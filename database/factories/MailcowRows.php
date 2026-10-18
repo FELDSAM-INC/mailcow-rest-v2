@@ -38,6 +38,46 @@ class MailcowRows
     ];
 
     /**
+     * The Default mailbox template of init_db_schema() (2026-09a) with upstream
+     * $MAILBOX_DEFAULT_ATTRIBUTES, in its key order. It lacks `tagged_mail_handler` and
+     * `acl_pw_reset`, as upstream seeds it.
+     */
+    public const DEFAULT_MAILBOX_TEMPLATE = [
+        'tags' => [],
+        'quota' => 0,
+        'quarantine_notification' => 'hourly',
+        'quarantine_category' => 'reject',
+        'rl_frame' => 's',
+        'rl_value' => '',
+        'force_pw_update' => 0,
+        'force_tfa' => 0,
+        'sogo_access' => 1,
+        'active' => 1,
+        'tls_enforce_in' => 0,
+        'tls_enforce_out' => 0,
+        'imap_access' => 1,
+        'pop3_access' => 1,
+        'smtp_access' => 1,
+        'sieve_access' => 1,
+        'eas_access' => 1,
+        'dav_access' => 1,
+        'acl_spam_alias' => 1,
+        'acl_tls_policy' => 1,
+        'acl_spam_score' => 1,
+        'acl_spam_policy' => 1,
+        'acl_delimiter_action' => 1,
+        'acl_syncjobs' => 0,
+        'acl_eas_reset' => 1,
+        'acl_sogo_profile_reset' => 0,
+        'acl_pushover' => 1,
+        'acl_quarantine' => 1,
+        'acl_quarantine_attachments' => 1,
+        'acl_quarantine_notification' => 1,
+        'acl_quarantine_category' => 1,
+        'acl_app_passwds' => 1,
+    ];
+
+    /**
      * A superadmin (`admin.superadmin = 1`).
      *
      * @param  array<string, mixed>  $attributes
@@ -267,9 +307,9 @@ class MailcowRows
     }
 
     /** Pushover settings of a mailbox (`pushover`). */
-    public function pushover(string $username): void
+    public function pushover(string $username, int $active = 1): void
     {
-        DB::table('pushover')->insert(['username' => $username, 'key' => str_repeat('k', 30), 'token' => str_repeat('t', 30), 'attributes' => '{}']);
+        DB::table('pushover')->insert(['username' => $username, 'key' => str_repeat('k', 30), 'token' => str_repeat('t', 30), 'attributes' => '{}', 'active' => $active]);
     }
 
     /**
@@ -447,6 +487,227 @@ class MailcowRows
             'credentialId' => $credentialId,
             'active' => $active,
         ]);
+    }
+
+    /**
+     * A mailbox exactly as legacy `mailbox('add', 'mailbox')` stores it (feature 003 research R25):
+     * the row with the string attribute set (and `passwd_update` as `NOW()`), zeroed `quota2` and
+     * `quota2replica` rows, the own alias with the mailbox's status, the `user_acl` row (column
+     * defaults, overridden by $userAcl) and one `tags_mailbox` row per tag. The domain must exist.
+     * `quota` is bytes (0 = unlimited).
+     *
+     * @param  array<string, mixed>  $attributes  overrides of the attribute set (null removes a key)
+     * @param  array<string, int|bool>  $userAcl
+     * @param  list<string>  $tags
+     * @param  array<string, string>  $customAttributes
+     */
+    public function legacyMailbox(
+        string $username,
+        int $active = 1,
+        int $quota = 0,
+        array $attributes = [],
+        array $userAcl = [],
+        array $tags = [],
+        string $authsource = 'mailcow',
+        array $customAttributes = [],
+        ?string $name = null,
+        string $password = 'Passw0rd!',
+        string $scheme = 'BLF-CRYPT',
+    ): void {
+        [$localPart, $domain] = explode('@', $username, 2) + [1 => ''];
+
+        if ($domain === '') {
+            throw new InvalidArgumentException("{$username} is not an e-mail address");
+        }
+
+        $set = array_merge([
+            'force_pw_update' => '0',
+            'force_tfa' => '0',
+            'tls_enforce_in' => '0',
+            'tls_enforce_out' => '0',
+            'sogo_access' => '1',
+            'imap_access' => '1',
+            'pop3_access' => '1',
+            'smtp_access' => '1',
+            'sieve_access' => '1',
+            'eas_access' => '1',
+            'dav_access' => '1',
+            'relayhost' => '0',
+            'passwd_update' => time(),
+            'mailbox_format' => 'maildir:',
+            'quarantine_notification' => 'hourly',
+            'quarantine_category' => 'reject',
+            'attribute_hash' => '',
+        ], $attributes);
+        $set = array_filter($set, fn (mixed $value): bool => $value !== null);
+
+        DB::table('mailbox')->insert([
+            'username' => $username,
+            'password' => $authsource === 'mailcow' ? self::hash($scheme, $password) : '',
+            'name' => $name ?? $localPart,
+            'quota' => $quota,
+            'local_part' => $localPart,
+            'domain' => $domain,
+            'attributes' => json_encode($set),
+            'custom_attributes' => json_encode((object) $customAttributes),
+            'authsource' => $authsource,
+            'active' => $active,
+        ]);
+
+        if (! array_key_exists('passwd_update', $attributes)) {
+            DB::update("UPDATE `mailbox` SET `attributes` = JSON_SET(`attributes`, '$.passwd_update', NOW()) WHERE `username` = ?", [$username]);
+        }
+
+        foreach ($tags as $tag) {
+            $this->mailboxTag($username, $tag);
+        }
+
+        DB::table('quota2')->insert(['username' => $username, 'bytes' => 0, 'messages' => 0]);
+        DB::table('quota2replica')->insert(['username' => $username, 'bytes' => 0, 'messages' => 0]);
+        DB::table('alias')->insert(['address' => $username, 'goto' => $username, 'domain' => $domain, 'active' => $active]);
+        DB::table('user_acl')->insert(['username' => $username] + array_map(fn (int|bool $v): int => (int) $v, $userAcl));
+    }
+
+    /** A tag of a mailbox (`tags_mailbox`). */
+    public function mailboxTag(string $username, string $tag): void
+    {
+        DB::table('tags_mailbox')->insert(['username' => $username, 'tag_name' => $tag]);
+    }
+
+    /** Stored usage of a mailbox, replacing its row (`quota2`, or `quota2replica` for a replica). */
+    public function usage(string $username, int $bytes, int $messages, bool $replica = false): void
+    {
+        DB::table($replica ? 'quota2replica' : 'quota2')->updateOrInsert(['username' => $username], ['bytes' => $bytes, 'messages' => $messages]);
+    }
+
+    /**
+     * A mailbox template (`templates` with `type = 'mailbox'`), attributes exactly as given (legacy
+     * keys, quota in bytes). Returns its ID.
+     *
+     * @param  array<string, mixed>|string  $attributes
+     */
+    public function mailboxTemplate(string $name, array|string $attributes = []): int
+    {
+        return $this->domainTemplate($name, $attributes, 'mailbox');
+    }
+
+    /**
+     * The Default mailbox template exactly as init_db_schema() of 2026-09a seeds it. Returns its ID.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public function defaultMailboxTemplate(array $overrides = []): int
+    {
+        return $this->mailboxTemplate('Default', array_merge(self::DEFAULT_MAILBOX_TEMPLATE, $overrides));
+    }
+
+    /** A temporary alias (`spamalias`) with an explicit validity (Unix time) and permanence. */
+    public function temporaryAlias(string $address, string $goto, ?int $validity = null, int $permanent = 0): void
+    {
+        DB::table('spamalias')->insert(['address' => $address, 'goto' => $goto, 'description' => '', 'validity' => $validity ?? time() + 3600, 'permanent' => $permanent]);
+    }
+
+    /** A sync job delivering into a mailbox (`imapsync`). Returns its ID. */
+    public function syncJob(string $user2): int
+    {
+        return (int) DB::table('imapsync')->insertGetId([
+            'user2' => $user2,
+            'host1' => 'imap.example.net',
+            'user1' => 'remote@example.net',
+            'password1' => 'remote-secret',
+            'port1' => 993,
+        ]);
+    }
+
+    /** A quarantine item for a recipient (`quarantine`). Returns its ID. */
+    public function quarantineItem(string $rcpt): int
+    {
+        return (int) DB::table('quarantine')->insertGetId([
+            'qid' => strtoupper(bin2hex(random_bytes(5))),
+            'subject' => 'Spam',
+            'score' => 15.5,
+            'action' => 'reject',
+            'sender' => 'spammer@example.net',
+            'rcpt' => $rcpt,
+            'msg' => 'Subject: Spam',
+            'domain' => substr((string) strrchr($rcpt, '@'), 1),
+        ]);
+    }
+
+    /** A recipient map (`recipient_maps`). Returns its ID. */
+    public function recipientMap(string $oldDest, string $newDest): int
+    {
+        return (int) DB::table('recipient_maps')->insertGetId(['old_dest' => $oldDest, 'new_dest' => $newDest, 'active' => 1]);
+    }
+
+    /** A Sieve filter of a mailbox (`sieve_filters`). Returns its ID. */
+    public function sieveFilter(string $username, string $type = 'prefilter'): int
+    {
+        return (int) DB::table('sieve_filters')->insertGetId([
+            'username' => $username,
+            'script_desc' => 'Filter '.bin2hex(random_bytes(3)),
+            'script_name' => 'active',
+            'script_data' => 'keep;',
+            'filter_type' => $type,
+        ]);
+    }
+
+    /** An app password of a mailbox (`app_passwd`). Returns its ID. */
+    public function appPassword(string $mailbox, string $name = 'Phone', string $password = 'AppPassw0rd!'): int
+    {
+        return (int) DB::table('app_passwd')->insertGetId([
+            'name' => $name,
+            'mailbox' => $mailbox,
+            'domain' => substr((string) strrchr($mailbox, '@'), 1),
+            'password' => self::hash('BLF-CRYPT', $password),
+        ]);
+    }
+
+    /**
+     * Webmail data of a user as SOGo stores it: profile, cache folder, a calendar and an address
+     * book (`sogo_folder_info`) with a stored event, an appointment and a contact, and a sharing
+     * permission on the calendar.
+     */
+    public function sogoData(string $username): void
+    {
+        DB::table('sogo_user_profile')->insert(['c_uid' => $username, 'c_defaults' => '{}', 'c_settings' => '{}']);
+        DB::table('sogo_cache_folder')->insert(['c_uid' => $username, 'c_path' => '/'.$username.'/Calendar', 'c_type' => 0, 'c_creationdate' => time(), 'c_lastmodified' => time()]);
+
+        foreach (['Calendar' => 'Appointment', 'Contacts' => 'Contact'] as $folder => $type) {
+            $id = (int) DB::table('sogo_folder_info')->insertGetId([
+                'c_path' => '/Users/'.$username.'/'.$folder.'/personal',
+                'c_path1' => 'Users',
+                'c_path2' => $username,
+                'c_path3' => $folder,
+                'c_path4' => 'personal',
+                'c_foldername' => $folder,
+                'c_folder_type' => $type,
+            ], 'c_folder_id');
+
+            DB::table('sogo_store')->insert(['c_folder_id' => $id, 'c_name' => 'item.ics', 'c_content' => 'BEGIN:VCALENDAR', 'c_creationdate' => time(), 'c_lastmodified' => time(), 'c_version' => 0]);
+
+            if ($folder === 'Calendar') {
+                DB::table('sogo_quick_appointment')->insert(['c_folder_id' => $id, 'c_name' => 'item.ics', 'c_uid' => 'uid-1', 'c_title' => 'Meeting', 'c_classification' => 0, 'c_isopaque' => 1, 'c_status' => 1, 'c_component' => 'vevent']);
+                DB::table('sogo_acl')->insert(['c_folder_id' => $id, 'c_object' => '/Users/'.$username.'/Calendar/personal', 'c_uid' => 'colleague@example.net', 'c_role' => 'ObjectViewer']);
+            } else {
+                DB::table('sogo_quick_contact')->insert(['c_folder_id' => $id, 'c_name' => 'item.vcf', 'c_cn' => 'Friend', 'c_mail' => 'friend@example.net', 'c_component' => 'vcard']);
+            }
+        }
+    }
+
+    /** OAuth access and refresh tokens and an authorisation code of a user (`oauth_*`). */
+    public function oauthTokens(string $userId): void
+    {
+        $expires = date('Y-m-d H:i:s', time() + 3600);
+        DB::table('oauth_access_tokens')->insert(['access_token' => bin2hex(random_bytes(20)), 'client_id' => 'client', 'user_id' => $userId, 'expires' => $expires]);
+        DB::table('oauth_refresh_tokens')->insert(['refresh_token' => bin2hex(random_bytes(20)), 'client_id' => 'client', 'user_id' => $userId, 'expires' => $expires]);
+        DB::table('oauth_authorization_codes')->insert(['authorization_code' => bin2hex(random_bytes(20)), 'client_id' => 'client', 'user_id' => $userId, 'expires' => $expires]);
+    }
+
+    /** A recent-login record (`sasl_log`); `datetime` is mailcow local time. */
+    public function saslLog(string $username, string $service, string $datetime, string $realRip = '192.0.2.10'): void
+    {
+        DB::table('sasl_log')->insert(['username' => $username, 'service' => $service, 'datetime' => $datetime, 'real_rip' => $realRip]);
     }
 
     /** The configured external identity provider (`identity_provider.authsource`). */

@@ -186,6 +186,35 @@ class MailcowConfig
     }
 
     /**
+     * Whether last logins are reported (legacy `$SHOW_LAST_LOGIN`, feature 003 FR-010).
+     *
+     * @phpstan-impure
+     */
+    public function showLastLogin(): bool
+    {
+        $value = $this->value('SHOW_LAST_LOGIN');
+
+        return is_bool($value) ? $value : (bool) config('restv2.vars_defaults.SHOW_LAST_LOGIN');
+    }
+
+    /**
+     * Default attributes of new mailboxes (legacy `$MAILBOX_DEFAULT_ATTRIBUTES`, feature 003
+     * research R5): the operator's values merged over the upstream ones, so that a partial
+     * override keeps every other default.
+     *
+     * @return array<string, mixed>
+     *
+     * @phpstan-impure
+     */
+    public function mailboxDefaultAttributes(): array
+    {
+        $defaults = (array) config('restv2.vars_defaults.MAILBOX_DEFAULT_ATTRIBUTES');
+        $value = $this->value('MAILBOX_DEFAULT_ATTRIBUTES');
+
+        return is_array($value) && ! array_is_list($value) ? array_merge($defaults, $value) : $defaults;
+    }
+
+    /**
      * The effective value of a legacy variable listed in config/restv2.php.
      *
      * @phpstan-impure

@@ -218,4 +218,75 @@ class MailcowConfigTest extends TestCase
         $this->assertSame(25, $config->taggingLimit());
         $this->assertSame(60, $config->dockerTimeout());
     }
+
+    public function test_last_logins_are_shown_by_default(): void
+    {
+        // Feature 003 T003 (FR-010): legacy's $SHOW_LAST_LOGIN of the mounted vars.inc.php.
+        $this->assertTrue($this->config()->showLastLogin());
+    }
+
+    public function test_a_local_file_can_turn_off_the_last_logins(): void
+    {
+        $dir = $this->copyFixtures();
+        file_put_contents($dir.'/vars.local.inc.php', "\n\$SHOW_LAST_LOGIN = false;\n", FILE_APPEND);
+
+        $this->assertFalse($this->config()->showLastLogin());
+    }
+
+    public function test_the_last_login_server_setting_wins(): void
+    {
+        config(['restv2.vars_overrides.SHOW_LAST_LOGIN' => 'n']);
+
+        $this->assertFalse($this->config()->showLastLogin());
+    }
+
+    public function test_the_mailbox_defaults_are_the_upstream_values_without_the_directory(): void
+    {
+        config(['restv2.mailcow_inc_dir' => '/nonexistent/mailcow/web/inc']);
+        Log::spy();
+
+        $defaults = $this->config()->mailboxDefaultAttributes();
+
+        $this->assertSame([
+            'tls_enforce_in' => false,
+            'tls_enforce_out' => false,
+            'force_pw_update' => false,
+            'force_tfa' => false,
+            'sogo_access' => true,
+            'tagged_mail_handler' => 'none',
+            'quarantine_notification' => 'hourly',
+            'imap_access' => true,
+            'pop3_access' => true,
+            'smtp_access' => true,
+            'sieve_access' => true,
+            'eas_access' => true,
+            'dav_access' => true,
+            'quarantine_category' => 'reject',
+            'mailbox_format' => 'maildir:',
+        ], $defaults);
+    }
+
+    public function test_a_local_file_overrides_a_mailbox_default(): void
+    {
+        $dir = $this->copyFixtures();
+        file_put_contents($dir.'/vars.local.inc.php', "\n\$MAILBOX_DEFAULT_ATTRIBUTES['sogo_access'] = false;\n\$MAILBOX_DEFAULT_ATTRIBUTES['quarantine_notification'] = 'daily';\n", FILE_APPEND);
+
+        $defaults = $this->config()->mailboxDefaultAttributes();
+
+        $this->assertFalse($defaults['sogo_access']);
+        $this->assertSame('daily', $defaults['quarantine_notification']);
+        $this->assertTrue($defaults['imap_access']);
+    }
+
+    public function test_the_mailbox_defaults_server_setting_is_merged_over_the_upstream_values(): void
+    {
+        config(['restv2.vars_overrides.MAILBOX_DEFAULT_ATTRIBUTES' => '{"pop3_access":false,"tagged_mail_handler":"subject"}']);
+
+        $defaults = $this->config()->mailboxDefaultAttributes();
+
+        $this->assertFalse($defaults['pop3_access']);
+        $this->assertSame('subject', $defaults['tagged_mail_handler']);
+        $this->assertTrue($defaults['sogo_access']);
+        $this->assertSame('maildir:', $defaults['mailbox_format']);
+    }
 }

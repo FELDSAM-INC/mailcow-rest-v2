@@ -44,7 +44,7 @@ read-write keys owned by an administrator and by a domain administrator, and no 
 
 **Purpose**: configuration, deployment files and test support. No business logic.
 
-- [ ] T001 Extend `config/restv2.php` with the settings of research R23: `mailcow_pass_scheme`
+- [X] T001 Extend `config/restv2.php` with the settings of research R23: `mailcow_pass_scheme`
   (`env('MAILCOW_PASS_SCHEME', 'BLF-CRYPT')`), `maildir_gc_time` (`(int) env('MAILDIR_GC_TIME',
   7200)`), `cluster_mode` (`env('CLUSTERMODE', '')`), `master` (`env('MASTER', 'y')` matched by
   `/y|yes/i` as legacy), and `mailbox_custom_attribute_limit` (`RESTV2_MAILBOX_CUSTOM_ATTRIBUTE_LIMIT`,
@@ -53,12 +53,12 @@ read-write keys owned by an administrator and by a domain administrator, and no 
   and the single operation `getPasswordPolicy` to `tests/contract-scope.php` (002's T004); extend
   the scope file and `tests/bin/check-contract-coverage.php` to accept operation IDs, because the
   `Password policy` tag also holds feature 013's `updatePasswordPolicy`.
-- [ ] T002 [P] Update `deploy/docker-compose.override.yml`: pass `MAILCOW_PASS_SCHEME`,
+- [X] T002 [P] Update `deploy/docker-compose.override.yml`: pass `MAILCOW_PASS_SCHEME`,
   `MAILDIR_GC_TIME`, `CLUSTERMODE`, `MASTER`, `RESTV2_SHOW_LAST_LOGIN`,
   `RESTV2_MAILBOX_DEFAULT_ATTRIBUTES` and `RESTV2_MAILBOX_CUSTOM_ATTRIBUTE_LIMIT` to the
   `restv2-mailcow` environment (empty defaults). Update `deploy/nginx/site.restv2.custom` with
   `fastcgi_read_timeout 900s;` in the `/api/v2/` location (R26).
-- [ ] T003 [P] Write the failing cases first in `tests/Unit/Services/MailcowConfigTest.php`:
+- [X] T003 [P] Write the failing cases first in `tests/Unit/Services/MailcowConfigTest.php`:
   `showLastLogin()` (default `true`; `false` from a fixture `vars.local.inc.php`; `RESTV2_SHOW_LAST_LOGIN=n`
   wins) and `mailboxDefaultAttributes()` (upstream values of R5 when unset; a fixture override of
   `sogo_access`; `RESTV2_MAILBOX_DEFAULT_ATTRIBUTES` JSON wins). Add the fixture files under
@@ -66,7 +66,7 @@ read-write keys owned by an administrator and by a domain administrator, and no 
   `SHOW_LAST_LOGIN` and `MAILBOX_DEFAULT_ATTRIBUTES`, and `app/Services/Config/MailcowConfig.php`
   with `showLastLogin(): bool` and `mailboxDefaultAttributes(): array` (001 R14 precedence, merged
   over the upstream defaults).
-- [ ] T004 [P] Extend `database/factories/MailcowRows.php` and
+- [X] T004 [P] Extend `database/factories/MailcowRows.php` and
   `tests/Support/Mailcow/MailcowFactory.php` with writers that insert rows exactly as legacy does
   (data-model.md, research R25): `mailbox(address, password = 'Passw0rd!dev', scheme, active = 1,
   quota = 0, attributes = legacy string set, customAttributes = {}, authsource = 'mailcow', kind = '')`
@@ -79,7 +79,7 @@ read-write keys owned by an administrator and by a domain administrator, and no 
   `appPassword(mailbox)`; `sogoData(username)` (profile, cache folder, folder info with store,
   quick contact, quick appointment and ACL rows); `oauthTokens(userId)`; `saslLog(username,
   service, datetime)`; `identityProvider('ldap'|'keycloak'|'generic-oidc')`.
-- [ ] T005 [P] Extend `tests/Support/Fakes/FakeDockerApiClient.php` (002): scripted answers per
+- [X] T005 [P] Extend `tests/Support/Fakes/FakeDockerApiClient.php` (002): scripted answers per
   `{service, cmd, task}` (`success`, `failed(message)`, `unknown`, `unreachable`), optionally per
   call number; a programmable `get_acl` answer; `reachable()` per service; a broadcast log;
   assertions `assertExecuted(service, command)`, `assertNotExecuted(...)`, `assertExecOrder([...])`,
@@ -134,7 +134,7 @@ is complete.**
   `{SSHA256}` `c_password` that differs between calls), updates it after a name change, deletes
   the row of a mailbox that became inactive or was deleted, removes orphans, and touches nothing
   when `SKIP_SOGO=y`.
-- [ ] T012 [P] Extend `tests/Unit/Clients/HttpDockerApiClientTest.php` (002) with `Http::fake()`
+- [X] T012 [P] Extend `tests/Unit/Clients/HttpDockerApiClientTest.php` (002) with `Http::fake()`
   cases (R16): `reachable()` true when the container list has the service of
   `COMPOSE_PROJECT_NAME`, false when absent or the API is down; a connection error yields
   `failed` with `unreachable: true`; after a connection error or a timeout, later calls in the same

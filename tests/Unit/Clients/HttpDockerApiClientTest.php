@@ -136,4 +136,80 @@ class HttpDockerApiClientTest extends TestCase
             $this->assertEquals(42, $options['timeout']);
         }
     }
+
+    public function test_a_container_is_reachable_when_its_service_runs_in_the_compose_project(): void
+    {
+        // Feature 003 T012 (research R16): a container lookup only, no command.
+        $this->fake(['type' => 'success']);
+
+        $this->assertTrue($this->client()->reachable('dovecot-mailcow'));
+        $this->assertFalse($this->client()->reachable('netfilter-mailcow'));
+        Http::assertNotSent(fn (Request $r): bool => $r->method() === 'POST');
+    }
+
+    public function test_nothing_is_reachable_when_the_container_service_is_down(): void
+    {
+        Http::fake(fn () => Http::failedConnection('cURL error 7: Failed to connect to dockerapi port 443'));
+
+        $this->assertFalse($this->client()->reachable('dovecot-mailcow'));
+    }
+
+    public function test_a_connection_error_is_an_unreachable_failure(): void
+    {
+        Http::fake(fn () => Http::failedConnection('cURL error 7: Failed to connect to dockerapi port 443'));
+
+        $result = $this->client()->exec('dovecot-mailcow', ['cmd' => 'maildir', 'task' => 'cleanup', 'maildir' => 'example.org/anna']);
+
+        $this->assertSame(DockerCallResult::FAILED, $result->status);
+        $this->assertTrue($result->isUnreachable());
+    }
+
+    public function test_a_missing_container_is_an_unreachable_failure(): void
+    {
+        $this->fake(['type' => 'success']);
+
+        $result = $this->client()->exec('netfilter-mailcow', ['cmd' => 'x']);
+
+        $this->assertTrue($result->isUnreachable());
+    }
+
+    public function test_a_danger_answer_is_not_unreachable(): void
+    {
+        $this->fake(['type' => 'danger', 'msg' => 'command failed: mv: cannot move']);
+
+        $result = $this->client()->exec('dovecot-mailcow', ['cmd' => 'maildir', 'task' => 'move', 'old_maildir' => 'a/b', 'new_maildir' => 'a/c']);
+
+        $this->assertSame(DockerCallResult::FAILED, $result->status);
+        $this->assertFalse($result->isUnreachable());
+    }
+
+    public function test_a_query_returns_the_json_answer(): void
+    {
+        $acl = [['user' => 'anna@example.org', 'id' => 'bob@example.org', 'mailbox' => 'INBOX', 'rights' => ['lookup', 'read']]];
+        $this->fake($acl);
+
+        $result = $this->client()->query('dovecot-mailcow', ['cmd' => 'doveadm', 'task' => 'get_acl', 'id' => 'anna@example.org']);
+
+        $this->assertTrue($result->isSuccess());
+        $this->assertSame($acl, $result->data);
+        Http::assertSent(fn (Request $r): bool => $r->method() === 'POST'
+            && $r->url() === 'https://dockerapi/containers/'.self::DOVECOT_ID.'/exec'
+            && json_decode($r->body(), true) === ['cmd' => 'doveadm', 'task' => 'get_acl', 'id' => 'anna@example.org']);
+    }
+
+    public function test_a_query_answered_without_a_list_is_a_failure(): void
+    {
+        $this->fake(fn () => Http::response('null'));
+
+        $result = $this->client()->query('dovecot-mailcow', ['cmd' => 'doveadm', 'task' => 'get_acl', 'id' => 'anna@example.org']);
+
+        $this->assertSame(DockerCallResult::FAILED, $result->status);
+    }
+
+    public function test_a_query_that_times_out_has_an_unknown_outcome(): void
+    {
+        $this->fake(fn () => Http::failedConnection('cURL error 28: Operation timed out after 60001 milliseconds'));
+
+        $this->assertTrue($this->client()->query('dovecot-mailcow', ['cmd' => 'doveadm', 'task' => 'get_acl', 'id' => 'a@b'])->isUnknown());
+    }
 }

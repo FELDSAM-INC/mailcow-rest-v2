@@ -557,7 +557,7 @@ time, source address and changed attributes, and that no record contains the rem
   - port: required; a whole number from 1 to 65535;
   - remote user: required; at most 255 characters;
   - remote password: required at creation; at most 255 characters; write-only (FR-018);
-  - encryption: required; one of SSL, STARTTLS or PLAIN;
+  - encryption: one of SSL, STARTTLS or PLAIN; default SSL (clarification 8);
   - polling interval: a whole number of minutes from 1 to 43800; default 20;
   - maximum age: a whole number of days from 0 to 32000, where 0 means "ignore age"; default 0;
   - maximum bytes per second: a whole number from 0 to 125000000, where 0 means "unlimited";
@@ -749,6 +749,10 @@ fork-only sync-job capabilities to make configurable.
 | Mass actions | `edit/syncjob` and `delete/syncjob` with arrays; processing continues past per-job access failures, but a custom-parameter validation failure on one job stops the jobs after it | Bulk action with one result per job; optional per-item version tags (`outdated` result); no failure stops the others (FR-023, FR-024). **Deviation** for the stop on a validation failure |
 | UI log entries | Written to the `logs` table | Written to this API's audit log (FR-025), as in feature 001. **Deviation** |
 | SOGo / memcached side effects | None for sync jobs (the closing `update_sogo_static_view` block skips the `syncjob` type) | None (FR-022) |
+| Re-validation of stored values on edit (plan-level note) | `edit/syncjob` re-validates every stored value, so a job whose host legacy add never validated cannot even be deactivated | Only members whose value changes are validated; a member sent with its stored value, and every member not sent, is accepted as stored (FR-006's "unchanged" rule applied to every member). **Deviation** |
+| Target mailbox spelling (plan-level note) | `user2` is stored as typed, and the mailbox user's scope compares it case-sensitively | The target is stored as the mailbox's canonical username. **Deviation** (normalisation) |
+| Custom-parameter errors (plan-level note) | Stops at the first bad option; edit does not trim the value and then refuses a leading space as an unknown option | Every bad option is reported at once (FR-019); the value is trimmed on create and on edit. **Deviation** |
+| Columns written by an edit (plan-level note) | Rewrites the whole row, including `last_run` and `success`, and can overwrite a status the runner wrote after the job was read | Writes only the changed configuration columns, so the runner's status is never overwritten (FR-022). **Deviation** (bug fix) |
 
 ### Key Entities *(include if feature involves data)*
 
@@ -817,10 +821,11 @@ fork-only sync-job capabilities to make configurable.
   which move or remove a job's target, are handled in feature 003.
 - The remote password is stored in plain text because imapsync requires it; this is an inherent
   property of sync jobs, not a choice of this feature. The API keeps it hidden from every response.
-- These defaults can be changed by the operator: the list page size (25, maximum 1,000), the bulk
-  limit (100), the custom-parameter allow-list (default: upstream's `IMAPSYNC_OPTIONS.whitelist`)
-  and whether custom imapsync parameters are restricted to administrators (default: not restricted,
-  as in legacy). Clients read the values in effect through the capabilities read (FR-030).
+- These defaults can be changed by the operator: the bulk limit (100), the custom-parameter
+  allow-list (default: upstream's `IMAPSYNC_OPTIONS.whitelist`) and whether custom imapsync
+  parameters are restricted to administrators (default: not restricted, as in legacy). The list page
+  size (25, maximum 1,000) is the same for every list (`docs/conventions.md`) and is not a
+  per-feature setting. Clients read the values in effect through the capabilities read (FR-030).
 - Creating a sync job has no effect on Postfix, Dovecot delivery, SOGo, Redis or memcached beyond
   the runner eventually connecting to the remote server; the legacy code performs no such side
   effect for sync jobs.

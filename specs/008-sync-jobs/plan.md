@@ -105,7 +105,7 @@ operations in one module, 6 user stories and 0 new tables.
 | III. Upstream schema | No migration touches an upstream table. Uniqueness uses a named lock instead of a unique index (R9). The only migration is an index on API-owned `restv2_audit_events` (`MigrationPrefixTest`). `ImapsyncColumnsTest` fails if a release changes `imapsync`'s columns. | PASS |
 | IV. Parity | The legacy add, edit, delete and get code, the forms, the JS tables, `vars.inc.php` and `imapsync_runner.pl` were read (research R1–R16). Every write goes through `SyncJobService` with legacy's column list and no extra side effect (legacy has none for sync jobs). Validation parity is proven against extracted legacy oracles. Deviations are the spec's, completed by the plan-level parity notes below, which were added to the spec's table. | PASS |
 | V. Coexistence | Same container and routing as 001. The runner, php-fpm, the legacy UI and `/api/v1` are untouched and keep editing the same rows. Legacy writes stay unserialised, as before. | PASS |
-| VI. Security | The permission flag is evaluated per request from mailcow data. Object-level scope means a foreign job is `404`. Keys act as their owner, and read-only keys are refused on writes. The password is write-only, hidden in the model, an HMAC in the tag, and "changed" in the audit. `showpasswords` is refused. Every change and every refusal by this feature is audited in the change's transaction. The log is declared operator-authored plain text. | PASS |
+| VI. Security | The permission flag is evaluated per request from mailcow data. Object-level scope means a foreign job is `404`. Keys act as their owner, and read-only keys are refused on writes. The password is write-only, hidden in the model, an HMAC in the tag, and "changed" in the audit. `showpasswords` is refused. Every change is audited in the change's transaction. The log is declared operator-authored plain text. Every refusal by an authenticated caller is audited too, read-only-key and restricted-session refusals included; CSRF failures and `401`s are not, to avoid forgeable and anonymous log flooding (R16). | PASS |
 | VII. Test-first | `tasks.md` puts each phase's tests first, to be observed failing. They run on MariaDB with the real schema and real Redis. No external service is involved: the runner is simulated through its own SQL, not faked behind an interface, because the API never calls it. | PASS |
 | VIII. Simplicity | No new dependency or table. Shared pieces from 001 and 002–004 are reused (configuration reader, host rule, bulk plumbing, alias models) before anything new is created. | PASS |
 | Cross-feature conventions | Out-of-scope objects answer 404, and missing flags 403. All bad entries are named at once, nothing is clamped. Bulk follows the rules: at most 100, per-item outcomes, per-item version tags, dedupe. Tags cover stored settings only. The secret is write-only. `IMAPSYNC_OPTIONS` uses 001's configuration reader with `RESTV2_IMAPSYNC_OPTIONS` winning. One audit record per affected job, with the bulk request ID. Reads are not audited. Nothing is cached. Lists default to 25, at most 1,000, and take `q`. | PASS |
@@ -116,12 +116,14 @@ justified below. The decisions that touched gates:
 - R4, the HMAC of the password in the version tag: VI.
 - R5, `412` before `422` and "unchanged means accepted": IV, recorded in the spec.
 - R9, the named lock instead of a unique index: III.
-- R16, refusals audited with the shared failure reasons, and pipeline refusals left to 001: VI.
+- R16, every refusal by an authenticated caller audited (pipeline refusals included, through a
+  route-scoped `RefusalAuditor`), except CSRF failures and `401`s: VI and FR-025.
 
 ## Parity notes added to the spec
 
-Constitution IV requires every deviation to be stated in the spec. These plan-level rows were added
-to the spec's "Legacy Parity and Deliberate Deviations" table:
+Constitution IV requires every deviation to be stated in the spec. These plan-level notes were added
+to the spec's "Legacy Parity and Deliberate Deviations" table, as four rows marked "plan-level
+note" (notes 3 and 4 share a row):
 
 1. **Unchanged values are accepted**: on an edit, a member sent with its stored value, and every
    member not sent, is accepted without re-validation. Legacy edit re-validates every stored value,
@@ -220,7 +222,9 @@ app/
 │   ├── SyncJobBulkService.php                    # per-item processing, BulkResult
 │   ├── SyncJobCapabilities.php
 │   ├── SyncJobAuditDetails.php                   # details/changes builders without secrets
+│   ├── SyncJobAuditTargetResolver.php            # target of refusal records (route id or mailbox member)
 │   └── {SyncJobEncryption,SyncJobLastResult,SyncJobBulkAction,SyncJobDefaults,SyncJobLimits}.php
+├── Services/Audit/RefusalAuditor.php             # audits refusals of routes declaring restv2.audit (reuse 002's if present)
 ├── Services/Config/MailcowConfig.php             # + imapsyncOptions() (001's reader, extended)
 ├── Support/Http/ProblemType.php                  # + SyncJobExists case (001's enum, extended)
 ├── Support/Validation/LegacyDomainName.php       # only if feature 002 left no port of is_valid_domain_name
@@ -282,11 +286,12 @@ before creating anything ("implemented once and reused").
 
 ## Owner-level questions (defaults applied)
 
-1. **Page size**: the spec's assumptions list it as operator-changeable, but the shared `Limit`
-   parameter fixes it at 25 and 1,000. *Default*: fixed, and reported in the capabilities read
-   (R17).
-2. **Audit filter edit**: `targetMailbox` must be added to 001's `api/modules/audit/audit-events.yaml`.
+1. **Audit filter edit**: `targetMailbox` must be added to 001's `api/modules/audit/audit-events.yaml`.
    *Default*: tasks.md does it as the first US6 task, after 002's `targetType` and `targetId`.
+
+The page size was an open point too: the spec's assumptions called it operator-changeable, but the
+shared `Limit` parameter fixes it. It was aligned with `docs/conventions.md` in the spec during
+analysis.
 
 ## Complexity Tracking
 

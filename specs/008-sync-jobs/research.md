@@ -273,7 +273,7 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
   1. the server setting `RESTV2_IMAPSYNC_OPTIONS`, a JSON object `{"whitelist": [...],
      "blacklist": [...]}`;
   2. otherwise `$IMAPSYNC_OPTIONS` from the mounted `vars.inc.php` and `vars.local.inc.php`;
-  3. otherwise upstream `2026-09a`'s list (115 entries, copied verbatim into `MailcowConfig`'s
+  3. otherwise upstream `2026-09a`'s list (114 entries, copied verbatim into `MailcowConfig`'s
      built-in defaults).
 
   `resources/bin/export-mailcow-vars.php` exports `IMAPSYNC_OPTIONS` alongside 001's variables.
@@ -477,18 +477,38 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
   - **Failures** have `outcome: failure`, a `failureReason` and the details `problemType`,
     `status`, `errors` (member → list of rule codes, never values), `mailbox` when known and
     `bulkRequestId`. The reasons map as follows:
-    - missing flag → `permissionDenied`;
+    - missing flag (`forbidden`), read-only key (`insufficient-key-scope`) or restricted session
+      (`pending-action-required`) → `permissionDenied`, told apart by `details.problemType`;
     - unknown or out of scope → `notFound`;
     - `412` or `outdated` → `versionOutdated`;
-    - `422` → `validationFailed`;
+    - `422`, or a `400` malformed body → `validationFailed`;
     - `409` → `conflict`;
     - unexpected → `null`.
 
     The values from 002 (`versionOutdated`, `validationFailed`, `conflict`) are reused, and
     `permissionDenied` and `notFound` are appended to the shared `AuditFailureReason`.
-  - **Not recorded by this feature**: refusals raised by 001's pipeline (`401`, CSRF, key scope,
-    pending actions). They happen before the feature's code runs, and 001 does not audit them
-    either.
+  - **Recording refusals**: one mechanism records every refusal of the five state-changing
+    operations (create, update, delete, reschedule, bulk), whether this feature's code raised it or
+    001's pipeline did (key scope, pending actions).
+    - `App\Services\Audit\RefusalAuditor` is called from 001's problem rendering in
+      `bootstrap/app.php` for a `4xx` problem when three conditions hold: the matched route
+      declares `->defaults('restv2.audit', ['event' => …, 'target' => 'syncJob'])`, the request
+      has an authenticated principal, and the type is not `csrf-token-mismatch`.
+    - A registered resolver for the target type `syncJob` supplies the target. For a route
+      `{syncJob}` it looks up the ID and `user2`, regardless of scope, because the audit log is for
+      administrators only. For a creation it uses the `mailbox` member as sent (truncated to 255),
+      or the mailbox user's own address.
+    - A whole-request bulk refusal gives one record with a `null` target and `details.itemIds`.
+      Per-item outcomes are recorded by `SyncJobBulkService`.
+    - If feature 002 already built such a hook, it is reused and only the `syncJob` resolver is
+      registered.
+  - **Not recorded**:
+    - `401` requests have no principal. Recording them would let anonymous clients fill the log
+      (001's Complexity Tracking).
+    - CSRF failures can be triggered by any third-party site in a victim's browser, so recording
+      them would let that site write audit rows in the victim's name at will. 001 does not audit
+      them either.
+    - Reads are not audited.
   - **Filtering by mailbox (FR-026)**: 002 adds the `targetType` and `targetId` filters of
     `listAuditEvents` (002 FR-058). This feature adds `targetMailbox`, implemented as
     `target_type = 'syncJob' AND target_name = ?`, plus the index migration
@@ -496,12 +516,19 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
     target_name)`. The parameter goes into 001's `api/modules/audit/audit-events.yaml`. The
     concurrent-planning rules do not let this plan edit another feature's module, so it is the
     first task of US6, before its tests (plan, Complexity Tracking).
-- **Rationale**: This is FR-025 and FR-026, with the password only as "changed" (SC-007). Values of
+- **Rationale**: This is FR-025 ("every request … that changes state, or tries to") and FR-026,
+  with the password only as "changed" (SC-007). A read-only key trying to delete a job is exactly
+  what an administrator investigating misuse needs to see. That is why the pipeline refusals with a
+  known principal are recorded, while the two unauthenticated or forgeable kinds are not. Values of
   refused input are never recorded, because a refused request may carry a password in any member.
   Putting the mailbox in `target.name` makes it visible in the audit list and searchable with 001's
   `q` immediately.
-- **Alternatives considered**: Separate `syncJobActivation` and `syncJobDeactivation` events were
-  rejected. FR-016 defines both as ordinary edits, and `changes.active` shows them.
+- **Alternatives considered**:
+  - Separate `syncJobActivation` and `syncJobDeactivation` events were rejected. FR-016 defines both
+    as ordinary edits, and `changes.active` shows them.
+  - Recording refusals inside each Form Request was rejected: the pipeline's refusals (key scope,
+    pending actions) never reach them.
+  - Recording CSRF failures was rejected because of the forgery amplification described above.
 
 ## R17. Capabilities
 
@@ -521,8 +548,9 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
 - **Rationale**: This is FR-030, following 002's FR-064 pattern. The page sizes are part of the
   shared contract (`Limit` has `default: 25, maximum: 1000`), so they are reported, not configured.
 - **Alternatives considered**: Making the page size an operator setting (the spec's assumptions
-  list it as changeable) was rejected. It would contradict the shared `Limit` parameter, which
-  every list uses. This is recorded as an owner-level question in the plan.
+  listed it as changeable) was rejected. It would contradict the shared `Limit` parameter and
+  `docs/conventions.md` ("the same for every list"), so the spec's assumption was aligned with the
+  conventions during analysis.
 
 ## R18. Server settings added by this feature
 

@@ -12,3 +12,9 @@ then marks the entry done here. Gaps that are a contract-wide rule are also reco
 | G3 | UI 010 | all | The members of `AuditEvent.details` are not documented in the contract, so the UI cannot label them. | Each feature documents its detail keys per event type in `docs/audit-events.md` (see `docs/conventions.md`). The `AuditEvent.details` description points there. | open: every feature as it is implemented. 001: `signIn`, `signOut`, `preferencesUpdate` and the passkey events documented, and the description points to the file; the API key events follow with 001 Phase 6 |
 | G4 | UI 010 | 010 | `/capabilities/dns` has no DKIM bulk limit, unlike other capabilities reads. | Add `dkim.bulkLimit` (100) to `DnsCapabilities`. | open |
 | G5 | UI 001 | release | `info.version` stays `0.1.0` while features merge. | Tag a contract release per implemented feature (`contract-NNN`), and document how UI pins it. | open: at release |
+| G6 | UI 011 | 011 | The meaning of the `before` cursor with `order=asc` is not documented for logs. | Document it, or refuse `before` with `asc`. | open |
+| G7 | UI 011 | 011 | The ban (fail2ban) parameter ranges are prose only. | Add `minimum`/`maximum` to the schema properties. | open |
+| G8 | UI 011 | 011 | `Audit-Recorded` is not declared on the queue bulk responses. | Declare the header wherever it can be sent. | open |
+| G9 | UI 011 | 011 | `meta.total` together with the `before` cursor is unspecified. | Document whether `total` counts all matches or the remaining ones. | open |
+| G10 | UI 011 | 006 | `rateLimitHash` has no pattern, while `bucketId` has one. | Add the same pattern. | open |
+| G11 | UI 011 | 003/011 | The `outcome-unknown` `step` extension member is prose only. | Add `step` to the problem schema (shared by 003 and 011). | open |

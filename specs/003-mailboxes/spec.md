@@ -102,6 +102,35 @@
 - Q: Must the policy read carry a version tag? → A: Yes, the same tag over the same values as
   feature 013's policy edit (FR-063). (orchestrator decision: a client can read here and edit in 013
   without a conflict.)
+- Q: How does a client learn the server settings it needs before it submits? → A: Through a
+  mailbox capabilities read for administrators and domain administrators. It gives the configured
+  identity provider type, whether the groupware is enabled, whether last logins are reported, the
+  bulk, tag, custom-attribute and page limits, and the garbage-area retention (FR-064). (orchestrator
+  decision: the web app found these gaps, and the read mirrors feature 002's FR-064. Feature 012
+  relies on domain administrators learning the provider type here.)
+- Q: Can a client see what a deletion would remove before confirming it? → A: Yes, through a
+  read-only deletion preview that writes no audit record. It gives the counts of dependent data,
+  the mail that would move to the garbage area, the retention period, any blocker and the current
+  version tag (FR-065). (orchestrator decision: the web app's confirmation needs numbers. The
+  preview mirrors feature 002's FR-065.)
+- Q: Can clients suggest existing tags? → A: Yes. A list of the distinct mailbox tags in the
+  caller's scope gives counts, with search and paging (FR-066). (orchestrator decision: the web
+  app's tag filter and tag input need it. The list mirrors feature 002's FR-066.)
+- Q: Do bulk actions check version tags? → A: Each item may carry its own version tag. An outdated
+  tag gives that item the result `outdated` while the others proceed, and untagged items are not
+  checked. Every list entry carries its version tag (FR-016, FR-053, FR-067). (orchestrator
+  decision: the bulk rule in `docs/conventions.md`.)
+- Q: How does this spec follow `docs/conventions.md` for follow-up steps, timeouts and legacy PHP
+  settings? → A:
+  - The initial rate limit, the tagged-mail handling and the groupware update run after the
+    mailbox is saved. Each step's outcome is reported, and a failing step never removes the mailbox
+    (FR-027).
+  - A container API call that times out answers "outcome unknown" (FR-040, FR-048).
+  - The mailbox defaults, the tagging limit and the last-login display are API server settings with
+    upstream defaults (FR-010, FR-022, FR-036).
+  - There is no server-side breached-password check (Assumptions).
+
+  (orchestrator decision: the cross-feature conventions apply to the next change of every spec.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -210,6 +239,13 @@ mailbox. Repeat at each domain limit.
 11. **Given** an operator who set the policy to a minimum length of 10 with digits required in the
     legacy UI, **When** a domain administrator's client reads the password policy, **Then** it
     receives exactly those rules, and a password that meets them is accepted at creation.
+12. **Given** a server with LDAP configured and the groupware disabled, **When** a domain
+    administrator's client reads the mailbox capabilities, **Then** it learns that the provider type
+    is LDAP, that the groupware is disabled, and the bulk, tag and custom-attribute limits in force.
+    **Given** no identity provider, **Then** the provider type is "none".
+13. **Given** a creation with an initial rate limit while the shared store is unreachable, **When**
+    the mailbox is created, **Then** it exists, and the response reports the rate-limit step as
+    failed.
 
 ---
 
@@ -288,6 +324,10 @@ in the legacy UI. Then create a new mailbox with the same address and confirm it
    mailbox, **Then** the request is refused with "insufficient key scope".
 5. **Given** a client that sends a deletion with an outdated version, **Then** the request is
    refused as outdated and the mailbox remains.
+6. **Given** a mailbox with 3 aliases that point only to it, 1 alias shared with another mailbox,
+   2 app passwords and a TOTP factor, **When** the client previews its deletion, **Then** it gets
+   exactly those counts and addresses, the storage that would move to the garbage area, the
+   retention period and the current version tag. Nothing changes and no audit record is written.
 
 ---
 
@@ -324,6 +364,10 @@ changeable. Send a mail through a domain with a footer that uses a custom attrib
    `{= department =}` renders "Sales" for mail sent by that mailbox.
 5. **Given** a mailbox user, **When** they try to change their own permissions, **Then** the
    request is refused as forbidden.
+6. **Given** a domain administrator whose mailboxes carry the tags "Sales" (3 mailboxes) and
+   "sales-eu" (1), while another domain's mailboxes carry "Secret", **When** the client lists the
+   tags in use searching for "sal", **Then** it gets "Sales" with 3 and "sales-eu" with 1, and never
+   "Secret".
 
 ---
 
@@ -384,6 +428,10 @@ results, stored data and audit records with the same mass action in the legacy U
    with a validation error that states the limit of 100.
 5. **Given** a bulk deletion in which the mail store of one mailbox cannot be cleaned, **Then** that
    mailbox is reported as failed and remains, and the others are deleted.
+6. **Given** a selection of three mailboxes sent with the version tags read from the list, one of
+   which was changed in the legacy UI meanwhile, **When** they are deactivated, **Then** that one
+   gets `outdated` and stays unchanged, and the other two are deactivated. Items sent without a
+   tag are not version-checked.
 
 ---
 
@@ -474,7 +522,11 @@ into each external step and check that the mailbox is left as it was.
   only a change that leaves more than the limit is refused.
 - **Custom attribute key containing whitespace**: refused with a validation error (legacy silently
   removes spaces).
-- **Version tag sent with a bulk action**: not supported; bulk actions do not check versions.
+- **Bulk item with an outdated version tag**: that item gets `outdated` and changes nothing; the
+  other items proceed, and items sent without a tag are not version-checked (FR-067).
+- **Deletion preview followed by a change**: the deletion re-checks everything. A client that sends
+  the previewed version tag with the deletion is refused as outdated when the mailbox changed in
+  between.
 - **Usage figures and last logins change constantly**: they do not change the version tag, so a
   client editing a busy mailbox is not refused for no reason.
 - **Deletion while webmail is disabled on the server** (legacy `SKIP_SOGO`): webmail data is still
@@ -495,9 +547,12 @@ into each external step and check that the mailbox is left as it was.
 - **Bulk action naming the same mailbox twice**: it is processed once and reported once.
 - **Audit record cannot be written**: the operation it would record does not succeed (feature 001
   convention).
-- **Shared store unavailable** during a creation, change, deletion or rename that needs it: the
-  request fails with a temporary-failure error, and nothing is changed. Reading the password policy
-  fails the same way.
+- **Shared store unavailable** during a deletion, a rename or a password check: the request fails
+  with a temporary-failure error and nothing is changed. Reading the password policy fails the same
+  way. During a creation's follow-up steps (initial rate limit, tagged-mail handling), the step is
+  reported as failed and the mailbox stays (FR-027).
+- **Container API timeout** (`DOCKER_TIMEOUT`, 60 s) during a deletion or a rename: the answer is
+  "outcome unknown". A deletion then removes no records, and retrying it is safe (FR-040, FR-048).
 - **Password policy changed between reading it and submitting a password**: the password is
   checked against the current policy, and the validation error names the rules it fails.
 - **Password policy never saved by the operator**: the legacy defaults apply, both when the policy
@@ -533,6 +588,9 @@ into each external step and check that the mailbox is left as it was.
   | List and inspect mailbox templates | Yes | Yes | Refused |
   | Create, change and delete mailbox templates | Yes | Refused | Refused |
   | Read the password policy | Yes | Yes | Refused |
+  | Read the mailbox capabilities | Yes | Yes | Refused |
+  | Preview a mailbox deletion | All mailboxes | Mailboxes of own domains | Refused |
+  | List the mailbox tags in use | All mailboxes | Tags of own domains' mailboxes | Refused |
   | Read the audit records of this feature | Yes | Refused | Refused |
 
 - **FR-006**: A domain administrator MUST hold these permission flags to choose these settings:
@@ -591,8 +649,9 @@ into each external step and check that the mailbox is left as it was.
   - the percentage used is the storage used divided by the quota, rounded to a whole percent. A
     mailbox with unlimited quota has no percentage;
   - each last login is the most recent recent-login record of that service;
-  - when the operator has turned off the display of last logins (legacy `SHOW_LAST_LOGIN`), no
-    last-login times MUST be returned.
+  - when the operator has turned off the display of last logins, no last-login times MUST be
+    returned. This is an API server setting with the upstream default "on", which the operator
+    keeps aligned with legacy's `SHOW_LAST_LOGIN`. Clients learn it from FR-064.
 - **FR-011**: When the stored data of an older mailbox lacks a setting, the representation MUST
   report a missing protocol setting as allowed (as mail sign-in treats it), a missing forced flag
   as off and a missing password-changed time as absent.
@@ -613,9 +672,9 @@ into each external step and check that the mailbox is left as it was.
   recent IMAP, POP3 or SMTP login, as legacy sorts it), password last changed, creation time and
   modification time. The default MUST be by address, ascending. Ties MUST be broken by address.
   Mailboxes without a value for the sort field MUST come after all others in both directions.
-- **FR-016**: Each list entry MUST carry the full mailbox representation (FR-008), so that the list
-  screen needs no request per row. Producing a page MUST NOT require one lookup per mailbox on the
-  page.
+- **FR-016**: Each list entry MUST carry the full mailbox representation (FR-008) and its version
+  tag (FR-038), so that the list screen needs no request per row and can send the tags with a bulk
+  action (FR-067). Producing a page MUST NOT require one lookup per mailbox on the page.
 - **FR-017**: A client MUST be able to inspect one mailbox in its scope. The response MUST carry the
   mailbox's version tag (FR-038).
 
@@ -649,8 +708,9 @@ into each external step and check that the mailbox is left as it was.
   template, the Default template, and the built-in legacy defaults: active, no forced password
   change, no forced two-factor setup, webmail redirect on, all six protocols allowed, no TLS
   enforcement, no tagged-mail handling, hourly quarantine notifications, "rejected mail" quarantine
-  category, no rate limit, and every user permission except sync jobs and SOGo profile reset. The
-  operator's legacy overrides of these defaults (`MAILBOX_DEFAULT_ATTRIBUTES`) MUST be honoured.
+  category, no rate limit, and every user permission except sync jobs and SOGo profile reset. These
+  built-in defaults MUST be API server settings with the upstream values above. The operator keeps
+  them aligned with legacy's overrides (`MAILBOX_DEFAULT_ATTRIBUTES`), which the API cannot read.
   Exceptions:
   - the quota comes from the named template when one is named, and otherwise from the domain's
     default quota for a new mailbox (feature 002, FR-008);
@@ -703,11 +763,14 @@ into each external step and check that the mailbox is left as it was.
     record;
   - create the mailbox's own alias (its address delivering to itself) with the mailbox's status;
   - store its user permissions and its tags;
-  - store its rate limit and its tagged-mail handling in the shared store when they are set;
-  - add it to the groupware directory view when it is active, and flush the groupware cache. When
-    webmail is disabled on the server (legacy `SKIP_SOGO`), this step MUST be skipped.
+  - as follow-up steps: store its rate limit and its tagged-mail handling in the shared store when
+    they are set, and add it to the groupware directory view when it is active and flush the
+    groupware cache. When webmail is disabled on the server (`SKIP_SOGO`), the groupware step MUST
+    be skipped.
 
-  The database part of a creation MUST succeed or fail as a whole.
+  The database part of a creation MUST succeed or fail as a whole. The follow-up steps MUST run
+  after it, as `docs/conventions.md` requires: the response MUST report each step's outcome, and a
+  failing step MUST NOT remove the mailbox.
 - **FR-028**: A successful creation MUST respond with the created mailbox, its address and its
   version tag. The response MUST NOT contain the password or its hash.
 
@@ -761,7 +824,8 @@ into each external step and check that the mailbox is left as it was.
   - Users MUST NOT change their own permissions.
 - **FR-036**: A mailbox's tags MUST be a set of texts, as in feature 002 (FR-043 and FR-044 there):
   each tag trimmed, not empty and at most 255 characters long; tags differing only in letter case
-  are the same tag; at most the server's tagging limit, 25 by default (legacy `TAGGING_LIMIT`).
+  are the same tag; at most the server's tagging limit, an API server setting that defaults to 25
+  as legacy's `TAGGING_LIMIT` does.
   Setting the tags MUST replace the whole set. Removing tags, which legacy does with
   `delete/mailbox/tag`, is done by setting the set without them.
 - **FR-037**: A mailbox's custom attributes MUST be a set of named text values. Each name MUST be 1
@@ -787,8 +851,11 @@ into each external step and check that the mailbox is left as it was.
 - **FR-040**: Before removing anything else, the system MUST ask the mail store to move the
   mailbox's mail to mailcow's garbage area, from which mailcow purges it after the operator's
   retention period (legacy `MAILDIR_GC_TIME`, 5 days by default). In replicated cluster setups the
-  request MUST go to every mail node. When the mail store does not confirm the move, the deletion
-  MUST be refused with the "temporary failure" error and nothing MUST be removed.
+  request MUST go to every mail node. When the mail store reports a failure or cannot be reached,
+  the deletion MUST be refused with the "temporary failure" error and nothing MUST be removed. When
+  it does not answer within the container API timeout (`DOCKER_TIMEOUT`, 60 s), the deletion MUST
+  answer "outcome unknown" and MUST remove no records. A retry is safe, because a mail directory
+  that is already gone counts as moved.
 - **FR-041**: A successful deletion MUST remove, as legacy does:
   - the mailbox, its usage records, user permissions, tags, sieve filters and app passwords;
   - aliases whose only recipient is the mailbox, including its own alias, and the mailbox from the
@@ -846,6 +913,9 @@ into each external step and check that the mailbox is left as it was.
   system MUST undo the steps already done and refuse the request with the "temporary failure"
   error. When undoing also fails, the system MUST answer with the "rename incomplete" error, which
   lists the steps that are done and those that are not, and MUST record the same in the audit log.
+  A step that does not answer within the container API timeout (`DOCKER_TIMEOUT`, 60 s) has an
+  unknown outcome. The system MUST undo the steps known to be done and answer "outcome unknown",
+  naming that step.
 
 #### Mailbox templates
 
@@ -866,8 +936,9 @@ into each external step and check that the mailbox is left as it was.
   renamed or deleted. Such a request MUST be refused with the "protected template" error, and
   nothing MUST change.
 - **FR-053**: The template list MUST support pagination, sorting by name, identifier, creation time
-  and modification time (default: name, ascending), and a search on the name. Templates MUST only
-  pre-fill new mailboxes. Changing or deleting a template MUST NOT change any mailbox.
+  and modification time (default: name, ascending), and a search on the name. Each entry MUST carry
+  its version tag. Templates MUST only pre-fill new mailboxes. Changing or deleting a template MUST
+  NOT change any mailbox.
 
 #### Bulk actions
 
@@ -878,8 +949,9 @@ into each external step and check that the mailbox is left as it was.
 - **FR-055**: A bulk action MUST be refused as a whole when the caller's role, key scope or flags
   (FR-006) do not allow the action. Otherwise each named mailbox MUST be processed on its own, with
   the same checks, side effects and audit record as a single request for it, and the response MUST
-  report one result per distinct mailbox: done, not found, refused (with the error type), or failed
-  (with the error type). A failure on one mailbox MUST NOT stop or undo the others, as in legacy.
+  report one result per distinct mailbox: `done`, `notFound`, `refused` (with the error type),
+  `outdated` (FR-067) or `failed` (with the error type). A failure on one mailbox MUST NOT stop or
+  undo the others, as in legacy.
 
 #### Audit
 
@@ -902,8 +974,9 @@ into each external step and check that the mailbox is left as it was.
   MUST document at least these error types: not found, address in use (with the kind of holder),
   domain mailbox limit reached (with the count and the limit), attribute not permitted for the
   role (with the field and the flag), outdated version, mailbox cannot be renamed, rename
-  incomplete (with the steps), template name already exists, protected template, and temporary
-  failure (mail store, webmail service or shared store unavailable).
+  incomplete (with the steps), outcome unknown (with the step that timed out), template name
+  already exists, protected template, and temporary failure (mail store, webmail service or shared
+  store unavailable).
 - **FR-059**: Validation errors MUST carry stable rule codes and their parameters, as feature 001
   requires (FR-055 there). They MUST include the quota rules with the bytes allowed, each unmet
   password policy rule with its parameter, the tag limit, and the read-only field rule.
@@ -936,6 +1009,64 @@ into each external step and check that the mailbox is left as it was.
     whenever a policy value changes, whether through feature 013, the legacy UI or `/api/v1`.
   - The policy MUST NOT be changed through this feature. Editing it belongs to feature 013.
 
+#### Capabilities
+
+- **FR-064**: Administrators and domain administrators MUST be able to read the mailbox
+  capabilities, the server settings and limits a client needs before it submits:
+  - the type of the configured external identity provider: none, Keycloak, generic OIDC or LDAP,
+    read from mailcow's identity-provider settings. It decides which authentication sources a
+    mailbox may be given at creation or switched to (FR-025). Feature 012 relies on domain
+    administrators learning it here;
+  - whether the groupware is enabled (`SKIP_SOGO`). When it is disabled, clients can hide the
+    webmail redirect, which then has no effect, as legacy does;
+  - whether last logins are reported (FR-010), so that clients can tell "turned off" from "never
+    logged in";
+  - the bulk limit (FR-054), the tagging limit and the maximum tag length (FR-036), the
+    custom-attribute limits (FR-037), and the default and maximum page sizes (FR-012);
+  - the garbage-area retention period (`MAILDIR_GC_TIME`, FR-040).
+
+  The values MUST reflect the server's current configuration and MUST NOT include any secret or
+  connection detail of the identity provider. The read MUST change nothing, and read-only keys MAY
+  use it.
+
+#### Deletion preview
+
+- **FR-065**: Administrators and domain administrators MUST be able to preview the deletion of a
+  mailbox in their scope. The preview MUST change nothing and MUST NOT write an audit record.
+  Read-only keys MAY use it. It MUST report, computed by the same rules as the deletion itself
+  (FR-040 to FR-042):
+  - what would be removed: the aliases whose only recipient is the mailbox (not counting its own
+    alias), with up to 100 addresses; the aliases that would only lose it as a recipient, with up
+    to 100 addresses; and the number of sender permissions it holds, sender permissions that let
+    others send as it, temporary aliases, sync jobs delivering into it, app passwords, sieve
+    filters, spam filter settings and allow and block list entries, quarantine items, BCC maps,
+    OAuth tokens and codes, second factors, passkeys, tags and recent-login records;
+  - whether push notification settings, webmail data, a rate limit and a tagged-mail handling
+    exist;
+  - the storage used and the message count that would move to the garbage area, and the retention
+    period before they are purged;
+  - whether the deletion could currently proceed. The only blockers are services the deletion needs
+    (mail store, shared store) being unreachable, and each one is named;
+  - the mailbox's current version tag, which the client can send with the deletion.
+
+  A preview of a mailbox that does not exist or lies outside the caller's scope MUST be answered
+  "not found".
+
+#### Tags in use
+
+- **FR-066**: Administrators and domain administrators MUST be able to list the distinct tags of the
+  mailboxes in their scope. Each entry MUST give the tag and the number of mailboxes in scope that
+  carry it. Tags that differ only in letter case MUST form one entry, as the tag filter matches them
+  (FR-013). The list MUST support a case-insensitive substring search and pagination as in FR-012,
+  sorted alphabetically without regard to letter case. It MUST NOT reveal tags that appear only on
+  mailboxes outside the caller's scope.
+
+#### Bulk version tags
+
+- **FR-067**: Each mailbox named in a bulk action MAY carry its version tag (FR-038). When an item's
+  tag no longer matches, that item MUST get the result `outdated` and MUST change nothing, and the
+  other items MUST proceed. Items without a tag MUST NOT be version-checked.
+
 ### Legacy Coverage
 
 Each allocated legacy action and screen, and the requirements that cover it.
@@ -961,7 +1092,10 @@ Each allocated legacy action and screen, and the requirements that cover it.
 | Admin-set password | FR-024, FR-032, FR-060 |
 | `get/passwordpolicy` and `get/passwordpolicy/html` (read only) | FR-063; editing (`edit/passwordpolicy`) belongs to feature 013 |
 | Forced password change and forced 2FA flags | FR-008, FR-025, FR-029, FR-033 |
-| Mailbox list mass actions: activate, disable login, deactivate, delete, protocol on/off | FR-054, FR-055 |
+| Mailbox list mass actions: activate, disable login, deactivate, delete, protocol on/off | FR-054, FR-055, FR-067 |
+| Server settings the legacy forms depend on (`SKIP_SOGO` hides the webmail redirect, the identity-provider type fills the source select, `SHOW_LAST_LOGIN` hides last logins) | FR-064 |
+| "Remove" confirmation in the list and on the edit page | FR-039, FR-065 (preview with counts) |
+| Tag input and tag filter (legacy suggests nothing) | FR-066 |
 | Mass actions for TLS policy and quarantine notifications | Not covered: features 005 and 006 |
 | "Edit mailbox" buttons for tagging, TLS policy, quarantine notifications; "Pushover" and "Rate limit" tabs | Not covered: features 005 and 006 (initial values at creation in FR-018) |
 | Login-as and SOGo login buttons in the list | Not covered: feature 007 |
@@ -976,8 +1110,8 @@ for `mailbox`, `mailbox_templates`, `mailbox_custom_attribute`, `mailbox_rename`
 `hasMailboxObjectAccess`, `hasACLAccess`, `update_sogo_static_view`, `flush_memcached`),
 `functions.ratelimit.inc.php`, `json_api.php` (including `get/passwordpolicy`),
 `Dockerfiles/phpfpm/docker-entrypoint.sh` (`PASSWD_POLICY` defaults), `vars.inc.php`
-(`MAILBOX_DEFAULT_ATTRIBUTES`, `TAGGING_LIMIT`, `SHOW_LAST_LOGIN`), `init_db.inc.php` (`mailbox`, `quota2`, `quota2replica`,
-`user_acl`, `da_acl`, `tags_mailbox`, `templates` and the Default mailbox template), the templates
+(`MAILBOX_DEFAULT_ATTRIBUTES`, `TAGGING_LIMIT`, `SHOW_LAST_LOGIN`), `init_db.inc.php` (`mailbox`,
+`quota2`, `quota2replica`, `user_acl`, `da_acl`, `tags_mailbox`, `templates` and the Default mailbox template), the templates
 `modals/mailbox.twig`, `edit/mailbox.twig`, `mailbox/tab-mailboxes.twig`, `js/site/mailbox.js`,
 `Dockerfiles/dockerapi/modules/DockerApi.py` (`maildir cleanup|move`, `sogo rename_user`,
 `doveadm get_acl|delete_acl|set_acl`) and `Dockerfiles/postfix/postfix.sh` (status values).
@@ -1017,7 +1151,14 @@ other default change, the DKIM selector of the Default domain template, belongs 
 | Rename | `doveadm` ACLs read and deleted, SQL updates in one transaction (`mailbox`, `alias`, `tags_mailbox`, `sieve_filters`, `app_passwd`, `user_acl`, `da_acl`, `quota2`, `quota2replica`, `pushover`, `imapsync`, `bcc_maps`, `recipient_maps`, `sender_acl`, `_sogo_static_view`), `maildir move`, `sogo rename_user`, ACLs re-set, optional alias with a comment. No check that the new address is free, no lower-casing, no undo after the ACLs are deleted, and `tfa`, `fido2`, `spamalias`, `filterconf`, `quarantine`, `RL_VALUE`, `RCPT_WANTS_*`, `sasl_log` and `oauth_*` stay under the old address. No memcached flush | Same mechanisms (FR-045, FR-047), plus preflight checks and normalisation (FR-043, FR-044), undo (FR-048), carry-over of the forgotten data, revocation of OAuth tokens and a cache flush (FR-046). `da_acl` rows are not moved, because they belong to a separate domain-administrator account. **Deviations** (bug fixes) |
 | Rename of inactive mailboxes | Refused (`active` must be 1 or 2) | Same (FR-044) |
 | Template edits | Omitted quota reset to 0; edits without protocol or ACL fields copy unrelated row fields into the attributes; Default name kept silently; Default deletion silently ignored; the UI form sends `activesync` instead of `eas`, so new templates never allow ActiveSync | Only sent values change; Default protected with an explicit error; explicit boolean per protocol (FR-050 to FR-052). **Deviations** (bug fixes) |
-| Mass actions | `edit/mailbox` and `delete/mailbox` with arrays; processing continues past failures | Bulk action with one result per mailbox (FR-054, FR-055) |
+| Mass actions | `edit/mailbox` and `delete/mailbox` with arrays; processing continues past failures; no version check | Bulk action with one result per mailbox (FR-054, FR-055), and optional per-item version tags that give `outdated` (FR-067). **Deviation** |
+| Server settings for forms | Twig renders the forms from PHP configuration and the identity-provider settings; `/api/v1` offers no read of them | Mailbox capabilities read (FR-064). **Deviation** (new read) |
+| Deletion confirmation | Generic "Are you sure?" dialog without counts | Read-only deletion preview with counts, retention and blockers (FR-065). **Deviation** (new read) |
+| Tags in use | Not available | Distinct tags in scope with counts (FR-066). **Deviation** (new read) |
+| Legacy PHP configuration (`MAILBOX_DEFAULT_ATTRIBUTES`, `TAGGING_LIMIT`, `SHOW_LAST_LOGIN`) | Read directly from `vars.(local.)inc.php` | API server settings with upstream defaults, kept aligned by the operator (FR-010, FR-022, FR-036), as `docs/conventions.md` requires. **Deviation** |
+| Creation follow-up failures | A failing rate-limit or tagging step adds an error message; the mailbox stays | Same principle: each follow-up step's outcome is reported (FR-027) |
+| Container API timeouts | `DOCKER_TIMEOUT` (60 s); deletion continues after a failed maildir move | "Outcome unknown", with no records removed (FR-040, FR-048). **Deviation** |
+| Breached-password check | The browser asks the haveibeenpwned service while a password is typed | Not offered. The new web app makes no third-party calls, and the API adds no server-side check. **Deviation** |
 | Listing | `get/mailbox/all` makes one detail lookup per mailbox; `search/mailbox` pages server-side but still looks up each row | Paginated list without per-row lookups (FR-012 to FR-016). **Deviation** (performance) |
 | Concurrent edits | No protection | Version tags (FR-038). **Deviation** |
 | Out-of-scope objects | `access_denied` | "Not found" (FR-003). **Deviation**: existence is not revealed |
@@ -1052,7 +1193,14 @@ other default change, the DKIM selector of the Default domain template, belongs 
   required character classes for passwords, read-only here.
 - **Recent-login record** (existing mailcow data): the last login of a mailbox per service and
   address.
-- **Bulk action** (transient): an action, up to 100 mailboxes and one result per mailbox.
+- **Bulk action** (transient): an action, up to 100 mailboxes each with an optional version tag, and
+  one result per mailbox.
+- **Mailbox capabilities** (read-only view of server settings): the identity provider type, the
+  groupware and last-login switches, the limits and the garbage-area retention.
+- **Deletion preview** (computed): what deleting one mailbox would remove or move, the blockers and
+  the version tag.
+- **Tag in use** (computed): a distinct mailbox tag in the caller's scope and how many mailboxes
+  carry it.
 - **Audit record** (feature 001): one immutable record per change or attempted change.
 
 ## Success Criteria *(mandatory)*
@@ -1109,7 +1257,10 @@ other default change, the DKIM selector of the Default domain template, belongs 
 - When upstream adds a user permission flag, the contract gains it in a later release. Until then it
   keeps its database default.
 - The tagging limit, the bulk limit of 100, the page size limits and the custom-attribute limits are
-  defaults the operator can configure.
+  API server settings with these defaults. Clients read the values in force from FR-064.
+- There is no breached-password check. Legacy's check runs in the browser against a third-party
+  service. The new web app makes no third-party calls, and the API does not replace the check
+  (orchestrator decision).
 - **Out of scope**:
   - sender permissions and external sender addresses (004);
   - users managing their own mailbox, recovery e-mail, tagging, TLS policy, push notifications, app

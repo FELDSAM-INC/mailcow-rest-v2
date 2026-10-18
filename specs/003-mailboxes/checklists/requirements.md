@@ -66,6 +66,25 @@
   013 edits the policy with (FR-008, FR-036 and FR-037 there), computed over the same effective
   values. Added a pointer in FR-038, a twelfth clarification (orchestrator decision) and a note in
   the parity row. Re-validated: 16/16 → 16/16 items passing, no state changes.
+- Iteration 7 (orchestrator follow-up: API gaps found by the UI 003 spec, and `docs/conventions.md`):
+  - FR-064: mailbox capabilities (identity provider type, groupware switch, last-login switch,
+    limits, garbage-area retention);
+  - FR-065: read-only deletion preview, writing no audit record;
+  - FR-066: distinct mailbox tags in scope;
+  - FR-067: optional per-item version tags in bulk actions, with the `outdated` result. FR-016 and
+    FR-053 put the version tag on every list entry. The edge case saying that bulk actions never
+    check tags was replaced.
+
+  Alignments with the conventions:
+  - creation follow-up steps that report their outcome and never remove the mailbox (FR-027);
+  - "outcome unknown" on container API timeouts (FR-040, FR-048, FR-058);
+  - legacy PHP settings as API server settings (FR-010, FR-022, FR-036);
+  - no server-side breached-password check.
+
+  Also added: five orchestrator-decision clarifications, coverage and parity rows, acceptance
+  scenarios (User Story 2 #12 and #13, User Story 4 #6, User Story 5 #6, User Story 7 #6), edge
+  cases and key entities. Re-validated: 16/16 → 16/16 items passing, no state changes. Spec
+  totals: 67 FRs, 11 SCs.
 - The FeldHost fork was diffed against upstream `2026-09a` for every file in the parity reference.
   Mailbox logic is identical. The only differences are display labels (authentication source
   "mailcow", `pw_reset` permission label), which do not change the contract.

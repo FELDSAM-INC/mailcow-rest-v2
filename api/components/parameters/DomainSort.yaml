@@ -1,0 +1,25 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. Default `name` with `order=asc`. Ties are broken by name. `mailboxes`, `aliases`,
+  `quotaAllocated` and `storageUsed` sort by the usage figures.
+schema:
+  type: string
+  enum:
+    - name
+    - description
+    - active
+    - backupMx
+    - mailboxes
+    - aliases
+    - quotaAllocated
+    - storageUsed
+    - maxMailboxes
+    - maxAliases
+    - defaultMailboxQuota
+    - maxMailboxQuota
+    - domainQuota
+    - createdAt
+    - modifiedAt
+  default: name

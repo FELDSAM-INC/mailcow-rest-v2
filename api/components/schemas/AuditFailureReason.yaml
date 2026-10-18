@@ -10,6 +10,29 @@ description: |
   - `secondFactorFailed`, `secondFactorUnavailable`, `verificationUnavailable` (Yubico service).
   - `throttled`: refused by sign-in throttling without checking credentials.
   - `registrationFailed`: the authenticator's registration response was rejected.
+  - Refused changes of mail objects (feature 002 onwards; `details.problemType` holds the
+    problem type and `details.errors` the field errors): `attributeNotPermitted`,
+    `versionOutdated` (`If-Match` or bulk item version mismatch), `validationFailed`, `conflict`
+    (for example an existing name or a non-empty domain), `temporaryFailure` (shared store
+    unavailable).
+  - Sync jobs (feature 008) also use `permissionDenied` (the caller lacks the permission flag that
+    gates the operation, here `syncjobs`) and `notFound` (the object or a referenced object does
+    not exist or lies outside the caller's scope).
+  - Identity providers (feature 012), for sign-ins through a provider and session ends:
+    `signInStateInvalid` (single sign-on state unknown, expired, used or foreign),
+    `singleSignOnNotAvailable`, `providerRefused` (the provider refused the code, the token
+    renewal or the user details), `providerReturnedError` (the provider returned the browser with
+    an error; `details.providerError` holds its code), `identityProviderUnavailable` (unreachable,
+    timed out, server error or service account refused), `noEmailAddress`, `mailboxNotLinked`
+    (the mailbox's authentication source is not the configured type), `autoCreationOff`,
+    `noMatchingMapping` (no mapping entry and no default template), `mailboxCreationFailed`
+    (`details.cause` holds the reason, for example `templateMissing`, `domainNotFound`,
+    `addressInUse` or `mailboxLimitReached`), `passwordNotVerifiable` (no `mailcow_password`
+    value, or the source cannot verify passwords). Connection tests use `connectionTestFailed`
+    with `details.failureCategory`.
+  - Mailboxes (feature 003) also use `outcomeUnknown` (the container API timed out; the step is in
+    `details.steps` or `details.mailStoreCleanup`) and `partiallyCompleted` (a rename could neither
+    complete nor be undone; `details.steps` lists every step).
 enum:
   - invalidCredentials
   - accountInactive
@@ -24,3 +47,24 @@ enum:
   - verificationUnavailable
   - throttled
   - registrationFailed
+  - attributeNotPermitted
+  - versionOutdated
+  - validationFailed
+  - conflict
+  - temporaryFailure
+  - permissionDenied
+  - notFound
+  - signInStateInvalid
+  - singleSignOnNotAvailable
+  - providerRefused
+  - providerReturnedError
+  - identityProviderUnavailable
+  - noEmailAddress
+  - mailboxNotLinked
+  - autoCreationOff
+  - noMatchingMapping
+  - mailboxCreationFailed
+  - passwordNotVerifiable
+  - connectionTestFailed
+  - outcomeUnknown
+  - partiallyCompleted

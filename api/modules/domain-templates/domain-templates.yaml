@@ -1,0 +1,62 @@
+get:
+  operationId: listDomainTemplates
+  tags: [Domain templates]
+  summary: List domain templates
+  description: |
+    Lists the domain templates, each with its version tag. Administrators only, read-only keys
+    included; domain administrators and mailbox users are refused with `403 forbidden`. `q`
+    searches the name.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/DomainTemplateSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainTemplateListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createDomainTemplate
+  tags: [Domain templates]
+  summary: Create a domain template
+  description: |
+    Creates a domain template. Administrators only, with a session or a read-write key. Omitted
+    values get the legacy defaults; see `DomainTemplateCreateRequest`. A name already used by
+    another domain template, compared case-insensitively, is refused with `409
+    domain-template-name-exists`. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/DomainTemplateCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/DomainTemplateCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/DomainTemplateConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

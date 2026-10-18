@@ -1,0 +1,91 @@
+parameters:
+  - $ref: '../../components/parameters/DomainTemplateId.yaml'
+get:
+  operationId: getDomainTemplate
+  tags: [Domain templates]
+  summary: Get a domain template
+  description: Returns one domain template. Administrators only, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainTemplateResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateDomainTemplate
+  tags: [Domain templates]
+  summary: Update a domain template
+  description: |
+    Changes only the sent values of a domain template (JSON Merge Patch). Administrators only, with
+    a session or a read-write key. Renaming the Default template, or renaming a template to a name
+    another domain template has, is refused with `409` and changes nothing. Domains created from
+    the template keep their values. Send the version tag in `If-Match`: a stale tag answers `412`.
+    Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/DomainTemplatePatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainTemplateResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/DomainTemplateConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteDomainTemplate
+  tags: [Domain templates]
+  summary: Delete a domain template
+  description: |
+    Deletes a domain template. Administrators only, with a session or a read-write key. The
+    Default template is refused with `409 domain-template-protected`. Domains created from the
+    template keep their values. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/DomainTemplateConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

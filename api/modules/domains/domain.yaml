@@ -1,0 +1,116 @@
+parameters:
+  - $ref: '../../components/parameters/DomainName.yaml'
+get:
+  operationId: getDomain
+  tags: [Domains]
+  summary: Get a domain
+  description: |
+    Returns one domain in the caller's scope with its usage figures, including the values a
+    mailbox form needs (`usage.maxNewMailboxQuota`, `usage.defaultNewMailboxQuota`) and the numbers
+    a deletion would remove. Domain administrators never receive `domainAdmins`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateDomain
+  tags: [Domains]
+  summary: Update a domain
+  description: |
+    Changes a domain with a JSON Merge Patch. See `DomainPatch` for who may change what and for
+    the rules. Administrators may change every editable attribute of any domain; domain
+    administrators may change the Global Address List flag and the tags of their domains, and the
+    description with the `domainDesc` permission flag. A read-only key is refused.
+
+    Send the version tag in `If-Match` (recommended for interactive clients): a stale tag answers
+    `412` and changes nothing, also when the change was made in the legacy UI or `/api/v1`. The
+    tag does not change with the usage figures. After a successful change the groupware directory
+    is updated and its cache flushed, unless the groupware is disabled. A change of
+    `globalAddressList` takes effect at the groupware's next restart; an edit never restarts it.
+    A patch that changes nothing returns the domain unchanged and is not audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/DomainPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/DomainForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteDomain
+  tags: [Domains]
+  summary: Delete a domain
+  description: |
+    Deletes a domain that has no mailboxes and no resources. Administrators only, with a session
+    or a read-write key. A domain with mailboxes or resources is refused with `409
+    domain-not-empty`, which reports how many remain. Use `previewDomainDeletion` first to show
+    what the deletion affects.
+
+    A deletion removes, as legacy mailcow does: the domain, its tags, its domain administrator
+    assignments and aliases; the sender permissions, quota records, notification settings and
+    temporary aliases of addresses in the domain; its spam allow and block lists and its MTA-STS
+    policy; its entries in the domain map and the rate limits; and domain administrator accounts
+    left without any domain, whose API keys then stop working. Unlike legacy, it also removes the
+    domain's BCC maps (stored as `@<domain>` or as the bare name), its footer, and every alias
+    domain that points to it exactly as a deletion of that alias domain would. The DKIM key is
+    kept, so that the name reuses it when it is added again. The stored mail is moved to
+    mailcow's garbage area; a failure there does not stop the deletion and is recorded in the
+    audit record. Then the groupware directory is updated and its cache flushed, unless the
+    groupware is disabled.
+
+    When mailcow's shared store is unavailable, the deletion is refused with `503
+    temporary-failure` and nothing is removed.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/DomainNotEmptyConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/DomainTemporaryFailure.yaml'

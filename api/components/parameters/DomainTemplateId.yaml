@@ -1,0 +1,7 @@
+name: templateId
+in: path
+required: true
+description: ID of a domain template. IDs of mailbox templates, and unknown IDs, answer `404`.
+schema:
+  type: integer
+  minimum: 1

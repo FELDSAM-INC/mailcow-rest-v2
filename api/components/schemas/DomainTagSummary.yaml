@@ -1,0 +1,13 @@
+type: object
+description: |
+  One distinct tag among the domains in the caller's scope. Tags that differ only in letter case
+  are counted together.
+required: [name, domainCount]
+properties:
+  name:
+    type: string
+    description: The tag. When domains spell it differently, the alphabetically first spelling.
+  domainCount:
+    type: integer
+    minimum: 1
+    description: Number of domains in the caller's scope that carry the tag.

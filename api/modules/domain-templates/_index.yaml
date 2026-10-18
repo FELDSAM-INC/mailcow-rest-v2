@@ -1,0 +1,5 @@
+# Paths of the domain-templates module: named values that pre-fill new domains.
+/domain-templates:
+  $ref: './domain-templates.yaml'
+/domain-templates/{templateId}:
+  $ref: './domain-template.yaml'

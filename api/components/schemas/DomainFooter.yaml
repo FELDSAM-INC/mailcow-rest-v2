@@ -1,0 +1,41 @@
+type: object
+description: |
+  The domain-wide footer that mailcow's mail filter adds to outgoing mail from the domain and its
+  alias domains (mailcow table `domain_wide_footer`). A domain without a stored footer returns empty
+  texts, `skipReplies: false` and no exclusions.
+
+  The texts may use these placeholders: `{= auth_user =}` (authenticated user), `{= from_user =}`
+  (local part of the sender), `{= from_name =}` (sender's display name), `{= from_addr =}` (sender
+  address), `{= from_domain =}` (sender domain) and `{= <attribute> =}` for a custom attribute of
+  the sending mailbox. `html` is operator-authored HTML: clients must render it safely (sandboxed or
+  sanitised), never inject it into their own page.
+
+  An exclusion that stopped belonging to the domain, for example a deleted mailbox, stays stored and
+  is shown, but must be removed or made valid before the footer can be saved again.
+required: [domain, html, plain, skipReplies, excludedAddresses, excludedAliasDomains, etag]
+properties:
+  domain:
+    type: string
+    description: ASCII name of the domain.
+  html:
+    type: string
+  plain:
+    type: string
+  skipReplies:
+    type: boolean
+    description: Do not add the footer to replies.
+  excludedAddresses:
+    type: array
+    description: Senders (mailbox or alias addresses) whose mail gets no footer.
+    items:
+      type: string
+  excludedAliasDomains:
+    type: array
+    description: Alias domains whose mail gets no footer.
+    items:
+      type: string
+  etag:
+    type: string
+    description: |
+      Version tag of the footer content. An absent footer and a stored empty footer have the same
+      tag. Send it in `If-Match`.

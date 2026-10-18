@@ -1,0 +1,73 @@
+type: object
+description: |
+  Usage figures, computed from mailcow's data on every request exactly as the legacy UI computes
+  them. They are not covered by the version tag. Resources are mailboxes of kind location, thing or
+  group. Quotas and storage are bytes.
+required:
+  - mailboxes
+  - resources
+  - aliases
+  - aliasDomains
+  - mailboxesLeft
+  - aliasesLeft
+  - largestMailboxQuota
+  - quotaAllocated
+  - storageUsed
+  - messages
+  - maxNewMailboxQuota
+  - defaultNewMailboxQuota
+properties:
+  mailboxes:
+    type: integer
+    minimum: 0
+    description: Mailboxes of the domain, not counting resources.
+  resources:
+    type: integer
+    minimum: 0
+    description: Resources of the domain. Like mailboxes, they block a deletion.
+  aliases:
+    type: integer
+    minimum: 0
+    description: |
+      Aliases whose address is in the domain or in one of its alias domains, not counting aliases
+      whose address is itself a mailbox.
+  aliasDomains:
+    type: integer
+    minimum: 0
+    description: Alias domains that point to the domain.
+  mailboxesLeft:
+    type: integer
+    description: '`maxMailboxes` minus `mailboxes`. Negative when the limit is below usage.'
+  aliasesLeft:
+    type: integer
+    description: '`maxAliases` minus `aliases`. Negative when the limit is below usage.'
+  largestMailboxQuota:
+    type: integer
+    minimum: 0
+    description: |
+      Largest quota of an existing mailbox, not counting resources. `maxMailboxQuota` cannot be set
+      below it.
+  quotaAllocated:
+    type: integer
+    minimum: 0
+    description: |
+      Sum of the quotas of the domain's mailboxes, not counting resources. Mailboxes with unlimited
+      quota allocate nothing. `domainQuota` cannot be set below it.
+  storageUsed:
+    type: integer
+    minimum: 0
+    description: Bytes stored by all mailboxes of the domain, resources included.
+  messages:
+    type: integer
+    minimum: 0
+    description: Messages stored by all mailboxes of the domain, resources included.
+  maxNewMailboxQuota:
+    type: integer
+    minimum: 0
+    description: |
+      Largest quota a new mailbox may get: `domainQuota` minus `quotaAllocated`, capped at
+      `maxMailboxQuota`, never below zero.
+  defaultNewMailboxQuota:
+    type: integer
+    minimum: 0
+    description: Default quota for a new mailbox, `maxNewMailboxQuota` capped at `defaultMailboxQuota`.

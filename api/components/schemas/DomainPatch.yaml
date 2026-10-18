@@ -1,0 +1,100 @@
+type: object
+minProperties: 1
+description: |
+  JSON Merge Patch of a domain. Omitted members keep their values. A sent value, including zero, is
+  applied or refused by the rules, never ignored; only the relay normalisation can override a sent
+  relay option (`relayUnknownOnly` implies `relayAllRecipients`, which implies `backupMx`).
+
+  **Who may change what**:
+  - Administrators: `description`, `active`, `maxMailboxes`, `maxAliases`, `defaultMailboxQuota`,
+    `maxMailboxQuota`, `domainQuota`, `backupMx`, `relayAllRecipients`, `relayUnknownOnly`,
+    `globalAddressList` and `tags`.
+  - Domain administrators: `globalAddressList` and `tags`, and `description` only with the
+    `domainDesc` permission flag. Any other change is refused with `403 attribute-not-permitted`,
+    which names the attributes, and nothing changes.
+
+  **Unchanged values are always accepted**, so that a client may send back a whole form. The
+  read-only members (`name`, `unicodeName`, `relayhost`, `rateLimit`, `createdAt`, `modifiedAt`,
+  `usage`, `domainAdmins` and `etag`) are accepted when equal to the current value and refused with
+  the rule code `immutable` otherwise. Usage figures change with every delivered message, so clients
+  should not send `usage`.
+
+  **Rules**: as for creation, plus: a changed limit may not be below current usage (`belowInUse`,
+  with the value in use as `inUse`): `maxMailboxes` ≥ `usage.mailboxes`, `maxAliases` ≥
+  `usage.aliases`, `maxMailboxQuota` ≥ `usage.largestMailboxQuota`, `domainQuota` ≥
+  `usage.quotaAllocated`. A limit that is not changed is not checked. An empty `description`, or
+  `null`, stores the domain name.
+properties:
+  description:
+    oneOf:
+      - type: string
+        maxLength: 255
+      - type: 'null'
+  active:
+    type: boolean
+  maxMailboxes:
+    type: integer
+    minimum: 0
+    maximum: 2147483647
+  maxAliases:
+    type: integer
+    minimum: 0
+    maximum: 2147483647
+  defaultMailboxQuota:
+    type: integer
+    minimum: 1048576
+    maximum: 9007199254740992
+  maxMailboxQuota:
+    type: integer
+    minimum: 1048576
+    maximum: 9007199254740992
+  domainQuota:
+    type: integer
+    minimum: 1048576
+    maximum: 9007199254740992
+  backupMx:
+    type: boolean
+  relayAllRecipients:
+    type: boolean
+  relayUnknownOnly:
+    type: boolean
+  globalAddressList:
+    type: boolean
+    description: Takes effect in the groupware at its next restart. An edit never restarts it.
+  tags:
+    $ref: './DomainTagList.yaml'
+  name:
+    type: string
+    description: Read-only. Accepted when equal to the current value (ASCII or Unicode form).
+  unicodeName:
+    type: string
+    description: Read-only.
+  relayhost:
+    description: Read-only.
+    oneOf:
+      - $ref: './DomainRelayhost.yaml'
+      - type: 'null'
+  rateLimit:
+    description: Read-only.
+    oneOf:
+      - $ref: './DomainRateLimit.yaml'
+      - type: 'null'
+  createdAt:
+    type: string
+    description: Read-only.
+  modifiedAt:
+    description: Read-only.
+    oneOf:
+      - type: string
+      - type: 'null'
+  usage:
+    type: object
+    description: Read-only. Do not send.
+  domainAdmins:
+    type: array
+    description: Read-only.
+    items:
+      type: string
+  etag:
+    type: string
+    description: Read-only. Use `If-Match` for the version check.

@@ -1,0 +1,13 @@
+description: Domain templates matching the filters, each with its version tag.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/DomainTemplate.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

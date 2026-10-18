@@ -1,0 +1,29 @@
+get:
+  operationId: listDomainTags
+  tags: [Domains]
+  summary: List distinct domain tags
+  description: |
+    Lists each distinct tag of the domains in the caller's scope with the number of domains that
+    carry it, for filter and tag-editor suggestions. Tags that appear only on domains outside the
+    caller's scope are never revealed. `q` searches the tag. Administrators and domain
+    administrators, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/DomainTagSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainTagListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

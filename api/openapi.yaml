@@ -107,6 +107,137 @@ tags:
     description: Authentication and key-management audit log.
   - name: System
     description: Health, the contract itself and problem type documentation.
+  - name: Sync jobs
+    description: imapsync jobs that pull mail from remote IMAP accounts into local mailboxes.
+  - name: Domains
+    description: Mail domains, their limits, quotas, relay options, tags, footer and bulk actions.
+  - name: Domain templates
+    description: Named values that pre-fill new domains.
+  - name: Aliases
+    description: |
+      Aliases and catch-all aliases, copies over alias domains, bulk actions, and the capabilities
+      of aliases, alias domains, resources and sender settings.
+  - name: Alias domains
+    description: Domain names whose mailbox addresses map to the same local parts of a target domain.
+  - name: Resources
+    description: Groupware resources (rooms, equipment and groups) that are booked through the groupware.
+  - name: Sender settings
+    description: What a mailbox may send as, through explicit sender permissions and external sender addresses.
+  - name: Mailboxes
+    description: Mailboxes of the caller's domains, their settings, rename, deletion and bulk actions.
+  - name: Mailbox templates
+    description: Templates whose values pre-fill new mailboxes.
+  - name: Password policy
+    description: The password rules applied whenever a password is set.
+  - name: DKIM
+    description: DKIM signing keys of domains and alias domains, their DNS records, private key export and the FeldHost ISPConfig DNS publication.
+  - name: MTA-STS
+    description: MTA-STS policies of domains, published for the domain and its alias domains.
+  - name: DNS diagnostics
+    description: DNS checks of a domain or alias domain against the server's configuration, with a zone file.
+  - name: Identity provider
+    description: |
+      The server's external identity provider: Keycloak, a generic OpenID Connect provider or an
+      LDAP directory, with attribute mapping, mailbox creation on first sign-in, synchronisation
+      settings and connection tests. Single sign-on and provider password sign-in are part of
+      Authentication.
+  - name: OAuth2 clients
+    description: |
+      Clients of mailcow's own OAuth2 provider. Applications use the unchanged legacy endpoints on
+      the same host:
+
+      - authorization endpoint `/oauth/authorize`, token endpoint `/oauth/token`, resource page
+        `/oauth/profile` (user details of the signed-in mailbox);
+      - grant type "Authorization Code"; refresh tokens are issued, and a new refresh token replaces
+        a used one;
+      - the default and only scope is `profile`, which also applies when the scope parameter is
+        omitted; only mailbox users can authorise applications, on the legacy login page;
+      - the `state` parameter is required in the authorize request;
+      - access tokens are valid for 24 hours and refresh tokens for 31 days (mailcow's
+        `ACCESS_TOKEN_LIFETIME` and `REFRESH_TOKEN_LIFETIME`);
+      - when a client has several redirect URIs, the authorize request must name one;
+      - regenerating the client secret does not expire existing authorization codes or tokens, but
+        renewing a token with the old secret fails; revoking the tokens ends every application
+        session at once.
+  - name: Administrators
+    description: |
+      Administrator accounts (feature 007) and the account capabilities. Administrator accounts
+      are written only in a signed-in administrator session; keys owned by administrators may
+      list and inspect them. The server always keeps at least one active administrator.
+  - name: Domain administrators
+    description: |
+      Domain administrator accounts with their domains and the 19 permission flags (feature 007).
+      Managed by administrators, also with a read-write administrator key.
+  - name: Single sign-on tokens
+    description: |
+      Short-lived, single-use tokens with which a domain administrator signs in without a password
+      (feature 007), shared with the legacy domain administrator login.
+  - name: Impersonation
+    description: |
+      Login-as (legacy "dual login"): administrators, and domain administrators with the `loginAs`
+      flag, act as another account and return to their own; webmail sign-in on a user's behalf
+      (feature 007). Every audit record written during an impersonation names both accounts.
+  - name: Host and installation
+    description: |
+      System overview, mail storage usage, public addresses, installed version, update status and
+      monitoring capabilities (feature 011). Administrators only. Live data carries its collection
+      time; poll every 5 seconds while visible, there is no push channel.
+  - name: Containers
+    description: |
+      mailcow's service containers: states, resource usage, start, stop and restart (feature 011).
+      Stop and restart are destructive: clients confirm and name the container.
+  - name: Logs
+    description: |
+      Every log mailcow keeps, with server-side paging, filters and search; secrets in legacy logs
+      are masked (feature 011). Administrators only.
+  - name: Rspamd
+    description: Rspamd's scan history and statistics (feature 011). Administrators only.
+  - name: Mail queue
+    description: |
+      The Postfix mail queue: listing, message content (audited), deliver now, hold, release,
+      delete, flush and delete all (feature 011). Deletions are destructive and irreversible.
+  - name: Fail2ban
+    description: |
+      mailcow's ban service (legacy "Fail2ban"): settings, allowlist and denylist, rules, active and
+      permanent bans, and the public ban list ID (feature 011).
+  - name: Relayhosts
+    description: |
+      Relayhosts (legacy "sender-dependent transports"): SMTP servers through which mailcow sends the
+      outbound mail of selected domains and mailboxes, with write-only credentials, usage, choices
+      for selectors and a connection test (feature 009).
+  - name: Relayhost assignments
+    description: |
+      The relayhost a domain or a mailbox sends through, read and replaced on its own, with the
+      effective relayhost of a mailbox (feature 009).
+  - name: Transports
+    description: |
+      Transport maps: mail for selected recipients routed to a next hop, with credentials shared per
+      next hop and a connection test (feature 009).
+  - name: BCC maps
+    description: |
+      Silent copies of mail sent by or to a domain, alias domain, mailbox or alias, and the local
+      destination choices (feature 009).
+  - name: Recipient maps
+    description: Envelope recipient rewriting before delivery (feature 009).
+  - name: TLS policy maps
+    description: Outbound TLS policy overrides per destination (feature 009).
+  - name: Forwarding hosts
+    description: |
+      Servers that forward mail to mailcow and are accepted without blocklist checks, greylisting or
+      spam rejection, stored in mailcow's Redis (feature 009).
+  - name: Routing capabilities
+    description: Server settings and limits for routing clients (feature 009).
+  - name: Quarantine
+    description: |
+      Quarantine items and their release, learning, deletion and downloads, bulk actions, the
+      quarantine settings with template preview, the quarantine capabilities and the quarantine
+      notification settings of mailboxes (feature 006).
+  - name: Spam policy
+    description: |
+      Allow and block lists of domains, alias domains and mailboxes, mailbox spam scores and the
+      spam filter's action statistics (feature 006).
+  - name: Rate limits
+    description: Sending rate limits of domains, alias domains and mailboxes, and bucket resets (feature 006).
 paths:
   /csrf-token:
     $ref: './modules/auth/_index.yaml#/~1csrf-token'
@@ -156,6 +287,338 @@ paths:
     $ref: './modules/system/_index.yaml#/~1docs'
   /problems/{problemType}:
     $ref: './modules/system/_index.yaml#/~1problems~1{problemType}'
+  /sync-jobs:
+    $ref: './modules/sync-jobs/_index.yaml#/~1sync-jobs'
+  /sync-jobs/capabilities:
+    $ref: './modules/sync-jobs/_index.yaml#/~1sync-jobs~1capabilities'
+  /sync-jobs/bulk-actions:
+    $ref: './modules/sync-jobs/_index.yaml#/~1sync-jobs~1bulk-actions'
+  /sync-jobs/{syncJobId}:
+    $ref: './modules/sync-jobs/_index.yaml#/~1sync-jobs~1{syncJobId}'
+  /sync-jobs/{syncJobId}/log:
+    $ref: './modules/sync-jobs/_index.yaml#/~1sync-jobs~1{syncJobId}~1log'
+  /sync-jobs/{syncJobId}/schedule-reset:
+    $ref: './modules/sync-jobs/_index.yaml#/~1sync-jobs~1{syncJobId}~1schedule-reset'
+  /domains:
+    $ref: './modules/domains/_index.yaml#/~1domains'
+  /domains/bulk-actions:
+    $ref: './modules/domains/_index.yaml#/~1domains~1bulk-actions'
+  /domains/{domain}:
+    $ref: './modules/domains/_index.yaml#/~1domains~1{domain}'
+  /domains/{domain}/deletion-preview:
+    $ref: './modules/domains/_index.yaml#/~1domains~1{domain}~1deletion-preview'
+  /domains/{domain}/footer:
+    $ref: './modules/domains/_index.yaml#/~1domains~1{domain}~1footer'
+  /domain-capabilities:
+    $ref: './modules/domains/_index.yaml#/~1domain-capabilities'
+  /domain-tags:
+    $ref: './modules/domains/_index.yaml#/~1domain-tags'
+  /domain-templates:
+    $ref: './modules/domain-templates/_index.yaml#/~1domain-templates'
+  /domain-templates/{templateId}:
+    $ref: './modules/domain-templates/_index.yaml#/~1domain-templates~1{templateId}'
+  /aliases:
+    $ref: './modules/aliases/_index.yaml#/~1aliases'
+  /aliases/capabilities:
+    $ref: './modules/aliases/_index.yaml#/~1aliases~1capabilities'
+  /aliases/bulk-actions:
+    $ref: './modules/aliases/_index.yaml#/~1aliases~1bulk-actions'
+  /aliases/alias-domain-copies:
+    $ref: './modules/aliases/_index.yaml#/~1aliases~1alias-domain-copies'
+  /aliases/{aliasId}:
+    $ref: './modules/aliases/_index.yaml#/~1aliases~1{aliasId}'
+  /aliases/{aliasId}/alias-domain-copies:
+    $ref: './modules/aliases/_index.yaml#/~1aliases~1{aliasId}~1alias-domain-copies'
+  /alias-domains:
+    $ref: './modules/alias-domains/_index.yaml#/~1alias-domains'
+  /alias-domains/bulk-actions:
+    $ref: './modules/alias-domains/_index.yaml#/~1alias-domains~1bulk-actions'
+  /alias-domains/{aliasDomain}:
+    $ref: './modules/alias-domains/_index.yaml#/~1alias-domains~1{aliasDomain}'
+  /resources:
+    $ref: './modules/resources/_index.yaml#/~1resources'
+  /resources/bulk-actions:
+    $ref: './modules/resources/_index.yaml#/~1resources~1bulk-actions'
+  /resources/{resourceAddress}:
+    $ref: './modules/resources/_index.yaml#/~1resources~1{resourceAddress}'
+  /mailboxes/{mailbox}/sender-settings:
+    $ref: './modules/sender-settings/_index.yaml#/~1mailboxes~1{mailbox}~1sender-settings'
+  /mailboxes/{mailbox}/sender-settings/permission-candidates:
+    $ref: './modules/sender-settings/_index.yaml#/~1mailboxes~1{mailbox}~1sender-settings~1permission-candidates'
+  /mailboxes:
+    $ref: './modules/mailboxes/_index.yaml#/~1mailboxes'
+  /mailboxes/capabilities:
+    $ref: './modules/mailboxes/_index.yaml#/~1mailboxes~1capabilities'
+  /mailboxes/tags:
+    $ref: './modules/mailboxes/_index.yaml#/~1mailboxes~1tags'
+  /mailboxes/bulk-actions:
+    $ref: './modules/mailboxes/_index.yaml#/~1mailboxes~1bulk-actions'
+  /mailboxes/{mailbox}:
+    $ref: './modules/mailboxes/_index.yaml#/~1mailboxes~1{mailbox}'
+  /mailboxes/{mailbox}/deletion-preview:
+    $ref: './modules/mailboxes/_index.yaml#/~1mailboxes~1{mailbox}~1deletion-preview'
+  /mailboxes/{mailbox}/rename:
+    $ref: './modules/mailboxes/_index.yaml#/~1mailboxes~1{mailbox}~1rename'
+  /mailbox-templates:
+    $ref: './modules/mailbox-templates/_index.yaml#/~1mailbox-templates'
+  /mailbox-templates/{mailboxTemplateId}:
+    $ref: './modules/mailbox-templates/_index.yaml#/~1mailbox-templates~1{mailboxTemplateId}'
+  /password-policy:
+    $ref: './modules/password-policy/_index.yaml#/~1password-policy'
+  /dkim-keys:
+    $ref: './modules/dkim/_index.yaml#/~1dkim-keys'
+  /dkim-keys/{dkimName}:
+    $ref: './modules/dkim/_index.yaml#/~1dkim-keys~1{dkimName}'
+  /dkim-keys/{dkimName}/import:
+    $ref: './modules/dkim/_index.yaml#/~1dkim-keys~1{dkimName}~1import'
+  /dkim-keys/{dkimName}/copy:
+    $ref: './modules/dkim/_index.yaml#/~1dkim-keys~1{dkimName}~1copy'
+  /dkim-keys/{dkimName}/private-key:
+    $ref: './modules/dkim/_index.yaml#/~1dkim-keys~1{dkimName}~1private-key'
+  /dkim-keys/{dkimName}/dns-publication:
+    $ref: './modules/dkim/_index.yaml#/~1dkim-keys~1{dkimName}~1dns-publication'
+  /mail-dns-capabilities:
+    $ref: './modules/dkim/_index.yaml#/~1mail-dns-capabilities'
+  /mta-sts-policies:
+    $ref: './modules/mta-sts/_index.yaml#/~1mta-sts-policies'
+  /mta-sts-policies/{policyDomain}:
+    $ref: './modules/mta-sts/_index.yaml#/~1mta-sts-policies~1{policyDomain}'
+  /dns-diagnostics/{diagnosticsName}:
+    $ref: './modules/dns-diagnostics/_index.yaml#/~1dns-diagnostics~1{diagnosticsName}'
+  /identity-provider:
+    $ref: './modules/identity-provider/_index.yaml#/~1identity-provider'
+  /identity-provider/connection-tests:
+    $ref: './modules/identity-provider/_index.yaml#/~1identity-provider~1connection-tests'
+  /session/single-sign-on:
+    $ref: './modules/single-sign-on/_index.yaml#/~1session~1single-sign-on'
+  /session/single-sign-on/completion:
+    $ref: './modules/single-sign-on/_index.yaml#/~1session~1single-sign-on~1completion'
+  /session/single-sign-on/provider-error:
+    $ref: './modules/single-sign-on/_index.yaml#/~1session~1single-sign-on~1provider-error'
+  /oauth2-clients:
+    $ref: './modules/oauth2-clients/_index.yaml#/~1oauth2-clients'
+  /oauth2-clients/bulk-actions:
+    $ref: './modules/oauth2-clients/_index.yaml#/~1oauth2-clients~1bulk-actions'
+  /oauth2-clients/{oauth2ClientId}:
+    $ref: './modules/oauth2-clients/_index.yaml#/~1oauth2-clients~1{oauth2ClientId}'
+  /oauth2-clients/{oauth2ClientId}/secret-regeneration:
+    $ref: './modules/oauth2-clients/_index.yaml#/~1oauth2-clients~1{oauth2ClientId}~1secret-regeneration'
+  /oauth2-clients/{oauth2ClientId}/token-revocation:
+    $ref: './modules/oauth2-clients/_index.yaml#/~1oauth2-clients~1{oauth2ClientId}~1token-revocation'
+  /admins:
+    $ref: './modules/admins/_index.yaml#/~1admins'
+  /admins/{username}:
+    $ref: './modules/admins/_index.yaml#/~1admins~1{username}'
+  /admins/{username}/second-factor-suspension:
+    $ref: './modules/admins/_index.yaml#/~1admins~1{username}~1second-factor-suspension'
+  /admin-bulk-actions:
+    $ref: './modules/admins/_index.yaml#/~1admin-bulk-actions'
+  /account-capabilities:
+    $ref: './modules/admins/_index.yaml#/~1account-capabilities'
+  /domain-admins:
+    $ref: './modules/domain-admins/_index.yaml#/~1domain-admins'
+  /domain-admins/{username}:
+    $ref: './modules/domain-admins/_index.yaml#/~1domain-admins~1{username}'
+  /domain-admins/{username}/second-factor-suspension:
+    $ref: './modules/domain-admins/_index.yaml#/~1domain-admins~1{username}~1second-factor-suspension'
+  /domain-admin-bulk-actions:
+    $ref: './modules/domain-admins/_index.yaml#/~1domain-admin-bulk-actions'
+  /domain-admins/{username}/sso-token:
+    $ref: './modules/sso-tokens/_index.yaml#/~1domain-admins~1{username}~1sso-token'
+  /session/sso-token:
+    $ref: './modules/sso-tokens/_index.yaml#/~1session~1sso-token'
+  /session/impersonation:
+    $ref: './modules/impersonation/_index.yaml#/~1session~1impersonation'
+  /mailboxes/{mailbox}/webmail-sign-in:
+    $ref: './modules/impersonation/_index.yaml#/~1mailboxes~1{mailbox}~1webmail-sign-in'
+  /host:
+    $ref: './modules/host/_index.yaml#/~1host'
+  /host/mail-storage:
+    $ref: './modules/host/_index.yaml#/~1host~1mail-storage'
+  /host/public-addresses:
+    $ref: './modules/host/_index.yaml#/~1host~1public-addresses'
+  /installation:
+    $ref: './modules/host/_index.yaml#/~1installation'
+  /installation/update-status:
+    $ref: './modules/host/_index.yaml#/~1installation~1update-status'
+  /monitoring/capabilities:
+    $ref: './modules/host/_index.yaml#/~1monitoring~1capabilities'
+  /containers:
+    $ref: './modules/containers/_index.yaml#/~1containers'
+  /containers/{containerName}:
+    $ref: './modules/containers/_index.yaml#/~1containers~1{containerName}'
+  /containers/{containerName}/resource-usage:
+    $ref: './modules/containers/_index.yaml#/~1containers~1{containerName}~1resource-usage'
+  /containers/{containerName}/start:
+    $ref: './modules/containers/_index.yaml#/~1containers~1{containerName}~1start'
+  /containers/{containerName}/stop:
+    $ref: './modules/containers/_index.yaml#/~1containers~1{containerName}~1stop'
+  /containers/{containerName}/restart:
+    $ref: './modules/containers/_index.yaml#/~1containers~1{containerName}~1restart'
+  /logs/postfix:
+    $ref: './modules/logs/_index.yaml#/~1logs~1postfix'
+  /logs/dovecot:
+    $ref: './modules/logs/_index.yaml#/~1logs~1dovecot'
+  /logs/sogo:
+    $ref: './modules/logs/_index.yaml#/~1logs~1sogo'
+  /logs/netfilter:
+    $ref: './modules/logs/_index.yaml#/~1logs~1netfilter'
+  /logs/autodiscover:
+    $ref: './modules/logs/_index.yaml#/~1logs~1autodiscover'
+  /logs/watchdog:
+    $ref: './modules/logs/_index.yaml#/~1logs~1watchdog'
+  /logs/acme:
+    $ref: './modules/logs/_index.yaml#/~1logs~1acme'
+  /logs/cron:
+    $ref: './modules/logs/_index.yaml#/~1logs~1cron'
+  /logs/rate-limits:
+    $ref: './modules/logs/_index.yaml#/~1logs~1rate-limits'
+  /logs/legacy-api-requests:
+    $ref: './modules/logs/_index.yaml#/~1logs~1legacy-api-requests'
+  /logs/legacy-ui-activity:
+    $ref: './modules/logs/_index.yaml#/~1logs~1legacy-ui-activity'
+  /logs/logins:
+    $ref: './modules/logs/_index.yaml#/~1logs~1logins'
+  /rspamd/history:
+    $ref: './modules/rspamd-stats/_index.yaml#/~1rspamd~1history'
+  /rspamd/statistics:
+    $ref: './modules/rspamd-stats/_index.yaml#/~1rspamd~1statistics'
+  /mail-queue/messages:
+    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages'
+  /mail-queue/messages/delivery:
+    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages~1delivery'
+  /mail-queue/messages/hold:
+    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages~1hold'
+  /mail-queue/messages/release:
+    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages~1release'
+  /mail-queue/messages/deletion:
+    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages~1deletion'
+  /mail-queue/messages/{queueId}/content:
+    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages~1{queueId}~1content'
+  /mail-queue/flush:
+    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1flush'
+  /mail-queue/purge:
+    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1purge'
+  /fail2ban/settings:
+    $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1settings'
+  /fail2ban/ban-list-rotation:
+    $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1ban-list-rotation'
+  /fail2ban/rules:
+    $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1rules'
+  /fail2ban/rules/reset:
+    $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1rules~1reset'
+  /fail2ban/active-bans:
+    $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1active-bans'
+  /fail2ban/active-bans/{network}/lift:
+    $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1active-bans~1{network}~1lift'
+  /fail2ban/active-bans/{network}/allowlist:
+    $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1active-bans~1{network}~1allowlist'
+  /fail2ban/active-bans/{network}/denylist:
+    $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1active-bans~1{network}~1denylist'
+  /fail2ban/permanent-bans:
+    $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1permanent-bans'
+  /relayhosts:
+    $ref: './modules/relayhosts/_index.yaml#/~1relayhosts'
+  /relayhosts/choices:
+    $ref: './modules/relayhosts/_index.yaml#/~1relayhosts~1choices'
+  /relayhosts/bulk-actions:
+    $ref: './modules/relayhosts/_index.yaml#/~1relayhosts~1bulk-actions'
+  /relayhosts/{relayhostId}:
+    $ref: './modules/relayhosts/_index.yaml#/~1relayhosts~1{relayhostId}'
+  /relayhosts/{relayhostId}/usage:
+    $ref: './modules/relayhosts/_index.yaml#/~1relayhosts~1{relayhostId}~1usage'
+  /relayhosts/{relayhostId}/connection-test:
+    $ref: './modules/relayhosts/_index.yaml#/~1relayhosts~1{relayhostId}~1connection-test'
+  /domains/{domain}/relayhost-assignment:
+    $ref: './modules/relayhost-assignments/_index.yaml#/~1domains~1{domain}~1relayhost-assignment'
+  /mailboxes/{mailbox}/relayhost-assignment:
+    $ref: './modules/relayhost-assignments/_index.yaml#/~1mailboxes~1{mailbox}~1relayhost-assignment'
+  /transports:
+    $ref: './modules/transports/_index.yaml#/~1transports'
+  /transports/bulk-actions:
+    $ref: './modules/transports/_index.yaml#/~1transports~1bulk-actions'
+  /transports/{transportId}:
+    $ref: './modules/transports/_index.yaml#/~1transports~1{transportId}'
+  /transports/{transportId}/connection-test:
+    $ref: './modules/transports/_index.yaml#/~1transports~1{transportId}~1connection-test'
+  /bcc-maps:
+    $ref: './modules/bcc-maps/_index.yaml#/~1bcc-maps'
+  /bcc-maps/destination-choices:
+    $ref: './modules/bcc-maps/_index.yaml#/~1bcc-maps~1destination-choices'
+  /bcc-maps/bulk-actions:
+    $ref: './modules/bcc-maps/_index.yaml#/~1bcc-maps~1bulk-actions'
+  /bcc-maps/{bccMapId}:
+    $ref: './modules/bcc-maps/_index.yaml#/~1bcc-maps~1{bccMapId}'
+  /recipient-maps:
+    $ref: './modules/recipient-maps/_index.yaml#/~1recipient-maps'
+  /recipient-maps/bulk-actions:
+    $ref: './modules/recipient-maps/_index.yaml#/~1recipient-maps~1bulk-actions'
+  /recipient-maps/{recipientMapId}:
+    $ref: './modules/recipient-maps/_index.yaml#/~1recipient-maps~1{recipientMapId}'
+  /tls-policy-maps:
+    $ref: './modules/tls-policy-maps/_index.yaml#/~1tls-policy-maps'
+  /tls-policy-maps/bulk-actions:
+    $ref: './modules/tls-policy-maps/_index.yaml#/~1tls-policy-maps~1bulk-actions'
+  /tls-policy-maps/{tlsPolicyMapId}:
+    $ref: './modules/tls-policy-maps/_index.yaml#/~1tls-policy-maps~1{tlsPolicyMapId}'
+  /forwarding-hosts:
+    $ref: './modules/forwarding-hosts/_index.yaml#/~1forwarding-hosts'
+  /forwarding-hosts/bulk-actions:
+    $ref: './modules/forwarding-hosts/_index.yaml#/~1forwarding-hosts~1bulk-actions'
+  /forwarding-hosts/{forwardingHostAddress}:
+    $ref: './modules/forwarding-hosts/_index.yaml#/~1forwarding-hosts~1{forwardingHostAddress}'
+  /routing-capabilities:
+    $ref: './modules/routing-capabilities/_index.yaml#/~1routing-capabilities'
+  /quarantine:
+    $ref: './modules/quarantine/_index.yaml#/~1quarantine'
+  /quarantine/bulk-actions:
+    $ref: './modules/quarantine/_index.yaml#/~1quarantine~1bulk-actions'
+  /quarantine/settings:
+    $ref: './modules/quarantine/_index.yaml#/~1quarantine~1settings'
+  /quarantine/settings/template-preview:
+    $ref: './modules/quarantine/_index.yaml#/~1quarantine~1settings~1template-preview'
+  /quarantine/{itemId}:
+    $ref: './modules/quarantine/_index.yaml#/~1quarantine~1{itemId}'
+  /quarantine/{itemId}/release:
+    $ref: './modules/quarantine/_index.yaml#/~1quarantine~1{itemId}~1release'
+  /quarantine/{itemId}/spam-learning:
+    $ref: './modules/quarantine/_index.yaml#/~1quarantine~1{itemId}~1spam-learning'
+  /quarantine/{itemId}/message:
+    $ref: './modules/quarantine/_index.yaml#/~1quarantine~1{itemId}~1message'
+  /quarantine/{itemId}/attachments/{position}:
+    $ref: './modules/quarantine/_index.yaml#/~1quarantine~1{itemId}~1attachments~1{position}'
+  /quarantine-capabilities:
+    $ref: './modules/quarantine/_index.yaml#/~1quarantine-capabilities'
+  /quarantine-notification-settings/bulk-actions:
+    $ref: './modules/quarantine/_index.yaml#/~1quarantine-notification-settings~1bulk-actions'
+  /mailboxes/{mailbox}/quarantine-notification-settings:
+    $ref: './modules/quarantine/_index.yaml#/~1mailboxes~1{mailbox}~1quarantine-notification-settings'
+  /domains/{domain}/spam-policy-entries:
+    $ref: './modules/spam-policy/_index.yaml#/~1domains~1{domain}~1spam-policy-entries'
+  /domains/{domain}/spam-policy-entries/{entryId}:
+    $ref: './modules/spam-policy/_index.yaml#/~1domains~1{domain}~1spam-policy-entries~1{entryId}'
+  /alias-domains/{aliasDomain}/spam-policy-entries:
+    $ref: './modules/spam-policy/_index.yaml#/~1alias-domains~1{aliasDomain}~1spam-policy-entries'
+  /alias-domains/{aliasDomain}/spam-policy-entries/{entryId}:
+    $ref: './modules/spam-policy/_index.yaml#/~1alias-domains~1{aliasDomain}~1spam-policy-entries~1{entryId}'
+  /mailboxes/{mailbox}/spam-policy-entries:
+    $ref: './modules/spam-policy/_index.yaml#/~1mailboxes~1{mailbox}~1spam-policy-entries'
+  /mailboxes/{mailbox}/spam-policy-entries/{entryId}:
+    $ref: './modules/spam-policy/_index.yaml#/~1mailboxes~1{mailbox}~1spam-policy-entries~1{entryId}'
+  /mailboxes/{mailbox}/spam-score:
+    $ref: './modules/spam-policy/_index.yaml#/~1mailboxes~1{mailbox}~1spam-score'
+  /spam-filter-action-statistics:
+    $ref: './modules/spam-policy/_index.yaml#/~1spam-filter-action-statistics'
+  /rate-limits:
+    $ref: './modules/rate-limits/_index.yaml#/~1rate-limits'
+  /domains/{domain}/rate-limit:
+    $ref: './modules/rate-limits/_index.yaml#/~1domains~1{domain}~1rate-limit'
+  /alias-domains/{aliasDomain}/rate-limit:
+    $ref: './modules/rate-limits/_index.yaml#/~1alias-domains~1{aliasDomain}~1rate-limit'
+  /mailboxes/{mailbox}/rate-limit:
+    $ref: './modules/rate-limits/_index.yaml#/~1mailboxes~1{mailbox}~1rate-limit'
+  /rate-limit-buckets/{bucketId}:
+    $ref: './modules/rate-limits/_index.yaml#/~1rate-limit-buckets~1{bucketId}'
 components:
   securitySchemes:
     sessionCookie:

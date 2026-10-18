@@ -1,0 +1,74 @@
+type: object
+minProperties: 1
+description: |
+  JSON Merge Patch of a domain template. Only the sent values change; every other value is kept.
+  The rules of `DomainTemplateCreateRequest` apply to the resulting template. Renaming the Default
+  template is refused with `409 domain-template-protected` (sending its current name is accepted).
+  The read-only members (`id`, `isDefault`, `createdAt`, `modifiedAt`, `etag`) are accepted when
+  equal to the current value and refused with the rule code `immutable` otherwise.
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 255
+  tags:
+    $ref: './DomainTagList.yaml'
+  maxMailboxes:
+    type: integer
+    minimum: 0
+    maximum: 2147483647
+  maxAliases:
+    type: integer
+    minimum: 0
+    maximum: 2147483647
+  defaultMailboxQuota:
+    type: integer
+    minimum: 1048576
+    maximum: 9007199254740992
+  maxMailboxQuota:
+    type: integer
+    minimum: 1048576
+    maximum: 9007199254740992
+  domainQuota:
+    type: integer
+    minimum: 1048576
+    maximum: 9007199254740992
+  rateLimit:
+    description: '`null` removes the rate limit.'
+    oneOf:
+      - $ref: './DomainRateLimit.yaml'
+      - type: 'null'
+  active:
+    type: boolean
+  globalAddressList:
+    type: boolean
+  backupMx:
+    type: boolean
+  relayAllRecipients:
+    type: boolean
+  relayUnknownOnly:
+    type: boolean
+  dkimSelector:
+    type: string
+    maxLength: 255
+    pattern: '^[A-Za-z0-9._-]*$'
+  dkimKeySize:
+    type: integer
+    enum: [1024, 2048, 3072, 4096]
+  id:
+    type: integer
+    description: Read-only.
+  isDefault:
+    type: boolean
+    description: Read-only.
+  createdAt:
+    type: string
+    description: Read-only.
+  modifiedAt:
+    description: Read-only.
+    oneOf:
+      - type: string
+      - type: 'null'
+  etag:
+    type: string
+    description: Read-only. Use `If-Match` for the version check.

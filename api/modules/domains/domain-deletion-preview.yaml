@@ -1,0 +1,26 @@
+parameters:
+  - $ref: '../../components/parameters/DomainName.yaml'
+get:
+  operationId: previewDomainDeletion
+  tags: [Domains]
+  summary: Preview a domain deletion
+  description: |
+    Shows what deleting the domain would currently be blocked by (mailboxes and resources), what it
+    would remove (alias domains, aliases including those of the alias domains, the footer), the
+    domain administrator accounts it would delete, and whether a DKIM key exists, which it would
+    keep. Computed by the same rules as `deleteDomain`. Changes nothing and writes no audit
+    record. Administrators only, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainDeletionPreviewResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

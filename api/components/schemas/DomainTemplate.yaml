@@ -1,0 +1,86 @@
+type: object
+description: |
+  A domain template (mailcow table `templates`, `type = 'domain'`): named values that pre-fill new
+  domains. Templates only pre-fill: editing or deleting one never changes a domain, and a domain
+  does not record its template. The template named "Default" (compared case-insensitively) always
+  exists; it can be edited but not renamed or deleted.
+required:
+  - id
+  - name
+  - isDefault
+  - tags
+  - maxMailboxes
+  - maxAliases
+  - defaultMailboxQuota
+  - maxMailboxQuota
+  - domainQuota
+  - rateLimit
+  - active
+  - globalAddressList
+  - backupMx
+  - relayAllRecipients
+  - relayUnknownOnly
+  - dkimSelector
+  - dkimKeySize
+  - createdAt
+  - modifiedAt
+  - etag
+properties:
+  id:
+    type: integer
+    minimum: 1
+  name:
+    type: string
+    maxLength: 255
+  isDefault:
+    type: boolean
+    description: Whether this is the protected Default template.
+  tags:
+    $ref: './DomainTagList.yaml'
+  maxMailboxes:
+    type: integer
+  maxAliases:
+    type: integer
+  defaultMailboxQuota:
+    type: integer
+    minimum: 0
+    description: Bytes.
+  maxMailboxQuota:
+    type: integer
+    minimum: 0
+    description: Bytes.
+  domainQuota:
+    type: integer
+    minimum: 0
+    description: Bytes.
+  rateLimit:
+    oneOf:
+      - $ref: './DomainRateLimit.yaml'
+      - type: 'null'
+  active:
+    type: boolean
+  globalAddressList:
+    type: boolean
+  backupMx:
+    type: boolean
+  relayAllRecipients:
+    type: boolean
+  relayUnknownOnly:
+    type: boolean
+  dkimSelector:
+    type: string
+    description: Selector for the DKIM key of new domains. Empty means "no DKIM key".
+  dkimKeySize:
+    type: integer
+    description: RSA key size in bits.
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string
+    description: Version tag of the template's stored name and values. Send it in `If-Match`.

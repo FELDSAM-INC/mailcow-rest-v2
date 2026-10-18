@@ -1,0 +1,63 @@
+parameters:
+  - $ref: '../../components/parameters/DomainName.yaml'
+get:
+  operationId: getDomainFooter
+  tags: [Domains]
+  summary: Get a domain's footer
+  description: |
+    Returns the footer of a domain in the caller's scope. Administrators and the domain's domain
+    administrators, no permission flag needed. A domain without a footer returns empty texts,
+    `skipReplies: false` and no exclusions. An alias domain name answers `404`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainFooterResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+put:
+  operationId: replaceDomainFooter
+  tags: [Domains]
+  summary: Replace a domain's footer
+  description: |
+    Replaces the footer as a whole, where legacy mailcow stores it, so that the mail filter applies
+    it to mail from the domain and its alias domains. Administrators and the domain's domain
+    administrators, no permission flag needed; a read-only key is refused. Send the version tag in
+    `If-Match`: a stale tag answers `412`. Audited, with the texts recorded only as changed and
+    their old and new sizes.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/DomainFooterReplace.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainFooterResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

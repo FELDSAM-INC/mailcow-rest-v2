@@ -1,0 +1,17 @@
+description: |
+  The domain still has mailboxes or resources (type `/api/v2/problems/domain-not-empty`), with
+  their numbers. Nothing was deleted.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/DomainNotEmptyProblem.yaml'
+    examples:
+      domainNotEmpty:
+        value:
+          type: /api/v2/problems/domain-not-empty
+          title: Domain not empty
+          status: 409
+          detail: example.org still has 1 mailbox and 0 resources.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          mailboxes: 1
+          resources: 0

@@ -1,0 +1,110 @@
+get:
+  operationId: listDomains
+  tags: [Domains]
+  summary: List domains
+  description: |
+    Lists the domains in the caller's scope, as the legacy "Mail setup › Domains" screen shows
+    them: each entry is the full domain with its usage figures and its version tag, so the list
+    needs no request per row. Administrators see every domain; domain administrators see the
+    domains assigned to them through an active assignment, whether or not the domain is active,
+    and never `domainAdmins`. Mailbox users are refused with `403 forbidden`.
+
+    `q` searches, case-insensitively and as a substring, the ASCII name, the readable (Unicode)
+    name, the description and the tags.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/DomainSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: active
+      in: query
+      required: false
+      description: Only active (`true`) or inactive (`false`) domains.
+      schema:
+        type: boolean
+    - name: backupMx
+      in: query
+      required: false
+      description: Only domains with (`true`) or without (`false`) "relay this domain".
+      schema:
+        type: boolean
+    - name: tag
+      in: query
+      required: false
+      description: |
+        Only domains that carry any of these tags, matched as whole tags without regard to letter
+        case. Repeat the parameter for several tags. Use `q` for substring matching.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 100
+        items:
+          type: string
+          minLength: 1
+          maxLength: 255
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createDomain
+  tags: [Domains]
+  summary: Create a domain
+  description: |
+    Creates a domain, pre-filled from a domain template (the Default template unless `templateId`
+    names another). Administrators only, with a session or a read-write key.
+
+    The domain row, its tags and its entry in mailcow's domain map (Redis `DOMAIN_MAP`) are stored
+    together or not at all; external sender addresses in the new domain that were granted to
+    mailboxes are removed, because the domain is now local. Then the follow-up steps run, each
+    reported in `data.creationReport` and in the audit record, none undoing the creation:
+    1. the initial rate limit, when the request or the template sets one;
+    2. a DKIM key with the selector and key size of the request, the template or the built-in
+       defaults, unless a key already exists for the name or the selector is explicitly empty;
+       when the DKIM DNS publication is enabled (FeldHost setting), the public key is published to
+       the ISPConfig DNS server;
+    3. the groupware directory update and cache flush, unless the groupware is disabled;
+    4. the groupware restart, when `restartGroupware` is `true`.
+
+    When mailcow's shared store is unavailable, the creation is refused with `503
+    temporary-failure` and nothing is stored. Concurrent creations of the same name: exactly one
+    succeeds.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/DomainCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/DomainCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/DomainExistsConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/DomainTemporaryFailure.yaml'

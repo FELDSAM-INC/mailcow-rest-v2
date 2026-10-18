@@ -1,0 +1,122 @@
+type: object
+description: |
+  A mail domain (mailcow tables `domain` and `tags_domain`). Quotas are bytes; mailcow stores them in
+  whole mebibytes, so they are always multiples of 1,048,576. `relayhost` and `rateLimit` are
+  read-only here: the routing feature assigns relayhosts, and the spam policy feature changes rate
+  limits.
+required:
+  - name
+  - unicodeName
+  - description
+  - active
+  - maxMailboxes
+  - maxAliases
+  - defaultMailboxQuota
+  - maxMailboxQuota
+  - domainQuota
+  - backupMx
+  - relayAllRecipients
+  - relayUnknownOnly
+  - globalAddressList
+  - tags
+  - relayhost
+  - rateLimit
+  - createdAt
+  - modifiedAt
+  - usage
+  - etag
+properties:
+  name:
+    type: string
+    description: |
+      Lower-case ASCII (punycode) name, the identifier used in paths. Never changes.
+    examples: [xn--mnchen-3ya.de]
+  unicodeName:
+    type: string
+    description: Readable (Unicode) form of `name`. Equal to `name` for ASCII-only names.
+    examples: [münchen.de]
+  description:
+    type: string
+    maxLength: 255
+    description: Free text. Defaults to the domain name.
+  active:
+    type: boolean
+    description: |
+      Inactive domains receive no mail. They stay visible and editable for their domain
+      administrators.
+  maxMailboxes:
+    type: integer
+    description: Maximum number of mailboxes (`domain.mailboxes`).
+  maxAliases:
+    type: integer
+    description: Maximum number of aliases (`domain.aliases`).
+  defaultMailboxQuota:
+    type: integer
+    minimum: 0
+    multipleOf: 1048576
+    description: Default quota of a new mailbox, bytes (`domain.defquota`).
+  maxMailboxQuota:
+    type: integer
+    minimum: 0
+    multipleOf: 1048576
+    description: Maximum quota of one mailbox, bytes (`domain.maxquota`).
+  domainQuota:
+    type: integer
+    minimum: 0
+    multipleOf: 1048576
+    description: Total quota that the domain's mailboxes may allocate, bytes (`domain.quota`).
+  backupMx:
+    type: boolean
+    description: '"Relay this domain" (backup MX, `domain.backupmx`).'
+  relayAllRecipients:
+    type: boolean
+    description: |
+      Relay all recipients (`domain.relay_all_recipients`). Implies `backupMx`.
+  relayUnknownOnly:
+    type: boolean
+    description: |
+      Relay only recipients that are not existing mailboxes (`domain.relay_unknown_only`). Implies
+      `relayAllRecipients` and `backupMx`.
+  globalAddressList:
+    type: boolean
+    description: |
+      Whether the groupware shows the domain's Global Address List (`domain.gal`). The groupware
+      reads it only when it starts: a change takes effect at its next restart.
+  tags:
+    $ref: './DomainTagList.yaml'
+  relayhost:
+    description: Assigned relayhost, `null` for none. Read-only in this feature.
+    oneOf:
+      - $ref: './DomainRelayhost.yaml'
+      - type: 'null'
+  rateLimit:
+    description: |
+      Rate limit of the domain from mailcow's shared store, `null` for none. Read-only after
+      creation in this feature.
+    oneOf:
+      - $ref: './DomainRateLimit.yaml'
+      - type: 'null'
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    description: Last change of the domain row, `null` when never modified.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  usage:
+    $ref: './DomainUsage.yaml'
+  domainAdmins:
+    type: array
+    description: |
+      Usernames of the domain administrators assigned to the domain (mailcow `domain_admins`),
+      sorted. Present for administrators only; domain administrators never receive it.
+    items:
+      type: string
+  etag:
+    type: string
+    description: |
+      Version tag of the stored settings and tags (not of `usage`, `rateLimit` or
+      `domainAdmins`), equal to the `ETag` header of a single read. It changes whenever the
+      stored settings change, also through the legacy UI or `/api/v1`. Send it in `If-Match`.

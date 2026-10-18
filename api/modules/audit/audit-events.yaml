@@ -60,6 +60,46 @@ get:
       schema:
         type: string
         maxLength: 49
+    - name: targetType
+      in: query
+      required: false
+      description: Only records whose target is of this type.
+      schema:
+        $ref: '../../components/schemas/AuditTarget.yaml#/properties/type'
+    - name: targetId
+      in: query
+      required: false
+      description: |
+        Only records whose target identifier equals this value. Domain names (targets `domain` and
+        `domainFooter`) may be given in ASCII or Unicode form and any letter case. Without
+        `targetType`, a domain name matches the records of the domain and of its footer.
+      schema:
+        type: string
+        maxLength: 255
+    - name: impersonatedAccount
+      in: query
+      required: false
+      description: |
+        Feature 007: only records written while this account (a mailbox address or a domain
+        administrator's username, exact match after lower-casing) was impersonated, including the
+        starts and ends of its impersonations.
+      schema:
+        type: string
+        maxLength: 255
+    - name: authMethod
+      in: query
+      required: false
+      description: |
+        Feature 012: only records whose sign-in or authentication method is one of these, for
+        example `singleSignOn`, `directoryPassword` or `providerPassword`. Repeat the parameter for
+        several.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          $ref: '../../components/schemas/AuthMethod.yaml'
   responses:
     '200':
       $ref: '../../components/responses/AuditEventListResponse.yaml'

@@ -4,7 +4,7 @@ required: [type, id, name]
 properties:
   type:
     type: string
-    enum: [apiKey, passkey, preferences, session]
+    enum: [apiKey, passkey, preferences, session, syncJob, domain, domainTemplate, domainFooter, dkimKey, mtaStsPolicy, identityProvider, oauth2Client, mailbox, mailboxTemplate, admin, domainAdmin, ssoToken, impersonation, relayhost, domainRelayhostAssignment, mailboxRelayhostAssignment, transport, bccMap, recipientMap, tlsPolicyMap, forwardingHost]
   id:
     oneOf:
       - type: string

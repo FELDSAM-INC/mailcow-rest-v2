@@ -16,6 +16,64 @@ description: |
   - `mustBeInFuture`: a time that must lie in the future does not.
   - `notFound`: the referenced object does not exist.
   - `notEligible`: the referenced object exists but cannot be used here. Params: `allowedRoles`.
+  - Sync jobs (feature 008): `invalidFormat` also uses `format: hostName` (host name or IPv4
+    address); `notEligible` uses `kind` (`resource`, `alias`, `aliasDomainAddress`) for a sync-job
+    target that is not a mailbox; `optionNotAllowed` (an imapsync option not on the allow-list,
+    param `option`); `optionContainsSpace` (an option token containing a space, param `token`);
+    `customParamsNotPermitted` (custom imapsync parameters are restricted to administrators);
+    `invalidRegex` (not a valid regular expression); `immutable` (the value cannot be changed after
+    creation).
+  - Domains (feature 002): `invalidFormat` also uses `format: domainName`, `dkimSelector` and
+    `email`; `tooLong` may carry `unit: bytes`; `immutable` also covers read-only members sent back
+    with a different value; `notMultipleOf` (a quota that is not a whole multiple of a unit, param
+    `factor`); `mustNotExceed` (a value above another field's value, params `field` and `value`);
+    `belowInUse` (a limit below current usage, param `inUse`); `reserved` (a name reserved by the
+    server, such as its own host name).
+  - DKIM, MTA-STS and DNS (feature 010): `invalidFormat` also uses `format: mxHost` (a host name
+    with an optional `*.` prefix); `invalidPrivateKey` (not exactly one PEM-encoded PKCS #1 or
+    PKCS #8 private key); `encryptedPrivateKey` (the private key is encrypted);
+    `unsupportedKeyType` (not an RSA key, param `allowed`); `keyLengthOutOfRange` (key length in
+    bits outside `min` and `max`); `sameAsSource` (a copy target equal to its source). None of them
+    echoes the key text.
+  - Mailboxes (feature 003): `invalidFormat` also uses `format: localPart`, `email` and
+    `attributeName`; `notEligible` uses `kind: aliasDomain` for a creation domain that is an alias
+    domain; `notMultipleOf` (param `factor: 1048576`) for quotas; `outOfRange` on a quota carries
+    `limit` (`maxMailboxQuota`, `domainQuotaLeft` or `largestAllowedQuota`) next to `min` and
+    `max` in bytes; `immutable` for any read-only member sent in a change; `tooShort` on a password
+    is the policy's minimum length; `missingCharacterClass` (a password lacks a class the policy
+    requires, param `characterClass`: `letter`, `digit`, `special` or `lowerAndUpper`);
+    `conflictsWith` (a value not allowed together with another field's value, params `field` and
+    `value`, for example a password with an external `authSource`); `unchanged` (a rename to the
+    current local part).
+  - Identity providers and OAuth2 clients (feature 012): `invalidFormat` also uses `format:
+    httpUrl` (absolute `https` or `http` URL), `hostName` (also an IPv6 address for LDAP hosts),
+    `keycloakRealm`, `keycloakVersion`, `scopeList`, `ldapAttribute`, `ldapFilter`, `redirectUri`
+    (absolute URI with a scheme, no fragment, no whitespace) and `oauthErrorCode`; `notFound` on a
+    mapped or default template carries `resource: mailboxTemplate`; `conflictsWith` (params
+    `field: type`, `value`) for a member that is not a setting of the configuration's type, and
+    for an LDAP `attributeField` left empty while `importUsers` or `periodicSync` is on;
+    `immutable` for a different `type` in a change or a different OAuth2 `clientId` or `scope`;
+    `secretRequired` (the client secret or bind password must be sent, param `reason`:
+    `noStoredSecret`, `typeChanged` or `addressChanged`, with `field` naming the changed address
+    for the latter); `duplicate` (a value that must be unique appears twice, param
+    `duplicateOf` with the path of the first occurrence).
+  - Administrators and domain administrators (feature 007): `invalidFormat` also uses `format:
+    accountUsername` (only `a-z`, `0-9`, `.`, `_`, `-`, with at least one letter or digit);
+    `reserved` (param `reserved: [api]`) for the username `api`; `notEligible` uses `kind:
+    aliasDomain` for an assigned domain that is an alias domain, and `reason` (`mailboxInactive`,
+    `loginDisabled`, `domainInactive`, `webmailDisabled`) for a mailbox whose webmail cannot be
+    opened; `immutable` for a read-only member sent back with a different value; password rules
+    use feature 003's codes; `unknownField` (a member the schema does not define, for example an
+    unknown permission flag, named by its path).
+  - Routing (feature 009): `invalidFormat` also uses `format: nextHop` (`host`, `host:port`,
+    `[host]` or `[host]:port`), `transportDestination`, `recipientMapDestination`,
+    `tlsPolicyDestination`, `tlsPolicyParameters`, `domainName`, `email` and `ipNetwork`;
+    `invalidRegex` for an MX-based transport pattern MariaDB cannot evaluate; `immutable` for a
+    read-only member sent back with a different value; `notFound` for an unknown or out-of-scope BCC
+    local destination or relayhost; `tooMany` (`max: 1`) for several BCC destinations;
+    `notResolvable` (a forwarding host name that resolves to no address); `invalidCharacter` (a value
+    containing a forbidden character, param `characters`, for example `[":"]` in an SMTP username);
+    `required` with param `because: password` for a password without a username.
 enum:
   - required
   - invalidType
@@ -28,3 +86,25 @@ enum:
   - mustBeInFuture
   - notFound
   - notEligible
+  - optionNotAllowed
+  - optionContainsSpace
+  - customParamsNotPermitted
+  - invalidRegex
+  - immutable
+  - notMultipleOf
+  - mustNotExceed
+  - belowInUse
+  - reserved
+  - invalidPrivateKey
+  - encryptedPrivateKey
+  - unsupportedKeyType
+  - keyLengthOutOfRange
+  - sameAsSource
+  - missingCharacterClass
+  - conflictsWith
+  - unchanged
+  - secretRequired
+  - duplicate
+  - unknownField
+  - notResolvable
+  - invalidCharacter

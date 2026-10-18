@@ -1,0 +1,22 @@
+get:
+  operationId: getDomainCapabilities
+  tags: [Domains]
+  summary: Get the domain capabilities
+  description: |
+    Returns the server settings and limits that the domain forms need before they submit: whether
+    the groupware is enabled, the tagging limit and the other limits, and, for administrators
+    only, the DKIM defaults and whether the DKIM DNS publication is enabled. Reflects the current
+    configuration on every request and contains no secret. Administrators and domain
+    administrators, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainCapabilitiesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

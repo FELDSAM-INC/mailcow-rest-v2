@@ -1,0 +1,23 @@
+description: |
+  The domain was created. `data.creationReport` gives the outcome of each follow-up step; a failed
+  step does not undo the creation.
+headers:
+  Location:
+    description: Absolute path of the created resource.
+    required: true
+    schema:
+      type: string
+      format: uri-reference
+  ETag:
+    description: Version tag (strong ETag) of the resource's stored settings, equal to `data.etag`. Send it in `If-Match` when changing the resource.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/DomainCreated.yaml'

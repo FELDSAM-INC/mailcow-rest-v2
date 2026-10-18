@@ -1,0 +1,13 @@
+description: Distinct tags of the domains in the caller's scope.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/DomainTagSummary.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

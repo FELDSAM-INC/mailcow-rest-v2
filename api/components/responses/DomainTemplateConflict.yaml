@@ -1,0 +1,12 @@
+description: |
+  The request conflicts with the template's state. Possible types:
+  - `/api/v2/problems/domain-template-name-exists`: another domain template has this name
+    (compared case-insensitively);
+  - `/api/v2/problems/domain-template-protected`: the Default template cannot be renamed or
+    deleted.
+
+  Nothing was changed.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

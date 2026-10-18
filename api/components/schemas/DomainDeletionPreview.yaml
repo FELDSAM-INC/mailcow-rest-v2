@@ -1,0 +1,47 @@
+type: object
+description: |
+  What deleting the domain would currently be blocked by, remove and keep, computed by the same
+  rules as the deletion. A snapshot: the deletion checks and computes everything again.
+required: [domain, allowed, blockers, removals, domainAdminsToDelete, dkimKeyKept, etag]
+properties:
+  domain:
+    type: string
+    description: ASCII name of the domain.
+  allowed:
+    type: boolean
+    description: '`true` when the domain has no mailboxes and no resources.'
+  blockers:
+    type: object
+    required: [mailboxes, resources]
+    properties:
+      mailboxes:
+        $ref: './DomainAddressSample.yaml'
+      resources:
+        $ref: './DomainAddressSample.yaml'
+  removals:
+    type: object
+    required: [aliasDomains, aliases, footer]
+    properties:
+      aliasDomains:
+        type: array
+        description: ASCII names of the alias domains that point to the domain, sorted.
+        items:
+          type: string
+      aliases:
+        $ref: './DomainAddressSample.yaml'
+      footer:
+        type: boolean
+        description: Whether a footer is stored for the domain.
+  domainAdminsToDelete:
+    type: array
+    description: |
+      Domain administrator accounts that would be deleted because they would be left without any
+      domain assignment, as legacy mailcow does. Their API keys stop working.
+    items:
+      type: string
+  dkimKeyKept:
+    type: boolean
+    description: Whether a DKIM key exists for the name. A deletion keeps it.
+  etag:
+    type: string
+    description: The domain's current version tag, to send in `If-Match` with the deletion.

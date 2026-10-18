@@ -1,0 +1,8 @@
+description: The created domain and the outcome of its follow-up steps.
+allOf:
+  - $ref: './Domain.yaml'
+  - type: object
+    required: [creationReport]
+    properties:
+      creationReport:
+        $ref: './DomainCreationReport.yaml'

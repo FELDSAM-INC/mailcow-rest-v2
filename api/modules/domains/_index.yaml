@@ -1,0 +1,16 @@
+# Paths of the domains module: domains, their footer, deletion preview, bulk actions,
+# capabilities and distinct tags.
+/domains:
+  $ref: './domains.yaml'
+/domains/bulk-actions:
+  $ref: './domain-bulk-actions.yaml'
+/domains/{domain}:
+  $ref: './domain.yaml'
+/domains/{domain}/deletion-preview:
+  $ref: './domain-deletion-preview.yaml'
+/domains/{domain}/footer:
+  $ref: './domain-footer.yaml'
+/domain-capabilities:
+  $ref: './domain-capabilities.yaml'
+/domain-tags:
+  $ref: './domain-tags.yaml'

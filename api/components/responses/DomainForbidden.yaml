@@ -1,0 +1,25 @@
+description: |
+  The caller is authenticated but may not perform this request. Possible types:
+  - `/api/v2/problems/attribute-not-permitted`: a domain administrator would change attributes
+    that their role or permission flags do not allow (extension `attributes`). Nothing changed.
+  - `/api/v2/problems/forbidden`: the caller's role may never use the operation, for example a
+    mailbox user.
+  - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request.
+  - `/api/v2/problems/csrf-token-mismatch`, `/api/v2/problems/pending-action-required`,
+    `/api/v2/problems/api-key-source-not-allowed`: see `Forbidden`.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/DomainAttributeNotPermittedProblem.yaml'
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      attributeNotPermitted:
+        value:
+          type: /api/v2/problems/attribute-not-permitted
+          title: Attribute not permitted
+          status: 403
+          detail: Your role may not change these attributes.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          attributes: [maxMailboxes]

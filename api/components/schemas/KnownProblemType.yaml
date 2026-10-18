@@ -25,3 +25,39 @@ enum:
   - /api/v2/problems/api-key-source-not-allowed
   - /api/v2/problems/insufficient-key-scope
   - /api/v2/problems/service-unavailable
+  - /api/v2/problems/sync-job-exists
+  - /api/v2/problems/domain-exists
+  - /api/v2/problems/domain-not-empty
+  - /api/v2/problems/domain-template-name-exists
+  - /api/v2/problems/domain-template-protected
+  - /api/v2/problems/attribute-not-permitted
+  - /api/v2/problems/temporary-failure
+  - /api/v2/problems/dkim-key-exists
+  - /api/v2/problems/dkim-private-key-export-disabled
+  - /api/v2/problems/dkim-dns-publication-disabled
+  - /api/v2/problems/mta-sts-policy-exists
+  - /api/v2/problems/address-in-use
+  - /api/v2/problems/mailbox-limit-reached
+  - /api/v2/problems/mailbox-not-renamable
+  - /api/v2/problems/mailbox-rename-incomplete
+  - /api/v2/problems/outcome-unknown
+  - /api/v2/problems/mailbox-template-name-exists
+  - /api/v2/problems/mailbox-template-protected
+  - /api/v2/problems/identity-provider-not-configured
+  - /api/v2/problems/identity-provider-in-use
+  - /api/v2/problems/single-sign-on-not-available
+  - /api/v2/problems/sign-in-state-invalid
+  - /api/v2/problems/identity-provider-unavailable
+  - /api/v2/problems/identity-provider-session-ended
+  - /api/v2/problems/account-exists
+  - /api/v2/problems/last-active-admin
+  - /api/v2/problems/cannot-delete-own-account
+  - /api/v2/problems/already-impersonating
+  - /api/v2/problems/impersonation-ended
+  - /api/v2/problems/not-allowed-while-impersonating
+  - /api/v2/problems/webmail-on-behalf-disabled
+  - /api/v2/problems/account-inactive
+  - /api/v2/problems/routing-entry-exists
+  - /api/v2/problems/next-hop-credentials-differ
+  - /api/v2/problems/next-hop-interferes
+  - /api/v2/problems/permission-flag-required

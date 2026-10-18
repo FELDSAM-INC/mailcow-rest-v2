@@ -1,0 +1,33 @@
+type: object
+description: |
+  Outcome of each follow-up step of a domain creation. The domain, its tags and its domain map entry
+  are stored together before these steps run; a failed step never undoes the creation. The same
+  report is stored in the creation's audit record.
+required: [rateLimit, dkimKey, dkimDnsPublication, groupwareDirectoryUpdate, groupwareRestart]
+properties:
+  rateLimit:
+    type: string
+    enum: [applied, notRequested, failed]
+  dkimKey:
+    type: string
+    enum: [created, alreadyExisted, notRequested, failed]
+    description: '`notRequested` when the selector was explicitly empty.'
+  dkimDnsPublication:
+    type: string
+    enum: [published, noZone, failed, notConfigured, skipped]
+    description: |
+      Publication of the new DKIM key to the ISPConfig DNS server (FeldHost setting, off by
+      default). `noZone`: the ISPConfig server has no zone for the domain. `notConfigured`: the
+      publication is disabled. `skipped`: no new key was generated.
+  groupwareDirectoryUpdate:
+    type: string
+    enum: [done, failed, groupwareDisabled]
+  groupwareRestart:
+    type: string
+    enum: [done, failed, notRequested, groupwareDisabled]
+    description: '`failed` also covers a restart whose outcome is unknown after the container service timed out.'
+  messages:
+    type: object
+    description: English explanation of each failed step, keyed by step name. Never contains secrets.
+    additionalProperties:
+      type: string

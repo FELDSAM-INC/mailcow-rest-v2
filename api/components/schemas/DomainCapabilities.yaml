@@ -1,0 +1,51 @@
+type: object
+description: |
+  Server settings and limits that shape the domain forms, read from the current configuration on
+  every request. Contains no secret and no connection detail.
+required:
+  - groupwareEnabled
+  - taggingLimit
+  - maxTagLength
+  - maxDescriptionLength
+  - footerTextMaxBytes
+  - bulkLimit
+  - defaultPageSize
+  - maxPageSize
+  - quotaUnit
+properties:
+  groupwareEnabled:
+    type: boolean
+    description: |
+      `false` when the groupware is disabled (mailcow `SKIP_SOGO=y`). Clients then hide the Global
+      Address List flag of the creation form and the restart option, as legacy does.
+  taggingLimit:
+    type: integer
+    minimum: 1
+    description: Maximum number of tags per domain (legacy `TAGGING_LIMIT`, 25 by default).
+  maxTagLength:
+    type: integer
+    examples: [255]
+  maxDescriptionLength:
+    type: integer
+    examples: [255]
+  footerTextMaxBytes:
+    type: integer
+    description: Maximum size of each footer text in bytes.
+    examples: [1048576]
+  bulkLimit:
+    type: integer
+    minimum: 1
+    description: Maximum number of targets of one bulk action.
+    examples: [100]
+  defaultPageSize:
+    type: integer
+    examples: [25]
+  maxPageSize:
+    type: integer
+    examples: [1000]
+  quotaUnit:
+    type: integer
+    description: Quotas must be whole multiples of this number of bytes (1 MiB).
+    examples: [1048576]
+  dkim:
+    $ref: './DomainDkimCapabilities.yaml'

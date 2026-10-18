@@ -1,0 +1,14 @@
+description: Problem of type `/api/v2/problems/domain-not-empty` (status `409`).
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [mailboxes, resources]
+    properties:
+      mailboxes:
+        type: integer
+        minimum: 0
+        description: Mailboxes that remain in the domain.
+      resources:
+        type: integer
+        minimum: 0
+        description: Resources that remain in the domain.

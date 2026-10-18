@@ -240,3 +240,297 @@ extension members.
 - **Extension members**: `checks`, an object with the result (`ok` or `failed`) of `database`,
   `schema`, `redis` and `migrations`.
 - **Client action**: For operators and monitoring. Fix the failed dependency.
+
+## sync-job-exists
+
+- **Type**: `/api/v2/problems/sync-job-exists`
+- **Status**: 409
+- **Meaning**: Feature 008. Another sync job already pulls from the same remote user on the same
+  remote host into the same local mailbox. Legacy mailcow enforces the same uniqueness of
+  `(mailbox, remote user, remote host)` and reports it as `object_exists`. The API refuses both a
+  creation and an edit of the remote user or host that would create such a duplicate. Nothing is
+  stored. Values are compared like legacy does, with the database's case-insensitive collation.
+- **Extension members**: `syncJobId`, the `id` of the existing job. It syncs into the same mailbox,
+  so the caller can always reach it.
+- **Client action**: Open or edit the existing job instead, or change the remote user or host.
+- **Related sync-job errors** (no type of their own): a job or target mailbox that does not exist
+  or lies outside the caller's scope is `404` (`about:blank`). An outdated `If-Match` is `412`
+  (`about:blank`); in a bulk action the item is reported `outdated`. A caller without the
+  sync-jobs permission gets `forbidden`, and a read-only key `insufficient-key-scope`. Invalid input
+  is `validation-failed` with the rule codes `invalidFormat` (`format: hostName`), `invalidRegex`,
+  `optionNotAllowed` (param `option`), `optionContainsSpace` (param `token`),
+  `customParamsNotPermitted`, `notEligible` (param `kind`), `immutable`, `outOfRange` (params `min`
+  and `max`) and `tooMany` (param `max`, the bulk limit).
+
+## domain-exists
+
+- **Type**: `/api/v2/problems/domain-exists`
+- **Status**: 409
+- **Meaning**: A domain cannot be created because its name, after normalisation (trimmed,
+  lower-cased, converted to ASCII), already exists as a domain or as an alias domain. Nothing was
+  created. Of two concurrent creations of the same name, exactly one succeeds and the other gets
+  this problem.
+- **Client action**: Tell the user that the name is taken. Do not retry.
+
+## domain-not-empty
+
+- **Type**: `/api/v2/problems/domain-not-empty`
+- **Status**: 409
+- **Meaning**: A domain cannot be deleted because it still has mailboxes or resources. Nothing was
+  deleted. Bulk deletions report it per item.
+- **Extension members**: `mailboxes` and `resources`, the numbers that remain.
+- **Client action**: Show the remaining objects (`GET /api/v2/domains/{domain}/deletion-preview`
+  lists up to 100 of each) and let the user delete or move them first.
+
+## domain-template-name-exists
+
+- **Type**: `/api/v2/problems/domain-template-name-exists`
+- **Status**: 409
+- **Meaning**: Another domain template already has this name, compared without regard to letter
+  case. Applies to creation and to renaming. Nothing was changed.
+- **Client action**: Ask for another name.
+
+## domain-template-protected
+
+- **Type**: `/api/v2/problems/domain-template-protected`
+- **Status**: 409
+- **Meaning**: The Default domain template (named "Default", compared without regard to letter
+  case) cannot be renamed or deleted. Its values can be changed. Nothing was changed.
+- **Client action**: Hide rename and delete for the Default template.
+
+## attribute-not-permitted
+
+- **Type**: `/api/v2/problems/attribute-not-permitted`
+- **Status**: 403
+- **Meaning**: The request would change attributes that the caller's role or permission flags do
+  not allow it to change, for example a domain administrator changing a domain's mailbox limit, or
+  its description without the `domainDesc` flag. The whole request is refused and nothing changed.
+  Attributes sent with their current value are always accepted, so a client may send a whole form.
+- **Extension members**: `attributes`, the names of the attributes that may not be changed, as in
+  the request body.
+- **Client action**: Make these fields read-only for the user, or send only permitted changes.
+
+## temporary-failure
+
+- **Type**: `/api/v2/problems/temporary-failure`
+- **Status**: 503
+- **Meaning**: A dependency that the change needs, such as mailcow's shared store (Redis), is
+  temporarily unavailable. The request left no partial change. In bulk actions, the item gets the
+  outcome `failed` with this problem.
+- **Extension members**: none. The `Retry-After` header gives the seconds after which a retry makes
+  sense.
+- **Client action**: Retry later. Tell the user if it persists.
+
+## dkim-key-exists
+
+- **Type**: `/api/v2/problems/dkim-key-exists`
+- **Status**: 409
+- **Meaning**: A DKIM key generation, import or copy targets a name that already has a key,
+  complete or not, and the request does not ask to overwrite. Of several concurrent requests for a
+  name without a key, exactly one succeeds and the others get this problem. The existing key is
+  unchanged.
+- **Client action**: Show that the name already has a key. An administrator may repeat the request
+  with `overwrite: true`, which replaces the whole old key in one step. Domain administrators cannot
+  overwrite keys.
+
+## dkim-private-key-export-disabled
+
+- **Type**: `/api/v2/problems/dkim-private-key-export-disabled`
+- **Status**: 403
+- **Meaning**: A DKIM private key export was requested, but the operator has not enabled private key
+  export (the server setting mirroring legacy's `SHOW_DKIM_PRIV_KEYS`, off by default). The refused
+  attempt is recorded in the audit log.
+- **Client action**: Explain that the operator must enable private key export. Do not retry.
+
+## dkim-dns-publication-disabled
+
+- **Type**: `/api/v2/problems/dkim-dns-publication-disabled`
+- **Status**: 403
+- **Meaning**: A DKIM record was asked to be published again, but the DKIM DNS publication to an
+  ISPConfig server (a FeldHost setting, off by default) is disabled on this server. The refused
+  attempt is recorded in the audit log.
+- **Client action**: Hide the action when `getMailDnsCapabilities` reports
+  `dkim.dnsPublicationEnabled: false`. Publish the record at the DNS provider instead.
+
+## mta-sts-policy-exists
+
+- **Type**: `/api/v2/problems/mta-sts-policy-exists`
+- **Status**: 409
+- **Meaning**: An MTA-STS policy was to be created for a domain that already has one. A domain has
+  at most one policy.
+- **Client action**: Read the existing policy and change it with `PATCH
+  /api/v2/mta-sts-policies/{domain}` instead.
+
+## mailbox-limit-reached
+
+- **Type**: `/api/v2/problems/mailbox-limit-reached`
+- **Status**: 409
+- **Meaning**: Feature 003. A mailbox cannot be created because its domain already has as many
+  mailboxes as its limit allows. Resources (locations, things, groups) are not counted. Of
+  concurrent creations in a domain with room for one, exactly one succeeds. Nothing was created.
+- **Extension members**: `domain` (ASCII form), `count` (mailboxes now) and `limit`.
+- **Client action**: Tell the user the limit; an administrator can raise it (feature 002).
+- **Related mailbox errors**: a mailbox outside the caller's scope, a resource and an unknown
+  address are all `404` (`about:blank`). An outdated `If-Match` is `412` (`about:blank`); in a bulk
+  action the item is reported `outdated`. A mailbox user gets `forbidden` for every mailbox
+  operation, and a domain administrator gets it for template writes and for protocol bulk actions
+  without the `protocolAccess` flag. A domain administrator choosing a setting their flags do not
+  allow gets `attribute-not-permitted`, which for mailboxes also carries `requiredFlags` (refused
+  member path → `PermissionFlags` name). A shared store, mail store or webmail outage is
+  `temporary-failure`, which for mailboxes also carries `dependency` (`sharedStore`, `mailStore` or
+  `webmail`) and, for a rename, `steps`. Keeping the old address as an alias on rename can give
+  `domain-alias-limit-reached` (feature 004). Invalid input is `validation-failed`; the rule codes
+  of feature 003 are listed in `ValidationRuleCode`.
+
+## address-in-use
+
+- **Type**: `/api/v2/problems/address-in-use`
+- **Status**: 409
+- **Meaning**: The address is already used by another object, so a mailbox cannot be created with
+  it or renamed to it. Addresses are compared after normalisation (trimmed, lower-cased, domain in
+  ASCII form). Nothing was changed.
+- **Extension members**: `address`, the normalised address, and `holder`, the kind of object that
+  holds it: `mailbox`, `resource`, `alias` or `temporaryAlias`.
+- **Client action**: Tell the user which kind of object uses the address. Do not retry.
+
+## mailbox-not-renamable
+
+- **Type**: `/api/v2/problems/mailbox-not-renamable`
+- **Status**: 409
+- **Meaning**: Feature 003. Only active and login-disabled mailboxes can be renamed, as in legacy.
+  The mailbox is inactive. Nothing was changed.
+- **Client action**: Offer to activate the mailbox first.
+
+## mailbox-rename-incomplete
+
+- **Type**: `/api/v2/problems/mailbox-rename-incomplete`
+- **Status**: 500
+- **Meaning**: Feature 003. A step of a mailbox rename failed, and undoing the steps already done
+  failed as well, so the mailbox is partly renamed. The audit record of the request holds the same
+  step list.
+- **Extension members**: `previousAddress`, `newAddress`, and `steps`, every rename step in order
+  with its outcome (`done`, `undone`, `notDone`, `failed`, `unknown`, `undoFailed`, `skipped`).
+  The steps are `sharedFolderPermissionsRemoval`, `sharedStoreMove`, `database`, `mailStoreMove`,
+  `webmailRename` and `sharedFolderPermissionsRecreation`.
+- **Client action**: Show the step list and ask an administrator to finish the steps marked
+  `undoFailed` or `notDone` by hand: the database rows name the address given by the `database`
+  step's outcome, the maildir is under `/var/vmail/<domain>/<local part>`, SOGo data is renamed
+  with `sogo-tool rename-user`, and shared-folder permissions are set with `doveadm acl set`. Do not
+  retry automatically.
+
+## outcome-unknown
+
+- **Type**: `/api/v2/problems/outcome-unknown`
+- **Status**: 504
+- **Meaning**: mailcow's container API did not answer within its timeout (`DOCKER_TIMEOUT`, 60
+  seconds), so the outcome of one step is unknown. For a mailbox deletion the step is
+  `mailStoreCleanup`: no record was removed, and retrying is safe because a maildir that is already
+  gone counts as moved. For a mailbox rename, every step known to be done was undone and the
+  unknown step is named.
+- **Extension members**: `step`, the step whose outcome is unknown, and for a rename `steps`, as in
+  `mailbox-rename-incomplete`.
+- **Client action**: Retry a deletion later. After a rename, read the mailbox under both addresses
+  and ask an administrator to check the named step before retrying.
+
+## mailbox-template-name-exists
+
+- **Type**: `/api/v2/problems/mailbox-template-name-exists`
+- **Status**: 409
+- **Meaning**: Feature 003. Another mailbox template already has this name, compared without
+  regard to letter case. Applies to creation and to renaming. Nothing was changed.
+- **Client action**: Ask for another name.
+
+## mailbox-template-protected
+
+- **Type**: `/api/v2/problems/mailbox-template-protected`
+- **Status**: 409
+- **Meaning**: Feature 003. The Default mailbox template cannot be renamed or deleted. Its values
+  can be changed. Nothing was changed.
+- **Client action**: Hide rename and delete for the Default template (`isDefault`).
+
+## account-exists
+
+- **Type**: `/api/v2/problems/account-exists`
+- **Status**: 409
+- **Meaning**: Feature 007. The username of a new or renamed administrator or domain administrator
+  is already used by an administrator or a domain administrator. Both roles share one namespace,
+  compared without regard to letter case (usernames are lower-cased). Nothing was changed.
+- **Client action**: Show the error on the username field and ask for another name.
+
+## last-active-admin
+
+- **Type**: `/api/v2/problems/last-active-admin`
+- **Status**: 409
+- **Meaning**: Feature 007. The deactivation or deletion would leave the server without an active
+  administrator. The check and the change are atomic, so concurrent requests cannot together
+  remove the last one. In a bulk action, the item that would leave none active is reported
+  `refused` with this problem and the other items are processed. Changes that do not reduce the
+  number of active administrators are never refused with it. Nothing was changed.
+- **Client action**: Activate or create another administrator first.
+
+## cannot-delete-own-account
+
+- **Type**: `/api/v2/problems/cannot-delete-own-account`
+- **Status**: 409
+- **Meaning**: Feature 007. An administrator tried to delete their own account, alone or in a bulk
+  action (the item is then reported `refused`). Self-deactivation is allowed while another active
+  administrator remains.
+- **Client action**: Ask another administrator to delete the account.
+
+## already-impersonating
+
+- **Type**: `/api/v2/problems/already-impersonating`
+- **Status**: 409
+- **Meaning**: Feature 007. The session is already impersonating an account. Impersonations cannot
+  be nested.
+- **Client action**: End the current impersonation (`DELETE /session/impersonation`) and start the
+  new one.
+
+## impersonation-ended
+
+- **Type**: `/api/v2/problems/impersonation-ended`
+- **Status**: 403
+- **Meaning**: Feature 007. The session's impersonation became invalid and ended automatically: the
+  impersonated account was deleted or renamed, it left the impersonator's scope, or the
+  impersonating domain administrator lost the `loginAs` flag. Any request of the session can
+  detect it. The request was **not** carried out. The session now acts as the impersonator again,
+  and its identifier and anti-forgery token were renewed. The automatic end is audited with its
+  reason. Ending the impersonation and signing out are never refused with this problem.
+- **Client action**: Call `GET /csrf-token` and `GET /me`, tell the user that the impersonation
+  ended, and do not resend the request: it was meant for the impersonated account.
+
+## not-allowed-while-impersonating
+
+- **Type**: `/api/v2/problems/not-allowed-while-impersonating`
+- **Status**: 403
+- **Meaning**: Feature 007. The session impersonates another account, and the operation is not
+  available during an impersonation: managing the account's sign-in credentials (password,
+  passkeys, second factors, recovery e-mail) or any webmail sign-in (on behalf of a user, or the
+  impersonated mailbox's own webmail hand-off). Nothing was changed.
+- **Client action**: Explain that the user must do this themselves, or end the impersonation first.
+
+## webmail-on-behalf-disabled
+
+- **Type**: `/api/v2/problems/webmail-on-behalf-disabled`
+- **Status**: 403
+- **Meaning**: Feature 007. Opening a mailbox's webmail on the user's behalf is disabled on this
+  server: the setting `ALLOW_ADMIN_EMAIL_LOGIN` (mailcow.conf, default `n`) is off. The identity of
+  administrators and domain administrators reports the setting as `webmailOnBehalfEnabled`.
+- **Client action**: Hide the webmail button. The operator can enable the setting.
+
+## account-inactive
+
+- **Type**: `/api/v2/problems/account-inactive`
+- **Status**: 409
+- **Meaning**: Feature 007. A single sign-on token was requested for an inactive domain
+  administrator account. No token was issued, because an inactive account can never sign in.
+- **Client action**: Activate the account first.
+- **Related errors of feature 007** (no type of their own): an account, impersonation target or
+  mailbox that does not exist, has the other role or lies outside the caller's scope is `404`
+  (`about:blank`). An outdated `If-Match` is `412` (`about:blank`); in a bulk action the item is
+  reported `outdated`. Administrator account writes with an API key are `session-required`; other
+  roles get `forbidden`. A failed single sign-on token sign-in is `sign-in-failed`. Invalid input is
+  `validation-failed` with the rule codes `invalidFormat` (`format: accountUsername` or
+  `domainName`), `reserved`, `tooLong`, `notFound`, `notEligible` (`kind: aliasDomain`, or `reason`
+  for a webmail sign-in), `immutable`, `unknownField`, `required`, `tooMany` (the bulk limit) and
+  feature 003's password rule codes.

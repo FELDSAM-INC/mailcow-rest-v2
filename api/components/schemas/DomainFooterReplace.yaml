@@ -1,0 +1,32 @@
+type: object
+description: |
+  A complete footer that replaces the stored one. Empty texts without exclusions mean that no footer
+  is added. Each text may be at most 1 MiB (1,048,576 bytes in UTF-8; `tooLong` with `max` and
+  `unit: bytes`). Duplicate exclusions are stored once.
+
+  Each entry of `excludedAddresses` must be the address of a mailbox or alias in the domain or in
+  one of its alias domains, and each entry of `excludedAliasDomains` the name of one of the domain's
+  alias domains. Any other entry is refused (`notFound`, keyed by its position, for example
+  `excludedAddresses.2`), and the stored footer stays unchanged.
+required: [html, plain, skipReplies]
+properties:
+  html:
+    type: string
+    maxLength: 1048576
+  plain:
+    type: string
+    maxLength: 1048576
+  skipReplies:
+    type: boolean
+  excludedAddresses:
+    type: array
+    default: []
+    items:
+      type: string
+      maxLength: 255
+  excludedAliasDomains:
+    type: array
+    default: []
+    items:
+      type: string
+      maxLength: 255

@@ -1,0 +1,16 @@
+description: |
+  Problem of type `/api/v2/problems/attribute-not-permitted` (status `403`): the request would
+  change attributes that the caller's role or permission flags do not allow it to change.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [attributes]
+    properties:
+      attributes:
+        type: array
+        minItems: 1
+        description: Names of the attributes that may not be changed, as in the request body.
+        items:
+          type: string
+        examples:
+          - [maxMailboxes, active]

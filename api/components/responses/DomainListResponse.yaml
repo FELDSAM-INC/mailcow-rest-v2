@@ -1,0 +1,13 @@
+description: Domains matching the filters, each with its usage figures and version tag.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/Domain.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

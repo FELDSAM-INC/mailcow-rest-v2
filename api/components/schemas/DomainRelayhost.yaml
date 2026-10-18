@@ -1,0 +1,14 @@
+type: object
+description: |
+  The relayhost assigned to a domain (mailcow `domain.relayhost`, an ID in `relayhosts`). Read-only
+  in this feature; relayhosts and their assignment are managed by the routing feature.
+required: [id, hostname]
+properties:
+  id:
+    type: integer
+    minimum: 1
+  hostname:
+    description: Host name of the relayhost, `null` when the referenced relayhost no longer exists.
+    oneOf:
+      - type: string
+      - type: 'null'

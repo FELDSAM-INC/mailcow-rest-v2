@@ -1,0 +1,12 @@
+name: domain
+in: path
+required: true
+description: |
+  Name of a domain, in ASCII or Unicode form and any letter case (it is trimmed, lower-cased and
+  converted to ASCII with UTS #46). A name that does not exist, that lies outside the caller's
+  scope, or that belongs to an alias domain answers `404`.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 255
+  examples: [example.org]

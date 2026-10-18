@@ -1,0 +1,15 @@
+description: |
+  The name is already used by a domain or an alias domain (type `/api/v2/problems/domain-exists`).
+  Nothing was created.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'
+    examples:
+      domainExists:
+        value:
+          type: /api/v2/problems/domain-exists
+          title: Domain exists
+          status: 409
+          detail: example.org already exists as a domain or alias domain.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736

@@ -1,0 +1,8 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `name` (alphabetical, ignoring letter case) with `order=asc`.
+schema:
+  type: string
+  enum: [name, domainCount]
+  default: name

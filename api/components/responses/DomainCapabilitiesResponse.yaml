@@ -1,0 +1,9 @@
+description: The domain capabilities. `dkim` is present for administrators only.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/DomainCapabilities.yaml'

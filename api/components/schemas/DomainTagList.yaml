@@ -1,0 +1,11 @@
+type: array
+description: |
+  Tags of a domain, sorted alphabetically without regard to letter case. Tags that differ only in
+  letter case are one tag. Each tag is trimmed, 1 to 255 characters long. A request may not leave a
+  domain with more tags than the server's tagging limit (`DomainCapabilities.taggingLimit`, 25 by
+  default); a domain that already has more can only shrink. Sending tags replaces the whole set.
+items:
+  type: string
+  minLength: 1
+  maxLength: 255
+  examples: [customer-a]

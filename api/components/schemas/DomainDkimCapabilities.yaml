@@ -1,0 +1,21 @@
+type: object
+description: DKIM defaults for the domain and template forms. Returned to administrators only.
+required: [defaultSelector, defaultKeySize, allowedKeySizes, dnsPublicationEnabled]
+properties:
+  defaultSelector:
+    type: string
+    description: Server setting, `dkim` upstream (`feldhost` on the FeldHost deployment).
+    examples: [dkim]
+  defaultKeySize:
+    type: integer
+    description: Built-in default key size in bits.
+    examples: [2048]
+  allowedKeySizes:
+    type: array
+    items:
+      type: integer
+    examples:
+      - [1024, 2048, 3072, 4096]
+  dnsPublicationEnabled:
+    type: boolean
+    description: Whether new DKIM keys are published to an ISPConfig DNS server (FeldHost setting, off by default).

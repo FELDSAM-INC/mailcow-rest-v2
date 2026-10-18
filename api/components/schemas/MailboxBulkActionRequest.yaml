@@ -11,7 +11,7 @@ description: |
   The whole request is refused (`403`) when the caller may never apply the action: a mailbox user
   (`forbidden`), a read-only key (`insufficient-key-scope`), or a domain administrator without the
   `protocolAccess` flag for `allowProtocol` and `disallowProtocol` (`permission-flag-required`
-  with `flag: protocolAccess`).
+  with `requiredFlags: [protocolAccess]`).
 required: [action, targets]
 properties:
   action:

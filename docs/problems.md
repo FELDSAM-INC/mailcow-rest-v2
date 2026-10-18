@@ -376,8 +376,8 @@ extension members.
   address are all `404` (`about:blank`). An outdated `If-Match` is `412` (`about:blank`); in a bulk
   action the item is reported `outdated`. A mailbox user gets `forbidden` for every mailbox
   operation, and a domain administrator gets it for template writes. A protocol bulk action by a
-  domain administrator without the `protocolAccess` flag gets `permission-flag-required` (`flag:
-  protocolAccess`). A domain administrator choosing a setting their flags do not
+  domain administrator without the `protocolAccess` flag gets `permission-flag-required` (`requiredFlags:
+  [protocolAccess]`). A domain administrator choosing a setting their flags do not
   allow gets `attribute-not-permitted`, which for mailboxes also carries `requiredFlags` (refused
   member path → `PermissionFlags` name). A shared store, mail store or webmail outage is
   `temporary-failure`, which for mailboxes also carries `dependency` (`sharedStore`, `mailStore` or
@@ -913,7 +913,7 @@ response header `Audit-Recorded: false`.
   (`about:blank`). An outdated `If-Match` is `412` (`about:blank`); in a bulk action the item is
   reported `outdated`. An address that is taken is `address-in-use` (extension members `address`
   and `holder`). A domain administrator creating an alias domain without `aliasDomains` gets
-  `permission-flag-required` (`flag: aliasDomains`); adding external alias destinations without
+  `permission-flag-required` (`requiredFlags: [aliasDomains]`); adding external alias destinations without
   `aliasExternalGoto`, giving an initial rate limit without `ratelimit`, or changing external
   sender addresses without `extendSenderAcl` gets `attribute-not-permitted` with `attributes` and
   the `requiredFlags` map (field → flag). External destinations that the server disables for every

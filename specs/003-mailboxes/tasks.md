@@ -238,7 +238,7 @@ is complete.**
     `MailboxTemplateNameExists`, `MailboxTemplateProtected`, and `DomainAliasLimitReached`
     (feature 004's contract type, implemented here first because 004 comes later; 004 reuses the
     case), and `PermissionFlagRequired` (`docs/conventions.md` "Permission refusals"; feature
-    009's contract type, implemented here first) with the extension `flag`;
+    009's contract type, implemented here first) with the extension `requiredFlags`;
   - `app/Clients/SharedStore/SharedStoreUnavailable.php` rendering (002, `bootstrap/app.php`): add
     the extension `dependency: sharedStore`; create
     `app/Exceptions/MailboxDependencyUnavailable.php` (`dependency`, optional `steps`, rendered as
@@ -723,7 +723,7 @@ results, rows and audit records (spec US7).
   - AS-2 a domain administrator's selection of three own and two foreign mailboxes → 3 `done`,
     2 `notFound`, the foreign ones unchanged;
   - AS-3 a domain administrator without `protocolAccess` and `disallowProtocol` → `403
-    permission-flag-required` with `flag: protocolAccess`,
+    permission-flag-required` with `requiredFlags: [protocolAccess]`,
     nothing changed, no audit record per item;
   - AS-4 101 targets → `422 tooMany {max: 100}` on `targets`; `protocol` missing for a protocol
     action or present for another action → `422`;

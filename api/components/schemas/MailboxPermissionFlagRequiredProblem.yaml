@@ -6,14 +6,13 @@ description: |
 allOf:
   - $ref: './Problem.yaml'
   - type: object
-    required: [flag]
+    required: [requiredFlags]
     properties:
-      flag:
-        type: string
-        description: Name of the missing flag, as in `PermissionFlags`.
-        examples: [protocolAccess]
       requiredFlags:
         type: array
-        description: The same flag as a one-element list, as `docs/problems.md` documents the type.
+        minItems: 1
+        description: Flag names as in `PermissionFlags`; any one of them allows the operation.
         items:
           type: string
+        examples:
+          - [protocolAccess]

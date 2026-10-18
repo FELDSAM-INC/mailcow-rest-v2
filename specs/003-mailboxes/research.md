@@ -250,7 +250,7 @@ only in display texts (spec, parity section).
   appPasswds, pushover, spamPolicy}` → the flag of the same name. All refused members are
   collected into one `403 attribute-not-permitted` with `attributes` (paths) and `requiredFlags`
   (path → flag). Bulk protocol actions need `protocolAccess` as a whole (`403 permission-flag-required` with
-  `flag: protocolAccess`, `docs/conventions.md` "Permission refusals"); a role that may never use
+  `requiredFlags: [protocolAccess]`, `docs/conventions.md` "Permission refusals"); a role that may never use
   an operation gets `403 forbidden`.
   - Order of checks, as 002 D11: role (`403 forbidden` before any lookup), scope (`404`), shape
     (`422`), version under the row lock (`412`), permissions (`403 attribute-not-permitted`),
@@ -560,7 +560,7 @@ only in display texts (spec, parity section).
 
 - **Decision**: `App\Services\Mailboxes\MailboxBulkActions`, as 002 D20: the request is refused as
   a whole only for the role, the key scope, a domain administrator without `protocolAccess` for a
-  protocol action (`403 permission-flag-required`, `flag: protocolAccess`) and for more targets than the bulk limit (`422 tooMany`).
+  protocol action (`403 permission-flag-required`, `requiredFlags: [protocolAccess]`) and for more targets than the bulk limit (`422 tooMany`).
   Targets are normalised (R7) and deduplicated in request order (the first spelling is the result
   `id`); an address that does not normalise gives `notFound`. Each target runs `MailboxUpdater`
   (`status` or one `protocolAccess` member) or `MailboxDeleter` with its own transaction, version

@@ -62,7 +62,8 @@
     FR-028);
   - the overview and the password rules for self-service are in scope (FR-014, FR-069).
 - Iteration 3 (alignment with `docs/conventions.md`, committed while this spec was written):
-  - list pages have a maximum of 100 (FR-037 and the lists that refer to it);
+  - list pages follow the conventions' page sizes, default 25 and maximum 1,000 (FR-037 and the
+    lists that refer to it);
   - the bulk TLS change follows the bulk rules: refused, outdated and per-item version tags
     (FR-060);
   - Pushover credentials say only whether they are set (FR-054);

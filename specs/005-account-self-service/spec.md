@@ -868,7 +868,7 @@ target and scan every record for secrets.
 #### App passwords
 
 - **FR-037**: Clients MUST be able to list the app passwords of a mailbox in their scope with
-  pagination (default 25, maximum 100, as the cross-feature conventions set), sorting by name,
+  pagination (default 25, maximum 1,000, as the cross-feature conventions set), sorting by name,
   creation time, modification time or
   active state (default name, ascending), a filter on the active state and a search on the name, and
   to inspect one. An app password MUST be represented with its identifier, name, mailbox, allowed
@@ -1374,7 +1374,7 @@ this feature:
 - These defaults can be changed by the operator: the reset token lifetime (15 minutes) and limit
   (3); the reset page address; the reset throttling (10 per 15 minutes); the TOTP issuer name
   (`mailcow UI`); the enrolment lifetimes (10 minutes for TOTP, 5 minutes for WebAuthn); the country
-  lookup (on); the bulk limit (100); the page sizes (25, maximum 100).
+  lookup (on); the bulk limit (100); the page sizes (25, maximum 1,000).
 - Own passwords are chosen by the user, and the web app may suggest one generated in the browser, as
   legacy does. The API generates only app passwords, and only when the client gives none.
 - **Out of scope**:

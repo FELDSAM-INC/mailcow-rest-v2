@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>PayloadContent</key>
+    <array>
+      <dict>
+        <key>EmailAccountDescription</key>
+        <string>anna@example.org</string>
+        <key>EmailAccountType</key>
+        <string>EmailTypeIMAP</string>
+        <key>EmailAccountName</key>
+        <string>Anna &amp; &lt;B&gt;</string>
+        <key>EmailAddress</key>
+        <string>anna@example.org</string>
+        <key>IncomingMailServerAuthentication</key>
+        <string>EmailAuthPassword</string>
+        <key>IncomingMailServerHostName</key>
+        <string>mail.example.org</string>
+        <key>IncomingMailServerPortNumber</key>
+        <integer>993</integer>
+        <key>IncomingMailServerUseSSL</key>
+        <true/>
+        <key>IncomingMailServerUsername</key>
+        <string>anna@example.org</string>
+                <key>OutgoingMailServerAuthentication</key>
+        <string>EmailAuthPassword</string>
+        <key>OutgoingMailServerHostName</key>
+        <string>mail.example.org</string>
+        <key>OutgoingMailServerPortNumber</key>
+        <integer>465</integer>
+        <key>OutgoingMailServerUseSSL</key>
+        <true/>
+        <key>OutgoingMailServerUsername</key>
+        <string>anna@example.org</string>
+        <key>OutgoingPasswordSameAsIncomingPassword</key>
+        <true/>
+        <key>PayloadDescription</key>
+        <string>Configures email account.</string>
+        <key>PayloadDisplayName</key>
+        <string>IMAP Account (anna@example.org)</string>
+        <key>PayloadIdentifier</key>
+        <string>org.example.anna.appleprofile.mailcowUI.email</string>
+        <key>PayloadOrganization</key>
+        <string></string>
+        <key>PayloadType</key>
+        <string>com.apple.mail.managed</string>
+        <key>PayloadUUID</key>
+        <string>00000000-0000-4000-8000-000000000000</string>
+        <key>PayloadVersion</key>
+        <integer>1</integer>
+        <key>PreventAppSheet</key>
+        <false/>
+        <key>PreventMove</key>
+        <false/>
+        <key>SMIMESigningUserOverrideable</key>
+        <true/>
+        <key>SMIMESigningCertificateUUIDUserOverrideable</key>
+        <true/>
+        <key>SMIMEEncryptByDefaultUserOverrideable</key>
+        <true/>
+        <key>SMIMEEncryptionCertificateUUIDUserOverrideable</key>
+        <true/>
+        <key>SMIMEEnableEncryptionPerMessageSwitch</key>
+        <true/>
+      </dict>
+          </array>
+    <key>PayloadDescription</key>
+    <string>IMAP</string>
+    <key>PayloadDisplayName</key>
+    <string>anna@example.org</string>
+    <key>PayloadIdentifier</key>
+    <string>org.example.anna.appleprofile.mailcowUI</string>
+    <key>PayloadOrganization</key>
+    <string>mailcow UI</string>
+    <key>PayloadRemovalDisallowed</key>
+    <false/>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>00000000-0000-4000-8000-000000000000</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+  </dict>
+</plist>

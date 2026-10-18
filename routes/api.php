@@ -45,6 +45,7 @@ use App\Http\Controllers\Api\V2\Fail2BanRulesController;
 use App\Http\Controllers\Api\V2\Fail2BanRulesResetController;
 use App\Http\Controllers\Api\V2\Fail2BanSettingsController;
 use App\Http\Controllers\Api\V2\ForwardingHostController;
+use App\Http\Controllers\Api\V2\GroupwareResetController;
 use App\Http\Controllers\Api\V2\HostOverviewController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\IdentityProviderCapabilitiesController;
@@ -77,6 +78,8 @@ use App\Http\Controllers\Api\V2\Oauth2ClientController;
 use App\Http\Controllers\Api\V2\Oauth2ClientSecretRegenerationController;
 use App\Http\Controllers\Api\V2\Oauth2ClientTokenRevocationController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
+use App\Http\Controllers\Api\V2\OwnAppleProfileController;
+use App\Http\Controllers\Api\V2\OwnClientConfigurationController;
 use App\Http\Controllers\Api\V2\OwnMailboxOverviewController;
 use App\Http\Controllers\Api\V2\OwnPasswordController;
 use App\Http\Controllers\Api\V2\OwnPasswordPolicyController;
@@ -831,6 +834,8 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('policyDomain', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'mtaStsPolicyUpdate', 'target' => 'mtaStsPolicy'])
             ->name('mta-sts-policies.update');
+    });
+
     // The signed-in account's own password and second factors (feature 005 US1, US2): sessions
     // only, every role. A restricted session may resolve its forced actions here (research R5).
     Route::middleware(['restv2.own', 'restv2.auth:session'])->group(function (): void {
@@ -900,6 +905,16 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->middleware(['restv2.csrf', 'restv2.pending'])
             ->defaults('restv2.audit', ['event' => 'webmailHandOff', 'target' => 'webmailHandOff'])
             ->name('webmail-handoff.store');
+        Route::get('/me/mailbox/client-configuration', [OwnClientConfigurationController::class, 'show'])
+            ->middleware('restv2.pending')
+            ->name('own-client-configuration.show');
+        Route::get('/me/mailbox/apple-profile', [OwnAppleProfileController::class, 'show'])
+            ->middleware('restv2.pending')
+            ->name('own-apple-profile.show');
+        Route::post('/me/mailbox/apple-profile', [OwnAppleProfileController::class, 'store'])
+            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->defaults('restv2.audit', ['event' => 'appPasswordCreation', 'target' => 'appPassword'])
+            ->name('own-apple-profile.store');
     });
 
     // Self-service objects of the mailboxes in the caller's scope (feature 005 US4, US6–US10):
@@ -975,6 +990,14 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where(['mailbox' => '[^/]+', 'sieveFilterId' => '[1-9][0-9]{0,9}'])
             ->defaults('restv2.audit', ['event' => 'sieveFilterDeletion', 'target' => 'sieveFilter'])
             ->name('mailbox-sieve-filters.destroy');
+        Route::delete('/mailboxes/{mailbox}/activesync-cache', [GroupwareResetController::class, 'activeSyncCache'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'activeSyncCacheReset', 'target' => 'groupwareData'])
+            ->name('activesync-cache.destroy');
+        Route::delete('/mailboxes/{mailbox}/groupware-profile', [GroupwareResetController::class, 'profile'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'groupwareProfileReset', 'target' => 'groupwareData'])
+            ->name('groupware-profile.destroy');
         Route::delete('/mailboxes/{mailbox}/recent-logins', [RecentLoginController::class, 'destroy'])
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'recentLoginsClear', 'target' => 'recentLogins'])

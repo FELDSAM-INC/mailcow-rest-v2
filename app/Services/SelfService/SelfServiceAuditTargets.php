@@ -90,7 +90,8 @@ final class SelfServiceAuditTargets
         }
 
         $raw = $request->route('mailbox');
-        $mailbox = is_string($raw) && $raw !== '' ? self::address($raw) : null;
+        // Own-mailbox routes (the Apple profile's app password) name no mailbox: the caller's own.
+        $mailbox = is_string($raw) && $raw !== '' ? self::address($raw) : RequestContext::principal($request)?->username;
 
         $result = ['target' => ['type' => $type, 'id' => $mailbox, 'name' => self::label($type, $request, $mailbox)]];
 

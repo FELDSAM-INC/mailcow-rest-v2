@@ -23,6 +23,9 @@ class QrCodeProviderTest extends TestCase
         $svg = (string) base64_decode(substr($uri, strlen('data:image/svg+xml;base64,')), true);
         $this->assertStringStartsWith('<svg', $svg);
         $this->assertStringContainsString('</svg>', $svg);
+        // G26: the documented element subset only.
+        preg_match_all('/<([a-zA-Z]+)/', $svg, $elements);
+        $this->assertSame(['svg', 'rect', 'g', 'path'], array_values(array_unique($elements[1])));
         $this->assertSame('image/svg+xml', (new QrCodeProvider)->getMimeType());
     }
 }

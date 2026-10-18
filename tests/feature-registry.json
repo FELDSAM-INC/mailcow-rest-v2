@@ -406,11 +406,5 @@
             ]
         }
     },
-    "pendingOperations": [
-        "getOwnClientConfiguration",
-        "getOwnAppleProfile",
-        "createOwnAppleProfileWithAppPassword",
-        "resetActiveSyncCache",
-        "resetGroupwareProfile"
-    ]
+    "pendingOperations": []
 }

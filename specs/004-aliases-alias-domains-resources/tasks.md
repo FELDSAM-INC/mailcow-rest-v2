@@ -193,7 +193,7 @@ with the expected values.
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T023 [P] [US1] Write `tests/Feature/Aliases/ListAliasesTest.php` (`listAliases`):
+- [X] T023 [P] [US1] Write `tests/Feature/Aliases/ListAliasesTest.php` (`listAliases`):
   - AS1: 60 aliases and 40 mailboxes → 25 newest by `id desc`, `meta.total = 60`, no own-alias row;
   - AS2: `info@example.net` in alias domain `example.net` of `example.org` shows `domain`
     `example.net`, `inAliasDomain: true`, `primaryDomain` `example.org`; included by
@@ -210,11 +210,11 @@ with the expected values.
   - an orphaned alias is listed for an administrator with `orphaned: true`;
   - every entry's `etag` equals the `ETag` of `getAlias` for it;
   - invalid `sort`, `limit=1001`, a 256-character `q` → `422` with 001's rule codes.
-- [ ] T024 [P] [US1] Write `tests/Feature/Aliases/GetAliasTest.php` (`getAlias`): `200` with the full
+- [X] T024 [P] [US1] Write `tests/Feature/Aliases/GetAliasTest.php` (`getAlias`): `200` with the full
   representation (UTC times, `modifiedAt: null` when never modified, comments `""` for `NULL`,
   `active: true` for stored `2`) and `ETag`; a mailbox's own-alias row id → `404 about:blank`; an
   unknown id → `404`.
-- [ ] T025 [P] [US1] Write `tests/Feature/Aliases/AliasReadAuthorizationTest.php` (FR-001–FR-005,
+- [X] T025 [P] [US1] Write `tests/Feature/Aliases/AliasReadAuthorizationTest.php` (FR-001–FR-005,
   SC-004) for `listAliases` and `getAlias` as admin session, admin read-write key, admin read-only
   key, domain-admin session, domain-admin read-only key and mailbox user: AS4 a domain administrator
   of two of ten domains lists only aliases of those domains and their alias domains (an active
@@ -224,19 +224,19 @@ with the expected values.
 
 ### Implementation for User Story 1
 
-- [ ] T026 [P] [US1] Create `app/Services/Aliases/AliasQuery.php`: base query with `notOwnAlias`, the
+- [X] T026 [P] [US1] Create `app/Services/Aliases/AliasQuery.php`: base query with `notOwnAlias`, the
   scope of R19 through 002's `DomainScope` (alias domains of the caller's domains included), the
   derived columns by left joins on `alias_domain` and `domain`, the filters, the search with
   `UnicodeSearch`, and the sort map of `api/components/parameters/AliasSort.yaml`, through 001's
   `ListQuery`.
-- [ ] T027 [P] [US1] Create `app/Http/Requests/Api/V2/ListAliasesRequest.php` (filters normalised like
+- [X] T027 [P] [US1] Create `app/Http/Requests/Api/V2/ListAliasesRequest.php` (filters normalised like
   stored data; `address`, `domain`, `primaryDomain` up to 100 values, `destination` up to 20, `kind`
   and `destinationType` from their enums, booleans) and `app/Http/Resources/Api/V2/AliasResource.php`
   (contract `Alias`, readable forms with `DomainName::toUnicode()`, `etag`).
-- [ ] T028 [US1] Create `app/Policies/AliasPolicy.php` (administrators and domain administrators;
+- [X] T028 [US1] Create `app/Policies/AliasPolicy.php` (administrators and domain administrators;
   mailbox users → `forbidden`; objects outside the scope resolve to `404` in the lookup) and
   `app/Http/Controllers/Api/V2/AliasController.php` with `index` and `show` (`ETag` header).
-- [ ] T029 [US1] Register in `routes/api.php` `GET /aliases` and `GET /aliases/{aliasId}`
+- [X] T029 [US1] Register in `routes/api.php` `GET /aliases` and `GET /aliases/{aliasId}`
   (`restv2.auth:authenticated`, `restv2.pending:enforce`), `{aliasId}` constrained to
   `[1-9][0-9]{0,9}`, after the literal `/aliases/bulk-actions` route (registered in US6). Makes
   T023–T025 pass.
@@ -853,3 +853,11 @@ what exists map as listed.
 - **T022**: the per-event detail whitelists live in `AuditEventType::detailKeys()` (001's design), not
   in `AuditLogger`. Creation records carry the stored attributes in `values`, as the creation records
   of 002 and 003 do, instead of `changes`. `permission-flag-required` existed (002).
+- **T026, T028**: the scope of aliases is `App\Services\Aliases\AliasScope` (002's `DomainScope`
+  covers `domain` rows only; aliases also reach the alias domains of the caller's domains), and the
+  representation is built by `AliasPresenter`, which `AliasResource` wraps (002's
+  `DomainPresenter`/`DomainResource` split). `AliasPolicy` (registered for the `Alias` model) gates
+  every operation of feature 004, alias domains, resources and sender settings included.
+- **T026**: ties are broken by the identifier in the requested direction (001's `ListQuery`
+  convention); `active`, `senderAllowed`, `groupwareVisible` and `internal` filters treat any
+  non-zero flag as `true`, as the representation does.

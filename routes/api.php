@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V2\AliasController;
 use App\Http\Controllers\Api\V2\ApiDocsController;
 use App\Http\Controllers\Api\V2\ApiKeyController;
 use App\Http\Controllers\Api\V2\ApiKeyOwnerCandidateController;
@@ -220,6 +221,15 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'mailboxUpdate', 'target' => 'mailbox'])
             ->name('mailboxes.update');
+    });
+
+    // Feature 004: aliases, alias domains, resources and sender settings. Literal paths
+    // (bulk-actions, capabilities) come before the parameterised ones; `{aliasId}` is digits only.
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/aliases', [AliasController::class, 'index'])->name('aliases.index');
+        Route::get('/aliases/{aliasId}', [AliasController::class, 'show'])
+            ->where('aliasId', '[1-9][0-9]{0,9}')
+            ->name('aliases.show');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

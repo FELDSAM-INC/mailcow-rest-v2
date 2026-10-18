@@ -15,10 +15,12 @@ use App\Clients\Memcached\MemcachedFlusher;
 use App\Clients\Memcached\SocketMemcachedFlusher;
 use App\Clients\Yubico\HttpYubicoOtpVerifier;
 use App\Clients\Yubico\YubicoOtpVerifier;
+use App\Models\Mailcow\Alias;
 use App\Models\Mailcow\Domain;
 use App\Models\Mailcow\DomainTemplate;
 use App\Models\Mailcow\Mailbox;
 use App\Models\Mailcow\MailboxTemplate;
+use App\Policies\AliasPolicy;
 use App\Policies\DomainPolicy;
 use App\Policies\DomainTemplatePolicy;
 use App\Policies\MailboxPolicy;
@@ -79,6 +81,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(DomainTemplate::class, DomainTemplatePolicy::class);
         Gate::policy(Mailbox::class, MailboxPolicy::class);
         Gate::policy(MailboxTemplate::class, MailboxTemplatePolicy::class);
+        Gate::policy(Alias::class, AliasPolicy::class);
 
         // Refusal auditing: target resolvers of the features whose routes declare `restv2.audit`.
         DomainAuditTargets::register($this->app->make(RefusalAuditor::class));

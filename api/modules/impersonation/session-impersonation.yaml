@@ -1,0 +1,103 @@
+get:
+  operationId: getImpersonation
+  tags: [Impersonation]
+  summary: Get the session's impersonation
+  description: |
+    Returns the impersonation of the caller's session: the impersonator, the impersonated account
+    and the start time. Without an active impersonation the answer is `404`. Available in
+    restricted sessions. Requests with an API key are refused with `session-required`.
+  security:
+    - sessionCookie: []
+  responses:
+    '200':
+      $ref: '../../components/responses/ImpersonationResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: startImpersonation
+  tags: [Impersonation]
+  summary: Start impersonating an account
+  description: |
+    Makes the session act as another account (legacy "login as"), without signing in again.
+
+    - Administrators impersonate any mailbox user and any domain administrator.
+    - Domain administrators with the `loginAs` flag impersonate the mailbox users of domains
+      assigned to them through an active assignment.
+    - Nobody impersonates an administrator, and a domain administrator never impersonates another
+      domain administrator (`403`).
+    - Inactive targets and mailboxes in inactive domains are allowed, as in legacy. Resources,
+      unknown accounts and mailboxes outside a domain administrator's domains answer `404`.
+
+    Only a full browser session may start one: API keys are refused with `session-required`, a
+    restricted session with `pending-action-required`, and a session that is already
+    impersonating with `409 already-impersonating`.
+
+    While impersonating, the session acts with the target's role and scope. The permission flags
+    are those legacy grants: an administrator gets every flag; a domain administrator gets every
+    mailbox user flag, except `syncjobs`, `quarantine`, `appPasswds`, `pushover` and `spamPolicy`,
+    and every domain administrator flag, which take its own current values. The target's forced
+    actions do not restrict the session, the impersonator's preferences stay in effect, and
+    managing the target's sign-in credentials or opening any webmail is refused with
+    `not-allowed-while-impersonating`. Every audit record names the impersonator as the actor and
+    the target as the impersonated account.
+
+    The session identifier and the anti-forgery token are renewed; the response carries the new
+    token and the new identity. The start is audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/ImpersonationStartRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/ImpersonationStartedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/ImpersonationConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: endImpersonation
+  tags: [Impersonation]
+  summary: End the impersonation
+  description: |
+    Returns the session to the impersonator, with the impersonator's original sign-in method. The
+    session identifier and the anti-forgery token are renewed: fetch the new token with
+    `GET /csrf-token` and re-read `GET /me`. Audited. Without an active impersonation the request
+    succeeds and changes nothing. Available in restricted sessions.
+
+    Signing out (`DELETE /session`) during an impersonation ends the whole session, not only the
+    impersonation. An impersonation also ends automatically when the target is deleted or renamed,
+    leaves the impersonator's scope, or an impersonating domain administrator loses `loginAs`: the
+    next request is then refused with `impersonation-ended` and not carried out.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -1,5 +1,20 @@
 type: string
 description: |
   How the caller authenticated: `password` (no second factor active), `passwordAndSecondFactor`,
-  `passkey` (usernameless passkey sign-in) or `apiKey`.
-enum: [password, passwordAndSecondFactor, passkey, apiKey]
+  `passkey` (usernameless passkey sign-in) or `apiKey`. Feature 007 adds `ssoToken` (a domain
+  administrator's single sign-on token). Feature 012 adds `singleSignOn` (a mailbox user signed
+  in through a Keycloak or generic OIDC provider), `directoryPassword` and
+  `directoryPasswordAndSecondFactor` (password verified by the LDAP directory), and
+  `providerPassword` and `providerPasswordAndSecondFactor` (password verified against Keycloak
+  through the mailpassword flow). Clients must tolerate values added later.
+enum:
+  - password
+  - passwordAndSecondFactor
+  - passkey
+  - apiKey
+  - ssoToken
+  - singleSignOn
+  - directoryPassword
+  - directoryPasswordAndSecondFactor
+  - providerPassword
+  - providerPasswordAndSecondFactor

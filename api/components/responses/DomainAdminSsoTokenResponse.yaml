@@ -1,0 +1,16 @@
+description: The token was issued. It is shown only in this response.
+headers:
+  Cache-Control:
+    description: Always `no-store`, because the response contains a credential.
+    required: true
+    schema:
+      type: string
+      const: no-store
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/DomainAdminSsoToken.yaml'

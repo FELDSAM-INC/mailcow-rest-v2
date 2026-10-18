@@ -1,0 +1,103 @@
+parameters:
+  - $ref: '../../components/parameters/DomainAdminUsername.yaml'
+get:
+  operationId: getDomainAdmin
+  tags: [Domain administrators]
+  summary: Get a domain administrator
+  description: |
+    Returns one domain administrator account with its domains, its 19 permission flags and its
+    version tag. Administrators only, with a session or a key (read-only keys included). A domain
+    administrator reads its own flags through `GET /me`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainAdminResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateDomainAdmin
+  tags: [Domain administrators]
+  summary: Change a domain administrator
+  description: |
+    Changes the username, password, status, forced flags, domains or permission flags of a domain
+    administrator with a JSON Merge Patch (see `DomainAdminPatch` for the rules). Administrators
+    only, with a session or a read-write key owned by an administrator. No domain administrator can
+    change any permission flag, its own or another's.
+
+    Changes apply to the account's next request, of its sessions, its API keys and its
+    impersonations. Send the version tag in `If-Match` (recommended for interactive clients): a
+    stale tag answers `412` and changes nothing, also when the change was made in the legacy UI or
+    `/api/v1`. A patch that changes nothing returns the account unchanged and is not audited. Every
+    change is audited with its old and new values, the domains added and removed and the flags
+    changed; a password only as changed.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/DomainAdminPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainAdminResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/DomainAdminConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteDomainAdmin
+  tags: [Domain administrators]
+  summary: Delete a domain administrator
+  description: |
+    Deletes a domain administrator account, with or without assignments. Administrators only, with
+    a session or a read-write key owned by an administrator.
+
+    The deletion removes, as legacy mailcow does, the account, its assignments, its permission
+    record, its second factors and its passkeys. It also removes its unused single sign-on tokens,
+    revokes its API keys permanently (revocation reason `ownerDeleted`, revoked by the caller),
+    ends its sessions and every impersonation of it, and removes its preferences. Audit records are
+    kept. A later account with the same username inherits nothing.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

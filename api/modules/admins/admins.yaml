@@ -1,0 +1,82 @@
+get:
+  operationId: listAdmins
+  tags: [Administrators]
+  summary: List administrators
+  description: |
+    Lists the administrator accounts, each with its full representation and version tag.
+    Administrators only: a signed-in administrator or a key owned by an administrator, read-only
+    keys included. `q` searches the username (case-insensitive substring).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/AdminSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: active
+      in: query
+      required: false
+      description: Only active (`true`) or inactive (`false`) accounts.
+      schema:
+        type: boolean
+    - name: secondFactorStatus
+      in: query
+      required: false
+      schema:
+        $ref: '../../components/schemas/AccountSecondFactorStatus.yaml'
+    - name: forcePasswordChange
+      in: query
+      required: false
+      schema:
+        type: boolean
+    - name: forceSecondFactorSetup
+      in: query
+      required: false
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/AdminListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createAdmin
+  tags: [Administrators]
+  summary: Create an administrator
+  description: |
+    Creates an active administrator (unless `active: false` is sent) without forced actions
+    (unless sent). Only a signed-in administrator may create administrators: requests
+    authenticated by a key are refused with `session-required`, so that a leaked key cannot create
+    lasting administrator credentials. Audited without the password.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/AdminCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/AdminCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/AdminConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

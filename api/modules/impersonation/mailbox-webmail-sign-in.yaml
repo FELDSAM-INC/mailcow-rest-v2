@@ -1,0 +1,35 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+post:
+  operationId: createWebmailSignInOnBehalf
+  tags: [Impersonation]
+  summary: Open a mailbox's webmail on the user's behalf
+  description: |
+    Grants the requesting browser a single-use webmail sign-in for a mailbox, so that a support
+    administrator sees what the user sees (legacy "SOGo" button). It uses the webmail hand-off of
+    feature 005 and records the legacy recent-login entry for webmail single sign-on (service `SSO`)
+    for the mailbox. The caller's session in this API is not changed.
+
+    Requires the server setting `ALLOW_ADMIN_EMAIL_LOGIN` (default off; otherwise
+    `webmail-on-behalf-disabled`). Administrators may open any mailbox; domain administrators with
+    the `loginAs` flag the mailboxes of their domains. Mailbox users are refused. Only a full
+    browser session may do this: API keys are refused with `session-required`, and a session that
+    is impersonating another account with `not-allowed-while-impersonating`, whatever the target.
+    A mailbox that cannot use webmail (inactive, login disabled, in an inactive domain, or webmail
+    disabled on the server) is refused with `notEligible` on `mailbox`. Audited, also when refused.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxWebmailSignInResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/MailboxWebmailSignInForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

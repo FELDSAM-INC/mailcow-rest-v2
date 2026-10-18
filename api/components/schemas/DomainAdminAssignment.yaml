@@ -1,0 +1,27 @@
+type: object
+description: |
+  One domain assigned to a domain administrator (mailcow table `domain_admins`). Only active
+  assignments of existing primary domains grant access. Assignments to names that are not an
+  existing primary domain (an alias domain name, a removed domain or legacy's `ALL`) are shown with
+  `domainExists: false`, grant nothing in this API and are dropped the next time the domain set is
+  saved.
+required: [domain, domainUnicode, active, createdAt, domainExists]
+properties:
+  domain:
+    type: string
+    description: Assigned name as stored, in ASCII form.
+    examples: [xn--bcher-kva.example]
+  domainUnicode:
+    type: string
+    description: Readable (Unicode) form of `domain`.
+    examples: [bücher.example]
+  active:
+    type: boolean
+    description: The assignment's own status, shown as stored even when a legacy tool made it differ from the account's.
+  createdAt:
+    type: string
+    format: date-time
+    description: When the assignment was created. Kept when the domain set is changed and the domain stays.
+  domainExists:
+    type: boolean
+    description: '`false` when the name is not an existing primary domain.'

@@ -1,0 +1,22 @@
+get:
+  operationId: getAccountCapabilities
+  tags: [Administrators]
+  summary: Get the account capabilities
+  description: |
+    Returns the server values a client needs before it creates or changes administrator and
+    domain administrator accounts: the default permission flags of a new domain administrator as
+    this server's mailcow schema stores them, the defaults of a new account, the bulk limit, the
+    page sizes, the username length limit and the single sign-on token lifetime. Changes nothing.
+    Administrators only, with a session or a key (read-only keys included).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/AccountCapabilitiesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

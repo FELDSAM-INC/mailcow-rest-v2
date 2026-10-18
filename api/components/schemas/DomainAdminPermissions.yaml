@@ -1,0 +1,47 @@
+type: object
+description: |
+  The 19 permission flags of a domain administrator (mailcow table `da_acl`), named in camelCase
+  after the legacy columns. Without a stored permission record every flag reads as `false`. The
+  defaults of a new account are those of the server's mailcow schema, readable through
+  `GET /account-capabilities`. Each flag is enforced by the feature that owns the matching
+  operations.
+required:
+  - syncjobs
+  - quarantine
+  - loginAs
+  - sogoAccess
+  - appPasswds
+  - bccMaps
+  - pushover
+  - filters
+  - ratelimit
+  - spamPolicy
+  - extendSenderAcl
+  - unlimitedQuota
+  - protocolAccess
+  - smtpIpAccess
+  - aliasDomains
+  - mailboxRelayhost
+  - domainRelayhost
+  - domainDesc
+  - aliasExternalGoto
+properties:
+  syncjobs: {type: boolean, description: 'Sync jobs (`da_acl.syncjobs`).'}
+  quarantine: {type: boolean, description: 'Quarantine actions (`da_acl.quarantine`).'}
+  loginAs: {type: boolean, description: 'Log in as mailbox users and open their webmail (`da_acl.login_as`).'}
+  sogoAccess: {type: boolean, description: 'Manage the webmail access of mailboxes (`da_acl.sogo_access`).'}
+  appPasswds: {type: boolean, description: 'Manage app passwords (`da_acl.app_passwds`).'}
+  bccMaps: {type: boolean, description: 'BCC maps (`da_acl.bcc_maps`).'}
+  pushover: {type: boolean, description: 'Push notifications (`da_acl.pushover`).'}
+  filters: {type: boolean, description: 'Mailbox filters (`da_acl.filters`).'}
+  ratelimit: {type: boolean, description: 'Rate limits (`da_acl.ratelimit`).'}
+  spamPolicy: {type: boolean, description: 'Deny and allow lists (`da_acl.spam_policy`).'}
+  extendSenderAcl: {type: boolean, description: 'Extend sender permissions by external addresses (`da_acl.extend_sender_acl`).'}
+  unlimitedQuota: {type: boolean, description: 'Unlimited quota for mailboxes (`da_acl.unlimited_quota`).'}
+  protocolAccess: {type: boolean, description: 'Change protocol access (`da_acl.protocol_access`).'}
+  smtpIpAccess: {type: boolean, description: 'Change the allowed hosts for SMTP (`da_acl.smtp_ip_access`).'}
+  aliasDomains: {type: boolean, description: 'Add alias domains (`da_acl.alias_domains`).'}
+  mailboxRelayhost: {type: boolean, description: 'Change a mailbox''s relayhost (`da_acl.mailbox_relayhost`).'}
+  domainRelayhost: {type: boolean, description: 'Change a domain''s relayhost (`da_acl.domain_relayhost`).'}
+  domainDesc: {type: boolean, description: 'Change the domain description (`da_acl.domain_desc`).'}
+  aliasExternalGoto: {type: boolean, description: 'Allow aliases with external destinations (`da_acl.alias_external_goto`).'}

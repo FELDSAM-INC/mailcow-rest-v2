@@ -1,0 +1,6 @@
+# Paths of the sso-tokens module (feature 007): single sign-on tokens for domain administrators,
+# shared with the legacy domain administrator login.
+/domain-admins/{username}/sso-token:
+  $ref: './domain-admin-sso-token.yaml'
+/session/sso-token:
+  $ref: './session-sso-token.yaml'

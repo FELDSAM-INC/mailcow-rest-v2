@@ -1,0 +1,10 @@
+type: object
+description: The account that was impersonated when the audited action happened.
+required: [username, role]
+properties:
+  username:
+    type: string
+    examples: [bob@a.example]
+  role:
+    type: string
+    enum: [mailboxUser, domainAdmin]

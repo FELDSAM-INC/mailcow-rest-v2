@@ -1,0 +1,45 @@
+post:
+  operationId: applyAdminBulkAction
+  tags: [Administrators]
+  summary: Apply an action to several administrators
+  description: |
+    Activates, deactivates, suspends the second factors of, or deletes up to the bulk limit of
+    administrators (100) in one request, as the legacy mass actions do. Only a signed-in
+    administrator may do this: requests with a key, and callers of other roles, are refused as a
+    whole (`403`). More targets than the limit are refused as a whole (`422`, `tooMany` on
+    `targets`, with the limit as `max`).
+
+    Otherwise each distinct account is processed in the order given, with the checks, side effects
+    and audit record of the single operation, and gets one result:
+    - `done`: applied, with the new version tag unless deleted;
+    - `notFound`: no administrator has this username (also a domain administrator's username);
+    - `refused`: `last-active-admin` (the item that would leave no active administrator) or
+      `cannot-delete-own-account`;
+    - `outdated`: the target's `version` no longer matches (`412` problem); the account is
+      unchanged;
+    - `failed`: an unexpected failure.
+
+    Targets without `version` are not version-checked. Every audit record carries the
+    `bulkRequestId`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/AccountBulkActionRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

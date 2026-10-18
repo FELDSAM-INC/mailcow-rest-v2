@@ -1,0 +1,31 @@
+parameters:
+  - $ref: '../../components/parameters/DomainAdminUsername.yaml'
+post:
+  operationId: suspendDomainAdminSecondFactors
+  tags: [Domain administrators]
+  summary: Suspend a domain administrator's second factors
+  description: |
+    Deactivates every TOTP, WebAuthn and Yubico OTP entry of the account until its next successful
+    password sign-in, which re-activates them, for example when a reseller lost their
+    authenticator. Passkeys are not affected. Suspending an account without active entries
+    succeeds and changes nothing. Administrators only, with a session or a read-write key owned by
+    an administrator. Audited with the number of suspended entries.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainAdminResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

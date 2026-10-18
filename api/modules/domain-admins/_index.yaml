@@ -1,0 +1,10 @@
+# Paths of the domain-admins module (feature 007): domain administrator accounts with their
+# domains and permission flags, and their bulk actions.
+/domain-admins:
+  $ref: './domain-admins.yaml'
+/domain-admins/{username}:
+  $ref: './domain-admin.yaml'
+/domain-admins/{username}/second-factor-suspension:
+  $ref: './domain-admin-second-factor-suspension.yaml'
+/domain-admin-bulk-actions:
+  $ref: './domain-admin-bulk-actions.yaml'

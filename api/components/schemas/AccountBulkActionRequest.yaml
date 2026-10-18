@@ -1,0 +1,27 @@
+type: object
+description: |
+  One action applied to several accounts of one role, as the legacy mass actions of the
+  administrator and domain administrator lists do. A target's `id` is the username in any letter
+  case; `version` is the account's version tag as read, for example from the list. Each distinct
+  account is authorised, version-checked, processed and audited on its own, in the order given,
+  exactly as the single operation for it (`active` in the account's `PATCH`, the second-factor
+  suspension, or the deletion); one failure does not stop the others. A username given twice is
+  processed and reported once. At most the bulk limit of targets (`AccountCapabilities.bulkLimit`,
+  100) may be sent (`tooMany` on `targets`, with the limit as `max`).
+
+  - `activate`, `deactivate`: set the account's status (for a domain administrator also every
+    assignment's).
+  - `suspendSecondFactors`: deactivate every TOTP, WebAuthn and Yubico OTP entry until the next
+    password sign-in.
+  - `delete`: delete the account with every effect of the single deletion.
+required: [action, targets]
+additionalProperties: false
+properties:
+  action:
+    type: string
+    enum: [activate, deactivate, suspendSecondFactors, delete]
+  targets:
+    type: array
+    minItems: 1
+    items:
+      $ref: './BulkTarget.yaml'

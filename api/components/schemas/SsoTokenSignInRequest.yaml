@@ -1,0 +1,13 @@
+type: object
+description: |
+  A single sign-on token issued for a domain administrator, through this API
+  (`POST /domain-admins/{username}/sso-token`) or legacy `/api/v1` (`add/sso/domain-admin`).
+  Surrounding whitespace is ignored and letter case does not matter.
+required: [token]
+properties:
+  token:
+    type: string
+    minLength: 1
+    maxLength: 255
+    writeOnly: true
+    examples: [3FA94C-0B12DE-77A0C1-E5D2B9-41C08F]

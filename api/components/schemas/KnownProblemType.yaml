@@ -61,3 +61,20 @@ enum:
   - /api/v2/problems/next-hop-credentials-differ
   - /api/v2/problems/next-hop-interferes
   - /api/v2/problems/permission-flag-required
+  - /api/v2/problems/container-protected
+  - /api/v2/problems/container-not-running
+  - /api/v2/problems/container-action-failed
+  - /api/v2/problems/mail-service-not-running
+  - /api/v2/problems/queue-action-failed
+  - /api/v2/problems/ban-rules-not-restored
+  - /api/v2/problems/ip-check-disabled
+  - /api/v2/problems/spam-policy-entry-exists
+  - /api/v2/problems/quarantine-message-too-large
+  - /api/v2/problems/quarantine-item-busy
+  - /api/v2/problems/quarantine-delivery-refused
+  - /api/v2/problems/demo-mode
+  - /api/v2/problems/feature-disabled
+  - /api/v2/problems/regex-map-unavailable
+  - /api/v2/problems/global-sieve-filter-unavailable
+  - /api/v2/problems/mass-mail-already-running
+  - /api/v2/problems/mass-mail-recipient-count-changed

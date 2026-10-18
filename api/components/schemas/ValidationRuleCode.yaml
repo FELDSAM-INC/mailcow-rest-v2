@@ -74,6 +74,42 @@ description: |
     `notResolvable` (a forwarding host name that resolves to no address); `invalidCharacter` (a value
     containing a forbidden character, param `characters`, for example `[":"]` in an SMTP username);
     `required` with param `because: password` for a password without a username.
+  - Monitoring and operations (feature 011): `invalidFormat` also uses `format: ipNetworkOrHostname`
+    (allowlist entry), `ipNetwork` (denylist entry), `queueId` (hexadecimal Postfix queue ID) and
+    `logCursor` (a malformed `before` cursor); `outOfRange` on `maxBanTime` carries
+    `minField: banTime` when the ban time is the limit, and `mustNotExceed` (params `field:
+    maxBanTime`, `value`) is used on `banTime` when only the ban time was sent; `reserved` (param
+    `reserved`, the refused networks) for a denylist entry that would ban everything or mailcow's
+    internal network; `conflictsWith` (params `field`, `value`) for an entry on both lists;
+    `invalidRegex` (param `error`, the Python `re` compiler message) for a ban rule that does not
+    compile; `missingCaptureGroup` (a ban rule without a capture group for the client address).
+  - Quarantine, spam policy and rate limits (feature 006): `invalidFormat` also uses `format:
+    email`, `domainName` and `senderPattern` (an allow or block list pattern with characters other
+    than `a-z`, `0-9`, `@`, `_`, `.`, `-`, `*`, or without a letter or digit); `notMultipleOf`
+    (param `factor`: `1048576` for the maximum message size, `0.1` for spam scores);
+    `mustNotExceed` (params `field: rejectScore` and `value`) for a junk score above the reject
+    score; `tooLong` with `unit: bytes` for the notification template; `tooMany` (param `max`, the
+    bulk limit) for bulk targets; `notFound` for an excluded domain that is neither a domain nor an
+    alias domain; `invalidTemplate` (a notification template the legacy notifier cannot use,
+    params `reason`: `syntax`, `security`, `render` or `timeout`, and `line` when known).
+  - System settings (feature 013): `invalidFormat` also uses `format: email`, `singleLine` (no
+    line breaks or other control characters), `appLinkUrl` (absolute `http`/`https` URL or a path
+    starting with a single `/`), `hexColor` (`#RRGGBB`) and `origin` (`scheme://host[:port]` or
+    `*`); `tooLong` with `unit: bytes` for templates, rules, maps, scripts, bodies and logo files
+    (reported on `body`); `outOfRange` (`min: 3`, `max: 64`) for the password policy length;
+    `notFound` and `notEligible` (param `reason`: `notReceiving` or `outsideSelectedDomains`) for
+    mass mail selection entries; `unsupportedImageType` (param `allowed`, the accepted media types);
+    `invalidImage` (a raster image that does not decode); `imageDimensionsExceeded` (params
+    `maxWidth`, `maxHeight`, `width`, `height`); `unsafeSvgContent` (params `construct`, for example
+    `scriptElement`, `eventHandlerAttribute`, `scriptUrl`, `foreignContent`, `externalReference`,
+    `styleImport`, `doctype`, `notWellFormed` or `rootNotSvg`, and `line` when known);
+    `insufficientContrast` (params `ratio`, rounded down to two decimals, `minimum` and `surface`);
+    `invalidRegexLine` (params `line`, 1-based, and `reason`: `notSlashDelimited`, `tooManyFlags`,
+    `innerSlash` or `doesNotCompile`); `invalidSieveSyntax` (params `line` and `reason`, the legacy
+    parser's message); `unbalancedStructure` (params `line` and `construct`: `unclosedBrace`,
+    `unexpectedBrace`, `unclosedBracket`, `unexpectedBracket` or `unclosedString`);
+    `mutuallyExclusive` (param `with`, the other field); `tooFew` (param `min`) for a mass mail
+    selection without recipients.
 enum:
   - required
   - invalidType
@@ -108,3 +144,15 @@ enum:
   - unknownField
   - notResolvable
   - invalidCharacter
+  - missingCaptureGroup
+  - invalidTemplate
+  - unsupportedImageType
+  - invalidImage
+  - imageDimensionsExceeded
+  - unsafeSvgContent
+  - insufficientContrast
+  - invalidRegexLine
+  - invalidSieveSyntax
+  - unbalancedStructure
+  - mutuallyExclusive
+  - tooFew

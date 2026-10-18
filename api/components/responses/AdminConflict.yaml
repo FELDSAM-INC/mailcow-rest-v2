@@ -1,0 +1,20 @@
+description: |
+  The request conflicts with the current state. Possible types:
+  - `/api/v2/problems/account-exists`: the username is used by an administrator or a domain
+    administrator (creation or rename).
+  - `/api/v2/problems/last-active-admin`: the change or deletion would leave the server without an
+    active administrator.
+  - `/api/v2/problems/cannot-delete-own-account`: administrators cannot delete their own account.
+  Nothing was changed.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'
+    examples:
+      lastActiveAdmin:
+        value:
+          type: /api/v2/problems/last-active-admin
+          title: Last active administrator
+          status: 409
+          detail: The server must keep at least one active administrator.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736

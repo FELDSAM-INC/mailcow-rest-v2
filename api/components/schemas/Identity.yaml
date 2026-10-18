@@ -25,3 +25,17 @@ properties:
   preferences:
     description: Present for sessions only.
     $ref: './Preferences.yaml'
+  impersonation:
+    $ref: './Impersonation.yaml'
+    description: |
+      Present while the session impersonates another account (feature 007). `username`, `role`,
+      `scope` and `permissions` then describe the impersonated account, with the permission flags
+      legacy grants to impersonators; `authentication`, `pendingActions` and `preferences` are the
+      impersonator's.
+  webmailOnBehalfEnabled:
+    type: boolean
+    description: |
+      Present for administrators and domain administrators (feature 007): whether the server
+      setting `ALLOW_ADMIN_EMAIL_LOGIN` allows opening a mailbox's webmail on the user's behalf. A
+      domain administrator also needs the `loginAs` flag, and no webmail sign-in is possible while
+      impersonating.

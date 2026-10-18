@@ -1,0 +1,11 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. Default `username` with `order=asc`. Ties are broken by username, ascending.
+  `domainCount` is the number of assignments. Accounts that were never modified sort first for
+  `modifiedAt` ascending.
+schema:
+  type: string
+  enum: [username, active, createdAt, modifiedAt, domainCount]
+  default: username

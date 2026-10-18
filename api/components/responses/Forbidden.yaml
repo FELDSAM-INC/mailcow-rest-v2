@@ -7,6 +7,11 @@ description: |
   - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request.
   - `/api/v2/problems/api-key-source-not-allowed`: the key is used from an address outside its
     allowed networks.
+  - `/api/v2/problems/impersonation-ended` (feature 007, any session request): the session's
+    impersonation became invalid and ended; the request was not carried out, and the session acts
+    as the impersonator again.
+  - `/api/v2/problems/not-allowed-while-impersonating` (feature 007): a sign-in credential
+    operation or a webmail sign-in during an impersonation.
 content:
   application/problem+json:
     schema:

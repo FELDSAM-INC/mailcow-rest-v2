@@ -1,0 +1,36 @@
+type: object
+description: |
+  A new administrator account. The username is trimmed and lower-cased, and must then be 1 to 255
+  characters of `a-z`, `0-9`, `.`, `_` and `-` with at least one letter or digit (rule codes
+  `tooLong`, `invalidFormat` with `format: accountUsername`), must not be `api` (`reserved`) and
+  must not be used by any administrator or domain administrator (`409 account-exists`, compared
+  without regard to letter case).
+required: [username, password]
+additionalProperties: false
+properties:
+  username:
+    type: string
+    minLength: 1
+    maxLength: 255
+    examples: [bob]
+  password:
+    type: string
+    minLength: 1
+    maxLength: 4096
+    writeOnly: true
+    format: password
+    description: |
+      Given once, without a confirmation field. It must meet the server's password policy
+      (readable through feature 003; each unmet rule is named with its own rule code and
+      parameter) and is stored in mailcow's configured hash scheme. A value that begins with a
+      hash-scheme prefix mailcow recognises (for example `{BLF-CRYPT}` or `{SSHA512}`) is stored
+      as given, without the policy check.
+  active:
+    type: boolean
+    default: true
+  forcePasswordChange:
+    type: boolean
+    default: false
+  forceSecondFactorSetup:
+    type: boolean
+    default: false

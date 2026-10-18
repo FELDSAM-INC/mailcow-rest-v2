@@ -1,0 +1,30 @@
+parameters:
+  - $ref: '../../components/parameters/AdminUsername.yaml'
+post:
+  operationId: suspendAdminSecondFactors
+  tags: [Administrators]
+  summary: Suspend an administrator's second factors
+  description: |
+    Deactivates every TOTP, WebAuthn and Yubico OTP entry of the account until its next successful
+    password sign-in, which re-activates them (legacy "disable TFA until next successful login").
+    Passkeys are not affected. Suspending an account without active entries succeeds and changes
+    nothing. Only a signed-in administrator may do this; keys are refused with `session-required`.
+    Audited with the number of suspended entries.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/AdminResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

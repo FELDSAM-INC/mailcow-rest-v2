@@ -70,6 +70,15 @@ properties:
     oneOf:
       - $ref: './AccountRef.yaml'
       - type: 'null'
+  revocationReason:
+    description: |
+      Feature 007: why the key was revoked. `manual`: an administrator revoked it. `ownerDeleted`:
+      its owner's account was deleted, and `revokedBy` is the deleting administrator. `null` while
+      the key is not revoked.
+    oneOf:
+      - type: string
+        enum: [manual, ownerDeleted]
+      - type: 'null'
   etag:
     type: string
     description: |

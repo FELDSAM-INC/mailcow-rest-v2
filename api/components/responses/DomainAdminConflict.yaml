@@ -1,0 +1,15 @@
+description: |
+  The username is used by an administrator or a domain administrator (type
+  `/api/v2/problems/account-exists`). Nothing was changed.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'
+    examples:
+      accountExists:
+        value:
+          type: /api/v2/problems/account-exists
+          title: Account already exists
+          status: 409
+          detail: An administrator or domain administrator named "ops" already exists.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736

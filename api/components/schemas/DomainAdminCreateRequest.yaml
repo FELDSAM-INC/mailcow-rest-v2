@@ -1,0 +1,46 @@
+type: object
+description: |
+  A new domain administrator account. `username` and `password` follow the rules of
+  `AdminCreateRequest`. Each entry of `domains` is normalised (trimmed, lower-cased, converted to
+  ASCII with the UTS #46 rules) and must be an existing primary domain: an invalid name is refused
+  with `invalidFormat` (`format: domainName`), an alias domain name with `notEligible`
+  (`expected: primaryDomain`) and an unknown name with `notFound`, each on `domains.<index>`.
+  Duplicates are merged. Permission flags that are not sent get this server's defaults, the values
+  `GET /account-capabilities` reports. The account, its assignments (with the account's status) and
+  its permission record are stored together or not at all; an orphaned permission record left by
+  legacy for the same username is replaced.
+required: [username, password, domains]
+additionalProperties: false
+properties:
+  username:
+    type: string
+    minLength: 1
+    maxLength: 255
+    examples: [reseller1]
+  password:
+    type: string
+    minLength: 1
+    maxLength: 4096
+    writeOnly: true
+    format: password
+  domains:
+    type: array
+    minItems: 1
+    description: Domain names in ASCII or Unicode form.
+    items:
+      type: string
+      minLength: 1
+      maxLength: 255
+    examples:
+      - [a.example, b.example]
+  active:
+    type: boolean
+    default: true
+  forcePasswordChange:
+    type: boolean
+    default: false
+  forceSecondFactorSetup:
+    type: boolean
+    default: false
+  permissions:
+    $ref: './DomainAdminPermissionsPatch.yaml'

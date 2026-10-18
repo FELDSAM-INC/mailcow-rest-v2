@@ -1,0 +1,52 @@
+type: object
+description: |
+  JSON Merge Patch of an administrator account. Members that are not sent keep their values; every
+  member that is sent is applied or refused, never ignored. An empty object is refused (`required`
+  on `body`) and an unknown member with `unknownField`.
+
+  - `username` renames the account (same rules as at creation; `409 account-exists`). Second
+    factors, passkeys, API keys and preferences follow the account. The account's other sessions
+    and every impersonation of it end; a caller renaming their own account stays signed in under
+    the new name.
+  - `password` sets a new password (same rules as at creation). Forced flags, sessions and API keys
+    are not changed.
+  - `active: false` is refused with `409 last-active-admin` when no other active administrator
+    would remain. Changes that do not reduce the number of active administrators are never
+    refused by this rule.
+  - The read-only members of `Admin` (`createdAt`, `modifiedAt`, `secondFactorStatus`,
+    `activePasskeyCount`, `etag`) may be sent back unchanged; a different value is refused with
+    rule code `immutable`.
+minProperties: 1
+additionalProperties: false
+properties:
+  username:
+    type: string
+    minLength: 1
+    maxLength: 255
+  password:
+    type: string
+    minLength: 1
+    maxLength: 4096
+    writeOnly: true
+    format: password
+  active:
+    type: boolean
+  forcePasswordChange:
+    type: boolean
+  forceSecondFactorSetup:
+    type: boolean
+  secondFactorStatus:
+    $ref: './AccountSecondFactorStatus.yaml'
+  activePasskeyCount:
+    type: integer
+    minimum: 0
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string

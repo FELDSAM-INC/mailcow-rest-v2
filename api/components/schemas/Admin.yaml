@@ -1,0 +1,56 @@
+type: object
+description: |
+  An administrator account (mailcow table `admin`, `superadmin = 1`). Administrators have full
+  access to the server. Passwords and password hashes are never returned.
+required:
+  - username
+  - active
+  - forcePasswordChange
+  - forceSecondFactorSetup
+  - secondFactorStatus
+  - activePasskeyCount
+  - createdAt
+  - modifiedAt
+  - etag
+properties:
+  username:
+    type: string
+    maxLength: 255
+    description: Username as stored. Addressed in paths in any letter case.
+    examples: [alice]
+  active:
+    type: boolean
+    description: Inactive accounts cannot sign in, and their API keys are refused until reactivated.
+  forcePasswordChange:
+    type: boolean
+    description: |
+      The account must change its password at its next sign-in in either UI (mailcow attribute
+      `force_pw_update`). The session is restricted until then.
+  forceSecondFactorSetup:
+    type: boolean
+    description: |
+      The account must set up a second factor at its next sign-in when it has none (mailcow
+      attribute `force_tfa`).
+  secondFactorStatus:
+    $ref: './AccountSecondFactorStatus.yaml'
+  activePasskeyCount:
+    type: integer
+    minimum: 0
+    description: Number of active passkeys (mailcow table `fido2`).
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    description: |
+      Last change of the account row (username, password, status or forced flags), `null` when
+      never modified.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string
+    description: |
+      Version tag of the stored settings (username, status and forced flags; not the second-factor
+      status or the passkey count), equal to the `ETag` header of a single read. Send it in
+      `If-Match` when changing or deleting the account, and as `version` in bulk actions.

@@ -1,0 +1,34 @@
+parameters:
+  - $ref: '../../components/parameters/DomainAdminUsername.yaml'
+post:
+  operationId: issueDomainAdminSsoToken
+  tags: [Single sign-on tokens]
+  summary: Issue a single sign-on token for a domain administrator
+  description: |
+    Issues a token with which the domain administrator signs in once, within 30 seconds, without a
+    password and without a second factor, as reseller and billing panels do today through
+    `/api/v1` (`add/sso/domain-admin`). The panel redirects the user's browser to the legacy
+    domain administrator login (`/domainadmin?sso_token=<token>`) or to the new web app, which
+    submits it to `POST /session/sso-token`. The token is stored in mailcow's own token store, so
+    it works in both and only once. Issuing removes expired tokens.
+
+    Administrators only, with a session or a read-write key owned by an administrator. An inactive
+    account is refused with `409 account-inactive`, and no token is issued. Audited with the target
+    and the expiry, never the token.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainAdminSsoTokenResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/DomainAdminSsoTokenConflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -238,6 +238,26 @@ tags:
       spam filter's action statistics (feature 006).
   - name: Rate limits
     description: Sending rate limits of domains, alias domains and mailboxes, and bucket resets (feature 006).
+  - name: Branding settings
+    description: Logos, UI texts, login page options, app links, brand colours and the IP check opt-in (feature 013).
+  - name: Password settings
+    description: The password reset notification (feature 013). The password policy change is under "Password policy".
+  - name: Quota notification settings
+    description: The quota notification e-mail and each domain's copy recipients (feature 013).
+  - name: Rspamd settings
+    description: |
+      Rspamd settings rules, the global regex maps, the effective settings map and the Rspamd web
+      interface password (feature 013).
+  - name: Global filters
+    description: The global Sieve pre-filter and post-filter that Dovecot applies to every mailbox (feature 013).
+  - name: Presets
+    description: The Rspamd and Sieve examples mailcow ships (feature 013).
+  - name: Server settings
+    description: The settings capabilities and the CORS settings of the legacy API (feature 013).
+  - name: Mass mail
+    description: Recipient previews and background mass mail jobs delivered into the mailboxes (feature 013).
+  - name: License
+    description: The server's GUID and its verification against mailcow's license service (feature 013).
 paths:
   /csrf-token:
     $ref: './modules/auth/_index.yaml#/~1csrf-token'
@@ -619,6 +639,60 @@ paths:
     $ref: './modules/rate-limits/_index.yaml#/~1mailboxes~1{mailbox}~1rate-limit'
   /rate-limit-buckets/{bucketId}:
     $ref: './modules/rate-limits/_index.yaml#/~1rate-limit-buckets~1{bucketId}'
+  /settings/capabilities:
+    $ref: './modules/settings-server/_index.yaml#/~1settings~1capabilities'
+  /settings/legacy-api-cors:
+    $ref: './modules/settings-server/_index.yaml#/~1settings~1legacy-api-cors'
+  /settings/logos/{variant}:
+    $ref: './modules/settings-branding/_index.yaml#/~1settings~1logos~1{variant}'
+  /settings/ui-texts:
+    $ref: './modules/settings-branding/_index.yaml#/~1settings~1ui-texts'
+  /settings/login-page:
+    $ref: './modules/settings-branding/_index.yaml#/~1settings~1login-page'
+  /settings/app-links:
+    $ref: './modules/settings-branding/_index.yaml#/~1settings~1app-links'
+  /settings/brand-colors:
+    $ref: './modules/settings-branding/_index.yaml#/~1settings~1brand-colors'
+  /settings/ip-check:
+    $ref: './modules/settings-branding/_index.yaml#/~1settings~1ip-check'
+  /settings/password-reset-notification:
+    $ref: './modules/settings-password/_index.yaml#/~1settings~1password-reset-notification'
+  /settings/quota-notification:
+    $ref: './modules/settings-quota-notifications/_index.yaml#/~1settings~1quota-notification'
+  /domains/{domain}/quota-notification-recipients:
+    $ref: './modules/settings-quota-notifications/_index.yaml#/~1domains~1{domain}~1quota-notification-recipients'
+  /settings/rspamd-rules:
+    $ref: './modules/settings-rspamd/_index.yaml#/~1settings~1rspamd-rules'
+  /settings/rspamd-rules/{ruleId}:
+    $ref: './modules/settings-rspamd/_index.yaml#/~1settings~1rspamd-rules~1{ruleId}'
+  /settings/rspamd-regex-maps:
+    $ref: './modules/settings-rspamd/_index.yaml#/~1settings~1rspamd-regex-maps'
+  /settings/rspamd-regex-maps/{mapId}:
+    $ref: './modules/settings-rspamd/_index.yaml#/~1settings~1rspamd-regex-maps~1{mapId}'
+  /settings/rspamd-settings-map:
+    $ref: './modules/settings-rspamd/_index.yaml#/~1settings~1rspamd-settings-map'
+  /settings/rspamd-ui-password:
+    $ref: './modules/settings-rspamd/_index.yaml#/~1settings~1rspamd-ui-password'
+  /settings/global-sieve-filters:
+    $ref: './modules/settings-global-filters/_index.yaml#/~1settings~1global-sieve-filters'
+  /settings/global-sieve-filters/{filterId}:
+    $ref: './modules/settings-global-filters/_index.yaml#/~1settings~1global-sieve-filters~1{filterId}'
+  /presets/{presetKind}:
+    $ref: './modules/presets/_index.yaml#/~1presets~1{presetKind}'
+  /mass-mail-jobs:
+    $ref: './modules/mass-mail/_index.yaml#/~1mass-mail-jobs'
+  /mass-mail-jobs/recipient-preview:
+    $ref: './modules/mass-mail/_index.yaml#/~1mass-mail-jobs~1recipient-preview'
+  /mass-mail-jobs/{jobId}:
+    $ref: './modules/mass-mail/_index.yaml#/~1mass-mail-jobs~1{jobId}'
+  /mass-mail-jobs/{jobId}/recipients:
+    $ref: './modules/mass-mail/_index.yaml#/~1mass-mail-jobs~1{jobId}~1recipients'
+  /mass-mail-jobs/{jobId}/cancellation:
+    $ref: './modules/mass-mail/_index.yaml#/~1mass-mail-jobs~1{jobId}~1cancellation'
+  /license:
+    $ref: './modules/license/_index.yaml#/~1license'
+  /license/verification:
+    $ref: './modules/license/_index.yaml#/~1license~1verification'
 components:
   securitySchemes:
     sessionCookie:

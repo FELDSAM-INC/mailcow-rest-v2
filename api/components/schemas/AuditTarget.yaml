@@ -4,7 +4,7 @@ required: [type, id, name]
 properties:
   type:
     type: string
-    enum: [apiKey, passkey, preferences, session, syncJob, domain, domainTemplate, domainFooter, dkimKey, mtaStsPolicy, identityProvider, oauth2Client, mailbox, mailboxTemplate, admin, domainAdmin, ssoToken, impersonation, relayhost, domainRelayhostAssignment, mailboxRelayhostAssignment, transport, bccMap, recipientMap, tlsPolicyMap, forwardingHost]
+    enum: [apiKey, passkey, preferences, session, syncJob, domain, domainTemplate, domainFooter, dkimKey, mtaStsPolicy, identityProvider, oauth2Client, mailbox, mailboxTemplate, admin, domainAdmin, ssoToken, impersonation, relayhost, domainRelayhostAssignment, mailboxRelayhostAssignment, transport, bccMap, recipientMap, tlsPolicyMap, forwardingHost, container, mailQueue, mailQueueMessage, fail2banSettings, fail2banRules, fail2banActiveBan, fail2banBanListId, quarantineItem, quarantineSettings, quarantineNotificationSettings, spamScore, spamPolicyEntry, rateLimit, rateLimitBucket, logo, uiTexts, loginPage, appLinks, brandColors, ipCheck, passwordPolicy, passwordResetNotification, quotaNotification, quotaNotificationRecipients, rspamdSettingsRule, rspamdRegexMap, globalSieveFilter, rspamdUiPassword, legacyApiCors, massMailJob, license]
   id:
     oneOf:
       - type: string

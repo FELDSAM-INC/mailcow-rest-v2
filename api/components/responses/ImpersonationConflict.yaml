@@ -1,0 +1,7 @@
+description: |
+  The session is already impersonating an account (type
+  `/api/v2/problems/already-impersonating`). End the current impersonation first.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

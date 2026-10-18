@@ -1,0 +1,14 @@
+description: |
+  The caller may not open this webmail. Possible types, in addition to those of `Forbidden`:
+  - `/api/v2/problems/forbidden`: the caller is a mailbox user, or a domain administrator without
+    the `loginAs` flag.
+  - `/api/v2/problems/not-allowed-while-impersonating`: the session is impersonating an account.
+  - `/api/v2/problems/webmail-on-behalf-disabled`: the server setting `ALLOW_ADMIN_EMAIL_LOGIN` is
+    off.
+  - `/api/v2/problems/session-required`: the request carries an API key.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'

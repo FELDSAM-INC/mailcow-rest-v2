@@ -1,0 +1,58 @@
+type: object
+description: |
+  Server values a client needs before it submits an administrator or domain administrator form.
+  Read from the server's current mailcow schema and configuration on every request.
+required:
+  - domainAdminPermissionDefaults
+  - newAccountDefaults
+  - bulkLimit
+  - pageSize
+  - usernameMaxLength
+  - ssoTokenLifetime
+properties:
+  domainAdminPermissionDefaults:
+    $ref: './DomainAdminPermissions.yaml'
+    description: |
+      The flags a new domain administrator gets when they are not sent: the column defaults of the
+      server's mailcow schema, which can differ between supported mailcow releases.
+  newAccountDefaults:
+    type: object
+    description: Values a new account gets when they are not sent.
+    required: [active, forcePasswordChange, forceSecondFactorSetup]
+    properties:
+      active:
+        type: boolean
+        examples: [true]
+      forcePasswordChange:
+        type: boolean
+        examples: [false]
+      forceSecondFactorSetup:
+        type: boolean
+        examples: [false]
+  bulkLimit:
+    type: integer
+    minimum: 1
+    description: Maximum number of targets of one bulk action.
+    examples: [100]
+  pageSize:
+    type: object
+    required: [default, maximum]
+    properties:
+      default:
+        type: integer
+        minimum: 1
+        examples: [25]
+      maximum:
+        type: integer
+        minimum: 1
+        examples: [1000]
+  usernameMaxLength:
+    type: integer
+    minimum: 1
+    description: Maximum length of a username.
+    examples: [255]
+  ssoTokenLifetime:
+    type: integer
+    minimum: 1
+    description: Lifetime of a single sign-on token in seconds.
+    examples: [30]

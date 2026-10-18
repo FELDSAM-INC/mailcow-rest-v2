@@ -57,3 +57,11 @@ properties:
       Non-secret event details, for example `requestedRole`, `secondFactorType`,
       `changedFields` or `accessLevel`.
     additionalProperties: true
+  impersonatedAccount:
+    description: |
+      Feature 007: the impersonated account when the record was written during an impersonation,
+      by any feature. `actor` is then the impersonator. `null` (or absent in records written before
+      feature 007) outside impersonations.
+    oneOf:
+      - $ref: './AuditImpersonatedAccount.yaml'
+      - type: 'null'

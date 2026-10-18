@@ -1,0 +1,17 @@
+type: object
+description: |
+  A single-use webmail sign-in for a mailbox, obtained on the user's behalf. The response sets the
+  webmail hand-off cookie of feature 005 in the requesting browser; opening `url` in that browser
+  shows the mailbox's webmail without a sign-in prompt. The caller's session in this API is not
+  changed. The hand-off replaces a legacy UI sign-in of the same browser.
+required: [mailbox, url]
+properties:
+  mailbox:
+    type: string
+    description: Normalised mailbox address.
+    examples: [bob@a.example]
+  url:
+    type: string
+    format: uri-reference
+    description: Address of the webmail to open in the same browser.
+    examples: [/SOGo/so/]

@@ -1,0 +1,11 @@
+type: string
+description: |
+  Second-factor status of an administrator or domain administrator account, over its TOTP,
+  WebAuthn and Yubico OTP entries (mailcow table `tfa`). Deprecated U2F and HOTP entries never
+  count, because this API never accepts them.
+
+  - `none`: the account has no such entry.
+  - `active`: at least one entry is active.
+  - `suspended`: entries exist, but none is active, for example after an administrator suspended
+    them until the next sign-in.
+enum: [none, active, suspended]

@@ -1,0 +1,7 @@
+description: |
+  The domain administrator account is inactive (type `/api/v2/problems/account-inactive`). No token
+  was issued.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

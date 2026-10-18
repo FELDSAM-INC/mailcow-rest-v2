@@ -1,0 +1,11 @@
+name: username
+in: path
+required: true
+description: |
+  Username of the domain administrator, in any letter case. An administrator's username answers
+  `404`, exactly like a username that does not exist.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 255
+  pattern: '^[A-Za-z0-9._-]+$'

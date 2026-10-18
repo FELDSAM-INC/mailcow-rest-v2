@@ -15,8 +15,20 @@ properties:
     $ref: './Role.yaml'
   authMethod:
     type: string
-    enum: [password, passwordAndSecondFactor, passkey]
-    description: How this session was signed in.
+    enum:
+      - password
+      - passwordAndSecondFactor
+      - passkey
+      - ssoToken
+      - singleSignOn
+      - directoryPassword
+      - directoryPasswordAndSecondFactor
+      - providerPassword
+      - providerPasswordAndSecondFactor
+    description: |
+      How this session was signed in. `ssoToken` is a domain administrator's single sign-on token
+      (feature 007). `singleSignOn`, `directoryPassword*` (LDAP) and `providerPassword*` (Keycloak
+      mailpassword flow) are sign-ins through the identity provider (feature 012); see `AuthMethod`.
   signedInAt:
     type: string
     format: date-time
@@ -34,3 +46,9 @@ properties:
     description: Empty unless `state` is `restricted`.
     items:
       $ref: './PendingAction.yaml'
+  impersonation:
+    $ref: './Impersonation.yaml'
+    description: |
+      Present while the session impersonates another account (feature 007). `username` and `role`
+      are then those of the impersonated account; `authMethod`, `signedInAt` and `pendingActions`
+      are those of the impersonator's own sign-in.

@@ -1,0 +1,106 @@
+parameters:
+  - $ref: '../../components/parameters/AdminUsername.yaml'
+get:
+  operationId: getAdmin
+  tags: [Administrators]
+  summary: Get an administrator
+  description: |
+    Returns one administrator account with its version tag. Administrators only, with a session or
+    a key (read-only keys included).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/AdminResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateAdmin
+  tags: [Administrators]
+  summary: Change an administrator
+  description: |
+    Changes the username, password, status or forced flags of an administrator with a JSON Merge
+    Patch (see `AdminPatch` for the rules). Only a signed-in administrator may do this; keys are
+    refused with `session-required`.
+
+    A deactivation or a deletion never leaves the server without an active administrator: the
+    check and the change are atomic, so concurrent requests cannot together remove the last one
+    (`409 last-active-admin`). An administrator may deactivate their own account while another
+    active administrator remains; their session then ends at its next request.
+
+    Send the version tag in `If-Match` (recommended for interactive clients): a stale tag answers
+    `412` and changes nothing, also when the change was made in the legacy UI or `/api/v1`. A
+    patch that changes nothing returns the account unchanged and is not audited. Every change is
+    audited with its old and new values; a password only as changed.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/AdminPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/AdminResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/AdminConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteAdmin
+  tags: [Administrators]
+  summary: Delete an administrator
+  description: |
+    Deletes an administrator account. Only a signed-in administrator may do this; keys are refused
+    with `session-required`. Administrators cannot delete their own account
+    (`409 cannot-delete-own-account`), and the last active administrator cannot be deleted
+    (`409 last-active-admin`).
+
+    The deletion removes, as legacy mailcow does, the account and any domain assignments,
+    permission record, second factors and passkeys with its username. It also revokes the
+    account's API keys permanently (revocation reason `ownerDeleted`, revoked by the caller), ends
+    its sessions and every impersonation of it, and removes its preferences. Audit records are
+    kept. A later account with the same username inherits nothing.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/AdminConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

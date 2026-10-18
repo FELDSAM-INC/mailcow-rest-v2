@@ -1,0 +1,22 @@
+type: object
+description: |
+  An assignment sent back in a domain set, as read from `DomainAdmin.domains`. Only `domain`
+  counts. The other members are read-only: they are accepted when equal to the stored assignment
+  of that domain and refused with rule code `immutable` otherwise (a domain that is not assigned
+  yet accepts only `domain`).
+required: [domain]
+additionalProperties: false
+properties:
+  domain:
+    type: string
+    minLength: 1
+    maxLength: 255
+  domainUnicode:
+    type: string
+  active:
+    type: boolean
+  createdAt:
+    type: string
+    format: date-time
+  domainExists:
+    type: boolean

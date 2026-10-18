@@ -1,0 +1,113 @@
+get:
+  operationId: listDomainAdmins
+  tags: [Domain administrators]
+  summary: List domain administrators
+  description: |
+    Lists every domain administrator account, including accounts without any assignment, each
+    with its domains, permission flags and version tag. Administrators only: a signed-in
+    administrator or a key owned by an administrator, read-only keys included. `q` searches the
+    username and the assigned domain names in ASCII and readable form (case-insensitive
+    substring).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/DomainAdminSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: active
+      in: query
+      required: false
+      description: Only active (`true`) or inactive (`false`) accounts.
+      schema:
+        type: boolean
+    - name: secondFactorStatus
+      in: query
+      required: false
+      schema:
+        $ref: '../../components/schemas/AccountSecondFactorStatus.yaml'
+    - name: forcePasswordChange
+      in: query
+      required: false
+      schema:
+        type: boolean
+    - name: forceSecondFactorSetup
+      in: query
+      required: false
+      schema:
+        type: boolean
+    - name: domain
+      in: query
+      required: false
+      description: |
+        Only accounts with an assignment to any of these domains (ASCII or Unicode form, any letter
+        case). Repeat the parameter for several.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 100
+        items:
+          type: string
+          minLength: 1
+          maxLength: 255
+    - name: permission
+      in: query
+      required: false
+      description: Only accounts whose flag of this name has the value `permissionValue`. A missing permission record counts as every flag `false`.
+      schema:
+        $ref: '../../components/schemas/DomainAdminPermissionName.yaml'
+    - name: permissionValue
+      in: query
+      required: false
+      description: Value the flag named by `permission` must have. Only valid together with `permission`.
+      schema:
+        type: boolean
+        default: true
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainAdminListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createDomainAdmin
+  tags: [Domain administrators]
+  summary: Create a domain administrator
+  description: |
+    Creates a domain administrator with a username, a password and at least one domain, and
+    optionally its status, forced flags and permission flags (see `DomainAdminCreateRequest`).
+    Administrators only, with a session or a read-write key owned by an administrator, so that
+    billing systems can provision resellers. Audited without the password.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/DomainAdminCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/DomainAdminCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/DomainAdminConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

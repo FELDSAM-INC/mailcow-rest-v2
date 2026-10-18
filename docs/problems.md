@@ -534,3 +534,285 @@ extension members.
   `domainName`), `reserved`, `tooLong`, `notFound`, `notEligible` (`kind: aliasDomain`, or `reason`
   for a webmail sign-in), `immutable`, `unknownField`, `required`, `tooMany` (the bulk limit) and
   feature 003's password rule codes.
+
+## routing-entry-exists
+
+- **Type**: `/api/v2/problems/routing-entry-exists`
+- **Status**: 409
+- **Meaning**: Feature 009. A creation or edit would duplicate a unique key of a routing entry:
+  a transport destination (MX-based or not, compared without regard to letter case after
+  normalisation), a BCC map's local destination and type (also when a type switch would duplicate
+  another map), a recipient map's original destination, or a TLS policy map's destination. The
+  uniqueness also holds under concurrent requests. Nothing changed. In a bulk action, the item is
+  `refused` with this problem.
+- **Extension members**: `field`, the request member that collides (`destination`,
+  `localDestination`, `type`, `originalDestination`); `conflictingId`, the identifier of the existing
+  entry as used in its path.
+- **Client action**: Show the error on the field and offer to open the existing entry.
+- **Related routing errors** (no type of their own): an entry, domain or mailbox that does not
+  exist or lies outside the caller's scope is `404` (`about:blank`); an outdated `If-Match` is `412`
+  (`about:blank`), and an outdated bulk item `outdated`. Mailcow's Redis, a temporary DNS failure
+  or a write lock held too long gives `temporary-failure`. Invalid input is `validation-failed`
+  with the codes listed for feature 009 in `ValidationRuleCode`, for example `invalidFormat` with
+  `format: nextHop`, `invalidRegex`, `invalidCharacter` (a `:` in an SMTP username), `notResolvable`
+  (a forwarding host name without addresses), `notFound` (an unknown or out-of-scope BCC local
+  destination or relayhost) and `immutable` (a read-only member sent with a different value).
+
+## next-hop-credentials-differ
+
+- **Type**: `/api/v2/problems/next-hop-credentials-differ`
+- **Status**: 409
+- **Meaning**: Feature 009. A transport creation sends a username for a next hop that other
+  transports already use with a different username (an empty username counts). Transports with the
+  same next hop share one set of credentials, because the mail server looks credentials up by next
+  hop. Nothing changed.
+- **Extension members**: `nextHop`, the stored next hop; `transportIds`, the transports that use it.
+- **Client action**: Create the transport without credentials (it inherits the next hop's), or
+  change the credentials on one of the listed transports first, which applies them to all of them.
+
+## next-hop-interferes
+
+- **Type**: `/api/v2/problems/next-hop-interferes`
+- **Status**: 409
+- **Meaning**: Feature 009. A transport would use the next hop `host` while another uses `[host]` or
+  `[host]:port`, or the reverse. The mail server looks up the credentials of `host` before those of
+  `[host]:port`, so both cannot be used at the same time. Letter case is ignored. Nothing changed.
+- **Extension members**: `nextHop`, the interfering stored next hop; `transportIds`, its transports.
+- **Client action**: Use the same next hop spelling as the existing transports, or change them.
+
+## permission-flag-required
+
+- **Type**: `/api/v2/problems/permission-flag-required`
+- **Status**: 403
+- **Meaning**: The caller is a domain administrator, the operation is open to domain administrators
+  in general, but it needs a permission flag that this account does not hold. Feature 009 uses it
+  for changing a domain's relayhost (`domainRelayhost`), changing a mailbox's relayhost
+  (`mailboxRelayhost`), reading the relayhost choices (either flag) and writing BCC maps
+  (`bccMaps`). The flag is checked before the object is looked up, so the answer never reveals
+  whether an object outside the caller's scope exists. Nothing changed. A bulk action that needs the
+  flag is refused as a whole. Other features may use this type for the same meaning; an edit whose
+  individual attributes are not permitted uses `attribute-not-permitted` instead.
+- **Extension members**: `requiredFlags`, a non-empty list of flag names as in `PermissionFlags`
+  (for example `["domainRelayhost"]`; for the relayhost choices `["domainRelayhost",
+  "mailboxRelayhost"]`, either of which suffices).
+- **Client action**: Hide or disable the action for this account, and tell the user which permission
+  an administrator must grant.
+
+## identity-provider-not-configured
+
+- **Type**: `/api/v2/problems/identity-provider-not-configured`
+- **Status**: 404
+- **Meaning**: Feature 012. No external identity provider configuration is stored, so it cannot be
+  read, changed or deleted. A whole save (`PUT /api/v2/identity-provider`) creates one.
+- **Client action**: Offer to set up an identity provider.
+
+## identity-provider-in-use
+
+- **Type**: `/api/v2/problems/identity-provider-in-use`
+- **Status**: 409
+- **Meaning**: Feature 012. Mailboxes still authenticate against an external source that the request
+  would remove: a deletion while any mailbox has an external authentication source, or a save of
+  another type while mailboxes use a source other than the new type. Nothing changed.
+- **Extension members**: `blockingMailboxes`, the number of mailboxes that block the request, and
+  `mailboxCounts`, the number of mailboxes per external source (`keycloak`, `genericOidc`, `ldap`).
+- **Client action**: Tell the administrator to switch those mailboxes to another authentication
+  source first (mailbox list filtered by authentication source, feature 003).
+
+## single-sign-on-not-available
+
+- **Type**: `/api/v2/problems/single-sign-on-not-available`
+- **Status**: 409
+- **Meaning**: Feature 012. Single sign-on was started or completed, but the server has no complete
+  Keycloak or generic OIDC configuration, for example because it was removed or changed to LDAP in
+  the meantime.
+- **Client action**: Refresh the public configuration and hide the single sign-on action.
+
+## sign-in-state-invalid
+
+- **Type**: `/api/v2/problems/sign-in-state-invalid`
+- **Status**: 401
+- **Meaning**: Feature 012. The `state` of a single sign-on completion or provider-error report is
+  unknown, expired (10 minutes after the start), already used, or was issued to another browser
+  session. The provider was not contacted, and the pending single sign-on is gone.
+- **Client action**: Start a new single sign-on. Never resubmit the old code.
+
+## identity-provider-unavailable
+
+- **Type**: `/api/v2/problems/identity-provider-unavailable`
+- **Status**: 503
+- **Meaning**: Feature 012. The identity provider could not be reached, did not answer within
+  7 seconds, answered with a server error, or refused the service account, during a single sign-on
+  completion or a password sign-in of an LDAP or Keycloak mailbox. The attempt is not reported to
+  fail2ban and does not count towards sign-in throttling. The `Retry-After` header says when to try
+  again.
+- **Client action**: Say that the organisation's sign-in service is not reachable. Keep the
+  username, clear the password, and do not describe it as a wrong password.
+
+## identity-provider-session-ended
+
+- **Type**: `/api/v2/problems/identity-provider-session-ended`
+- **Status**: 401
+- **Meaning**: Feature 012. A single sign-on session ended. The provider refused or could not renew
+  it (checked on the first request more than 5 minutes after the last renewal), the renewed user
+  details carry another e-mail address, the identity provider configuration was removed, changed to
+  another type or is incomplete, or the mailbox no longer authenticates against the provider. The
+  session is gone; the user is still signed in at the provider.
+- **Client action**: Show the sign-in screen with an explanation and offer single sign-on again.
+  Do not send the browser to the provider automatically.
+- **Related errors of feature 012** (no type of their own): an OAuth2 client that does not exist is
+  `404` (`about:blank`). An outdated `If-Match` is `412` (`about:blank`); in a bulk action the item
+  is reported `outdated`. A refused single sign-on completion or provider password sign-in is
+  `sign-in-failed`. Invalid input is `validation-failed` with, among others, the rule codes
+  `secretRequired`, `duplicate`, `notFound` (`resource: mailboxTemplate`), `conflictsWith`
+  (`field: type`), `immutable`, `tooMany` (the bulk limit) and `invalidFormat` with the formats
+  listed in `ValidationRuleCode`.
+
+## container-protected
+
+- **Type**: `/api/v2/problems/container-protected`
+- **Status**: 409
+- **Meaning**: Feature 011. The container is protected and the action is not allowed: stopping a
+  protected container (by default the container service, the database, the key-value store, the
+  reverse proxy and this API's own container, a server setting), or stopping or restarting this
+  API's own container. Nothing was done. The attempt is audited.
+- **Extension members**: `container`, the service name.
+- **Client action**: Explain that the container cannot be stopped through the API. Offer a restart
+  where it is allowed (`Container.availableActions`).
+
+## container-not-running
+
+- **Type**: `/api/v2/problems/container-not-running`
+- **Status**: 409
+- **Meaning**: Feature 011. The resource usage of a container that is not running was requested.
+  The request was refused at once, without waiting for the container service.
+- **Extension members**: `container`, the service name.
+- **Client action**: Show the container as stopped and stop polling its usage until it runs again.
+
+## container-action-failed
+
+- **Type**: `/api/v2/problems/container-action-failed`
+- **Status**: 502
+- **Meaning**: Feature 011. mailcow's container service reported a failure for a start, stop or
+  restart (after the documented retries for start and stop), or for the restart of the ban service
+  during a rule reset. The audit record names the failure.
+- **Extension members**: `container`, the service name; `serviceMessage`, the container service's
+  message.
+- **Client action**: Show `serviceMessage`, read the container again and let the administrator
+  retry. Repeated failures need a look at the host (`docker compose ps`).
+
+## mail-service-not-running
+
+- **Type**: `/api/v2/problems/mail-service-not-running`
+- **Status**: 409
+- **Meaning**: Feature 011. The Postfix container is not running, so the queue cannot be listed,
+  viewed or changed. Nothing was changed.
+- **Extension members**: `container`, the stopped container (`postfix-mailcow`).
+- **Client action**: Tell the administrator to start the named container (`POST
+  /containers/{containerName}/start`) and try again.
+
+## queue-action-failed
+
+- **Type**: `/api/v2/problems/queue-action-failed`
+- **Status**: 502
+- **Meaning**: Feature 011. Postfix, or the container service running its command, reported a
+  failure for a queue listing, a message view or a queue action. A selected-messages action is not
+  partially reported: the whole request failed, and the audit record names the failure.
+- **Extension members**: `serviceMessage`, the reported message, never message content.
+- **Client action**: Show `serviceMessage` and list the queue again to see what changed.
+
+## ban-rules-not-restored
+
+- **Type**: `/api/v2/problems/ban-rules-not-restored`
+- **Status**: 504
+- **Meaning**: Feature 011. The ban rules were reset: the stored rules were removed and the ban
+  service was restarted, but it did not store mailcow's default rules within 10 seconds of the
+  restart. It stores them with the next log line it receives, as legacy reports. The audit record
+  holds the old rules.
+- **Extension members**: none.
+- **Client action**: Do not repeat the reset. Read the rules again after the next login attempt on
+  the server, or later.
+
+## ip-check-disabled
+
+- **Type**: `/api/v2/problems/ip-check-disabled`
+- **Status**: 409
+- **Meaning**: Feature 011. The public address lookup is refused because the IP check of the legacy
+  customisation settings is disabled (`MonitoringCapabilities.ipCheckEnabled` is `false`). No
+  outbound request was made. Enabling the check belongs to feature 013.
+- **Extension members**: none.
+- **Client action**: Hide or disable the lookup, or link to the setting.
+
+Feature 011 also uses `temporary-failure` (503, with `Retry-After`) when the container service,
+the key-value store, the database or the Rspamd controller is unavailable for a read or a change,
+or when the audit log cannot be written before an irreversible operation (container action, queue
+action, rule reset), and `outcome-unknown` (504) when the container service does not answer within
+`DOCKER_TIMEOUT`; there `step` names the action (`start`, `stop`, `restart`, `deliver`, `hold`,
+`release`, `delete`, `flush`, `purge`, `rulesReset`). An outdated `If-Match` on the ban settings,
+rules, rule reset or ban list rotation answers `412` (`about:blank`). An irreversible operation
+that was carried out but whose audit record could not be written answers normally and carries the
+response header `Audit-Recorded: false`.
+
+## quarantine-item-busy
+
+- **Type**: `/api/v2/problems/quarantine-item-busy`
+- **Status**: 409
+- **Meaning**: Feature 006. Another request of this API is releasing, learning or deleting the same
+  quarantine item right now. An item is processed by at most one request, so a message is never
+  delivered or learned twice through this API. Nothing changed. In a bulk action, the item gets the
+  outcome `refused` with this problem.
+- **Extension members**: none. The `Retry-After` header (5 seconds) says when to look again.
+- **Client action**: Re-check the item after `Retry-After`. It is then gone (`404`) or available
+  again.
+- **Related feature 006 errors** (no type of their own, or shared types):
+  - An item, mailbox, domain, alias domain, list entry or bucket that does not exist or lies outside
+    the caller's scope is `404` (`about:blank`), and so is a resource addressed as a mailbox. An
+    outdated `If-Match` is `412` (`about:blank`); in a bulk action the target is `outdated`.
+  - `permission-flag-required` (403, `requiredFlags`) is also used for mailbox users: `quarantine`
+    (item actions, whole-message download), `quarantineAttachments` (attachment downloads, whole
+    message download), `quarantineNotification`, `quarantineCategory`, `spamScore` and
+    `spamPolicy`; and for domain administrators: `quarantine`, `spamPolicy` and `ratelimit`. A role
+    that may never use an operation (a mailbox user and rate limits, a domain administrator and the
+    quarantine settings) gets `forbidden`.
+  - `temporary-failure` (503) carries, in feature 006, the extension members `dependency`
+    (`sharedStore`, `spamFilter` or `mailServer`) and, for item actions, `step` (`delivery` or
+    `learning`). A release whose learning fails after the delivery is not an error: the action
+    report says `learning: failed`.
+  - Invalid input is `validation-failed` with the rule codes listed for feature 006 in
+    `ValidationRuleCode`, among them `invalidTemplate` (params `reason`: `syntax`, `security`,
+    `render` or `timeout`, and `line`) for a notification template the legacy notifier cannot use.
+
+## quarantine-delivery-refused
+
+- **Type**: `/api/v2/problems/quarantine-delivery-refused`
+- **Status**: 409
+- **Meaning**: Feature 006. The mail server permanently refused (`5xx`) the message released from the
+  quarantine, for example because the recipient mailbox no longer exists or a policy rejects it.
+  The item is kept and nothing was learned. When the mail server cannot be reached, times out or
+  answers `4xx`, the answer is `temporary-failure` with `dependency: mailServer` instead. In a bulk
+  action, the item gets the outcome `refused` with this problem.
+- **Extension members**: `smtpCode` (500–599) and `smtpResponse`, the mail server's answer.
+- **Client action**: Show the mail server's answer. Delete the item, or fix the cause (for example
+  recreate the mailbox) and release it again.
+
+## quarantine-message-too-large
+
+- **Type**: `/api/v2/problems/quarantine-message-too-large`
+- **Status**: 409
+- **Meaning**: Feature 006. The stored message is larger than the content size limit (10 MiB by
+  default, `contentSizeLimit` of `GET /quarantine-capabilities`), so its attachments and the whole
+  message are not downloaded, as in legacy. The item's details then report
+  `contentStatus: tooLarge`. Releasing, learning and deleting the item still work.
+- **Extension members**: `size` and `limit`, in bytes.
+- **Client action**: Explain that the message is too large to inspect. Offer release or deletion.
+
+## spam-policy-entry-exists
+
+- **Type**: `/api/v2/problems/spam-policy-entry-exists`
+- **Status**: 409
+- **Meaning**: Feature 006. The domain, alias domain or mailbox already has this pattern (after
+  trimming and lower-casing) on its allow or its block list. A pattern may be on only one list of
+  an owner, as in legacy. The same pattern may exist for other owners. Nothing changed.
+- **Extension members**: `list` (`allow` or `block`) and `entryId`, the existing entry of the same
+  owner.
+- **Client action**: Point the user to the existing entry. To move a pattern to the other list,
+  remove the existing entry first.

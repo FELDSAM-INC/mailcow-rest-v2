@@ -1,0 +1,64 @@
+type: object
+description: |
+  JSON Merge Patch of a domain administrator account. Members that are not sent keep their values;
+  every member that is sent is applied or refused, never ignored. An empty object is refused
+  (`required` on `body`) and an unknown member with `unknownField`.
+
+  - `username`, `password`, `forcePasswordChange` and `forceSecondFactorSetup` follow the rules of
+    `AdminPatch`. A rename also moves the assignments (with their creation times), the permission
+    record, the API keys and the preferences, removes unused single sign-on tokens, and ends the
+    account's sessions and every impersonation of it.
+  - `active` changes the account and every one of its assignments.
+  - `domains` replaces the whole domain set. It must contain at least one domain (`required`), and
+    each entry follows the rules of `DomainAdminCreateRequest`. Assignments to domains that stay
+    keep their creation time and status; new assignments get the account's status. Assignments to
+    names that are not existing primary domains are dropped.
+  - `permissions` changes only the flags it names (see `DomainAdminPermissionsPatch`).
+  - The read-only members of `DomainAdmin` may be sent back unchanged; a different value is refused
+    with rule code `immutable`.
+minProperties: 1
+additionalProperties: false
+properties:
+  username:
+    type: string
+    minLength: 1
+    maxLength: 255
+  password:
+    type: string
+    minLength: 1
+    maxLength: 4096
+    writeOnly: true
+    format: password
+  active:
+    type: boolean
+  forcePasswordChange:
+    type: boolean
+  forceSecondFactorSetup:
+    type: boolean
+  domains:
+    type: array
+    minItems: 1
+    description: Domain names in ASCII or Unicode form, or assignments as read.
+    items:
+      oneOf:
+        - type: string
+          minLength: 1
+          maxLength: 255
+        - $ref: './DomainAdminAssignmentInput.yaml'
+  permissions:
+    $ref: './DomainAdminPermissionsPatch.yaml'
+  secondFactorStatus:
+    $ref: './AccountSecondFactorStatus.yaml'
+  activePasskeyCount:
+    type: integer
+    minimum: 0
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string

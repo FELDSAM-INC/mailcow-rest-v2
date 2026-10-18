@@ -1,0 +1,6 @@
+# Paths of the impersonation module (feature 007): login-as (legacy "dual login") and webmail
+# sign-in on behalf of a mailbox user.
+/session/impersonation:
+  $ref: './session-impersonation.yaml'
+/mailboxes/{mailbox}/webmail-sign-in:
+  $ref: './mailbox-webmail-sign-in.yaml'

@@ -1,0 +1,42 @@
+post:
+  operationId: createSessionWithSsoToken
+  tags: [Single sign-on tokens]
+  summary: Sign in with a single sign-on token
+  description: |
+    Signs in the domain administrator a token was issued for, without a password and without a
+    second factor, and consumes the token for this API and the legacy login alike. Tokens issued
+    through `/api/v1` work too. The token is valid only if it exists, is less than 30 seconds old,
+    and belongs to an active domain administrator account that existed when it was issued.
+
+    The session gets the domain administrator role and the sign-in method `ssoToken`. As after any
+    sign-in, the session identifier is renewed and forced password change or second-factor setup
+    restrict the session. A session the client already holds, including an impersonating one, is
+    replaced.
+
+    Failures return the generic `sign-in-failed` error, are audited and count towards sign-in
+    throttling per client address (`429` after 10 failures within 15 minutes). They are not
+    reported to fail2ban.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/SsoTokenSignInRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/SessionCreated.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/SignInRejected.yaml'
+    '403':
+      $ref: '../../components/responses/SignInForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '429':
+      $ref: '../../components/responses/TooManyRequests.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

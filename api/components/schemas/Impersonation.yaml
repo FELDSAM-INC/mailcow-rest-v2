@@ -1,0 +1,40 @@
+type: object
+description: |
+  The impersonation of the caller's session (legacy "login as" or "dual login"): the signed-in
+  account (`impersonator`) acts as `target`, with the target's role and scope and the permission
+  flags legacy grants to impersonators. It ends when the impersonator ends it, signs out, or when
+  the target is deleted or renamed, leaves the impersonator's scope, or an impersonating domain
+  administrator loses the `loginAs` flag.
+required: [id, impersonator, target, startedAt]
+properties:
+  id:
+    type: string
+    pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
+    description: ULID of the impersonation, also the audit target of its start and end.
+  impersonator:
+    type: object
+    description: The signed-in account and how it signed in.
+    required: [username, role, authMethod]
+    properties:
+      username:
+        type: string
+        examples: [alice]
+      role:
+        type: string
+        enum: [admin, domainAdmin]
+      authMethod:
+        $ref: './AuthMethod.yaml'
+  target:
+    type: object
+    description: The impersonated account.
+    required: [username, role]
+    properties:
+      username:
+        type: string
+        examples: [bob@a.example]
+      role:
+        type: string
+        enum: [mailboxUser, domainAdmin]
+  startedAt:
+    type: string
+    format: date-time

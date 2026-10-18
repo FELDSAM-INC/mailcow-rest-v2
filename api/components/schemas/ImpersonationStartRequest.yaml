@@ -1,0 +1,17 @@
+type: object
+description: |
+  The account to impersonate. `role` names its type: `mailboxUser` with the mailbox address
+  (normalised as feature 003 does: trimmed, lower-cased, domain in ASCII form), or `domainAdmin`
+  with the domain administrator's username (trimmed, lower-cased). Administrators can never be
+  impersonated.
+required: [role, username]
+additionalProperties: false
+properties:
+  role:
+    type: string
+    enum: [mailboxUser, domainAdmin]
+  username:
+    type: string
+    minLength: 1
+    maxLength: 255
+    examples: [bob@a.example]

@@ -1,0 +1,22 @@
+type: string
+description: Name of one domain administrator permission flag (see `DomainAdminPermissions`).
+enum:
+  - syncjobs
+  - quarantine
+  - loginAs
+  - sogoAccess
+  - appPasswds
+  - bccMaps
+  - pushover
+  - filters
+  - ratelimit
+  - spamPolicy
+  - extendSenderAcl
+  - unlimitedQuota
+  - protocolAccess
+  - smtpIpAccess
+  - aliasDomains
+  - mailboxRelayhost
+  - domainRelayhost
+  - domainDesc
+  - aliasExternalGoto

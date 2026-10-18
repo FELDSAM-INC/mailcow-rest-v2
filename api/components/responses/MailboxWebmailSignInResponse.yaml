@@ -1,0 +1,25 @@
+description: |
+  The webmail sign-in was granted to the requesting browser. Open `data.url` in the same browser.
+headers:
+  Set-Cookie:
+    description: |
+      The webmail hand-off cookie of feature 005 (mailcow's legacy session cookie, `HttpOnly`,
+      `Secure`), which mailcow's webmail single sign-on accepts. It grants webmail access to this
+      mailbox only.
+    required: true
+    schema:
+      type: string
+  Cache-Control:
+    description: Always `no-store`.
+    required: true
+    schema:
+      type: string
+      const: no-store
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/MailboxWebmailSignIn.yaml'

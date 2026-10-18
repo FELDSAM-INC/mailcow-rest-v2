@@ -1,0 +1,28 @@
+type: object
+description: |
+  Any subset of the 19 domain administrator permission flags. Only the flags sent are changed;
+  the others keep their values. A name that is not one of the 19 flags is refused with rule code
+  `unknownField` on `permissions.<name>`, and nothing changes. When the account has no stored
+  permission record, a change creates it with the sent flags and every other flag `false`.
+minProperties: 1
+additionalProperties: false
+properties:
+  syncjobs: {type: boolean}
+  quarantine: {type: boolean}
+  loginAs: {type: boolean}
+  sogoAccess: {type: boolean}
+  appPasswds: {type: boolean}
+  bccMaps: {type: boolean}
+  pushover: {type: boolean}
+  filters: {type: boolean}
+  ratelimit: {type: boolean}
+  spamPolicy: {type: boolean}
+  extendSenderAcl: {type: boolean}
+  unlimitedQuota: {type: boolean}
+  protocolAccess: {type: boolean}
+  smtpIpAccess: {type: boolean}
+  aliasDomains: {type: boolean}
+  mailboxRelayhost: {type: boolean}
+  domainRelayhost: {type: boolean}
+  domainDesc: {type: boolean}
+  aliasExternalGoto: {type: boolean}

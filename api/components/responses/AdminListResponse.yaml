@@ -1,0 +1,13 @@
+description: Accounts matching the filters, each with its full representation and version tag.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/Admin.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

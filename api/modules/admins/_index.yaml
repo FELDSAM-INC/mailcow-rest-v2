@@ -1,0 +1,12 @@
+# Paths of the admins module (feature 007): administrator accounts, their bulk actions and the
+# account capabilities shared with domain administrators.
+/admins:
+  $ref: './admins.yaml'
+/admins/{username}:
+  $ref: './admin.yaml'
+/admins/{username}/second-factor-suspension:
+  $ref: './admin-second-factor-suspension.yaml'
+/admin-bulk-actions:
+  $ref: './admin-bulk-actions.yaml'
+/account-capabilities:
+  $ref: './account-capabilities.yaml'

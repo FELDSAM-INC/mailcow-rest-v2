@@ -1,0 +1,21 @@
+type: object
+description: |
+  A single sign-on token for one domain administrator. It signs the account in once, without a
+  password and without a second factor, within 30 seconds of issue: either at the legacy domain
+  administrator login (`/domainadmin?sso_token=<token>`) or through `POST /session/sso-token`.
+  Using it in one place consumes it for both. This is the only response that ever contains the
+  token.
+required: [token, username, expiresAt]
+properties:
+  token:
+    type: string
+    pattern: '^[0-9A-F]{6}(-[0-9A-F]{6}){4}$'
+    description: Five groups of six upper-case hexadecimal characters, as legacy mailcow issues them.
+    examples: [3FA94C-0B12DE-77A0C1-E5D2B9-41C08F]
+  username:
+    type: string
+    examples: [reseller1]
+  expiresAt:
+    type: string
+    format: date-time
+    description: Issue time plus 30 seconds.

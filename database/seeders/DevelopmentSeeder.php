@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Services\Dkim\DkimKeyGenerator;
 use Database\Factories\MailcowRows;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,10 @@ use RuntimeException;
  *  - feature 008: alice@example.org may use sync jobs (`user_acl.syncjobs = 1`) and has job #1
  *    (never run) and job #2 (last run failed with EXIT_AUTHENTICATION_FAILURE_USER1, with a log);
  *    `carol@example.net` has job #3; `dave@example.org` may not use sync jobs; `reseller` keeps
- *    `da_acl.syncjobs = 1` (the schema default).
+ *    `da_acl.syncjobs = 1` (the schema default);
+ *  - feature 010: the alias domain example.com of example.org, a 2,048-bit DKIM key (selector
+ *    `dkim`) for example.org and an unused 1,024-bit key for old.example, in mailcow's Redis
+ *    hashes as legacy writes them.
  *
  * Run by scripts/dev/reset-dev-database.sh. It refuses to run outside APP_ENV=local, so that it
  * can never write accounts into a real mailcow database.
@@ -74,5 +78,13 @@ class DevelopmentSeeder extends Seeder
                 ."Exiting with return value 161 (EXIT_AUTHENTICATION_FAILURE_USER1) 0/50 nb_errors/max_errors\n",
         ]);
         $rows->syncJob('carol@example.net', ['host1' => 'mail.previous.example', 'user1' => 'carol', 'password1' => 'previous-secret']);
+
+        // Feature 010: an alias domain, a domain's DKIM key and an unused key (quickstart Part B).
+        $rows->aliasDomain('example.com', 'example.org');
+        $generator = new DkimKeyGenerator;
+        $domainKey = $generator->generate(2048);
+        $rows->dkimKeyHashes('example.org', 'dkim', $domainKey->publicKey, $domainKey->privateKey);
+        $unusedKey = $generator->generate(1024);
+        $rows->dkimKeyHashes('old.example', 'dkim', $unusedKey->publicKey, $unusedKey->privateKey);
     }
 }

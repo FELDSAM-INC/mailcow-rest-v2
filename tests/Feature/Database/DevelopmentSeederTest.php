@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Database;
 
+use App\Clients\SharedStore\DkimKeyStore;
+use App\Services\Dkim\DkimPublicKey;
 use Database\Seeders\DevelopmentSeeder;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -49,5 +51,13 @@ class DevelopmentSeederTest extends TestCase
         $this->assertNotSame('', (string) $jobs[1]->returned_text);
         $this->assertSame([1, 0, 1], array_map(fn (string $u): int => (int) DB::table('user_acl')->where('username', $u)->value('syncjobs'), ['alice@example.org', 'dave@example.org', 'carol@example.net']));
         $this->assertSame(1, (int) DB::table('da_acl')->where('username', 'reseller')->value('syncjobs'));
+
+        // Feature 010 T103: the alias domain and the DKIM keys of quickstart Part B.
+        $this->assertSame('example.org', DB::table('alias_domain')->where('alias_domain', 'example.com')->value('target_domain'));
+        $domainKey = $this->app->make(DkimKeyStore::class)->read('example.org');
+        $this->assertNotNull($domainKey);
+        $this->assertTrue($domainKey->complete());
+        $this->assertSame(['dkim', 2048], [$domainKey->selector, (new DkimPublicKey((string) $domainKey->publicKey))->bits()]);
+        $this->assertTrue((bool) $this->app->make(DkimKeyStore::class)->read('old.example')?->complete());
     }
 }

@@ -899,18 +899,18 @@ target.
 
 ## Phase 12: Polish & cross-cutting concerns
 
-- [ ] T100 [P] Write `tests/Feature/Dkim/DkimSecretLeakTest.php` (SC-005, FR-027): run a scenario
+- [X] T100 [P] Write `tests/Feature/Dkim/DkimSecretLeakTest.php` (SC-005, FR-027): run a scenario
   through every DKIM operation with logging captured, then scan the captured log, every response
   body of the scenario and every `restv2_audit_events.details` for `PRIVATE KEY` armour and for the
   base64 body lines of the fixture keys; matches are allowed only in export responses.
-- [ ] T101 [P] Write `tests/Feature/Dkim/DkimListPerformanceTest.php` (group `performance`, SC-012):
+- [X] T101 [P] Write `tests/Feature/Dkim/DkimListPerformanceTest.php` (group `performance`, SC-012):
   seed 5,000 domains, 5,000 alias domains and their 2,048-bit public keys (fixture texts, multi-row
   inserts and pipelined `HSET`), then assert that 20 requests for a page of 25 entries (default
   sort, then `sort=keyLength`) answer within 1 s at p95.
-- [ ] T102 [P] Write `tests/Feature/DnsDiagnostics/DnsDiagnosticsPerformanceTest.php` (group
+- [X] T102 [P] Write `tests/Feature/DnsDiagnostics/DnsDiagnosticsPerformanceTest.php` (group
   `performance`, SC-006): with `FakeDnsResolver` answering every lookup after 20 ms, 20 runs finish
   within 5 s at p95; with every lookup timing out, each run returns within the 30-second deadline.
-- [ ] T103 [P] Extend `database/seeders/DevelopmentSeeder.php`: alias domain `example.com` →
+- [X] T103 [P] Extend `database/seeders/DevelopmentSeeder.php`: alias domain `example.com` →
   `example.org`, a 2,048-bit DKIM key for `example.org`, an unused key for `old.example`, as
   quickstart Part B expects.
 - [ ] T104 Run `composer test` and confirm that `build/contract/coverage.json` lists the 15 operations

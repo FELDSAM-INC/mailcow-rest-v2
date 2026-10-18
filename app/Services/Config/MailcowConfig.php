@@ -17,7 +17,8 @@ use Throwable;
  * default of 2026-09a (`restv2.vars_defaults`). The files are evaluated by
  * resources/bin/export-mailcow-vars.php in a subprocess and the result is cached in Redis under
  * `restv2:mailcow-vars:<fingerprint>`, where the fingerprint covers path, size, modification time
- * and inode of both files: any change is picked up by the next call, with no time-based staleness.
+ * and inode of the files (feature 011 adds app_info.inc.php, which update.sh rewrites): any change
+ * is picked up by the next call, with no time-based staleness.
  * When the files are missing or cannot be evaluated, the defaults apply and one warning is logged
  * per fingerprint.
  *
@@ -226,6 +227,34 @@ class MailcowConfig
     }
 
     /**
+     * The installed version as mailcow's generated app_info.inc.php records it (feature 011
+     * research R9): tag, branch, commit, commit date (as written, `git log --format=%ci`), project
+     * address, owner and repository. Empty values are null.
+     *
+     * @return array{version: string|null, branch: string|null, commit: string|null, commitDate: string|null, url: string|null, owner: string|null, repo: string|null}
+     *
+     * @phpstan-impure
+     */
+    public function appInfo(): array
+    {
+        $text = function (string $name): ?string {
+            $value = $this->value($name);
+
+            return is_scalar($value) && trim((string) $value) !== '' ? trim((string) $value) : null;
+        };
+
+        return [
+            'version' => $text('MAILCOW_GIT_VERSION'),
+            'branch' => $text('MAILCOW_BRANCH'),
+            'commit' => $text('MAILCOW_GIT_COMMIT'),
+            'commitDate' => $text('MAILCOW_GIT_COMMIT_DATE'),
+            'url' => $text('MAILCOW_GIT_URL'),
+            'owner' => $text('MAILCOW_GIT_OWNER'),
+            'repo' => $text('MAILCOW_GIT_REPO'),
+        ];
+    }
+
+    /**
      * The effective value of a legacy variable listed in config/restv2.php.
      *
      * @phpstan-impure
@@ -339,7 +368,7 @@ class MailcowConfig
         if ($dir !== null) {
             clearstatcache(true);
 
-            foreach (['vars.inc.php', 'vars.local.inc.php'] as $file) {
+            foreach (['vars.inc.php', 'vars.local.inc.php', 'app_info.inc.php'] as $file) {
                 $stat = @stat($dir.'/'.$file);
                 $parts[$file] = $stat === false ? null : [$stat['size'], $stat['mtime'], $stat['ino']];
             }

@@ -9,6 +9,9 @@ use App\Auth\Role;
 use App\Clients\DockerApi\DockerApiClient;
 use App\Clients\Ispconfig\IspconfigDnsClient;
 use App\Clients\Memcached\MemcachedFlusher;
+use App\Clients\PublicAddress\PublicAddressLookup;
+use App\Clients\Releases\ReleaseSource;
+use App\Clients\Rspamd\RspamdController;
 use App\Services\Auth\SessionManager;
 use App\Services\Dkim\DkimDnsPublisher;
 use App\Support\Clock\Clock;
@@ -28,7 +31,10 @@ use Tests\Support\Dns\FakeClock;
 use Tests\Support\Fakes\FakeDockerApiClient;
 use Tests\Support\Fakes\FakeIspconfigDnsClient;
 use Tests\Support\Fakes\FakeMemcachedFlusher;
+use Tests\Support\Fakes\FakePublicAddressLookup;
+use Tests\Support\Fakes\FakeReleaseSource;
 use Tests\Support\Mailcow\MailcowFactory;
+use Tests\Support\Rspamd\FakeRspamdController;
 
 /**
  * Base class of every Laravel test (research R3, R13).
@@ -42,7 +48,8 @@ use Tests\Support\Mailcow\MailcowFactory;
  *  - Records sign-in throttling delays instead of waiting (`sleeper()`).
  *  - Fakes the outbound services of feature 002 and 010 with asserting fakes (`dockerApi()`,
  *    `memcached()`, `ispconfig()`) and binds a clock that moves only when the test advances it
- *    (`clock()`).
+ *    (`clock()`). Feature 011 adds the Rspamd controller (`rspamd()`), the update check's release
+ *    source (`releases()`) and the IP check service (`publicAddresses()`).
  */
 abstract class TestCase extends BaseTestCase
 {
@@ -63,6 +70,12 @@ abstract class TestCase extends BaseTestCase
 
     private FakeClock $clock;
 
+    private FakeRspamdController $rspamd;
+
+    private FakeReleaseSource $releases;
+
+    private FakePublicAddressLookup $publicAddresses;
+
     /** @var array<string, string> */
     private array $cookieJar = [];
 
@@ -76,6 +89,9 @@ abstract class TestCase extends BaseTestCase
         $this->app->instance(DockerApiClient::class, $this->dockerApi = new FakeDockerApiClient);
         $this->app->instance(MemcachedFlusher::class, $this->memcached = new FakeMemcachedFlusher);
         $this->app->instance(IspconfigDnsClient::class, $this->ispconfig = new FakeIspconfigDnsClient($this->clock));
+        $this->app->instance(RspamdController::class, $this->rspamd = new FakeRspamdController);
+        $this->app->instance(ReleaseSource::class, $this->releases = new FakeReleaseSource);
+        $this->app->instance(PublicAddressLookup::class, $this->publicAddresses = new FakePublicAddressLookup);
         DkimDnsPublisher::resetWarnings();
     }
 
@@ -97,6 +113,21 @@ abstract class TestCase extends BaseTestCase
     protected function clock(): FakeClock
     {
         return $this->clock;
+    }
+
+    protected function rspamd(): FakeRspamdController
+    {
+        return $this->rspamd;
+    }
+
+    protected function releases(): FakeReleaseSource
+    {
+        return $this->releases;
+    }
+
+    protected function publicAddresses(): FakePublicAddressLookup
+    {
+        return $this->publicAddresses;
     }
 
     /**

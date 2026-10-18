@@ -6,10 +6,10 @@
  *   php -n -d display_errors=stderr resources/bin/export-mailcow-vars.php <dir> <hostname> <NAME>...
  *
  * Reproduces legacy's include sequence (prerequisites.inc.php): HTTP_HOST is set to the mailcow
- * host name, which vars.inc.php reads, then <dir>/vars.inc.php and, when it exists,
- * <dir>/vars.local.inc.php are included in the global scope. Prints the requested variables that
- * are defined. Runs in its own process because vars.inc.php changes error_reporting and defines
- * globals. A parse error exits non-zero.
+ * host name, which vars.inc.php reads, then <dir>/vars.inc.php and, when they exist,
+ * <dir>/vars.local.inc.php and <dir>/app_info.inc.php are included in the global scope. Prints
+ * the requested variables that are defined. Runs in its own process because vars.inc.php changes
+ * error_reporting and defines globals. A parse error exits non-zero.
  */
 
 if ($argc < 3) {
@@ -31,6 +31,11 @@ require $__restv2_dir.'/vars.inc.php';
 
 if (is_file($__restv2_dir.'/vars.local.inc.php')) {
     include $__restv2_dir.'/vars.local.inc.php';
+}
+
+// The installed version (feature 011 research R9), included when present as legacy does.
+if (is_file($__restv2_dir.'/app_info.inc.php')) {
+    include $__restv2_dir.'/app_info.inc.php';
 }
 ob_end_clean();
 

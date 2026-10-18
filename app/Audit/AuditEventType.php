@@ -56,6 +56,25 @@ enum AuditEventType: string
     case ResourceDeletion = 'resourceDeletion';
     case MailboxSenderSettingsUpdate = 'mailboxSenderSettingsUpdate';
 
+    // Feature 011: monitoring and operations.
+    case ContainerStart = 'containerStart';
+    case ContainerStop = 'containerStop';
+    case ContainerRestart = 'containerRestart';
+    case MailQueueDelivery = 'mailQueueDelivery';
+    case MailQueueHold = 'mailQueueHold';
+    case MailQueueRelease = 'mailQueueRelease';
+    case MailQueueDeletion = 'mailQueueDeletion';
+    case MailQueueFlush = 'mailQueueFlush';
+    case MailQueuePurge = 'mailQueuePurge';
+    case MailQueueMessageView = 'mailQueueMessageView';
+    case Fail2banSettingsUpdate = 'fail2banSettingsUpdate';
+    case Fail2banRulesReplacement = 'fail2banRulesReplacement';
+    case Fail2banRulesReset = 'fail2banRulesReset';
+    case Fail2banBanLift = 'fail2banBanLift';
+    case Fail2banBanAllowlisting = 'fail2banBanAllowlisting';
+    case Fail2banBanDenylisting = 'fail2banBanDenylisting';
+    case Fail2banBanListIdRotation = 'fail2banBanListIdRotation';
+
     /**
      * Keys of refusal records written by App\Services\Audit\RefusalAuditor (docs/conventions.md
      * "Refusal auditing"): the problem type, the status and, for `422`, the field errors (rule codes
@@ -65,6 +84,9 @@ enum AuditEventType: string
 
     /** Keys of bulk actions: the request ID on every item's record, and the whole-request refusal. */
     private const BULK = ['bulkRequestId', 'targetIds', 'bulkAction'];
+
+    /** Feature 011: the list entries a ban service change added and removed. */
+    private const BAN_LISTS = ['allowlistAdded', 'allowlistRemoved', 'denylistAdded', 'denylistRemoved'];
 
     /**
      * The `details` keys this event may record (docs/audit-events.md). Every other key is dropped,
@@ -110,6 +132,15 @@ enum AuditEventType: string
             self::AliasDomainDeletion => ['removed', ...self::BULK, ...self::REFUSAL],
             self::ResourceCreation => ['values', 'groupwareUpdate', ...self::REFUSAL],
             self::MailboxSenderSettingsUpdate => ['changes', 'groupwareUpdate', ...self::REFUSAL],
+            self::ContainerStart, self::ContainerStop, self::ContainerRestart => ['outcome', 'stateBefore', 'stateAfter', 'serviceMessage', 'step', ...self::REFUSAL],
+            self::MailQueueDelivery, self::MailQueueHold, self::MailQueueRelease, self::MailQueueDeletion => ['results', 'serviceMessage', 'step', 'itemIds', 'bulkAction', ...self::REFUSAL],
+            self::MailQueueFlush, self::MailQueuePurge => ['serviceMessage', 'step', ...self::REFUSAL],
+            self::MailQueueMessageView => self::REFUSAL,
+            self::Fail2banSettingsUpdate => ['changes', ...self::BAN_LISTS, ...self::REFUSAL],
+            self::Fail2banRulesReplacement => ['oldRules', 'newRules', ...self::REFUSAL],
+            self::Fail2banRulesReset => ['oldRules', 'newRules', 'serviceMessage', 'step', ...self::REFUSAL],
+            self::Fail2banBanLift, self::Fail2banBanAllowlisting, self::Fail2banBanDenylisting => ['network', ...self::BAN_LISTS, ...self::REFUSAL],
+            self::Fail2banBanListIdRotation => self::REFUSAL,
         };
     }
 }

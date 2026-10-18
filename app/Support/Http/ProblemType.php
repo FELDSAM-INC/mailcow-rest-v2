@@ -60,6 +60,15 @@ enum ProblemType: string
     case AliasDomainAlreadyExists = 'alias-domain-already-exists';
     case NotPrimaryDomainAlias = 'not-primary-domain-alias';
 
+    // Feature 011: monitoring and operations (temporary-failure and outcome-unknown are shared).
+    case ContainerProtected = 'container-protected';
+    case ContainerNotRunning = 'container-not-running';
+    case ContainerActionFailed = 'container-action-failed';
+    case MailServiceNotRunning = 'mail-service-not-running';
+    case QueueActionFailed = 'queue-action-failed';
+    case BanRulesNotRestored = 'ban-rules-not-restored';
+    case IpCheckDisabled = 'ip-check-disabled';
+
     public function uri(): string
     {
         return '/api/v2/problems/'.$this->value;
@@ -80,6 +89,9 @@ enum ProblemType: string
             self::DkimKeyExists, self::MtaStsPolicyExists, self::AddressInUse, self::MailboxLimitReached,
             self::MailboxNotRenamable, self::MailboxTemplateNameExists, self::MailboxTemplateProtected,
             self::DomainAliasLimitReached, self::AliasDomainAlreadyExists, self::NotPrimaryDomainAlias => 409,
+            self::ContainerProtected, self::ContainerNotRunning, self::MailServiceNotRunning, self::IpCheckDisabled => 409,
+            self::ContainerActionFailed, self::QueueActionFailed => 502,
+            self::BanRulesNotRestored => 504,
             self::MailboxRenameIncomplete => 500,
             self::OutcomeUnknown => 504,
             self::AttributeNotPermitted, self::PermissionFlagRequired, self::DkimPrivateKeyExportDisabled,
@@ -134,6 +146,13 @@ enum ProblemType: string
             self::DomainAliasLimitReached => 'Domain alias limit reached',
             self::AliasDomainAlreadyExists => 'Alias domain already exists',
             self::NotPrimaryDomainAlias => 'Not a primary-domain alias',
+            self::ContainerProtected => 'Container protected',
+            self::ContainerNotRunning => 'Container not running',
+            self::ContainerActionFailed => 'Container action failed',
+            self::MailServiceNotRunning => 'Mail service not running',
+            self::QueueActionFailed => 'Queue action failed',
+            self::BanRulesNotRestored => 'Ban rules not restored',
+            self::IpCheckDisabled => 'IP check disabled',
         };
     }
 
@@ -184,6 +203,13 @@ enum ProblemType: string
             self::DomainAliasLimitReached => 'The domain has no room for more aliases.',
             self::AliasDomainAlreadyExists => 'The name already exists as a domain or alias domain.',
             self::NotPrimaryDomainAlias => 'Only aliases of a primary domain can be copied over its alias domains.',
+            self::ContainerProtected => 'The container is protected; the action is not allowed. Nothing was done.',
+            self::ContainerNotRunning => 'The container is not running.',
+            self::ContainerActionFailed => 'mailcow\'s container service reported a failure.',
+            self::MailServiceNotRunning => 'The Postfix container is not running. Nothing was changed.',
+            self::QueueActionFailed => 'Postfix reported a failure.',
+            self::BanRulesNotRestored => 'The ban service did not store mailcow\'s default rules within 10 seconds of its restart; it stores them with the next log line it receives.',
+            self::IpCheckDisabled => 'The IP check is disabled in the customisation settings; no outbound request was made.',
         };
     }
 

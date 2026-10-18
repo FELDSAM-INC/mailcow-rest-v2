@@ -25,17 +25,21 @@ use App\Policies\DomainPolicy;
 use App\Policies\DomainTemplatePolicy;
 use App\Policies\MailboxPolicy;
 use App\Policies\MailboxTemplatePolicy;
+use App\Policies\MonitoringPolicy;
 use App\Services\Aliases\AliasAuditTargets;
 use App\Services\Audit\RefusalAuditor;
 use App\Services\Config\MailcowConfig;
 use App\Services\Domains\DomainAuditTargets;
 use App\Services\Groupware\GroupwareCacheFlush;
 use App\Services\Mailboxes\MailboxAuditTargets;
+use App\Services\Monitoring\MonitoringAuditTargetResolver;
+use App\Services\Monitoring\SharedSnapshotCache;
 use App\Support\Clock\Clock;
 use App\Support\Clock\Sleeper;
 use App\Support\Clock\SystemClock;
 use App\Support\Clock\UsleepSleeper;
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -49,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(Fail2BanReporter::class, RedisFail2BanReporter::class);
         $this->app->bind(Sleeper::class, UsleepSleeper::class);
         $this->app->bind(YubicoOtpVerifier::class, HttpYubicoOtpVerifier::class);
+        $this->app->singleton(SharedSnapshotCache::class, fn ($app) => new SharedSnapshotCache($app->make(CacheFactory::class)->store('restv2')));
 
         // Outbound services of features 002 and 010, faked in tests (tests/TestCase.php) and, in
         // development only, with RESTV2_FAKE_OUTBOUND=y.
@@ -87,6 +92,20 @@ class AppServiceProvider extends ServiceProvider
         DomainAuditTargets::register($this->app->make(RefusalAuditor::class));
         MailboxAuditTargets::register($this->app->make(RefusalAuditor::class));
         AliasAuditTargets::register($this->app->make(RefusalAuditor::class));
+        MonitoringAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
+
+        // Feature 011: administrators only (research R26).
+        Gate::define('operate-monitoring', [MonitoringPolicy::class, 'operate']);
+
+        // Feature 011 (research R24, FR-064): an operation carried out without its audit record.
+        JsonResponse::macro('withAuditRecorded', function (bool $recorded): JsonResponse {
+            /** @var JsonResponse $this */
+            if (! $recorded) {
+                $this->headers->set('Audit-Recorded', 'false');
+            }
+
+            return $this;
+        });
 
         // mailcow's SESSION_LIFETIME (seconds) is the idle lifetime of browser sessions (R6).
         try {

@@ -63,22 +63,22 @@ polish.
 **Purpose**: Reconcile with earlier features, runtime and deployment changes, configuration and
 recorded fixtures. No business logic.
 
-- [ ] T001 Reconcile the prerequisites (R1). Check that `app/Clients/DockerApi/DockerApiClient.php`
+- [X] T001 Reconcile the prerequisites (R1). Check that `app/Clients/DockerApi/DockerApiClient.php`
   with `restart()`, `exec()` and `DockerCallResult` (002, 003), `app/Clients/Rspamd/RspamdController.php`
   (006), `app/Services/Audit/RefusalAuditor.php` (008), the `ProblemType` cases `TemporaryFailure`
   and `OutcomeUnknown`, and the `targetType`/`targetId` filters of `GET /audit-events` exist. Where
   the implemented names differ from this document, replace them throughout this `tasks.md` before
   T007. If a prerequisite is missing, stop and implement it in its own feature first; 011 does not
   re-create 002's, 006's or 008's code.
-- [ ] T002 [P] Update `docker/php/Dockerfile`, stage `base`: `apk add --no-cache python3` (R20,
+- [X] T002 [P] Update `docker/php/Dockerfile`, stage `base`: `apk add --no-cache python3` (R20,
   R29), and add a build-time check `python3 -c "import re, json"`. Update `docker/php/php-fpm.conf`
   with `request_terminate_timeout = 100s`. In `deploy/nginx/site.restv2.custom` and
   `docker/nginx/dev.conf`, change `fastcgi_read_timeout` from `60s` to `90s` (R28).
-- [ ] T003 [P] Extend `deploy/docker-compose.override.yml` for service `restv2-mailcow`: environment
+- [X] T003 [P] Extend `deploy/docker-compose.override.yml` for service `restv2-mailcow`: environment
   `COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-mailcow-dockerized}`, `SKIP_CLAMD=${SKIP_CLAMD:-n}`,
   `SKIP_OLEFY=${SKIP_OLEFY:-n}`, `LOG_LINES=${LOG_LINES:-9999}`, and the volume
   `rspamd-vol-1:/var/lib/rspamd:ro` if 006 did not add it (R28).
-- [ ] T004 [P] Add the settings of R27 to `config/restv2.php` (`monitoring.*`, `fail2ban.*`,
+- [X] T004 [P] Add the settings of R27 to `config/restv2.php` (`monitoring.*`, `fail2ban.*`,
   `update_check.*`, `ip_check.*`, `dockerapi.*`), with these constants in `monitoring`:
   `poll_interval = 5`, `max_age = [containers => 5, host => 10, usage_sample => 15, usage_cache =>
   5, mail_storage => 60]`, `queue_listing_max = 10000`, `queue_bulk_max = 1000`, `rules_max = 100`,
@@ -95,7 +95,7 @@ recorded fixtures. No business logic.
   Add the same names to `.env.example` and `.env.testing` (testing: `COMPOSE_PROJECT_NAME=mailcowtest`,
   `LOG_LINES=9999`, `TZ=Europe/Prague`, `IPV4_NETWORK=172.22.1`,
   `IPV6_NETWORK=fd4d:6169:6c63:6f77::/64`).
-- [ ] T005 [P] Record the fixtures of `tests/fixtures/monitoring/` from a `2026-09a` installation
+- [X] T005 [P] Record the fixtures of `tests/fixtures/monitoring/` from a `2026-09a` installation
   (anonymised, no secrets; each file starts with a comment line or a sibling `.md` naming its
   source command):
   - `containers.json` (dockerapi `/containers/json?all=true` with 19 mailcow services of project
@@ -113,7 +113,7 @@ recorded fixtures. No business logic.
   - `rspamd-history.json` (version 2, 30 rows including a `reject` from `spammer@example.net`
     with positive, negative and zero symbols), `rspamd-stat.json`;
   - `github-latest.json`, `github-tag-2026-09a.json`.
-- [ ] T006 [P] Create `tests/fixtures/monitoring/app_info.inc.php` and
+- [X] T006 [P] Create `tests/fixtures/monitoring/app_info.inc.php` and
   `tests/fixtures/monitoring/vars.local.inc.php` (sets `$DOCKER_TIMEOUT = 30;`) for the
   `MailcowConfig` tests (format of upstream `generate_config.sh`: `MAILCOW_GIT_VERSION="2026-09a"`,
   `MAILCOW_BRANCH="master"`, empty commit, `MAILCOW_GIT_URL`, owner `mailcow`, repo
@@ -131,7 +131,7 @@ values, authorisation and the route group. **No user story starts before this ph
 
 ### Tests and toolkit for the foundation (write first, observe failing) ⚠️
 
-- [ ] T007 [P] Extend 002's `tests/Support/Fakes/FakeDockerApiClient.php` (it implements
+- [X] T007 [P] Extend 002's `tests/Support/Fakes/FakeDockerApiClient.php` (it implements
   `DockerApiClient`) with scripted answers per method and service (`withContainers(array)`,
   `withHostStats(array)`, `withStats(service, list)`, `withExec(service, cmd, task, answer)`,
   `failNext(method, 'unreachable'|'timeout'|'danger:<msg>')`), a call log (`calls()`,
@@ -142,11 +142,11 @@ values, authorisation and the route group. **No user story starts before this ph
   `tests/Support/Redis/MailcowLogs.php` (pushes log lines in each producer's exact format to the
   `mailcow` connection, and writes `F2B_*` keys as legacy and netfilter write them, including
   Python `json.dumps` spacing for `F2B_OPTIONS`).
-- [ ] T008 [P] Extend 006's `tests/Support/Rspamd/FakeRspamdController.php` with `history()` and
+- [X] T008 [P] Extend 006's `tests/Support/Rspamd/FakeRspamdController.php` with `history()` and
   `stat()` answers from fixtures, `unreachable()`, and a call log; create
   `tests/Support/Fakes/FakeReleaseSource.php` (`latest()`, `byTag()`, `fail()`, call counter); and
   `tests/Support/Fakes/FakePublicAddressLookup.php` (per-family answers, call counter).
-- [ ] T009 [P] Extend 002's `tests/Unit/Clients/HttpDockerApiClientTest.php` (`Http::fake()`, R2):
+- [X] T009 [P] Extend 002's `tests/Unit/Clients/HttpDockerApiClientTest.php` (`Http::fake()`, R2):
   `containers()` calls `GET /containers/json?all=true`, keeps only project `mailcowtest`
   (case-insensitive), keys by service label, maps `0001-01-01T00:00:00Z`, absent health and
   health `none` to `null`, and the serialised `ContainerSnapshot` contains no `Env` value (assert `planted-secret` is
@@ -159,12 +159,12 @@ values, authorisation and the route group. **No user story starts before this ph
   timeouts → `DockerApiTimeout` for the reads and `unknown` for actions and exec,
   `{"type":"danger","msg":"x"}` → `failed('x')`; `DOCKER_TIMEOUT` is the default timeout. The
   existing 002/003 cases stay green.
-- [ ] T010 [P] Write `tests/Unit/Monitoring/SharedSnapshotCacheTest.php` (R5) on the real Redis:
+- [X] T010 [P] Write `tests/Unit/Monitoring/SharedSnapshotCacheTest.php` (R5) on the real Redis:
   a fresh snapshot is served without calling the loader; a snapshot older than the maximum age
   calls the loader once; two concurrent callers (simulated by holding the lock in the test and
   releasing it) cause one loader call; `forget()` invalidates; the stored TTL is `maxAge + 5`;
   a lock wait timeout falls back to a direct load.
-- [ ] T011 [P] Write `tests/Unit/Monitoring/ContainerRoleMapTest.php` and
+- [X] T011 [P] Write `tests/Unit/Monitoring/ContainerRoleMapTest.php` and
   `tests/Feature/Monitoring/ContainerRegistryTest.php` (R3): every upstream service maps to its role
   (`mysql-mailcow` → `database`, `redis-mailcow` → `keyValueStore`, `postfix-mailcow` →
   `mailTransfer`, `dovecot-mailcow` → `imap`, `sogo-mailcow` → `webmail`, `nginx-mailcow` → `proxy`,
@@ -172,25 +172,25 @@ values, authorisation and the route group. **No user story starts before this ph
   `RESTV2_CONTAINER_ROLES` overrides; `SKIP_CLAMD=y` and `SKIP_OLEFY=yes` hide the scanners;
   protected and own-container flags (also by host-name prefix of the container ID); available
   actions per state; `banServiceRunning()` returns `true`, `false` or `null` (dockerapi down).
-- [ ] T012 [P] Write `tests/Feature/Config/MailcowConfigInstallationTest.php` (R9): with the T006
+- [X] T012 [P] Write `tests/Feature/Config/MailcowConfigInstallationTest.php` (R9): with the T006
   fixtures mounted as the `inc` directory, `MailcowConfig` returns the `app_info.inc.php` values and
   `DOCKER_TIMEOUT = 30` from `vars.local.inc.php`; `RESTV2_DOCKER_TIMEOUT` overrides it; without the
   files the defaults are `null` and `60`; touching `app_info.inc.php` changes the fingerprint and
   the next call sees the new version; empty strings become `null`; `MAILCOW_GIT_COMMIT_DATE`
   `2026-09-15 10:11:12 +0200` becomes `2026-09-15T08:11:12Z`.
-- [ ] T013 [P] Write `tests/Feature/Audit/IrreversibleOperationAuditTest.php` (R24, FR-064):
+- [X] T013 [P] Write `tests/Feature/Audit/IrreversibleOperationAuditTest.php` (R24, FR-064):
   `probe()` throws a `ProblemException(TemporaryFailure)` when the audit table cannot be read
   (simulate by revoking with a broken connection config in the test); `recordWithRetry()` inserts
   exactly one row; after an injected connection failure it reconnects and retries every second with
   the faked `Sleeper` until the deadline; a duplicate ULID on retry counts as success; after the
   deadline it logs at `error` without secrets and reports `recorded = false`, and the
   `withAuditRecorded(false)` response macro adds `Audit-Recorded: false`.
-- [ ] T014 [P] Write `tests/Unit/Support/ProblemTypeMonitoringTest.php`: the `ProblemType` cases
+- [X] T014 [P] Write `tests/Unit/Support/ProblemTypeMonitoringTest.php`: the `ProblemType` cases
   `ContainerProtected` (409), `ContainerNotRunning` (409), `ContainerActionFailed` (502),
   `MailServiceNotRunning` (409), `QueueActionFailed` (502), `BanRulesNotRestored` (504) and
   `IpCheckDisabled` (409) exist with the URIs of `docs/problems.md`; 001's
   `ProblemTypeConsistencyTest` stays green.
-- [ ] T015 [P] Create `tests/Feature/Security/MonitoringAuthorizationTest.php` with a data provider
+- [X] T015 [P] Create `tests/Feature/Security/MonitoringAuthorizationTest.php` with a data provider
   `operations()` (method, path, body) that each story phase extends with its operations, and the
   cases: signed-in administrator → not `401`/`403`; domain administrator and mailbox user sessions →
   `403 forbidden`; read-write key owned by a domain administrator → `403 forbidden` on every
@@ -210,7 +210,7 @@ values, authorisation and the route group. **No user story starts before this ph
 
 ### Implementation of the foundation
 
-- [ ] T016 Extend 002's `app/Clients/DockerApi/DockerApiClient.php` and `HttpDockerApiClient.php`
+- [X] T016 Extend 002's `app/Clients/DockerApi/DockerApiClient.php` and `HttpDockerApiClient.php`
   with `containers()`, `start()`, `stop()`, `containerStats()` and `hostStats()`, switch the ID
   lookup to `GET /containers/json?all=true`, and add `body` to
   `app/Clients/DockerApi/DockerCallResult.php` if 003 or 005 did not (R2). Create
@@ -218,29 +218,29 @@ values, authorisation and the route group. **No user story starts before this ph
   `running`, `startedAt`, `health`; no environment) and the exceptions `DockerApiUnreachable` and
   `DockerApiTimeout` in the same directory. Extend `tests/Support/Fakes/FakeDockerApiClient.php`
   (002) as described in T007. This makes T009 pass.
-- [ ] T017 [P] Create `app/Services/Monitoring/Snapshot.php` and `SharedSnapshotCache.php` (R5) on
+- [X] T017 [P] Create `app/Services/Monitoring/Snapshot.php` and `SharedSnapshotCache.php` (R5) on
   the `restv2` cache store with `Cache::lock()`. This makes T010 pass.
-- [ ] T018 Create `app/Services/Monitoring/ContainerRoleMap.php` and `ContainerRegistry.php` (R3):
+- [X] T018 Create `app/Services/Monitoring/ContainerRoleMap.php` and `ContainerRegistry.php` (R3):
   `snapshot(): Snapshot` (cached 5 s), `fresh(): list<ContainerSnapshot>`,
   `find(string $service, bool $fresh = false): ?ContainerSnapshot` (hidden and foreign → `null`),
   `isProtected()`, `isOwnContainer()`, `role()`, `availableActions()`, `banServiceRunning(): ?bool`,
   `forget(string $service)`. Depends on T016 and T017. This makes T011 pass.
-- [ ] T019 [P] Extend `resources/bin/export-mailcow-vars.php` and
+- [X] T019 [P] Extend `resources/bin/export-mailcow-vars.php` and
   `app/Services/Config/MailcowConfig.php` (001) with `app_info.inc.php` (included when present) and
   the values of R9, and the three-file fingerprint; add `app/Services/Monitoring/InstallationVersionService.php`
   returning an `InstallationVersion` value (`tag`, `branch`, `commit`, `commitDate` UTC,
   `projectUrl`). This makes T012 pass.
-- [ ] T020 [P] Create `app/Services/Audit/IrreversibleOperationAudit.php` (`probe()`,
+- [X] T020 [P] Create `app/Services/Audit/IrreversibleOperationAudit.php` (`probe()`,
   `recordWithRetry(AuditEventType, …, float $deadline): bool`) on top of 001's `AuditLogger`, and
   the response macro `withAuditRecorded(bool)` in `app/Providers/AppServiceProvider.php`. This makes
   T013 pass.
-- [ ] T021 [P] Add the seven cases of T014 to `app/Support/Http/ProblemType.php` with their
+- [X] T021 [P] Add the seven cases of T014 to `app/Support/Http/ProblemType.php` with their
   statuses and English titles, and render the extension members `container` and `serviceMessage`
   from `ProblemException` context. Map exceptions in `bootstrap/app.php`:
   `DockerApiUnreachable`, `DockerCallResult` with `unreachable`, and Redis/PDO connection failures
   inside the monitoring route group →
   `503 temporary-failure` with `Retry-After: 5`. This makes T014 pass.
-- [ ] T022 Create `app/Policies/MonitoringPolicy.php` and register the gate `operate-monitoring`
+- [X] T022 Create `app/Policies/MonitoringPolicy.php` and register the gate `operate-monitoring`
   (role `admin` only) in `AppServiceProvider`; add an empty route group in `routes/api.php` with
   `restv2.auth:authenticated`, the default `restv2.pending:enforce` and `can:operate-monitoring`,
   under which every route of this feature is registered; every state-changing route declares
@@ -927,3 +927,41 @@ this feature.
 - Container environments are dropped in `HttpDockerApiClient` and must never reach a cache, a log,
   a response or an audit record (T009, T109).
 - Commit after each task or logical group, with short imperative subjects and no AI attribution.
+
+## Implementation notes (2026-10-18)
+
+Deviations and decisions made while implementing, with the reason:
+
+- **T001** (prerequisites): 001 and 002 were in place. Feature 003's foundation (on `main` since
+  `3ebb3ad`) supplies `DockerCallResult::unreachable()` and its `data` member (the `body` of research
+  R2 is `data`), `ProblemType::OutcomeUnknown` with `App\Exceptions\OutcomeUnknown`, and
+  `App\Exceptions\CarriesAuditDetails` (refusal records take details from the exception and also
+  cover `5xx` answers that carry them). 008's `RefusalAuditor` exists since 002, and so do the
+  `targetType`/`targetId` audit filters. Feature 006's Rspamd client did not exist: 011 created
+  `App\Clients\Rspamd\RspamdController` with the two reads it needs (`stat()` with 006's signature
+  and `history()`), `RspamdUnavailable`, `UnixSocketRspamdController` and
+  `tests/Support/Rspamd/FakeRspamdController.php` (006's plan path), with `config('restv2.rspamd.*')`
+  as 006 research R2 and R20 define it; 006 adds its learning calls and `actions()`.
+- **T002**: `request_terminate_timeout` is not set. Feature 003 raised nginx's `fastcgi_read_timeout`
+  to 900 s and its long operations call `set_time_limit(0)`; a 100 s php-fpm limit would kill them.
+  011's actions bound themselves with `set_time_limit(DOCKER_TIMEOUT + 20)`, and 900 s covers them.
+- **T004**: `.env.testing` keeps 002's `COMPOSE_PROJECT_NAME=mailcowdockerized` (002's tests depend on
+  it), so the fixtures use that project instead of `mailcowtest`. `HOSTNAME` is the source of the
+  own-container check by host name (`restv2.monitoring.hostname`).
+- **T005**: the fixtures were synthesised from the producers' code (dockerapi, netfilter, syslog-ng,
+  `postqueue -j`, Rspamd's history and stat documents, GitHub's release API) instead of being
+  recorded on an installation; `tests/fixtures/monitoring/README.md` names each source.
+- **T009, T016**: text answers (`postqueue -j`, `postcat`, `df`) come from a new
+  `DockerApiClient::execText()`, so that `exec()` keeps 002's and 003's `{type, msg}` semantics.
+  `exec()`, `query()` and `reachable()` still look up running containers only; `start()`, `stop()`
+  and `restart()` use `?all=true`, so 002's SOGo restart now also starts a stopped SOGo (dockerapi's
+  own restart handler lists all containers too). The new cases are in
+  `tests/Unit/Clients/HttpDockerApiClientMonitoringTest.php`; 002's test only follows the new lookup.
+- **T013, T020**: `AuditLogger::recordWithId()` writes a record with a ULID chosen up front;
+  `record()` is unchanged, because tests override it and a new parameter would break their
+  signatures. Reconnecting after a lost connection is skipped inside a database transaction
+  (tests), where it would end the transaction.
+- **T022**: the gate `operate-monitoring` runs in the route middleware
+  `App\Http\Middleware\AuthorizeMonitoring` (registered by class name), not Laravel's `can:`,
+  because the session guard's user is not the request's `Principal`. It runs after
+  `restv2.pending`, before validation.

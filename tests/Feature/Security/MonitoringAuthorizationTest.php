@@ -1,0 +1,206 @@
+<?php
+
+namespace Tests\Feature\Security;
+
+use App\Auth\Role;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpFoundation\Response;
+use Tests\Support\ApiKeys\ApiKeys;
+use Tests\Support\Mailcow\MailcowFactory;
+use Tests\TestCase;
+
+/**
+ * Feature 011 T015 (FR-001, FR-002, FR-004, SC-005, research R24, R26): every operation of the
+ * monitoring feature for every kind of caller. Administrators (sessions, read-write keys) may use
+ * everything, administrator read-only keys every read; everyone else is refused. Refusals of
+ * authenticated callers on state-changing operations, and on the message content view, write
+ * exactly one failure record; anti-forgery failures, `401`s and other refused reads write none.
+ * Each story phase adds its operations to operations().
+ */
+class MonitoringAuthorizationTest extends TestCase
+{
+    use ApiKeys;
+
+    /** @var array<string, string> */
+    private array $keys = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $f = $this->mailcow();
+        $f->admin('admin', MailcowFactory::PASSWORD, 'SSHA256');
+        $f->admin('restricted', MailcowFactory::PASSWORD, 'SSHA256', attributes: ['force_pw_update' => '1']);
+        $f->domain('example.org');
+        $f->domainAdmin('reseller', ['example.org'], scheme: 'SSHA256');
+        $f->mailbox('user@example.org', MailcowFactory::PASSWORD, 'SSHA256');
+        $this->keys = [
+            'adminKey' => $this->apiKey('admin', 'readWrite')['secret'],
+            'adminReadOnlyKey' => $this->apiKey('admin', 'readOnly')['secret'],
+            'domainAdminKey' => $this->apiKey('reseller', 'readWrite')['secret'],
+            'domainAdminReadOnlyKey' => $this->apiKey('reseller', 'readOnly')['secret'],
+        ];
+    }
+
+    /**
+     * operation => [method, path, body or null, audit event or null, audit target type or null].
+     * The event and target are those of the route's `restv2.audit` default (state-changing
+     * operations and the content view).
+     *
+     * @return array<string, array{string, string, array<string, mixed>|null, string|null, string|null}>
+     */
+    public static function operations(): array
+    {
+        return [];
+    }
+
+    private const CALLERS = [
+        'anonymous',
+        'restricted',
+        'adminSession',
+        'adminKey',
+        'adminReadOnlyKey',
+        'domainAdminSession',
+        'mailboxSession',
+        'domainAdminKey',
+        'domainAdminReadOnlyKey',
+    ];
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function cases(): array
+    {
+        $cases = [];
+
+        foreach (array_keys(self::operations()) as $operation) {
+            foreach (self::CALLERS as $caller) {
+                $cases["{$operation} as {$caller}"] = [$operation, $caller];
+            }
+        }
+
+        return $cases === [] ? ['no operation yet' => ['', '']] : $cases;
+    }
+
+    /**
+     * @return array{int|null, string|null} expected status (null: allowed, neither 401 nor 403) and problem type name
+     */
+    private static function expected(string $method, string $caller): array
+    {
+        $unsafe = $method !== 'GET';
+
+        if (in_array($caller, ['adminReadOnlyKey', 'domainAdminReadOnlyKey'], true) && $unsafe) {
+            return [403, 'insufficient-key-scope'];
+        }
+
+        return match ($caller) {
+            'anonymous' => [401, 'unauthenticated'],
+            'restricted' => [403, 'pending-action-required'],
+            'adminSession', 'adminKey', 'adminReadOnlyKey' => [null, null],
+            default => [403, 'forbidden'],
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $body
+     * @return TestResponse<Response>
+     */
+    private function send(string $caller, string $method, string $path, ?array $body, bool $withCsrf = true): TestResponse
+    {
+        $headers = [];
+
+        match ($caller) {
+            'anonymous' => null,
+            'restricted' => $this->signInAs('restricted', Role::Admin),
+            'adminSession' => $this->signInAs('admin', Role::Admin),
+            'domainAdminSession' => $this->signInAs('reseller', Role::DomainAdmin),
+            'mailboxSession' => $this->signInAs('user@example.org', Role::MailboxUser),
+            default => $headers['X-API-Key'] = $this->keys[$caller],
+        };
+
+        if ($withCsrf && ! isset($headers['X-API-Key']) && $method !== 'GET') {
+            $headers['X-CSRF-Token'] = $this->csrfToken();
+        }
+
+        if ($body === null) {
+            return $method === 'GET' ? $this->json($method, $path, [], $headers) : $this->postEmptyAs($method, $path, $headers);
+        }
+
+        return $method === 'PATCH'
+            ? $this->patchMerge($path, $body, $headers)
+            : $this->json($method, $path, $body, $headers);
+    }
+
+    /**
+     * @param  array<string, string>  $headers
+     * @return TestResponse<Response>
+     */
+    private function postEmptyAs(string $method, string $path, array $headers): TestResponse
+    {
+        return $this->call($method, $path, [], [], [], $this->transformHeadersToServerVars(array_merge(['Accept' => 'application/json'], $headers)));
+    }
+
+    private function auditRows(): int
+    {
+        return DB::table('restv2_audit_events')->count();
+    }
+
+    #[DataProvider('cases')]
+    public function test_every_operation_for_every_caller(string $operation, string $caller): void
+    {
+        if ($operation === '') {
+            $this->markTestSkipped('No monitoring operation is implemented yet.');
+        }
+
+        [$method, $path, $body, $event, $target] = self::operations()[$operation];
+        [$status, $type] = self::expected($method, $caller);
+        $before = $this->auditRows();
+
+        $response = $this->send($caller, $method, $path, $body);
+
+        if ($status === null) {
+            $this->assertNotContains($response->getStatusCode(), [401, 403], "{$operation} refused {$caller}: ".$response->getContent());
+
+            return;
+        }
+
+        $response->assertStatus($status)->assertJsonPath('type', '/api/v2/problems/'.$type);
+
+        if ($status === 401 || $event === null) {
+            $this->assertSame($before, $this->auditRows(), 'a refused read or a 401 was audited');
+
+            return;
+        }
+
+        $rows = DB::table('restv2_audit_events')->where('outcome', 'failure')->get();
+        $this->assertCount($before + 1, DB::table('restv2_audit_events')->get(), 'not exactly one record for the refusal');
+        $row = $rows->last();
+        $this->assertSame($event, $row->event_type);
+        $this->assertSame($target, $row->target_type);
+        $this->assertSame('permissionDenied', $row->failure_reason);
+        $this->assertSame('/api/v2/problems/'.$type, json_decode((string) $row->details, true)['problemType'] ?? null);
+    }
+
+    #[DataProvider('cases')]
+    public function test_a_session_without_the_anti_forgery_token_is_refused_and_not_audited(string $operation, string $caller): void
+    {
+        if ($operation === '') {
+            $this->markTestSkipped('No monitoring operation is implemented yet.');
+        }
+
+        [$method, $path, $body] = self::operations()[$operation];
+
+        if ($method === 'GET' || $caller !== 'adminSession') {
+            $this->addToAssertionCount(1);
+
+            return;
+        }
+
+        $this->send('adminSession', $method, $path, $body, withCsrf: false)
+            ->assertStatus(403)
+            ->assertJsonPath('type', '/api/v2/problems/csrf-token-mismatch');
+        $this->assertSame(0, $this->auditRows());
+    }
+}

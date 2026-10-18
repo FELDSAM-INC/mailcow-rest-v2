@@ -19,6 +19,12 @@ use Throwable;
  *
  * A connection error or a missing container is an unreachable failure, a timeout an unknown
  * outcome. Broadcasts go through mailcow's Redis (`MC_CHANNEL`), as legacy docker('broadcast').
+ *
+ * Feature 011 (research R2): exec commands find running containers only (legacy get_id), while
+ * start, stop and restart look the ID up in `GET /containers/json?all=true`, so that a stopped
+ * container is found. The container list, resource samples and host figures are reads that throw
+ * DockerApiUnreachable or DockerApiTimeout; resource samples and host figures wait 5 seconds at
+ * most. Container environments are dropped while the list is parsed (ContainerSnapshot).
  */
 class HttpDockerApiClient implements DockerApiClient
 {
@@ -29,7 +35,7 @@ class HttpDockerApiClient implements DockerApiClient
 
     public function restart(string $service): DockerCallResult
     {
-        return $this->post($service, 'restart', null, false);
+        return $this->post($service, 'restart', null, false, true);
     }
 
     public function exec(string $service, array $command): DockerCallResult
@@ -51,6 +57,70 @@ class HttpDockerApiClient implements DockerApiClient
         }
     }
 
+    public function execText(string $service, array $command): DockerCallResult
+    {
+        try {
+            $id = $this->containerId($service);
+
+            if ($id === null) {
+                return DockerCallResult::unreachable("No running container of {$service} in compose project ".$this->project().'.');
+            }
+
+            return self::text($this->request()->post($this->url("/containers/{$id}/exec"), $command));
+        } catch (ConnectionException $e) {
+            return $this->isTimeout($e)
+                ? DockerCallResult::unknown('The container service did not answer in time.')
+                : DockerCallResult::unreachable('The container service is unreachable: '.$e->getMessage());
+        } catch (Throwable $e) {
+            return DockerCallResult::failed($e->getMessage());
+        }
+    }
+
+    public function containers(): array
+    {
+        return ContainerSnapshot::listForProject($this->read(fn (): mixed => $this->request()->get($this->url('/containers/json?all=true'))->json()), $this->project());
+    }
+
+    public function start(string $service): DockerCallResult
+    {
+        return $this->post($service, 'start', null, false, true);
+    }
+
+    public function stop(string $service): DockerCallResult
+    {
+        return $this->post($service, 'stop', null, false, true);
+    }
+
+    public function containerStats(string $service, float $timeout = 5.0): array
+    {
+        return $this->read(function () use ($service, $timeout): array {
+            $id = $this->containerId($service, false, $timeout);
+
+            if ($id === null) {
+                return [];
+            }
+
+            $samples = $this->request($timeout)->post($this->url("/container/{$id}/stats/update"))->json();
+
+            if (! is_array($samples) || ! array_is_list($samples)) {
+                throw new DockerApiUnreachable('The container service answered the resource samples with an unexpected document.');
+            }
+
+            return array_values(array_filter($samples, 'is_array'));
+        });
+    }
+
+    public function hostStats(): array
+    {
+        $stats = $this->read(fn (): mixed => $this->request(5.0)->get($this->url('/host/stats'))->json());
+
+        if (! is_array($stats) || ! isset($stats['cpu'], $stats['memory'])) {
+            throw new DockerApiUnreachable('The container service answered the host figures with an unexpected document.');
+        }
+
+        return $stats;
+    }
+
     public function broadcast(string $service, array $command): void
     {
         $message = (string) json_encode([
@@ -66,13 +136,13 @@ class HttpDockerApiClient implements DockerApiClient
     /**
      * @param  array<string, mixed>|null  $body
      */
-    private function post(string $service, string $action, ?array $body, bool $expectsData): DockerCallResult
+    private function post(string $service, string $action, ?array $body, bool $expectsData, bool $anyState = false): DockerCallResult
     {
         try {
-            $id = $this->containerId($service);
+            $id = $this->containerId($service, $anyState);
 
             if ($id === null) {
-                return DockerCallResult::unreachable("No running container of {$service} in compose project ".$this->project().'.');
+                return DockerCallResult::unreachable(($anyState ? 'No container of ' : 'No running container of ')."{$service} in compose project ".$this->project().'.');
             }
 
             $request = $this->request();
@@ -118,9 +188,55 @@ class HttpDockerApiClient implements DockerApiClient
         return DockerCallResult::failed($message);
     }
 
-    private function containerId(string $service): ?string
+    /**
+     * A text or JSON-string answer (`postqueue -j`, `postcat -q`, `system df`); dockerapi's `null`
+     * (the container is not running) and `{"type": "danger"}` are failures.
+     */
+    private static function text(Response $response): DockerCallResult
     {
-        $containers = $this->request()->get($this->url('/containers/json'))->json();
+        $body = $response->body();
+        $decoded = json_decode($body, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return $response->successful() ? DockerCallResult::success(null, $body) : DockerCallResult::failed('HTTP '.$response->status());
+        }
+
+        return match (true) {
+            is_string($decoded) => DockerCallResult::success(null, $decoded),
+            $decoded === null => DockerCallResult::failed('The container service returned no answer: the container is not running.'),
+            is_array($decoded) && ($decoded['type'] ?? null) === 'success' => DockerCallResult::success(is_string($decoded['msg'] ?? null) ? $decoded['msg'] : null, is_string($decoded['msg'] ?? null) ? $decoded['msg'] : ''),
+            is_array($decoded) && isset($decoded['msg']) => DockerCallResult::failed(is_string($decoded['msg']) ? $decoded['msg'] : (string) json_encode($decoded['msg'])),
+            default => DockerCallResult::success(null, $body),
+        };
+    }
+
+    /**
+     * Runs a read, mapping connection errors to DockerApiUnreachable and timeouts to
+     * DockerApiTimeout.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $read
+     * @return T
+     */
+    private function read(callable $read): mixed
+    {
+        try {
+            return $read();
+        } catch (ConnectionException $e) {
+            throw $this->isTimeout($e)
+                ? new DockerApiTimeout('The container service did not answer in time.', 0, $e)
+                : new DockerApiUnreachable('The container service is unreachable: '.$e->getMessage(), 0, $e);
+        }
+    }
+
+    /**
+     * The ID of the service's container: running containers only, as legacy docker('get_id'), or
+     * any state for start, stop and restart (feature 011 R2).
+     */
+    private function containerId(string $service, bool $anyState = false, ?float $timeout = null): ?string
+    {
+        $containers = $this->request($timeout)->get($this->url($anyState ? '/containers/json?all=true' : '/containers/json'))->json();
 
         foreach (is_array($containers) ? $containers : [] as $container) {
             $labels = is_array($container) ? ($container['Config']['Labels'] ?? null) : null;
@@ -137,12 +253,12 @@ class HttpDockerApiClient implements DockerApiClient
         return null;
     }
 
-    private function request(): PendingRequest
+    private function request(?float $timeout = null): PendingRequest
     {
         return Http::withoutVerifying()
             ->acceptJson()
             ->asJson()
-            ->timeout($this->config->dockerTimeout());
+            ->timeout($timeout ?? $this->config->dockerTimeout());
     }
 
     private function url(string $path): string

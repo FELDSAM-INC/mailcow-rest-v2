@@ -53,7 +53,8 @@ class HttpDockerApiClientTest extends TestCase
         Http::fake(function (Request $request, array $options) use ($action) {
             $this->options[] = $options;
 
-            if (str_ends_with($request->url(), '/containers/json')) {
+            // The ID lookup of exec reads running containers; restart reads all (feature 011 R2).
+            if (str_contains($request->url(), '/containers/json')) {
                 return Http::response($this->containers());
             }
 
@@ -68,7 +69,7 @@ class HttpDockerApiClientTest extends TestCase
         $result = $this->client()->restart('sogo-mailcow');
 
         $this->assertTrue($result->isSuccess());
-        Http::assertSent(fn (Request $r): bool => $r->method() === 'GET' && str_ends_with($r->url(), '://dockerapi/containers/json'));
+        Http::assertSent(fn (Request $r): bool => $r->method() === 'GET' && str_ends_with($r->url(), '://dockerapi/containers/json?all=true'));
         Http::assertSent(fn (Request $r): bool => $r->method() === 'POST' && $r->url() === 'https://dockerapi/containers/'.self::SOGO_ID.'/restart');
         Http::assertSentCount(2);
     }

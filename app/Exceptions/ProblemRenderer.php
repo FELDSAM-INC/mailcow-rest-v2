@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use App\Clients\DockerApi\DockerApiUnreachable;
 use App\Clients\SharedStore\SharedStoreUnavailable;
 use App\Http\Requests\Api\V2\ApiFormRequest;
 use App\Support\Http\Problem;
@@ -30,6 +31,8 @@ final class ProblemRenderer
         return match (true) {
             $e instanceof ProblemException => Problem::response($e->type, $request, $e->detail, $e->extensions, $e->headers),
             $e instanceof ValidationProblemException => self::validation($e->errors, $request),
+            // Feature 011: a read of the container service failed or timed out; nothing was changed.
+            $e instanceof DockerApiUnreachable => Problem::response(ProblemType::TemporaryFailure, $request, 'mailcow\'s container service is unavailable. Nothing was changed; retry later.', ['dependency' => 'containerService'], ['Retry-After' => '5']),
             $e instanceof SharedStoreUnavailable => Problem::response(ProblemType::TemporaryFailure, $request, null, ['dependency' => 'sharedStore'], ['Retry-After' => '10']),
             $e instanceof ValidationException => self::validation(ApiFormRequest::violations($e->validator), $request),
             $e instanceof TokenMismatchException => Problem::response(ProblemType::CsrfTokenMismatch, $request),

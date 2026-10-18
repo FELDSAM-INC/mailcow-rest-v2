@@ -34,6 +34,27 @@ class AuditLogger
         ?string $failureReason,
         array $details,
     ): AuditEvent {
+        return $this->recordWithId(null, $type, $success, $actor, $target, $authMethod, $failureReason, $details);
+    }
+
+    /**
+     * record() with a ULID chosen up front, so that a retried insert cannot write the record twice
+     * (feature 011 research R24); null takes a new one.
+     *
+     * @param  Principal|array{username?: string|null, role?: Role|string|null, apiKeyId?: string|null}|null  $actor
+     * @param  array{type: string, id?: string|null, name?: string|null}|null  $target
+     * @param  array<string, mixed>  $details  filtered by the event's detail keys
+     */
+    public function recordWithId(
+        ?string $id,
+        AuditEventType $type,
+        bool $success,
+        Principal|array|null $actor,
+        ?array $target,
+        ?string $authMethod,
+        ?string $failureReason,
+        array $details,
+    ): AuditEvent {
         /** @var Request $request */
         $request = app('request');
 
@@ -41,6 +62,11 @@ class AuditLogger
         $userAgent = $request->userAgent();
 
         $event = new AuditEvent;
+
+        if ($id !== null) {
+            $event->id = $id;
+        }
+
         $event->forceFill([
             'occurred_at' => CarbonImmutable::now('UTC'),
             'event_type' => $type->value,

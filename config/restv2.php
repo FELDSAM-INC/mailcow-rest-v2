@@ -221,6 +221,15 @@ return [
         'MAILBOX_DEFAULT_ATTRIBUTES' => env('RESTV2_MAILBOX_DEFAULT_ATTRIBUTES'),
         // Feature 004: external alias destinations disabled for every role (FR-007).
         'ALIAS_DISABLE_EXTERNAL_DOMAINS' => env('RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS'),
+        // Feature 011 (research R9): the installed version, from mailcow's generated
+        // app_info.inc.php when it is mounted next to the vars files.
+        'MAILCOW_GIT_VERSION' => env('RESTV2_MAILCOW_GIT_VERSION'),
+        'MAILCOW_GIT_OWNER' => env('RESTV2_MAILCOW_GIT_OWNER'),
+        'MAILCOW_GIT_REPO' => env('RESTV2_MAILCOW_GIT_REPO'),
+        'MAILCOW_GIT_URL' => env('RESTV2_MAILCOW_GIT_URL'),
+        'MAILCOW_GIT_COMMIT' => env('RESTV2_MAILCOW_GIT_COMMIT'),
+        'MAILCOW_GIT_COMMIT_DATE' => env('RESTV2_MAILCOW_GIT_COMMIT_DATE'),
+        'MAILCOW_BRANCH' => env('RESTV2_MAILCOW_BRANCH'),
     ],
 
     // Upstream defaults of mailcow-dockerized 2026-09a (data/web/inc/vars.inc.php).
@@ -297,6 +306,14 @@ return [
             'mailbox_format' => 'maildir:',
         ],
         'ALIAS_DISABLE_EXTERNAL_DOMAINS' => false,
+        // Feature 011: unknown unless app_info.inc.php or a server setting gives them.
+        'MAILCOW_GIT_VERSION' => null,
+        'MAILCOW_GIT_OWNER' => null,
+        'MAILCOW_GIT_REPO' => null,
+        'MAILCOW_GIT_URL' => null,
+        'MAILCOW_GIT_COMMIT' => null,
+        'MAILCOW_GIT_COMMIT_DATE' => null,
+        'MAILCOW_BRANCH' => null,
     ],
 
 ];

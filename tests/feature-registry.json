@@ -229,9 +229,6 @@
         }
     },
     "pendingOperations": [
-        "applySyncJobBulkAction",
-        "updateSyncJob",
-        "deleteSyncJob",
-        "rescheduleSyncJob"
+        "applySyncJobBulkAction"
     ]
 }

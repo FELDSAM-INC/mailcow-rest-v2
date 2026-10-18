@@ -591,7 +591,7 @@ the rows and the runner's selection with legacy's edit form (spec US3).
 
 ### Tests for User Story 3 (write first, observe failing) ⚠️
 
-- [ ] T047 [P] [US3] Write `tests/Feature/SyncJobs/UpdateSyncJobTest.php` (FR-016–FR-018, AS-1, AS-2,
+- [X] T047 [P] [US3] Write `tests/Feature/SyncJobs/UpdateSyncJobTest.php` (FR-016–FR-018, AS-1, AS-2,
   AS-4, AS-6 to AS-9):
   - **Partial edit** (AS-1): sending only `intervalMinutes` changes only `mins_interval`, and every
     other column is byte-equal, `password1` included.
@@ -624,7 +624,7 @@ the rows and the runner's selection with legacy's edit form (spec US3).
     `changes.remotePassword: "changed"` only when the password was replaced. A no-op `PATCH` writes
     a success record with empty `changes`. Refusals are recorded per R16. When the audit insert
     fails, the answer is `500` and the row is unchanged.
-- [ ] T048 [P] [US3] Write `tests/Feature/SyncJobs/UpdateSyncJobVersionTest.php` (FR-020, FR-021,
+- [X] T048 [P] [US3] Write `tests/Feature/SyncJobs/UpdateSyncJobVersionTest.php` (FR-020, FR-021,
   AS-3, SC-005):
   - **Stale tag** (AS-3): two clients read the tag; the first `PATCH` with it succeeds and the
     second gets `412 about:blank`, with the row unchanged.
@@ -634,18 +634,18 @@ the rows and the runner's selection with legacy's edit form (spec US3).
     and a reschedule leave the tag unchanged, so the old tag still succeeds.
   - **Wildcard and order**: `If-Match: *` succeeds. `412` is answered before `422`: a stale tag
     with an invalid body → `412`.
-- [ ] T049 [P] [US3] Write `tests/Feature/SyncJobs/UpdateSyncJobDuplicateTest.php` (FR-017): changing
+- [X] T049 [P] [US3] Write `tests/Feature/SyncJobs/UpdateSyncJobDuplicateTest.php` (FR-017): changing
   `remoteUser` and `remoteHost` to those of another job of the same mailbox → `409 sync-job-exists`
   with that job's `syncJobId`, and no change. Changing them to values of a job of another mailbox
   is accepted. Changing `intervalMinutes` only never runs the duplicate check (no `GET_LOCK` in the
   query log).
-- [ ] T050 [P] [US3] Write `tests/Feature/SyncJobs/UpdateSyncJobCustomParamsRestrictionTest.php`
+- [X] T050 [P] [US3] Write `tests/Feature/SyncJobs/UpdateSyncJobCustomParamsRestrictionTest.php`
   (FR-006, spec edge case). With the restriction on, for a job whose parameters an admin set:
   - a user's `PATCH` without `customParameters` → `200`;
   - the stored value sent unchanged → `200`;
   - a different value → `422 customParamsNotPermitted` and no change;
   - an admin's different value → `200`.
-- [ ] T051 [P] [US3] Write `tests/Feature/SyncJobs/RescheduleSyncJobTest.php` (FR-016, FR-021,
+- [X] T051 [P] [US3] Write `tests/Feature/SyncJobs/RescheduleSyncJobTest.php` (FR-016, FR-021,
   FR-022, AS-5):
   - **Reset** (AS-5): a job that last ran an hour ago gets `last_run` and `success` NULL, `200` with
     `runStatus.lastRunAt null` and `lastResult unknown`, `exitStatus null`, and an `ETag`
@@ -659,7 +659,7 @@ the rows and the runner's selection with legacy's edit form (spec US3).
 
 ### Implementation for User Story 3
 
-- [ ] T052 [US3] Add `update(Principal, SyncJob $locked, array $patch): SyncJob` to
+- [X] T052 [US3] Add `update(Principal, SyncJob $locked, array $patch): SyncJob` to
   `app/Services/SyncJobs/SyncJobService.php` (R11):
   - it computes the changed configuration columns only (a non-empty `remotePassword` replaces
     `password1`);
@@ -670,7 +670,7 @@ the rows and the runner's selection with legacy's edit form (spec US3).
 
   Add `reschedule(Principal, SyncJob): SyncJob`, which runs `UPDATE imapsync SET last_run = NULL,
   success = NULL WHERE id = ?` and records `syncJobReschedule`.
-- [ ] T053 [US3] Create `app/Http/Requests/Api/V2/UpdateSyncJobRequest.php` (R5, R6):
+- [X] T053 [US3] Create `app/Http/Requests/Api/V2/UpdateSyncJobRequest.php` (R5, R6):
   - `authorize()` runs the gate (403), then `SyncJobScope::findInScopeForUpdate` (404), then
     `If-Match` through 001's `ETag` against `SyncJobVersion` (412);
   - `rules()` covers the patch members with strict types and refuses `null`;
@@ -678,7 +678,7 @@ the rows and the runner's selection with legacy's edit form (spec US3).
     (case-insensitive → `immutable`) and "unchanged means accepted" (a member equal to the stored
     contract value skips its rules, type checks excepted), and runs `CustomParametersValidator` with
     the stored value.
-- [ ] T054 [US3] Add `update` to `SyncJobController` (`200` with the `ETag` header). Create
+- [X] T054 [US3] Add `update` to `SyncJobController` (`200` with the `ETag` header). Create
   `app/Http/Controllers/Api/V2/SyncJobScheduleResetController.php` (`store`, which runs the gate
   then `findInScope` and returns `200`). Register in `routes/api.php`:
   - `PATCH sync-jobs/{syncJob}`, with the `restv2.audit` default event `SyncJobUpdate`;
@@ -700,7 +700,7 @@ foreign job (spec US4).
 
 ### Tests for User Story 4 (write first, observe failing) ⚠️
 
-- [ ] T055 [P] [US4] Write `tests/Feature/SyncJobs/DeleteSyncJobTest.php` (FR-016, FR-021, AS-1 to
+- [X] T055 [P] [US4] Write `tests/Feature/SyncJobs/DeleteSyncJobTest.php` (FR-016, FR-021, AS-1 to
   AS-4):
   - **Owner delete** (AS-1): `204` with no body; the row is gone and is not in `selectableIds()`.
   - **Foreign or missing** (AS-2): `404`.
@@ -714,7 +714,7 @@ foreign job (spec US4).
 
 ### Implementation for User Story 4
 
-- [ ] T056 [US4] Add `delete(Principal, SyncJob $locked): void` to
+- [X] T056 [US4] Add `delete(Principal, SyncJob $locked): void` to
   `app/Services/SyncJobs/SyncJobService.php`. It runs `DELETE FROM imapsync WHERE id = ?` and records
   `syncJobDeletion` in the same transaction. Add `destroy` to `SyncJobController`, which runs the
   gate, then `findInScopeForUpdate`, then `If-Match` (412), and returns `204`. Register `DELETE
@@ -1060,4 +1060,15 @@ Checked on `main` at `e21f5ee`:
   rules, so 001's `ApiFormRequest` gained the additive hook `additionalViolations()`, computed after
   the rules and reported in the same `422` after the rules' violations of the same field. The
   resolver's `notEligible`, `required`, `invalidFormat` and `tooLong` on `mailbox` use it too.
+- **T052**: `SyncJobService::update()` checks the version again on the locked row (the Form
+  Request checks it first, before validation), so a change between the two checks still answers
+  `412`. Flags are compared as the representation shows them (any non-zero value is `true`), so a
+  legacy value such as 2 is kept when `true` is sent back. A password equal to the stored one is
+  not a change and is not audited as one. `update()`, `reschedule()` and `delete()` take an optional
+  bulk request ID, which the bulk action passes.
+- **T053**: read-only members are ignored, as `SyncJobPatch` documents (004 refuses them with
+  `immutable`; this contract does not). A body with no member of `SyncJobPatch` (for example only
+  `id`) is `required` on `body`, through 001's `memberViolations()` hook.
+- **T054, T056**: US4's deletion was implemented together with US3's change (same service and
+  controller); its tests (T055) were written and seen failing first.
 

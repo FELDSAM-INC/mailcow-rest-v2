@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use stdClass;
 use Symfony\Component\HttpFoundation\Response;
-use Tests\Support\Domains\DomainTestHelpers;
+use Tests\Support\Mailboxes\MailboxTestHelpers;
 
 /**
  * Callers, rows, requests and lookups shared by the tests of feature 008. Used in Tests\TestCase
@@ -15,7 +15,7 @@ use Tests\Support\Domains\DomainTestHelpers;
  */
 trait SyncJobTestHelpers
 {
-    use DomainTestHelpers;
+    use MailboxTestHelpers;
 
     /** The remote password of every job the tests create through the API. */
     protected const REMOTE_PASSWORD = 'Remote-S3cret!';

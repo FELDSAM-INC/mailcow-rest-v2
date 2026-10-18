@@ -84,6 +84,7 @@ use App\Services\Monitoring\ContainerRegistry;
 use App\Http\Controllers\Api\V2\SyncJobCapabilitiesController;
 use App\Http\Controllers\Api\V2\SyncJobController;
 use App\Http\Controllers\Api\V2\SyncJobLogController;
+use App\Http\Controllers\Api\V2\SyncJobScheduleResetController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -496,6 +497,18 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::post('/sync-jobs', [SyncJobController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'syncJobCreation', 'target' => 'syncJob'])
             ->name('sync-jobs.store');
+        Route::patch('/sync-jobs/{syncJobId}', [SyncJobController::class, 'update'])
+            ->where('syncJobId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'syncJobUpdate', 'target' => 'syncJob'])
+            ->name('sync-jobs.update');
+        Route::delete('/sync-jobs/{syncJobId}', [SyncJobController::class, 'destroy'])
+            ->where('syncJobId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'syncJobDeletion', 'target' => 'syncJob'])
+            ->name('sync-jobs.destroy');
+        Route::post('/sync-jobs/{syncJobId}/schedule-reset', [SyncJobScheduleResetController::class, 'store'])
+            ->where('syncJobId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'syncJobReschedule', 'target' => 'syncJob'])
+            ->name('sync-job-schedule-reset.store');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

@@ -34,3 +34,6 @@ then marks the entry done here. Gaps that are a contract-wide rule are also reco
 | G25 | UI 005 | 001/005 | The `PendingAction` and `pending-action-required` texts still say the password change happens in the legacy UI. | Update them when 005 lands (005 T029). | open |
 | G26 | UI 005 | 005 | The SVG element subset of the TOTP `qrCode` is undocumented. | Document the subset (or return the otpauth URI for client-side rendering). | open |
 | G27 | UI 005 | 005 | Reset links carry the token in the query string, so it can reach server logs. | Default `RESTV2_PW_RESET_PAGE` to `/ng/reset-password#token={token}`. | open |
+| G28 | UI 002 | 002 | `Domain` has no footer summary, so the domain page fetches the full footer (up to 2 × 1 MiB). | Add a footer summary (whether set, its size, the exclusion counts) to `Domain`. | open |
+| G29 | UI 002 | 002 | The template defaults are only in prose. | Expose them in `/capabilities/domains`, or as schema `default` keywords. | open |
+| G30 | UI 002 | 002 | There is no bulk deletion preview, so the bulk delete confirmation can't name the orphaned domain admins. | Optional: a bulk preview operation, or the orphaned accounts in the per-item results. | open (optional) |

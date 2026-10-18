@@ -66,6 +66,23 @@ class WebAuthnOptionsJsonTest extends TestCase
         $this->assertSame([], OpenApiContract::shared()->validateComponent($options, 'WebAuthnCreationOptions'));
     }
 
+    /**
+     * Orchestrator decision: the attestation conveyance is lbuchs's, as legacy sends it. `indirect`
+     * by default (no browser privacy prompt), `direct` only with root certificates
+     * (WEBAUTHN_ONLY_TRUSTED_VENDORS=y), `none` when only the `none` format is accepted.
+     */
+    public function test_registration_options_keep_the_attestation_conveyance_of_lbuchs(): void
+    {
+        $create = fn (WebAuthn $server): array => OptionsJson::creation($server->getCreateArgs('a', 'a', 'a', 300, true, 'preferred'));
+
+        $this->assertSame('indirect', $create($this->server())['attestation']);
+        $this->assertSame('none', $create(new WebAuthn('x', 'mail.example.org', ['none'], true))['attestation']);
+
+        $trusted = new WebAuthn('x', 'mail.example.org', null, true);
+        $trusted->addRootCertificates(resource_path('webauthn/rootCertificates'));
+        $this->assertSame('direct', $create($trusted)['attestation']);
+    }
+
     public function test_the_conversion_does_not_depend_on_lbuchs_encoding_mode(): void
     {
         $server = new WebAuthn('x', 'mail.example.org', null, false);

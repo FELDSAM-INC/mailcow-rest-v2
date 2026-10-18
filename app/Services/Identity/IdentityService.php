@@ -51,7 +51,8 @@ class IdentityService
      *
      *  - an administrator has every flag;
      *  - a domain administrator has every `user_acl` flag, overridden by its own `da_acl` row where
-     *    the names overlap; without a `da_acl` row every `da_acl` flag is off;
+     *    the names overlap; without a `da_acl` row, the row legacy would insert (the schema's column
+     *    defaults) applies;
      *  - a mailbox user has its `user_acl` row (every flag off without one) and never a flag that
      *    exists only in `da_acl`.
      *
@@ -70,7 +71,7 @@ class IdentityService
         }
 
         if ($principal->role === Role::DomainAdmin) {
-            $row = (array) (DaAcl::query()->whereKey($principal->username)->toBase()->first() ?? []);
+            $row = (array) (DaAcl::query()->whereKey($principal->username)->toBase()->first() ?? $this->daAclDefaults());
 
             foreach (PermissionFlag::cases() as $flag) {
                 $column = $flag->daAclColumn();
@@ -88,6 +89,24 @@ class IdentityService
         }
 
         return $flags;
+    }
+
+    /**
+     * The `da_acl` row legacy inserts for a domain administrator, `INSERT INTO da_acl (username)`:
+     * every column default of the deployed schema (orchestrator decision, spec parity table).
+     * Read only for a domain administrator who has no row.
+     *
+     * @return array<string, int>
+     */
+    private function daAclDefaults(): array
+    {
+        return DB::table('information_schema.COLUMNS')
+            ->whereRaw('`TABLE_SCHEMA` = DATABASE()')
+            ->where('TABLE_NAME', 'da_acl')
+            ->where('COLUMN_NAME', '!=', 'username')
+            ->pluck('COLUMN_DEFAULT', 'COLUMN_NAME')
+            ->map(fn (mixed $default): int => (int) trim((string) $default, "'"))
+            ->all();
     }
 
     /**

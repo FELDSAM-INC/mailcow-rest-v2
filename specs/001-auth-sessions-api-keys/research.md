@@ -726,7 +726,9 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     legacy. An inactive domain that is still assigned stays in scope, as in legacy.
   - **Flags**: legacy `acl('to_session')`. An admin gets every column of `user_acl` and `da_acl`
     set to `true`. A domain admin gets every `user_acl` column `true`, overwritten by its `da_acl`
-    row, and `false` for `da_acl` columns when the row is missing. A mailbox user gets its
+    row. When the row is missing, the row legacy would insert applies: legacy creates it with
+    `INSERT INTO da_acl (username)`, so every column takes the schema default, read from
+    `information_schema` (orchestrator decision, spec parity table). A mailbox user gets its
     `user_acl` row, and every column `false` when the row is missing, plus `false` for the
     `da_acl`-only columns. The column lists are fixed in `App\Auth\PermissionFlag` (enum, 29
     cases) and checked against the schema fixture by `tests/Feature/Schema/AclColumnsTest.php`.

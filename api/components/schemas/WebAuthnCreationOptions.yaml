@@ -67,7 +67,11 @@ properties:
   attestation:
     type: string
     enum: [none, indirect, direct, enterprise]
-    description: '`none` when mailcow''s `FIDO2_FORMATS` only allows `none`, `direct` otherwise.'
+    description: |
+      As legacy requests it: `none` when mailcow's `FIDO2_FORMATS` only allows `none`, `direct`
+      when only trusted vendors are accepted (`WEBAUTHN_ONLY_TRUSTED_VENDORS=y`, whose attestation
+      certificates are verified), `indirect` otherwise, so that browsers show no attestation
+      privacy prompt.
   extensions:
     type: object
     additionalProperties: true

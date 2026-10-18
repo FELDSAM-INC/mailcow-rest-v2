@@ -61,13 +61,30 @@ class PermissionFlagsTest extends TestCase
         $this->assertFlags(fn (PermissionFlag $flag): bool => $flag->daAclColumn() === null, $this->flags());
     }
 
-    public function test_a_domain_admin_without_a_da_acl_row(): void
+    /**
+     * Orchestrator decision (spec clarification, parity table): without a `da_acl` row, the
+     * domain administrator has the flags of the row legacy would insert, `INSERT INTO da_acl
+     * (username)`, which takes every column default of the upstream schema.
+     */
+    public function test_a_domain_admin_without_a_da_acl_row_has_the_schema_defaults(): void
     {
         $this->mailcow()->domainAdmin('reseller', []);
+        $defaults = (array) DB::table('da_acl')->where('username', 'reseller')->first();
         DB::table('da_acl')->where('username', 'reseller')->delete();
         $this->signInAs('reseller', Role::DomainAdmin);
 
-        $this->assertFlags(fn (PermissionFlag $flag): bool => $flag->daAclColumn() === null, $this->flags());
+        $flags = $this->flags();
+
+        $this->assertFlags(
+            fn (PermissionFlag $flag): bool => $flag->daAclColumn() === null || (int) $defaults[$flag->daAclColumn()] === 1,
+            $flags,
+        );
+        // Spot checks against the 2026-09a schema: login_as defaults to 1, pushover and
+        // unlimited_quota to 0.
+        $this->assertTrue($flags['loginAs']);
+        $this->assertFalse($flags['pushover']);
+        $this->assertFalse($flags['unlimitedQuota']);
+        $this->assertDatabaseMissing('da_acl', ['username' => 'reseller']);
     }
 
     public function test_the_overlapping_flags_of_a_domain_admin_come_from_da_acl(): void

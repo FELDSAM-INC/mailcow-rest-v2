@@ -885,7 +885,8 @@ unknown credentials, and role mismatches. Register, rename and remove passkeys a
   - The options have `residentKey required`, `requireResidentKey true`, `user.id` = base64url of
     the username, `user.name` = `displayName` = the username, `rp.id` = host, `rp.name` = the
     product name, `excludeCredentials` = all `fido2` IDs of the account, `userVerification` from
-    `$FIDO2_UV_FLAG_REGISTER`, and `attestation` `direct` (formats list) or `none` (formats `['none']`).
+    `$FIDO2_UV_FLAG_REGISTER`, and `attestation` `indirect` (formats list), `direct` (only trusted
+    vendors) or `none` (formats `['none']`).
   - AS-6: register → `201`, `Location: /api/v2/me/passkeys/<sha256 hex>`, `ETag`. The `fido2` row
     has `username`, `rpId`, `credentialPublicKey` starting `-----BEGIN PUBLIC KEY-----`,
     `credentialId` equal to the raw bytes, `AAGUID` 16 bytes, `signatureCounter`, `friendlyName`
@@ -902,10 +903,12 @@ unknown credentials, and role mismatches. Register, rename and remove passkeys a
 
   *Implementation note*: without an attestation certificate lbuchs reports `certificateSubject`
   and `certificateIssuer` as empty strings, which legacy stores as they are; the API stores them the
-  same way and reports an empty subject as `authenticatorDescription: null`. lbuchs asks for
-  `indirect` attestation without root certificates (legacy sends that); `OptionsJson` maps it to
-  `direct` as the contract's `WebAuthnCreationOptions.attestation` states. The duplicate check and
-  insert run under `GET_LOCK('restv2_fido2_<cid>')`.
+  same way and reports an empty subject as `authenticatorDescription: null`. The duplicate check and
+  insert run under `GET_LOCK('restv2_fido2_<cid>')`. *Orchestrator decision (Phase 6)*: the options
+  keep lbuchs's attestation conveyance, as legacy sends it: `indirect` by default (no browser
+  privacy prompt), `direct` only with `WEBAUTHN_ONLY_TRUSTED_VENDORS=y`, `none` when only the
+  `none` format is accepted. `OptionsJson` no longer maps `indirect` to `direct`, and the contract's
+  `WebAuthnCreationOptions.attestation` description says so.
 - [X] T071 [P] [US2] Write `tests/Feature/Passkeys/PasskeyManagementTest.php` for `listPasskeys`,
   `getPasskey`, `updatePasskey` and `deletePasskey` (FR-053, AS-7):
   - The list shows legacy and API passkeys with `id` = `SHA2(credentialId)`, `name`,
@@ -1014,9 +1017,11 @@ from a new session.
   - the overlapping flags `syncjobs`, `quarantine`, `appPasswds`, `pushover` and `spamPolicy`
     taken from `da_acl` for domain admins.
 
-  *Implementation note*: as R20 decides, a domain administrator without a `da_acl` row has every
-  `da_acl` flag off, the five overlapping ones included; legacy would leave those on (and warn).
-  Legacy always writes the row when it creates a domain administrator.
+  *Implementation note (orchestrator decision, Phase 6)*: a domain administrator without a
+  `da_acl` row has the flags of the row legacy would insert (`INSERT INTO da_acl (username)`, so
+  every column default of the schema), not every flag off. The test reads the defaults from the
+  fixture and spot-checks `loginAs` on, `pushover` and `unlimitedQuota` off. Legacy always writes
+  the row when it creates a domain administrator.
 - [X] T078 [P] [US3] Write `tests/Feature/Identity/PreferencesTest.php` for `getPreferences` and
   `updatePreferences` (FR-030, AS-3, AS-4):
   - The defaults are `DEFAULT_LANG` from the vars fixture (`cs-cz`) and `system`.

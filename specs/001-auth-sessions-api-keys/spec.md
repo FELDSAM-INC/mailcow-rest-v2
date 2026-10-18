@@ -78,6 +78,16 @@
 - Q: Do the lists of this feature follow the cross-feature list conventions? → A: Yes (FR-058):
   default page size 25 and at most 1,000, a substring search, and the version tag on every entry
   of a resource that can change. (orchestrator decision: `docs/conventions.md`.)
+- Q: Which permission flags does a domain administrator have when mailcow has no `da_acl` row
+  for them? → A: The flags of the row legacy would insert: legacy creates the row with only the
+  username, so every flag takes the upstream schema's column default (FR-028). Not "every flag
+  off". (orchestrator decision during implementation: the row is missing only after manual
+  database changes, and the defaults are what legacy grants a new domain administrator.)
+- Q: Which attestation does passkey registration request from the authenticator? → A: The same
+  as legacy (FR-052): `indirect` by default, `direct` only when the operator accepts trusted
+  vendors only (`WEBAUTHN_ONLY_TRUSTED_VENDORS=y`, which verifies attestation certificates), and
+  `none` when only the `none` format is accepted. (orchestrator decision during implementation:
+  `direct` makes some browsers show an attestation privacy prompt that legacy never shows.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -493,6 +503,8 @@ with each filter and confirm exactly the expected entries appear and contain no 
   - The options MUST exclude credentials already registered to the account.
   - User verification and the accepted authenticator attestation formats MUST follow the
     operator's existing mailcow settings. Legacy requests user verification as "preferred".
+  - The requested attestation conveyance MUST be legacy's: `indirect`, or `direct` when only
+    trusted vendors are accepted, or `none` when only the `none` format is accepted.
   - The passkey MUST be stored where legacy stores FIDO2 credentials, so that it works in both UIs.
 
   Registration needs a full session, or a session restricted only by pending second-factor setup.
@@ -544,7 +556,8 @@ with each filter and confirm exactly the expected entries appear and contain no 
     a domain administrator (as in legacy, a still-assigned inactive domain stays in scope), the
     mailbox and its domain for a mailbox user;
   - the effective permission flags: all for an administrator, the domain-administrator flags for a
-    domain administrator, the mailbox-user flags for a mailbox user;
+    domain administrator (the schema's defaults when mailcow has no flag row for them, as for a
+    newly created domain administrator), the mailbox-user flags for a mailbox user;
   - any pending actions;
   - for sessions, the user's preferences.
 - **FR-029**: Scope, permission flags and account status MUST be evaluated from the current
@@ -771,6 +784,7 @@ product name (FR-043).
 | Passkey sign-in with a named role | A mailbox-user FIDO2 login fails when the username also exists as an administrator or domain administrator | Only the named account type is tried (FR-002, FR-015). **Deviation** |
 | App links | The login page shows the non-hidden `$MAILCOW_APPS` entries, leaving out SOGo entries when `SKIP_SOGO=y`, then the non-hidden operator links. The header shows every entry with its signed-in address and `%u` replaced by the username. Old-style operator entries (name and address only) are converted. For `$MAILCOW_APPS`, legacy's header uses the login address instead of the signed-in address because of a bug | Same entries, order, hiding and `SKIP_SOGO` rule, delivered as data (FR-056). The client replaces `%u`. **Deviation**: the signed-in address of built-in apps is used (bug fix) |
 | Owner of a key | Legacy keys have no owner, and the key form lists nothing | List of possible owners (FR-057). New |
+| Domain administrator without a `da_acl` row | `acl('to_session')` keeps every `user_acl` flag on and leaves the `da_acl`-only flags unset (with PHP warnings) | The flags of the row legacy inserts for a new domain administrator: every column default of the schema (FR-028). **Deviation** (orchestrator decision) |
 | Passkey registration details | Relying-party name `WebAuthn Library`. No name at registration. A credential ID already stored would be stored again if an authenticator ignored the exclusion list | The relying-party name is the product name. A name may be given at registration. An already stored credential ID is refused (FR-052). **Deviation** (added by the plan) |
 
 ### Key Entities *(include if feature involves data)*

@@ -76,7 +76,8 @@ class PasskeyRegistrationTest extends TestCase
         $this->assertSame('required', $options['authenticatorSelection']['residentKey']);
         $this->assertTrue($options['authenticatorSelection']['requireResidentKey']);
         $this->assertSame('preferred', $options['authenticatorSelection']['userVerification']);
-        $this->assertSame('direct', $options['attestation']);
+        // Legacy's conveyance (orchestrator decision): `indirect`, which shows no privacy prompt.
+        $this->assertSame('indirect', $options['attestation']);
         $this->assertSame(300000, $options['timeout']);
         $this->assertEqualsCanonicalizing(
             [VirtualAuthenticator::base64UrlEncode($existing->id), VirtualAuthenticator::base64UrlEncode($inactive->id)],
@@ -101,6 +102,15 @@ class PasskeyRegistrationTest extends TestCase
         $this->assertSame('required', $options['authenticatorSelection']['userVerification']);
         $this->assertSame('Example & Co Mail', $options['rp']['name']);
         $this->assertSame([], $options['excludeCredentials']);
+    }
+
+    public function test_only_trusted_vendors_ask_for_direct_attestation(): void
+    {
+        config(['restv2.webauthn_only_trusted_vendors' => true]);
+        $this->mailcow()->admin('admin', 'x');
+        $this->signInAs('admin', Role::Admin);
+
+        $this->assertSame('direct', $this->registrationOptions()->assertOk()->json('data.publicKey.attestation'));
     }
 
     public function test_a_passkey_is_registered_like_legacy_and_signs_in(): void

@@ -491,7 +491,7 @@ as domain administrators with and without flags (spec US3).
 
 ### Tests for User Story 3 (write first, observe failing) ⚠️
 
-- [ ] T053 [P] [US3] Write `tests/Feature/Mailboxes/UpdateMailboxTest.php` for `updateMailbox`:
+- [X] T053 [P] [US3] Write `tests/Feature/Mailboxes/UpdateMailboxTest.php` for `updateMailbox`:
   - AS-1: a new password → `mailbox.password` verifies with `LegacyPasswordVerifier`,
     `passwd_update` changes, `force_pw_update` and `app_passwd` rows unchanged, neither the
     response nor the audit record nor the log contains it (`passwordSet: true`);
@@ -516,7 +516,7 @@ as domain administrators with and without flags (spec US3).
   - the audit record `mailboxUpdate` lists `changes` with old and new values;
   - FR-057: `listAuditEvents?targetType=mailbox&targetId=<address>` returns the records of this
     mailbox only.
-- [ ] T054 [P] [US3] Write `tests/Feature/Mailboxes/UpdateMailboxAuthorizationTest.php`: AS-8
+- [X] T054 [P] [US3] Write `tests/Feature/Mailboxes/UpdateMailboxAuthorizationTest.php`: AS-8
   mailbox user → `403 forbidden` (also for its own mailbox); AS-5 domain administrator without
   `protocolAccess` turning off IMAP → `403 attribute-not-permitted` while an administrator succeeds;
   without `sogoAccess` changing `webmailRedirect` → refused, sending the current value → accepted;
@@ -526,17 +526,17 @@ as domain administrators with and without flags (spec US3).
 
 ### Implementation for User Story 3
 
-- [ ] T055 [US3] Create `app/Http/Requests/Api/V2/UpdateMailboxRequest.php` (merge-patch shape:
+- [X] T055 [US3] Create `app/Http/Requests/Api/V2/UpdateMailboxRequest.php` (merge-patch shape:
   types, lengths, enumerations, `quota` with `WholeMebibytes`, `recoveryEmail` string ≤ 255 or
   `null`, unknown or read-only members → `immutable`, empty body → `required` on `body`).
-- [ ] T056 [US3] Create `app/Services/Mailboxes/MailboxUpdater.php` implementing research R13 for
+- [X] T056 [US3] Create `app/Services/Mailboxes/MailboxUpdater.php` implementing research R13 for
   the members of this story (display name, status with alias and groupware refresh, quota with the
   domain row lock, password after the authentication-source switch, forced flags, webmail
   redirect, protocol access, recovery e-mail), the permission guard against current values, the
   `If-Match` check under `SELECT … FOR UPDATE`, the `attribute_hash` reset, the audit record and
   the post-commit memcached flush; `update(Principal, Mailbox, array $patch, ?string $ifMatch,
   ?string $bulkRequestId = null)` so that the bulk actions reuse it.
-- [ ] T057 [US3] Add `update` to `app/Http/Controllers/Api/V2/MailboxController.php` (`200` with
+- [X] T057 [US3] Add `update` to `app/Http/Controllers/Api/V2/MailboxController.php` (`200` with
   `ETag`); in `routes/api.php` add `PATCH /mailboxes/{mailbox}` with `restv2.csrf` and `restv2.audit` (`mailboxUpdate`). This makes T053 and T054 pass.
 
 ---
@@ -620,23 +620,23 @@ check hidden flags for domain administrators (spec US5).
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T066 [P] [US5] Write `tests/Feature/Mailboxes/UpdateMailboxPermissionsTest.php`: AS-1
+- [X] T066 [P] [US5] Write `tests/Feature/Mailboxes/UpdateMailboxPermissionsTest.php`: AS-1
   granting `syncjobs` sets `user_acl.syncjobs = 1`, and 001's `GET /me` of that mailbox user shows
   `syncjobs: true` on the next request; only the sent flags change (others keep their values, also
   0s that legacy would reset); AS-2 a domain administrator without `syncjobs`: the read omits it,
   changing it → `403 attribute-not-permitted`, changing `spamScore` succeeds and `syncjobs` keeps
   its value; AS-5 a mailbox user → `403`.
-- [ ] T067 [P] [US5] Write `tests/Feature/Mailboxes/UpdateMailboxTagsTest.php`: AS-3 26 tags →
+- [X] T067 [P] [US5] Write `tests/Feature/Mailboxes/UpdateMailboxTagsTest.php`: AS-3 26 tags →
   `422 tooMany {max: 25}`; "Sales" and "sales" → one row "Sales"; `RESTV2_TAGGING_LIMIT=3` applies;
   a legacy mailbox with 30 tags is shown in full and may be set to 28 but not 31; the set replaces
   the old rows; tags appear in the representation sorted without regard to case.
-- [ ] T068 [P] [US5] Write `tests/Feature/Mailboxes/UpdateMailboxCustomAttributesTest.php`: AS-4
+- [X] T068 [P] [US5] Write `tests/Feature/Mailboxes/UpdateMailboxCustomAttributesTest.php`: AS-4
   `{old: 1}` plus `{department: "Sales", old: null}` → stored JSON exactly `{"department":"Sales"}`;
   a name with a space → `422 invalidFormat {format: attributeName}`; 4,097-character value →
   `tooLong`; 101 attributes after merging → `tooMany {max: 100}`; a non-string value →
   `invalidType`; the stored JSON is what php-fpm's `footer.php` reads (`json_decode` of the column
   gives `{"department":"Sales"}`).
-- [ ] T069 [P] [US5] Write `tests/Feature/Mailboxes/ListMailboxTagsTest.php` for `listMailboxTags`
+- [X] T069 [P] [US5] Write `tests/Feature/Mailboxes/ListMailboxTagsTest.php` for `listMailboxTags`
   (FR-066, AS-6): a domain administrator with "Sales" on 3 mailboxes and "sales-eu" on 1, another
   domain with "Secret" → `q=sal` gives `Sales` 3 and `sales-eu` 1 and never `Secret`; "Sales" and
   "sales" on different mailboxes form one entry named "Sales" with both counted; tags of resources
@@ -644,11 +644,11 @@ check hidden flags for domain administrators (spec US5).
 
 ### Implementation for User Story 5
 
-- [ ] T070 [US5] Extend `app/Services/Mailboxes/MailboxUpdater.php` and
+- [X] T070 [US5] Extend `app/Services/Mailboxes/MailboxUpdater.php` and
   `app/Http/Requests/Api/V2/UpdateMailboxRequest.php` with `userPermissions` (per-column
   `UPDATE user_acl`), `tags` (`TagSet`, delete and insert) and `customAttributes` (merge, limits,
   JSON object) as in research R13 and R21, including their audit `changes`.
-- [ ] T071 [P] [US5] Create `app/Services/Mailboxes/MailboxTagUsage.php` (query of research R12),
+- [X] T071 [P] [US5] Create `app/Services/Mailboxes/MailboxTagUsage.php` (query of research R12),
   `app/Http/Requests/Api/V2/ListMailboxTagsRequest.php`,
   `app/Http/Resources/Api/V2/MailboxTagUsageResource.php` and
   `app/Http/Controllers/Api/V2/MailboxTagController.php` (`index`); route `GET /mailbox-tags`. This makes T066–T069 pass.
@@ -996,3 +996,9 @@ what exists map as listed.
 - **T049**: without a rate limit or with `taggedMailHandling: none`, the creation removes any
   stale shared-store entry of the address, as legacy's ratelimit('edit') and delimiter_action do;
   a failure of that removal is only logged (the step is `notRequested`).
+- **T056, T070**: US3 and US5 are one `MailboxUpdater` (the members of both stories in one merge
+  patch). Changes are audited as dot paths (`protocolAccess.pop3`, `userPermissions.syncjobs`,
+  `customAttributes.<name>`), sorted; a password only as `password: {passwordSet, preHashed}`. The
+  quota limit is checked only when the quota actually changes, so a legacy mailbox over the domain
+  quota can still be edited otherwise. A legacy set of custom attributes over the limit may shrink
+  but not grow (as tags).

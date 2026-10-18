@@ -125,9 +125,7 @@
         }
     },
     "pendingOperations": [
-        "listMailboxTags",
         "applyMailboxBulkAction",
-        "updateMailbox",
         "deleteMailbox",
         "previewMailboxDeletion",
         "renameMailbox",

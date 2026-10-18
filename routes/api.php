@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\LivenessController;
 use App\Http\Controllers\Api\V2\MailboxCapabilitiesController;
 use App\Http\Controllers\Api\V2\MailboxController;
+use App\Http\Controllers\Api\V2\MailboxTagController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
 use App\Http\Controllers\Api\V2\PasskeyChallengeController;
@@ -203,6 +204,7 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
         Route::get('/mailboxes', [MailboxController::class, 'index'])->name('mailboxes.index');
         Route::get('/capabilities/mailboxes', [MailboxCapabilitiesController::class, 'show'])->name('mailbox-capabilities.show');
+        Route::get('/mailbox-tags', [MailboxTagController::class, 'index'])->name('mailbox-tags.index');
         Route::get('/password-policy', [PasswordPolicyController::class, 'show'])->name('password-policy.show');
         Route::get('/mailboxes/{mailbox}', [MailboxController::class, 'show'])
             ->where('mailbox', '[^/]+')
@@ -214,6 +216,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::post('/mailboxes', [MailboxController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'mailboxCreation', 'target' => 'mailbox'])
             ->name('mailboxes.store');
+        Route::patch('/mailboxes/{mailbox}', [MailboxController::class, 'update'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'mailboxUpdate', 'target' => 'mailbox'])
+            ->name('mailboxes.update');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

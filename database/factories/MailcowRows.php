@@ -298,10 +298,72 @@ class MailcowRows
         DB::table('quota2replica')->insert(['username' => $username, 'bytes' => $bytes, 'messages' => $messages]);
     }
 
-    /** A relayhost (`relayhosts`, feature 009). */
-    public function relayhost(int $id, string $hostname): void
+    /**
+     * A relayhost (`relayhosts`) as legacy relayhost('add') stores it (feature 009): credentials
+     * verbatim (pass legacy's escaped colons, `u\:x`, explicitly). A null ID takes the next one.
+     * Returns its ID.
+     */
+    public function relayhost(?int $id, string $hostname, string $username = '', string $password = '', int $active = 1): int
     {
-        DB::table('relayhosts')->insert(['id' => $id, 'hostname' => $hostname, 'username' => '', 'password' => '', 'active' => 1]);
+        $row = ['hostname' => $hostname, 'username' => $username, 'password' => $password, 'active' => $active];
+
+        if ($id === null) {
+            return (int) DB::table('relayhosts')->insertGetId($row);
+        }
+
+        DB::table('relayhosts')->insert(['id' => $id] + $row);
+
+        return $id;
+    }
+
+    /**
+     * A transport (`transports`) as legacy transport('add') stores it (feature 009). Returns its ID.
+     */
+    public function transport(string $destination, string $nexthop, string $username = '', string $password = '', int $isMxBased = 0, int $active = 1): int
+    {
+        return (int) DB::table('transports')->insertGetId([
+            'nexthop' => $nexthop,
+            'destination' => $destination,
+            'is_mx_based' => $isMxBased,
+            'username' => $username,
+            'password' => $password,
+            'active' => $active,
+        ]);
+    }
+
+    /** A TLS policy map (`tls_policy_override`, tls_policy_maps('add')). Returns its ID. */
+    public function tlsPolicyMap(string $dest, string $policy, string $parameters = '', int $active = 1): int
+    {
+        return (int) DB::table('tls_policy_override')->insertGetId([
+            'dest' => $dest,
+            'policy' => $policy,
+            'parameters' => $parameters,
+            'active' => $active,
+        ]);
+    }
+
+    /**
+     * The relayhost of a domain, written as a string the way legacy stores it (`'0'` for none,
+     * also legacy spellings such as `'03'`).
+     */
+    public function domainRelayhost(string $domain, string $value): void
+    {
+        DB::table('domain')->where('domain', $domain)->update(['relayhost' => $value]);
+    }
+
+    /**
+     * The relayhost attribute of a mailbox (`attributes.relayhost`, a JSON string as legacy's
+     * strval() writes it); null removes the attribute, as in rows older than the attribute.
+     */
+    public function mailboxRelayhost(string $username, ?string $value): void
+    {
+        if ($value === null) {
+            DB::update("UPDATE `mailbox` SET `attributes` = JSON_REMOVE(`attributes`, '$.relayhost') WHERE `username` = ?", [$username]);
+
+            return;
+        }
+
+        DB::update("UPDATE `mailbox` SET `attributes` = JSON_SET(`attributes`, '$.relayhost', ?) WHERE `username` = ?", [$value, $username]);
     }
 
     /** A sender permission (`sender_acl`). Returns its ID. */
@@ -323,14 +385,14 @@ class MailcowRows
     }
 
     /** A BCC map (`bcc_maps`); `local_dest` is `@domain` for domain maps, as legacy stores them. */
-    public function bccMap(string $localDest, string $bccDest, string $domain, string $type = 'rcpt'): int
+    public function bccMap(string $localDest, string $bccDest, string $domain, string $type = 'rcpt', int $active = 1): int
     {
         return (int) DB::table('bcc_maps')->insertGetId([
             'local_dest' => $localDest,
             'bcc_dest' => $bccDest,
             'domain' => $domain,
             'type' => $type,
-            'active' => 1,
+            'active' => $active,
         ]);
     }
 
@@ -702,9 +764,9 @@ class MailcowRows
     }
 
     /** A recipient map (`recipient_maps`). Returns its ID. */
-    public function recipientMap(string $oldDest, string $newDest): int
+    public function recipientMap(string $oldDest, string $newDest, int $active = 1): int
     {
-        return (int) DB::table('recipient_maps')->insertGetId(['old_dest' => $oldDest, 'new_dest' => $newDest, 'active' => 1]);
+        return (int) DB::table('recipient_maps')->insertGetId(['old_dest' => $oldDest, 'new_dest' => $newDest, 'active' => $active]);
     }
 
     /** A Sieve filter of a mailbox (`sieve_filters`). Returns its ID. */

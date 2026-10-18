@@ -69,6 +69,11 @@ enum ProblemType: string
     case BanRulesNotRestored = 'ban-rules-not-restored';
     case IpCheckDisabled = 'ip-check-disabled';
 
+    // Feature 009 (permission-flag-required and temporary-failure are feature 002's).
+    case RoutingEntryExists = 'routing-entry-exists';
+    case NextHopCredentialsDiffer = 'next-hop-credentials-differ';
+    case NextHopInterferes = 'next-hop-interferes';
+
     // Feature 008.
     case SyncJobExists = 'sync-job-exists';
 
@@ -108,6 +113,7 @@ enum ProblemType: string
             self::ContainerActionFailed, self::QueueActionFailed => 502,
             self::BanRulesNotRestored => 504,
             self::SyncJobExists => 409,
+            self::RoutingEntryExists, self::NextHopCredentialsDiffer, self::NextHopInterferes => 409,
             self::MailboxRenameIncomplete => 500,
             self::OutcomeUnknown => 504,
             self::AttributeNotPermitted, self::PermissionFlagRequired, self::DkimPrivateKeyExportDisabled,
@@ -176,6 +182,9 @@ enum ProblemType: string
             self::SignInStateInvalid => 'Sign-in state invalid',
             self::IdentityProviderUnavailable => 'Identity provider unavailable',
             self::IdentityProviderSessionEnded => 'Identity provider session ended',
+            self::RoutingEntryExists => 'Entry already exists',
+            self::NextHopCredentialsDiffer => 'Next hop has different credentials',
+            self::NextHopInterferes => 'Next hop interferes',
         };
     }
 
@@ -240,6 +249,9 @@ enum ProblemType: string
             self::SignInStateInvalid => 'The single sign-on state is unknown, expired, already used or belongs to another browser session. Start again.',
             self::IdentityProviderUnavailable => 'The identity provider could not be reached. Try again later.',
             self::IdentityProviderSessionEnded => 'The single sign-on session ended. Sign in again.',
+            self::RoutingEntryExists => 'An entry with this unique value already exists.',
+            self::NextHopCredentialsDiffer => 'Transports with this next hop use a different username; they share one set of credentials.',
+            self::NextHopInterferes => 'The next hop interferes with the next hop of other transports.',
         };
     }
 

@@ -307,7 +307,11 @@
                 "deleteForwardingHost",
                 "getRoutingCapabilities"
             ],
-            "problemTypes": []
+            "problemTypes": [
+                "routing-entry-exists",
+                "next-hop-credentials-differ",
+                "next-hop-interferes"
+            ]
         }
     },
     "pendingOperations": [

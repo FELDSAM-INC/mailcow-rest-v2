@@ -57,10 +57,10 @@ Feature 009 starts only when these exist; the tasks below use them and never re-
 **Purpose**: Settings, deployment adjustments, the legacy parity fixtures and the contract check.
 Nothing here contains business logic.
 
-- [ ] T001 Verify that the prerequisite code of features 001 to 004 listed above exists (class
+- [X] T001 Verify that the prerequisite code of features 001 to 004 listed above exists (class
   names as in their plans). Record any rename in this file's dependency list before continuing. Do
   not create stand-ins: a missing prerequisite means the earlier feature is not finished.
-- [ ] T002 [P] Add the routing settings of R21 to `config/restv2.php` under `routing`:
+- [X] T002 [P] Add the routing settings of R21 to `config/restv2.php` under `routing`:
   `test_sender` (`RESTV2_ROUTING_TEST_SENDER`, default `relay@example.org`), `test_recipient`
   (`RESTV2_ROUTING_TEST_RECIPIENT`, default `null@hosted.mailcow.de`), `test_step_timeout`
   (`RESTV2_ROUTING_TEST_STEP_TIMEOUT`, default 15), `test_total_timeout`
@@ -68,15 +68,15 @@ Nothing here contains business logic.
   `spf_lookup_limit` (10, fixed). Invalid values (a non-address, a timeout below 1, a total below the
   step) fall back to the default with one logged warning. Document the four variables in
   `.env.example`.
-- [ ] T003 [P] Add an optional `mailpit` service (`axllent/mailpit`, pinned tag, MIT) to
+- [X] T003 [P] Add an optional `mailpit` service (`axllent/mailpit`, pinned tag, MIT) to
   `compose.yaml` under the profile `routing`, with `MP_SMTP_AUTH_ACCEPT_ANY=1`,
   `MP_SMTP_AUTH_ALLOW_INSECURE=1` and port `8025:8025`, for quickstart Part B (R24).
-- [ ] T004 [P] Deployment (R13, R15): add `dns: ["${IPV4_NETWORK:-172.22.1}.254"]` and
+- [X] T004 [P] Deployment (R13, R15): add `dns: ["${IPV4_NETWORK:-172.22.1}.254"]` and
   `dns_opt: ["timeout:2", "attempts:2"]` to the `restv2-mailcow` service in
   `deploy/docker-compose.override.yml`; raise `fastcgi_read_timeout`
   from `60s` to `90s` in `deploy/nginx/site.restv2.custom` (and in `docker/nginx/dev.conf` if it
   repeats the value).
-- [ ] T005 [P] Create `scripts/legacy/extract-routing-maps.sh <tag>`. It reads
+- [X] T005 [P] Create `scripts/legacy/extract-routing-maps.sh <tag>`. It reads
   `data/Dockerfiles/postfix/postfix.sh` and `data/conf/rspamd/dynmaps/bcc.php` with
   `git -C "${MAILCOW_REPO:-./source_code}" show <tag>:…` (tags only) and writes the `query = …` of
   `mysql_sender_dependent_default_transport_maps.cf`, `mysql_sasl_passwd_maps_sender_dependent.cf`,
@@ -84,7 +84,7 @@ Nothing here contains business logic.
   `mysql_tls_policy_override_maps.cf`, `mysql_recipient_canonical_maps.cf` and the two `bcc_maps`
   queries of `bcc.php` to `tests/fixtures/legacy/routing-maps/2026-09a/<name>.sql`, with a header
   (tag, source SHA-256). Run it for `2026-09a` and commit the files. They feed the parity tests.
-- [ ] T006 Run `composer contract:lint` and `composer contract:bundle`. Confirm that
+- [X] T006 Run `composer contract:lint` and `composer contract:bundle`. Confirm that
   `build/contract/openapi.json` contains the 46 operations of plan.md ("Contract Operations") and
   that `tests/bin/check-contract-coverage.php` now reports them as uncovered (they become covered
   story by story). Confirm that `tests/Support/Contract/OpenApiContract.php` coerces query values
@@ -101,7 +101,7 @@ rules, the DNS client, problem types, authorisation, audit and bulk plumbing, an
 
 ### Test support and foundation tests (write first, observe failing) ⚠️
 
-- [ ] T007 [P] Extend `database/factories/MailcowRows.php` and `tests/Support/Mailcow/MailcowFactory.php`
+- [X] T007 [P] Extend `database/factories/MailcowRows.php` and `tests/Support/Mailcow/MailcowFactory.php`
   with rows written exactly as legacy writes them (data-model.md):
   - `relayhost(host, username = '', password = '', active = 1)`;
   - `transport(destination, nexthop, username = '', password = '', isMxBased = 0, active = 1)`;
@@ -116,10 +116,10 @@ rules, the DNS client, problem types, authorisation, audit and bulk plumbing, an
 
   Legacy variants for edge tests: credentials with escaped colons (`u\:x`), `domain.relayhost = '03'`,
   forwarding hosts in non-canonical form (`2001:0db8::0001`, `192.0.2.5/24`).
-- [ ] T008 [P] Create `tests/Support/Dns/FakeDnsResolver.php` (records per name and type, names that
+- [X] T008 [P] Create `tests/Support/Dns/FakeDnsResolver.php` (records per name and type, names that
   throw `DnsTemporaryFailure`, a call log, `assertQueried()` and `lookupCount()`). It implements the
   interface of T023. (`FakeSmtpProbe` comes with US4, T057.)
-- [ ] T009 [P] Write `tests/Unit/Routing/NextHopTest.php` (FR-019, R5) as a data table:
+- [X] T009 [P] Write `tests/Unit/Routing/NextHopTest.php` (FR-019, R5) as a data table:
   `[smtp.example.net]:587` kept; `192.0.2.10:25` → `[192.0.2.10]:25`; `192.0.2.10` →
   `[192.0.2.10]`; `2001:db8::1` → `[2001:db8::1]`; `[ipv6:2001:DB8::1]:25` → lower-cased, kept;
   `postfix-relay` kept; `Bücher.Example:587` → `xn--bcher-kva.example:587` (FR-011);
@@ -128,35 +128,35 @@ rules, the DNS client, problem types, authorisation, audit and bulk plumbing, an
   `relay..example.net`, `[relay.example.net]:0`, `relay.example.net:65536`, `[]`, `[a b]`,
   `host:+25`. `required` for `""`, `tooLong` `{max: 255}` for 256 characters. Also assert
   `bracketed()`, `host()`, `port()` and `cleanHost()` (the legacy `next_hop_clean`).
-- [ ] T010 [P] Write `tests/Unit/Routing/IpNetworkLiteralTest.php` (FR-077, R16): canonical forms
+- [X] T010 [P] Write `tests/Unit/Routing/IpNetworkLiteralTest.php` (FR-077, R16): canonical forms
   (`2001:0DB8::0001` → `2001:db8::1`, `192.0.2.5/24` → `192.0.2.0/24`, `2001:db8::1/32` →
   `2001:db8::/32`, `203.0.113.7` without prefix); invalid literals (`999.1.1.1`,
   `192.0.2.0/33`, `2001:db8::/129`, `1.2.3`); classification (`cafe` and `example.org` are not
   literals; anything with `/` or `:` or only digits and dots is); canonical equality of a stored
   non-canonical entry; the sort key (IPv4 before IPv6, numeric, then prefix length).
-- [ ] T011 [P] Write `tests/Unit/Routing/CredentialFingerprintTest.php` (R2): the fingerprint is
+- [X] T011 [P] Write `tests/Unit/Routing/CredentialFingerprintTest.php` (R2): the fingerprint is
   `hash_hmac('sha256', password, config('app.key'))`; it differs from `hash('sha256', password)`;
   it changes with the password and with the application key; an empty password has its own
   fingerprint; a version tag built with `ETag::strong()` over a fingerprint never contains the
   password or its plain hash.
-- [ ] T012 [P] Write `tests/Feature/Routing/Support/NamedLockTest.php` (R9): `NamedLock::run('restv2:routing:transports', fn)`
+- [X] T012 [P] Write `tests/Feature/Routing/Support/NamedLockTest.php` (R9): `NamedLock::run('restv2:routing:transports', fn)`
   takes `GET_LOCK`, runs the callback in a transaction and releases the lock, also when the callback
   throws. With the lock held by a second PDO connection and `routing.lock_timeout = 1`, the call
   throws a `ProblemException` of `temporary-failure` (503, `Retry-After`) after about 1 s and runs
   nothing. After the other connection releases it, the call succeeds.
-- [ ] T013 [P] Write `tests/Unit/Routing/RoutingRulesTest.php` against a test-only Form Request:
+- [X] T013 [P] Write `tests/Unit/Routing/RoutingRulesTest.php` against a test-only Form Request:
   `App\Rules\SmtpUsername` (trimmed, at most 255 → `tooLong` `{max: 255}`, a `:` →
   `invalidCharacter` `{characters: [":"]}`); `App\Rules\RoutingEmail` (`FILTER_VALIDATE_EMAIL` after
   UTS #46 normalisation of the domain, at most 255; otherwise `invalidFormat` `{format: email}`);
   `ApiFormRequest` maps the new codes `invalidCharacter` and `notResolvable` with their params, and
   `required` with `{because: password}`. Messages never contain the submitted value. Several invalid
   fields in one request are all named (SC-011).
-- [ ] T014 [P] Write `tests/Unit/Clients/NativeDnsResolverTest.php` (R15) with an injected lookup
+- [X] T014 [P] Write `tests/Unit/Clients/NativeDnsResolverTest.php` (R15) with an injected lookup
   callable in place of `dns_get_record()`: `[]` → no records; `false` plus the warning "A temporary
   server error occurred." → `DnsTemporaryFailure`; `false` with another warning →
   `DnsTemporaryFailure`; TXT records with several character strings are concatenated; MX records
   are returned with their preference; no PHP warning reaches the log.
-- [ ] T015 [P] Write `tests/Feature/Routing/Support/RoutingPolicyTest.php` (FR-001 to FR-006,
+- [X] T015 [P] Write `tests/Feature/Routing/Support/RoutingPolicyTest.php` (FR-001 to FR-006,
   FR-029): every row of the FR-005 table for an administrator, a domain administrator with and
   without each of `domain_relayhost`, `mailbox_relayhost` and `bcc_maps` (rows in `da_acl`), and a
   mailbox user. The decision order is role (`403 forbidden`), then flag (`403
@@ -164,7 +164,7 @@ rules, the DNS client, problem types, authorisation, audit and bulk plumbing, an
   BCC scope covers their domains (active `domain_admins` row, existing domain) and those domains'
   alias domains, and nothing else. An inactive `domain_admins` row removes the scope on the next
   request (FR-002). A key principal acts as its owner.
-- [ ] T016 [P] Write `tests/Feature/Routing/Support/RoutingAuditTest.php` (FR-085, data-model.md
+- [X] T016 [P] Write `tests/Feature/Routing/Support/RoutingAuditTest.php` (FR-085, data-model.md
   audit table, R22): `RoutingAudit` writes one `restv2_audit_events` row per target with the event
   type, `target.type`, `target.id` and `target.name`; `password` appears only as `set`, `changed` or
   `removed`; `bulkRequestId` is set for bulk items; a failing audit insert rolls the audited change
@@ -176,7 +176,7 @@ rules, the DNS client, problem types, authorisation, audit and bulk plumbing, an
   (`details.errors` with rule codes, never values), `conflict`, `versionOutdated` or
   `temporaryFailure`; a `401` and a CSRF failure write nothing; the resolvers give the target id
   (numeric id, stored address, or the normalised domain name or mailbox address for assignments).
-- [ ] T017 [P] Write `tests/Unit/Routing/RoutingBulkActionRequestTest.php` (FR-090, R20):
+- [X] T017 [P] Write `tests/Unit/Routing/RoutingBulkActionRequestTest.php` (FR-090, R20):
   `RoutingBulkActionRequest` accepts each collection's actions only (`notInList` with `allowed`),
   1 to 100 targets (`tooMany` `{max: 100}` above, `required` for none), each target shaped like
   `BulkTarget` (`id` required string, optional `version`). Duplicate ids are kept for the runner to
@@ -184,39 +184,39 @@ rules, the DNS client, problem types, authorisation, audit and bulk plumbing, an
 
 ### Implementation of the foundation
 
-- [ ] T018 Create `app/Support/Routing/NextHop.php` (R5), using 002's `App\Support\Domain\DomainName`
+- [X] T018 Create `app/Support/Routing/NextHop.php` (R5), using 002's `App\Support\Domain\DomainName`
   for the domain part and `filter_var(FILTER_VALIDATE_IP)` for literals, and the rule
   `app/Rules/NextHopRule.php` that reports `required`, `tooLong` and `invalidFormat`
   `{format: nextHop}`. This makes T009 pass.
-- [ ] T019 [P] Create `app/Support/Routing/IpNetworkLiteral.php` (`parse()`, `isLiteralLike()`,
+- [X] T019 [P] Create `app/Support/Routing/IpNetworkLiteral.php` (`parse()`, `isLiteralLike()`,
   `canonical()`, `equals()`, `sortKey()`). This makes T010 pass.
-- [ ] T020 [P] Create `app/Support/Routing/CredentialFingerprint.php`. This makes T011 pass.
-- [ ] T021 [P] Create `app/Support/Database/NamedLock.php` (`run(string $name, Closure $fn)`,
+- [X] T020 [P] Create `app/Support/Routing/CredentialFingerprint.php`. This makes T011 pass.
+- [X] T021 [P] Create `app/Support/Database/NamedLock.php` (`run(string $name, Closure $fn)`,
   `GET_LOCK(?, config('restv2.routing.lock_timeout'))`, `RELEASE_LOCK` in `finally`, a timeout →
   `ProblemException(ProblemType::TemporaryFailure)` with `Retry-After: 5`). This makes T012 pass.
-- [ ] T022 [P] Create `app/Rules/SmtpUsername.php` and `app/Rules/RoutingEmail.php`, and register the
+- [X] T022 [P] Create `app/Rules/SmtpUsername.php` and `app/Rules/RoutingEmail.php`, and register the
   codes `invalidCharacter` and `notResolvable` in `app/Http/Requests/Api/V2/ApiFormRequest.php`'s
   rule-code mapping. This makes T013 pass.
-- [ ] T023 [P] Create `app/Clients/Dns/DnsResolver.php` (interface: `txt`, `mx`, `a`, `aaaa`),
+- [X] T023 [P] Create `app/Clients/Dns/DnsResolver.php` (interface: `txt`, `mx`, `a`, `aaaa`),
   `app/Clients/Dns/NativeDnsResolver.php` and `app/Clients/Dns/DnsTemporaryFailure.php`, and bind
   the interface in `app/Providers/AppServiceProvider.php`. This makes T014 pass.
-- [ ] T024 (FR-087) Add the cases `RoutingEntryExists` (409), `NextHopCredentialsDiffer` (409),
+- [X] T024 (FR-087) Add the cases `RoutingEntryExists` (409), `NextHopCredentialsDiffer` (409),
   `NextHopInterferes` (409) and `PermissionFlagRequired` (403) to `app/Support/Http/ProblemType.php`,
   with their URIs and English titles, plus extension builders (`field`, `conflictingId`; `nextHop`,
   `transportIds`; `requiredFlags`). Run 001's `tests/Unit/Support/ProblemTypeConsistencyTest.php`,
   which must pass against the four new sections of `docs/problems.md` and `KnownProblemType`.
-- [ ] T025 Create `app/Policies/RoutingPolicy.php` (FR-005 decisions, using 001's `Principal` and
+- [X] T025 Create `app/Policies/RoutingPolicy.php` (FR-005 decisions, using 001's `Principal` and
   `PermissionFlag`, 002's `DomainScope` and 003's `MailboxScope`) and
   `app/Services/Routing/BccScope.php` (the SQL condition of data-model.md for a domain
   administrator), and register the policy. This makes T015 pass.
-- [ ] T026 Create `app/Services/Routing/RoutingAudit.php` (event, target and details builders for
+- [X] T026 Create `app/Services/Routing/RoutingAudit.php` (event, target and details builders for
   successes and per-item bulk outcomes), register the target resolvers of R22 with 008's
   `App\Services\Audit\RefusalAuditor` in `app/Providers/AppServiceProvider.php`, and extend the
   per-event `details` whitelist of `app/Services/Audit/AuditLogger.php` with the 21 event types of
   data-model.md (plus `requiredFlags` for failures). Every state-changing route registered by the
   later tasks declares `->defaults('restv2.audit', ['event' => …, 'target' => …])`. This makes T016
   pass.
-- [ ] T027 Create `app/Http/Requests/Api/V2/RoutingBulkActionRequest.php` (the action list comes
+- [X] T027 Create `app/Http/Requests/Api/V2/RoutingBulkActionRequest.php` (the action list comes
   from the route: relayhosts, transports, recipient maps and TLS policy maps `activate`,
   `deactivate`, `delete`; BCC maps also `switchToSender`, `switchToRecipient`; forwarding hosts
   `enableSpamFilter`, `disableSpamFilter`, `delete`) and the skeleton
@@ -1012,3 +1012,56 @@ Each story ends with its checkpoint green and the contract coverage growing towa
   (`tls_policy_override`) and `ForwardingHostService` (`WHITELISTED_FWD_HOST`, `KEEP_SPAM`).
   Controllers never write.
 - Commit after each task or logical group, with short imperative subjects and no AI attribution.
+
+## Implementation notes (2026-10-18)
+
+Deviations and decisions made while implementing, with the reason. Names in tasks that differ from
+what exists map as listed.
+
+- **T001** (prerequisites, all on `main`, 003 complete since `1351d9e`): `ETag::strong()` is 001's
+  `App\Support\Http\ETag::of()` (already an HMAC keyed with the app key, 003's note);
+  `App\Support\Database\NamedLock` exists (003) as `run(list $names, Closure, int $timeout)`
+  throwing `LockNotAcquired`; `ProblemType::PermissionFlagRequired` and
+  `App\Exceptions\PermissionFlagRequiredException` exist (002, G34); the per-event detail
+  whitelist is `App\Audit\AuditEventType::detailKeys()` (004's note), not `AuditLogger`;
+  `RefusalAuditor`, `BulkActionRunner`, `DomainScope`, `DomainName`, `DomainVersion`,
+  `SharedStore`, the models `Relayhost`, `AliasDomain`, `Alias`, and 003's `MailboxAddress`,
+  `MailboxScope`, `MailboxVersion` exist under the names of the dependency list. The contract
+  coverage scope is `tests/feature-registry.json` (feature `009-routing-address-rewriting`, all 46
+  operations pending until their story lands). No 003 piece is missing: the mailbox assignment is
+  009's own operation, and 003's mailbox change refuses `relayhostId` as a read-only member.
+- **T002**: `config/restv2.php` keeps the raw values; `App\Services\Routing\RoutingSettings`
+  validates them on every read and falls back to the default with one logged warning per process
+  (configuration files cannot log).
+- **T003**: `axllent/mailpit:v1.27.10`; its UI port is bound to `127.0.0.1` only.
+- **T004**: the override already had the `dns` entry (001); `dns_opt` and the four
+  `RESTV2_ROUTING_*` settings were added. `fastcgi_read_timeout` is already `900s` (raised by 003
+  for renames), above the 90 s the plan needs, so only its comment changed; `docker/nginx/dev.conf`
+  does not set it.
+- **T005**: the fixtures are `tests/fixtures/legacy/routing-maps/2026-09a/*.sql` plus
+  `bcc_maps_recipient.sql` and `bcc_maps_sender.sql` (bcc.php's two statements, `:local_dest`
+  kept).
+- **T006**: 001's contract validator already coerces boolean and repeated query parameters
+  (002 T003 and its tests); nothing was changed.
+- **T007**: the existing `relayhost()`, `bccMap()` and `recipientMap()` writers gained optional
+  parameters after their existing ones (`relayhost()` takes a nullable ID and returns it);
+  `forwardingHost()` lives on the test `MailcowFactory`, next to `redisHash()`, because it writes
+  Redis.
+- **T012, T021**: no second named-lock helper: `App\Services\Routing\RoutingLock` takes 003's
+  `NamedLock`, runs the code in one transaction and maps a timeout to `503 temporary-failure` with
+  `dependency: database` and `Retry-After: 5`. T012's test exercises it.
+- **T024**: three new cases (`routing-entry-exists`, `next-hop-credentials-differ`,
+  `next-hop-interferes`); the extension builders are `App\Services\Routing\RoutingConflict`.
+- **T025**: `App\Policies\RoutingPolicy` is not registered with the Gate, because a Gate answer
+  cannot carry the `permission-flag-required` problem; callers use `authorize($principal,
+  $ability)`.
+- **T026**: the resolvers are `App\Services\Routing\RoutingAuditTargets` (like 004's
+  `AliasAuditTargets`), using 003's `RefusalAuditor::bulkRefusal()` for whole-request bulk
+  refusals. Creation records carry the stored attributes in `values`, as 002–004 do, instead of
+  top-level keys; a password appears only as `"set"`, `"changed"` or `"removed"`.
+  `PermissionFlagRequiredException` now passes its flags as audit details, so that refusal records
+  of this feature carry `requiredFlags` (other features' event types do not list the key, so their
+  records are unchanged). The 21 event types are documented in `docs/audit-events.md` (G3).
+- **T027**: the per-collection item handlers implement `App\Services\Routing\RoutingBulkHandler`;
+  `RoutingBulkActions` runs them on the shared runner.
+

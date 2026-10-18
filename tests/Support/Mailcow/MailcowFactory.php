@@ -53,6 +53,20 @@ class MailcowFactory extends MailcowRows
         $client->hSet($key, $field, $value);
     }
 
+    /**
+     * A forwarding host as legacy fwdhost('add') stores it (feature 009): the address (in any
+     * spelling, also non-canonical) with its source in `WHITELISTED_FWD_HOST`, and `KEEP_SPAM` set
+     * when the spam filter is disabled.
+     */
+    public function forwardingHost(string $address, string $source, bool $keepSpam = false): void
+    {
+        $this->redisHash('WHITELISTED_FWD_HOST', $address, $source);
+
+        if ($keepSpam) {
+            $this->redisHash('KEEP_SPAM', $address, '1');
+        }
+    }
+
     public function tfaWebAuthnCredential(string $username, VirtualCredential $credential, string $keyId = 'Security key', int $active = 1): int
     {
         return $this->tfaWebAuthn($username, $credential->id, $credential->publicKeyPem, $keyId, $active);

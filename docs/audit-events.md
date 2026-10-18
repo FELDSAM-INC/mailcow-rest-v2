@@ -1017,3 +1017,352 @@ client ID it had.
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
+
+## relayhostCreation
+
+Feature 009. Written for every creation of a relayhost (`POST /relayhosts`), in the transaction
+that stores it, and for every refusal. The target is the relayhost (`type: relayhost`, `id` its
+identifier, `name` its host); a refused creation has no identifier and names the host as sent
+(normalised when it is a valid next hop).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The stored attributes in contract names: `host`, `username` (`null` without one), `password` (`"set"` when a password was stored, `null` otherwise; never the password) and `active`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## relayhostUpdate
+
+Feature 009. Written for every change of a relayhost (`PATCH /relayhosts/{relayhostId}`), for every
+relayhost of the bulk actions `activate` and `deactivate`, and for every refusal. A change whose
+values equal the stored ones is recorded too, with empty `changes`. The target is the relayhost
+with its host after the change.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed attribute as `{old, new}`, keyed by its contract name: `host`, `username` (`null` for none), `active`; a changed password only as `password: "set"`, `"changed"` or `"removed"`. Empty when nothing changed. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## relayhostDeletion
+
+Feature 009. Written for every deletion of a relayhost (`DELETE /relayhosts/{relayhostId}` and bulk
+deletions), in the transaction that deletes it and clears its assignments, and for every refusal.
+The target is the deleted relayhost.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `host` | string | The host the relayhost had. | on success |
+| `clearedDomains` | array of strings | The domains (ASCII names, sorted) whose assignment to the relayhost was cleared. | on success |
+| `clearedMailboxes` | array of strings | The mailboxes (addresses, sorted) whose assignment to the relayhost was cleared. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## relayhostTest
+
+Feature 009. Written for every connection test of a relayhost
+(`POST /relayhosts/{relayhostId}/connection-test`) that ran, whatever its outcome, in a transaction
+of its own after the dialogue, and for every refusal. The target is the relayhost. The transcript
+and the credentials are never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `sender` | string | The envelope sender of the test message (the request's or the server setting's default). | on success |
+| `recipient` | string | The envelope recipient of the test message. | on success |
+| `accepted` | boolean | Whether the next hop accepted the test message. | on success |
+| `step` | string | The step reached or failed: `resolve`, `connect`, `greeting`, `tls`, `login`, `sender`, `recipient` or `message` (`RoutingConnectionTestStep`). | on success |
+| `failureReason` | string or null | The reason of a failed test (`RoutingConnectionTestResult.failure.reason`, for example `timeout`, `loginFailed`, `rejected`), `null` when the message was accepted. Never the transcript. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## relayhostAssignmentUpdate
+
+Feature 009. Written for every replacement of the relayhost assignment of a domain
+(`PUT /domains/{domain}/relayhost-assignment`, target `type: domainRelayhostAssignment`, `id` and
+`name` the ASCII domain name) or of a mailbox (`PUT /mailboxes/{mailbox}/relayhost-assignment`,
+target `type: mailboxRelayhostAssignment`, `id` and `name` the mailbox address), and for every
+refusal, including a domain administrator's attempt without the permission flag. A replacement with
+the stored value is recorded too, with empty `changes`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `relayhostId` as `{old, new}` (integers, `null` for none; a dangling old reference keeps its stored identifier), when it changed. Empty otherwise. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## transportCreation
+
+Feature 009. Written for every creation of a transport (`POST /transports`), in the transaction that
+stores it and propagates the credentials of its next hop, and for every refusal. The target is the
+transport (`type: transport`, `id` its identifier, `name` its destination).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The stored attributes in contract names: `destination`, `nextHop`, `mxBased`, `active`, `username` (`null` without one) and `password` (`"set"` when one is stored, `null` otherwise; never the password). | on success |
+| `affectedTransportIds` | array of integers | The other transports of the next hop whose stored credentials the creation changed, sorted. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## transportUpdate
+
+Feature 009. Written for every change of a transport (`PATCH /transports/{transportId}`), for every
+transport of the bulk actions `activate` and `deactivate`, and for every refusal. A change whose
+values equal the stored ones is recorded too, with empty `changes`. The target is the transport with
+its destination after the change.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed attribute as `{old, new}`, keyed by its contract name: `destination`, `nextHop`, `mxBased`, `active`, `username` (`null` for none); a changed password only as `password: "set"`, `"changed"` or `"removed"`. Empty when nothing changed. | on success |
+| `affectedTransportIds` | array of integers | The other transports of the resulting next hop whose stored credentials the change changed, sorted. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## transportDeletion
+
+Feature 009. Written for every deletion of a transport (`DELETE /transports/{transportId}` and bulk
+deletions), in the transaction that deletes it, and for every refusal. The target is the deleted
+transport.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `destination` | string | The destination the transport had. | on success |
+| `nextHop` | string | The next hop the transport had. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## transportTest
+
+Feature 009. Written for every connection test of a transport
+(`POST /transports/{transportId}/connection-test`) that ran, whatever its outcome, and for every
+refusal. The target is the transport. The transcript and the credentials are never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `sender` | string | The envelope sender of the test message (the request's or the server setting's default). | on success |
+| `recipient` | string | The envelope recipient of the test message. | on success |
+| `accepted` | boolean | Whether the next hop accepted the test message. | on success |
+| `step` | string | The step reached or failed: `resolve`, `connect`, `greeting`, `tls`, `login`, `sender`, `recipient` or `message` (`RoutingConnectionTestStep`). | on success |
+| `failureReason` | string or null | The reason of a failed test (`RoutingConnectionTestResult.failure.reason`, for example `timeout`, `loginFailed`, `rejected`), `null` when the message was accepted. Never the transcript. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## bccMapCreation
+
+Feature 009. Written for every creation of a BCC map (`POST /bcc-maps`), in the transaction that
+stores it, and for every refusal. The target is the map (`type: bccMap`, `id` its identifier,
+`name` its local destination).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The stored attributes in contract names: `localDestination`, `type` (`sender` or `recipient`), `bccDestination`, `domain` and `active`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## bccMapUpdate
+
+Feature 009. Written for every change of a BCC map (`PATCH /bcc-maps/{bccMapId}`), for every map of
+the bulk actions `activate`, `deactivate`, `switchToSender` and `switchToRecipient`, and for every
+refusal. A change whose values equal the stored ones is recorded too, with empty `changes`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed attribute as `{old, new}`: `type`, `bccDestination`, `active`. Empty when nothing changed. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## bccMapDeletion
+
+Feature 009. Written for every deletion of a BCC map (`DELETE /bcc-maps/{bccMapId}` and bulk
+deletions) and every refusal. The target is the deleted map.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `localDestination` | string | The local destination the map had. | on success |
+| `type` | string | The map's type: `sender` or `recipient`. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## recipientMapCreation
+
+Feature 009. Written for every creation of a recipient map (`POST /recipient-maps`) and every
+refusal. The target is the map (`type: recipientMap`, `id` its identifier, `name` its original
+destination).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The stored attributes in contract names: `originalDestination`, `newDestination` and `active`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## recipientMapUpdate
+
+Feature 009. Written for every change of a recipient map (`PATCH /recipient-maps/{recipientMapId}`),
+for every map of the bulk actions `activate` and `deactivate`, and for every refusal. A change whose
+values equal the stored ones is recorded too, with empty `changes`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed attribute as `{old, new}`: `originalDestination`, `newDestination`, `active`. Empty when nothing changed. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## recipientMapDeletion
+
+Feature 009. Written for every deletion of a recipient map and every refusal. The target is the
+deleted map.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `originalDestination` | string | The original destination the map had. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## tlsPolicyMapCreation
+
+Feature 009. Written for every creation of a TLS policy map (`POST /tls-policy-maps`) and every
+refusal. The target is the entry (`type: tlsPolicyMap`, `id` its identifier, `name` its destination).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The stored attributes in contract names: `destination`, `policy`, `parameters` (`""` for none) and `active`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## tlsPolicyMapUpdate
+
+Feature 009. Written for every change of a TLS policy map (`PATCH /tls-policy-maps/{tlsPolicyMapId}`),
+for every entry of the bulk actions `activate` and `deactivate`, and for every refusal. A change
+whose values equal the stored ones is recorded too, with empty `changes`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed attribute as `{old, new}`: `destination`, `policy`, `parameters`, `active`. Empty when nothing changed. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## tlsPolicyMapDeletion
+
+Feature 009. Written for every deletion of a TLS policy map and every refusal. The target is the
+deleted entry.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `destination` | string | The destination the entry had. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## forwardingHostCreation
+
+Feature 009. Written for every addition of a forwarding host (`POST /forwarding-hosts`), in the
+transaction whose last step writes mailcow's Redis, and for every refusal. One record covers every
+address the request added or updated. The target is `type: forwardingHost` with `id` the source
+(the trimmed host as entered) and `name` the stored addresses joined by spaces (cut to 255
+characters), so that the `q` search of the audit log finds the record by an address.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `entries` | array of objects | Every address of the request as `{address, outcome}`: the stored address and `added` or `updated`. | on success |
+| `spamFilter` | boolean | The spam filter setting written for every entry. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## forwardingHostUpdate
+
+Feature 009. Written for every change of a forwarding host's spam filter
+(`PATCH /forwarding-hosts/{forwardingHostAddress}`), for every entry of the bulk actions
+`enableSpamFilter` and `disableSpamFilter`, and for every refusal. A change that keeps the stored
+setting is recorded too, with empty `changes`. The target is the entry (`id` and `name` its stored
+address).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `spamFilter` as `{old, new}`, when it changed. Empty otherwise. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+## forwardingHostDeletion
+
+Feature 009. Written for every deletion of a forwarding host and every refusal. The target is the
+deleted entry (`id` and `name` its stored address).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `source` | string | The source the entry had. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |

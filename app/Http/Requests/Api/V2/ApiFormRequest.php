@@ -239,7 +239,7 @@ abstract class ApiFormRequest extends FormRequest
     public static function make(string $code, array $params, ?string $message = null): array
     {
         $message ??= match ($code) {
-            'required' => 'This field is required.',
+            'required' => ($params['because'] ?? null) === 'password' ? 'A password needs a username.' : 'This field is required.',
             'invalidType' => 'Must be of type '.($params['expected'] ?? 'the documented type').'.',
             'tooShort' => "Must be at least {$params['min']} characters long.",
             'tooLong' => ($params['unit'] ?? null) === 'bytes' ? "Must be at most {$params['max']} bytes long." : "Must be at most {$params['max']} characters long.",
@@ -260,6 +260,11 @@ abstract class ApiFormRequest extends FormRequest
                 'email' => 'Not a valid e-mail address.',
                 'localPart' => 'Not a valid local part of an e-mail address.',
                 'attributeName' => 'Must be 1 to 255 characters without whitespace.',
+                'nextHop' => 'Not a valid next hop: use host, host:port, [host] or [host]:port.',
+                'transportDestination' => 'Not a valid destination: use *, a domain, .domain or an e-mail address.',
+                'recipientMapDestination' => 'Not a valid domain name or e-mail address.',
+                'tlsPolicyDestination' => 'Not a valid destination: use a domain, .domain, [host] or [host]:port.',
+                'tlsPolicyParameters' => 'Use name=value items separated by spaces.',
                 default => 'Invalid format.',
             },
             'notMultipleOf' => 'Must be a whole multiple of '.($params['factor'] ?? 'the unit').'.',
@@ -279,6 +284,9 @@ abstract class ApiFormRequest extends FormRequest
             },
             'conflictsWith' => 'Not allowed together with '.($params['field'] ?? 'another field').(isset($params['value']) && is_scalar($params['value']) ? ' = '.$params['value'] : '').'.',
             'unchanged' => 'Must differ from the current value.',
+            'invalidCharacter' => 'Must not contain: '.implode(', ', array_map(fn (mixed $c): string => '"'.(is_scalar($c) ? (string) $c : '').'"', (array) ($params['characters'] ?? []))).'.',
+            'notResolvable' => 'The host name resolves to no address.',
+            'invalidRegex' => 'Not a valid regular expression.',
             default => 'Invalid value.',
         };
 

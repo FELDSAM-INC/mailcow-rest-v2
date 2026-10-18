@@ -9,7 +9,9 @@ use App\Support\Http\ProblemType;
  * `403 permission-flag-required` with the shared extension members of
  * `PermissionFlagRequiredProblem` (G34, docs/conventions.md "Permission refusals"): the flags as
  * the property names of `PermissionFlags`, and how they combine (`all`: every listed flag is
- * needed and only the missing ones are listed; `any`: one of them suffices).
+ * needed and only the missing ones are listed; `any`: one of them suffices). The flags also go to
+ * the refusal's audit record (`requiredFlags`), where the event type documents the key (feature
+ * 009).
  */
 class PermissionFlagRequiredException extends ProblemException
 {
@@ -26,6 +28,8 @@ class PermissionFlagRequiredException extends ProblemException
                 ? 'This operation needs one of these permission flags: '.implode(', ', $names).'.'
                 : 'This operation needs these permission flags: '.implode(', ', $names).'.'),
             ['requiredFlags' => $names, 'requiredFlagsMatch' => $match === 'any' ? 'any' : 'all'],
+            [],
+            ['requiredFlags' => $names],
         );
     }
 }

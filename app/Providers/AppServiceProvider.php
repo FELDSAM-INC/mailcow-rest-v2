@@ -8,6 +8,8 @@ use App\Clients\Development\NullMemcachedFlusher;
 use App\Clients\Development\NullPublicAddressLookup;
 use App\Clients\Development\NullReleaseSource;
 use App\Clients\Development\NullRspamdController;
+use App\Clients\Dns\DnsResolver;
+use App\Clients\Dns\NativeDnsResolver;
 use App\Clients\DockerApi\DockerApiClient;
 use App\Clients\DockerApi\HttpDockerApiClient;
 use App\Clients\Fail2Ban\Fail2BanReporter;
@@ -59,6 +61,7 @@ use App\Services\Monitoring\UpdateCheckService;
 use App\Services\Oauth2\Oauth2ClientAuditTargetResolver;
 use App\Services\Oauth2\Oauth2ClientService;
 use App\Services\SyncJobs\SyncJobAuditTargets;
+use App\Services\Routing\RoutingAuditTargets;
 use App\Support\Clock\Clock;
 use App\Support\Clock\Sleeper;
 use App\Support\Clock\SystemClock;
@@ -93,6 +96,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ReleaseSource::class, GitHubReleaseSource::class);
         $this->app->bind(PublicAddressLookup::class, HttpPublicAddressLookup::class);
         $this->app->when(UpdateCheckService::class)->needs(Repository::class)->give(fn ($app) => $app->make(CacheFactory::class)->store('restv2'));
+        // Feature 009: DNS and the SMTP connection test, faked in feature tests.
+        $this->app->bind(DnsResolver::class, NativeDnsResolver::class);
 
         // Feature 012: the identity provider's protocols, faked in tests (Http::fake(), FakeLdapDirectory).
         $this->app->bind(OidcClient::class, LeagueOidcClient::class);
@@ -138,6 +143,7 @@ class AppServiceProvider extends ServiceProvider
         MonitoringAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
         IdentityProviderAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
         Oauth2ClientAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
+        RoutingAuditTargets::register($this->app->make(RefusalAuditor::class));
 
         // Feature 011: administrators only (research R26).
         Gate::define('operate-monitoring', [MonitoringPolicy::class, 'operate']);

@@ -79,6 +79,28 @@ enum AuditEventType: string
     case SyncJobUpdate = 'syncJobUpdate';
     case SyncJobReschedule = 'syncJobReschedule';
     case SyncJobDeletion = 'syncJobDeletion';
+    // Feature 009: routing and address rewriting.
+    case RelayhostCreation = 'relayhostCreation';
+    case RelayhostUpdate = 'relayhostUpdate';
+    case RelayhostDeletion = 'relayhostDeletion';
+    case RelayhostTest = 'relayhostTest';
+    case RelayhostAssignmentUpdate = 'relayhostAssignmentUpdate';
+    case TransportCreation = 'transportCreation';
+    case TransportUpdate = 'transportUpdate';
+    case TransportDeletion = 'transportDeletion';
+    case TransportTest = 'transportTest';
+    case BccMapCreation = 'bccMapCreation';
+    case BccMapUpdate = 'bccMapUpdate';
+    case BccMapDeletion = 'bccMapDeletion';
+    case RecipientMapCreation = 'recipientMapCreation';
+    case RecipientMapUpdate = 'recipientMapUpdate';
+    case RecipientMapDeletion = 'recipientMapDeletion';
+    case TlsPolicyMapCreation = 'tlsPolicyMapCreation';
+    case TlsPolicyMapUpdate = 'tlsPolicyMapUpdate';
+    case TlsPolicyMapDeletion = 'tlsPolicyMapDeletion';
+    case ForwardingHostCreation = 'forwardingHostCreation';
+    case ForwardingHostUpdate = 'forwardingHostUpdate';
+    case ForwardingHostDeletion = 'forwardingHostDeletion';
 
     // Feature 012: identity provider configuration.
     case IdentityProviderCreation = 'identityProviderCreation';
@@ -115,6 +137,11 @@ enum AuditEventType: string
 
     /** Feature 011: the list entries a ban service change added and removed. */
     private const BAN_LISTS = ['allowlistAdded', 'allowlistRemoved', 'denylistAdded', 'denylistRemoved'];
+    /** Refusal keys of feature 009, which also records the missing permission flags. */
+    private const ROUTING_REFUSAL = ['problemType', 'status', 'errors', 'requiredFlags'];
+
+    /** Keys of a connection test record (feature 009 FR-085): never the transcript. */
+    private const CONNECTION_TEST = ['sender', 'recipient', 'accepted', 'step', 'failureReason'];
 
     /**
      * The `details` keys this event may record (docs/audit-events.md). Every other key is dropped,
@@ -184,6 +211,19 @@ enum AuditEventType: string
             self::Oauth2ClientUpdate => ['changes', ...self::REFUSAL],
             self::Oauth2ClientSecretRegeneration => [...self::BULK, ...self::REFUSAL],
             self::Oauth2ClientTokenRevocation, self::Oauth2ClientDeletion => ['removed', ...self::BULK, ...self::REFUSAL],
+            self::RelayhostCreation, self::BccMapCreation, self::RecipientMapCreation, self::TlsPolicyMapCreation => ['values', ...self::ROUTING_REFUSAL],
+            self::RelayhostUpdate, self::BccMapUpdate, self::RecipientMapUpdate, self::TlsPolicyMapUpdate, self::ForwardingHostUpdate => ['changes', ...self::BULK, ...self::ROUTING_REFUSAL],
+            self::RelayhostDeletion => ['host', 'clearedDomains', 'clearedMailboxes', ...self::BULK, ...self::ROUTING_REFUSAL],
+            self::RelayhostTest, self::TransportTest => [...self::CONNECTION_TEST, ...self::ROUTING_REFUSAL],
+            self::RelayhostAssignmentUpdate => ['changes', ...self::ROUTING_REFUSAL],
+            self::TransportCreation => ['values', 'affectedTransportIds', ...self::ROUTING_REFUSAL],
+            self::TransportUpdate => ['changes', 'affectedTransportIds', ...self::BULK, ...self::ROUTING_REFUSAL],
+            self::TransportDeletion => ['destination', 'nextHop', ...self::BULK, ...self::ROUTING_REFUSAL],
+            self::BccMapDeletion => ['localDestination', 'type', ...self::BULK, ...self::ROUTING_REFUSAL],
+            self::RecipientMapDeletion => ['originalDestination', ...self::BULK, ...self::ROUTING_REFUSAL],
+            self::TlsPolicyMapDeletion => ['destination', ...self::BULK, ...self::ROUTING_REFUSAL],
+            self::ForwardingHostCreation => ['entries', 'spamFilter', ...self::ROUTING_REFUSAL],
+            self::ForwardingHostDeletion => ['source', ...self::BULK, ...self::ROUTING_REFUSAL],
         };
     }
 }

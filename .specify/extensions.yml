@@ -15,7 +15,7 @@ hooks:
   before_specify:
   - extension: git
     command: speckit.git.feature
-    enabled: true
+    enabled: false
     optional: false
     priority: 10
     prompt: Execute speckit.git.feature?

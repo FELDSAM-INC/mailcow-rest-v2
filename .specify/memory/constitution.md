@@ -162,6 +162,11 @@ upstream mailcow, and so that mailcow contributors can work on it.
   6. Pint formatting and static analysis pass.
 - When a feature changes the contract, the release notes list it, so that mailcowui-ng can bump
   its pinned version.
+- **Git**: commit directly to `main`, with no feature branches and no pull requests. The Spec Kit
+  `before_specify` branch hook is disabled, but spec directories keep the `specs/NNN-feature-name`
+  numbering. Commit subjects are short and imperative.
+- **License**: GPL-3.0, the same as mailcow, so the code can be proposed upstream and logic
+  ported from mailcow stays license-compatible. Every dependency must be GPL-3.0-compatible.
 
 ## Governance
 
@@ -176,6 +181,7 @@ upstream mailcow, and so that mailcow contributors can work on it.
   - Conventions shared with ispconfig-rest: modular `api/` layout, `{data, meta}` lists,
     RFC 9457 errors, `X-API-Key`.
   - The API and the Vue app live in separate repositories.
+  - GPL-3.0 for both repositories, and commits go directly to `main` (added in 1.1.0).
 - Agent runtime guidance lives in `CLAUDE.md` and MUST NOT contradict this document.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-10-18
+**Version**: 1.1.0 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-10-18

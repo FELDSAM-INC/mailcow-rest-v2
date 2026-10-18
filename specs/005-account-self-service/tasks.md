@@ -839,29 +839,29 @@ domain administrator with and without `filters`; list as the user; read the acti
 
 ### Tests for User Story 9 ⚠️
 
-- [ ] T103 [P] [US9] Write `tests/Unit/Sieve/SieveValidatorTest.php`: valid scripts pass; for a set
+- [X] T103 [P] [US9] Write `tests/Unit/Sieve/SieveValidatorTest.php`: valid scripts pass; for a set
   of invalid scripts the message equals the exception message of the legacy parser loaded from the
   tag in a subprocess (`resources/legacy/sieve/` unchanged, `ORIGIN` hashes match).
-- [ ] T104 [P] [US9] Write `tests/Feature/SieveFilters/SieveFilterCrudTest.php` (FR-048 to FR-051,
+- [X] T104 [P] [US9] Write `tests/Feature/SieveFilters/SieveFilterCrudTest.php` (FR-048 to FR-051,
   AS-1, AS-2): create active prefilter while another is active → the old one `inactive`, the new one
   `active`, in `sieve_before` view output; changing an active prefilter to postfilter deactivates the
   active postfilter; syntax error → `422 sieveSyntax` with `message`, nothing saved; 65,536 bytes →
   `tooLong` (`unit: bytes`); description 0 or 256 characters → `tooShort`/`tooLong`; patch only sent
   members, mailbox never changes; delete; `ETag` and `412`; audit with the script as sizes; two
   concurrent activations leave one active filter (named lock).
-- [ ] T105 [P] [US9] Write `tests/Feature/SieveFilters/SieveFilterAuthorizationTest.php` (AS-3, AS-4):
+- [X] T105 [P] [US9] Write `tests/Feature/SieveFilters/SieveFilterAuthorizationTest.php` (AS-3, AS-4):
   domain admin without `filters` → create, patch, delete `403 permission-flag-required`
   (`filters`), lists allowed; mailbox user → own list allowed, create `403 forbidden`, foreign
   mailbox `404`; admin any; keys (read-only lists allowed, changes refused); refusals audited.
-- [ ] T106 [P] [US9] Write `tests/Feature/SieveFilters/SieveFilterListTest.php` (FR-047, AS-6): 300
+- [X] T106 [P] [US9] Write `tests/Feature/SieveFilters/SieveFilterListTest.php` (FR-047, AS-6): 300
   filters across 120 mailboxes; `GET /sieve-filters` as admin with `mailbox` and `kind` filters →
   only matches, paginated; default order mailbox then description; a domain admin sees only the
   mailboxes of their domains; a mailbox user → `403 forbidden`; `q` on description and mailbox.
-- [ ] T107 [P] [US9] Write `tests/Feature/SieveFilters/SieveScriptValidationTest.php` (FR-052):
+- [X] T107 [P] [US9] Write `tests/Feature/SieveFilters/SieveScriptValidationTest.php` (FR-052):
   valid → `{valid: true, message: null}`; invalid → `{valid: false, message}`; a read-only key of an
   administrator → `200` (read-only marker); a mailbox user → `403 forbidden`; nothing is written or
   audited.
-- [ ] T108 [P] [US9] Write `tests/Feature/SieveFilters/ActiveSieveScriptTest.php` (FR-053, AS-5)
+- [X] T108 [P] [US9] Write `tests/Feature/SieveFilters/ActiveSieveScriptTest.php` (FR-053, AS-5)
   with `FakeSieveScriptReader` and, separately, `tests/Unit/Clients/DockerApiSieveScriptReaderTest.php`
   with 002's `FakeDockerApiClient`: list output `roundcube ACTIVE` → print called with
   `script_name roundcube`, first output line removed, `{name, script}` returned; no active line →
@@ -870,14 +870,14 @@ domain administrator with and without `filters`; list as the user; read the acti
 
 ### Implementation for User Story 9
 
-- [ ] T109 [P] [US9] Create `app/Support/Sieve/SieveValidator.php`. This makes T103 pass.
-- [ ] T110 [P] [US9] Create `app/Clients/Dovecot/{SieveScriptReader,DockerApiSieveScriptReader,ActiveSieveScript}.php`
+- [X] T109 [P] [US9] Create `app/Support/Sieve/SieveValidator.php`. This makes T103 pass.
+- [X] T110 [P] [US9] Create `app/Clients/Dovecot/{SieveScriptReader,DockerApiSieveScriptReader,ActiveSieveScript}.php`
   (over 002's `DockerApiClient::exec`, `DOCKER_TIMEOUT`) and `tests/Support/Fakes/FakeSieveScriptReader.php`;
   bind in `AppServiceProvider`.
-- [ ] T111 [US9] Create `app/Models/Mailcow/SieveFilter.php` and
+- [X] T111 [US9] Create `app/Models/Mailcow/SieveFilter.php` and
   `app/Services/SieveFilters/SieveFilterService.php` (R13: validation, activation under `NamedLock`
   `restv2_sieve_<sha1(mailbox)>`, scope-joined lists, `ETag`, `filters` flag, audit).
-- [ ] T112 [US9] Create `app/Http/Requests/Api/V2/{ListSieveFiltersRequest,ListMailboxSieveFiltersRequest,StoreSieveFilterRequest,UpdateSieveFilterRequest,ValidateSieveScriptRequest}.php`
+- [X] T112 [US9] Create `app/Http/Requests/Api/V2/{ListSieveFiltersRequest,ListMailboxSieveFiltersRequest,StoreSieveFilterRequest,UpdateSieveFilterRequest,ValidateSieveScriptRequest}.php`
   (constraints of DM `sieve_filters`), `app/Http/Resources/Api/V2/{SieveFilterResource,SieveScriptValidationResource,ActiveSieveScriptResource}.php`
   and the controllers `SieveFilterController.php` (`index`), `MailboxSieveFilterController.php`,
   `SieveScriptValidationController.php` and `ActiveSieveScriptController.php`; register the routes
@@ -1210,3 +1210,16 @@ that differ from what exists map as listed.
   lookups do. No `ListRecentLoginsRequest` or resource class: the controller validates `days` and
   `service` with the validator, as T086. G24: `RecentLogin.service` is `anyOf` the known codes and
   any other code.
+- **T103–T112**: `SieveValidator` runs legacy's parser with the PHP 8.4 noise of its unmodified
+  files silenced (the compile warning is masked in `error_reporting` while the classes load, the
+  dynamic-property deprecations go to a scoped handler that passes anything else on); the unit test
+  compares its messages with the parser loaded as legacy loads it, in a subprocess, and checks the
+  `ORIGIN` hashes. One `SieveFilterController` serves the eight operations, and no model or resource
+  classes (query builder, as the other 005 services). The rules are coded rules in the requests
+  (`CharacterLength`, implicit so an empty string is `tooShort`; `SieveScript` for `sieveSyntax`
+  with `message` and `line`), so every violation is reported together; unknown members such as
+  `mailbox` are `immutable`. The deactivation runs whenever the resulting filter is active, as
+  legacy's edit does. The active script uses `DockerApiClient::execText` (dockerapi answers the
+  `sieve` tasks as text), not `exec`. `SieveScriptUnavailable` maps to `503 temporary-failure`
+  (`mailStore`). G23: `GET /sieve-filters?id=`. Refusals that name an existing app password or
+  filter now record `appPasswordId` / `sieveFilterId`, as `docs/audit-events.md` already said.

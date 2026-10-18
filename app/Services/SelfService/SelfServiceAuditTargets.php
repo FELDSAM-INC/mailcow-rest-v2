@@ -92,7 +92,25 @@ final class SelfServiceAuditTargets
         $raw = $request->route('mailbox');
         $mailbox = is_string($raw) && $raw !== '' ? self::address($raw) : null;
 
-        return ['target' => ['type' => $type, 'id' => $mailbox, 'name' => self::label($type, $request, $mailbox)]];
+        $result = ['target' => ['type' => $type, 'id' => $mailbox, 'name' => self::label($type, $request, $mailbox)]];
+
+        // A refusal that names an existing app password or filter of the mailbox records its ID.
+        $object = match ($type) {
+            'appPassword' => ['app_passwd', 'mailbox', 'appPasswordId'],
+            'sieveFilter' => ['sieve_filters', 'username', 'sieveFilterId'],
+            default => null,
+        };
+
+        if ($object !== null && $mailbox !== null) {
+            [$table, $owner, $parameter] = $object;
+            $id = $request->route($parameter);
+
+            if (is_string($id) && ctype_digit($id) && strlen($id) <= 10 && DB::table($table)->where('id', (int) $id)->where($owner, $mailbox)->exists()) {
+                $result['details'] = [$parameter => (int) $id];
+            }
+        }
+
+        return $result;
     }
 
     /**

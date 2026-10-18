@@ -411,14 +411,6 @@
         "getOwnAppleProfile",
         "createOwnAppleProfileWithAppPassword",
         "resetActiveSyncCache",
-        "resetGroupwareProfile",
-        "listSieveFilters",
-        "validateSieveScript",
-        "listMailboxSieveFilters",
-        "createSieveFilter",
-        "getSieveFilter",
-        "updateSieveFilter",
-        "deleteSieveFilter",
-        "getActiveSieveScript"
+        "resetGroupwareProfile"
     ]
 }

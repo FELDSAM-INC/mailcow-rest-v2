@@ -12,6 +12,8 @@ use App\Clients\Dns\DnsResolver;
 use App\Clients\Dns\NativeDnsResolver;
 use App\Clients\DockerApi\DockerApiClient;
 use App\Clients\DockerApi\HttpDockerApiClient;
+use App\Clients\Dovecot\DockerApiSieveScriptReader;
+use App\Clients\Dovecot\SieveScriptReader;
 use App\Clients\Fail2Ban\Fail2BanReporter;
 use App\Clients\Fail2Ban\RedisFail2BanReporter;
 use App\Clients\Geo\CountryLookup;
@@ -105,6 +107,7 @@ class AppServiceProvider extends ServiceProvider
         // (the webmail hand-off).
         $this->app->bind(PushoverClient::class, HttpPushoverClient::class);
         $this->app->bind(CountryLookup::class, HttpCountryLookup::class);
+        $this->app->bind(SieveScriptReader::class, DockerApiSieveScriptReader::class);
         $this->app->tag([WebmailHandOffService::class], SessionRegistry::LISTENER_TAG);
         $this->app->scoped(GroupwareCacheFlush::class);
         $this->app->bind(Clock::class, SystemClock::class);

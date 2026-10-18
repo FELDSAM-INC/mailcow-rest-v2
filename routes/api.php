@@ -117,6 +117,7 @@ use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SelfServiceCapabilitiesController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
 use App\Http\Controllers\Api\V2\SessionController;
+use App\Http\Controllers\Api\V2\SieveFilterController;
 use App\Http\Controllers\Api\V2\SingleSignOnCompletionController;
 use App\Http\Controllers\Api\V2\SingleSignOnController;
 use App\Http\Controllers\Api\V2\SingleSignOnProviderErrorController;
@@ -928,6 +929,17 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/mailboxes/{mailbox}/recent-logins', [RecentLoginController::class, 'index'])
             ->where('mailbox', '[^/]+')
             ->name('recent-logins.index');
+        Route::get('/sieve-filters', [SieveFilterController::class, 'index'])
+            ->name('sieve-filters.index');
+        Route::get('/mailboxes/{mailbox}/sieve-filters', [SieveFilterController::class, 'mailboxIndex'])
+            ->where('mailbox', '[^/]+')
+            ->name('mailbox-sieve-filters.index');
+        Route::get('/mailboxes/{mailbox}/sieve-filters/{sieveFilterId}', [SieveFilterController::class, 'show'])
+            ->where(['mailbox' => '[^/]+', 'sieveFilterId' => '[1-9][0-9]{0,9}'])
+            ->name('mailbox-sieve-filters.show');
+        Route::get('/mailboxes/{mailbox}/active-sieve-script', [SieveFilterController::class, 'active'])
+            ->where('mailbox', '[^/]+')
+            ->name('active-sieve-script.show');
     });
 
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
@@ -947,6 +959,22 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'pushNotificationSettingsDeletion', 'target' => 'pushNotificationSettings'])
             ->name('push-notifications.destroy');
+        // A read (FR-004): read-only keys may validate.
+        Route::post('/sieve-filters/validation', [SieveFilterController::class, 'validateScript'])
+            ->defaults('restv2.readOnly', true)
+            ->name('sieve-filter-validation.store');
+        Route::post('/mailboxes/{mailbox}/sieve-filters', [SieveFilterController::class, 'store'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'sieveFilterCreation', 'target' => 'sieveFilter'])
+            ->name('mailbox-sieve-filters.store');
+        Route::patch('/mailboxes/{mailbox}/sieve-filters/{sieveFilterId}', [SieveFilterController::class, 'update'])
+            ->where(['mailbox' => '[^/]+', 'sieveFilterId' => '[1-9][0-9]{0,9}'])
+            ->defaults('restv2.audit', ['event' => 'sieveFilterUpdate', 'target' => 'sieveFilter'])
+            ->name('mailbox-sieve-filters.update');
+        Route::delete('/mailboxes/{mailbox}/sieve-filters/{sieveFilterId}', [SieveFilterController::class, 'destroy'])
+            ->where(['mailbox' => '[^/]+', 'sieveFilterId' => '[1-9][0-9]{0,9}'])
+            ->defaults('restv2.audit', ['event' => 'sieveFilterDeletion', 'target' => 'sieveFilter'])
+            ->name('mailbox-sieve-filters.destroy');
         Route::delete('/mailboxes/{mailbox}/recent-logins', [RecentLoginController::class, 'destroy'])
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'recentLoginsClear', 'target' => 'recentLogins'])

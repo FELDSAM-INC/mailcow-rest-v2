@@ -5,7 +5,7 @@ get:
   description: |
     Lists the Sieve filters of every mailbox in the caller's scope, with pagination instead of
     legacy's per-domain loop. Sorted by mailbox and then description by default. `q` searches the
-    description and the mailbox. Administrators and domain administrators, from a session or a key;
+    description and the mailbox; `id` selects one filter. Administrators and domain administrators, from a session or a key;
     reading needs no permission flag. Mailbox users list their own filters with
     `listMailboxSieveFilters`.
   security:
@@ -24,6 +24,14 @@ get:
       schema:
         type: string
         maxLength: 255
+    - name: id
+      in: query
+      required: false
+      description: Only the filter with this ID (G23), for example to read a filter whose mailbox is not known.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 4294967295
     - name: kind
       in: query
       required: false

@@ -746,14 +746,14 @@ FR-064).
   an alias domain, a resource and sender permissions appear unchanged in the next API response, and
   rows written by the API are read back by legacy's `alias_details`, `alias_domain_details`,
   `resource_details` and `sender_acl_handles` queries with the same values.
-- [ ] T086 Run `docker compose run --rm app composer test`; confirm `build/contract/coverage.json`
+- [X] T086 Run `docker compose run --rm app composer test`; confirm `build/contract/coverage.json`
   covers all 23 operations of this feature and that 001's `ProblemTypeConsistencyTest` passes.
-- [ ] T087 [P] Run `vendor/bin/pint --test` and `vendor/bin/phpstan analyse` and fix every finding in
+- [X] T087 [P] Run `vendor/bin/pint --test` and `vendor/bin/phpstan analyse` and fix every finding in
   the files of this feature.
-- [ ] T088 [P] Add the feature's contract changes to the release notes (`CHANGELOG.md`): the 23
+- [X] T088 [P] Add the feature's contract changes to the release notes (`CHANGELOG.md`): the 23
   operations, the new problem types and the values appended to `AuditEventType`, `AuditTarget`,
   `KnownProblemType` and `ValidationRuleCode`, so that mailcowui-ng can bump its pinned contract.
-- [ ] T089 Walk through [quickstart.md](./quickstart.md) Part B against the dev stack and correct
+- [X] T089 Walk through [quickstart.md](./quickstart.md) Part B against the dev stack and correct
   `specs/004-aliases-alias-domains-resources/quickstart.md` wherever the behaviour differs from the
   guide (the behaviour follows the contract, not the guide).
 
@@ -912,3 +912,10 @@ what exists map as listed.
   an administrator's unfiltered list as all rows minus the own rows (two primary-key scans instead
   of 300,000 lookups). The bulk timing runs with the groupware disabled, as 002's does.
 - **T082, T083, T085** were written after the stories they verify and passed on their first run.
+- **T086**: coverage is reported by `tests/bin/check-contract-coverage.php` against the feature
+  registry (all 23 operations of 004 covered); `build/contract/coverage.json` is not written.
+- **T089**: Part B ran against the dev database of the worktree's compose project with
+  administrator and `da1` API keys over `php artisan serve` (no host ports for a parallel
+  worktree); the guide now seeds what it uses (`anna@`, `carl@example.com`, `da1`), uses the seeded
+  password and the HTTPS listener, and names `example.info` as the alias domain candidate, because
+  the dev seeder creates `example.net` as a domain. Part C stays open.

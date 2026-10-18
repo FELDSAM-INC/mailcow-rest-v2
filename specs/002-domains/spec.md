@@ -752,8 +752,10 @@ and list the audit log filtered by target.
     stored for the bare domain name. Legacy removes only the bare form, so the domain's BCC maps
     survive a legacy deletion;
   - for each alias domain that pointed to the domain: its aliases, the temporary aliases of its
-    addresses, its BCC maps in both forms, and its entries in the domain map and in the rate
-    limits, as a deletion of that alias domain alone would;
+    addresses, its BCC maps in both forms, the explicit sender permissions for it and for its
+    aliases' addresses, its spam allow and block lists, and its entries in the domain map and in
+    the rate limits, as a deletion of that alias domain alone would (feature 004, FR-045 there,
+    with one shared implementation);
   - the domain's footer.
 - **FR-038**: A deletion MUST keep the domain's DKIM key, as in legacy, so that a domain created
   again with the same name reuses it. DKIM keys are managed in feature 010. A deletion MUST delete
@@ -986,7 +988,7 @@ in three ways:
 | Edit side effects | `update_sogo_static_view()` and memcached flush. GAL changes need a SOGo restart | Same (FR-034) |
 | Delete preconditions | Any `mailbox` row, including resources, blocks. A missing domain is reported as removed | Same; a missing domain is "not found" (FR-035, FR-040). **Deviation** |
 | Delete side effects | Rows in `domain`, `domain_admins`, `alias` (domain), `alias_domain` (target), `sender_acl`, `quota2`, `quota2replica`, `pushover`, `spamalias`, `filterconf`, `mta_sts`; `admin` rows with `superadmin = 0` left without `domain_admins`, orphaned `da_acl`; `tags_domain` by cascade; `DOMAIN_MAP` and `RL_VALUE` entries; dockerapi exec in dovecot `maildir cleanup`; SOGo view and memcached | Same (FR-036, FR-038, FR-039) |
-| Delete leftovers | Aliases, temporary aliases, BCC maps, `DOMAIN_MAP` and `RL_VALUE` entries of the alias domains, and the `domain_wide_footer` row stay | Removed (FR-037). **Deviation** |
+| Delete leftovers | Aliases, temporary aliases, BCC maps, sender permissions, spam lists, `DOMAIN_MAP` and `RL_VALUE` entries of the alias domains, and the `domain_wide_footer` row stay | Removed, with the alias domain cleanup shared with feature 004 (FR-037). **Deviation** |
 | Domain BCC maps on delete | `DELETE FROM bcc_maps WHERE local_dest = '<domain>'`, but `bcc` add stores domain BCC maps as `@<domain>` (`functions.address_rewriting.inc.php`), so they survive. Alias domain deletion has the same defect | Removed in both forms, for the domain and its alias domains (FR-037). **Deviation** (bug fix) |
 | DKIM key on delete | Kept, shown as an unassigned key on the DKIM screen | Kept (FR-038) |
 | Templates | Name required; uniqueness checked only at creation; renaming Default silently ignored; deleting Default silently ignored but reported as done; bulk delete stops after the first; values not validated; 0 replaced by defaults | Uniqueness also on rename; Default rename and delete refused; values validated like domains; explicit values kept (FR-046 to FR-048). **Deviation** |
@@ -1002,6 +1004,9 @@ in three ways:
 | DKIM key size | Any number the key generator accepts | 1024, 2048, 3072 or 4096, as the forms offer (FR-020). **Deviation** |
 | Default DKIM selector | `dkim` upstream, `feldhost` in the fork | Server setting, default `dkim` (FR-028) |
 | ISPConfig DKIM DNS push (fork) | Always attempted when the config file exists; failures ignored silently | Server setting, off by default; outcome reported (FR-025, FR-027) |
+| Groupware directory placeholder password (plan-level note) | `update_sogo_static_view()` means to write a random `{SSHA256}` hash into `_sogo_static_view.c_password` to deny direct groupware logins, but builds it from undefined variables, so every row gets the same hash of an empty password | A fresh random hash per rebuild (FR-023, FR-034, FR-036). **Deviation** (bug fix); the next legacy rebuild writes its own value |
+| Order of the stored-mail move on deletion (plan-level note) | The move to the garbage area is requested before the rows are deleted | Requested after the rows are deleted and committed, so a refused or failed deletion never moves mail; its outcome is still recorded in the audit record (FR-039) |
+| Footer exclusion spelling (plan-level note) | Stored as sent | Trimmed and lower-cased, with the domain part in ASCII, as the mail filter compares them exactly (FR-053) |
 
 ### Key Entities *(include if feature involves data)*
 

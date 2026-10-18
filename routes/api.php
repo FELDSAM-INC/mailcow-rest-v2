@@ -76,6 +76,7 @@ use App\Http\Controllers\Api\V2\PublicAddressesController;
 use App\Http\Controllers\Api\V2\PublicConfigController;
 use App\Http\Controllers\Api\V2\PublicConfigLogoController;
 use App\Http\Controllers\Api\V2\ReadinessController;
+use App\Http\Controllers\Api\V2\RelayhostAssignmentController;
 use App\Http\Controllers\Api\V2\RelayhostChoiceController;
 use App\Http\Controllers\Api\V2\RelayhostController;
 use App\Http\Controllers\Api\V2\RelayhostUsageController;
@@ -101,6 +102,7 @@ use App\Http\Middleware\AuthorizeMonitoring;
 use App\Rules\MailQueueId;
 use App\Services\Logs\LogType;
 use App\Services\Monitoring\ContainerRegistry;
+use App\Http\Controllers\Api\V2\TransportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -602,6 +604,16 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/relayhosts/{relayhostId}/usage', [RelayhostUsageController::class, 'index'])
             ->where('relayhostId', '[1-9][0-9]{0,9}')
             ->name('relayhost-usage.index');
+        Route::get('/transports', [TransportController::class, 'index'])->name('transports.index');
+        Route::get('/transports/{transportId}', [TransportController::class, 'show'])
+            ->where('transportId', '[1-9][0-9]{0,9}')
+            ->name('transports.show');
+        Route::get('/domains/{domain}/relayhost-assignment', [RelayhostAssignmentController::class, 'showDomain'])
+            ->where('domain', '[^/]+')
+            ->name('domain-relayhost-assignment.show');
+        Route::get('/mailboxes/{mailbox}/relayhost-assignment', [RelayhostAssignmentController::class, 'showMailbox'])
+            ->where('mailbox', '[^/]+')
+            ->name('mailbox-relayhost-assignment.show');
     });
 
     // State-changing routes of feature 009: refusals of authenticated callers are audited.
@@ -621,6 +633,28 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('relayhostId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'relayhostDeletion', 'target' => 'relayhost'])
             ->name('relayhosts.destroy');
+        Route::post('/transports/bulk-actions', [RoutingBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'transport'])
+            ->name('transport-bulk-actions.store');
+        Route::post('/transports', [TransportController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'transportCreation', 'target' => 'transport'])
+            ->name('transports.store');
+        Route::patch('/transports/{transportId}', [TransportController::class, 'update'])
+            ->where('transportId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'transportUpdate', 'target' => 'transport'])
+            ->name('transports.update');
+        Route::delete('/transports/{transportId}', [TransportController::class, 'destroy'])
+            ->where('transportId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'transportDeletion', 'target' => 'transport'])
+            ->name('transports.destroy');
+        Route::put('/domains/{domain}/relayhost-assignment', [RelayhostAssignmentController::class, 'updateDomain'])
+            ->where('domain', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'relayhostAssignmentUpdate', 'target' => 'domainRelayhostAssignment'])
+            ->name('domain-relayhost-assignment.update');
+        Route::put('/mailboxes/{mailbox}/relayhost-assignment', [RelayhostAssignmentController::class, 'updateMailbox'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'relayhostAssignmentUpdate', 'target' => 'mailboxRelayhostAssignment'])
+            ->name('mailbox-relayhost-assignment.update');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

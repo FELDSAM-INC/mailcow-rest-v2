@@ -30,7 +30,8 @@ get:
       required: false
       description: |
         Only transports with exactly this next hop, compared without regard to letter case: the
-        transports that share one set of credentials.
+        transports that share one set of credentials. The value is normalised like a stored next
+        hop (a bare IP address is put in brackets, a Unicode host name converted to ASCII).
       schema:
         type: string
         maxLength: 255

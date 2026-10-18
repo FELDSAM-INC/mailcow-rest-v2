@@ -9,6 +9,7 @@ use App\Http\Resources\Api\V2\RoutingResource;
 use App\Services\Routing\RelayhostService;
 use App\Services\Routing\RoutingBulkActions;
 use App\Services\Routing\RoutingBulkHandler;
+use App\Services\Routing\TransportService;
 use Illuminate\Http\JsonResponse;
 use LogicException;
 
@@ -23,6 +24,7 @@ class RoutingBulkActionController extends Controller
     /** @var array<string, class-string<RoutingBulkHandler>> collection => item handler */
     private const HANDLERS = [
         'relayhost' => RelayhostService::class,
+        'transport' => TransportService::class,
     ];
 
     public function store(RoutingBulkActionRequest $request, RoutingBulkActions $bulk): JsonResponse

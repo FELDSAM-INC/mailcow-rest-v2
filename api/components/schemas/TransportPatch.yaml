@@ -8,8 +8,9 @@ description: |
     it adopt their credentials; moved to an unused next hop, it keeps its own.
 
   An omitted `password` is kept, `""` removes it, and an empty `username` without a password also
-  removes the password. `id` and `nextHopSharedWith` are read-only (accepted with their current
-  value only). The response's `meta.affectedTransports` names the other transports whose
+  removes the password. `id`, `nextHopSharedWith`, `passwordSet` and `etag` are read-only
+  (accepted with their current value only, refused with `immutable` otherwise); any other member is
+  refused (`immutable`). The response's `meta.affectedTransports` names the other transports whose
   credentials changed.
 minProperties: 1
 properties:
@@ -38,4 +39,10 @@ properties:
     description: Read-only.
   nextHopSharedWith:
     type: integer
+    description: Read-only.
+  passwordSet:
+    type: boolean
+    description: Read-only.
+  etag:
+    type: string
     description: Read-only.

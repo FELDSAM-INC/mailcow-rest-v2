@@ -348,7 +348,7 @@ they choose the expected relayhost and credentials, as after the same change in 
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T038 [P] [US2] Write `tests/Feature/Routing/RelayhostAssignments/DomainRelayhostAssignmentTest.php`
+- [X] T038 [P] [US2] Write `tests/Feature/Routing/RelayhostAssignments/DomainRelayhostAssignmentTest.php`
   for `getDomainRelayhostAssignment` and `replaceDomainRelayhostAssignment` (FR-024, FR-026 to
   FR-030):
   - reads: none (`relayhost: null`), active, inactive and dangling (`state: dangling`, `host: null`)
@@ -368,7 +368,7 @@ they choose the expected relayhost and credentials, as after the same change in 
     identical to an unknown domain;
   - AS-7: `{"relayhostId": null}` stores `'0'`; a dangling assignment can be replaced and cleared;
   - AS-8: a stale `If-Match` → `412` and nothing changes.
-- [ ] T039 [P] [US2] Write `tests/Feature/Routing/RelayhostAssignments/MailboxRelayhostAssignmentTest.php`
+- [X] T039 [P] [US2] Write `tests/Feature/Routing/RelayhostAssignments/MailboxRelayhostAssignmentTest.php`
   for `getMailboxRelayhostAssignment` and `replaceMailboxRelayhostAssignment` (FR-024 to FR-030,
   edge cases):
   - AS-3: a domain administrator with `mailbox_relayhost` assigns relayhost 5 to
@@ -382,7 +382,7 @@ they choose the expected relayhost and credentials, as after the same change in 
   - a mailbox without `$.relayhost` reads as none; a resource address and an alias-domain address →
     `404`; a domain administrator without the flag → `403 permission-flag-required` with
     `["mailboxRelayhost"]`; out of scope → `404`; a stale `If-Match` → `412`.
-- [ ] T040 [P] [US2] Write `tests/Feature/Routing/RelayhostAssignments/RelayhostAssignmentPostfixParityTest.php`
+- [X] T040 [P] [US2] Write `tests/Feature/Routing/RelayhostAssignments/RelayhostAssignmentPostfixParityTest.php`
   (SC-002, FR-027): after assignments made through the API, run the extracted
   `mysql_sender_dependent_default_transport_maps.sql` and
   `mysql_sasl_passwd_maps_sender_dependent.sql` (T005) with `%s`, `%d` and `%u` substituted for the
@@ -390,25 +390,25 @@ they choose the expected relayhost and credentials, as after the same change in 
   another address of the domain. The chosen host and the `username:password` agree with
   `effectiveRelayhost` and `credentialsRelayhost` of the API, including the domain-first
   credential lookup and the alias-domain rule. A password containing `:` comes back verbatim.
-- [ ] T041 [P] [US2] Write `tests/Feature/Routing/RelayhostAssignments/RelayhostAssignmentAuthorizationTest.php`:
+- [X] T041 [P] [US2] Write `tests/Feature/Routing/RelayhostAssignments/RelayhostAssignmentAuthorizationTest.php`:
   the four operations × the callers of T032, plus domain administrators with each flag
   combination and read-write keys owned by them (reads need no flag; writes need the matching
   flag; out of scope `404`).
 
 ### Implementation for User Story 2
 
-- [ ] T042 [US2] Create `app/Services/Routing/RelayhostReference.php` (value object) and
+- [X] T042 [US2] Create `app/Services/Routing/RelayhostReference.php` (value object) and
   `app/Services/Routing/RelayhostAssignmentService.php` (R11): read a domain's or mailbox's
   assignment through 002's `DomainScope` and 003's `MailboxScope`/`MailboxAddress`, resolve
   references in one query, compute `effectiveRelayhost` and `credentialsRelayhost`, the version tags
   (`ETag::strong()` over `domain|relayhost` and `username|relayhost`), and `replace()` writing only
   `domain.relayhost` or `JSON_SET(attributes, '$.relayhost', ?)` with the audit record
   (`relayhostAssignmentUpdate`, target id the domain name or the address).
-- [ ] T043 [P] [US2] Create `app/Http/Requests/Api/V2/ReplaceRelayhostAssignmentRequest.php`
+- [X] T043 [P] [US2] Create `app/Http/Requests/Api/V2/ReplaceRelayhostAssignmentRequest.php`
   (`relayhostId`: required, "integer ≥ 1 or null", unknown → `notFound`) and
   `app/Http/Resources/Api/V2/DomainRelayhostAssignmentResource.php` and
   `MailboxRelayhostAssignmentResource.php`.
-- [ ] T044 [US2] Create `app/Http/Controllers/Api/V2/DomainRelayhostAssignmentController.php` and
+- [X] T044 [US2] Create `app/Http/Controllers/Api/V2/DomainRelayhostAssignmentController.php` and
   `MailboxRelayhostAssignmentController.php` (`show`, `update`; flag check before the lookup), and
   register `GET|PUT /domains/{domain}/relayhost-assignment` and
   `GET|PUT /mailboxes/{mailbox}/relayhost-assignment` in `routes/api.php` with the parameter
@@ -430,13 +430,13 @@ lookups with those for the same entries created in the legacy UI.
 
 ### Tests for User Story 3 (write first, observe failing) ⚠️
 
-- [ ] T045 [P] [US3] Write `tests/Feature/Routing/Transports/TransportListTest.php` for
+- [X] T045 [P] [US3] Write `tests/Feature/Routing/Transports/TransportListTest.php` for
   `listTransports` and `getTransport` (FR-031 to FR-033): every member including
   `nextHopSharedWith` (two transports on `[h]:25` and one on `[H]:25` share: each reports 2); `q` on
   destination, next hop and username; filters `active`, `mxBased`, `nextHop` (exact, ignoring
   case); every sort key in both orders; `etag` equal to `getTransport`'s `ETag`; no password in any
   body.
-- [ ] T046 [P] [US3] Write `tests/Feature/Routing/Transports/TransportWriteTest.php` for
+- [X] T046 [P] [US3] Write `tests/Feature/Routing/Transports/TransportWriteTest.php` for
   `createTransport`, `updateTransport` and `deleteTransport` (FR-034 to FR-036, FR-039, FR-040):
   - AS-1: created inactive by default; activating it works; `201` with `Location`, `ETag` and
     `meta.affectedTransports: []`;
@@ -452,7 +452,7 @@ lookups with those for the same entries created in the legacy UI.
     `nextHopSharedWith` with a different value → `immutable`; a stale `If-Match` → `412`;
   - deleting one transport leaves the credentials of the other transports of its next hop intact;
     unknown ids → `404`.
-- [ ] T047 [P] [US3] Write `tests/Feature/Routing/Transports/TransportCredentialSharingTest.php`
+- [X] T047 [P] [US3] Write `tests/Feature/Routing/Transports/TransportCredentialSharingTest.php`
   (FR-038, R7):
   - AS-6: with A on next hop H and username `u1`, creating B on H with `u2` → `409
     next-hop-credentials-differ` with `nextHop` and `transportIds: [A]`; without credentials, B gets
@@ -469,41 +469,41 @@ lookups with those for the same entries created in the legacy UI.
     manual database change) each report what is stored, and the next credential change through the
     API applies one set to all of them (spec edge case); all changes of one request are stored together (a forced failure of
     the audit insert leaves every row unchanged).
-- [ ] T048 [P] [US3] Write `tests/Feature/Routing/Transports/TransportInterferenceTest.php` (FR-037,
+- [X] T048 [P] [US3] Write `tests/Feature/Routing/Transports/TransportInterferenceTest.php` (FR-037,
   R8): AS-5, an existing `relay.net` refuses `[relay.net]:587` and the reverse, ignoring letter
   case, with `409 next-hop-interferes` naming the interfering next hop and its transports; an edit
   that keeps its own next hop is not refused by itself.
-- [ ] T049 [P] [US3] Write `tests/Feature/Routing/Transports/TransportConcurrencyTest.php` (FR-084):
+- [X] T049 [P] [US3] Write `tests/Feature/Routing/Transports/TransportConcurrencyTest.php` (FR-084):
   with `restv2:routing:transports` held by a second connection and `routing.lock_timeout = 1`, a
   creation answers `503 temporary-failure` with `Retry-After` and stores nothing; after the other
   connection inserts the same destination and releases the lock, the creation answers `409`.
-- [ ] T050 [P] [US3] Write `tests/Feature/Routing/Transports/TransportPostfixParityTest.php` (SC-002,
+- [X] T050 [P] [US3] Write `tests/Feature/Routing/Transports/TransportPostfixParityTest.php` (SC-002,
   FR-040): run the extracted `mysql_transport_maps.sql` (active transport → `smtp_via_transport_maps:<nexthop>`,
   inactive → nothing), `mysql_sasl_passwd_maps_transport_maps.sql` (by next hop → the shared
   `username:password`, verbatim) and `mysql_mbr_access_maps.sql` (`'MX1.GOOGLE.COM' REGEXP
   destination` matches the stored pattern ignoring case).
-- [ ] T051 [P] [US3] Write `tests/Feature/Routing/Transports/TransportBulkActionAndAuthorizationTest.php`:
+- [X] T051 [P] [US3] Write `tests/Feature/Routing/Transports/TransportBulkActionAndAuthorizationTest.php`:
   bulk activate, deactivate and delete with `notFound`, `outdated`, duplicates and `bulkRequestId`;
   AS-9 and the caller matrix of T032 for the seven transport operations.
 
 ### Implementation for User Story 3
 
-- [ ] T052 [US3] Create `app/Models/Mailcow/Transport.php` (`$hidden = ['password']`, casts),
+- [X] T052 [US3] Create `app/Models/Mailcow/Transport.php` (`$hidden = ['password']`, casts),
   `app/Support/Routing/TransportDestination.php` (kinds and normalisation of R6) with
   `app/Rules/TransportDestinationRule.php` (the MX-based check runs `SELECT '' REGEXP ?` and maps
   error 1139 to `invalidRegex`), and `app/Services/Routing/TransportQuery.php` (list with the
   `nexthop` count table, filters, sorts).
-- [ ] T053 [US3] Create `app/Services/Routing/TransportService.php`: uniqueness (R6), interference
+- [X] T053 [US3] Create `app/Services/Routing/TransportService.php`: uniqueness (R6), interference
   (R8), the credential algorithm (R7), writes under `NamedLock('restv2:routing:transports')` in one
   transaction with the audit record (`affectedTransportIds`), the version tag over the credential
   fingerprint, the list of affected transports for `meta`, and the bulk item handlers.
-- [ ] T054 [P] [US3] Create `app/Http/Requests/Api/V2/ListTransportsRequest.php`,
+- [X] T054 [P] [US3] Create `app/Http/Requests/Api/V2/ListTransportsRequest.php`,
   `StoreTransportRequest.php` ("destination required, trimmed, at most 255"; "nextHop required";
   `mxBased` and `active` booleans, defaults `false`; credentials as for relayhosts) and
   `UpdateTransportRequest.php` (merge patch, `immutable` for `id` and `nextHopSharedWith`).
-- [ ] T055 [P] [US3] Create `app/Http/Resources/Api/V2/TransportResource.php` and
+- [X] T055 [P] [US3] Create `app/Http/Resources/Api/V2/TransportResource.php` and
   `TransportReferenceResource.php`.
-- [ ] T056 [US3] Create `app/Http/Controllers/Api/V2/TransportController.php` and
+- [X] T056 [US3] Create `app/Http/Controllers/Api/V2/TransportController.php` and
   `TransportBulkActionController.php` (`store` and `update` answer `{data, meta.affectedTransports}`),
   and register `/transports`, `POST /transports/bulk-actions` and `/transports/{transportId}`
   (`whereNumber`) in `routes/api.php`, with `restv2.audit` defaults on the writes. This makes T045 to T051 pass.
@@ -1087,4 +1087,25 @@ what exists map as listed.
   representations the routing queries build (004's presenter pattern); one
   `RoutingBulkActionController` serves the bulk path of every collection, picking the item handler
   from the route's `restv2.audit` target. Entry IDs match `[1-9][0-9]{0,9}`, as 004's alias IDs.
+- **T040, T050**: `tests/Support/Routing/LegacyRoutingMaps` runs the extracted Postfix queries as
+  Postfix does (`%s`, `%u`, `%d` substituted with SQL quoting, `%%` turned into `%`) and bcc.php's
+  statements with `:local_dest`.
+- **T042–T044**: one `RelayhostAssignmentController` (`showDomain`, `updateDomain`, `showMailbox`,
+  `updateMailbox`) instead of two; representations are built by `RelayhostAssignmentService`, so
+  no separate resource classes. A replacement with the stored value writes nothing and is audited
+  with empty `changes` (as 004's alias changes are). The relayhost of a replacement is read with a
+  shared lock, so that a concurrent deletion cannot leave a dangling assignment behind.
+- **T045, G35**: the `nextHop` filter is normalised like a stored next hop (bare IP bracketed,
+  Unicode host to ASCII); the contract says so.
+- **T049**: uniqueness, interference and next hop reads of transport writes are locking reads
+  (`FOR UPDATE`), so that under the named lock they see rows committed by other sessions even
+  inside an open transaction. The test cleans the other session's committed row up after its own
+  transaction has been rolled back.
+- **T052–T056**: `TransportResource` and `TransportReferenceResource` are not needed: the
+  representations come from `TransportQuery` and `RoutingResource` wraps them with
+  `meta.affectedTransports`. Credentials are compared exactly (in PHP, not with the
+  case-insensitive column collation) to decide which other transports were affected. An edit
+  always empties the password of an empty resulting username, as legacy's transport('edit')
+  does. The interference check runs only when the next hop changes, so that legacy rows that
+  already interfere stay editable otherwise.
 

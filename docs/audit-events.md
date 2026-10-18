@@ -15,7 +15,12 @@ checks that this file and the code agree.
 ## signIn
 
 Feature 001. Written for every completed sign-in and for every refused sign-in step: a password
-sign-in, the second-factor step of a pending sign-in, and a passkey sign-in. Opening a pending
+sign-in, the second-factor step of a pending sign-in, and a passkey sign-in. Feature 012 adds the
+single sign-on completion (`authMethod: singleSignOn`; its failures, a refused state and a
+provider-error report included), password sign-ins verified by the LDAP directory
+(`directoryPassword`, `directoryPasswordAndSecondFactor`) or by Keycloak's mailpassword flow
+(`providerPassword`, `providerPasswordAndSecondFactor`); the actor of a failure after the provider
+named the user is the provider's e-mail address. Opening a pending
 sign-in (password verified, second factor outstanding) is not recorded; its outcome is.
 `authMethod` is `password`, `passwordAndSecondFactor` or `passkey`; `failureReason` says why a step
 was refused.
@@ -26,6 +31,11 @@ was refused.
 | `secondFactorType` | string | The second factor used or attempted: `totp`, `webauthn` or `yubiOtp`. | when a second factor completed the sign-in, and on every failure of the second-factor step |
 | `restricted` | boolean | Whether the new session is restricted by pending actions (forced password change or second-factor setup). | on success only |
 | `step` | string | The refused step: `password`, `secondFactor` or `passkey`. | on failure only |
+| `identityProvider` | string | Feature 012: the provider of a sign-in through it (`keycloak`, `genericOidc`, `ldap`). | for single sign-on and provider password sign-ins, when the provider type is known |
+| `mailboxCreated` | boolean | Feature 012: whether the sign-in created the mailbox (first sign-in). | on success of a sign-in through the provider |
+| `templateApplied` | boolean | Feature 012: whether the mailbox was updated from its mapped template before the session was established. | on success of a sign-in through the provider |
+| `providerError` | string | Feature 012: the OAuth 2.0 error code the provider returned the browser with (`failureReason: providerReturnedError`). | on provider-error reports |
+| `cause` | string | Feature 012: why the mailbox could not be created on first sign-in (`failureReason: mailboxCreationFailed`): `templateMissing`, `domainNotFound`, `addressInUse`, `mailboxLimitReached`, `quotaExceeded`, `temporaryFailure` or `validationFailed`. | on `mailboxCreationFailed` failures |
 
 ## signOut
 
@@ -251,6 +261,9 @@ have run. The password and its hash never appear.
 | `passwordSet` | boolean | Whether a password was stored (`false` for an external authentication source). | on success |
 | `preHashed` | boolean | Whether the password was given pre-hashed and stored as given. | on success, when `passwordSet` is `true` |
 | `creationReport` | object | The creation report of the response (`MailboxCreationReport`): `rateLimit`, `taggedMailHandling`, `groupwareDirectoryUpdate` and, when a step failed, `messages`. `"pending"` only until the follow-up steps complete. | on success |
+| `trigger` | string | Feature 012: `identityProviderSignIn` when a sign-in through the identity provider created the mailbox; the actor is then the signing-in user (`role` null). | for creations on sign-in |
+| `template` | string | Feature 012: the name of the mapped or default template the mailbox was created from. | for creations on sign-in |
+| `signInRequestId` | string | Feature 012: the request ID of the sign-in that created the mailbox (its `signIn` record carries it as `requestId`). | for creations on sign-in |
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
@@ -268,6 +281,9 @@ The target is the mailbox.
 | `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
 | `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
 | `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `trigger` | string | Feature 012: `identityProviderSignIn` for the update from the mapped template on sign-in (also its failures, which never stop the sign-in: a missing template is `failureReason: notFound`); the actor is the signing-in user (`role` null). | for updates on sign-in |
+| `template` | string | Feature 012: the mapped template applied. | for updates on sign-in |
+| `signInRequestId` | string | Feature 012: the request ID of the sign-in that caused the update. | for updates on sign-in |
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
@@ -916,6 +932,19 @@ target is the configuration (`name` the tested type). The secret is never record
 | `problemType` | string | See "Refusal records". | on refusals of the request |
 | `status` | integer | See "Refusal records". | on refusals of the request |
 | `errors` | object | See "Refusal records". | on `422` refusals |
+
+## identityProviderSessionEnd
+
+Feature 012. Written when a single sign-on session was ended by the identity provider check of a
+request (FR-026), with `outcome: failure`, `authMethod: singleSignOn` and a failure reason
+(`providerRefused`, `identityProviderUnavailable`, `singleSignOnNotAvailable` or
+`mailboxNotLinked`). The actor is the session's mailbox user, the target the session. Never contains
+a provider token.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `identityProvider` | string | The provider type of the session. | always |
+| `reason` | string | `providerRefused` (the renewal or the user details were refused), `providerUnavailable` (the provider could not be reached), `emailChanged` (the renewed details carry another e-mail address), `configurationChanged` (the configuration was removed, changed to another type or is incomplete) or `authSourceChanged` (the mailbox no longer authenticates against the provider). | always |
 
 ## oauth2ClientCreation
 

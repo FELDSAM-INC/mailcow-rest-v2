@@ -25,13 +25,30 @@ final class FakeOidcProvider
     /** @var array<string, list<\Closure(Request): (PromiseInterface)>> */
     private array $scripts = [];
 
+    /** @var array<string, bool> endpoint => whether its last (repeating) answer was used */
+    private array $usedLast = [];
+
     /** @var list<array{endpoint: string, url: string, method: string, form: array<string, mixed>, headers: array<string, mixed>, options: array<string, mixed>, query: array<string, mixed>}> */
     private array $requests = [];
 
+    /**
+     * The test's provider: installed on Http::fake() once per test; a later call starts a new script
+     * on the same provider (Http::fake() keeps earlier stubs, which would answer first).
+     */
     public static function install(): self
     {
+        if (app()->bound(self::class)) {
+            /** @var self $fake */
+            $fake = app(self::class);
+            $fake->scripts = [];
+            $fake->usedLast = [];
+
+            return $fake;
+        }
+
         $fake = new self;
         Http::fake(fn (Request $request, array $options = []): PromiseInterface => $fake->handle($request, $options));
+        app()->instance(self::class, $fake);
 
         return $fake;
     }
@@ -121,7 +138,12 @@ final class FakeOidcProvider
             return Http::response(['error' => 'unscripted'], 404);
         }
 
-        $answer = count($script) > 1 ? array_shift($this->scripts[$endpoint]) : $script[0];
+        if (count($script) > 1) {
+            $answer = array_shift($this->scripts[$endpoint]);
+        } else {
+            $answer = $script[0];
+            $this->usedLast[$endpoint] = true;
+        }
 
         return $answer($request);
     }
@@ -153,6 +175,12 @@ final class FakeOidcProvider
 
     private function push(string $endpoint, \Closure $answer): self
     {
+        // A used repeating answer is replaced by the answers scripted after it.
+        if ($this->usedLast[$endpoint] ?? false) {
+            $this->scripts[$endpoint] = [];
+            $this->usedLast[$endpoint] = false;
+        }
+
         $this->scripts[$endpoint][] = $answer;
 
         return $this;

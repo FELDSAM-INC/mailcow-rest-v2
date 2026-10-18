@@ -2,7 +2,11 @@
 
 namespace Tests\Feature\Mailboxes;
 
+use App\Auth\AccountKind;
+use App\Auth\AuthMethod;
+use App\Auth\Principal;
 use App\Auth\Role;
+use App\Services\Mailboxes\MailboxUpdater;
 use App\Support\Hashing\LegacyPasswordVerifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -213,5 +217,25 @@ class UpdateMailboxTest extends TestCase
 
         $events = (array) $this->getJson('/api/v2/audit-events?targetType=mailbox&targetId=anna@example.org')->assertOk()->json('data');
         $this->assertSame(['mailboxUpdate'], array_column($events, 'eventType'));
+    }
+
+    /**
+     * Feature 012 (FR-025): the update from the mapped template on sign-in records the template
+     * marker instead of clearing it, also when no value changed, and audits the signing-in user.
+     */
+    public function test_the_identity_provider_update_records_the_template_marker(): void
+    {
+        $updater = $this->app->make(MailboxUpdater::class);
+        $system = new Principal('identity-provider-sign-in', Role::Admin, AccountKind::Admin, AuthMethod::SingleSignOn);
+        $options = ['templateMarker' => 'new-marker', 'auditActor' => ['username' => 'anna@example.org', 'role' => null], 'auditDetails' => ['trigger' => 'identityProviderSignIn', 'template' => 'Staff', 'signInRequestId' => 'abc']];
+
+        $this->assertTrue($updater->update($system, 'anna@example.org', ['displayName' => 'Anna Example'], null, null, false, $options));
+        $this->assertSame('new-marker', $this->mailboxAttributes('anna@example.org')['attribute_hash']);
+        $record = $this->auditOf('mailboxUpdate')[0];
+        $this->assertSame(['anna@example.org', null, 'Staff'], [$record->actor_username, $record->actor_role, $record->details['template']]);
+
+        $this->assertFalse($updater->update($system, 'anna@example.org', ['displayName' => 'Anna Example'], null, null, false, ['templateMarker' => 'newer-marker'] + $options));
+        $this->assertSame('newer-marker', $this->mailboxAttributes('anna@example.org')['attribute_hash'], 'a changed marker alone is recorded');
+        $this->assertCount(1, $this->auditOf('mailboxUpdate'), 'and not audited');
     }
 }

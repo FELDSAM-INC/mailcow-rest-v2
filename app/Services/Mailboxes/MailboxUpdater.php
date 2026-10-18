@@ -50,13 +50,19 @@ class MailboxUpdater
     ) {}
 
     /**
+     * Feature 012 updates mailboxes from their mapped template on sign-in with `$options`: the
+     * template marker to record instead of clearing it (also when no value changed), the
+     * signing-in user as the audit actor (the principal acts for the system) and further audit
+     * details (`trigger`, `template`, `signInRequestId`).
+     *
      * @param  array<string, mixed>  $patch  the sent members of `MailboxPatch`
      * @param  string|null  $ifMatch  the `If-Match` value (or a bulk item's version as one)
+     * @param  array{templateMarker?: string, auditActor?: array{username: string|null, role: null}, auditDetails?: array<string, mixed>}  $options
      * @return bool whether anything changed
      */
-    public function update(Principal $principal, string $address, array $patch, ?string $ifMatch, ?string $bulkRequestId = null, bool $deferFlush = false): bool
+    public function update(Principal $principal, string $address, array $patch, ?string $ifMatch, ?string $bulkRequestId = null, bool $deferFlush = false, array $options = []): bool
     {
-        $changed = DB::transaction(function () use ($principal, $address, $patch, $ifMatch, $bulkRequestId): bool {
+        $changed = DB::transaction(function () use ($principal, $address, $patch, $ifMatch, $bulkRequestId, $options): bool {
             $domainName = DB::table('mailbox')->where('username', $address)->value('domain');
             $domain = array_key_exists('quota', $patch) && is_string($domainName)
                 ? DB::table('domain')->where('domain', $domainName)->lockForUpdate()->first()
@@ -84,11 +90,18 @@ class MailboxUpdater
                 $changes['password'] = ['passwordSet' => true, 'preHashed' => $password->preHashed];
             }
 
+            $marker = isset($options['templateMarker']) ? (string) $options['templateMarker'] : null;
+
             if ($changes === []) {
+                if ($marker !== null && (MailboxReader::decode($row->attributes ?? null)['attribute_hash'] ?? '') !== $marker) {
+                    // Feature 012: only the marker changed; it is bookkeeping, not a setting.
+                    DB::update("UPDATE `mailbox` SET `attributes` = JSON_SET(`attributes`, '$.attribute_hash', ?) WHERE `username` = ?", [$marker, $address]);
+                }
+
                 return false;
             }
 
-            $this->write($row, $current, $values, $password);
+            $this->write($row, $current, $values, $password, $marker ?? '');
 
             $details = ['changes' => $changes];
 
@@ -96,7 +109,7 @@ class MailboxUpdater
                 $details['bulkRequestId'] = $bulkRequestId;
             }
 
-            $this->audit->record(AuditEventType::MailboxUpdate, true, $principal, ['type' => 'mailbox', 'id' => $address, 'name' => (string) $values['displayName']], null, null, $details);
+            $this->audit->record(AuditEventType::MailboxUpdate, true, $options['auditActor'] ?? $principal, ['type' => 'mailbox', 'id' => $address, 'name' => (string) $values['displayName']], null, null, $details + ($options['auditDetails'] ?? []));
 
             return true;
         }, 3);
@@ -258,7 +271,7 @@ class MailboxUpdater
      * @param  array<string, mixed>  $current
      * @param  array<string, mixed>  $values
      */
-    private function write(object $row, array $current, array $values, ?HashedPassword $password): void
+    private function write(object $row, array $current, array $values, ?HashedPassword $password, string $templateMarker = ''): void
     {
         $address = (string) $row->username;
         $set = [];
@@ -279,8 +292,9 @@ class MailboxUpdater
             $set['recovery_email'] = (string) $values['recoveryEmail'];
         }
 
-        // Legacy clears the identity-provider template marker on every edit (FR-034).
-        $set['attribute_hash'] = '';
+        // Legacy clears the identity-provider template marker on every edit (FR-034); the update
+        // from the mapped template on sign-in records the new marker instead (feature 012 FR-025).
+        $set['attribute_hash'] = $templateMarker;
         $paths = [];
         $bindings = [];
 

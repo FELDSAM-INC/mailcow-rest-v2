@@ -69,9 +69,15 @@ class MailboxCreator
     ) {}
 
     /**
+     * Feature 012 creates mailboxes on a first sign-in through the identity provider with
+     * `$options`: the template marker to record in `attribute_hash` (instead of ''), the
+     * signing-in user as the audit actor (the principal acts for the system) and further audit
+     * details (`trigger`, `template`, `signInRequestId`).
+     *
      * @param  array<string, mixed>  $input  the sent members of `MailboxCreateRequest`
+     * @param  array{templateMarker?: string, auditActor?: array{username: string|null, role: null}, auditDetails?: array<string, mixed>}  $options
      */
-    public function create(Principal $principal, array $input): MailboxCreation
+    public function create(Principal $principal, array $input, array $options = []): MailboxCreation
     {
         $violations = new FieldViolations;
         $domain = $this->validator->creationDomain($principal, (string) $input['domain'], $violations);
@@ -116,7 +122,7 @@ class MailboxCreator
         $values['authSource'] = $authSource;
         $hashed = $password === null ? null : $this->hasher->hash($password);
 
-        $eventId = $this->lock->run([$address->address], fn (): string => $this->store($principal, $address, $values, $hashed, $templateId));
+        $eventId = $this->lock->run([$address->address], fn (): string => $this->store($principal, $address, $values, $hashed, $templateId, $options));
         $report = $this->followUps($address->address, $values);
 
         try {
@@ -204,10 +210,11 @@ class MailboxCreator
      * record. Returns the audit record's ID.
      *
      * @param  array<string, mixed>  $values
+     * @param  array{templateMarker?: string, auditActor?: array{username: string|null, role: null}, auditDetails?: array<string, mixed>}  $options
      */
-    private function store(Principal $principal, MailboxAddress $address, array $values, ?HashedPassword $password, ?int $templateId): string
+    private function store(Principal $principal, MailboxAddress $address, array $values, ?HashedPassword $password, ?int $templateId, array $options = []): string
     {
-        return DB::transaction(function () use ($principal, $address, $values, $password, $templateId): string {
+        return DB::transaction(function () use ($principal, $address, $values, $password, $templateId, $options): string {
             $domain = DB::table('domain')->where('domain', $address->domain)->lockForUpdate()->first();
 
             if (! $domain instanceof stdClass) {
@@ -233,7 +240,7 @@ class MailboxCreator
             $violations->throwIfAny();
 
             try {
-                $this->insertRows($address, $values, $password);
+                $this->insertRows($address, $values, $password, (string) ($options['templateMarker'] ?? ''));
             } catch (QueryException $e) {
                 if ((int) ($e->errorInfo[1] ?? 0) === 1062) {
                     throw AddressAvailability::inUse($address->address, $this->availability->holderOf($address->address) ?? 'mailbox');
@@ -253,14 +260,14 @@ class MailboxCreator
                 $details['preHashed'] = $password->preHashed;
             }
 
-            return $this->audit->record(AuditEventType::MailboxCreation, true, $principal, ['type' => 'mailbox', 'id' => $address->address, 'name' => $values['displayName']], null, null, $details)->id;
+            return $this->audit->record(AuditEventType::MailboxCreation, true, $options['auditActor'] ?? $principal, ['type' => 'mailbox', 'id' => $address->address, 'name' => $values['displayName']], null, null, $details + ($options['auditDetails'] ?? []))->id;
         }, 3);
     }
 
     /**
      * @param  array<string, mixed>  $values
      */
-    private function insertRows(MailboxAddress $address, array $values, ?HashedPassword $password): void
+    private function insertRows(MailboxAddress $address, array $values, ?HashedPassword $password, string $templateMarker = ''): void
     {
         $attributes = [
             'force_pw_update' => self::flag($values['forcePasswordChange']),
@@ -280,7 +287,7 @@ class MailboxCreator
             'mailbox_format' => $this->defaults->mailboxFormat(),
             'quarantine_notification' => (string) $values['quarantineNotification'],
             'quarantine_category' => MailboxValues::QUARANTINE_CATEGORIES[$values['quarantineCategory']],
-            'attribute_hash' => '',
+            'attribute_hash' => $templateMarker,
         ];
         $active = MailboxValues::STATUSES[$values['status']];
 

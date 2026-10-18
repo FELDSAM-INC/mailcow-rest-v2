@@ -4,10 +4,13 @@ namespace App\Services\Auth;
 
 use App\Auth\AccountKind;
 use App\Auth\AuthMethod;
+use App\Auth\IdentityProviderType;
+use App\Auth\PasswordSource;
 use App\Auth\PendingAction;
 use App\Auth\Principal;
 use App\Auth\Role;
 use App\Auth\SessionState;
+use App\Services\IdentityProvider\SsoLinkStore;
 use App\Support\Http\Base64Url;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Session\Session;
@@ -84,6 +87,9 @@ class SessionManager
             accountKind: $kind,
             authMethod: $method,
             signedInAt: isset($data['signedInAt']) ? CarbonImmutable::createFromTimestampUTC((int) $data['signedInAt']) : null,
+            identityProvider: IdentityProviderType::tryFrom((string) ($data['identityProvider'] ?? '')),
+            passwordSource: PasswordSource::tryFrom((string) ($data['passwordSource'] ?? '')),
+            ssoLinkId: is_string($data['ssoLinkId'] ?? null) ? $data['ssoLinkId'] : null,
         );
     }
 
@@ -152,14 +158,18 @@ class SessionManager
     {
         $session->migrate(true);
         $session->forget([self::PENDING, self::PASSKEY_CHALLENGE, self::PASSKEY_REGISTRATION]);
-        $session->put(self::PRINCIPAL, [
+        $session->put(self::PRINCIPAL, array_filter([
             'username' => $principal->username,
             'role' => $principal->role->value,
             'accountKind' => $principal->accountKind->value,
             'authMethod' => $principal->authMethod->value,
             'signedInAt' => ($principal->signedInAt ?? CarbonImmutable::now('UTC'))->getTimestamp(),
             'userAgentHash' => self::userAgentHash($userAgent),
-        ]);
+            // Feature 012: the provider of a sign-in through it, and the single sign-on link.
+            'identityProvider' => $principal->identityProvider?->value,
+            'passwordSource' => $principal->passwordSource?->value,
+            'ssoLinkId' => $principal->ssoLinkId,
+        ], fn (mixed $value): bool => $value !== null));
         $this->touch($session);
     }
 
@@ -173,10 +183,17 @@ class SessionManager
 
     /**
      * Ends the session: its data is destroyed, the identifier and the anti-forgery token renewed
-     * (FR-010).
+     * (FR-010). The provider tokens of a single sign-on session are discarded with it (feature
+     * 012 FR-027); the user stays signed in at the provider.
      */
     public function end(Session $session): void
     {
+        $linkId = $this->principal($session)?->ssoLinkId;
+
+        if ($linkId !== null) {
+            app(SsoLinkStore::class)->delete($linkId);
+        }
+
         $session->invalidate();
     }
 

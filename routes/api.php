@@ -84,6 +84,9 @@ use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
 use App\Http\Controllers\Api\V2\SessionController;
+use App\Http\Controllers\Api\V2\SingleSignOnCompletionController;
+use App\Http\Controllers\Api\V2\SingleSignOnController;
+use App\Http\Controllers\Api\V2\SingleSignOnProviderErrorController;
 use App\Http\Controllers\Api\V2\SyncJobBulkActionController;
 use App\Http\Controllers\Api\V2\SyncJobCapabilitiesController;
 use App\Http\Controllers\Api\V2\SyncJobController;
@@ -128,6 +131,11 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::post('/session/pending-sign-in/second-factor', [SecondFactorController::class, 'store'])->name('second-factor.store');
         Route::post('/session/passkey-challenge', [PasskeyChallengeController::class, 'store'])->name('passkey-challenge.store');
         Route::post('/session/passkey-assertion', [PasskeyAssertionController::class, 'store'])->name('passkey-assertion.store');
+        // Feature 012: single sign-on of mailbox users (ceremonies; failures are audited as sign-ins).
+        Route::post('/session/single-sign-on', [SingleSignOnController::class, 'store'])->name('single-sign-on.store');
+        Route::delete('/session/single-sign-on', [SingleSignOnController::class, 'destroy'])->name('single-sign-on.destroy');
+        Route::post('/session/single-sign-on/completion', [SingleSignOnCompletionController::class, 'store'])->name('single-sign-on-completion.store');
+        Route::post('/session/single-sign-on/provider-error', [SingleSignOnProviderErrorController::class, 'store'])->name('single-sign-on-provider-error.store');
     });
 
     // Signing out needs the token only with a live session (R7).

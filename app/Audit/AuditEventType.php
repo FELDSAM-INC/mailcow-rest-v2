@@ -85,6 +85,7 @@ enum AuditEventType: string
     case IdentityProviderUpdate = 'identityProviderUpdate';
     case IdentityProviderDeletion = 'identityProviderDeletion';
     case IdentityProviderConnectionTest = 'identityProviderConnectionTest';
+    case IdentityProviderSessionEnd = 'identityProviderSessionEnd';
 
     // Feature 012: OAuth2 clients.
     case Oauth2ClientCreation = 'oauth2ClientCreation';
@@ -99,6 +100,15 @@ enum AuditEventType: string
      * and parameters only, never input values).
      */
     private const REFUSAL = ['problemType', 'status', 'errors'];
+
+    /**
+     * Feature 012: keys of sign-ins through the identity provider (the provider type, a mailbox
+     * created or updated on the way, the provider's error code, the cause of a failed creation).
+     */
+    private const PROVIDER_SIGN_IN = ['identityProvider', 'mailboxCreated', 'templateApplied', 'providerError', 'cause'];
+
+    /** Feature 012: keys of a mailbox created or updated by a sign-in through the identity provider. */
+    private const PROVISIONING = ['trigger', 'template', 'signInRequestId'];
 
     /** Keys of bulk actions: the request ID on every item's record, and the whole-request refusal. */
     private const BULK = ['bulkRequestId', 'targetIds', 'bulkAction'];
@@ -115,7 +125,7 @@ enum AuditEventType: string
     public function detailKeys(): array
     {
         return match ($this) {
-            self::SignIn => ['requestedRole', 'secondFactorType', 'restricted', 'step'],
+            self::SignIn => ['requestedRole', 'secondFactorType', 'restricted', 'step', ...self::PROVIDER_SIGN_IN],
             self::SignOut, self::PasskeyRename, self::PasskeyRemoval => [],
             self::PreferencesUpdate => ['changedFields'],
             self::PasskeyRegistration => ['restrictionLifted'],
@@ -135,8 +145,8 @@ enum AuditEventType: string
             self::DkimDnsPublication => ['selector', 'dnsPublication', ...self::REFUSAL],
             self::MtaStsPolicyCreation => ['version', 'mode', 'mxHosts', 'maxAge', 'active', 'policyId', ...self::REFUSAL],
             self::MtaStsPolicyUpdate => ['changes', 'oldPolicyId', 'newPolicyId', ...self::REFUSAL],
-            self::MailboxCreation => ['values', 'templateId', 'passwordSet', 'preHashed', 'creationReport', ...self::REFUSAL],
-            self::MailboxUpdate => ['changes', ...self::BULK, ...self::REFUSAL],
+            self::MailboxCreation => ['values', 'templateId', 'passwordSet', 'preHashed', 'creationReport', ...self::PROVISIONING, ...self::REFUSAL],
+            self::MailboxUpdate => ['changes', ...self::BULK, ...self::PROVISIONING, ...self::REFUSAL],
             self::MailboxDeletion => ['removed', 'mailStoreCleanup', ...self::BULK, ...self::REFUSAL],
             self::MailboxRename => ['previousAddress', 'newAddress', 'keepOldAddressAsAlias', 'steps', ...self::REFUSAL],
             self::MailboxTemplateCreation => ['values', ...self::REFUSAL],
@@ -168,6 +178,7 @@ enum AuditEventType: string
             self::IdentityProviderCreation => ['type', 'changes', 'mailboxCounts', ...self::REFUSAL],
             self::IdentityProviderUpdate => ['type', 'previousType', 'changes', 'mailboxCounts', ...self::REFUSAL],
             self::IdentityProviderDeletion => ['type', 'mailboxCounts', ...self::REFUSAL],
+            self::IdentityProviderSessionEnd => ['identityProvider', 'reason'],
             self::IdentityProviderConnectionTest => ['type', 'testedAddress', 'outcome', 'failureCategory', 'providerStatus', ...self::REFUSAL],
             self::Oauth2ClientCreation => ['redirectUris', ...self::REFUSAL],
             self::Oauth2ClientUpdate => ['changes', ...self::REFUSAL],

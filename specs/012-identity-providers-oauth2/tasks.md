@@ -408,11 +408,11 @@ and template updates, renewal every 5 minutes and provider-error reporting.
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T048 [P] [US2] Write `tests/Feature/PublicConfig/PublicConfigSingleSignOnTest.php` (FR-020):
+- [X] T048 [P] [US2] Write `tests/Feature/PublicConfig/PublicConfigSingleSignOnTest.php` (FR-020):
   `singleSignOnAvailable` is `true` for a complete Keycloak or generic OIDC configuration and
   `false` for LDAP, none or an incomplete one (AS-9); with `CUSTOM_LOGIN` `force_sso=1`, a password
   sign-in of a mailcow mailbox and a passkey sign-in still succeed (the option is display-only).
-- [ ] T049 [P] [US2] Write `tests/Feature/SingleSignOn/StartSingleSignOnTest.php` (FR-021):
+- [X] T049 [P] [US2] Write `tests/Feature/SingleSignOn/StartSingleSignOnTest.php` (FR-021):
   `409 single-sign-on-not-available` for LDAP, none and incomplete (AS-9); `200` with
   `authorizationUrl` carrying `client_id`, `response_type=code`, `redirect_uri` for the request's
   host (`Host: mail.example.net` → that host; an unknown host → `MAILCOW_HOSTNAME`), Keycloak scopes
@@ -420,7 +420,7 @@ and template updates, renewal every 5 minutes and provider-error reporting.
   `expiresAt` 10 minutes ahead; the session holds `restv2.sso` with the state's SHA-256 only; a new
   start replaces the old one; no CSRF token → `403 csrf-token-mismatch`; an API key →
   `403 session-required`; not audited.
-- [ ] T050 [P] [US2] Write `tests/Feature/SingleSignOn/CompleteSingleSignOnTest.php` (FR-022 to
+- [X] T050 [P] [US2] Write `tests/Feature/SingleSignOn/CompleteSingleSignOnTest.php` (FR-022 to
   FR-024, FR-028):
   - AS-1: Keycloak mailbox `anna@example.org` with a TOTP entry → `201`, `Location: /api/v2/session`,
     `state: active`, `authMethod: singleSignOn`, no pending second factor, `GET /me` reports method
@@ -440,7 +440,7 @@ and template updates, renewal every 5 minutes and provider-error reporting.
   - forced password change and forced second-factor setup flags do not restrict the session;
   - no fail2ban publication (`ChannelSpy::assertNothingPublished()`) and no throttle count for any
     failure.
-- [ ] T051 [P] [US2] Write `tests/Feature/SingleSignOn/SingleSignOnProvisioningTest.php` (FR-034 to
+- [X] T051 [P] [US2] Write `tests/Feature/SingleSignOn/SingleSignOnProvisioningTest.php` (FR-034 to
   FR-040): AS-2 mapped template "Staff" → mailbox created through 003 with the template's values,
   `authsource keycloak`, no password, name from `name`, `attributes.attribute_hash` equal to
   `TemplateMarker`, audit `mailboxCreation` with `trigger: identityProviderSignIn`, `template` and
@@ -453,27 +453,27 @@ and template updates, renewal every 5 minutes and provider-error reporting.
   reached → `mailboxLimitReached`; address used by an alias → `addressInUse`; mapped template
   deleted → `templateMissing`; no partial mailbox after a failure; generic OIDC creation has forced
   second-factor setup off even when the template sets it; empty name → local part.
-- [ ] T052 [P] [US2] Write `tests/Feature/SingleSignOn/ConcurrentFirstSignInTest.php` (FR-040):
+- [X] T052 [P] [US2] Write `tests/Feature/SingleSignOn/ConcurrentFirstSignInTest.php` (FR-040):
   (a) hold `GET_LOCK('restv2_idp_' . sha1('ben@example.org'), 10)` from a second database
   connection, create the mailbox, release the lock after 1 s, and assert the completion continues as an existing mailbox
   with exactly one `mailbox` row; (b) replace 003's creation service with a double that throws the
   duplicate-key error once and assert the sign-in succeeds as an existing mailbox.
-- [ ] T053 [P] [US2] Write `tests/Feature/SingleSignOn/TemplateUpdateOnSignInTest.php` (FR-025):
+- [X] T053 [P] [US2] Write `tests/Feature/SingleSignOn/TemplateUpdateOnSignInTest.php` (FR-025):
   AS-7 a changed template → `MailboxService::update()` applies its values (quota, protocol access,
   TLS enforcement, quarantine settings, rate limit, user ACL) and the provider name, records the new
   marker (not cleared), audit `mailboxUpdate` with `changes`; equal marker and name → no update and
   no audit record; the default template never updates; a missing template → update skipped, sign-in
   succeeds, audit failure; a failing update does not stop the sign-in; the update is not limited by
   domain-administrator flags.
-- [ ] T054 [P] [US2] Write `tests/Feature/SingleSignOn/ProviderErrorTest.php` (FR-063, AS-10):
+- [X] T054 [P] [US2] Write `tests/Feature/SingleSignOn/ProviderErrorTest.php` (FR-063, AS-10):
   `access_denied` with the valid state → `204`, pending removed, audit `signIn` failure
   `providerReturnedError` with `details.providerError: access_denied`, a later completion with the
   state → `401 sign-in-state-invalid`; an invalid state → `401`; an `error` with `"` or 65
   characters, or an `error_description` member → `422` (test names contain `Invalid`).
-- [ ] T055 [P] [US2] Write `tests/Feature/SingleSignOn/CancelSingleSignOnTest.php`: `DELETE
+- [X] T055 [P] [US2] Write `tests/Feature/SingleSignOn/CancelSingleSignOnTest.php`: `DELETE
   /session/single-sign-on` → `204`, then a completion → `401 sign-in-state-invalid`; with nothing
   pending → `204`; not audited.
-- [ ] T056 [P] [US2] Write `tests/Feature/SingleSignOn/SingleSignOnSessionRenewalTest.php` (FR-026,
+- [X] T056 [P] [US2] Write `tests/Feature/SingleSignOn/SingleSignOnSessionRenewalTest.php` (FR-026,
   SC-009): after 4 minutes `GET /me` sends nothing to the provider; after 6 minutes it sends a
   refresh grant and a user info request and stores the new tokens; refused refresh → `401
   identity-provider-session-ended`, session gone, audit `identityProviderSessionEnd`
@@ -484,16 +484,16 @@ and template updates, renewal every 5 minutes and provider-error reporting.
   keeps the old one; with the renewal lock held and the link already renewed, a request sends
   nothing; `GET /session` and `DELETE /session` never renew; the raw Redis value of
   `restv2:sso-link:*` contains no token text.
-- [ ] T057 [P] [US2] Write `tests/Feature/SingleSignOn/SingleSignOnSignOutTest.php` (FR-027):
+- [X] T057 [P] [US2] Write `tests/Feature/SingleSignOn/SingleSignOnSignOutTest.php` (FR-027):
   `DELETE /session` ends the session, deletes `restv2:sso-link:<id>`, sends nothing to the provider,
   and audits `signOut`.
 
 ### Implementation for User Story 2
 
-- [ ] T058 [P] [US2] Create `app/Services/IdentityProvider/SsoLinkStore.php` (`create(OidcTokens,
+- [X] T058 [P] [US2] Create `app/Services/IdentityProvider/SsoLinkStore.php` (`create(OidcTokens,
   username, type): linkId`, `get(linkId)`, `put(linkId, …)`, `delete(linkId)`, `touch(linkId)`;
   `Crypt::encryptString` values, TTL `SESSION_LIFETIME`) (R7).
-- [ ] T059 [US2] Create `app/Services/IdentityProvider/MailboxProvisioner.php` (R6):
+- [X] T059 [US2] Create `app/Services/IdentityProvider/MailboxProvisioner.php` (R6):
   `provision(IdentityProviderConfig, email, ?mappingValue, ?displayName, trigger, signInRequestId)`
   → `created|existing|failure(reason, cause)` under `GET_LOCK('restv2_idp_' . sha1($email), 10)`
   with re-check and duplicate-key fallback (`docs/conventions.md`), calling 003's `MailboxService::create()` as the system actor; and
@@ -502,29 +502,29 @@ and template updates, renewal every 5 minutes and provider-error reporting.
   with the new option "record template marker". Add that option to 003's change service (it sets
   `attributes.attribute_hash` to the given marker instead of `''`; 003 FR-034) with a test case in
   003's change test file.
-- [ ] T060 [US2] Create `app/Services/IdentityProvider/SingleSignOnService.php` with `start(Request)`,
+- [X] T060 [US2] Create `app/Services/IdentityProvider/SingleSignOnService.php` with `start(Request)`,
   `complete(Request, code, state)`, `reportProviderError(Request, error, state)` and
   `cancel(Request)` per R4 and R5, using `IdentityProviderRepository`, `AppReturnUrls`, `OidcClient`,
   `MailboxProvisioner`, `RecentLoginRecorder`, `SessionManager`, `SsoLinkStore` and `AuditLogger`;
   never touching `SignInThrottle` or `Fail2BanReporter`.
-- [ ] T061 [US2] Create `app/Services/IdentityProvider/IdentityProviderSessionGuard.php` (`check(Request,
+- [X] T061 [US2] Create `app/Services/IdentityProvider/IdentityProviderSessionGuard.php` (`check(Request,
   Principal)`: local checks of FR-026 on every call; renewal under `restv2:lock:sso-link:<id>` when due;
   ending through `SessionManager::end()`, `SsoLinkStore::delete()`, audit and a `ProblemException`
   `IdentityProviderSessionEnded`) (R7). Call it from `app/Http/Middleware/RequireAuth.php` (001) for
   the modes `session` and `authenticated` when the principal's method is `singleSignOn`.
-- [ ] T062 [US2] Extend feature 001's classes: `app/Services/Auth/SessionManager.php` (principal
+- [X] T062 [US2] Extend feature 001's classes: `app/Services/Auth/SessionManager.php` (principal
   fields `identityProvider`, `passwordSource`, `ssoLinkId`; `end()` deletes the link);
   `app/Services/Auth/PendingActionEvaluator.php` (no pending actions for `singleSignOn`, FR-024);
   `app/Http/Resources/Api/V2/SessionResource.php` and the identity resource of 001 (`authMethod`,
   `authentication.identityProvider`); `app/Services/Branding/PublicConfigService.php` and
   `app/Http/Resources/Api/V2/PublicConfigResource.php` (`singleSignOnAvailable` from
   `IdentityProviderRepository::current()`). This makes T048 pass.
-- [ ] T063 [US2] Create `app/Http/Requests/Api/V2/CompleteSingleSignOnRequest.php` (`code` "required,
+- [X] T063 [US2] Create `app/Http/Requests/Api/V2/CompleteSingleSignOnRequest.php` (`code` "required,
   string, 1–4096", `state` "required, string, 1–512", no other members) and
   `ReportSingleSignOnProviderErrorRequest.php` (`error` "required, regex
   `^[\x20-\x21\x23-\x5B\x5D-\x7E]{1,64}$`", `state` as above, no other members), and
   `app/Http/Resources/Api/V2/SingleSignOnStartResource.php`.
-- [ ] T064 [US2] Create `app/Http/Controllers/Api/V2/SingleSignOnController.php` (`store` → `200`,
+- [X] T064 [US2] Create `app/Http/Controllers/Api/V2/SingleSignOnController.php` (`store` → `200`,
   `destroy` → `204`), `SingleSignOnCompletionController.php` (`store` → `201` with `Location`) and
   `SingleSignOnProviderErrorController.php` (`store` → `204`). Register `POST|DELETE
   /session/single-sign-on`, `POST /session/single-sign-on/completion` and

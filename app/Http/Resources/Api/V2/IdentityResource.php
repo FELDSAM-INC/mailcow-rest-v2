@@ -26,6 +26,10 @@ class IdentityResource extends JsonResource
         $identity = app(IdentityService::class);
         $authentication = ['method' => $principal->authMethod->value];
 
+        if ($principal->identityProvider !== null) {
+            $authentication['identityProvider'] = $principal->identityProvider->value;
+        }
+
         if ($principal->apiKey !== null) {
             $authentication['apiKey'] = [
                 'id' => $principal->apiKey->id,

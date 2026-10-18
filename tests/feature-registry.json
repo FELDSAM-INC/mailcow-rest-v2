@@ -259,10 +259,5 @@
             ]
         }
     },
-    "pendingOperations": [
-        "startSingleSignOn",
-        "cancelSingleSignOn",
-        "completeSingleSignOn",
-        "reportSingleSignOnProviderError"
-    ]
+    "pendingOperations": []
 }

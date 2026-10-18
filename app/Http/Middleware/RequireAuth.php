@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Exceptions\ProblemException;
 use App\Http\RequestContext;
 use App\Services\Auth\SessionManager;
+use App\Services\IdentityProvider\IdentityProviderSessionGuard;
 use App\Support\Http\ProblemType;
 use Closure;
 use Illuminate\Http\Request;
@@ -19,10 +20,17 @@ use Symfony\Component\HttpFoundation\Response;
  *  - `session`: a signed-in session only; none gives `401 unauthenticated`, a pending sign-in
  *    `401 second-factor-required`, a key `403 session-required`;
  *  - `authenticated`: a signed-in session or an API key.
+ *
+ * Feature 012: in the modes `session` and `authenticated`, a single sign-on session is checked and,
+ * when due, renewed with the provider (IdentityProviderSessionGuard); `GET /session`, sign-out and
+ * public routes never depend on the provider.
  */
 class RequireAuth
 {
-    public function __construct(private readonly SessionManager $sessions) {}
+    public function __construct(
+        private readonly SessionManager $sessions,
+        private readonly IdentityProviderSessionGuard $identityProviderSessions,
+    ) {}
 
     public function handle(Request $request, Closure $next, string $mode = 'session'): Response
     {
@@ -46,8 +54,11 @@ class RequireAuth
         }
 
         $session = $request->session();
+        $principal = $this->sessions->principal($session);
 
-        if ($this->sessions->principal($session) !== null) {
+        if ($principal !== null) {
+            $this->identityProviderSessions->check($request, $principal);
+
             return;
         }
 

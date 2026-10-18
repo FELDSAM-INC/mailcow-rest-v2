@@ -3,6 +3,7 @@
 namespace App\Services\Auth;
 
 use App\Auth\AccountKind;
+use App\Auth\AuthMethod;
 use App\Auth\PendingAction;
 use App\Auth\Principal;
 use App\Models\Mailcow\Admin;
@@ -29,7 +30,9 @@ class PendingActionEvaluator
      */
     public function evaluate(Principal $principal): array
     {
-        if ($principal->isApiKey()) {
+        // A single sign-on is never restricted by forced password change or second-factor setup:
+        // the provider is responsible for the strength of the sign-in (feature 012 FR-024).
+        if ($principal->isApiKey() || $principal->authMethod === AuthMethod::SingleSignOn) {
             return [];
         }
 

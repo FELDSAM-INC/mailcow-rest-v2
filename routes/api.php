@@ -63,6 +63,7 @@ use App\Http\Controllers\Api\V2\MailQueueMessageController;
 use App\Http\Controllers\Api\V2\MailQueuePurgeController;
 use App\Http\Controllers\Api\V2\MailStorageUsageController;
 use App\Http\Controllers\Api\V2\MonitoringCapabilitiesController;
+use App\Http\Controllers\Api\V2\MtaStsPolicyController;
 use App\Http\Controllers\Api\V2\Oauth2ClientBulkActionController;
 use App\Http\Controllers\Api\V2\Oauth2ClientCapabilitiesController;
 use App\Http\Controllers\Api\V2\Oauth2ClientController;
@@ -762,11 +763,22 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/dns-diagnostics/{diagnosticsName}', [DnsDiagnosticsController::class, 'show'])
             ->where('diagnosticsName', '[^/]+')
             ->name('dns-diagnostics.show');
+        Route::get('/mta-sts-policies', [MtaStsPolicyController::class, 'index'])->name('mta-sts-policies.index');
+        Route::get('/mta-sts-policies/{policyDomain}', [MtaStsPolicyController::class, 'show'])
+            ->where('policyDomain', '[^/]+')
+            ->name('mta-sts-policies.show');
     });
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
         Route::post('/dkim-keys', [DkimKeyController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'dkimKeyGeneration', 'target' => 'dkimKey'])
             ->name('dkim-keys.store');
+        Route::post('/mta-sts-policies', [MtaStsPolicyController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'mtaStsPolicyCreation', 'target' => 'mtaStsPolicy'])
+            ->name('mta-sts-policies.store');
+        Route::patch('/mta-sts-policies/{policyDomain}', [MtaStsPolicyController::class, 'update'])
+            ->where('policyDomain', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'mtaStsPolicyUpdate', 'target' => 'mtaStsPolicy'])
+            ->name('mta-sts-policies.update');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

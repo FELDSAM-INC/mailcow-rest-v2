@@ -605,14 +605,14 @@ administrator; compare the `mta_sts` row and the text `mta-sts.php` would serve 
 
 ### Tests for User Story 4
 
-- [ ] T071 [P] [US4] Write `tests/Unit/MtaSts/MtaStsPolicyIdTest.php`: `next()` is `YmdHis` in `TZ`
+- [X] T071 [P] [US4] Write `tests/Unit/MtaSts/MtaStsPolicyIdTest.php`: `next()` is `YmdHis` in `TZ`
   (`Europe/Prague` in tests, fake clock); when not greater than the previous identifier it is the
   previous identifier's time plus one second (also across a minute and a day boundary); the result
   always has 14 digits.
-- [ ] T072 [P] [US4] Write `tests/Unit/MtaSts/MtaStsPolicyTextTest.php`: the text equals the output
+- [X] T072 [P] [US4] Write `tests/Unit/MtaSts/MtaStsPolicyTextTest.php`: the text equals the output
   of legacy `data/web/mta-sts.php` for the same stored row (`version: STSv1`, `mode`, `max_age`, one
   `mx:` line per host, trailing line feeds), including wildcard hosts.
-- [ ] T073 [P] [US4] Write `tests/Feature/MtaSts/CreateMtaStsPolicyTest.php`:
+- [X] T073 [P] [US4] Write `tests/Feature/MtaSts/CreateMtaStsPolicyTest.php`:
   - AS1: `{domain, mode: enforce, mxHosts: [mail.example.org], maxAge: 86400, active: true}` →
     `201`, `Location: /api/v2/mta-sts-policies/example.org`, `ETag`; the `mta_sts` row is
     `version 'stsv1'`, `mode 'enforce'`, `mx 'mail.example.org'`, `max_age '86400'`, `active 1`,
@@ -633,7 +633,7 @@ administrator; compare the `mta_sts` row and the text `mta-sts.php` would serve 
   - each success and refusal after authentication writes one `mtaStsPolicyCreation` audit record;
     when the audit insert fails, the response is `500` and no `mta_sts` row exists (one
     transaction).
-- [ ] T074 [P] [US4] Write `tests/Feature/MtaSts/UpdateMtaStsPolicyTest.php`:
+- [X] T074 [P] [US4] Write `tests/Feature/MtaSts/UpdateMtaStsPolicyTest.php`:
   - AS2: changing only `mode` → new `policyId`; changing only `active` → same `policyId`; changing
     the MX order or `maxAge` or `version` value → new identifier; two changes within one second →
     different identifiers (fake clock);
@@ -644,31 +644,31 @@ administrator; compare the `mta_sts` row and the text `mta-sts.php` would serve 
     `invalidType`; validation as in T073;
   - a domain without a policy → `404`; AS7 a domain administrator changes an own domain's policy;
   - the audit record has `changes` with old and new values and `oldPolicyId`/`newPolicyId`.
-- [ ] T075 [P] [US4] Write `tests/Feature/MtaSts/ListMtaStsPoliciesTest.php` and
+- [X] T075 [P] [US4] Write `tests/Feature/MtaSts/ListMtaStsPoliciesTest.php` and
   `tests/Feature/MtaSts/GetMtaStsPolicyTest.php`: scope (administrator all, domain administrator
   own), `q` on ASCII and Unicode names, `active` and `mode` filters, sorts `domain`, `mode`,
   `maxAge` (numeric), `policyId`, ties by domain, pagination with `meta`, `etag` on every entry
   equal to the single read's `ETag`; a row changed directly in MariaDB is visible on the next read
   (FR-058).
-- [ ] T076 [P] [US4] Write `tests/Feature/MtaSts/MtaStsAuthorizationMatrixTest.php`: the role and key
+- [X] T076 [P] [US4] Write `tests/Feature/MtaSts/MtaStsAuthorizationMatrixTest.php`: the role and key
   matrix for the four MTA-STS operations.
 
 ### Implementation for User Story 4
 
-- [ ] T077 [P] [US4] Create `app/Services/MtaSts/MtaStsPolicyId.php` and
+- [X] T077 [P] [US4] Create `app/Services/MtaSts/MtaStsPolicyId.php` and
   `app/Services/MtaSts/MtaStsPolicyText.php`. T071 and T072 pass.
-- [ ] T078 [P] [US4] Create `app/Http/Requests/Api/V2/StoreMtaStsPolicyRequest.php`,
+- [X] T078 [P] [US4] Create `app/Http/Requests/Api/V2/StoreMtaStsPolicyRequest.php`,
   `UpdateMtaStsPolicyRequest.php` and `ListMtaStsPoliciesRequest.php` with
   the data-model rules quoted exactly: `version` "optional, string, max 16, equal to `stsv1`
   case-insensitively"; `mode` "required at creation, string, max 16, one of `enforce`, `testing`,
   `none` case-insensitively"; `maxAge` "required at creation, integer, 1 to 31,557,600"; `mxHosts`
   "required at creation, array of 1 to 128 strings, each at most 255 characters … joined by `,` at
   most 255 characters"; `active` "optional boolean"; patch: at least one member, no `null`.
-- [ ] T079 [US4] Create `app/Services/MtaSts/MtaStsPolicyService.php` (`create` with `INSERT` and
+- [X] T079 [US4] Create `app/Services/MtaSts/MtaStsPolicyService.php` (`create` with `INSERT` and
   duplicate key → conflict; `update` with `SELECT … FOR UPDATE`, `If-Match`, identifier rules,
   no-op detection; both in one transaction with the audit record) and
   `app/Services/MtaSts/MtaStsAudit.php` (whitelisted details of R22).
-- [ ] T080 [US4] Create `app/Http/Resources/Api/V2/MtaStsPolicyResource.php` (contract
+- [X] T080 [US4] Create `app/Http/Resources/Api/V2/MtaStsPolicyResource.php` (contract
   `MtaStsPolicy`, ETag of data-model) and `app/Http/Controllers/Api/V2/MtaStsPolicyController.php`
   (`index`, `store`, `show`, `update`; domain resolution through `domain` only, so alias domain names
   answer `404`) and register the four `/mta-sts-policies` routes in `routes/api.php`. T073–T076

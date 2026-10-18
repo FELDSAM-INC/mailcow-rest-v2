@@ -345,10 +345,6 @@
         "importDkimKey",
         "copyDkimKey",
         "exportDkimPrivateKey",
-        "publishDkimDnsRecord",
-        "listMtaStsPolicies",
-        "createMtaStsPolicy",
-        "getMtaStsPolicy",
-        "updateMtaStsPolicy"
+        "publishDkimDnsRecord"
     ]
 }

@@ -806,7 +806,7 @@ target type and identifier (spec US6).
 
 ### Tests for User Story 6 (write first, observe failing) ⚠️
 
-- [ ] T061 [P] [US6] Write `tests/Feature/Audit/SyncJobAuditTest.php` (FR-025, FR-026, AS-1 to AS-3,
+- [X] T061 [P] [US6] Write `tests/Feature/Audit/SyncJobAuditTest.php` (FR-025, FR-026, AS-1 to AS-3,
   SC-007):
   - **Change record** (AS-1): after an admin changes a job's interval and password, another admin
     lists `?targetType=syncJob&targetId=<id>`. The entry shows actor, `occurredAt`,
@@ -822,7 +822,7 @@ target type and identifier (spec US6).
 
 ### Implementation for User Story 6
 
-- [ ] T062 [US6] Make the generic history filter accept sync jobs. If the `targetType` validation
+- [X] T062 [US6] Make the generic history filter accept sync jobs. If the `targetType` validation
   of the audit list (`app/Http/Requests/Api/V2/ListAuditEventsRequest.php`) uses a PHP list of
   target types rather than the contract's `AuditTarget.type`, add `syncJob` to that list. No new
   parameter and no migration. T061 must pass.
@@ -1083,4 +1083,7 @@ Checked on `main` at `e21f5ee`:
 - **T060**: the whole-request refusal record comes from `SyncJobAuditTargets` through 002's
   `RefusalAuditor::bulkRefusal()`, with the event of the requested action; it is covered by
   `SyncJobRefusalAuditTest` (T021) and `SyncJobBulkActionTest`.
+- **T061, T062**: `ListAuditEventsRequest` accepts any `targetType` string (002 T087), so the
+  generic filters serve sync jobs without code; T061 was written after the stories whose records
+  it reads and passed on its first run (as 004's T080 did).
 

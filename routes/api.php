@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\LivenessController;
 use App\Http\Controllers\Api\V2\MailboxCapabilitiesController;
 use App\Http\Controllers\Api\V2\MailboxController;
+use App\Http\Controllers\Api\V2\MailboxDeletionPreviewController;
 use App\Http\Controllers\Api\V2\MailboxSenderSettingsController;
 use App\Http\Controllers\Api\V2\MailboxTagController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
@@ -216,6 +217,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/capabilities/mailboxes', [MailboxCapabilitiesController::class, 'show'])->name('mailbox-capabilities.show');
         Route::get('/mailbox-tags', [MailboxTagController::class, 'index'])->name('mailbox-tags.index');
         Route::get('/password-policy', [PasswordPolicyController::class, 'show'])->name('password-policy.show');
+        Route::get('/mailboxes/{mailbox}/deletion-preview', [MailboxDeletionPreviewController::class, 'show'])
+            ->where('mailbox', '[^/]+')
+            ->name('mailbox-deletion-preview.show');
         Route::get('/mailboxes/{mailbox}', [MailboxController::class, 'show'])
             ->where('mailbox', '[^/]+')
             ->name('mailboxes.show');
@@ -230,6 +234,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'mailboxUpdate', 'target' => 'mailbox'])
             ->name('mailboxes.update');
+        Route::delete('/mailboxes/{mailbox}', [MailboxController::class, 'destroy'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'mailboxDeletion', 'target' => 'mailbox'])
+            ->name('mailboxes.destroy');
     });
 
     // Feature 004: aliases, alias domains, resources and sender settings. Literal paths

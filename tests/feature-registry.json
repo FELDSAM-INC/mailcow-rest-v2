@@ -157,8 +157,6 @@
     },
     "pendingOperations": [
         "applyMailboxBulkAction",
-        "deleteMailbox",
-        "previewMailboxDeletion",
         "renameMailbox",
         "listMailboxTemplates",
         "createMailboxTemplate",

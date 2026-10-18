@@ -10,11 +10,13 @@ use App\Http\Requests\Api\V2\UpdateMailboxRequest;
 use App\Http\Resources\Api\V2\MailboxResource;
 use App\Models\Mailcow\Mailbox;
 use App\Services\Mailboxes\MailboxCreator;
+use App\Services\Mailboxes\MailboxDeleter;
 use App\Services\Mailboxes\MailboxReader;
 use App\Services\Mailboxes\MailboxScope;
 use App\Services\Mailboxes\MailboxUpdater;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -54,6 +56,20 @@ class MailboxController extends Controller
         $updater->update($principal, $request->address(), $request->members(), $request->header('If-Match'));
 
         return MailboxResource::response($this->reader->one($principal, $request->address()) ?? throw new NotFoundHttpException('The mailbox does not exist.'));
+    }
+
+    public function destroy(Request $request, string $mailbox, MailboxDeleter $deleter): Response
+    {
+        $principal = RequestContext::requirePrincipal($request);
+        Gate::forUser($principal)->authorize('delete', Mailbox::class);
+        $address = $this->scope->resolve($principal, $mailbox) ?? throw new NotFoundHttpException('The mailbox does not exist.');
+
+        // The mail-store call can take DOCKER_TIMEOUT; a client going away never interrupts it.
+        ignore_user_abort(true);
+        set_time_limit(0);
+        $deleter->delete($principal, $address, $request->header('If-Match'));
+
+        return response()->noContent();
     }
 
     public function show(Request $request, string $mailbox): JsonResponse

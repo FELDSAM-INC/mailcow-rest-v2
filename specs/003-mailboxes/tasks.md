@@ -551,7 +551,7 @@ deletion, re-create the address (spec US4).
 
 ### Tests for User Story 4 (write first, observe failing) ⚠️
 
-- [ ] T058 [P] [US4] Write `tests/Feature/Mailboxes/DeleteMailboxTest.php` for `deleteMailbox`:
+- [X] T058 [P] [US4] Write `tests/Feature/Mailboxes/DeleteMailboxTest.php` for `deleteMailbox`:
   AS-1 seed every dependent row of data-model.md "Tables touched by deletion and rename" plus
   `RL_VALUE`, both `RCPT_WANTS_*` fields, `sasl_log` and a `restv2_preferences` row → `204`; every
   row naming the address is gone (FK cascades included), an alias pointing to it and to another
@@ -562,22 +562,22 @@ deletion, re-create the address (spec US4).
   gone, memcached was flushed, and the audit record `mailboxDeletion` holds
   `mailStoreCleanup: done` and the removed counts. With `SKIP_SOGO=y` the `sogo_*` rows are still
   removed and `_sogo_static_view` is not touched (spec edge case).
-- [ ] T059 [P] [US4] Write `tests/Feature/Mailboxes/DeleteMailboxFailureTest.php`: AS-2 cleanup
+- [X] T059 [P] [US4] Write `tests/Feature/Mailboxes/DeleteMailboxFailureTest.php`: AS-2 cleanup
   `failed` and `unreachable` → `503 temporary-failure {dependency: mailStore}` and every row and
   Redis field still present; `unknown` → `504 outcome-unknown {step: mailStoreCleanup}`, nothing
   removed, and a retry with `success` deletes; shared store down → `503`, no container call;
   `CLUSTERMODE=replication` → one local exec and one `MC_CHANNEL` broadcast; a failing database
   statement after the move (injected) → `500`, rows kept, Redis fields restored, the failure audit
   record says `mailStoreCleanup: done`.
-- [ ] T060 [P] [US4] Write `tests/Feature/Mailboxes/DeleteMailboxReuseTest.php` (AS-3, SC-007):
+- [X] T060 [P] [US4] Write `tests/Feature/Mailboxes/DeleteMailboxReuseTest.php` (AS-3, SC-007):
   delete a mailbox with mail usage, logins, TOTP, a passkey, tagged-mail handling and preferences,
   re-create the same address through `createMailbox`, and assert that it has zero usage, no
   `sasl_log`, `tfa`, `fido2`, `RCPT_WANTS_*`, rate limit or preferences.
-- [ ] T061 [P] [US4] Write `tests/Feature/Mailboxes/DeleteMailboxAuthorizationTest.php`: AS-4
+- [X] T061 [P] [US4] Write `tests/Feature/Mailboxes/DeleteMailboxAuthorizationTest.php`: AS-4
   foreign mailbox for a domain administrator → `404`, read-only key → `403
   insufficient-key-scope`; AS-5 outdated `If-Match` → `412`, nothing removed and no container call;
   mailbox user → `403`; a domain administrator deletes in its own domain → `204`.
-- [ ] T062 [P] [US4] Write `tests/Feature/Mailboxes/PreviewMailboxDeletionTest.php` for
+- [X] T062 [P] [US4] Write `tests/Feature/Mailboxes/PreviewMailboxDeletionTest.php` for
   `previewMailboxDeletion` (FR-065, AS-6): 3 exclusive aliases (own alias not counted), 1 shared
   alias, 2 app passwords and a TOTP factor → exactly those counts and addresses; every other count
   and presence flag against seeded rows; `mail` from `quota2`; `garbageRetentionMinutes`; `etag`
@@ -588,18 +588,18 @@ deletion, re-create the address (spec US4).
 
 ### Implementation for User Story 4
 
-- [ ] T063 [US4] Create `app/Services/Mailboxes/DeletionPlan.php` and
+- [X] T063 [US4] Create `app/Services/Mailboxes/DeletionPlan.php` and
   `app/Services/Mailboxes/MailboxDeletionPlanner.php` (the selects and counts of research R15 and
   R12, alias samples of up to 100, blockers via `DockerApiClient::reachable` and
   `SharedStore::ping`).
-- [ ] T064 [US4] Create `app/Services/Mailboxes/MailboxDeleter.php` implementing research R15:
+- [X] T064 [US4] Create `app/Services/Mailboxes/MailboxDeleter.php` implementing research R15:
   scope, `AddressLock` for the address, `If-Match`, `SharedStore::ping`,
   `MailStoreCommands::cleanupMaildir` with the `503`/`504` mapping, the transaction with every
   delete in legacy's order plus `sasl_log` and `restv2_preferences`, the alias `goto` rewrite, the
   Redis `MULTI` with compensation, `SogoDirectory::refresh` for the address and the rewritten
   aliases' mailboxes, the audit record, commit, memcached flush;
   `delete(Principal, Mailbox, ?string $ifMatch, ?string $bulkRequestId = null)`.
-- [ ] T065 [US4] Add `destroy` to `app/Http/Controllers/Api/V2/MailboxController.php` (`204`; `ignore_user_abort(true)`,
+- [X] T065 [US4] Add `destroy` to `app/Http/Controllers/Api/V2/MailboxController.php` (`204`; `ignore_user_abort(true)`,
   `set_time_limit(0)`), `app/Http/Resources/Api/V2/MailboxDeletionPreviewResource.php` and
   `app/Http/Controllers/Api/V2/MailboxDeletionPreviewController.php` (`show`); in `routes/api.php`
   `DELETE /mailboxes/{mailbox}` (with `restv2.csrf` and `restv2.audit`, `mailboxDeletion`) and
@@ -1002,3 +1002,10 @@ what exists map as listed.
   quota limit is checked only when the quota actually changes, so a legacy mailbox over the domain
   quota can still be edited otherwise. A legacy set of custom attributes over the limit may shrink
   but not grow (as tags).
+- **T064**: failure records of a deletion are written by the shared refusal auditing from the
+  exceptions' audit details (`mailStoreCleanup`: `failed`, `unknown`, or `done` for a failure after
+  the move, which answers `500` through `AuditedFailure`). An unreachable mail store raises
+  `MailStoreUnreachable` (a `MailboxDependencyUnavailable`), so that bulk deletions can stop calling
+  it. The groupware entry of the deleted address is refreshed (removed); the other recipients of
+  rewritten aliases keep identical rows, so they are not refreshed. The rewrite removes every exact
+  occurrence of the address from a destination list.

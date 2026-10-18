@@ -40,7 +40,7 @@ patch:
     A non-empty `notificationTemplate` is checked the way the legacy notifier uses it (see
     `QuarantineSettingsPatch`). With `validateOnly=true`, every rule is applied, including
     `If-Match` and the template check, but nothing is stored and nothing is audited; success answers
-    `204`.
+    `200` with `{"data": {"valid": true}}`.
 
     Audited with each changed value (old and new); the template is recorded only as changed, with
     its old and new sizes.
@@ -59,9 +59,25 @@ patch:
           $ref: '../../components/schemas/QuarantineSettingsPatch.yaml'
   responses:
     '200':
-      $ref: '../../components/responses/QuarantineSettingsResponse.yaml'
-    '204':
-      description: '`validateOnly=true`: the change would be accepted. Nothing was stored.'
+      description: |
+        The changed settings (`QuarantineSettings`, with the `ETag` header), or with
+        `validateOnly=true` the validation result.
+      headers:
+        ETag:
+          description: Version tag of the changed settings, equal to `data.etag`. Absent with `validateOnly=true`.
+          required: false
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                oneOf:
+                  - $ref: '../../components/schemas/QuarantineSettings.yaml'
+                  - $ref: '../../components/schemas/QuarantineSettingsValidationResult.yaml'
     '400':
       $ref: '../../components/responses/BadRequest.yaml'
     '401':

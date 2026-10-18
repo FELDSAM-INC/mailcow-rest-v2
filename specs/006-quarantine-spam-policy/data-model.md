@@ -53,9 +53,9 @@ No insert or update.
                ┌──────────┐  notifier sets notified = 1 (legacy)
                │ present  │◄──────────────────────────────┐
                └────┬─────┘                               │
-   lock acquired    │ (restv2:quarantine-item:<id>)       │ failure before removal:
-                    ▼                                     │ delivery refused/unreachable,
-               ┌──────────┐ ─────────────────────────────►┘ spam learning failed, audit failed
+   lock acquired    │ (restv2:quarantine-item:<id>)       │ failure before removal: delivery
+                    ▼                                     │ refused/unreachable, spam learning
+               ┌──────────┐ ─────────────────────────────►┘ failed, audit failed (spam, delete)
                │processing│   other requests: 409 quarantine-item-busy
                └────┬─────┘
                     │ release: delivered → DELETE;  learn as spam: learned → DELETE;  delete: DELETE
@@ -95,7 +95,8 @@ Writes: `SpamPolicyEntryService` (list entries) and `SpamScoreService` (scores) 
   `tooLong` with `max: 100`). `list`: `notInList`.
 - Uniqueness (FR-047): no row with the same `object` and `value` and `option IN
   ('whitelist_from','blacklist_from')`; otherwise `409 spam-policy-entry-exists` (`list`,
-  `entryId` of the existing row).
+  `entryId` of the existing row). Check and insert run under `GET_LOCK('restv2:filterconf:<object>',
+  10)` (conventions; no index is added to the upstream table).
 - Insert: `INSERT INTO filterconf (object, option, value) VALUES (?, ?, ?)`. Delete:
   `DELETE FROM filterconf WHERE prefid = ? AND object = ? AND option IN (…)`.
 - **Version tag**: strong ETag over `prefid|object|option|value`.
@@ -252,9 +253,10 @@ on stdout (`ok`, `renders[{html, text}]` or `reason`, `line`, `message`).
 | `rateLimitUpdate`, `rateLimitRemoval` | `rateLimit` / object / object | `kind`, `old`, `new` |
 | `rateLimitBucketReset` | `rateLimitBucket` / bucket id / bucket id | `countersExisted`, `logEntriesRemoved` |
 
-Failures carry `outcome: failure`, a `failureReason` from the values earlier features added
-(`permissionDenied`, `notFound`, `versionOutdated`, `validationFailed`, `conflict`,
-`temporaryFailure`) and `details.problemType`; `422` records list the invalid field names only.
+Failures (every refusal of an authenticated caller on a state-changing route, research R19) carry
+`outcome: failure`, a shared `failureReason` (`permissionDenied`, `notFound`, `versionOutdated`,
+`validationFailed`, `conflict`, `serviceFailure` for a refused delivery, `temporaryFailure`) and
+`details.problemType`; `422` records list the invalid field names only.
 Never recorded: subjects, bodies, attachments, `qhash`, template text.
 
 ---

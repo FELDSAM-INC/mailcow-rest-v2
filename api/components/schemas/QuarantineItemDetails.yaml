@@ -36,7 +36,7 @@ allOf:
         type: string
         description: |
           `available`: `content` holds the parsed message. `tooLarge`: the stored message is larger
-          than the content size limit (10 MiB by default, see `GET /quarantine-capabilities`), so
+          than the content size limit (10 MiB by default, see `GET /capabilities/quarantine`), so
           only the summary and the filter's results are returned, and downloads are refused with
           `quarantine-message-too-large`. `missing`: no message is stored with the item.
         enum: [available, tooLarge, missing]

@@ -29,15 +29,24 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
     (prefix `restv2:`), `MailcowDateTime`, `MailcowRows`/`MailcowFactory`, `OpenApiContract`,
     the `api.v2` middleware pipeline (key scope, CSRF, pending actions) and
     `restv2.auth:authenticated`.
-  - **002**: domain name normalisation (trim, lower case, UTS #46 to ASCII; 002 FR-006), the
-    `Domain` model, domain reachability for domain administrators, the bulk action runner and its
-    `RESTV2_BULK_LIMIT` setting, the `temporary-failure` problem type, the audit filters
-    `targetType`/`targetId` on `GET /audit-events` (002 FR-058, needed by FR-064), and the
-    `RL_VALUE` writer used for initial rate limits.
-  - **003**: the `Mailbox` model with resource exclusion (`kind`), mailbox reachability, and the
-    `MailboxRateLimit`/quarantine notification values shown read-only in mailbox representations.
-  - **004**: the `AliasDomain` model and alias domain reachability.
+  - **002** (`specs/002-domains/plan.md`): `App\Support\Domain\DomainName` (trim, lower case,
+    UTS #46 to ASCII; 002 FR-006), the `Domain` and `AliasDomain` models,
+    `App\Services\Domains\DomainScope` (domain reachability), `App\Clients\SharedStore\SharedStore`
+    and `SharedStoreUnavailable` (ping, `MULTI`/`EXEC` with compensation, for every Redis write),
+    `App\Services\RateLimits\RateLimitStore` (the `RL_VALUE` writer, "extended by 006"), the
+    `temporary-failure` problem type and the rule codes `notMultipleOf` and `mustNotExceed`, the
+    generic audit filters `targetType`/`targetId` on `GET /audit-events` (002 FR-058, needed by
+    FR-064), and the refusal auditing of 002 (or the route-declared `RefusalAuditor` hook described
+    by `docs/conventions.md`, whichever the first implemented feature created). 006 makes no
+    dockerapi call, so it does not use 002's `DockerApiClient`.
+  - **003**: `App\Services\Mailboxes\MailboxScope` (mailbox reachability and `404` semantics,
+    resources excluded) and the `Mailbox` model.
+  - **004**: `App\Services\AliasDomains\AliasDomainQuery` (alias domains reachable through their
+    target domain).
   - **009**: the `permission-flag-required` problem type (already in the contract).
+  - Bulk actions: 002 and 003 implement them per feature (`DomainBulkActions`,
+    `MailboxBulkActions`) with the constant limit of 100 (conventions); 006 does the same with
+    `QuarantineBulkActions` and `QuarantineNotificationBulkActions`.
 
   The tasks name the expected classes. Setup task T001 checks that each exists; when a name
   differs, 006 uses the existing class, and it creates a component only if no earlier feature did
@@ -148,9 +157,10 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
   transaction or row lock across network calls: such a lock would block the ingestion's retention
   `DELETE` for the same mailbox (`pipe.php`) for up to a minute.
 - **Alternatives considered**: `SELECT … FOR UPDATE` across the SMTP and Rspamd calls was
-  rejected (above). MariaDB `GET_LOCK()` was rejected: it binds the lock to the request's database
-  connection, which the test suite shares between "concurrent" requests, so it cannot be tested
-  deterministically. Deleting the row first and re-inserting it on failure was rejected: the item
+  rejected (above). MariaDB `GET_LOCK()` (which the conventions prescribe for uniqueness checks,
+  R11) was rejected here: the item lock is not a uniqueness check, and it must survive up to 90 s of
+  network waits during which a dropped and re-established database connection would silently
+  release a session-bound lock; the Redis lock has an explicit owner and TTL. Deleting the row first and re-inserting it on failure was rejected: the item
   would vanish from both UIs while processing, and the re-insert would need explicit IDs.
 
 ### R5. Quarantine message parsing for inspection and downloads
@@ -260,10 +270,11 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
     template HTML-escaped for its textarea; the API returns it raw.
   - **Write**: only the keys whose stored value changes, in legacy's formats (`Q_MAX_SIZE` in MiB,
     `Q_EXCLUDE_DOMAINS` as `json_encode` of a list, empty strings for defaults, `raw` for
-    `original`). `WATCH` on the eleven keys, re-read, compare `If-Match`, then `MULTI`/`SET…`/`EXEC`.
-    A failed `EXEC` (concurrent change) is retried once, then answered `412` when `If-Match` was
-    sent, otherwise applied on the fresh values. Any `RedisException` → `503 temporary-failure`
-    (`sharedStore`), nothing written (FR-061).
+    `original`), through 002's `SharedStore`: `WATCH` on the eleven keys, re-read, compare
+    `If-Match`, then `MULTI`/`SET…`/`EXEC` (T001 adds a `watch()` variant to `SharedStore` if it has
+    none). A failed `EXEC` (concurrent change) is retried once, then answered `412` when `If-Match`
+    was sent, otherwise applied on the fresh values. `SharedStoreUnavailable` → `503
+    temporary-failure` (`sharedStore`), nothing written (FR-061).
   - **Validation** (FR-030) is in `UpdateQuarantineSettingsRequest`; the excluded domains are
     normalised with 002's normaliser and looked up in `domain` and `alias_domain`; a stored entry
     that no longer exists may be sent back unchanged.
@@ -307,19 +318,21 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
     empty); mailbox: `object = :username` (own) `OR object = :mailboxDomain` (inherited). Filters,
     search (`value LIKE`), sorting and paging are applied in SQL over the union.
   - **Create**: normalise (`trim`, `mb_strtolower`), validate (`/^[a-z0-9@_.*-]+$/`, at least one
-    `[a-z0-9]`, length ≤ 100), then in a transaction lock the owner row (`domain`, `alias_domain` or
-    `mailbox`) `FOR UPDATE`, check `SELECT prefid, option FROM filterconf WHERE object = ? AND value
-    = ? AND option IN (…)` → `409 spam-policy-entry-exists`, `INSERT (object, option, value)`
-    (`created` by default), audit, commit. The owner lock serialises concurrent identical additions,
-    which legacy does not protect.
+    `[a-z0-9]`, length ≤ 100), then take the MariaDB lock `GET_LOCK('restv2:filterconf:<object>',
+    10)` (the conventions' rule for uniqueness that upstream enforces only in code; a timeout →
+    `503 temporary-failure`), and in a transaction check `SELECT prefid, option FROM filterconf
+    WHERE object = ? AND value = ? AND option IN (…)` → `409 spam-policy-entry-exists`, `INSERT
+    (object, option, value)` (`created` by default), audit, commit, then `RELEASE_LOCK`. The lock
+    serialises concurrent identical additions, which legacy does not protect; no index is added to
+    `filterconf`.
   - **Remove**: `DELETE FROM filterconf WHERE prefid = ? AND object = ? AND option IN (…)`; zero
     rows → `404`.
 - **Rationale**: Legacy's rows, so the settings map applies them within its 30 s refresh (SC-004).
 
 ### R12. Rate limits (FR-050 to FR-056)
 
-- **Decision**: The rate limit store introduced by 002 (`App\Services\RateLimits\RateLimitStore`
-  or its actual name, R1) gains the operations 006 needs:
+- **Decision**: 002's `App\Services\RateLimits\RateLimitStore` (R1) gains the operations 006
+  needs; no second writer of `RL_VALUE` exists:
   - **Format**: value `"<n> / 1<s|m|h|d>"`; parsing `^([1-9][0-9]{0,9}) / 1([smhd])$` with
     `n ≤ 2147483647`; anything else is `invalidStoredValue`.
   - **Field**: the normalised object (lower case, ASCII domain), which `DYN_RL_CHECK` looks up
@@ -334,7 +347,8 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
     paging in PHP (the hash is small).
   - **Mailbox effective limit**: own value, else the mailbox domain's value (legacy
     `mailbox_details`: `rl_scope`).
-  - Every Redis failure → `503 temporary-failure` (`sharedStore`) (FR-061).
+  - Every Redis failure (`SharedStoreUnavailable`) → `503 temporary-failure` (`sharedStore`)
+    (FR-061).
 - **Rationale**: One writer for `RL_VALUE` across 002–006 (conventions); atomic compare-and-set
   without `WATCH` on the whole hash, which every unrelated write would abort.
 
@@ -409,15 +423,18 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
   - Quarantine item: `id|qid|rcpt|created` (never `notified`, which is runtime status).
   - List entry: `prefid|object|option|value`.
   The same value is the `ETag` header of a single read and `etag` of every representation and list
-  entry. Bulk targets compare `version` (without quotes).
+  entry. Bulk targets compare `version` (without quotes). No tag covers a stored secret: the item's
+  `qhash`, the only secret this feature touches, is deliberately left out, so the conventions' HMAC
+  rule for secret-bearing tags does not apply.
 - **Rationale**: Conventions "Version tags": stored settings only; immutable objects keep a stable
   tag.
 
 ### R18. Bulk actions (FR-027, FR-037)
 
-- **Decision**: 002's bulk runner (`App\Support\Bulk\BulkActionRunner` or its actual name):
-  role/flag/key-scope check for the whole request; `targets` count ≤ `RESTV2_BULK_LIMIT` (`422
-  tooMany`); deduplication by normalised identifier (first occurrence kept); per target:
+- **Decision**: `App\Services\Quarantine\QuarantineBulkActions` and
+  `QuarantineNotificationBulkActions`, built like 002's `DomainBulkActions`: role/flag/key-scope
+  check for the whole request; at most 100 targets, the API-wide constant (`422 tooMany`,
+  `max: 100`); deduplication by normalised identifier (first occurrence kept); per target:
   authorise, version check (`outdated`), process, audit with `bulkRequestId`; outcome mapping
   `NotFound` → `notFound`; `quarantine-item-busy` and `quarantine-delivery-refused` → `refused`;
   `412` → `outdated`; `temporary-failure` and anything unexpected → `failed`. The quarantine bulk
@@ -438,12 +455,21 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
   `owner`, `ownerKind`, `list`, `pattern`; rate limits `object`, `kind`, `old`, `new`; bucket
   reset `bucketId`, `countersExisted`, `logEntriesRemoved`. Never a subject, body, attachment or
   `qhash` (SC-010 scan test).
-  - **Refusals** raised by this feature's checks (403 role or flag, 404, 409, 412, 422, 503) write
-    one failure record per targeted object in their own transaction, with `failureReason` from the
-    values earlier features added (`permissionDenied`, `notFound`, `versionOutdated`,
-    `validationFailed`, `conflict`, `temporaryFailure`) and `details.problemType`. Refusals by 001's
-    middleware (401, CSRF, key scope, restricted session) stay 001's concern. Validate-only
-    requests and previews write nothing.
+  - **Refusals** (conventions "Refusal auditing"): every state-changing route of this feature
+    declares `->defaults('restv2.audit', ['event' => …, 'target' => …])`. The `RefusalAuditor` hook
+    in 001's problem rendering (created by the first implemented feature that needed it; 006
+    creates it if 002 did not) writes one failure record for every `4xx` problem of such a route
+    when the request has an authenticated principal, except `csrf-token-mismatch`. This covers
+    read-only keys, restricted sessions, missing flags, objects outside the scope, `409`, `412` and
+    `422`; `401`s and CSRF failures are not recorded. 006 registers target resolvers for its seven
+    target types (for `quarantineItem` the queue identifier and recipient are looked up regardless of
+    scope, since the audit log is for administrators only; never the subject). Per-item refusals of
+    bulk actions are recorded by the bulk services. `failureReason` uses the shared values
+    (`permissionDenied` for role, flag, key scope and restricted session; `notFound`;
+    `versionOutdated`; `validationFailed` with field names only; `conflict` for a busy item or an
+    existing entry; `serviceFailure` for a delivery the mail server refused; `temporaryFailure`),
+    with `details.problemType`. `503` refusals are recorded by the services. Validate-only requests
+    and previews write nothing.
   - **Atomicity**: database writes and their record share one transaction. Redis writes: begin
     transaction → insert record → `EXEC` → commit; a failed `EXEC` rolls the record back.
   - **Releases**: delivery → item `DELETE` (own transaction, FR-021) → learning → record. If the
@@ -462,7 +488,6 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
 | `RESTV2_RELEASE_SMTP_HOST` | `postfix` | Postfix host for releases (R3) |
 | `RESTV2_RELEASE_SMTP_PORT` | `590` | Quarantine submission port |
 | `RESTV2_RELEASE_SMTP_TIMEOUT` | `30` | Seconds per SMTP step |
-| `RESTV2_BULK_LIMIT` | `100` | Bulk limit (shared with 002; R18) |
 | `RESTV2_QUARANTINE_CONTENT_LIMIT` | `10485760` | Content size limit in bytes (FR-014) |
 | `RESTV2_QUARANTINE_DEFAULT_TEMPLATE` | `/mailcow/assets/templates/quarantine.tpl` | Default notification template |
 | `RESTV2_TEMPLATE_RENDER_TIMEOUT` | `5` | Seconds for a template check or preview (FR-070) |

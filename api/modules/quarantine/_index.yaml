@@ -19,7 +19,7 @@
   $ref: './quarantine-item-message.yaml'
 /quarantine/{itemId}/attachments/{position}:
   $ref: './quarantine-item-attachment.yaml'
-/quarantine-capabilities:
+/capabilities/quarantine:
   $ref: './quarantine-capabilities.yaml'
 /quarantine-notification-settings/bulk-actions:
   $ref: './quarantine-notification-bulk-actions.yaml'

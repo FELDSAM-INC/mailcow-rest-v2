@@ -8,7 +8,7 @@ properties:
   bulkLimit:
     type: integer
     minimum: 1
-    description: Most targets in one bulk request (`RESTV2_BULK_LIMIT`, 100 by default).
+    description: Most targets in one bulk request (100, the API-wide limit of the conventions).
   defaultPageSize:
     type: integer
     description: Default `limit` of lists (25).

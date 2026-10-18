@@ -100,8 +100,8 @@ stories.
 | V. Coexistence | Same container (001). The override adds two read-only mounts and an environment variable; no other mailcow file or container is changed. The ingestion, the notifier, the cleanup, the quick links, `settings.php` and `DYN_RL` stay in place. | PASS |
 | VI. Security | Object-level authorisation for all three roles, both key types and the flags (FR-006), flag check before lookup, `404` outside scope. Read-only keys refused on every unsafe method by 001's pipeline. `qhash` and `msg` never returned; HTML converted to text; downloads `attachment` + `nosniff` + sandbox CSP. The template check runs in Jinja2's sandbox, in a subprocess with time and output limits. Every change audited; refusals audited. | PASS |
 | VII. Test-first | `tasks.md` puts the tests of every phase first; MariaDB with the real schema; real Redis; Rspamd and Postfix faked behind interfaces with call assertions; parity goldens from legacy images. | PASS |
-| VIII. Simplicity | Two Composer packages, both legacy's own; Python only because nothing else can check a Jinja2 template the way the notifier does (Complexity Tracking). Interfaces only for the two outbound services. Shared code from 001–004 reused, not duplicated (R1). | PASS (justified) |
-| Cross-feature conventions | `404` outside scope, `403` only for role/flag/key scope. Lists: `limit` 25/1000, `q`, `sort`, `order`. Bulk: limit 100, whole-request refusal only for role/flag/key scope, per-item `version` with `outdated`, one result and one audit record per item, `bulkRequestId`. Version tags over stored settings only, on every list entry. Reads not audited. No caching. Server settings with upstream defaults (R20); 001's configuration reader for `DEFAULT_LANG`. | PASS |
+| VIII. Simplicity | Two Composer packages, both legacy's own; Python only because nothing else can check a Jinja2 template the way the notifier does (Complexity Tracking). Interfaces only for the two outbound services. Shared code from 001–004 reused, not duplicated (R1): 002's `RateLimitStore`, `SharedStore`, `DomainName`, `DomainScope`; 003's `MailboxScope`; 004's `AliasDomainQuery`. | PASS (justified) |
+| Cross-feature conventions | `404` outside scope, `403` only for role/flag/key scope. Capabilities at `/capabilities/quarantine` (`getQuarantineCapabilities`). History through the generic `targetType`/`targetId` filters (only `AuditTarget` values added). Refusals of authenticated callers audited through route declarations. List entry uniqueness under `GET_LOCK()`, no new index. Lists: `limit` 25/1000, `q`, `sort`, `order`. Bulk: limit 100, whole-request refusal only for role/flag/key scope, per-item `version` with `outdated`, one result and one audit record per item, `bulkRequestId`. Version tags over stored settings only, on every list entry. Reads not audited. No caching. Server settings with upstream defaults (R20); 001's configuration reader for `DEFAULT_LANG`. | PASS |
 | Runtime constraints | Stateless php-fpm, read-only root filesystem (no temp files: parsing in memory, Python with `-B`), JSON logs with request ID; configuration from environment variables. | PASS |
 
 **Post-design re-check (after Phase 1)**: PASS. The decisions that touched gates:
@@ -123,8 +123,9 @@ plan-level rows (constitution IV requires every deviation to be stated in the sp
    LF); the delivered message is the same.
 3. `GET /rate-limits` lists limits of existing objects only; a field stored in upper case by
    another tool is not found (the spam filter does not match it either).
-4. Refusals raised by 001's authentication pipeline (unauthenticated, CSRF, read-only key,
-   restricted session) are audited by 001's rules, not by this feature.
+4. Every refusal of an authenticated caller on a state-changing route is audited (read-only keys,
+   restricted sessions, missing flags, out-of-scope objects); CSRF failures and `401`s are not
+   (conventions "Refusal auditing").
 
 ## Contract Operations
 
@@ -141,7 +142,7 @@ plan-level rows (constitution IV requires every deviation to be stated in the sp
 | POST `/quarantine/{itemId}/spam-learning` | learnQuarantineItemAsSpam | admin; DA, user (`quarantine`) | US1, FR-023, FR-025, FR-026 |
 | GET `/quarantine/{itemId}/message` | downloadQuarantineMessage | admin; DA (`quarantine`); user (`quarantine`, `quarantineAttachments`) | US1, US2, FR-017, FR-018 |
 | GET `/quarantine/{itemId}/attachments/{position}` | downloadQuarantineAttachment | admin, DA; user (`quarantineAttachments`) | US1, US2, FR-016, FR-018 |
-| GET `/quarantine-capabilities` | getQuarantineCapabilities | all | US2, FR-072 |
+| GET `/capabilities/quarantine` | getQuarantineCapabilities | all | US2, FR-072 |
 | POST `/quarantine-notification-settings/bulk-actions` | applyQuarantineNotificationBulkAction | admin, DA | US4, FR-037 |
 | GET `/mailboxes/{mailbox}/quarantine-notification-settings` | getMailboxQuarantineNotificationSettings | all, scoped | US4, FR-035 |
 | PATCH `/mailboxes/{mailbox}/quarantine-notification-settings` | updateMailboxQuarantineNotificationSettings | admin, DA; user (`quarantineNotification`/`quarantineCategory`) | US4, FR-036, FR-038 |
@@ -192,8 +193,7 @@ specs/006-quarantine-spam-policy/
 ├── quickstart.md        # Phase 1: validation guide
 ├── contracts/README.md  # Phase 1: pointer to api/ (the contract is not duplicated)
 ├── checklists/requirements.md
-├── tasks.md             # Phase 2 (/speckit-tasks)
-└── analysis.md          # /speckit-analyze summary
+└── tasks.md             # Phase 2 (/speckit-tasks); the analysis summary is in the agent report
 ```
 
 ### Source Code (repository root)
@@ -243,6 +243,8 @@ app/
 │       └── SpamScoreResource.php, RateLimitResource.php
 ├── Models/Mailcow/{QuarantineItem,FilterPreference}.php
 ├── Policies/{QuarantinePolicy,SpamPolicyPolicy,RateLimitPolicy}.php
+├── Services/Access/SpamFilterScope.php   # item scope predicate; mailbox/domain/alias resolvers (R15)
+├── Services/Audit/RefusalAuditor.php     # route-declared refusal hook; created only if no earlier feature did (R19)
 ├── Rules/{SenderPattern,MailboxSize,OneDecimal,NotificationTemplate}.php
 ├── Services/
 │   ├── Quarantine/{QuarantineQuery,QuarantineMessageParser,ParsedMessage,QuarantineActionService,
@@ -250,6 +252,7 @@ app/
 │   │               QuarantineTemplateRenderer,TemplateCheckResult,QuarantineNotificationService,
 │   │               QuarantineCapabilities,ReleaseMessageFactory,DownloadFileName}.php
 │   ├── SpamPolicy/{SpamPolicyEntryService,SpamScoreService,SpamFilterStatisticsService}.php
+│   ├── Quarantine/{QuarantineBulkActions,QuarantineNotificationBulkActions}.php
 │   └── RateLimits/{RateLimitStore (002, extended),RateLimitService,RateLimitBucketService}.php
 └── Support/Redis/LuaScripts.php       # compare-and-set field, bucket reset
 
@@ -269,7 +272,9 @@ tests/
 ├── Support/
 │   ├── Rspamd/FakeRspamdController.php
 │   ├── Mail/FakeQuarantineReleaseMailer.php
-│   └── Smtp/{ScriptedSmtpServer,scripted-smtp-server}.php
+│   ├── Smtp/{ScriptedSmtpServer,scripted-smtp-server}.php
+│   ├── Quarantine/LargeMessage.php
+│   └── Commands/TestReleaseCommand.php   # testing environment only (concurrency test)
 ├── Feature/Quarantine/      # items, actions, bulk, downloads, settings, template, notifications,
 │                            # capabilities, concurrency, audit, performance
 ├── Feature/SpamPolicy/      # entries (3 owners), spam score, statistics

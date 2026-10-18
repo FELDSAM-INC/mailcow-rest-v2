@@ -2,7 +2,7 @@ type: object
 description: |
   One action for several quarantine items. Targets are item identifiers as decimal strings, each
   with the optional version tag (`etag`) the client last read. An item named twice is processed
-  once. At most the bulk limit of targets (100 by default, `GET /quarantine-capabilities`).
+  once. At most the bulk limit of targets (100, `GET /capabilities/quarantine`).
 required: [action, targets]
 properties:
   action:

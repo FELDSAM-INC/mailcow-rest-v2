@@ -931,7 +931,9 @@ filtered by target.
   record per affected object into feature 001's audit log, with the fields of FR-046 there and:
   - the target type (quarantine item, quarantine settings, notification settings, spam score, list
     entry, rate limit or rate-limit bucket) and the target identifier;
-  - the outcome, including refusals and their reason;
+  - the outcome, including refusals and their reason. Refusals of authenticated callers are
+    recorded, including read-only keys, restricted sessions, missing flags and objects outside the
+    scope; CSRF failures and unauthenticated requests are not (`docs/conventions.md`);
   - for item actions, the queue identifier, the recipient, the envelope sender, the action and the
     outcome of each step. The subject, the content, the attachments and the quick-action hash MUST
     NOT be recorded;
@@ -1136,7 +1138,7 @@ neither reads nor writes:
 | Release envelope sender that is not an address (plan) | The stored text is sent as `MAIL FROM`, for example the column default `unknown` | `sender-unknown@rspamd`, as for an empty sender (FR-019). **Deviation** |
 | Release SMTP dialogue (plan) | `HELO quarantine`, LF line endings, manual dot-stuffing | `EHLO quarantine`, CRLF line endings, the same message content. Transport detail |
 | Rate limit list (plan) | Iterates existing domains, alias domains and mailboxes | Lists the stored limits of existing objects in scope; a field stored in upper case by another tool is not found, as the spam filter does not match it either (FR-051) |
-| Refusals by the authentication pipeline (plan) | — | Unauthenticated, CSRF, read-only key and restricted-session refusals follow feature 001's audit rules; this feature audits the refusals of its own checks (FR-063) |
+| Refusals of state-changing requests (plan) | — | Every refusal of an authenticated caller is audited, including read-only keys, restricted sessions, missing flags and objects outside the scope; CSRF failures and unauthenticated requests are not (FR-063, `docs/conventions.md`) |
 
 ### Key Entities *(include if feature involves data)*
 
@@ -1221,9 +1223,9 @@ neither reads nor writes:
 - Domain administrator accounts and their flags are managed in feature 007, mailbox user flags in
   feature 003. This feature only reads them.
 - The legacy UI never sends version tags, so it can still overwrite changes made through this API.
-- The list page size follows the shared list convention (25 by default, at most 1,000,
-  `docs/conventions.md`). These defaults can be changed by the operator and are reported by the
-  capabilities read (FR-072): the bulk limit (100) and the content size limit (10 MiB).
+- The list page size (25 by default, at most 1,000) and the bulk limit (100) follow the shared
+  conventions (`docs/conventions.md`). The content size limit (10 MiB) can be changed by the
+  operator. All of them are reported by the capabilities read (FR-072).
 - **Out of scope**:
   - quarantine ingestion and notification sending;
   - the hash-based quick release and delete pages;

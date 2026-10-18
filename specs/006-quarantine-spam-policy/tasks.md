@@ -21,12 +21,15 @@ starts only when 001–005 are merged. It uses (research R1): from **001** `Prin
 `PermissionFlag`, `IdentityService`/`Scope`, `ProblemException`/`ProblemType`, `ETag`,
 `ApiFormRequest`, `ListQuery`, `AuditLogger`, `MailcowConfig`, the preferences language, the Redis
 connections `mailcow` and `restv2`, `MailcowDateTime`, `MailcowRows`/`MailcowFactory`,
-`OpenApiContract`, the `api.v2` pipeline; from **002** the domain name normaliser, the `Domain`
-model and domain reachability, the bulk action runner and `RESTV2_BULK_LIMIT`, the
-`temporary-failure` problem type, the audit filters `targetType`/`targetId`, and the `RL_VALUE`
-writer of initial rate limits; from **003** the `Mailbox` model with resource exclusion and mailbox
-reachability; from **004** the `AliasDomain` model and alias domain reachability. T001 verifies
-them; class names below are the expected ones, and the actual names found by T001 replace them.
+`OpenApiContract`, the `api.v2` pipeline; from **002** (`specs/002-domains/plan.md`)
+`App\Support\Domain\DomainName`, the `Domain` and `AliasDomain` models,
+`App\Services\Domains\DomainScope`, `App\Clients\SharedStore\SharedStore` (with
+`SharedStoreUnavailable`), `App\Services\RateLimits\RateLimitStore`, the `temporary-failure`
+problem type, the generic audit filters `targetType`/`targetId` and its refusal auditing; from
+**003** `App\Services\Mailboxes\MailboxScope` and the `Mailbox` model; from **004**
+`App\Services\AliasDomains\AliasDomainQuery`; from **009** the `permission-flag-required` type.
+006 makes no dockerapi call (002's `DockerApiClient` is not needed). T001 verifies them; if a
+class has another name in the merged code, that name replaces the one used below.
 
 **Commands**: every PHP, Composer, Node and Python command runs in the dev container:
 `docker compose run --rm app <command>`.
@@ -48,17 +51,17 @@ them; class names below are the expected ones, and the actual names found by T00
 **Purpose**: Verify the code of earlier features, add the runtime pieces, configuration, legacy
 extracts and fixtures. No business logic.
 
-- [ ] T001 Verify the prerequisites of R1 and record the actual class names at the top of this file
-  (a "Resolved names" note): 001's classes listed above; 002's domain normaliser (expected
-  `app/Support/Domains/DomainName.php`), domain reachability (expected
-  `app/Services/Access/ObjectAccess.php::canReachDomain()`), bulk runner (expected
-  `app/Support/Bulk/BulkActionRunner.php`), rate limit store (expected
-  `app/Services/RateLimits/RateLimitStore.php`) and `ProblemType::TemporaryFailure`; 003's
-  `app/Models/Mailcow/Mailbox.php` with a resource scope and `canReachMailbox()`; 004's
-  `app/Models/Mailcow/AliasDomain.php` and `canReachAliasDomain()`; the `targetType`/`targetId`
-  filters of `GET /audit-events`; 009's `ProblemType::PermissionFlagRequired` (or add the case, its
-  section exists in `docs/problems.md`). For any component that is missing, create it at the
-  expected path with the behaviour R15 and R18 describe, with its own unit test, before Phase 2.
+- [ ] T001 Verify the prerequisites of R1 and record any differing class name at the top of this
+  file (a "Resolved names" note): 001's classes listed above; 002's `app/Support/Domain/DomainName.php`,
+  `app/Services/Domains/DomainScope.php`, `app/Clients/SharedStore/SharedStore.php`,
+  `app/Services/RateLimits/RateLimitStore.php`, `ProblemType::TemporaryFailure`, the generic
+  `targetType`/`targetId` filters of `GET /audit-events` and the refusal auditing hook (the
+  route-declared `RefusalAuditor` of `docs/conventions.md`); 003's
+  `app/Services/Mailboxes/MailboxScope.php`; 004's `app/Services/AliasDomains/AliasDomainQuery.php`;
+  009's `ProblemType::PermissionFlagRequired` (add the case if 009 is not merged yet; its section
+  is in `docs/problems.md`). If `SharedStore` has no optimistic `WATCH` variant, add
+  `SharedStore::transactionWatching(array $keys, Closure $build)` with its unit test. If no earlier
+  feature created the refusal hook, T023 creates it.
 - [ ] T002 Extend `docker/php/Dockerfile` (stage `base`): `pecl install mailparse` (3.2.x) plus
   `docker-php-ext-enable mailparse`; `apk add --no-cache python3 py3-jinja2 py3-markupsafe
   py3-html2text`. Rebuild and check `php -m | grep mailparse` and
@@ -73,8 +76,8 @@ extracts and fixtures. No business logic.
   `quarantine.content_limit` (`RESTV2_QUARANTINE_CONTENT_LIMIT`, 10485760),
   `quarantine.default_template` (`RESTV2_QUARANTINE_DEFAULT_TEMPLATE`,
   `/mailcow/assets/templates/quarantine.tpl`), `quarantine.template_timeout`
-  (`RESTV2_TEMPLATE_RENDER_TIMEOUT`, 5), `skip_clamd` (`SKIP_CLAMD`, `n`). `bulk_limit`
-  (`RESTV2_BULK_LIMIT`, 100) is 002's; add it only if T001 found it missing.
+  (`RESTV2_TEMPLATE_RENDER_TIMEOUT`, 5), `skip_clamd` (`SKIP_CLAMD`, `n`). The bulk limit is the
+  API-wide constant 100 (conventions), not a setting.
 - [ ] T005 [P] Deployment (R2, R7, R18, R20): in `deploy/docker-compose.override.yml` add the volumes
   `rspamd-vol-1:/var/lib/rspamd:ro` and `./data/assets/templates:/mailcow/assets/templates:ro,z`
   and the variable `SKIP_CLAMD=${SKIP_CLAMD:-n}` to `restv2-mailcow`; in
@@ -215,11 +218,19 @@ plumbing that every story needs.
   path value, apply 002–004's reachability and resource exclusion (`kind NOT REGEXP
   'location|thing|group'`) and throw `404` otherwise. Register the policies. This makes T016 pass.
 - [ ] T023 Register the 006 audit event types and `details` whitelists of data-model.md "Audit
-  records" in `app/Services/Audit/AuditLogger.php` (or its event registry), and add
-  `App\Services\Audit\RefusalAuditor` (if 002 did not provide one) that writes one failure record
-  per targeted object in its own transaction with `failureReason` (`permissionDenied`, `notFound`,
-  `versionOutdated`, `validationFailed`, `conflict`, `temporaryFailure`) and `details.problemType`,
-  and only field names for `422`.
+  records" in `app/Services/Audit/AuditLogger.php` (or its event registry). Refusal auditing
+  (R19, conventions "Refusal auditing"): reuse the route-declared hook
+  `App\Services\Audit\RefusalAuditor` (called from 001's problem rendering in `bootstrap/app.php`
+  for a `4xx` problem when the matched route declares `->defaults('restv2.audit', ['event' => …,
+  'target' => …])`, the request has an authenticated principal and the type is not
+  `csrf-token-mismatch`); create it with its unit test `tests/Unit/Services/RefusalAuditorTest.php`
+  if no earlier feature did. Register resolvers for the target types `quarantineItem` (id, queue
+  id, recipient; never the subject), `quarantineSettings`, `quarantineNotificationSettings`,
+  `spamScore`, `spamPolicyEntry`, `rateLimit` and `rateLimitBucket`, and the `failureReason`
+  mapping `permissionDenied` (role, flag, key scope, restricted session), `notFound`,
+  `versionOutdated`, `validationFailed` (field names only), `conflict` (busy item, existing entry),
+  `serviceFailure` (refused delivery), `temporaryFailure`. Every state-changing route registered by
+  the tasks below declares `restv2.audit`.
 
 **Checkpoint**: clients, models, problem types and access checks exist; user stories can start.
 
@@ -305,7 +316,10 @@ for a mailbox user; compare deliveries, remaining rows and Rspamd calls with leg
     tag → `412` and nothing delivered; Redis stopped (pointing the `restv2` connection at a closed
     port) → `503` `sharedStore`, nothing delivered;
   - one audit record `quarantineItemRelease` with `queueId`, `recipient`, `sender`, `action`,
-    `steps`, no subject and no `qhash`; refusals write a failure record with `failureReason`.
+    `steps`, no subject and no `qhash`; refusals write a failure record with `failureReason`
+    (`permissionDenied` for a missing flag, an admin read-only key — `403 insufficient-key-scope` —
+    and a restricted session; `serviceFailure` for a refused delivery); a CSRF failure and an
+    unauthenticated request write none.
 - [ ] T031 [P] [US1] Write `tests/Feature/Quarantine/LearnQuarantineItemAsSpamTest.php` for
   `learnQuarantineItemAsSpam` (FR-023, FR-025, AS-1.5, AS-2.7): Rspamd calls `learnspam`, then
   `fuzzyadd` with `Flag: 11`; the row is removed only afterwards; `alreadyLearned` counts as success;
@@ -399,15 +413,16 @@ across several domains; run concurrent releases; make Rspamd unreachable during 
   a refused delivery → `refused` with `quarantine-delivery-refused`; Rspamd down during
   `learnAsSpam` → `failed` with `temporary-failure`, rows kept; a domain admin without `quarantine`
   → `403 permission-flag-required`, nothing removed; a read-only key → `403
-  insufficient-key-scope`; 101 targets (bulk limit 100) → `422 tooMany` `max: 100`; with
-  `RESTV2_BULK_LIMIT=5`, 6 targets → `422` `max: 5`; out-of-scope ids → `notFound`.
+  insufficient-key-scope`, with one failure record (null target, `details.itemIds`); 101 targets
+  → `422 tooMany` `max: 100`; out-of-scope ids → `notFound`.
 - [ ] T044 [P] [US2] Write `tests/Feature/Quarantine/QuarantineConcurrencyTest.php` (FR-026,
   AS-2.5, SC-006): while the lock of an item is held (acquired in the test), release, learn and
   delete answer `409 quarantine-item-busy` with `Retry-After: 5`, and after the item is removed
-  `404`; with two PHP processes (`Symfony\Component\Process`) running `php artisan
-  restv2:test-release <id>` against the same items with a fake mailer delay of 200 ms, each of 50
-  items is delivered once and learned once (fake call logs written to a shared file); a lock left
-  by a killed process expires after its TTL (time travel on a short test TTL).
+  `404`; ten PHP processes (`Symfony\Component\Process`) run `php artisan restv2:test-release`
+  over the same 100 items in shuffled order with a fake mailer delay of 20 ms — 1,000 release
+  attempts (SC-006) — and every item is delivered exactly once and learned exactly once (the fakes
+  append their calls to a shared file), every other attempt ending in `409` or `404`; a lock left by
+  a killed process expires after its TTL (a short test TTL).
 - [ ] T045 [P] [US2] Write `tests/Feature/Quarantine/QuarantineRoleAndKeyAccessTest.php` (FR-004,
   FR-006, AS-2.6): roles × keys for list, inspect, downloads, release and delete: a domain admin's
   read-only key with `quarantine` lists and downloads within the scope and gets `403
@@ -416,13 +431,14 @@ across several domains; run concurrent releases; make Rspamd unreachable during 
   domain admin's key acts with the owner's current flags (flag removed in `da_acl` → next request
   refused, FR-002); a restricted session → `403 pending-action-required`.
 - [ ] T046 [P] [US2] Write `tests/Feature/Quarantine/QuarantineCapabilitiesTest.php` for
-  `getQuarantineCapabilities` (FR-072, AS-2.9): every role and both key types get `bulkLimit` 100,
+  `getQuarantineCapabilities` at `GET /capabilities/quarantine` (FR-072, AS-2.9): every role and both key types get `bulkLimit` 100,
   `defaultPageSize` 25, `maxPageSize` 1000, `contentSizeLimit` 10485760,
   `pipelineMaxMessageSize` 10485760, the spam score range 0–5000 step 0.1, `senderPattern`
   (`maxLength` 100, `allowedCharacters` `a-z0-9@_.*-`), the rate limit range and frames, the
   settings limits (`maxMessageSizeStep` 1048576, `notificationTemplateMaxBytes` 1048576,
   `templateRenderTimeoutSeconds` 5, `releaseFormats`), `virusScanning: true`; with `SKIP_CLAMD=y`
-  `false`; with `RESTV2_BULK_LIMIT=50` `50`; no audit record.
+  `false`; with `RESTV2_QUARANTINE_CONTENT_LIMIT=5242880` `contentSizeLimit` 5242880; no audit
+  record.
 
 ### Implementation for User Story 2
 
@@ -432,19 +448,20 @@ across several domains; run concurrent releases; make Rspamd unreachable during 
   string like 001's audit filter, `virus`, `notified`, `from`/`to` converted to `TZ`, score range,
   escaped `LIKE` for `q`, every sort field with `id DESC` tie-break). This makes T042 pass.
 - [ ] T048 [US2] Create `app/Http/Requests/Api/V2/QuarantineBulkActionRequest.php` (`action` enum,
-  `targets` 1..bulk limit of `BulkTarget` with `id` `^[0-9]+$`) and
-  `app/Http/Controllers/Api/V2/QuarantineBulkActionController.php` (`store`): whole-request policy
-  check, then 002's bulk runner calling `QuarantineActionService` per distinct target with its
-  `version` as `If-Match`, outcome mapping of R18, `report` on `done` items, `QuarantineBulkResult`
-  response; register `POST /quarantine/bulk-actions` before `/quarantine/{itemId}`. This makes
-  T043 and T045 pass.
+  `targets` 1–100 `BulkTarget`s with `id` `^[0-9]+$`, `tooMany` `max: 100`),
+  `app/Services/Quarantine/QuarantineBulkActions.php` (R18, built like 002's `DomainBulkActions`:
+  whole-request policy check, deduplication, `QuarantineActionService` per distinct target with its
+  `version` as `If-Match`, outcome mapping, `report` on `done` items, per-item audit with
+  `bulkRequestId`) and `app/Http/Controllers/Api/V2/QuarantineBulkActionController.php` (`store`,
+  `QuarantineBulkResult` response); register `POST /quarantine/bulk-actions` before
+  `/quarantine/{itemId}`. This makes T043 and T045 pass.
 - [ ] T049 [US2] Add the test-only artisan command `tests/Support/Commands/TestReleaseCommand.php`
   (`restv2:test-release`, registered only in the `testing` environment) used by T044, and make
   `QuarantineItemLock` TTL configurable for tests (`restv2.quarantine.lock_ttl`, default 300). This
   makes T044 pass.
 - [ ] T050 [US2] Create `app/Services/Quarantine/QuarantineCapabilities.php` (values from
   configuration, FR-072) and `app/Http/Controllers/Api/V2/QuarantineCapabilitiesController.php`
-  (`show`); register `GET /quarantine-capabilities` (`restv2.auth:authenticated`). This makes T046
+  (`show`); register `GET /capabilities/quarantine` (`restv2.auth:authenticated`). This makes T046
   pass.
 
 **Checkpoint**: US1 and US2 work; both P1 stories are complete.
@@ -501,7 +518,8 @@ with the legacy settings tab.
   AS-3.8 to AS-3.10): saving `unclosed-for.tpl` → `422 invalidTemplate` `reason: syntax`, `line`;
   `unsafe-attribute.tpl` and `sandbox-call.tpl` → `security` or `render` as in the goldens;
   `acl-branch-error.tpl` → refused (the `quarantine_acl` 1 dataset); nothing stored, a failure audit
-  record; `?validateOnly=true` with a valid template → `204`, Redis unchanged, no audit record;
+  record; `?validateOnly=true` with a valid template → `200` `{"data": {"valid": true}}` without
+  `ETag`, Redis unchanged, no audit record;
   with an invalid one → the same `422`; with a stale `If-Match` → `412`;
   `previewQuarantineTemplate` without body → the stored or default template rendered with dataset
   B: `subject`, `html` containing the release and delete links with the zero `qhash` and
@@ -519,7 +537,7 @@ with the legacy settings tab.
   from config, 8 MiB output cap, datasets A and B with the fixed sample values, `check()` and
   `preview(bool $quarantineAcl)`). This makes T051 pass.
 - [ ] T055 [US3] Create `app/Services/Quarantine/QuarantineSettingsService.php` (R8: `MGET` of the
-  eleven keys, conversions and defaults, default template from
+  eleven keys through 002's `SharedStore`, conversions and defaults, default template from
   `config('restv2.quarantine.default_template')` with the bundled fallback, ETag over the raw
   values, `update()` with `WATCH`/`MULTI`/`EXEC` writing only changed keys in legacy formats, one
   retry, audit record inserted in the transaction before `EXEC`, `validateOnly` path that stops
@@ -532,7 +550,7 @@ with the legacy settings tab.
   (`template` string ≥ 1 or `null`, ≤ 1048576 bytes, `quarantineAcl` boolean).
 - [ ] T057 [US3] Create `app/Http/Resources/Api/V2/QuarantineSettingsResource.php` (full or public
   visibility), `app/Http/Controllers/Api/V2/QuarantineSettingsController.php` (`show`, `update`
-  with `validateOnly` → `204`) and `QuarantineTemplatePreviewController.php` (`store`); register
+  with `validateOnly` → `200` `{"data": {"valid": true}}`) and `QuarantineTemplatePreviewController.php` (`store`); register
   `GET|PATCH /quarantine/settings` and `POST /quarantine/settings/template-preview` before
   `/quarantine/{itemId}`. This makes T052 and T053 pass.
 
@@ -577,8 +595,8 @@ singly and in bulk; confirm the stored attributes the legacy pages and the notif
 - [ ] T061 [US4] Create `app/Http/Requests/Api/V2/UpdateQuarantineNotificationSettingsRequest.php`
   and `QuarantineNotificationBulkRequest.php`, and the controllers
   `app/Http/Controllers/Api/V2/QuarantineNotificationSettingsController.php` (`show`, `update`,
-  flag checks per member) and `QuarantineNotificationBulkActionController.php` (`store`, 002's bulk
-  runner, `BulkResultResponse`); register `GET|PATCH
+  flag checks per member), `app/Services/Quarantine/QuarantineNotificationBulkActions.php` (R18)
+  and `QuarantineNotificationBulkActionController.php` (`store`, `BulkResultResponse`); register `GET|PATCH
   /mailboxes/{mailbox}/quarantine-notification-settings` and `POST
   /quarantine-notification-settings/bulk-actions`. This makes T058 and T059 pass.
 
@@ -617,8 +635,9 @@ and `spamPolicy`; confirm the `filterconf` rows the settings map reads.
   `ownership`, `q`, sorts `pattern` (default asc), `createdAt`, `id`; `DELETE` of the domain entry
   through the mailbox → `404`; `DELETE` own entry → `204`, row gone; `GET` of the domain entry
   through the mailbox → `404`; a mailbox user without `spamPolicy` reads but gets `403
-  permission-flag-required` on create and delete; two concurrent identical creations → one `201`,
-  one `409`; audit with owner, list and pattern.
+  permission-flag-required` on create and delete; two concurrent identical creations from two
+  processes (separate database connections) → one `201`, one `409`, one row (`GET_LOCK`); a resource in the mailbox path → `404` (FR-069); a mailbox of another domain for a
+  domain admin → `404`; audit with owner, list and pattern.
 - [ ] T064 [P] [US5] Write `tests/Feature/SpamPolicy/DomainSpamPolicyEntryTest.php` for the domain
   list operations (FR-043, FR-045 to FR-048, AS-5.8): the list contains the domain's entries
   (`own: true`, kind `domain`) and the mailbox entries of the domain (`own: false`, kind
@@ -641,7 +660,8 @@ and `spamPolicy`; confirm the `filterconf` rows the settings map reads.
   `app/Http/Controllers/Api/V2/SpamScoreController.php` (`show`, `update`, `destroy`); register
   `GET|PUT|DELETE /mailboxes/{mailbox}/spam-score`. This makes T062 pass.
 - [ ] T067 [US5] Create `app/Services/SpamPolicy/SpamPolicyEntryService.php` (R11: views per owner
-  kind, filters, search, sort, paging in SQL; create with owner row lock and the uniqueness check;
+  kind, filters, search, sort, paging in SQL; create with `GET_LOCK('restv2:filterconf:<object>',
+  10)` around the uniqueness check and the insert;
   remove by owner; ETag over `prefid|object|option|value`; audit), `app/Rules/SenderPattern.php`,
   `app/Http/Requests/Api/V2/ListSpamPolicyEntriesRequest.php` and `StoreSpamPolicyEntryRequest.php`,
   `app/Http/Resources/Api/V2/SpamPolicyEntryResource.php` and
@@ -693,6 +713,7 @@ reset existing and missing buckets; confirm `RL_VALUE` and `RL_LOG`.
   gone, exactly the three lines removed; only log lines (expired bucket) → `204`; neither → `404`;
   `RLx` stored as a string key, not a hash → counters not deleted; `bucketId` `foo` → `422` (path
   pattern) or `404`; a domain admin → `403 forbidden`; an `LPUSH` concurrent with the reset is kept;
+  Redis down → `503 temporary-failure` `sharedStore` (FR-061);
   audit with `countersExisted` and `logEntriesRemoved`.
 
 ### Implementation for User Story 6
@@ -700,8 +721,9 @@ reset existing and missing buckets; confirm `RL_VALUE` and `RL_LOG`.
 - [ ] T072 [US6] Create `app/Support/Redis/LuaScripts.php` with the scripts `compareAndSetField`
   (`HGET` compare, then `HSET` or `HDEL`) and `resetRateLimitBucket` (R13: `TYPE`/`DEL`, `LRANGE`,
   `cjson.decode`, `LREM` on matching `rl_hash`, return counts). Extend 002's
-  `app/Services/RateLimits/RateLimitStore.php` (name per T001) with `get`, `all`,
-  `setIfMatches`, `removeIfMatches`, value parsing and formatting. This makes T068 pass.
+  `app/Services/RateLimits/RateLimitStore.php` with `get`, `all`, `setIfMatches`,
+  `removeIfMatches`, value parsing and formatting, running the scripts through 002's `SharedStore`
+  (`SharedStoreUnavailable` → `temporaryFailure('sharedStore')`). This makes T068 pass.
 - [ ] T073 [US6] Create `app/Services/RateLimits/RateLimitService.php` (scope and existence per kind,
   normalisation, mailbox effective limit, ETag, audit, list classification with one query per kind,
   filters, search, sort, paging) and `RateLimitBucketService.php`.
@@ -760,8 +782,9 @@ filtered by target.
   as `quarantineSettingsUpdate` with `changed`, `oldSize`, `newSize` and no template text; filters
   work for every target type of this feature (`quarantineSettings`, `quarantineNotificationSettings`,
   `spamScore`, `spamPolicyEntry`, `rateLimit`, `rateLimitBucket`); refusals (403 flag, 404, 409,
-  412, 422, 503) are listed with `outcome: failure`, `failureReason` and `details.problemType`; a
-  domain admin → `403 forbidden`.
+  412, 422, 503, a read-only key, a restricted session) are listed with `outcome: failure`,
+  `failureReason` and `details.problemType`; CSRF failures and `401`s are not listed; a domain
+  admin → `403 forbidden`.
 - [ ] T078 [P] [US8] Write `tests/Feature/Quarantine/AuditContentScanTest.php` (SC-010): runs every
   state-changing operation of this feature once (single and bulk, success and refusal) with
   fixtures whose subjects, bodies, attachment names and `qhash` are known marker strings, plus a
@@ -771,9 +794,10 @@ filtered by target.
 ### Implementation for User Story 8
 
 - [ ] T079 [US8] Make T077 and T078 pass: complete the `details` whitelists of T023 where a test
-  shows a gap, and route every refusal of the 006 services through `RefusalAuditor`. If T001 found
-  002's audit target filters missing, add them to `app/Http/Requests/Api/V2/ListAuditEventsRequest.php`
-  and `AuditEventController` (002 FR-058) here.
+  shows a gap, and check that every state-changing 006 route declares `restv2.audit`. The generic
+  `targetType`/`targetId` filters are 002's (conventions "History": no feature adds its own audit
+  filter); if T001 found them missing, implement exactly those generic filters in
+  `app/Http/Requests/Api/V2/ListAuditEventsRequest.php` and `AuditEventController` (002 FR-058).
 
 **Checkpoint**: All eight user stories work independently.
 
@@ -788,7 +812,9 @@ filtered by target.
   six user flags, admin read-write key, admin read-only key, domain-admin read-write key and
   domain-admin read-only key; expected status and problem `type` from a table derived from FR-006
   and the contract; object-level cases: foreign item, foreign mailbox, foreign domain, foreign
-  alias domain and foreign list entry → `404`, identical to unknown objects.
+  alias domain and foreign list entry → `404`, identical to unknown objects; every refusal of a
+  state-changing operation by an authenticated caller writes exactly one failure audit record, and
+  anonymous requests write none (conventions "Refusal auditing").
 - [ ] T081 [P] Write `tests/Feature/Quarantine/Performance/QuarantineListLatencyTest.php` (group
   `performance`, SC-007, R16): seeds 100,000 rows (multi-row inserts, `msg` of 2 KiB, 50 mailboxes
   in 5 domains) and measures 20 requests each of the default page, a domain admin page, a `q`
@@ -875,5 +901,8 @@ T033 QuarantineMessageParser   T034 DownloadFileName   T035 ReleaseMessageFactor
 
 - Never select `msg` in lists; never return or log `qhash`, `msg`, subjects in audit records or
   template text.
+- Every state-changing route declares `->defaults('restv2.audit', …)` so that refusals of
+  authenticated callers are audited (T023).
+- Commit with explicit file names only, never directories or globs.
 - Every upstream write goes through `app/Services/`; no migration in this feature.
 - Commit after each task or logical group; keep the contract and the implementation in step.

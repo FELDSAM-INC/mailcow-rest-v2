@@ -1,0 +1,11 @@
+type: object
+description: |
+  Result of `PATCH /quarantine/settings?validateOnly=true` that passed every rule, including
+  `If-Match` and the notification template check. Nothing was stored and nothing was audited. A
+  request that fails answers exactly as a real change would. Same shape as feature 013's
+  `SettingsValidationResult`.
+required: [valid]
+properties:
+  valid:
+    type: boolean
+    const: true

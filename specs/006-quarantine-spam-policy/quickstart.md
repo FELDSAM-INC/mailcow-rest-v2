@@ -100,8 +100,8 @@ ET=$(curl -sI $C "$B/quarantine/settings" | awk -F': ' 'tolower($1)=="etag"{prin
 curl -s $C $M -H "X-CSRF-Token: $T" -H "If-Match: $ET" -X PATCH "$B/quarantine/settings" \
   -d '{"notificationTemplate":"{% for x in meta %}"}' | jq '.errors.notificationTemplate'
 #   -> [{"code":"invalidTemplate","params":{"reason":"syntax","line":1},...}]
-curl -s -o /dev/null -w '%{http_code}\n' $C $M -H "X-CSRF-Token: $T" -X PATCH \
-  "$B/quarantine/settings?validateOnly=true" -d '{"maxAgeDays":30}'    # 204, nothing stored
+curl -s $C $M -H "X-CSRF-Token: $T" -X PATCH \
+  "$B/quarantine/settings?validateOnly=true" -d '{"maxAgeDays":30}' | jq .data   # {"valid": true}, nothing stored
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST "$B/quarantine/settings/template-preview" -d '{}' \
   | jq -r '.data.text' | head -20                                        # the default template as text
 docker compose exec redis redis-cli -a "$REDISPASS" MGET Q_RETENTION_SIZE Q_MAX_SIZE Q_MAX_AGE
@@ -119,7 +119,7 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X PUT "$B/mailboxes/alice@example.org/rate-
 docker compose exec redis redis-cli -a "$REDISPASS" HGETALL RL_VALUE   # alice@example.org -> "10 / 1m"
 docker compose exec redis redis-cli -a "$REDISPASS" HSET RLtestbucket x 1
 curl -s -o /dev/null -w '%{http_code}\n' $C -H "X-CSRF-Token: $T" -X DELETE "$B/rate-limit-buckets/RLtestbucket"  # 204
-curl -s $C "$B/quarantine-capabilities" | jq .data
+curl -s $C "$B/capabilities/quarantine" | jq .data
 
 # US8: audit trail of the item released above.
 curl -s $C "$B/audit-events?targetType=quarantineItem&targetId=$ID" | jq '.data[0] | {eventType, outcome, details}'

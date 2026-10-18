@@ -444,22 +444,22 @@ paths:
     $ref: './modules/oauth2-clients/_index.yaml#/~1oauth2-clients~1{oauth2ClientId}~1token-revocation'
   /admins:
     $ref: './modules/admins/_index.yaml#/~1admins'
+  /admins/bulk-actions:
+    $ref: './modules/admins/_index.yaml#/~1admins~1bulk-actions'
   /admins/{username}:
     $ref: './modules/admins/_index.yaml#/~1admins~1{username}'
   /admins/{username}/second-factor-suspension:
     $ref: './modules/admins/_index.yaml#/~1admins~1{username}~1second-factor-suspension'
-  /admin-bulk-actions:
-    $ref: './modules/admins/_index.yaml#/~1admin-bulk-actions'
   /capabilities/accounts:
     $ref: './modules/admins/_index.yaml#/~1capabilities~1accounts'
   /domain-admins:
     $ref: './modules/domain-admins/_index.yaml#/~1domain-admins'
+  /domain-admins/bulk-actions:
+    $ref: './modules/domain-admins/_index.yaml#/~1domain-admins~1bulk-actions'
   /domain-admins/{username}:
     $ref: './modules/domain-admins/_index.yaml#/~1domain-admins~1{username}'
   /domain-admins/{username}/second-factor-suspension:
     $ref: './modules/domain-admins/_index.yaml#/~1domain-admins~1{username}~1second-factor-suspension'
-  /domain-admin-bulk-actions:
-    $ref: './modules/domain-admins/_index.yaml#/~1domain-admin-bulk-actions'
   /domain-admins/{username}/sso-token:
     $ref: './modules/sso-tokens/_index.yaml#/~1domain-admins~1{username}~1sso-token'
   /session/sso-token:

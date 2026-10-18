@@ -3,8 +3,8 @@ post:
   tags: [Quarantine]
   summary: Set the quarantine notifications of several mailboxes
   description: |
-    Sets the frequency, the category, or both, for up to the bulk limit of mailboxes (100 by
-    default), as the legacy mailbox list's mass actions do. Administrators and domain
+    Sets the frequency, the category, or both, for up to the bulk limit of mailboxes (100),
+    as the legacy mailbox list's mass actions do. Administrators and domain
     administrators only (`forbidden` for mailbox users); read-only keys are refused. More targets
     than the limit are refused as a whole (`422`, `tooMany` on `targets`).
 

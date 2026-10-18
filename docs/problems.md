@@ -350,7 +350,7 @@ extension members.
   ISPConfig server (a FeldHost setting, off by default) is disabled on this server, or enabled
   without the ISPConfig remote API address, user and password. The refused attempt is recorded in
   the audit log.
-- **Client action**: Hide the action when `getMailDnsCapabilities` reports
+- **Client action**: Hide the action when `getDnsCapabilities` reports
   `dkim.dnsPublicationEnabled: false`. Publish the record at the DNS provider instead.
 
 ## mta-sts-policy-exists
@@ -496,11 +496,11 @@ extension members.
   impersonating domain administrator lost the `loginAs` flag. Any request of the session can
   detect it. The request was **not** carried out. The session now acts as the impersonator again,
   and its identifier and anti-forgery token were renewed. The automatic end is audited with its
-  reason. This also applies when the detecting request is the end of the impersonation or a
-  sign-out: the impersonation has ended, and the request was not carried out.
-- **Client action**: Call `GET /csrf-token` and `GET /me`, tell the user that the impersonation
-  ended, and do not resend the request: it was meant for the impersonated account. A sign-out
-  refused this way can be sent again; it then ends the impersonator's session.
+  reason. Ending the impersonation (`DELETE /session/impersonation`) and signing out
+  (`DELETE /session`) are never refused with this problem: when they detect the invalid
+  impersonation, they end and audit it and complete with their normal response.
+- **Client action**: Fetch a new anti-forgery token, re-read `GET /me`, tell the user that the
+  impersonation ended, and do not resend the request: it was meant for the impersonated account.
 
 ## not-allowed-while-impersonating
 
@@ -802,7 +802,7 @@ response header `Audit-Recorded: false`.
 - **Type**: `/api/v2/problems/quarantine-message-too-large`
 - **Status**: 409
 - **Meaning**: Feature 006. The stored message is larger than the content size limit (10 MiB by
-  default, `contentSizeLimit` of `GET /quarantine-capabilities`), so its attachments and the whole
+  default, `contentSizeLimit` of `GET /capabilities/quarantine`), so its attachments and the whole
   message are not downloaded, as in legacy. The item's details then report
   `contentStatus: tooLarge`. Releasing, learning and deleting the item still work.
 - **Extension members**: `size` and `limit`, in bytes.
@@ -826,7 +826,7 @@ response header `Audit-Recorded: false`.
 - **Status**: 403
 - **Meaning**: Feature 013. The operator enabled mailcow's demo mode (`DEMO_MODE=y`), which refuses
   changes to logos, UI texts, login page options, app links, brand colours and the IP check, as the
-  legacy UI refuses its customisation writes. Nothing was changed. `GET /api/v2/settings/capabilities`
+  legacy UI refuses its customisation writes. Nothing was changed. `GET /api/v2/capabilities/settings`
   reports the mode beforehand (`demoMode`).
 - **Client action**: Explain that branding cannot be changed on this server. Do not retry.
 
@@ -837,7 +837,7 @@ response header `Audit-Recorded: false`.
 - **Meaning**: Feature 013. The operator disabled the operation on this server with a server
   setting. Today this is license verification (`RESTV2_LICENSE_VERIFICATION=false`, for example on
   the FeldHost deployment): reading the license status and verifying the GUID are refused, and the
-  license service is never contacted. `GET /api/v2/settings/capabilities` reports it beforehand
+  license service is never contacted. `GET /api/v2/capabilities/settings` reports it beforehand
   (`licenseVerificationEnabled`).
 - **Client action**: State that the feature is not available on this server. Do not retry.
 
@@ -933,7 +933,7 @@ response header `Audit-Recorded: false`.
   `permission`, `aliasExternalGoto` for `missingPermission`, else `null`.
 - **Client action**: Mark the named destinations. For `missingPermission`, explain that an
   administrator must grant the permission or add the destination; for `serverSetting`, that the
-  server allows only destinations on this server (`getAliasCapabilities` reports
+  server allows only destinations on this server (`GET /api/v2/capabilities/aliases` reports
   `externalDestinationsDisabled`).
 
 ## alias-domain-already-exists

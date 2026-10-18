@@ -176,7 +176,7 @@ this phase is complete.**
 
 ### Test toolkit and tests for the foundation (write first, observe failing) ⚠️
 
-- [ ] T016 [P] Create `tests/Support/Contract/OpenApiContract.php` (R13). It loads
+- [ ] T016 [P] Create `tests/Support/Contract/OpenApiContract.php` (R13, FR-051). It loads
   `build/contract/openapi.json`, matches `{method, path}` to an operation (literal segments win
   over templates; the server base `/api/v2` is stripped), and validates with
   `Opis\JsonSchema\Validator` (draft 2020-12):
@@ -207,7 +207,7 @@ this phase is complete.**
     cookie; `signInAs(string $username, Role $role, AuthMethod $method = AuthMethod::Password)`,
     which writes a principal through `SessionManager` and sets the cookie; and
     `travelPastChallengeTtl()`.
-- [ ] T018 [P] Create `tests/Support/Contract/ContractCoverageExtension.php`, a PHPUnit 12
+- [ ] T018 [P] Create `tests/Support/Contract/ContractCoverageExtension.php` (FR-051), a PHPUnit 12
   extension. It records every operation answered with a documented 2xx or 3xx status, sent to it
   by `OpenApiContract`, and on `ExecutionFinished` writes `build/contract/coverage.json`. Register
   it in `phpunit.xml`. Create `tests/bin/check-contract-coverage.php`, which exits non-zero and
@@ -260,7 +260,7 @@ this phase is complete.**
   tables and 6 views from the fixture, and that the `restv2_` tables exist. Write
   `tests/Feature/Schema/AclColumnsTest.php`, asserting that the columns of `user_acl` and `da_acl`
   minus `username` equal the source columns of `App\Auth\PermissionFlag` (R20).
-- [ ] T024 [P] Write `tests/Feature/System/ProblemRenderingTest.php`:
+- [ ] T024 [P] Write `tests/Feature/System/ProblemRenderingTest.php` (FR-049, FR-055):
   - unknown path → `404`, `application/problem+json`, `type about:blank`, 32-hex `requestId`;
   - `PUT /api/v2/csrf-token` → `405` problem with an `Allow` header;
   - a forced exception on a test-only route under `/api/v2/__testing/` → `500` problem without a
@@ -514,7 +514,7 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T053 [P] [US1] Write `tests/Unit/Hashing/LegacyPasswordVerifierTest.php` (FR-004, R12). For
+- [ ] T053 [P] [US1] Write `tests/Unit/Hashing/LegacyPasswordVerifierTest.php` (FR-004, SC-001, R12). For
   every scheme in `ARGON2I`, `ARGON2ID`, `BLF-CRYPT`, `CRYPT`, `DES-CRYPT`, `MD5-CRYPT`, `MD5`,
   `SHA256-CRYPT`, `SHA512-CRYPT`, `CLEAR`, `CLEARTEXT`, `PLAIN`, `LDAP-MD5`, `PBKDF2`,
   `PBKDF2-SHA512`, `PLAIN-MD4`, `PLAIN-MD5`, `PLAIN-TRUNC`, `SHA`, `SHA1`, `SHA256`, `SHA512`,
@@ -575,7 +575,8 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
   - A verified password resets it.
   - `RESTV2_SIGNIN_MAX_FAILURES=3` and `RESTV2_SIGNIN_FAILURE_WINDOW=60` are honoured, and the
     window expires (`travel`).
-- [ ] T057 [P] [US1] Write `tests/Feature/Auth/SecondFactorTotpTest.php` for `verifySecondFactor`:
+- [ ] T057 [P] [US1] Write `tests/Feature/Auth/SecondFactorTotpTest.php` for `verifySecondFactor`
+  (FR-019 order within the second-factor step, SC-001):
   - AS-2: a mailbox with WebAuthn, TOTP and Yubico rows → `state pendingSecondFactor`, methods
     ordered `webauthn`, `totp`, `yubiOtp`, with tiers `primary`, `primary`, `advanced`, `id` from
     `tfa.id`, `name` from `key_id`, no secrets, and `expiresAt` = now + 300 s (FR-020).
@@ -710,7 +711,7 @@ unknown credentials, and role mismatches. Register, rename and remove passkeys a
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T069 [P] [US2] Write `tests/Feature/Auth/PasskeySignInTest.php` for `createPasskeyChallenge`
+- [ ] T069 [P] [US2] Write `tests/Feature/Auth/PasskeySignInTest.php` (FR-015–FR-019, SC-001) for `createPasskeyChallenge`
   and `createSessionWithPasskey`:
   - The challenge has empty `allowCredentials`, `userVerification` from `$FIDO2_UV_FLAG_LOGIN`
     (`preferred`), `rpId` = host, timeout 300000, and is replaced by a new request.
@@ -733,7 +734,7 @@ unknown credentials, and role mismatches. Register, rename and remove passkeys a
   - A tampered signature → `passkeyVerificationFailed`.
   - A passkey registered for `other.example.org` (`fido2.rpId` and the authenticator's RP ID hash)
     fails on `mail.example.org` (edge case "registered under a different host name").
-- [ ] T070 [P] [US2] Write `tests/Feature/Passkeys/PasskeyRegistrationTest.php` for
+- [ ] T070 [P] [US2] Write `tests/Feature/Passkeys/PasskeyRegistrationTest.php` (FR-052, FR-054) for
   `createPasskeyRegistrationOptions` and `registerPasskey`:
   - The options have `residentKey required`, `requireResidentKey true`, `user.id` = base64url of
     the username, `user.name` = `displayName` = the username, `rp.id` = host, `rp.name` = the
@@ -815,7 +816,7 @@ from a new session.
 
 ### Tests for User Story 3 (write first, observe failing) ⚠️
 
-- [ ] T076 [P] [US3] Write `tests/Feature/Identity/IdentityTest.php` for `getIdentity`:
+- [ ] T076 [P] [US3] Write `tests/Feature/Identity/IdentityTest.php` for `getIdentity` (FR-028, FR-029):
   - AS-1: a domain admin with two active assignments and one inactive → `scope {type: domains,
     domains: [the two, sorted]}`, and flags per `da_acl`.
   - AS-2: a mailbox user → `scope {type: mailbox, mailbox, domain}`, and `user_acl` flags.
@@ -892,7 +893,7 @@ and after expiry and revocation, and check every outcome and fail2ban message.
 
 ### Tests for User Story 4 (write first, observe failing) ⚠️
 
-- [ ] T082 [P] [US4] Write `tests/Feature/ApiKeys/ApiKeyAuthenticationTest.php` (FR-033,
+- [ ] T082 [P] [US4] Write `tests/Feature/ApiKeys/ApiKeyAuthenticationTest.php` (FR-033, FR-039, SC-005,
   FR-038–FR-041, R19). Use `ChannelSpy`, and test with `REMOTE_ADDR` set through `withServerVariables`.
   - AS-2: a key owned by a domain admin → `GET /me` gives the owner's role, scope and flags, plus
     `authentication {method: apiKey, apiKey {id, name, prefix, accessLevel}}`.
@@ -914,7 +915,7 @@ and after expiry and revocation, and check every outcome and fail2ban message.
   - A key whose owner has `force_pw_update` is not restricted, and `GET /me` shows
     `pendingActions: []` (R8).
   - Legacy's `api` table is unchanged after all of the above (FR-041).
-- [ ] T083 [P] [US4] Write `tests/Feature/ApiKeys/ApiKeyManagementTest.php` for `createApiKey`,
+- [ ] T083 [P] [US4] Write `tests/Feature/ApiKeys/ApiKeyManagementTest.php` (FR-032–FR-037, SC-010) for `createApiKey`,
   `listApiKeys`, `getApiKey` and `revokeApiKey`:
   - AS-1: an admin session creates a key → `201`, `Location`, `ETag`, `secret` matching
     `^mcv2_[A-Za-z0-9]{40}$`, and `prefix` = its first 12 characters. The row stores only
@@ -947,7 +948,7 @@ and after expiry and revocation, and check every outcome and fail2ban message.
     (R8).
   - Audits `apiKeyCreation` and `apiKeyRevocation` contain no secret: assert by searching the
     serialised record for the secret.
-- [ ] T084 [P] [US4] Write `tests/Feature/ApiKeys/SessionOnlyOperationsWithKeyTest.php`. A
+- [ ] T084 [P] [US4] Write `tests/Feature/ApiKeys/SessionOnlyOperationsWithKeyTest.php` (FR-031, FR-037). A
   read-write admin key on every session-only operation must answer `403 session-required`:
   `getCsrfToken`, `getSession`, `createSession`, `deleteSession`, `cancelPendingSignIn`, both
   challenges, `verifySecondFactor`, `createSessionWithPasskey`, preferences, and all passkey
@@ -1020,7 +1021,7 @@ the way legacy's `customize('edit', …)` writes them. Change a key and read aga
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T091 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigTest.php` for `getPublicConfig`
+- [ ] T091 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigTest.php` (SC-008) for `getPublicConfig`
   (FR-042–FR-044, AS-1–AS-3, R15):
   - With empty Redis: `pageTitle` = `productName` = `"mail.example.org - mail UI"`, logos with
     `url /img/cow_mailcow.svg` and `isDefault: true`, help, footer and announcement null and
@@ -1173,7 +1174,7 @@ record for secrets.
 
   Add `resources/docs/.gitkeep` and a `composer docs:assets` script that copies the
   `swagger-ui-dist` files with `npx`. Register the routes. This makes T103 pass.
-- [ ] T105 [P] Write `tests/Feature/Security/AuthorizationMatrixTest.php` (constitution VI, quality
+- [ ] T105 [P] Write `tests/Feature/Security/AuthorizationMatrixTest.php` (SC-005, SC-010, constitution VI, quality
   gate 5). It is a data provider over **all 31 operations** × the callers anonymous, pending sign-in,
   restricted (`passwordChange`), restricted (`secondFactorSetup`), admin session, domain-admin
   session, mailbox session, admin read-write key, admin read-only key and domain-admin read-write
@@ -1182,7 +1183,7 @@ record for secrets.
   `X-API-Key` on the public `GET /public-config` → `401 api-key-invalid`. Object-level cases:
   another account's `passkeyId` → `404`; an unknown `apiKeyId` → `404` for admins and
   `403 forbidden` for others.
-- [ ] T106 [P] Write `tests/Unit/Support/ProblemTypeConsistencyTest.php`. The set of `ProblemType`
+- [ ] T106 [P] Write `tests/Unit/Support/ProblemTypeConsistencyTest.php` (FR-049). The set of `ProblemType`
   enum URIs must equal the `## <name>` sections of `docs/problems.md` (excluding `Conventions`) and
   the `KnownProblemType` enum in `build/contract/openapi.json`. Each case's status must equal the
   status stated in its section.

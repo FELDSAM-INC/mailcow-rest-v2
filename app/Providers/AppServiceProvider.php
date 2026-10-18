@@ -56,6 +56,8 @@ use App\Services\Mailboxes\MailboxAuditTargets;
 use App\Services\Monitoring\MonitoringAuditTargetResolver;
 use App\Services\Monitoring\SharedSnapshotCache;
 use App\Services\Monitoring\UpdateCheckService;
+use App\Services\Oauth2\Oauth2ClientAuditTargetResolver;
+use App\Services\Oauth2\Oauth2ClientService;
 use App\Services\SyncJobs\SyncJobAuditTargets;
 use App\Support\Clock\Clock;
 use App\Support\Clock\Sleeper;
@@ -96,6 +98,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(OidcClient::class, LeagueOidcClient::class);
         $this->app->bind(LdapDirectory::class, ExtLdapDirectory::class);
         $this->app->bind(KeycloakAdminClient::class, HttpKeycloakAdminClient::class);
+        // OAuth2 client IDs: 12 lowercase hex characters from a cryptographically secure source.
+        $this->app->bind(Oauth2ClientService::CLIENT_ID_GENERATOR, fn () => fn (): string => bin2hex(random_bytes(6)));
 
         if (config('restv2.fake_outbound')) {
             if ($this->app->environment('local')) {
@@ -133,6 +137,7 @@ class AppServiceProvider extends ServiceProvider
         AliasAuditTargets::register($this->app->make(RefusalAuditor::class));
         MonitoringAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
         IdentityProviderAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
+        Oauth2ClientAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
 
         // Feature 011: administrators only (research R26).
         Gate::define('operate-monitoring', [MonitoringPolicy::class, 'operate']);

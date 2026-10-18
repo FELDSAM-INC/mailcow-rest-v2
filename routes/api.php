@@ -58,6 +58,11 @@ use App\Http\Controllers\Api\V2\MailQueueMessageController;
 use App\Http\Controllers\Api\V2\MailQueuePurgeController;
 use App\Http\Controllers\Api\V2\MailStorageUsageController;
 use App\Http\Controllers\Api\V2\MonitoringCapabilitiesController;
+use App\Http\Controllers\Api\V2\Oauth2ClientBulkActionController;
+use App\Http\Controllers\Api\V2\Oauth2ClientCapabilitiesController;
+use App\Http\Controllers\Api\V2\Oauth2ClientController;
+use App\Http\Controllers\Api\V2\Oauth2ClientSecretRegenerationController;
+use App\Http\Controllers\Api\V2\Oauth2ClientTokenRevocationController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
 use App\Http\Controllers\Api\V2\PasskeyChallengeController;
@@ -538,6 +543,40 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::post('/identity-provider/connection-tests', [IdentityProviderConnectionTestController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'identityProviderConnectionTest', 'target' => 'identityProvider'])
             ->name('identity-provider-connection-tests.store');
+    });
+
+    // Feature 012: clients of mailcow's own OAuth2 provider. bulk-actions before {oauth2ClientId},
+    // which is numeric.
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/capabilities/oauth2-clients', [Oauth2ClientCapabilitiesController::class, 'show'])->name('oauth2-client-capabilities.show');
+        Route::get('/oauth2-clients', [Oauth2ClientController::class, 'index'])->name('oauth2-clients.index');
+        Route::get('/oauth2-clients/{oauth2ClientId}', [Oauth2ClientController::class, 'show'])
+            ->where('oauth2ClientId', '[1-9][0-9]{0,9}')
+            ->name('oauth2-clients.show');
+    });
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::post('/oauth2-clients/bulk-actions', [Oauth2ClientBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'oauth2Client'])
+            ->name('oauth2-client-bulk-actions.store');
+        Route::post('/oauth2-clients', [Oauth2ClientController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'oauth2ClientCreation', 'target' => 'oauth2Client'])
+            ->name('oauth2-clients.store');
+        Route::patch('/oauth2-clients/{oauth2ClientId}', [Oauth2ClientController::class, 'update'])
+            ->where('oauth2ClientId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'oauth2ClientUpdate', 'target' => 'oauth2Client'])
+            ->name('oauth2-clients.update');
+        Route::delete('/oauth2-clients/{oauth2ClientId}', [Oauth2ClientController::class, 'destroy'])
+            ->where('oauth2ClientId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'oauth2ClientDeletion', 'target' => 'oauth2Client'])
+            ->name('oauth2-clients.destroy');
+        Route::post('/oauth2-clients/{oauth2ClientId}/secret-regeneration', [Oauth2ClientSecretRegenerationController::class, 'store'])
+            ->where('oauth2ClientId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'oauth2ClientSecretRegeneration', 'target' => 'oauth2Client'])
+            ->name('oauth2-client-secret-regeneration.store');
+        Route::post('/oauth2-clients/{oauth2ClientId}/token-revocation', [Oauth2ClientTokenRevocationController::class, 'store'])
+            ->where('oauth2ClientId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'oauth2ClientTokenRevocation', 'target' => 'oauth2Client'])
+            ->name('oauth2-client-token-revocation.store');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

@@ -284,6 +284,8 @@ return [
         // Feature 008: the custom imapsync parameter allow-list, JSON {"whitelist": [...],
         // "blacklist": [...]} (research R7). `showpasswords` is always removed.
         'IMAPSYNC_OPTIONS' => Env::get('RESTV2_IMAPSYNC_OPTIONS'),
+        'ACCESS_TOKEN_LIFETIME' => Env::get('RESTV2_ACCESS_TOKEN_LIFETIME'),
+        'REFRESH_TOKEN_LIFETIME' => Env::get('RESTV2_REFRESH_TOKEN_LIFETIME'),
     ],
 
     // Upstream defaults of mailcow-dockerized 2026-09a (data/web/inc/vars.inc.php).
@@ -340,6 +342,9 @@ return [
         ],
         'TAGGING_LIMIT' => 25,
         'DOCKER_TIMEOUT' => 60,
+        // Feature 012: token lifetimes of mailcow's OAuth2 provider (seconds).
+        'ACCESS_TOKEN_LIFETIME' => 86400,
+        'REFRESH_TOKEN_LIFETIME' => 2678400,
         'SHOW_LAST_LOGIN' => true,
         // Merged over the built-in mailbox defaults (feature 003 research R5).
         'MAILBOX_DEFAULT_ATTRIBUTES' => [

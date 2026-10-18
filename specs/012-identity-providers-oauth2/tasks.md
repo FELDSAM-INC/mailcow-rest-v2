@@ -623,13 +623,13 @@ results (SC-007).
 
 ### Tests for User Story 4 (write first, observe failing) ⚠️
 
-- [ ] T073 [P] [US4] Write `tests/Feature/Oauth2/ListOauth2ClientsTest.php` (FR-041, FR-042): default
+- [X] T073 [P] [US4] Write `tests/Feature/Oauth2/ListOauth2ClientsTest.php` (FR-041, FR-042): default
   25 per page, `limit=1000` accepted and `1001` → `422`; sort by `id` (default asc), `clientId`,
   `redirectUri`; AS-7 with 40 clients `q=wiki` returns exactly those whose client ID or redirect URIs
   contain `wiki`, case-insensitively; `hasActiveTokens=true|false`; `activeAccessTokens` and
   `activeRefreshTokens` count unexpired rows only; every entry has `etag`; no `clientSecret`
   anywhere; AS-6 a read-only administrator key lists, a domain administrator gets `403`.
-- [ ] T074 [P] [US4] Write `tests/Feature/Oauth2/CreateOauth2ClientTest.php` (FR-043, FR-044, AS-1,
+- [X] T074 [P] [US4] Write `tests/Feature/Oauth2/CreateOauth2ClientTest.php` (FR-043, FR-044, AS-1,
   AS-2): `201` with `Location: /api/v2/oauth2-clients/{id}`, `ETag`, `clientId` `^[0-9a-f]{12}$`,
   `clientSecret` `^[0-9a-f]{24}$`; the `oauth_clients` row has the URIs joined by single spaces,
   `scope profile`, `grant_types` and `user_id` `NULL`; `GET` afterwards has no secret; duplicate URIs
@@ -638,19 +638,19 @@ results (SC-007).
   `redirectUris`; a client ID collision (random source replaced by a sequence double) generates a
   new ID; audit `oauth2ClientCreation` without the secret; a read-only key → `403
   insufficient-key-scope` (AS-6).
-- [ ] T075 [P] [US4] Write `tests/Feature/Oauth2/UpdateOauth2ClientTest.php` (FR-045): `PATCH`
+- [X] T075 [P] [US4] Write `tests/Feature/Oauth2/UpdateOauth2ClientTest.php` (FR-045): `PATCH`
   replaces the URIs; `clientId` or `scope` with the current value accepted, a different value →
   `immutable`; a legacy-stored empty `redirect_uri` reads as `[]` and a `PATCH` with valid URIs
   succeeds; unknown id → `404`; stale `If-Match` → `412`; audited with old and new URIs.
-- [ ] T076 [P] [US4] Write `tests/Feature/Oauth2/RegenerateOauth2ClientSecretTest.php` (FR-046,
+- [X] T076 [P] [US4] Write `tests/Feature/Oauth2/RegenerateOauth2ClientSecretTest.php` (FR-046,
   AS-3): `200` with a new secret differing from the old one, tokens and codes kept, a new `ETag`;
   stale `If-Match` → `412`; audit without either secret.
-- [ ] T077 [P] [US4] Write `tests/Feature/Oauth2/RevokeAndDeleteOauth2ClientTest.php` (FR-047,
+- [X] T077 [P] [US4] Write `tests/Feature/Oauth2/RevokeAndDeleteOauth2ClientTest.php` (FR-047,
   FR-048, AS-4, AS-5): revocation removes the client's access tokens, refresh tokens and
   authorization codes and leaves other clients' rows; without tokens → `200`, nothing changed,
   audited with zero counts; deletion → `204`, client and its three kinds of rows gone, audited with
   the counts; unknown id → `404`; stale `If-Match` → `412`.
-- [ ] T078 [P] [US4] Write `tests/Feature/Oauth2/Oauth2BulkActionTest.php` (FR-060, FR-061, AS-8):
+- [X] T078 [P] [US4] Write `tests/Feature/Oauth2/Oauth2BulkActionTest.php` (FR-060, FR-061, AS-8):
   `revokeTokens` on three clients (one deleted elsewhere, one with an outdated `version`) → results
   `done`, `notFound`, `outdated` in request order, only the first client's tokens removed, and one
   audit record per distinct target (the `notFound` and `outdated` ones too, as their single requests
@@ -658,7 +658,7 @@ results (SC-007).
   client (service double throwing for one id) → `failed` and the others `done`; 101 targets → `422
   tooMany`; a non-numeric id → `422`; a read-only key → `403 insufficient-key-scope`; a domain
   administrator → `403 forbidden`.
-- [ ] T079 [P] [US4] Write `tests/Feature/Oauth2/LegacyOauth2EndpointCompatibilityTest.php` (FR-049,
+- [X] T079 [P] [US4] Write `tests/Feature/Oauth2/LegacyOauth2EndpointCompatibilityTest.php` (FR-049,
   SC-007, R13): build `OAuth2\Server` on `DB::connection()->getPdo()` with legacy's storage table
   names, scope `profile`, the grant types `authorization_code`, `user_credentials` and
   `refresh_token` (`always_issue_new_refresh_token`), and lifetimes 86400/2678400; with a client
@@ -667,7 +667,7 @@ results (SC-007).
   secret fails while the access token still verifies; after a revocation and after a deletion the
   old access token no longer verifies.
 
-- [ ] T080 [P] [US4] Write `tests/Feature/Oauth2/Oauth2ClientCapabilitiesTest.php` (FR-049,
+- [X] T080 [P] [US4] Write `tests/Feature/Oauth2/Oauth2ClientCapabilitiesTest.php` (FR-049,
   FR-064): `GET /capabilities/oauth2-clients` → the endpoint paths `/oauth/authorize`,
   `/oauth/token`, `/oauth/profile`, scope `profile`, grant types, lifetimes 86400 and 2678400 by
   default, the values of a `vars.local.inc.php` in `tests/fixtures/mailcow-inc` when present, and
@@ -677,7 +677,7 @@ results (SC-007).
 
 ### Implementation for User Story 4
 
-- [ ] T081 [US4] Create `app/Services/Oauth2/Oauth2ClientService.php` (R13): `list(ListQuery,
+- [X] T081 [US4] Create `app/Services/Oauth2/Oauth2ClientService.php` (R13): `list(ListQuery,
   ?bool $hasActiveTokens)` with grouped count queries per page; `create(array $redirectUris,
   Principal)` with the generator and collision retry; `updateRedirectUris(...)`;
   `regenerateSecret(...)`; `revokeTokens(...)`; `delete(...)`; each write in one transaction with
@@ -686,7 +686,7 @@ results (SC-007).
   string $bulkRequestId): BulkResult` processing each distinct target in its own transaction
   (FR-061). Use a `ClientIdGenerator` closure bound in the container so tests can replace the random
   source.
-- [ ] T082 [US4] Create `app/Http/Requests/Api/V2/ListOauth2ClientsRequest.php` (001's `ListQuery`
+- [X] T082 [US4] Create `app/Http/Requests/Api/V2/ListOauth2ClientsRequest.php` (001's `ListQuery`
   rules plus `sort` in `id, clientId, redirectUri` and `hasActiveTokens` boolean),
   `StoreOauth2ClientRequest.php` and `UpdateOauth2ClientRequest.php` (`redirectUris` "a list of 1 or
   more absolute URIs, each with a scheme, without a fragment and without whitespace; joined by single
@@ -694,16 +694,16 @@ results (SC-007).
   `Oauth2ClientBulkActionRequest.php` (`action` in `delete, revokeTokens`; 1–100 `targets` with
   `id` `^[1-9][0-9]{0,9}$` and optional `version`), and the resources
   `app/Http/Resources/Api/V2/Oauth2ClientResource.php` and `Oauth2ClientWithSecretResource.php`.
-- [ ] T083 [US4] Extend 001's `resources/bin/export-mailcow-vars.php` and
+- [X] T083 [US4] Extend 001's `resources/bin/export-mailcow-vars.php` and
   `app/Services/Config/MailcowConfig.php` with `accessTokenLifetime()` and `refreshTokenLifetime()`
   (`ACCESS_TOKEN_LIFETIME`, `REFRESH_TOKEN_LIFETIME`; server settings
   `RESTV2_ACCESS_TOKEN_LIFETIME` and `RESTV2_REFRESH_TOKEN_LIFETIME`; defaults 86400 and 2678400;
   001 R14 precedence) (R20).
-- [ ] T084 [US4] Create `app/Services/Oauth2/Oauth2ClientAuditTargetResolver.php` (target
+- [X] T084 [US4] Create `app/Services/Oauth2/Oauth2ClientAuditTargetResolver.php` (target
   `oauth2Client`: the route's `oauth2ClientId` and its client ID looked up without scope; for
   `POST /oauth2-clients/bulk-actions` a `null` target with `details.itemIds` and
   `details.bulkAction`) and register it with `RefusalAuditor` in `AppServiceProvider` (R15).
-- [ ] T085 [US4] Create `app/Http/Controllers/Api/V2/Oauth2ClientController.php` (`index`, `store`
+- [X] T085 [US4] Create `app/Http/Controllers/Api/V2/Oauth2ClientController.php` (`index`, `store`
   → `201`, `show`, `update`, `destroy` → `204`), `Oauth2ClientSecretRegenerationController.php`,
   `Oauth2ClientTokenRevocationController.php` and `Oauth2ClientBulkActionController.php`. Register in
   `routes/api.php`, with `POST /oauth2-clients/bulk-actions` before `/oauth2-clients/{oauth2ClientId}`

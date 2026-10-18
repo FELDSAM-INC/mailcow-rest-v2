@@ -175,6 +175,32 @@ class MailcowConfig
     }
 
     /**
+     * Lifetime in seconds of the access tokens of mailcow's OAuth2 provider (legacy
+     * `$ACCESS_TOKEN_LIFETIME`, feature 012 research R20).
+     *
+     * @phpstan-impure
+     */
+    public function accessTokenLifetime(): int
+    {
+        $value = $this->value('ACCESS_TOKEN_LIFETIME');
+
+        return is_numeric($value) && (int) $value > 0 ? (int) $value : (int) config('restv2.vars_defaults.ACCESS_TOKEN_LIFETIME');
+    }
+
+    /**
+     * Lifetime in seconds of the refresh tokens of mailcow's OAuth2 provider (legacy
+     * `$REFRESH_TOKEN_LIFETIME`).
+     *
+     * @phpstan-impure
+     */
+    public function refreshTokenLifetime(): int
+    {
+        $value = $this->value('REFRESH_TOKEN_LIFETIME');
+
+        return is_numeric($value) && (int) $value > 0 ? (int) $value : (int) config('restv2.vars_defaults.REFRESH_TOKEN_LIFETIME');
+    }
+
+    /**
      * Seconds that a call of mailcow's container service may take (legacy `$DOCKER_TIMEOUT`).
      *
      * @phpstan-impure

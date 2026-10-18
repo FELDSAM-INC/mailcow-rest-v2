@@ -86,6 +86,13 @@ enum AuditEventType: string
     case IdentityProviderDeletion = 'identityProviderDeletion';
     case IdentityProviderConnectionTest = 'identityProviderConnectionTest';
 
+    // Feature 012: OAuth2 clients.
+    case Oauth2ClientCreation = 'oauth2ClientCreation';
+    case Oauth2ClientUpdate = 'oauth2ClientUpdate';
+    case Oauth2ClientSecretRegeneration = 'oauth2ClientSecretRegeneration';
+    case Oauth2ClientTokenRevocation = 'oauth2ClientTokenRevocation';
+    case Oauth2ClientDeletion = 'oauth2ClientDeletion';
+
     /**
      * Keys of refusal records written by App\Services\Audit\RefusalAuditor (docs/conventions.md
      * "Refusal auditing"): the problem type, the status and, for `422`, the field errors (rule codes
@@ -162,6 +169,10 @@ enum AuditEventType: string
             self::IdentityProviderUpdate => ['type', 'previousType', 'changes', 'mailboxCounts', ...self::REFUSAL],
             self::IdentityProviderDeletion => ['type', 'mailboxCounts', ...self::REFUSAL],
             self::IdentityProviderConnectionTest => ['type', 'testedAddress', 'outcome', 'failureCategory', 'providerStatus', ...self::REFUSAL],
+            self::Oauth2ClientCreation => ['redirectUris', ...self::REFUSAL],
+            self::Oauth2ClientUpdate => ['changes', ...self::REFUSAL],
+            self::Oauth2ClientSecretRegeneration => [...self::REFUSAL],
+            self::Oauth2ClientTokenRevocation, self::Oauth2ClientDeletion => ['removed', ...self::BULK, ...self::REFUSAL],
         };
     }
 }

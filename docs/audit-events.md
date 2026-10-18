@@ -916,3 +916,72 @@ target is the configuration (`name` the tested type). The secret is never record
 | `problemType` | string | See "Refusal records". | on refusals of the request |
 | `status` | integer | See "Refusal records". | on refusals of the request |
 | `errors` | object | See "Refusal records". | on `422` refusals |
+
+## oauth2ClientCreation
+
+Feature 012. Written when `POST /oauth2-clients` created a client, in the transaction that stores
+it, and for every refusal. The target is the client (`type: oauth2Client`, `id` its numeric
+identifier, `name` its client ID; a refused creation has neither). The secret never appears.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `redirectUris` | array of strings | The stored redirect URIs, duplicates removed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## oauth2ClientUpdate
+
+Feature 012. Written for every change of a client's redirect URIs
+(`PATCH /oauth2-clients/{oauth2ClientId}`), also when they did not change, and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `redirectUris` as `{old, new}` (lists) when they changed; empty otherwise. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## oauth2ClientSecretRegeneration
+
+Feature 012. Written for every secret regeneration
+(`POST /oauth2-clients/{oauth2ClientId}/secret-regeneration`) and every refusal. Neither the old nor
+the new secret appears.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## oauth2ClientTokenRevocation
+
+Feature 012. Written for every token revocation
+(`POST /oauth2-clients/{oauth2ClientId}/token-revocation`), also when the client had no tokens, for
+every item of a `revokeTokens` bulk action, and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `removed` | object | Rows removed: `accessTokens`, `refreshTokens`, `authorizationCodes`. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## oauth2ClientDeletion
+
+Feature 012. Written for every deletion of a client (`DELETE /oauth2-clients/{oauth2ClientId}` and
+`delete` bulk items), in the transaction that deletes it, and every refusal. The target carries the
+client ID it had.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `removed` | object | Rows removed with the client: `accessTokens`, `refreshTokens`, `authorizationCodes`. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |

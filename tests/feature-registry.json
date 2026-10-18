@@ -263,15 +263,6 @@
         "startSingleSignOn",
         "cancelSingleSignOn",
         "completeSingleSignOn",
-        "reportSingleSignOnProviderError",
-        "getOauth2ClientsCapabilities",
-        "listOauth2Clients",
-        "createOauth2Client",
-        "bulkOauth2ClientAction",
-        "getOauth2Client",
-        "updateOauth2Client",
-        "deleteOauth2Client",
-        "regenerateOauth2ClientSecret",
-        "revokeOauth2ClientTokens"
+        "reportSingleSignOnProviderError"
     ]
 }

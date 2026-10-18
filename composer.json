@@ -21,7 +21,7 @@
         "robthree/twofactorauth": "^3.0"
     },
     "require-dev": {
-        "bshaffer/oauth2-server-php": "^1.11",
+        "bshaffer/oauth2-server-php": "1.11.1",
         "fakerphp/faker": "^1.23",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.27",

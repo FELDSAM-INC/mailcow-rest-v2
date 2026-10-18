@@ -1589,8 +1589,36 @@ record for secrets.
   first passkey registered and used within 1 minute, by stopwatch) and SC-006 (key created and
   first read within 2 minutes). Record the results in `CHANGELOG.md` under the release.
 
-  *Not done*: it needs a mailcow `2026-09a` host, which this environment does not have. It stays
-  open for the release; `CHANGELOG.md` says the release checks have not run.
+  *Staging run (2026-10-18), partly done*: Part C ran on maildev.feldhost.cz, the FeldHost fork at
+  `153698f` (upstream `2026-09a` plus fork changes, `db_schema` `18082026_1200`), with the
+  production image built from 3a35973. `restv2-mailcow` runs from the deployment override, with
+  three changes: a local image tag, `pull_policy: never`, and `APP_KEY` plus the FeldHost
+  `RESTV2_*` values in a mode-600 `env_file`, because `mailcow.conf` stays untouched.
+  `site.restv2.custom` is unchanged and was loaded with `nginx -t` and `nginx -s reload`. No other
+  container was restarted. Test accounts were created through legacy `/api/v1` and the legacy UI.
+  - SC-003 passes. The legacy UI (admin, domain admin, mailbox user, TOTP), `/api/v1` and
+    `/SOGo/so/` behave as before the deployment. Only the four `restv2_` tables were added, and
+    `db_schema` is unchanged. IMAP and SMTP sign-ins of the test mailboxes work before and after
+    the API operations.
+  - SC-004 passes on the API side. Ten failed `/api/v2` sign-ins published ten
+    `mailcow UI: Invalid password for <user> by <address>` messages on `F2B_CHANNEL`, the same text
+    and count as ten failed legacy sign-ins (`max_attempts` is 10). The throttled 11th attempt
+    answered 429 and was published too (R18). An invalid key publishes `API_USER`, as legacy
+    `/api/v1` does. The ban itself could not be checked: the host's netfilter container
+    crash-loops with a python-iptables error that predates the deployment.
+  - SC-002 passes with the virtual authenticator, not by stopwatch. Registration took 69 ms, the
+    password sign-in to the first passkey sign-in 262 ms, and a passkey sign-in 40–80 ms. Passkeys
+    registered through `/api/v2` also sign in to the legacy UI.
+  - SC-006 passes: admin sign-in, key creation and the first read with the key took 196 ms.
+  - Also checked: readiness, `/api/v2/docs`, the FeldHost branding, audit records with the real
+    client address (an external `X-Forwarded-For` is ignored), recent logins labelled `WEBUI`, and
+    no secret in the API logs.
+
+  Still open: the ban on a host with a working netfilter, the passkey stopwatch in a real browser,
+  a host on plain upstream `2026-09a`, and the change half of SC-008 (skipped to leave the shared
+  announcement alone). Deployment gap: `mcuadros/ofelia` reads labels only when it starts, so
+  `restv2_audit_purge` is not registered until `ofelia-mailcow` restarts. Part C step 7 expects the
+  job right after `docker compose up -d restv2-mailcow`.
 
 ---
 

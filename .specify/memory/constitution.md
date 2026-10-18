@@ -162,7 +162,10 @@ upstream mailcow, and so that mailcow contributors can work on it.
   6. Pint formatting and static analysis pass.
 - When a feature changes the contract, the release notes list it, so that mailcowui-ng can bump
   its pinned version.
-- **Git**: commit directly to `main`, with no feature branches and no pull requests. The Spec Kit
+- **Git**: commit directly to `main`, with no feature branches and no pull requests. Parallel implementation
+  may use short-lived local git worktrees on temporary local branches (`wt/NNN`), each rebased onto
+  `main` and fast-forwarded when its gates are green, then deleted. Such branches are never pushed,
+  and there are still no pull requests. The Spec Kit
   `before_specify` branch hook is disabled, but spec directories keep the `specs/NNN-feature-name`
   numbering. Commit subjects are short and imperative.
 - **License**: GPL-3.0, the same as mailcow, so the code can be proposed upstream and logic
@@ -182,6 +185,8 @@ upstream mailcow, and so that mailcow contributors can work on it.
     RFC 9457 errors, `X-API-Key`.
   - The API and the Vue app live in separate repositories.
   - GPL-3.0 for both repositories, and commits go directly to `main` (added in 1.1.0).
+  - Short-lived local worktree branches for parallel implementation, never pushed (added in
+    1.1.1).
 - Agent runtime guidance lives in `CLAUDE.md` and MUST NOT contradict this document.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-10-18
+**Version**: 1.1.1 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-10-18

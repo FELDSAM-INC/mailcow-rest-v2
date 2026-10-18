@@ -37,3 +37,6 @@ then marks the entry done here. Gaps that are a contract-wide rule are also reco
 | G28 | UI 002 | 002 | `Domain` has no footer summary, so the domain page fetches the full footer (up to 2 × 1 MiB). | Add a footer summary (whether set, its size, the exclusion counts) to `Domain`. | open |
 | G29 | UI 002 | 002 | The template defaults are only in prose. | Expose them in `/capabilities/domains`, or as schema `default` keywords. | open |
 | G30 | UI 002 | 002 | There is no bulk deletion preview, so the bulk delete confirmation can't name the orphaned domain admins. | Optional: a bulk preview operation, or the orphaned accounts in the per-item results. | open (optional) |
+| G31 | UI 003 | 003 | The recognised password hash-scheme prefixes (pre-hashed passwords) are given only as examples. | List them exactly (an enum in the schema description, or in `/capabilities/mailboxes`). | open |
+| G32 | UI 003 | 003 | The built-in mailbox template defaults can't be read. | Expose them in `/capabilities/mailboxes`, or as schema `default` keywords (like G29). | open |
+| G33 | UI 003 | 002 (first bulk feature) | Whether `etag` members and `BulkTarget.version` carry quotes is unclear. | `etag` members hold the exact `ETag` header value (quoted); `BulkTarget.version` accepts the value with or without quotes. Document it in `BulkTarget.yaml` and in the conventions. | open |

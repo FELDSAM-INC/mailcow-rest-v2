@@ -136,3 +136,12 @@ this document next to the constitution.
   app key.
 - **Uniqueness that upstream enforces only in code** is protected with MariaDB `GET_LOCK()` around
   check-and-insert, never with a new index on an upstream table.
+
+## Bulk paths and identity changes
+
+- **Bulk actions** use `POST /{collection}/bulk-actions`. The path is POST-only, and object paths
+  never accept POST, so an object named `bulk-actions` stays addressable.
+- **Identity changes** (impersonation start or end) renew the CSRF token. Clients re-read
+  `GET /me` before retrying a write that failed with `csrf-token-mismatch`.
+- **Sign-out and ending an impersonation** always succeed, even when an impersonation has become
+  invalid. They end and audit it.

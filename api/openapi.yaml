@@ -51,8 +51,10 @@ info:
 
     1. `GET /csrf-token` starts an anonymous session and returns its token. The token stays valid
        for the lifetime of the session, including across sign-in. A `403` with type
-       `/api/v2/problems/csrf-token-mismatch` means the session ended: fetch a new token and retry
-       once.
+       `/api/v2/problems/csrf-token-mismatch` means the session ended or its identity changed (the
+       token is renewed when an impersonation starts or ends). Fetch a new token and re-read
+       `GET /me`. Retry the write once only if the identity is unchanged; otherwise discard it, so
+       that a write prepared under one identity is never sent under another.
     2. Sign in with a passkey (`POST /session/passkey-challenge`, then
        `POST /session/passkey-assertion`) or with a password (`POST /session`).
     3. If the password step answers with state `pendingSecondFactor`, complete one of the listed
@@ -354,8 +356,8 @@ paths:
     $ref: './modules/domain-templates/_index.yaml#/~1domain-templates~1{templateId}'
   /aliases:
     $ref: './modules/aliases/_index.yaml#/~1aliases'
-  /aliases/capabilities:
-    $ref: './modules/aliases/_index.yaml#/~1aliases~1capabilities'
+  /capabilities/aliases:
+    $ref: './modules/aliases/_index.yaml#/~1capabilities~1aliases'
   /aliases/bulk-actions:
     $ref: './modules/aliases/_index.yaml#/~1aliases~1bulk-actions'
   /aliases/alias-domain-copies:
@@ -378,8 +380,8 @@ paths:
     $ref: './modules/resources/_index.yaml#/~1resources~1{resourceAddress}'
   /mailboxes/{mailbox}/sender-settings:
     $ref: './modules/sender-settings/_index.yaml#/~1mailboxes~1{mailbox}~1sender-settings'
-  /mailboxes/{mailbox}/sender-settings/permission-candidates:
-    $ref: './modules/sender-settings/_index.yaml#/~1mailboxes~1{mailbox}~1sender-settings~1permission-candidates'
+  /sender-permission-candidates:
+    $ref: './modules/sender-settings/_index.yaml#/~1sender-permission-candidates'
   /mailboxes:
     $ref: './modules/mailboxes/_index.yaml#/~1mailboxes'
   /capabilities/mailboxes:
@@ -776,6 +778,10 @@ paths:
     $ref: './modules/self-service/_index.yaml#/~1sieve-filters'
   /sieve-filters/validation:
     $ref: './modules/self-service/_index.yaml#/~1sieve-filters~1validation'
+  /capabilities/identity-provider:
+    $ref: './modules/identity-provider/_index.yaml#/~1capabilities~1identity-provider'
+  /capabilities/oauth2-clients:
+    $ref: './modules/oauth2-clients/_index.yaml#/~1capabilities~1oauth2-clients'
 components:
   securitySchemes:
     sessionCookie:

@@ -11,6 +11,7 @@ use App\Exceptions\ProblemException;
 use App\Http\RequestContext;
 use App\Rules\DkimPrivateKey;
 use App\Services\Audit\AuditContext;
+use App\Services\Config\MailcowConfig;
 use App\Support\Bulk\BulkActionRunner;
 use App\Support\Clock\Clock;
 use App\Support\Http\ETag;
@@ -209,6 +210,35 @@ class DkimKeyService
         );
 
         return $enabled ? ['data' => $result, 'meta' => ['dnsPublication' => $publications]] : ['data' => $result];
+    }
+
+    /**
+     * exportDkimPrivateKey (FR-026, research R9), in this order: administrators only (`403
+     * forbidden`), only while SHOW_DKIM_PRIV_KEYS is enabled (`403 dkim-private-key-export-disabled`),
+     * a name in scope (`404`) with a private key (`404`), then the audit record; when it cannot be
+     * written, the key is not returned. Never logged.
+     *
+     * @return array{name: string, selector: string, privateKey: string}
+     */
+    public function export(Principal $principal, string $rawName, MailcowConfig $config): array
+    {
+        Gate::forUser($principal)->authorize('dkim.export');
+
+        if (! $config->showDkimPrivateKeys()) {
+            throw new ProblemException(ProblemType::DkimPrivateKeyExportDisabled);
+        }
+
+        $name = $this->names->resolve($principal, $rawName) ?? throw new NotFoundHttpException('The name has no DKIM key.');
+        $key = $this->store->read($name->name);
+        $private = $key === null || $key->selector === null ? null : $this->store->privateKey($name->name, $key->selector);
+
+        if ($key === null || $key->selector === null || $private === null) {
+            throw new NotFoundHttpException('The name has no DKIM private key.');
+        }
+
+        $this->audit->export(new AuditContext($principal), $name->name, $key->selector, $key->publicKey);
+
+        return ['name' => $name->name, 'selector' => $key->selector, 'privateKey' => $private];
     }
 
     /**

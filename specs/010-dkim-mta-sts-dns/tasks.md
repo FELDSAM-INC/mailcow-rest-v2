@@ -796,7 +796,7 @@ audited.
 
 ### Tests for User Story 6
 
-- [ ] T092 [P] [US6] Write `tests/Feature/Dkim/ExportDkimPrivateKeyTest.php`: AS1 setting on →
+- [X] T092 [P] [US6] Write `tests/Feature/Dkim/ExportDkimPrivateKeyTest.php`: AS1 setting on →
   `200`, `data.privateKey` exactly as stored, `Cache-Control: no-store`, one `dkimPrivateKeyExport`
   audit record without the key; AS2 setting off (default) → `403
   dkim-private-key-export-disabled` and a failure audit record; AS3 domain administrator → `403
@@ -807,7 +807,7 @@ audited.
 
 ### Implementation for User Story 6
 
-- [ ] T093 [US6] Implement `DkimKeyService::export()` (order of checks of R9) in
+- [X] T093 [US6] Implement `DkimKeyService::export()` (order of checks of R9) in
   `app/Services/Dkim/DkimKeyService.php`, and create
   `app/Http/Resources/Api/V2/DkimPrivateKeyResource.php` and
   `app/Http/Controllers/Api/V2/DkimPrivateKeyController.php` (`Cache-Control: no-store`), and

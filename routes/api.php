@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\V2\DkimKeyBulkActionController;
 use App\Http\Controllers\Api\V2\DkimKeyController;
 use App\Http\Controllers\Api\V2\DkimKeyCopyController;
 use App\Http\Controllers\Api\V2\DkimKeyImportController;
+use App\Http\Controllers\Api\V2\DkimPrivateKeyController;
 use App\Http\Controllers\Api\V2\DnsCapabilitiesController;
 use App\Http\Controllers\Api\V2\DnsDiagnosticsController;
 use App\Http\Controllers\Api\V2\DomainBulkActionController;
@@ -760,6 +761,11 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
         Route::get('/capabilities/dns', [DnsCapabilitiesController::class, 'show'])->name('dns-capabilities.show');
         Route::get('/dkim-keys', [DkimKeyController::class, 'index'])->name('dkim-keys.index');
+        // The export is a read whose every attempt is audited (FR-026).
+        Route::get('/dkim-keys/{dkimName}/private-key', [DkimPrivateKeyController::class, 'show'])
+            ->where('dkimName', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'dkimPrivateKeyExport', 'target' => 'dkimKey'])
+            ->name('dkim-private-key.show');
         Route::get('/dkim-keys/{dkimName}', [DkimKeyController::class, 'show'])
             ->where('dkimName', '[^/]+')
             ->name('dkim-keys.show');

@@ -340,7 +340,6 @@
         }
     },
     "pendingOperations": [
-        "exportDkimPrivateKey",
         "publishDkimDnsRecord"
     ]
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature\SyncJobs;
 
 use App\Auth\Role;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ApiKeys\ApiKeys;
 use Tests\Support\SyncJobs\ImapsyncRunnerSimulator;
@@ -94,7 +95,7 @@ class RescheduleSyncJobTest extends TestCase
         $this->assertSame('syncJobReschedule', $records[0]->event_type);
         $this->assertSame(['lastRunAt', 'lastResult'], $records[0]->details['cleared']);
         $this->assertSame('failed', $records[0]->details['previous']['lastResult']);
-        $this->assertSame(\Carbon\CarbonImmutable::parse($lastRun, 'Europe/Prague')->utc()->format('Y-m-d\TH:i:s\Z'), $records[0]->details['previous']['lastRunAt']);
+        $this->assertSame(CarbonImmutable::parse($lastRun, 'Europe/Prague')->utc()->format('Y-m-d\TH:i:s\Z'), $records[0]->details['previous']['lastRunAt']);
         $this->assertSame('alice@example.org', $records[0]->details['mailbox']);
     }
 }

@@ -3,8 +3,9 @@
 namespace Tests\Unit\SyncJobs;
 
 use App\Rules\SyncJobExcludePattern;
+use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 /**
  * Feature 008 T032 (research R6, US2 AS-6): the exclusion pattern must compile as a PCRE pattern
@@ -34,12 +35,8 @@ class ExcludePatternRuleTest extends TestCase
     public function test_the_pattern_is_checked_like_legacy(string $pattern, bool $valid): void
     {
         $rule = new SyncJobExcludePattern;
-        $failed = false;
-        $rule->validate('exclude', $pattern, function () use (&$failed): void {
-            $failed = true;
-        });
 
-        $this->assertSame($valid, ! $failed);
+        $this->assertSame($valid, Validator::make(['exclude' => $pattern], ['exclude' => [$rule]])->passes());
         set_error_handler(static fn (): bool => true);
         $legacy = preg_match('/'.$pattern.'/', '') !== false;
         restore_error_handler();

@@ -65,8 +65,8 @@ class SyncJobTargetResolverTest extends TestCase
         $result = $this->resolve($mailbox, $principal);
 
         $this->assertNull($result['mailbox']);
-        $this->assertSame($code, $result['violation']['code'] ?? null);
-        $this->assertSame($params, $result['violation']['params'] ?? null);
+        $this->assertNotNull($result['violation']);
+        $this->assertSame([$code, $params], [$result['violation']['code'], $result['violation']['params']]);
     }
 
     public function test_a_mailbox_user_s_job_always_targets_their_own_mailbox(): void

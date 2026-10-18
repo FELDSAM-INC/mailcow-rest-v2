@@ -157,9 +157,7 @@ class CreateSyncJobValidationTest extends TestCase
     {
         $id = (int) $this->createSyncJob(self::syncJobBody(['remoteHost' => 'IMAP.Example.COM', 'customParameters' => '  --maxsize=1 ', 'exclude' => '']))->assertCreated()->json('data.id');
 
-        $row = $this->syncJobRow($id);
-        $this->assertSame('imap.example.com', $row?->host1);
-        $this->assertSame('--maxsize=1', $row?->custom_params);
-        $this->assertSame('', $row?->exclude);
+        $row = (array) $this->syncJobRow($id);
+        $this->assertSame(['imap.example.com', '--maxsize=1', ''], [$row['host1'], $row['custom_params'], $row['exclude']]);
     }
 }

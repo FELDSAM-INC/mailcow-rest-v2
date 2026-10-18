@@ -4,6 +4,10 @@ namespace Tests\Feature\SyncJobs;
 
 use App\Auth\Principal;
 use App\Auth\Role;
+use App\Models\Mailcow\SyncJob;
+use App\Services\Audit\AuditLogger;
+use App\Services\SyncJobs\SyncJobDuplicateGuard;
+use App\Services\SyncJobs\SyncJobScope;
 use App\Services\SyncJobs\SyncJobService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -199,14 +203,14 @@ class SyncJobBulkActionTest extends TestCase
     {
         $ids = $this->jobs(3);
         $failing = $ids[1];
-        $this->app->bind(SyncJobService::class, fn ($app) => new class($app->make(\App\Services\SyncJobs\SyncJobDuplicateGuard::class), $app->make(\App\Services\Audit\AuditLogger::class), $app->make(\App\Services\SyncJobs\SyncJobScope::class), $failing) extends SyncJobService
+        $this->app->bind(SyncJobService::class, fn ($app) => new class($app->make(SyncJobDuplicateGuard::class), $app->make(AuditLogger::class), $app->make(SyncJobScope::class), $failing) extends SyncJobService
         {
-            public function __construct(\App\Services\SyncJobs\SyncJobDuplicateGuard $guard, \App\Services\Audit\AuditLogger $audit, \App\Services\SyncJobs\SyncJobScope $scope, private readonly int $failing)
+            public function __construct(SyncJobDuplicateGuard $guard, AuditLogger $audit, SyncJobScope $scope, private readonly int $failing)
             {
                 parent::__construct($guard, $audit, $scope);
             }
 
-            public function update(Principal $principal, int $id, array $patch, ?string $ifMatch = null, ?string $bulkRequestId = null): \App\Models\Mailcow\SyncJob
+            public function update(Principal $principal, int $id, array $patch, ?string $ifMatch = null, ?string $bulkRequestId = null): SyncJob
             {
                 if ($id === $this->failing) {
                     throw new RuntimeException('the database went away');

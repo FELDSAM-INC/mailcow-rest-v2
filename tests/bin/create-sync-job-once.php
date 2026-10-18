@@ -1,5 +1,9 @@
 <?php
 
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+
 /*
  * Feature 008 T046: handles one `POST /api/v2/sync-jobs` through the HTTP kernel of the testing
  * environment and prints the response status (tests/Feature/SyncJobs/ConcurrentCreateSyncJobTest).
@@ -17,11 +21,11 @@ $_ENV['APP_ENV'] = $_SERVER['APP_ENV'] = 'testing';
 
 require __DIR__.'/../../vendor/autoload.php';
 
-/** @var Illuminate\Foundation\Application $app */
+/** @var Application $app */
 $app = require __DIR__.'/../../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+$kernel = $app->make(Kernel::class);
 
-$request = Illuminate\Http\Request::create('/api/v2/sync-jobs', 'POST', [], [], [], [
+$request = Request::create('/api/v2/sync-jobs', 'POST', [], [], [], [
     'HTTP_X_API_KEY' => $argv[1],
     'HTTP_ACCEPT' => 'application/json',
     'CONTENT_TYPE' => 'application/json',

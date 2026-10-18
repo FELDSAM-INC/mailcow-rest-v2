@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\RequestContext;
 use App\Http\Requests\Api\V2\RoutingBulkActionRequest;
 use App\Http\Resources\Api\V2\RoutingResource;
+use App\Services\Routing\BccMapService;
+use App\Services\Routing\RecipientMapService;
 use App\Services\Routing\RelayhostService;
 use App\Services\Routing\RoutingBulkActions;
 use App\Services\Routing\RoutingBulkHandler;
+use App\Services\Routing\TlsPolicyMapService;
 use App\Services\Routing\TransportService;
 use Illuminate\Http\JsonResponse;
 use LogicException;
@@ -24,6 +27,9 @@ class RoutingBulkActionController extends Controller
     /** @var array<string, class-string<RoutingBulkHandler>> collection => item handler */
     private const HANDLERS = [
         'relayhost' => RelayhostService::class,
+        'bccMap' => BccMapService::class,
+        'recipientMap' => RecipientMapService::class,
+        'tlsPolicyMap' => TlsPolicyMapService::class,
         'transport' => TransportService::class,
     ];
 

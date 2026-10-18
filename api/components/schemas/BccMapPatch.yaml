@@ -2,8 +2,9 @@ type: object
 description: |
   JSON Merge Patch of a BCC map. `type`, `bccDestination` and `active` can change; a type change
   that would duplicate another map of the same local destination is refused. `id`,
-  `localDestination` and `domain` are read-only: accepted with their current value, refused
-  (`immutable`) otherwise.
+  `localDestination`, `domain`, `orphaned`, `createdAt`, `modifiedAt` and `etag` are read-only:
+  accepted with their current value, refused (`immutable`) otherwise, so that a client can send
+  back the representation it read. Any other member is refused (`immutable`).
 minProperties: 1
 properties:
   type:
@@ -21,5 +22,19 @@ properties:
     type: string
     description: Read-only.
   domain:
+    type: string
+    description: Read-only.
+  orphaned:
+    type: boolean
+    description: Read-only.
+  createdAt:
+    type: string
+    description: Read-only.
+  modifiedAt:
+    description: Read-only.
+    oneOf:
+      - type: string
+      - type: 'null'
+  etag:
     type: string
     description: Read-only.

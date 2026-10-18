@@ -622,14 +622,14 @@ Rspamd's BCC queries and confirm that copies would be sent as for legacy maps.
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T067 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccMapListTest.php` for `listBccMaps` and
+- [X] T067 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccMapListTest.php` for `listBccMaps` and
   `getBccMap` (FR-046 to FR-048, FR-056): every member with UTC `createdAt` and `modifiedAt` (`null`
   when never modified, FR-010; stored in mailcow's local time `TZ=Europe/Prague` and returned in
   UTC); `type` mapping `rcpt` → `recipient`; filters `type`, `active`, repeated
   `domain` (Unicode accepted) and `orphaned`; `q` on both destinations; every sort key; AS-11: a map
   left behind for a deleted domain is listed `orphaned: true` for an administrator and can be
   filtered and deleted; a domain administrator never sees it.
-- [ ] T068 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccMapWriteTest.php` for `createBccMap`,
+- [X] T068 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccMapWriteTest.php` for `createBccMap`,
   `updateBccMap` and `deleteBccMap` (FR-049 to FR-055):
   - AS-1: `example.org` as a recipient map → stored `local_dest = '@example.org'`,
     `domain = 'example.org'`, `type = 'rcpt'`, `active = 1` (default `true`);
@@ -648,47 +648,47 @@ Rspamd's BCC queries and confirm that copies would be sent as for legacy maps.
     type`; AS-9: a different `localDestination` on edit → `immutable`, the current value accepted;
   - deletion `204`; a stale `If-Match` → `412`; an administrator can edit and delete an orphaned
     map; a concurrent creation with the `bcc_maps` lock held answers `503 temporary-failure`.
-- [ ] T069 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccMapScopeTest.php` (FR-001, FR-003): a
+- [X] T069 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccMapScopeTest.php` (FR-001, FR-003): a
   domain administrator sees the maps of their domains and of those domains' alias domains, not of
   other domains; AS-7: a foreign map → `404` for get, patch and delete, identical to an unknown id;
   an inactive `domain_admins` row removes the access on the next request.
-- [ ] T070 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccDestinationChoicesTest.php` for
+- [X] T070 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccDestinationChoicesTest.php` for
   `listBccDestinationChoices` (FR-057): AS-8, a domain administrator with two domains, one alias
   domain and 300 mailboxes searching `anna` receives one page of matching values from the scope only;
   every kind appears with its stored value and domain; `deliversTo` lists the in-scope mailboxes of
   an alias and the mailbox of an alias-domain address; catch-alls, mailboxes' own aliases and
   resources never appear; filters `kind` and `domain`, sorts `kind` and `value`, paging and
   `meta.total`; every value is accepted by `createBccMap`.
-- [ ] T071 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccMapBulkActionTest.php`
+- [X] T071 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccMapBulkActionTest.php`
   (`applyBccMapBulkAction`): AS-10, three sender maps switched to recipient where one collides → two
   `done`, one `refused` with `routing-entry-exists` and unchanged; maps outside a domain
   administrator's scope → `notFound`; a domain administrator without `bcc_maps` → `403
   permission-flag-required` as a whole; activate, deactivate and delete; `outdated`.
-- [ ] T072 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccMapRspamdParityTest.php` (SC-002,
+- [X] T072 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccMapRspamdParityTest.php` (SC-002,
   FR-058): after API writes, the two extracted `bcc.php` queries return the BCC destination for the
   address and for `@domain`, for the right type, only for active maps.
-- [ ] T073 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccMapAuthorizationTest.php`: the seven BCC
+- [X] T073 [P] [US5] Write `tests/Feature/Routing/BccMaps/BccMapAuthorizationTest.php`: the seven BCC
   operations × the callers of T032, and domain administrators with and without `bcc_maps`, with
   sessions and keys.
 
 ### Implementation for User Story 5
 
-- [ ] T074 [US5] Create `app/Models/Mailcow/BccMap.php` (casts with 001's `MailcowDateTime`) and
+- [X] T074 [US5] Create `app/Models/Mailcow/BccMap.php` (casts with 001's `MailcowDateTime`) and
   `app/Services/Routing/BccDestinationResolver.php` (R18: classification, scope, `notFound` for
   unknown or out-of-scope values, the stored value and the domain).
-- [ ] T075 [US5] Create `app/Services/Routing/BccMapQuery.php` (scope through `BccScope`, the orphaned
+- [X] T075 [US5] Create `app/Services/Routing/BccMapQuery.php` (scope through `BccScope`, the orphaned
   expression, filters, sorts) and `app/Services/Routing/BccDestinationChoiceQuery.php` (the
   `UNION ALL` of R18 with the page's `deliversTo` in one more query).
-- [ ] T076 [US5] Create `app/Services/Routing/BccMapService.php`: create, edit (type, BCC
+- [X] T076 [US5] Create `app/Services/Routing/BccMapService.php`: create, edit (type, BCC
   destination, active; read-only local destination and domain), delete, uniqueness under
   `NamedLock('restv2:routing:bcc_maps')`, the version tag, audit records and the bulk item handlers
   (`activate`, `deactivate`, `switchToSender`, `switchToRecipient`, `delete`).
-- [ ] T077 [P] [US5] Create `app/Http/Requests/Api/V2/ListBccMapsRequest.php`,
+- [X] T077 [P] [US5] Create `app/Http/Requests/Api/V2/ListBccMapsRequest.php`,
   `ListBccDestinationChoicesRequest.php`, `StoreBccMapRequest.php` ("localDestination required, at
   most 255"; "type one of sender, recipient"; "bccDestination exactly one address, at most 255";
   `active` boolean default `true`) and `UpdateBccMapRequest.php`, and the resources
   `app/Http/Resources/Api/V2/BccMapResource.php` and `BccDestinationChoiceResource.php`.
-- [ ] T078 [US5] Create `app/Http/Controllers/Api/V2/BccMapController.php`,
+- [X] T078 [US5] Create `app/Http/Controllers/Api/V2/BccMapController.php`,
   `BccMapBulkActionController.php` and `BccDestinationChoiceController.php`, and register the
   top-level helper `GET /bcc-destination-choices`, `POST /bcc-maps/bulk-actions`, `/bcc-maps` and
   `/bcc-maps/{bccMapId}` (`whereNumber`) in `routes/api.php`, with `restv2.audit` defaults on the
@@ -708,7 +708,7 @@ Postfix TLS policy query to confirm the stored policy is what the mail server ap
 
 ### Tests for User Story 6 (write first, observe failing) ⚠️
 
-- [ ] T079 [P] [US6] Write `tests/Feature/Routing/TlsPolicyMaps/TlsPolicyMapTest.php` for the six
+- [X] T079 [P] [US6] Write `tests/Feature/Routing/TlsPolicyMaps/TlsPolicyMapTest.php` for the six
   TLS policy map operations (FR-065 to FR-073):
   - AS-1: `dane-only` for `example.org` stored; AS-2: `.example.org` and `[mail.example.org]:25`
     accepted, `*`, `.`, `@` and `example.org:587` → `invalidFormat` `{format:
@@ -725,17 +725,17 @@ Postfix TLS policy query to confirm the stored policy is what the mail server ap
     true`; `412`; `immutable` `id`;
   - the extracted `mysql_tls_policy_override_maps.sql` returns `encrypt ` for an active entry and
     nothing for an inactive one (SC-002).
-- [ ] T080 [P] [US6] Write `tests/Feature/Routing/TlsPolicyMaps/TlsPolicyMapBulkActionAndAuthorizationTest.php`:
+- [X] T080 [P] [US6] Write `tests/Feature/Routing/TlsPolicyMaps/TlsPolicyMapBulkActionAndAuthorizationTest.php`:
   bulk activate, deactivate and delete with per-item outcomes, and the caller matrix of T032 for the
   six operations (domain administrators `403 forbidden`).
 
 ### Implementation for User Story 6
 
-- [ ] T081 [US6] Create `app/Models/Mailcow/TlsPolicyOverride.php`,
+- [X] T081 [US6] Create `app/Models/Mailcow/TlsPolicyOverride.php`,
   `app/Rules/TlsPolicyDestinationRule.php` (via `NextHop` for bracketed forms),
   `app/Rules/TlsPolicyParametersRule.php` and `app/Services/Routing/TlsPolicyMapService.php`
   (normalisation of R19, duplicate check plus error 1062 mapping, audit, bulk handlers).
-- [ ] T082 [US6] Create `app/Http/Requests/Api/V2/ListTlsPolicyMapsRequest.php`,
+- [X] T082 [US6] Create `app/Http/Requests/Api/V2/ListTlsPolicyMapsRequest.php`,
   `StoreTlsPolicyMapRequest.php` ("destination required, at most 255"; "policy required, one of the
   eight, any letter case"; "parameters at most 255 after joining") and `UpdateTlsPolicyMapRequest.php`,
   `app/Http/Resources/Api/V2/TlsPolicyMapResource.php`,
@@ -756,7 +756,7 @@ Postfix recipient canonical query to confirm the rewriting.
 
 ### Tests for User Story 7 (write first, observe failing) ⚠️
 
-- [ ] T083 [P] [US7] Write `tests/Feature/Routing/RecipientMaps/RecipientMapTest.php` for the six
+- [X] T083 [P] [US7] Write `tests/Feature/Routing/RecipientMaps/RecipientMapTest.php` for the six
   recipient map operations (FR-059 to FR-064):
   - AS-1: `old.example` → `new.example` stored as `@old.example` → `@new.example`; AS-2:
     `info@example.org` → `sales@example.org`; AS-3: a value that is neither a domain nor an address →
@@ -769,16 +769,16 @@ Postfix recipient canonical query to confirm the rewriting.
     `recipient_maps` lock held → `503`;
   - the extracted `mysql_recipient_canonical_maps.sql` returns the new destination for active maps
     only (SC-002).
-- [ ] T084 [P] [US7] Write `tests/Feature/Routing/RecipientMaps/RecipientMapBulkActionAndAuthorizationTest.php`:
+- [X] T084 [P] [US7] Write `tests/Feature/Routing/RecipientMaps/RecipientMapBulkActionAndAuthorizationTest.php`:
   bulk actions with per-item outcomes and the caller matrix (AS-6: domain administrators `403`).
 
 ### Implementation for User Story 7
 
-- [ ] T085 [US7] Create `app/Models/Mailcow/RecipientMap.php`,
+- [X] T085 [US7] Create `app/Models/Mailcow/RecipientMap.php`,
   `app/Rules/RecipientMapDestinationRule.php` and `app/Services/Routing/RecipientMapService.php`
   (R19 normalisation, uniqueness under `NamedLock('restv2:routing:recipient_maps')`, audit, bulk
   handlers).
-- [ ] T086 [US7] Create `app/Http/Requests/Api/V2/ListRecipientMapsRequest.php`,
+- [X] T086 [US7] Create `app/Http/Requests/Api/V2/ListRecipientMapsRequest.php`,
   `StoreRecipientMapRequest.php` ("both destinations required, at most 255 as stored") and
   `UpdateRecipientMapRequest.php`, `app/Http/Resources/Api/V2/RecipientMapResource.php`,
   `app/Http/Controllers/Api/V2/RecipientMapController.php` and `RecipientMapBulkActionController.php`,
@@ -1122,4 +1122,24 @@ what exists map as listed.
   the capabilities are built by their services, so no resource classes.
 - **G36**: `RoutingCapabilities.administration.maxLengths` gained `forwardingHost`, `testSender`
   and `testRecipient` (255 each).
+- **T067, T079**: list sorts by `type` (BCC maps) and `policy` (TLS policy maps) compare the
+  stored text (`CAST(… AS CHAR)`), so that they are alphabetical like the other sorts, not by the
+  `ENUM` index.
+- **T074–T078**: one `BccMapController` serves the maps and `listBccDestinationChoices`; the
+  representations come from `BccMapQuery` and `BccDestinationChoiceQuery` (no resource classes).
+  `deliversTo` is filled for the page with two more queries (the aliases' destinations, then the
+  mailboxes in scope among them), independent of the page size. Every read-only member of the
+  representation (`orphaned`, `createdAt`, `modifiedAt`, `etag` besides those of FR-054) may be sent
+  back unchanged; `BccMapPatch` says so.
+- **T081, T085**: the destination and parameter rules of recipient maps and TLS policy maps are one
+  support class, `App\Support\Routing\MapDestination` (no separate rule classes); reads live in
+  the two services (`TlsPolicyMapService`, `RecipientMapService`), so there are no query classes.
+  TLS policy writes need no named lock: `dest` has an upstream unique index, and a duplicate-key
+  error of a concurrent insert is answered `409`. A recipient map address longer than 255
+  characters as stored is `tooLong` (PHP's address check alone would call it invalid).
+- **T082, T086**: one controller per collection; the patches accept `createdAt`, `modifiedAt` and
+  `etag` unchanged and refuse unknown members (`immutable`), as their schemas now say.
+- **T080, T084**: the full caller matrix of these collections is
+  `RoutingAuthorizationMatrixTest` (T098); the story files test bulk outcomes and the refusals of
+  domain administrators and read-only keys.
 

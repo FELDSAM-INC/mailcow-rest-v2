@@ -1,7 +1,8 @@
 type: object
 description: |
   JSON Merge Patch of a recipient map, with the rules of creation (also normalised on edit, unlike
-  legacy). `id` is read-only.
+  legacy). `id`, `createdAt`, `modifiedAt` and `etag` are read-only: accepted with their current
+  value, refused (`immutable`) otherwise. Any other member is refused (`immutable`).
 minProperties: 1
 properties:
   originalDestination:
@@ -16,4 +17,15 @@ properties:
     type: boolean
   id:
     type: integer
+    description: Read-only.
+  createdAt:
+    type: string
+    description: Read-only.
+  modifiedAt:
+    description: Read-only.
+    oneOf:
+      - type: string
+      - type: 'null'
+  etag:
+    type: string
     description: Read-only.

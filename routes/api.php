@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V2\ApiKeyController;
 use App\Http\Controllers\Api\V2\ApiKeyOwnerCandidateController;
 use App\Http\Controllers\Api\V2\ApiKeyRevocationController;
 use App\Http\Controllers\Api\V2\AuditEventController;
+use App\Http\Controllers\Api\V2\BccMapController;
 use App\Http\Controllers\Api\V2\ContainerController;
 use App\Http\Controllers\Api\V2\ContainerResourceUsageController;
 use App\Http\Controllers\Api\V2\ContainerRestartController;
@@ -76,6 +77,7 @@ use App\Http\Controllers\Api\V2\PublicAddressesController;
 use App\Http\Controllers\Api\V2\PublicConfigController;
 use App\Http\Controllers\Api\V2\PublicConfigLogoController;
 use App\Http\Controllers\Api\V2\ReadinessController;
+use App\Http\Controllers\Api\V2\RecipientMapController;
 use App\Http\Controllers\Api\V2\RelayhostAssignmentController;
 use App\Http\Controllers\Api\V2\RelayhostChoiceController;
 use App\Http\Controllers\Api\V2\RelayhostController;
@@ -99,6 +101,7 @@ use App\Http\Controllers\Api\V2\SyncJobCapabilitiesController;
 use App\Http\Controllers\Api\V2\SyncJobController;
 use App\Http\Controllers\Api\V2\SyncJobLogController;
 use App\Http\Controllers\Api\V2\SyncJobScheduleResetController;
+use App\Http\Controllers\Api\V2\TlsPolicyMapController;
 use App\Http\Controllers\Api\V2\TransportController;
 use App\Http\Controllers\Api\V2\UpdateStatusController;
 use App\Http\Middleware\AuthorizeMonitoring;
@@ -608,6 +611,19 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('relayhostId', '[1-9][0-9]{0,9}')
             ->name('relayhost-usage.index');
         Route::get('/transports', [TransportController::class, 'index'])->name('transports.index');
+        Route::get('/bcc-maps', [BccMapController::class, 'index'])->name('bcc-maps.index');
+        Route::get('/recipient-maps', [RecipientMapController::class, 'index'])->name('recipient-maps.index');
+        Route::get('/recipient-maps/{recipientMapId}', [RecipientMapController::class, 'show'])
+            ->where('recipientMapId', '[1-9][0-9]{0,9}')
+            ->name('recipient-maps.show');
+        Route::get('/tls-policy-maps', [TlsPolicyMapController::class, 'index'])->name('tls-policy-maps.index');
+        Route::get('/tls-policy-maps/{tlsPolicyMapId}', [TlsPolicyMapController::class, 'show'])
+            ->where('tlsPolicyMapId', '[1-9][0-9]{0,9}')
+            ->name('tls-policy-maps.show');
+        Route::get('/bcc-destination-choices', [BccMapController::class, 'choices'])->name('bcc-destination-choices.index');
+        Route::get('/bcc-maps/{bccMapId}', [BccMapController::class, 'show'])
+            ->where('bccMapId', '[1-9][0-9]{0,9}')
+            ->name('bcc-maps.show');
         Route::get('/transports/{transportId}', [TransportController::class, 'show'])
             ->where('transportId', '[1-9][0-9]{0,9}')
             ->name('transports.show');
@@ -644,6 +660,48 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('transportId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'transportTest', 'target' => 'transport'])
             ->name('transport-connection-test.store');
+        Route::post('/recipient-maps/bulk-actions', [RoutingBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'recipientMap'])
+            ->name('recipient-map-bulk-actions.store');
+        Route::post('/recipient-maps', [RecipientMapController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'recipientMapCreation', 'target' => 'recipientMap'])
+            ->name('recipient-maps.store');
+        Route::patch('/recipient-maps/{recipientMapId}', [RecipientMapController::class, 'update'])
+            ->where('recipientMapId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'recipientMapUpdate', 'target' => 'recipientMap'])
+            ->name('recipient-maps.update');
+        Route::delete('/recipient-maps/{recipientMapId}', [RecipientMapController::class, 'destroy'])
+            ->where('recipientMapId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'recipientMapDeletion', 'target' => 'recipientMap'])
+            ->name('recipient-maps.destroy');
+        Route::post('/tls-policy-maps/bulk-actions', [RoutingBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'tlsPolicyMap'])
+            ->name('tls-policy-map-bulk-actions.store');
+        Route::post('/tls-policy-maps', [TlsPolicyMapController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'tlsPolicyMapCreation', 'target' => 'tlsPolicyMap'])
+            ->name('tls-policy-maps.store');
+        Route::patch('/tls-policy-maps/{tlsPolicyMapId}', [TlsPolicyMapController::class, 'update'])
+            ->where('tlsPolicyMapId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'tlsPolicyMapUpdate', 'target' => 'tlsPolicyMap'])
+            ->name('tls-policy-maps.update');
+        Route::delete('/tls-policy-maps/{tlsPolicyMapId}', [TlsPolicyMapController::class, 'destroy'])
+            ->where('tlsPolicyMapId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'tlsPolicyMapDeletion', 'target' => 'tlsPolicyMap'])
+            ->name('tls-policy-maps.destroy');
+        Route::post('/bcc-maps/bulk-actions', [RoutingBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'bccMap'])
+            ->name('bcc-map-bulk-actions.store');
+        Route::post('/bcc-maps', [BccMapController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'bccMapCreation', 'target' => 'bccMap'])
+            ->name('bcc-maps.store');
+        Route::patch('/bcc-maps/{bccMapId}', [BccMapController::class, 'update'])
+            ->where('bccMapId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'bccMapUpdate', 'target' => 'bccMap'])
+            ->name('bcc-maps.update');
+        Route::delete('/bcc-maps/{bccMapId}', [BccMapController::class, 'destroy'])
+            ->where('bccMapId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'bccMapDeletion', 'target' => 'bccMap'])
+            ->name('bcc-maps.destroy');
         Route::post('/transports/bulk-actions', [RoutingBulkActionController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'transport'])
             ->name('transport-bulk-actions.store');

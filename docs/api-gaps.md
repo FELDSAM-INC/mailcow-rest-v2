@@ -28,3 +28,9 @@ then marks the entry done here. Gaps that are a contract-wide rule are also reco
 | G19 | UI 012 | 001 | `GET /audit-events` has no `requestId` filter, so related records can't be linked. | Add a `requestId` filter. | open |
 | G20 | UI 012 | 012 | `PUT /identity-provider` has no create-only precondition, so simultaneous first setups overwrite each other. | Honour `If-None-Match: *` (412 when a configuration exists). | open |
 | G21 | UI 012 | 012 | There is no identity provider in the API dev stack for SSO smoke tests. | Add an optional Keycloak service with a realm import to the dev compose stack. | open |
+| G22 | UI 005 | 005 | `applyMailboxMailSettingsBulkAction` compares `version` with the mail-settings tag, but mailbox list entries expose only the mailbox `etag`, so bulk TLS can't send per-item versions. | Add `mailSettingsVersion` to the `Mailbox` list representation (003 schema, owned by 005). | open |
+| G23 | UI 005 | 005 | No operation reads a Sieve filter by its ID alone (needed by UI 014 mapping M31). | Add `GET /sieve-filters/{sieveFilterId}`, or an `id` filter on `GET /sieve-filters`. | open |
+| G24 | UI 005 | 005 | Recent-login services are an open string. | List the known values in the contract (enum, with clients tolerating unknown values). | open |
+| G25 | UI 005 | 001/005 | The `PendingAction` and `pending-action-required` texts still say the password change happens in the legacy UI. | Update them when 005 lands (005 T029). | open |
+| G26 | UI 005 | 005 | The SVG element subset of the TOTP `qrCode` is undocumented. | Document the subset (or return the otpauth URI for client-side rendering). | open |
+| G27 | UI 005 | 005 | Reset links carry the token in the query string, so it can reach server logs. | Default `RESTV2_PW_RESET_PAGE` to `/ng/reset-password#token={token}`. | open |

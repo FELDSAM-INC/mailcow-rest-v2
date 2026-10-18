@@ -226,7 +226,58 @@
             "problemTypes": [
                 "sync-job-exists"
             ]
+        },
+        "012-identity-providers-oauth2": {
+            "operations": [
+                "getIdentityProviderCapabilities",
+                "getIdentityProvider",
+                "saveIdentityProvider",
+                "updateIdentityProvider",
+                "deleteIdentityProvider",
+                "testIdentityProviderConnection",
+                "startSingleSignOn",
+                "cancelSingleSignOn",
+                "completeSingleSignOn",
+                "reportSingleSignOnProviderError",
+                "getOauth2ClientsCapabilities",
+                "listOauth2Clients",
+                "createOauth2Client",
+                "bulkOauth2ClientAction",
+                "getOauth2Client",
+                "updateOauth2Client",
+                "deleteOauth2Client",
+                "regenerateOauth2ClientSecret",
+                "revokeOauth2ClientTokens"
+            ],
+            "problemTypes": [
+                "identity-provider-not-configured",
+                "identity-provider-in-use",
+                "single-sign-on-not-available",
+                "sign-in-state-invalid",
+                "identity-provider-unavailable",
+                "identity-provider-session-ended"
+            ]
         }
     },
-    "pendingOperations": []
+    "pendingOperations": [
+        "getIdentityProviderCapabilities",
+        "getIdentityProvider",
+        "saveIdentityProvider",
+        "updateIdentityProvider",
+        "deleteIdentityProvider",
+        "testIdentityProviderConnection",
+        "startSingleSignOn",
+        "cancelSingleSignOn",
+        "completeSingleSignOn",
+        "reportSingleSignOnProviderError",
+        "getOauth2ClientsCapabilities",
+        "listOauth2Clients",
+        "createOauth2Client",
+        "bulkOauth2ClientAction",
+        "getOauth2Client",
+        "updateOauth2Client",
+        "deleteOauth2Client",
+        "regenerateOauth2ClientSecret",
+        "revokeOauth2ClientTokens"
+    ]
 }

@@ -78,7 +78,7 @@ each in spec priority order (US1–US3 P1, US4 P2, US5 P3), Phase 8 polish.
   with `ou=people,dc=example,dc=org`, the users `carl@example.org` (`title: staff`,
   `displayName: Carl Example`), `dana@example.org` (no `title`) and `a*b@example.org` (for escaping),
   all with password `Passw0rd!dev`.
-- [ ] T005 [P] Configure test groups: in `phpunit.xml` add the suite `Integration`
+- [X] T005 [P] Configure test groups: in `phpunit.xml` add the suite `Integration`
   (`tests/Integration`) and exclude the group `idp` by default. In `.github/workflows/ci.yml` add an
   `osixia/openldap:1.5.0` service to the `tests` job and a step `vendor/bin/phpunit --group idp`.
 - [X] T006 [P] Create `scripts/legacy/extract-sync-log-texts.sh <tag>`, which reads
@@ -97,7 +97,7 @@ problem types that every story needs. **No user story can start before this phas
 
 ### Test toolkit and foundation tests (write first, observe failing) ⚠️
 
-- [ ] T007 [P] Extend `database/factories/MailcowRows.php` and
+- [X] T007 [P] Extend `database/factories/MailcowRows.php` and
   `tests/Support/Mailcow/MailcowFactory.php` (001 T019) with rows written exactly as legacy writes
   them (data-model "Settings, contract members and encodings"):
   - `identityProviderRows(array $keyValues)` (raw rows, for legacy-stored cases);
@@ -109,12 +109,12 @@ problem types that every story needs. **No user story can start before this phas
   - `cronLog(array $entries)` pushing JSON `{time, priority, task, message}` onto `CRON_LOG` on the
     `mailcow` Redis connection (newest last pushed);
   - reuse 003's `mailboxTemplate(name, attributes)` and 001's `mailbox(..., authsource)`.
-- [ ] T008 [P] Create `tests/Support/Fakes/FakeLdapDirectory.php` implementing
+- [X] T008 [P] Create `tests/Support/Fakes/FakeLdapDirectory.php` implementing
   `App\Clients\Ldap\LdapDirectory`: scripted entries per filter, scripted bind results per DN
   (`ok`, code 49, unavailable, TLS failure, timeout), recorded calls (connection settings, filter
   strings, bind DNs, never passwords in assertion messages) and assertions `assertSearched(filter)`,
   `assertBoundAs(dn)`, `assertNotContacted()`.
-- [ ] T009 [P] Create `tests/Support/IdentityProvider/FakeOidcProvider.php` on `Http::fake()`:
+- [X] T009 [P] Create `tests/Support/IdentityProvider/FakeOidcProvider.php` on `Http::fake()`:
   helpers for the Keycloak and generic OIDC token endpoint (authorization code, refresh token,
   client credentials, invalid code), the user info endpoint, Keycloak introspection and
   `admin/realms/<realm>/users`, each answering success, an OAuth error (`invalid_grant`,
@@ -123,7 +123,7 @@ problem types that every story needs. **No user story can start before this phas
   `redirect_uri`, `client_id`, `client_secret`, `grant_type`), on the `verify` option and on
   "nothing sent". Create `tests/Support/IdentityProvider/IdentityProviderFixtures.php` with the
   standard Keycloak, generic OIDC and LDAP request bodies and user-info payloads.
-- [ ] T010 [P] Write `tests/Unit/IdentityProvider/IdentityProviderSettingsCodecTest.php` (R9):
+- [X] T010 [P] Write `tests/Unit/IdentityProvider/IdentityProviderSettingsCodecTest.php` (R9):
   - reading: FR-007 defaults for missing keys; `'1'`, `''`, `'0'` booleans; `redirect_url_extra`,
     `mappers`, `templates` as a JSON list and as a legacy JSON object (`{"0":"a","2":"b"}`);
     mapping lists of different lengths pair only the shorter length; rows of another type ignored;
@@ -137,16 +137,16 @@ problem types that every story needs. **No user story can start before this phas
   - the version tag ignores `access_token` and changes when any other value, including a secret,
     changes; secrets enter only as `hash_hmac('sha256', value, config('app.key'))`, so the tag input
     never contains the secret or its plain SHA-256 (`docs/conventions.md`).
-- [ ] T011 [P] Write `tests/Unit/IdentityProvider/TemplateMarkerTest.php`: for template attribute
+- [X] T011 [P] Write `tests/Unit/IdentityProvider/TemplateMarkerTest.php`: for template attribute
   strings with `/`, non-ASCII characters and nested JSON, `TemplateMarker::for($text)` equals
   `sha1(json_encode($text))` as computed by a verbatim copy of legacy's expression kept in the test
   with its source reference (`functions.mailbox.inc.php`, `mailbox_from_template`) (R6).
-- [ ] T012 [P] Write `tests/Unit/IdentityProvider/AppReturnUrlsTest.php` (R4):
+- [X] T012 [P] Write `tests/Unit/IdentityProvider/AppReturnUrlsTest.php` (R4):
   `MAILCOW_HOSTNAME=mail.example.org`, `ADDITIONAL_SERVER_NAMES=" webmail.example.org,MAIL.example.net,,bad host"`
   → list `https://mail.example.org/ng/sso/return`, `https://webmail.example.org/ng/sso/return`,
   `https://mail.example.net/ng/sso/return`; selection for host `Mail.Example.NET:443` → the third;
   unknown host → the first; scheme and path from config.
-- [ ] T013 [P] Write `tests/Unit/Rules/IdentityProviderRulesTest.php`, one data provider per rule
+- [X] T013 [P] Write `tests/Unit/Rules/IdentityProviderRulesTest.php`, one data provider per rule
   with valid and invalid values and the expected rule code and params (R10): `HttpUrl`
   (`ftp://x`, `/relative`, 2,001 characters → `invalidFormat` `httpUrl` or `tooLong`),
   `KeycloakRealm` (`a/b`), `KeycloakVersion` (`26.0.7` ok, `26.0.7.1.2`, `v26`), `ScopeList`
@@ -156,15 +156,15 @@ problem types that every story needs. **No user story can start before this phas
   (`duplicate` with `duplicateOf`). If 002 has no bulk result builder, also write
   `tests/Unit/Support/BulkResultTest.php` for `App\Support\Http\BulkResult` (summary counts, request
   order, `version` only for `done`).
-- [ ] T014 [P] Write `tests/Unit/Clients/ExtLdapDirectoryTest.php` for the pure parts of the
+- [X] T014 [P] Write `tests/Unit/Clients/ExtLdapDirectoryTest.php` for the pure parts of the
   adapter (R2): `uris(hosts, port, ssl)` (`ldap://a:389 ldap://b:389`; SSL 389 → `ldaps://a:636`;
   SSL 1636 stays; IPv6 → `ldap://[2001:db8::1]:389`), `userFilter(filter, field, username)`
   (`(&(objectClass=person)(mail=carl@example.org))`, no filter → `(mail=…)`, `a*b(c)\` escaped as
   `a\2ab\28c\29\5c`), option list with and without `ignoreTlsErrors`.
-- [ ] T015 [P] Write `tests/Unit/Clients/OidcEndpointsTest.php`: Keycloak endpoints from server URL
+- [X] T015 [P] Write `tests/Unit/Clients/OidcEndpointsTest.php`: Keycloak endpoints from server URL
   and realm; scopes `profile email` for version `19.0.3`, `profile email openid` for `20.0.0` and
   `26.0.7`; generic OIDC endpoints and the scope string unchanged (R1).
-- [ ] T016 [P] Write `tests/Unit/IdentityProvider/SynchronisationLogParserTest.php` (R12): every
+- [X] T016 [P] Write `tests/Unit/IdentityProvider/SynchronisationLogParserTest.php` (R12): every
   message of `tests/fixtures/cron-log/2026-09a-messages.json` is classified (completed, tick,
   progress, failure); the sample `tests/fixtures/cron-log/2026-09a.json` yields the expected
   `lastCompletedAt`, `lastFailedAt`, `state` and `nextRunExpectedAt` at fixed clock times (waiting,
@@ -172,32 +172,32 @@ problem types that every story needs. **No user story can start before this phas
 
 ### Implementation of the foundation
 
-- [ ] T017 [P] Create `app/Auth/IdentityProviderType.php` (enum `keycloak`, `genericOidc`, `ldap`
+- [X] T017 [P] Create `app/Auth/IdentityProviderType.php` (enum `keycloak`, `genericOidc`, `ldap`
   with `fromLegacy('generic-oidc')` and `legacy()`), `app/Auth/PasswordSource.php` (`mailcow`,
   `ldap`, `keycloak`), add the cases `SingleSignOn`, `DirectoryPassword`,
   `DirectoryPasswordAndSecondFactor`, `ProviderPassword`, `ProviderPasswordAndSecondFactor` to
   `app/Auth/AuthMethod.php`, and the optional properties `identityProvider`, `passwordSource` and
   `ssoLinkId` to `app/Auth/Principal.php` (001 T040).
-- [ ] T018 [P] Add the six cases of FR-057 `IdentityProviderNotConfigured` (404), `IdentityProviderInUse`
+- [X] T018 [P] Add the six cases of FR-057 `IdentityProviderNotConfigured` (404), `IdentityProviderInUse`
   (409), `SingleSignOnNotAvailable` (409), `SignInStateInvalid` (401), `IdentityProviderUnavailable`
   (503), `IdentityProviderSessionEnded` (401) to `app/Support/Http/ProblemType.php` with the titles of
   `docs/problems.md`. 001's `tests/Unit/Support/ProblemTypeConsistencyTest.php` then passes again.
-- [ ] T019 Create (FR-005, FR-007, FR-008) `app/Services/IdentityProvider/IdentityProviderConfig.php` (readonly value object:
+- [X] T019 Create (FR-005, FR-007, FR-008) `app/Services/IdentityProvider/IdentityProviderConfig.php` (readonly value object:
   type and typed settings, `isComplete()`, `missingSettings()`, `secret()`, `secretAddress()`,
   `withPatch(array)`) and `IdentityProviderSettingsCodec.php` (`fromRows(array): ?IdentityProviderConfig`,
   `toRows(IdentityProviderConfig): array<string,string>`, `keysFor(type)`, `etag(rows)` with the
   secrets as an HMAC keyed with `config('app.key')`) per R9 and
   the data model. This makes T010 pass.
-- [ ] T020 [P] Create `app/Services/IdentityProvider/TemplateMarker.php`, `AppReturnUrls.php`
+- [X] T020 [P] Create `app/Services/IdentityProvider/TemplateMarker.php`, `AppReturnUrls.php`
   (`all()`, `forHost(string)`, reading `config('restv2.mailcow_hostname')` and
   `config('restv2.identity_provider.*')`) and `IdentityProviderUsage.php` (`counts(): array{keycloak,
   genericOidc, ldap}` with the query of the data model, `blocking(newType|null)`). This makes T011
   and T012 pass.
-- [ ] T021 Create `app/Services/IdentityProvider/IdentityProviderRepository.php`: `rows()` (all rows
+- [X] T021 Create `app/Services/IdentityProvider/IdentityProviderRepository.php`: `rows()` (all rows
   of `identity_provider`), `current(): ?IdentityProviderConfig`, `etag()`, `modifiedAt()`
   (`MAX(COALESCE(modified, created))` without `access_token`, through `MailcowDateTime`) and
   `templatesExist(array $names): array<string,bool>` (one query on `templates`, `type = 'mailbox'`).
-- [ ] T022 [P] Create the rules `app/Rules/{HttpUrl,KeycloakRealm,KeycloakVersion,ScopeList,HostName,LdapAttributeName,LdapFilter,ExistingMailboxTemplate,UniqueAttributeValues,RedirectUri}.php`,
+- [X] T022 [P] Create the rules `app/Rules/{HttpUrl,KeycloakRealm,KeycloakVersion,ScopeList,HostName,LdapAttributeName,LdapFilter,ExistingMailboxTemplate,UniqueAttributeValues,RedirectUri}.php`,
   each reporting its rule code and params through 001's mechanism (001 T036), with the limits quoted
   in the data model ("absolute https/http URL, at most 2,000 characters"; "1 to 255 characters,
   without `/`"; "one to four whole numbers separated by dots"; "1 to 50 scope names separated by
@@ -205,7 +205,7 @@ problem types that every story needs. **No user story can start before this phas
   letters, digits or hyphens, at most 255 characters"; "at most 1,000 characters, starting with `(`,
   ending with `)`, balanced parentheses"; "absolute URI with a scheme, no fragment, no whitespace").
   If 002 did not create it, create `app/Support/Http/BulkResult.php`. This makes T013 pass.
-- [ ] T023 [P] Create `app/Clients/Oidc/OidcClient.php` (interface: `authorizationUrl(OidcEndpoints,
+- [X] T023 [P] Create `app/Clients/Oidc/OidcClient.php` (interface: `authorizationUrl(OidcEndpoints,
   clientId, returnUrl, state): array{url, codeVerifier}`, `exchangeCode(…, code, codeVerifier,
   returnUrl): OidcTokens`, `refresh(…, refreshToken): OidcTokens`, `userInfo(…, accessToken): array`),
   `OidcEndpoints.php`, `OidcTokens.php`, `OidcFailure.php` (`refused`, `unavailable` with the cURL
@@ -214,7 +214,7 @@ problem types that every story needs. **No user story can start before this phas
   `Http::timeout(config(...timeout))->connectTimeout(...)->withOptions(['verify' => !$ignoreTls,
   'allow_redirects' => false])->buildClient()` (R1, FR-056: 7 s, TLS verified unless ignored). Bind it in
   `app/Providers/AppServiceProvider.php`. This makes T015 pass.
-- [ ] T024 [P] Create `app/Clients/Ldap/LdapDirectory.php` (interface: `testBind(LdapConnectionSettings):
+- [X] T024 [P] Create `app/Clients/Ldap/LdapDirectory.php` (interface: `testBind(LdapConnectionSettings):
   LdapResult`, `findAndBind(LdapConnectionSettings, string $username, string $password,
   array $attributes): LdapResult`), `LdapConnectionSettings.php`, `LdapResult.php` and
   `ExtLdapDirectory.php` on `ldap_connect`, `ldap_set_option` (protocol 3, referrals 0, network
@@ -223,21 +223,21 @@ problem types that every story needs. **No user story can start before this phas
   and the result mapping of R2 and R11 (49 → wrong credentials; -1 with a certificate diagnostic or
   a StartTLS failure → TLS; timeout; unreachable). Never call `ldap_bind` with an empty password.
   Bind it in `AppServiceProvider`. This makes T014 pass.
-- [ ] T025 [P] Create `app/Clients/Keycloak/KeycloakAdminClient.php` (interface: `introspect`,
+- [X] T025 [P] Create `app/Clients/Keycloak/KeycloakAdminClient.php` (interface: `introspect`,
   `serviceToken`, `findUsersByEmail`) and `HttpKeycloakAdminClient.php` on Laravel's HTTP client with
   the timeout and TLS options of T023 (R3). Bind it in `AppServiceProvider`.
-- [ ] T026 [P] Create the read-only models `app/Models/Mailcow/{Oauth2Client,Oauth2AccessToken,Oauth2RefreshToken,Oauth2AuthorizationCode}.php`
+- [X] T026 [P] Create the read-only models `app/Models/Mailcow/{Oauth2Client,Oauth2AccessToken,Oauth2RefreshToken,Oauth2AuthorizationCode}.php`
   (`$table` `oauth_clients`, `oauth_access_tokens`, `oauth_refresh_tokens`,
   `oauth_authorization_codes`; `$timestamps = false`; `$guarded = ['*']`; `Oauth2Client` keyed by
   `id` for route binding; `expires` cast to `CarbonImmutable` in the server time zone).
-- [ ] T027 [P] Create `app/Policies/IdentityProviderPolicy.php` and `app/Policies/Oauth2ClientPolicy.php`
+- [X] T027 [P] Create `app/Policies/IdentityProviderPolicy.php` and `app/Policies/Oauth2ClientPolicy.php`
   (administrators only, for every ability, from 001's `Principal` role), registered in
   `AppServiceProvider`.
-- [ ] T028 [P] Extend `app/Logging/RedactSecrets.php` (001 T037) so that context keys matching
+- [X] T028 [P] Extend `app/Logging/RedactSecrets.php` (001 T037) so that context keys matching
   `state`, `verifier`, `bind` and `cookie` are dropped too, and extend its test
   `tests/Unit/Logging/RedactSecretsTest.php` with `clientSecret`, `bindPassword`, `code`, `state`,
   `codeVerifier`, `refreshToken` and `access_token` keys (R15).
-- [ ] T029 Create `app/Services/IdentityProvider/SynchronisationStatus.php` (value object) and
+- [X] T029 Create `app/Services/IdentityProvider/SynchronisationStatus.php` (value object) and
   `SynchronisationStatusReader.php` (`read(IdentityProviderConfig, CarbonImmutable $now)`: chunked
   `LRANGE CRON_LOG` of 500 on the `mailcow` connection up to 10,000 entries, the classification and
   derivation of R12, `disabled` without import and periodic synchronisation, `null` for generic
@@ -768,7 +768,7 @@ type and sign-in method.
   regeneration, revocation and bulk deletion with distinctive secrets, codes, states, verifiers and
   tokens; capture the log channel; assert that no response (apart from the OAuth2 creation and
   regeneration secrets), log line, audit row or session payload contains any of them.
-- [ ] T090 [P] Write `tests/Integration/Ldap/ExtLdapDirectoryTest.php` (group `idp`, R2) against the
+- [X] T090 [P] Write `tests/Integration/Ldap/ExtLdapDirectoryTest.php` (group `idp`, R2) against the
   `openldap` service: lookup and bind of `carl@example.org`, literal match of `a*b@example.org`, a
   filter that excludes the entry, wrong password → code 49, wrong bind DN password → unavailable,
   `ldaps://` with the self-signed certificate refused unless `ignoreTlsErrors`, StartTLS, a stopped

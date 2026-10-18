@@ -2,7 +2,10 @@
 
 namespace Database\Factories;
 
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use InvalidArgumentException;
 
 /**
@@ -778,6 +781,177 @@ class MailcowRows
     public function identityProvider(string $authsource): void
     {
         DB::table('identity_provider')->updateOrInsert(['key' => 'authsource'], ['value' => $authsource]);
+    }
+
+    /**
+     * Raw `identity_provider` rows (key => value), upserted as given: for configurations that only
+     * legacy can store (empty values, rows of another type, legacy JSON objects).
+     *
+     * @param  array<string, string>  $keyValues
+     */
+    public function identityProviderRows(array $keyValues): void
+    {
+        foreach ($keyValues as $key => $value) {
+            DB::table('identity_provider')->updateOrInsert(['key' => $key], ['value' => $value]);
+        }
+    }
+
+    /** The bind password of ldapConfig(). */
+    public const LDAP_BIND_PASSWORD = 'ldap-secret';
+
+    /** The client secret of keycloakConfig(). */
+    public const KEYCLOAK_CLIENT_SECRET = 'kc-secret';
+
+    /** The client secret of genericOidcConfig(). */
+    public const OIDC_CLIENT_SECRET = 'oidc-secret';
+
+    /**
+     * A complete LDAP configuration with every key legacy identity_provider('edit') writes, in its
+     * encodings (PHP booleans bound as '1'/'', integers as decimal strings, JSON lists). Overrides
+     * use the legacy keys.
+     *
+     * @param  array<string, string>  $overrides
+     */
+    public function ldapConfig(array $overrides = []): void
+    {
+        $this->identityProviderRows(array_merge([
+            'authsource' => 'ldap',
+            'host' => 'ldap1.example.org,ldap2.example.org',
+            'port' => '389',
+            'basedn' => 'ou=people,dc=example,dc=org',
+            'username_field' => 'mail',
+            'filter' => '(objectClass=inetOrgPerson)',
+            'attribute_field' => 'title',
+            'binddn' => 'cn=admin,dc=example,dc=org',
+            'bindpass' => self::LDAP_BIND_PASSWORD,
+            'periodic_sync' => '0',
+            'import_users' => '0',
+            'sync_interval' => '15',
+            'use_ssl' => '',
+            'use_tls' => '',
+            'ignore_ssl_error' => '',
+            'login_provisioning' => '1',
+            'mappers' => '["staff"]',
+            'templates' => '["Staff"]',
+            'default_template' => '',
+            'access_token' => '',
+        ], $overrides));
+    }
+
+    /**
+     * A complete Keycloak configuration, as ldapConfig() (version 26.0.7, realm `example`).
+     *
+     * @param  array<string, string>  $overrides
+     */
+    public function keycloakConfig(array $overrides = []): void
+    {
+        $this->identityProviderRows(array_merge([
+            'authsource' => 'keycloak',
+            'server_url' => 'https://sso.example.org',
+            'realm' => 'example',
+            'client_id' => 'mailcow',
+            'client_secret' => self::KEYCLOAK_CLIENT_SECRET,
+            'redirect_url' => 'https://mail.example.org',
+            'redirect_url_extra' => '[]',
+            'version' => '26.0.7',
+            'mailpassword_flow' => '0',
+            'periodic_sync' => '0',
+            'import_users' => '0',
+            'sync_interval' => '15',
+            'ignore_ssl_error' => '',
+            'login_provisioning' => '1',
+            'mappers' => '["staff"]',
+            'templates' => '["Staff"]',
+            'default_template' => '',
+            'access_token' => '',
+        ], $overrides));
+    }
+
+    /**
+     * A complete generic OIDC configuration, as ldapConfig().
+     *
+     * @param  array<string, string>  $overrides
+     */
+    public function genericOidcConfig(array $overrides = []): void
+    {
+        $this->identityProviderRows(array_merge([
+            'authsource' => 'generic-oidc',
+            'authorize_url' => 'https://idp.example.net/oauth2/authorize',
+            'token_url' => 'https://idp.example.net/oauth2/token',
+            'userinfo_url' => 'https://idp.example.net/oauth2/userinfo',
+            'client_id' => 'mailcow',
+            'client_secret' => self::OIDC_CLIENT_SECRET,
+            'redirect_url' => 'https://mail.example.org',
+            'redirect_url_extra' => '[]',
+            'client_scopes' => 'openid profile email mailcow_template',
+            'ignore_ssl_error' => '',
+            'login_provisioning' => '1',
+            'mappers' => '["staff"]',
+            'templates' => '["Staff"]',
+            'default_template' => '',
+            'access_token' => '',
+        ], $overrides));
+    }
+
+    /**
+     * An OAuth2 client as legacy oauth2('add', 'client') inserts it: generated client ID (12 hex)
+     * and secret (24 hex), scope `profile`, `grant_types` and `user_id` NULL. Returns its `id`.
+     */
+    public function oauthClient(string $redirectUri, ?string $clientId = null, ?string $secret = null): int
+    {
+        return (int) DB::table('oauth_clients')->insertGetId([
+            'client_id' => $clientId ?? bin2hex(random_bytes(6)),
+            'client_secret' => $secret ?? bin2hex(random_bytes(12)),
+            'redirect_uri' => $redirectUri,
+            'grant_types' => null,
+            'scope' => 'profile',
+            'user_id' => null,
+        ], 'id');
+    }
+
+    /** An access token of a client (`oauth_access_tokens`); a string `expires` is mailcow local time. Returns the token. */
+    public function oauthAccessToken(string $clientId, DateTimeInterface|string $expires, string $userId = 'user@example.org'): string
+    {
+        return $this->oauthRow('oauth_access_tokens', 'access_token', $clientId, $expires, $userId);
+    }
+
+    /** A refresh token of a client (`oauth_refresh_tokens`). Returns the token. */
+    public function oauthRefreshToken(string $clientId, DateTimeInterface|string $expires, string $userId = 'user@example.org'): string
+    {
+        return $this->oauthRow('oauth_refresh_tokens', 'refresh_token', $clientId, $expires, $userId);
+    }
+
+    /** An authorization code of a client (`oauth_authorization_codes`). Returns the code. */
+    public function oauthAuthorizationCode(string $clientId, DateTimeInterface|string $expires, string $userId = 'user@example.org'): string
+    {
+        return $this->oauthRow('oauth_authorization_codes', 'authorization_code', $clientId, $expires, $userId);
+    }
+
+    /**
+     * Entries of mailcow's scheduled-job log (Redis list `CRON_LOG` on the `mailcow` connection),
+     * pushed with LPUSH as the legacy jobs do, so the last entry given is the newest.
+     *
+     * @param  list<array{time: int, priority: string, task: string, message: string}>  $entries  oldest first
+     */
+    public function cronLog(array $entries): void
+    {
+        $redis = Redis::connection('mailcow');
+
+        foreach ($entries as $entry) {
+            $redis->lpush('CRON_LOG', json_encode($entry, JSON_THROW_ON_ERROR));
+        }
+    }
+
+    private function oauthRow(string $table, string $column, string $clientId, DateTimeInterface|string $expires, string $userId): string
+    {
+        $value = bin2hex(random_bytes(20));
+        $local = $expires instanceof DateTimeInterface
+            ? CarbonImmutable::instance($expires)->setTimezone((string) (config('restv2.timezone') ?: 'UTC'))->format('Y-m-d H:i:s')
+            : $expires;
+
+        DB::table($table)->insert([$column => $value, 'client_id' => $clientId, 'user_id' => $userId, 'expires' => $local]);
+
+        return $value;
     }
 
     /**

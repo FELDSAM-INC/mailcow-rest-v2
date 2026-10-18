@@ -20,14 +20,20 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
     </testsuites>
     <!--
       Timing tests (#[Group('performance')]) measure wall-clock budgets and fail on a loaded machine,
       so `composer test` leaves them out. `composer test:performance` runs them on their own.
+      Group idp needs the OpenLDAP service of the dev stack's idp profile (feature 012, quickstart
+      Part A): start it, then run phpunit with the option group idp.
     -->
     <groups>
         <exclude>
             <group>performance</group>
+            <group>idp</group>
         </exclude>
     </groups>
     <source>

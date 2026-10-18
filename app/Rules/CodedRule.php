@@ -27,9 +27,20 @@ abstract class CodedRule implements ValidationRule
         $violation = $this->check($value);
 
         if ($violation !== null) {
-            $this->violations[$attribute] = $violation;
-            $fail($violation['message']);
+            $this->remember($attribute, $violation, $fail);
         }
+    }
+
+    /**
+     * Records a violation of the attribute and fails it, for rules that override validate()
+     * because they need the attribute's path (for example its list index).
+     *
+     * @param  array{code: string, params: array<string, mixed>, message: string}  $violation
+     */
+    protected function remember(string $attribute, array $violation, Closure $fail): void
+    {
+        $this->violations[$attribute] = $violation;
+        $fail($violation['message']);
     }
 
     /**

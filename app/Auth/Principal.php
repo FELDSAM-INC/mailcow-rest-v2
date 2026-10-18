@@ -18,6 +18,11 @@ final readonly class Principal
         public AuthMethod $authMethod,
         public ?CarbonImmutable $signedInAt = null,
         public ?ApiKeyReference $apiKey = null,
+        // Feature 012: the provider of a sign-in through the identity provider, who verified the
+        // password of a password sign-in, and the provider link of a single sign-on session.
+        public ?IdentityProviderType $identityProvider = null,
+        public ?PasswordSource $passwordSource = null,
+        public ?string $ssoLinkId = null,
     ) {}
 
     public function isApiKey(): bool

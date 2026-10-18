@@ -113,6 +113,16 @@ jobs:
         image: redis:7.4.11-alpine
         env:
           TZ: Europe/Prague
+      # Feature 012: the real LDAP adapter (group idp). The tests add the people of
+      # tests/fixtures/ldap/bootstrap.ldif themselves, because services start before checkout.
+      openldap:
+        image: osixia/openldap:1.5.0
+        env:
+          LDAP_ORGANISATION: Example
+          LDAP_DOMAIN: example.org
+          LDAP_ADMIN_PASSWORD: ldap-secret
+          LDAP_TLS: 'true'
+          LDAP_TLS_VERIFY_CLIENT: never
     steps:
       - uses: actions/checkout@v4
       - name: Apply mailcow's server settings
@@ -151,6 +161,13 @@ jobs:
             -e REDISHOST=redis -e REDISPASS=devredispass \
             -e MAILCOW_SCHEMA="${{ matrix.schema }}" \
             "$DEV_IMAGE" composer test:performance
+      - name: LDAP integration (group idp)
+        run: |
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app \
+            --network "${{ job.services.mariadb.network }}" \
+            -e DBHOST=mariadb -e DBUSER=mailcow -e DBPASS=mailcow -e DBROOT=root \
+            -e REDISHOST=redis -e REDISPASS=devredispass \
+            "$DEV_IMAGE" vendor/bin/phpunit --group idp
       - uses: actions/upload-artifact@v4
         if: always()
         with:

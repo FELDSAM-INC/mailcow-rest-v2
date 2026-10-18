@@ -14,8 +14,14 @@ use App\Clients\Fail2Ban\Fail2BanReporter;
 use App\Clients\Fail2Ban\RedisFail2BanReporter;
 use App\Clients\Ispconfig\IspconfigDnsClient;
 use App\Clients\Ispconfig\JsonIspconfigDnsClient;
+use App\Clients\Keycloak\HttpKeycloakAdminClient;
+use App\Clients\Keycloak\KeycloakAdminClient;
+use App\Clients\Ldap\ExtLdapDirectory;
+use App\Clients\Ldap\LdapDirectory;
 use App\Clients\Memcached\MemcachedFlusher;
 use App\Clients\Memcached\SocketMemcachedFlusher;
+use App\Clients\Oidc\LeagueOidcClient;
+use App\Clients\Oidc\OidcClient;
 use App\Clients\PublicAddress\HttpPublicAddressLookup;
 use App\Clients\PublicAddress\PublicAddressLookup;
 use App\Clients\Releases\GitHubReleaseSource;
@@ -27,14 +33,18 @@ use App\Clients\Yubico\YubicoOtpVerifier;
 use App\Models\Mailcow\Alias;
 use App\Models\Mailcow\Domain;
 use App\Models\Mailcow\DomainTemplate;
+use App\Models\Mailcow\IdentityProviderSetting;
 use App\Models\Mailcow\Mailbox;
 use App\Models\Mailcow\MailboxTemplate;
+use App\Models\Mailcow\Oauth2Client;
 use App\Policies\AliasPolicy;
 use App\Policies\DomainPolicy;
 use App\Policies\DomainTemplatePolicy;
+use App\Policies\IdentityProviderPolicy;
 use App\Policies\MailboxPolicy;
 use App\Policies\MailboxTemplatePolicy;
 use App\Policies\MonitoringPolicy;
+use App\Policies\Oauth2ClientPolicy;
 use App\Policies\SyncJobPolicy;
 use App\Services\Aliases\AliasAuditTargets;
 use App\Services\Audit\RefusalAuditor;
@@ -81,6 +91,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PublicAddressLookup::class, HttpPublicAddressLookup::class);
         $this->app->when(UpdateCheckService::class)->needs(Repository::class)->give(fn ($app) => $app->make(CacheFactory::class)->store('restv2'));
 
+        // Feature 012: the identity provider's protocols, faked in tests (Http::fake(), FakeLdapDirectory).
+        $this->app->bind(OidcClient::class, LeagueOidcClient::class);
+        $this->app->bind(LdapDirectory::class, ExtLdapDirectory::class);
+        $this->app->bind(KeycloakAdminClient::class, HttpKeycloakAdminClient::class);
+
         if (config('restv2.fake_outbound')) {
             if ($this->app->environment('local')) {
                 $this->app->bind(DockerApiClient::class, NullDockerApiClient::class);
@@ -108,6 +123,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MailboxTemplate::class, MailboxTemplatePolicy::class);
         Gate::policy(Alias::class, AliasPolicy::class);
         Gate::define('syncJobs.use', [SyncJobPolicy::class, 'use']);
+        Gate::policy(IdentityProviderSetting::class, IdentityProviderPolicy::class);
+        Gate::policy(Oauth2Client::class, Oauth2ClientPolicy::class);
 
         // Refusal auditing: target resolvers of the features whose routes declare `restv2.audit`.
         DomainAuditTargets::register($this->app->make(RefusalAuditor::class));

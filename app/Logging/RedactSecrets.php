@@ -7,11 +7,12 @@ use Monolog\Processor\ProcessorInterface;
 
 /**
  * Removes secrets from the log context (FR-050, R24): every key, at any depth, whose name matches
- * password, secret, token, code, OTP, credential, assertion, authorization, cookie or X-API-Key.
+ * password, secret, token, code, OTP, credential, assertion, authorization, cookie or X-API-Key, and
+ * (feature 012) state, verifier or bind: single sign-on states, PKCE verifiers, LDAP bind passwords.
  */
 class RedactSecrets implements ProcessorInterface
 {
-    private const PATTERN = '/pass|secret|token|code|otp|credential|assertion|authorization|cookie|x-api-key/i';
+    private const PATTERN = '/pass|secret|token|code|otp|credential|assertion|authorization|cookie|x-api-key|state|verifier|bind/i';
 
     public function __invoke(LogRecord $record): LogRecord
     {

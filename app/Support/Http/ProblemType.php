@@ -72,6 +72,14 @@ enum ProblemType: string
     // Feature 008.
     case SyncJobExists = 'sync-job-exists';
 
+    // Feature 012 (identity providers and single sign-on).
+    case IdentityProviderNotConfigured = 'identity-provider-not-configured';
+    case IdentityProviderInUse = 'identity-provider-in-use';
+    case SingleSignOnNotAvailable = 'single-sign-on-not-available';
+    case SignInStateInvalid = 'sign-in-state-invalid';
+    case IdentityProviderUnavailable = 'identity-provider-unavailable';
+    case IdentityProviderSessionEnded = 'identity-provider-session-ended';
+
     public function uri(): string
     {
         return '/api/v2/problems/'.$this->value;
@@ -82,7 +90,11 @@ enum ProblemType: string
         return match ($this) {
             self::ValidationFailed => 422,
             self::Unauthenticated, self::SignInFailed, self::SignInExpired, self::SecondFactorRequired,
-            self::SecondFactorFailed, self::ApiKeyInvalid, self::ApiKeyExpired, self::ApiKeyRevoked => 401,
+            self::SecondFactorFailed, self::ApiKeyInvalid, self::ApiKeyExpired, self::ApiKeyRevoked,
+            self::SignInStateInvalid, self::IdentityProviderSessionEnded => 401,
+            self::IdentityProviderNotConfigured => 404,
+            self::IdentityProviderInUse, self::SingleSignOnNotAvailable => 409,
+            self::IdentityProviderUnavailable => 503,
             self::Forbidden, self::CsrfTokenMismatch, self::SessionRequired, self::PendingActionRequired,
             self::SecondFactorUnavailable, self::ApiKeySourceNotAllowed, self::InsufficientKeyScope => 403,
             self::TooManyRequests => 429,
@@ -158,6 +170,12 @@ enum ProblemType: string
             self::BanRulesNotRestored => 'Ban rules not restored',
             self::IpCheckDisabled => 'IP check disabled',
             self::SyncJobExists => 'Sync job already exists',
+            self::IdentityProviderNotConfigured => 'Identity provider not configured',
+            self::IdentityProviderInUse => 'Identity provider in use',
+            self::SingleSignOnNotAvailable => 'Single sign-on not available',
+            self::SignInStateInvalid => 'Sign-in state invalid',
+            self::IdentityProviderUnavailable => 'Identity provider unavailable',
+            self::IdentityProviderSessionEnded => 'Identity provider session ended',
         };
     }
 
@@ -216,6 +234,12 @@ enum ProblemType: string
             self::BanRulesNotRestored => 'The ban service did not store mailcow\'s default rules within 10 seconds of its restart; it stores them with the next log line it receives.',
             self::IpCheckDisabled => 'The IP check is disabled in the customisation settings; no outbound request was made.',
             self::SyncJobExists => 'A sync job for this mailbox, remote user and remote host already exists.',
+            self::IdentityProviderNotConfigured => 'No external identity provider is configured on this server.',
+            self::IdentityProviderInUse => 'Mailboxes still authenticate against an external identity provider that the request would remove.',
+            self::SingleSignOnNotAvailable => 'No complete Keycloak or generic OIDC identity provider is configured on this server.',
+            self::SignInStateInvalid => 'The single sign-on state is unknown, expired, already used or belongs to another browser session. Start again.',
+            self::IdentityProviderUnavailable => 'The identity provider could not be reached. Try again later.',
+            self::IdentityProviderSessionEnded => 'The single sign-on session ended. Sign in again.',
         };
     }
 

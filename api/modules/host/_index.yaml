@@ -10,5 +10,5 @@
   $ref: './installation.yaml'
 /installation/update-status:
   $ref: './installation-update-status.yaml'
-/monitoring/capabilities:
-  $ref: './monitoring-capabilities.yaml'
+/capabilities/monitoring:
+  $ref: './capabilities-monitoring.yaml'

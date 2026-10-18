@@ -1,11 +1,16 @@
 type: object
 description: |
-  Between 1 and 1,000 queued messages. A queue ID named twice is processed once. More than 1,000
-  IDs, or an ID that is not hexadecimal, refuses the whole request (`422`, rule `tooMany` with
-  `max`, or `invalidFormat` with `format: queueId` on `items.<n>.id`) and nothing changes.
-required: [items]
+  A queue action on 1 to 1,000 queued messages (`{"action": …, "targets": [BulkTarget, …]}`). A
+  queue ID named twice is processed once. More than 1,000 targets, or an ID that is not
+  hexadecimal, refuses the whole request (`422`, rule `tooMany` with `max` on `targets`, or
+  `invalidFormat` with `format: queueId` on `targets.<n>.id`) and nothing changes. The `delete`
+  action is destructive and irreversible.
+required: [action, targets]
 properties:
-  items:
+  action:
+    type: string
+    enum: [deliver, hold, release, delete]
+  targets:
     type: array
     minItems: 1
     maxItems: 1000

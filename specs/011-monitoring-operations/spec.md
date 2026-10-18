@@ -120,6 +120,14 @@
   cards by role and must not depend on service names, which operators can change.) Acting on all
   messages that match a filter is not added: the 1,000-ID bulk limit together with flush and delete
   all cover the legacy Queue Manager. The installed version stays administrator-only.
+- Q: Which cross-feature conventions shape this feature's interface? → A: The capabilities read is
+  the top-level `/capabilities/monitoring`; the queue actions on selected messages are one bulk
+  action (`deliver`, `hold`, `release` or `delete` with the selected queue IDs as targets, without
+  version tags), whose results use the shared per-item outcomes; history uses the generic audit
+  target filters; refusals of authenticated callers on state-changing operations are audited,
+  including read-only keys and restricted sessions; and every non-administrator role or key type
+  is refused as forbidden. (orchestrator decision: `docs/conventions.md`, sections "Capabilities,
+  history and refusals", "Bulk paths and identity changes" and "Permission refusals".)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -857,7 +865,10 @@ and each queued message view, then list the audit log filtered by target type an
   the fields of FR-046 there and:
   - the target type (container, mail queue, queued message, ban settings, ban rules, active ban or
     ban list ID) and the target identifier;
-  - the outcome, including refusals with their reason and "outcome unknown" after a timeout;
+  - the outcome, including refusals with their reason and "outcome unknown" after a timeout.
+    Refusals of authenticated callers are recorded whatever refused them, including roles, read-only
+    keys, restricted sessions and invalid input; anti-forgery failures and unauthenticated requests
+    are not recorded (`docs/conventions.md`);
   - for a container action: the action and the state before and after;
   - for a queue action: the action and every queue ID with its result;
   - for a content view: the queue ID, never the content;

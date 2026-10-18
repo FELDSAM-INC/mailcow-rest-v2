@@ -131,7 +131,8 @@ to sent values that differ from the stored ones:
 - `null` for any member → `invalidType`; an empty patch → `required` on `body`.
 
 **Version tags** (FR-057):
-- settings: strong ETag (001 `ETag::strong()`, base64url SHA-256, quoted) over the canonical JSON
+- settings: strong ETag, HMAC-SHA256 keyed with the app key (base64url, quoted; the values include
+  the ban list ID, so no plain hash, `docs/conventions.md`), over the canonical JSON
   of the normalised values `{allowlist, banListId, banTime, banTimeIncrement, denylist,
   externallyEnforced, ipv4PrefixLength, ipv6PrefixLength, maxAttempts, maxBanTime, retryWindow}`
   with both lists sorted and unique. It changes when a value changes, whoever changes it, and not
@@ -177,7 +178,10 @@ No migration. New values of the shared enumerations (contract):
 - `AuditFailureReason`: `serviceFailure`, `rulesNotRestored` (plus the existing `conflict`,
   `notFound`, `versionOutdated`, `temporaryFailure`, `outcomeUnknown`).
 
-The `details` whitelist per event is in research R24. Content views record the queue ID only; ban
+Refusals of authenticated callers on the state-changing routes (role, read-only key, restricted
+session, `422`, malformed `400`) are recorded by 008's `RefusalAuditor` through the route default
+`restv2.audit` and 011's `MonitoringAuditTargetResolver`, with `permissionDenied`, `notFound` or
+`validationFailed`. The `details` whitelist per event is in research R24. Content views record the queue ID only; ban
 list rotations record no ID; settings changes record old and new values of each changed parameter
 and the list entries added and removed.
 

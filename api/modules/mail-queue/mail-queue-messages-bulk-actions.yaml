@@ -1,0 +1,69 @@
+post:
+  operationId: bulkMailQueueMessages
+  tags: [Mail queue]
+  summary: Act on selected queued messages
+  description: |
+    Applies one action to 1 to 1,000 queued messages (`MailQueueBulkRequest`: `action` and
+    `targets`, the legacy Queue Manager's mass actions):
+
+    - `deliver`: asks Postfix to attempt immediate delivery (`postqueue -i`, legacy "Deliver"). The
+      response comes once Postfix has accepted the request; delivery continues in the background and
+      shows in later listings. Held messages stay on hold. The container service asks Postfix once
+      per message, so a large selection can reach the container-service timeout; to retry everything
+      that is not on hold, flush the queue instead.
+    - `hold`: moves the messages to the hold queue (`postsuper -h`). Holding a held message is `done`
+      without change.
+    - `release`: returns held messages to the queue for delivery (`postsuper -H`, legacy "Unhold").
+      Releasing a message that is not on hold is `done` without change.
+    - `delete`: **destructive and irreversible**: deletes the messages from every queue, including
+      the hold queue (`postsuper -d`). Clients must ask for confirmation and name the number of
+      messages; the API needs no confirmation token.
+
+    Hold, release and delete complete before the response. Each distinct queue ID gets one result,
+    in request order: `done`, or `notFound` when the message is not in the queue when the request
+    is processed; a missing ID never stops the others. Queued messages have no version tag, so
+    targets carry only `id`. More than 1,000 IDs or a non-hexadecimal ID refuses the whole request
+    (`422`) and nothing changes. A stopped Postfix container answers `mail-service-not-running`; a
+    Postfix failure answers `queue-action-failed` (nothing is reported per ID); a container-service
+    timeout answers `outcome-unknown` with `step` = the action. Needs an administrator session or a
+    read-write key owned by an administrator.
+
+    The request writes **one** audit record (event `mailQueueDelivery`, `mailQueueHold`,
+    `mailQueueRelease` or `mailQueueDeletion`) that lists every ID with its result; queued messages
+    are transient system objects, the documented exception to one record per object. Refusals are
+    audited too. When the audit log cannot be written before the action, the request is refused
+    with `temporary-failure` and nothing is done. When the record cannot be written after the
+    action, the response carries the header `Audit-Recorded: false` (the shared
+    `BulkResultResponse` cannot declare it).
+  x-destructive: true
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/MailQueueBulkRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/MailQueueConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '502':
+      $ref: '../../components/responses/MailQueueActionFailed.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'
+    '504':
+      $ref: '../../components/responses/MonitoringOutcomeUnknown.yaml'

@@ -33,9 +33,11 @@ description: |
   - Mailboxes (feature 003) also use `outcomeUnknown` (the container API timed out; the step is in
     `details.steps` or `details.mailStoreCleanup`) and `partiallyCompleted` (a rename could neither
     complete nor be undone; `details.steps` lists every step).
-  - Monitoring and operations (feature 011) use `conflict` (container protected, container or
-    mail service not running; `details.problemType` names it), `notFound`, `versionOutdated`,
-    `temporaryFailure` and `outcomeUnknown` (the container service timed out), plus
+  - Monitoring and operations (feature 011) use `permissionDenied` (role, read-only key or
+    restricted session, told apart by `details.problemType`), `validationFailed`, `conflict`
+    (container protected, container or mail service not running; `details.problemType` names it),
+    `notFound`, `versionOutdated`, `temporaryFailure` and `outcomeUnknown` (the container service
+    timed out), plus
     `serviceFailure` (the container service or Postfix reported a failure; `details.serviceMessage`)
     and `rulesNotRestored` (the ban rules were reset but the defaults did not reappear in time).
   - System settings (feature 013) use `validationFailed`, `versionOutdated`, `notFound`,

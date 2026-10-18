@@ -32,7 +32,7 @@ docker compose run --rm app vendor/bin/phpstan analyse
 **Expected**:
 
 - The lint shows only 001's four known `operation-4xx-response` warnings.
-- `composer test` is green and `build/contract/coverage.json` lists all 45 operations of this
+- `composer test` is green and `build/contract/coverage.json` lists all 42 operations of this
   feature as covered.
 - `tests/Feature/Security/MonitoringAuthorizationTest.php` shows every operation refused for
   domain administrators, mailbox users and domain-administrator keys, every state-changing
@@ -43,7 +43,7 @@ docker compose run --rm app vendor/bin/phpstan analyse
 
 ## Part B: Manual checks against the dev stack
 
-The dev stack has no dockerapi, Postfix or Rspamd. Set `RESTV2_MONITORING_FAKES=recorded` in `.env`
+The dev stack has no dockerapi, Postfix or Rspamd. Set `RESTV2_FAKE_OUTBOUND=y` in `.env`
 (local environment only; `AppServiceProvider` refuses it elsewhere) to bind the fakes with the
 recorded payloads of `tests/fixtures/monitoring/`, then sign in as the dev seeder's `admin`
 (001 quickstart Part B).
@@ -57,7 +57,7 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session -d '{"username":"admin","
 curl -s $C $B/host | jq '.data | {hostName, timeZone, cpu, collectedAt}'
 curl -s $C $B/host/mail-storage | jq '.data | {measured, totalBytes, usedPercent, approximate}'
 curl -s $C "$B/containers?sort=name&limit=50" | jq '.data[] | {name, state, role, protected, availableActions}'
-curl -s $C $B/monitoring/capabilities | jq '.data | {pollIntervalSeconds, maxAgeSeconds, clientAddress, limits}'
+curl -s $C $B/capabilities/monitoring | jq '.data | {pollIntervalSeconds, maxAgeSeconds, clientAddress, limits}'
 
 # US2: a protected container cannot be stopped
 curl -s $C -H "X-CSRF-Token: $T" -X POST $B/containers/mysql-mailcow/stop | jq '{type, container}'

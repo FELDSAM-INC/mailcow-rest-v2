@@ -1,14 +1,8 @@
 # Paths of the mail-queue module: the Postfix mail queue (feature 011).
 /mail-queue/messages:
   $ref: './mail-queue-messages.yaml'
-/mail-queue/messages/delivery:
-  $ref: './mail-queue-messages-delivery.yaml'
-/mail-queue/messages/hold:
-  $ref: './mail-queue-messages-hold.yaml'
-/mail-queue/messages/release:
-  $ref: './mail-queue-messages-release.yaml'
-/mail-queue/messages/deletion:
-  $ref: './mail-queue-messages-deletion.yaml'
+/mail-queue/messages/bulk-actions:
+  $ref: './mail-queue-messages-bulk-actions.yaml'
 /mail-queue/messages/{queueId}/content:
   $ref: './mail-queue-message-content.yaml'
 /mail-queue/flush:

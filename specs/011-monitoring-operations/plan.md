@@ -25,7 +25,7 @@ tabs), the Queue Manager and the fail2ban section show today:
 
 The technical approach:
 
-- The contract was authored first: 45 operations in six modules (`host`, `containers`, `logs`,
+- The contract was authored first: 42 operations in six modules (`host`, `containers`, `logs`,
   `rspamd-stats`, `mail-queue`, `fail2ban`), lint-clean with Redocly 2.64.1.
 - Everything is administrator-only and runs in 001's pipeline; read-only keys may read everything,
   including message content, and nothing else.
@@ -90,7 +90,7 @@ no more host measurements than one. SC-009: container and queue actions answer w
 
 **Scale/Scope**: One mailcow host with about 20 containers, up to 10,000 entries per in-memory log,
 an unbounded legacy UI activity log, up to 1,000 Rspamd history rows, queues of tens of thousands of
-messages (listing capped at 10,000), allowlists and denylists of up to 10,000 entries. 45
+messages (listing capped at 10,000), allowlists and denylists of up to 10,000 entries. 42
 operations in 6 modules, 8 user stories, no API-owned table.
 
 ## Constitution Check
@@ -99,15 +99,15 @@ operations in 6 modules, 8 user stories, no API-owned table.
 
 | Principle | Gate | Status |
 |---|---|---|
-| I. Contract-first | All 45 operations are authored in `api/modules/{host,containers,logs,rspamd-stats,mail-queue,fail2ban}/` before code; `npx @redocly/cli@2.64.1 lint api/openapi.yaml` passes (only 001's four known system warnings remain). Every test request and response is validated (001 R13); the contract coverage check includes the new operations. | PASS |
-| II. HTTP contract | Plural nouns and sub-resource actions (`/containers/{containerName}/restart`, `/mail-queue/messages/hold`, `/fail2ban/rules/reset`); `PATCH` with merge patch for settings, `PUT` for the rule list. `{data, meta}` lists (the queue's `meta` extends `ListMeta`), `{data}` singles, RFC 9457 problems with documented types, `ETag`/`If-Match` on the two mutable resources (ban settings and rules). camelCase, booleans, RFC 3339 UTC, bytes and seconds as explicit units. Statuses 502 and 504 are justified below. | PASS (justified) |
+| I. Contract-first | All 42 operations are authored in `api/modules/{host,containers,logs,rspamd-stats,mail-queue,fail2ban}/` before code; `npx @redocly/cli@2.64.1 lint api/openapi.yaml` passes (only 001's four known system warnings remain). Every test request and response is validated (001 R13); the contract coverage check includes the new operations. | PASS |
+| II. HTTP contract | Plural nouns and sub-resource actions (`/containers/{containerName}/restart`, `/fail2ban/rules/reset`), bulk queue actions at `POST /mail-queue/messages/bulk-actions` with `{action, targets}`; `PATCH` with merge patch for settings, `PUT` for the rule list. `{data, meta}` lists (the queue's `meta` extends `ListMeta`), `{data}` singles, RFC 9457 problems with documented types, `ETag`/`If-Match` on the two mutable resources (ban settings and rules). camelCase, booleans, RFC 3339 UTC, bytes and seconds as explicit units. Statuses 502 and 504 are justified below. | PASS (justified) |
 | III. Upstream schema | No migration. `logs` and `sasl_log` are read through read-only models. | PASS |
 | IV. Parity | The legacy code was read ([research](./research.md)): `functions.{docker,mailq,fail2ban}.inc.php`, `get_logs()`, `json_api.php`, `container_ctrl.php`, `update_check.php`, `dashboard.php`, dockerapi and netfilter. Ban data is written exactly as legacy writes it (keys, JSON shape, list hashes), dockerapi tasks are legacy's. Every deviation is in the spec's parity table; plan-level details are recorded under "Parity notes" below. | PASS |
 | V. Coexistence | Own container; dockerapi, netfilter, Rspamd and php-fpm unchanged; the public ban list endpoint stays in legacy. The override gains environment variables and a read-only volume only. | PASS |
-| VI. Security | Object-level authorisation: administrators only, tested for every role and key type on every operation. Read-only keys never change anything. No secret in responses (container `Env` dropped, log masking per FR-028, content views audited, ban list IDs not audited). Every state change is audited, with a pre-check and retry for irreversible operations. dockerapi's certificate is not verified, as in legacy (justified below). | PASS (justified) |
+| VI. Security | Object-level authorisation: administrators only, tested for every role and key type on every operation. Read-only keys never change anything. No secret in responses (container `Env` dropped, log masking per FR-028, content views audited, ban list IDs not audited). Every state change is audited, refusals of authenticated callers included (008's `RefusalAuditor`, `restv2.audit` route defaults), with a pre-check and retry for irreversible operations. dockerapi's certificate is not verified, as in legacy (justified below). | PASS (justified) |
 | VII. Test-first | `tasks.md` puts tests before implementation in every phase; MariaDB with the real schema; real Redis; fakes only for dockerapi, the Rspamd controller and the outbound HTTP services, all asserting their calls. | PASS |
 | VIII. Simplicity | No new Composer package; one OS package (python3) justified in R29. One snapshot cache class for four data kinds; reuse of 002's dockerapi client, 006's Rspamd client and 001's audit, config and ETag code. | PASS |
-| Cross-feature conventions (`docs/conventions.md`) | Out-of-installation containers, absent queue IDs, unbanned networks and unknown log types answer `404`. Bulk queue actions use `BulkTarget` (extended, no version) and `BulkResultResponse` with `BulkItemOutcome` values, at most 1,000 IDs. Lists default to 25 (max 1,000) with `q`. Version tags cover stored values only. Reads are not audited except content views. Maximum ages are the spec's. Long dockerapi operations are synchronous with "outcome unknown" on timeout. Legacy PHP configuration (`DOCKER_TIMEOUT`, `app_info.inc.php`) via `MailcowConfig`; fork behaviour as settings (`RESTV2_UPDATE_CHECK`, 001's `RESTV2_SASL_LOG_SERVICE`). Shared problem types `temporary-failure` and `outcome-unknown` are reused. | PASS |
+| Cross-feature conventions (`docs/conventions.md`) | Out-of-installation containers, absent queue IDs, unbanned networks and unknown log types answer `404`. The capabilities read is `GET /capabilities/monitoring` (`getMonitoringCapabilities`). History uses the generic `targetType`/`targetId` audit filters with new `AuditTarget` values; no filter parameter is added. Refusals are audited per "Refusal auditing". Bulk queue actions use `BulkTarget` (extended, no version) and `BulkResultResponse` with `BulkItemOutcome` values, at most 1,000 IDs. Lists default to 25 (max 1,000) with `q`. Version tags cover stored values only. Reads are not audited except content views. Maximum ages are the spec's. Long dockerapi operations are synchronous with "outcome unknown" on timeout. Legacy PHP configuration (`DOCKER_TIMEOUT`, `app_info.inc.php`) via `MailcowConfig`; fork behaviour as settings (`RESTV2_UPDATE_CHECK`, 001's `RESTV2_SASL_LOG_SERVICE`). Shared problem types `temporary-failure` and `outcome-unknown` are reused. | PASS |
 | Runtime constraints | Stateless; the snapshot cache lives in Redis. JSON logs with the request ID; container environments and message content never logged. | PASS |
 
 **Post-design re-check (after Phase 1)**: PASS. The contract, data model and research add no
@@ -141,7 +141,7 @@ These details refine rows of the spec's parity table without changing behaviour 
 | GET `/host/public-addresses` | getPublicAddresses | admin session or key (ro too) | US7, FR-021 |
 | GET `/installation` | getInstallationVersion | admin session or key (ro too) | US7, FR-018 |
 | GET `/installation/update-status` | getUpdateStatus | admin session or key (ro too) | US7, FR-019, FR-020 |
-| GET `/monitoring/capabilities` | getMonitoringCapabilities | admin session or key (ro too) | US1, FR-069 |
+| GET `/capabilities/monitoring` | getMonitoringCapabilities | admin session or key (ro too) | US1, FR-069 |
 | GET `/containers` | listContainers | admin session or key (ro too) | US1, FR-008, FR-009 |
 | GET `/containers/{containerName}` | getContainer | admin session or key (ro too) | US1, FR-010 |
 | GET `/containers/{containerName}/resource-usage` | getContainerResourceUsage | admin session or key (ro too) | US1, FR-011 |
@@ -164,10 +164,7 @@ These details refine rows of the spec's parity table without changing behaviour 
 | GET `/rspamd/statistics` | getRspamdStatistics | admin session or key (ro too) | US6, FR-035, FR-036 |
 | GET `/mail-queue/messages` | listMailQueueMessages | admin session or key (ro too) | US4, FR-037, FR-038, FR-043 |
 | GET `/mail-queue/messages/{queueId}/content` | getMailQueueMessageContent | admin session or key (ro too) | US4, FR-039, FR-062 |
-| POST `/mail-queue/messages/delivery` | deliverMailQueueMessages | admin session + CSRF or rw key | US4, FR-040, FR-042 |
-| POST `/mail-queue/messages/hold` | holdMailQueueMessages | admin session + CSRF or rw key | US4, FR-040, FR-042 |
-| POST `/mail-queue/messages/release` | releaseMailQueueMessages | admin session + CSRF or rw key | US4, FR-040, FR-042 |
-| POST `/mail-queue/messages/deletion` | deleteMailQueueMessages | admin session + CSRF or rw key | US4, FR-040, FR-042 |
+| POST `/mail-queue/messages/bulk-actions` | bulkMailQueueMessages | admin session + CSRF or rw key | US4, FR-040, FR-042 (deliver, hold, release, delete) |
 | POST `/mail-queue/flush` | flushMailQueue | admin session + CSRF or rw key | US4, FR-041, FR-042 |
 | POST `/mail-queue/purge` | purgeMailQueue | admin session + CSRF or rw key | US4, FR-041, FR-042 |
 | GET `/fail2ban/settings` | getFail2BanSettings | admin session or key (ro too) | US5, FR-044 |
@@ -198,8 +195,7 @@ specs/011-monitoring-operations/
 ├── quickstart.md        # Phase 1: validation guide
 ├── contracts/README.md  # Phase 1: pointer to api/modules (the contract is not duplicated)
 ├── checklists/
-├── tasks.md             # Phase 2 (/speckit-tasks)
-└── analysis.md          # /speckit-analyze summary
+└── tasks.md             # Phase 2 (/speckit-tasks); the /speckit-analyze summary is in the design report
 ```
 
 ### Source Code (repository root)
@@ -209,16 +205,17 @@ are created by that feature and extended here.
 
 ```text
 api/
-├── modules/{host,containers,logs,rspamd-stats,mail-queue,fail2ban}/   # authored (45 operations)
+├── modules/{host,containers,logs,rspamd-stats,mail-queue,fail2ban}/   # authored (42 operations)
 └── components/{schemas,parameters,responses}/                         # new resource-named files
 
 app/
 ├── Clients/
 │   ├── DockerApi/                          # (002) extended
-│   │   ├── DockerApiClient.php             # + listContainers, containerAction, containerStats, hostStats, exec
-│   │   ├── HttpDockerApiClient.php
+│   │   ├── DockerApiClient.php             # + containers, start, stop, containerStats, hostStats (restart, exec: 002)
+│   │   ├── HttpDockerApiClient.php         # lookup switched to ?all=true
+│   │   ├── DockerCallResult.php            # (002/003) + body if not yet present
 │   │   ├── ContainerSnapshot.php
-│   │   └── {DockerApiUnavailable,DockerApiTimeout,DockerApiFailure}.php
+│   │   └── {DockerApiUnreachable,DockerApiTimeout}.php
 │   ├── Rspamd/{RspamdController,SocketRspamdController}.php       # (006) + history()
 │   ├── Releases/{ReleaseSource,GitHubReleaseSource}.php
 │   ├── PublicAddress/{PublicAddressLookup,HttpPublicAddressLookup}.php
@@ -229,7 +226,7 @@ app/
 │   │   ├── {Container,ContainerResourceUsage,ContainerStart,ContainerStop,ContainerRestart}Controller.php
 │   │   ├── LogEntryController.php          # one index for the 12 log types (route default `logType`)
 │   │   ├── {RspamdHistory,RspamdStatistics}Controller.php
-│   │   ├── {MailQueueMessage,MailQueueMessageContent,MailQueueDelivery,MailQueueHold,MailQueueRelease,MailQueueDeletion,MailQueueFlush,MailQueuePurge}Controller.php
+│   │   ├── {MailQueueMessage,MailQueueMessageContent,MailQueueBulkAction,MailQueueFlush,MailQueuePurge}Controller.php
 │   │   └── {Fail2BanSettings,Fail2BanBanListRotation,Fail2BanRules,Fail2BanRulesReset,Fail2BanActiveBan,Fail2BanBanLift,Fail2BanBanAllowlist,Fail2BanBanDenylist,Fail2BanPermanentBan}Controller.php
 │   ├── Requests/Api/V2/
 │   │   ├── {ListContainers,ListLogEntries,ListRspamdHistory,ListMailQueueMessages,MailQueueBulkAction}Request.php
@@ -267,7 +264,7 @@ app/
 config/restv2.php                          # (001) + R27 settings, monitoring constants
 resources/bin/export-mailcow-vars.php      # (001) + app_info.inc.php, DOCKER_TIMEOUT
 resources/bin/validate-python-regex.py
-routes/api.php                             # + the 45 routes in one admin-only group
+routes/api.php                             # + the 42 routes in one admin-only group
 docker/php/Dockerfile                      # (001) + python3
 docker/php/php-fpm.conf                    # (001) + request_terminate_timeout
 docker/nginx/dev.conf, deploy/nginx/site.restv2.custom   # (001) fastcgi_read_timeout 90s

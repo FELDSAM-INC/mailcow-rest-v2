@@ -34,16 +34,21 @@ identical.
     `MailcowDateTime` cast, `SaslLogEntry`, `config('restv2.sasl_log_service')`, the `Sleeper`
     clock, the test toolkit (`OpenApiContract`, `TestCase::signInAs()`, `MailcowFactory`,
     contract coverage) and `deploy/`.
-  - **002**: the dockerapi client (`App\Clients\DockerApi\`, first used for the SOGo restart and
-    the maildir move), the problem types `temporary-failure` (503) and the audit target filters
-    `targetType` and `targetId` on `GET /audit-events` (002 FR-058), which US8 uses.
+  - **002**: `App\Clients\DockerApi\DockerApiClient` with `HttpDockerApiClient`,
+    `DockerCallResult` (`success`, `failed(message)`, `unknown`) and the test fake (002 D14; 003
+    adds the `unreachable` flag on `failed`, `reachable()` and a per-request circuit breaker), the
+    problem type `temporary-failure` (503), the dev setting `RESTV2_FAKE_OUTBOUND`, and the generic
+    audit filters `targetType` and `targetId` on `GET /audit-events` (002 FR-058), which US8 uses.
   - **003**: the problem type `outcome-unknown` (504, extension `step`) and its audit failure
     reason `outcomeUnknown`.
   - **006**: the Rspamd controller client (`App\Clients\Rspamd\`, first used for learning and
     `/actions`) and the Rspamd socket mount in the deployment override.
+  - **008**: `App\Services\Audit\RefusalAuditor`, which records refusals of routes that declare
+    the route default `restv2.audit` (`docs/conventions.md`, "Refusal auditing"), with a resolver
+    per target type.
 
   Where an earlier feature already created a class this plan names, the 011 tasks **extend** it
-  with the methods below instead of creating a second one; T003 reconciles the names before any
+  with the methods below instead of creating a second one; T001 reconciles the names before any
   011 test is written. If an earlier feature chose different class names, the 011 tasks use those
   names, keeping the method contracts of this document.
 - **Rationale**: Constitution VIII (one client per external system, abstractions after the second
@@ -58,31 +63,39 @@ identical.
 
 ### R2. dockerapi client operations
 
-- **Decision**: `App\Clients\DockerApi\DockerApiClient` (interface) and `HttpDockerApiClient`
-  (Laravel HTTP client) offer, for this feature:
+- **Decision**: 011 extends 002's `App\Clients\DockerApi\DockerApiClient` (service-name based;
+  the adapter resolves the container ID from the compose labels before each call, as legacy
+  `docker('get_id')`). It reuses `restart()` and `exec()` and adds four methods:
 
   | Method | dockerapi call | Used by |
   |---|---|---|
-  | `listContainers(): list<ContainerSnapshot>` | `GET /containers/json?all=true` | container list, inspect, state checks |
-  | `containerAction(string $id, 'start'\|'stop'\|'restart'): void` | `POST /containers/{id}/{action}` | container control, rule reset |
-  | `containerStats(string $id, float $timeout): list<array>` | `POST /container/{id}/stats/update` | resource usage |
-  | `hostStats(): array` | `GET /host/stats` | system overview |
-  | `exec(string $id, string $cmd, string $task, array $payload = [], float $timeout): string\|array\|null` | `POST /containers/{id}/exec` with `{cmd, task, …}` | `system df`, `mailq list/cat/hold/unhold/deliver/delete/flush/super_delete` |
+  | `containers(): list<ContainerSnapshot>` (new) | `GET /containers/json?all=true` | container list, inspect, state checks |
+  | `start(string $service): DockerCallResult` (new), `stop(…)` (new), `restart(…)` (002) | `POST /containers/{id}/start\|stop\|restart` | container control, rule reset |
+  | `containerStats(string $service, float $timeout): list<array>` (new) | `POST /container/{id}/stats/update` | resource usage |
+  | `hostStats(): array` (new) | `GET /host/stats` | system overview |
+  | `exec(string $service, array $command): DockerCallResult` (002) | `POST /containers/{id}/exec` with `{cmd, task, …}` | `system df`, `mailq list/cat/hold/unhold/deliver/delete/flush/super_delete` |
 
-  - **Endpoint and TLS**: `https://dockerapi:443` (`RESTV2_DOCKERAPI_URL`). dockerapi serves
+  - **ID lookup**: 011 switches the adapter's lookup from `GET /containers/json` (running
+    containers only, legacy `get_id`) to `GET /containers/json?all=true`, so that `start` and
+    `restart` find a stopped container. Callers that exec into a container are unaffected:
+    dockerapi's exec handlers act only on running containers and answer `null` otherwise.
+  - **Result body**: `DockerCallResult` carries dockerapi's answer as `body` (decoded JSON, a JSON
+    string, or text for `utf8_text_only` handlers such as `postqueue -j` and `postcat`). If 003 or
+    005 did not already add it for `get_acl` and the Sieve reads, 011 adds it.
+  - **Endpoint and TLS**: `https://dockerapi:443` (`RESTV2_DOCKERAPI_URL`, 002). dockerapi serves
     mailcow's mail certificate, whose names do not match, so certificate verification is off,
-    exactly as legacy `docker()` (`CURLOPT_SSL_VERIFYHOST/PEER = 0`). dockerapi is reachable only
-    on `mailcow-network` and has no authentication, as in legacy.
-  - **Timeouts**: every call is bounded by `DOCKER_TIMEOUT` (R27, 60 s by default) except the two
-    polled reads: `hostStats()` and `containerStats()` use 5 s, because the spec requires the
-    first resource sample within 5 seconds and dockerapi's stats handler loops forever for a
-    container that stopped (R7).
-  - **Error mapping**: connection refused, DNS failure or TLS error → `DockerApiUnavailable`
-    (→ `503 temporary-failure`); timeout → `DockerApiTimeout` (→ `504 outcome-unknown` for
-    actions, `503 temporary-failure` for reads); a JSON body `{"type": "danger", "msg": …}` (which
-    dockerapi returns with HTTP 200 for every handler exception) → `DockerApiFailure($msg)`
-    (→ `502 container-action-failed` or `queue-action-failed`).
-  - **Project filtering**: `listContainers()` keeps only containers whose
+    exactly as legacy `docker()` and 002. dockerapi is reachable only on `mailcow-network`.
+  - **Timeouts**: `DOCKER_TIMEOUT` (60 s by default) for every call except the two polled reads:
+    `hostStats()` and `containerStats()` use 5 s, because the spec requires the first resource
+    sample within 5 seconds and dockerapi's stats handler loops forever for a container that
+    stopped (R7).
+  - **Error mapping**: the new read methods throw `DockerApiUnreachable` (connection refused, DNS
+    or TLS failure → `503 temporary-failure`) and `DockerApiTimeout` (→ `503` for reads). Actions
+    and exec return `DockerCallResult`: `failed` with `unreachable` → `503 temporary-failure`;
+    `unknown` (timeout) → `504 outcome-unknown`; `failed(message)` (dockerapi's
+    `{"type": "danger", "msg": …}`, which it returns with HTTP 200 for every handler exception) →
+    `502 container-action-failed` or `queue-action-failed`.
+  - **Project filtering**: `containers()` keeps only containers whose
     `Config.Labels["com.docker.compose.project"]` equals `COMPOSE_PROJECT_NAME`
     case-insensitively, keyed by `Config.Labels["com.docker.compose.service"]`, as legacy
     `docker('info')`. `ContainerSnapshot` holds only `id`, `service`, `image` (`Config.Image`),
@@ -90,12 +103,13 @@ identical.
     `0001-01-01T00:00:00Z` → `null`) and `health` (`State.Health.Status`, absent → `null`).
     **`Config.Env` and every other field are dropped at parse time**: the environment holds
     `DBPASS`, `REDISPASS` and other secrets, and nothing else is ever cached or logged.
-- **Rationale**: These are the only dockerapi endpoints legacy uses for the allocated surface.
-  Wrapping exec per `{cmd, task}` keeps the command whitelist in dockerapi, so the API can never
-  run an arbitrary command.
+- **Rationale**: One client per external service (002 D27 names 011 as a reuser). These are the
+  only dockerapi endpoints legacy uses for the allocated surface. Wrapping exec per
+  `{cmd, task}` keeps the command whitelist in dockerapi, so the API can never run an arbitrary
+  command.
 - **Alternatives considered**: The Docker socket in the API container was rejected
-  (constitution V and a root-equivalent privilege). Verifying dockerapi's certificate was
-  rejected: it would need the mail certificate and a matching name that dockerapi does not have.
+  (constitution V and a root-equivalent privilege). A second, ID-based client was rejected: two
+  clients for one service would drift in TLS, timeout and error handling.
 
 ### R3. Container identity, protection and roles
 
@@ -134,15 +148,15 @@ identical.
 ### R4. Container actions
 
 - **Decision**: `App\Services\Monitoring\ContainerControlService`:
-  1. Resolve the container from a **fresh** `listContainers()` (not the cache) and record the
+  1. Resolve the container from a **fresh** `containers()` (not the cache) and record the
      state before. Apply R3 (protected, own container) → `409` with an audit record.
   2. Probe the audit log (R24). If it cannot be written → `503 temporary-failure`, nothing done.
   3. **start**: if running → `alreadyInState`. Otherwise up to 4 attempts, 1.5 s apart (the
-     `Sleeper` of 001, faked in tests): `containerAction(id, 'start')`, then a fresh state read;
+     `Sleeper` of 001, faked in tests): `start($service)`, then a fresh state read;
      running → `done`. After 4 attempts not running → `502 container-action-failed` with the last
      dockerapi message (or "container did not start").
      **stop**: the mirror image, deciding by `State.Running`, as legacy `container_ctrl.php`.
-     **restart**: one `containerAction(id, 'restart')` whatever the state, then a fresh read.
+     **restart**: one `restart($service)` whatever the state, then a fresh read.
   4. The whole action is bounded by `DOCKER_TIMEOUT` measured from the start of the request; a
      dockerapi timeout → `504 outcome-unknown` with `step` = the action.
   5. Write the audit record (R24) with the state before and after, then invalidate the container
@@ -171,10 +185,10 @@ identical.
 
   | Data | Key | Max age | Loader | `collectedAt` |
   |---|---|---|---|---|
-  | Container states | `monitoring:containers` | 5 s | `listContainers()` | when dockerapi answered |
+  | Container states | `monitoring:containers` | 5 s | `containers()` | when dockerapi answered |
   | Host figures | `monitoring:host` | 10 s | `hostStats()` | dockerapi's `system_time` (R6) |
   | Resource usage | `monitoring:usage:<service>` | 5 s (sample ≤ 15 s, R7) | `containerStats()` | newest sample's `read` |
-  | Mail storage | `monitoring:mail-storage` | 60 s | `exec(dovecot, system, df)` | when `df` answered |
+  | Mail storage | `monitoring:mail-storage` | 60 s | `exec(dovecot, df)` | when `df` answered |
 
   The maximum ages are constants in `config/restv2.php` (`monitoring.max_age.*`), also reported
   by the capabilities read (R32). Container actions delete `monitoring:containers` and the
@@ -209,7 +223,7 @@ identical.
   - Checks the container's state in the shared container snapshot. Not running → `409
     container-not-running` at once (legacy blocks until the timeout, because dockerapi's
     `/container/{id}/stats/update` loops until a sample exists).
-  - Calls `containerStats(id, 5 s)`. dockerapi starts a sampling task (one sample now, a second
+  - Calls `containerStats($service, 5 s)`. dockerapi starts a sampling task (one sample now, a second
     5 s later, keeping at most 3 raw `docker stats` samples for 60 s) and returns the stored
     samples. A timeout re-reads the state fresh: stopped → `409`, else `503 temporary-failure`.
   - `DockerStatsCalculator` (a pure class, unit-tested with recorded samples) computes from the
@@ -233,7 +247,7 @@ identical.
 
 ### R8. Mail storage usage
 
-- **Decision**: `exec(dovecot-mailcow, 'system', 'df', ['dir' => '/var/vmail'])`. dockerapi runs
+- **Decision**: `exec('dovecot-mailcow', ['cmd' => 'system', 'task' => 'df', 'dir' => '/var/vmail'])`. dockerapi runs
   `df -H '<dir>' | tail -n1 | tr -s [:blank:] | tr ' ' ','` as `nobody` and returns the line as
   a JSON string, or `"0,0,0,0,0,0"` when `df` fails, or `null` when the container is not running.
   `DfOutputParser` takes the **last five** comma-separated fields as size, used, available, use%
@@ -462,7 +476,9 @@ identical.
     anything else → `502` with the first line (at most 500 characters) as `serviceMessage`. The
     content is never logged. The view is audited (R24) before the content is returned; when the
     audit record cannot be written, the content is not returned (`503`).
-  - **Selected messages**: the IDs are de-duplicated case-sensitively in request order. A fresh
+  - **Selected messages** (`POST /mail-queue/messages/bulk-actions`, body
+    `{"action": deliver|hold|release|delete, "targets": [{"id"}]}`, the bulk path and body of
+    `docs/conventions.md`): the IDs are de-duplicated case-sensitively in request order. A fresh
     `list` determines which IDs are in the queue now (all lines, not only the first 10,000);
     absent IDs get `notFound`. The present IDs go to one `exec`: `hold` (`postsuper -h …`),
     `unhold` (`postsuper -H …`), `delete` (`postsuper -d …`), or `deliver` (dockerapi runs
@@ -499,7 +515,10 @@ identical.
     `int()` for numbers (an unparseable value reports the default), truthiness for the two flags.
     `F2B_WHITELIST` and `F2B_BLACKLIST` are hashes whose field names are the entries; they are
     returned sorted naturally (legacy `natsort`).
-  - **Version tag**: `ETag::strong()` over the canonical JSON `{allowlist (sorted, unique),
+  - **Version tag**: a strong ETag computed as HMAC-SHA256 keyed with the app key (the settings
+    include the ban list ID, which works like a secret for the public ban list address, and
+    `docs/conventions.md` forbids plain hashes of stored secrets in tags) over the canonical JSON
+    `{allowlist (sorted, unique),
     banListId, banTime, banTimeIncrement, denylist (sorted, unique), externallyEnforced,
     ipv4PrefixLength, ipv6PrefixLength, maxAttempts, maxBanTime, retryWindow}` of the normalised
     values. The ban service rewrites `F2B_OPTIONS` every 10 s and on every ban with Python's
@@ -586,7 +605,7 @@ identical.
 - **Decision**: `Fail2BanRulesService::reset()`: check `If-Match` against the rules tag; probe the
   audit log (R24); resolve `netfilter-mailcow` (`RESTV2_BAN_SERVICE_CONTAINER`) in a fresh
   container list (dockerapi down → `503`, nothing deleted); `DEL F2B_REGEX`;
-  `containerAction(id, 'restart')` (timeout → `504 outcome-unknown`, `step: rulesReset`;
+  `restart($service)` (timeout → `504 outcome-unknown`, `step: rulesReset`;
   `danger` → `502 container-action-failed`); then poll `F2B_REGEX` every 1 s up to 10 times
   (`Sleeper`). Rules found → `200` with them; otherwise `504 ban-rules-not-restored`. The audit
   record holds the old rules and the new ones (or `null`).
@@ -628,11 +647,28 @@ identical.
 
 ### R24. Audit records of this feature
 
-- **Decision**: One record per state-changing request that reaches the operation (after
-  authentication, role and key-scope checks and request validation), whatever its outcome, and
-  one per message content view. Refusals by the pipeline (`401`, `403`, CSRF) and `422`
-  validation failures are not audited, as in feature 001. Records use 001's `AuditLogger` with
-  the new event types and targets of the contract:
+- **Decision**: Exactly one record per state-changing request by an authenticated caller,
+  whatever its outcome, and one per message content view (FR-062):
+  - The services write the record for every request that reaches the operation: success,
+    `alreadyInState`, `409` refusals, `404` (absent container, queue ID or ban), `412`, `502`,
+    `503` after the operation started, and `504`.
+  - **Refusal auditing** (`docs/conventions.md`): every state-changing route of this feature
+    declares the route default `restv2.audit` (`['event' => <AuditEventType>, 'target' => <target
+    type>]`), so 008's `RefusalAuditor` records the refusals raised before the operation runs:
+    `403 forbidden` (domain administrators, mailbox users, their keys), `403
+    insufficient-key-scope` (read-only keys), `403 pending-action-required` (restricted sessions),
+    `404` from route constraints, `422` and a malformed `400`. It maps them to `permissionDenied`
+    (told apart by `details.problemType`), `notFound` and `validationFailed`. CSRF failures and
+    `401`s are not recorded. 011 registers resolvers for its target types:
+    `container` (the `containerName` route parameter, as sent), `mailQueue` (a `null` target with
+    `details.itemIds`, the sent queue IDs that are hexadecimal, at most 1,000; the event follows
+    the body's `action` through 008's `'event' => 'fromBulkAction'`), `fail2banSettings`,
+    `fail2banRules` and `fail2banBanListId` (`null` ID), and `fail2banActiveBan` (the decoded
+    `network` route parameter). A refusal the service raises itself is recorded by the service
+    and not a second time (the service marks the request as audited).
+  - Reads are not audited, except content views (`mailQueueMessageView`, also for `404`).
+
+  Records use 001's `AuditLogger` with the new event types and targets of the contract:
 
   | Event | Target | `details` (whitelisted) |
   |---|---|---|
@@ -645,8 +681,10 @@ identical.
   | `fail2banBanLift`, `fail2banBanAllowlisting`, `fail2banBanDenylisting` | `fail2banActiveBan`, network | `network`, list entries added and removed |
   | `fail2banBanListIdRotation` | `fail2banBanListId`, null | — (never an ID) |
 
-  Failure reasons: `conflict` (with `details.problemType`), `notFound`, `versionOutdated`,
-  `temporaryFailure`, `outcomeUnknown`, and the new `serviceFailure` and `rulesNotRestored`. The
+  Failure reasons: `permissionDenied`, `validationFailed`, `conflict` (with
+  `details.problemType`), `notFound`, `versionOutdated`, `temporaryFailure`, `outcomeUnknown`, and
+  the new `serviceFailure` and `rulesNotRestored` (all in the shared, append-only
+  `AuditFailureReason`). The
   bulk request ID is the record's `requestId`, as the shared `BulkResult` defines.
 
   **Irreversible operations** (container actions, queue actions, rule reset; FR-064) use
@@ -663,8 +701,9 @@ identical.
   transaction around the Redis `EXEC`: begin, insert, `EXEC`, commit. An insert failure aborts
   before `EXEC` (`503`); a failed `EXEC` rolls back. If the commit fails after `EXEC` succeeded, the
   change stays, the event is logged at `error` and `Audit-Recorded: false` is sent.
-- **Rationale**: FR-062 to FR-064 and constitution VI. The queue's single record per request is the
-  spec's clarification 5, which governs over the per-object convention.
+- **Rationale**: FR-062 to FR-064, constitution VI and the refusal-auditing convention. The queue's
+  single record per request is the spec's clarification 5, which governs over the per-object
+  convention.
 - **Alternatives considered**: Writing a "pending" record before and an outcome record after was
   rejected: two records per request contradict FR-062, and records are immutable.
 
@@ -720,9 +759,9 @@ identical.
   | `RESTV2_UPDATE_STABLE_BRANCH` | `master` | branch the update check runs on |
   | `RESTV2_IP_CHECK_IPV4_URL`, `RESTV2_IP_CHECK_IPV6_URL` | `http://ipv4.mailcow.email`, `http://ipv6.mailcow.email` | external IP check service |
 
-  For the dev stack only, `RESTV2_MONITORING_FAKES=recorded` binds the test fakes with the
-  recorded payloads of `tests/fixtures/monitoring/`; `AppServiceProvider` refuses the setting
-  outside `APP_ENV=local`.
+  For the dev stack only, 002's `RESTV2_FAKE_OUTBOUND=y` also binds this feature's fakes (Rspamd,
+  release source, IP check) and loads the recorded payloads of `tests/fixtures/monitoring/` into
+  the dockerapi fake; it is refused outside `APP_ENV=local`, as in 002.
 
   `MAILCOW_HOSTNAME`, `TZ`, `IPV4_NETWORK` and `IPV6_NETWORK` come from 001 R14. The polling
   interval (5 s), maximum ages, the 10,000-message listing limit and the bulk and rule limits are
@@ -780,7 +819,7 @@ identical.
 
 ### R32. Monitoring capabilities (orchestrator items 1 to 5)
 
-- **Decision**: `GET /monitoring/capabilities` (`MonitoringCapabilitiesService`) returns
+- **Decision**: `GET /capabilities/monitoring` (`MonitoringCapabilitiesService`) returns
   `ipCheckEnabled` (Redis `IP_CHECK`), `pollIntervalSeconds` (5), `maxAgeSeconds` (5, 10, 15, 60),
   `logRetention` (`entries` with `LOG_LINES + 1` for the in-memory logs, `entries` 101 for
   autodiscover, `unbounded` for the legacy UI activity log, `cleanedDaily` for logins),

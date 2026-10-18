@@ -44,6 +44,19 @@ post:
 
     The session identifier is renewed when the step succeeds. A previous sign-in of the same
     session is replaced.
+
+    **Identity provider mailboxes** (feature 012): a mailbox with the LDAP source is verified by a
+    bind to the directory, and a mailbox with the Keycloak source, when the mailpassword flow is
+    on, against the hash in the user's `mailcow_password` attribute. When no account matches and
+    LDAP, or Keycloak with the mailpassword flow, is configured, the username and password are
+    verified at the provider and a mailbox is created from the mapped or default template. Second
+    factors, forced second-factor setup, throttling and fail2ban reporting then work as for a
+    mailcow password; `authMethod` is `directoryPassword*` or `providerPassword*`. A provider that
+    cannot be reached, times out or refuses the service account answers `503
+    identity-provider-unavailable`, which is neither reported to fail2ban nor counted towards
+    throttling. A verified password for which no mailbox can be created, a Keycloak user without a
+    `mailcow_password` value, and a mailbox of a generic OIDC provider get `sign-in-failed`
+    without a fail2ban report.
   security:
     - sessionCookie: []
       csrfToken: []
@@ -68,6 +81,8 @@ post:
       $ref: '../../components/responses/TooManyRequests.yaml'
     '500':
       $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/IdentityProviderUnavailable.yaml'
 delete:
   operationId: deleteSession
   tags: [Authentication]

@@ -113,6 +113,37 @@
   publishes the flag as a login page option. Enforcing it is a product decision that is left to the
   owner, see Assumptions.)
 
+### Session 2026-10-18 (orchestrator input from UI feature 012)
+
+- Q: Which mailbox counts does the configuration report? → A: The number of mailboxes for each
+  external authentication source (Keycloak, generic OIDC and LDAP), not only for the configured
+  type, counted exactly as the "identity provider in use" checks count them. The conflict reports
+  the same counts (FR-006, FR-015, FR-017). (orchestrator decision: the UI 012 spec found that a
+  client cannot foresee a refusal caused by mailboxes of another external type.)
+- Q: Does the configuration report the state of the synchronisation jobs? → A: Yes, for Keycloak and
+  LDAP, as far as it can be derived without changing legacy: the end of the last completed run, a
+  run-level failure since then, whether a run is in progress or overdue, and when the next run is
+  expected. It is derived from the scheduled-job log that the legacy jobs write, is read-only, and
+  is not part of the version tag (FR-062). (orchestrator decision: the UI 012 spec found that
+  administrators cannot see whether the synchronisation works. The jobs stay in legacy, FR-018.)
+- Q: What happens when the provider sends the browser back with an error instead of a code, for
+  example because the user cancelled or refused? → A: The client passes the provider's error code
+  and the state to the API. The API validates the state as for a completion, cancels the pending
+  single sign-on, and writes an audit record with the provider's error code. The provider's
+  free-text description is never accepted or stored (FR-063). (orchestrator decision: the UI 012
+  spec found that such cancellations could not be audited.)
+- Q: Does "force single sign-on" hide passkey sign-in? → A: It stays a display-only option, as in
+  clarification 10: clients offer single sign-on instead of the password form on the mailbox-user
+  sign-in screen, passkey sign-in stays available, and the API refuses no sign-in method because of
+  it (FR-020). (orchestrator decision: UI features 001 and 012 keep passkey sign-in available.)
+- Q: Does the API offer the legacy mass actions of the OAuth2 apps table? → A: Yes, for deletion and
+  token revocation: up to 100 clients per request, one result per client, optional version tags per
+  client and one audit record per client, as `docs/conventions.md` requires wherever legacy offers
+  mass actions. Secret regeneration has no bulk form, because each new secret must be shown once and
+  copied individually (FR-060, FR-061). This replaces the earlier exclusion of batch operations.
+  (orchestrator decision: legacy's "OAuth2 Apps" table offers "Remove", "Revoke all client tokens"
+  and "Generate new client secret" for the selected clients.)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Configure and test the identity provider (Priority: P1)
@@ -180,6 +211,11 @@ synchronisation run uses them. Confirm that no response, log line or audit recor
 9. **Given** two administrators who read the configuration, **When** the first saves a change and
    the second then saves with the version they read, **Then** the second save is refused as
    outdated.
+10. **Given** an LDAP configuration, 12 LDAP mailboxes and 3 mailboxes left with the Keycloak source,
+    **When** an administrator reads the configuration, **Then** it reports 12 LDAP, 3 Keycloak and
+    0 generic OIDC mailboxes. **Given** periodic synchronisation on and a completed run 4 minutes
+    ago with a 15-minute interval, **Then** it reports that run's end and the next run expected
+    about 11 minutes from now.
 
 ---
 
@@ -233,6 +269,10 @@ users. Disable a user at the provider and confirm their session ends.
 9. **Given** a server with an LDAP configuration or no configuration, **When** a client reads the
    public configuration, **Then** single sign-on is reported as unavailable. **When** it starts
    single sign-on, **Then** the request is refused as "single sign-on not available".
+10. **Given** a started single sign-on, **When** the user cancels at the provider and the client
+    passes the provider's error `access_denied` with the state, **Then** the pending single sign-on
+    is cancelled, a failed sign-in is audited with the error code `access_denied`, and a later
+    completion with the same state is refused as "sign-in state invalid".
 
 ---
 
@@ -320,6 +360,10 @@ endpoints with the client, and confirm the outcome the step implies.
    refused with "insufficient key scope".
 7. **Given** 40 clients, **When** an administrator searches for "wiki", **Then** exactly the clients
    whose client ID or redirect URIs contain "wiki" are returned.
+8. **Given** three selected clients, one of which was deleted elsewhere and one sent with an outdated
+   version tag, **When** an administrator revokes their tokens in one bulk request, **Then** the
+   response reports `done`, `notFound` and `outdated`, only the first client's tokens are removed,
+   and one audit record per client carries the bulk request's identifier.
 
 ---
 
@@ -371,7 +415,8 @@ each filter.
 - **Two first sign-ins of the same new user at the same time**: exactly one mailbox is created, and
   both sign-ins succeed.
 - **User cancels at the provider**, or never comes back: the pending single sign-on expires after
-  10 minutes. The client can also cancel it.
+  10 minutes. The client can also cancel it. When the provider sends the browser back with an error,
+  the client reports it (FR-063).
 - **Configuration changed or deleted between the start and the completion** of a single sign-on:
   the completion uses the current configuration. If single sign-on is no longer available, it fails
   as "single sign-on not available".
@@ -438,7 +483,7 @@ each filter.
   | Save, change or delete the configuration | Yes | Forbidden | Forbidden | Unauthenticated |
   | Test a connection | Yes | Forbidden | Forbidden | Unauthenticated |
   | List and inspect OAuth2 clients | Yes, without secrets | Forbidden | Forbidden | Unauthenticated |
-  | Create, change, regenerate the secret of, revoke the tokens of, delete an OAuth2 client | Yes | Forbidden | Forbidden | Unauthenticated |
+  | Create, change, regenerate the secret of, revoke the tokens of, delete an OAuth2 client, singly or in bulk (FR-060) | Yes | Forbidden | Forbidden | Unauthenticated |
   | Start and complete single sign-on | Not applicable | Not applicable | Not applicable | Yes, signs in a mailbox user |
   | Password sign-in of an LDAP or Keycloak mailbox | Not applicable | Not applicable | Not applicable | Yes, through feature 001's sign-in |
   | Read the audit log | Yes | Forbidden | Forbidden | Unauthenticated |
@@ -472,7 +517,9 @@ each filter.
     whether it is set;
   - for each mapping entry and for the default template, whether the template currently exists;
   - whether the configuration is complete for sign-in (FR-008);
-  - the number of mailboxes whose authentication source is the configured type;
+  - the number of mailboxes for each external authentication source (Keycloak, generic OIDC and
+    LDAP), counted as the checks of FR-015 and FR-017 count them;
+  - for Keycloak and LDAP, the synchronisation status (FR-062);
   - its last modification time and its version tag (FR-050).
 - **FR-007**: A value missing from the stored data MUST be shown with the legacy default: automatic
   creation on first sign-in on; scopes `openid profile email mailcow_template`; SSL, StartTLS,
@@ -543,7 +590,8 @@ each filter.
     secret MUST be refused with a validation error on the secret, and nothing MUST change.
 - **FR-015**: A save of a type other than the stored one MUST be refused as an "identity provider in
   use" conflict when any mailbox has an external authentication source other than the new type. The
-  error MUST report how many mailboxes there are, as legacy refuses this. After any successful save,
+  error MUST report how many mailboxes there are, per authentication source, as legacy refuses this.
+  After any successful save,
   the stored configuration MUST hold only the settings of the saved type: settings of a previous
   type MUST be removed. **Deviation**: legacy keeps them.
 - **FR-016**: A successful save MUST clear the cached Keycloak service token, as legacy does, so
@@ -555,7 +603,8 @@ each filter.
 
 - **FR-017**: Administrators MUST be able to delete the configuration. A deletion MUST be refused as
   an "identity provider in use" conflict when any mailbox has an external authentication source,
-  and the error MUST report how many mailboxes there are, as in legacy. A successful deletion MUST
+  and the error MUST report how many mailboxes there are, per authentication source, as in legacy.
+  A successful deletion MUST
   remove every stored setting, including the cached service token, and MUST respond with no body.
   Single sign-on then becomes unavailable, and the synchronisation jobs stop at their next run.
 
@@ -601,8 +650,9 @@ each filter.
   OIDC and complete (FR-008). The public configuration of feature 001 (FR-042 there) MUST also state
   whether single sign-on is available. The contract MUST document that clients offer single sign-on
   to mailbox users when it is available, and that when the "force single sign-on" login option is
-  set, clients offer only single sign-on on the mailbox-user sign-in screen, as the legacy login
-  page does. The option MUST NOT make the API refuse any other sign-in method.
+  set and single sign-on is available, clients offer single sign-on instead of the password form on
+  the mailbox-user sign-in screen, as the legacy login page does, while passkey sign-in stays
+  available. The option is display-only and MUST NOT make the API refuse any sign-in method.
 - **FR-021**: An unauthenticated client MUST be able to start a single sign-on. The response MUST
   contain the provider's authorization address, to which the browser is sent. Starting MUST:
   - create a random state that is single-use, bound to the client's browser session, and expires
@@ -825,7 +875,9 @@ each filter.
   - for successful changes, each changed setting with its old and new value. Secrets MUST be
     recorded only as changed;
   - for a test, the provider type, the address tested and the outcome category;
-  - for a revocation or deletion of a client, the number of tokens and codes removed.
+  - for a revocation or deletion of a client, the number of tokens and codes removed;
+  - for an item of a bulk action (FR-060), one record per client, carrying the bulk request's
+    identifier, as `docs/conventions.md` requires.
 - **FR-053**: Sign-in audit records (feature 001, FR-045 and FR-046 there) MUST cover single sign-on
   and password sign-in through a provider, with the methods "single sign-on", "directory password"
   (LDAP) and "provider password" (Keycloak mailpassword flow), the provider type, and these failure
@@ -858,8 +910,38 @@ each filter.
   implemented, and its behaviour MUST match the contract.
 - **FR-059**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response
   of this API.
-- **FR-060**: This feature MUST NOT offer batch operations. Each OAuth2 client is changed, revoked
-  or deleted with its own request.
+- **FR-060**: Administrators MUST be able to delete, or revoke the tokens of, up to 100 OAuth2
+  clients in one request, as the legacy mass actions of the "OAuth2 Apps" table do. A request with
+  more than 100 clients MUST be refused with a validation error that states the limit. Secret
+  regeneration, creation and redirect URI changes MUST NOT be offered as bulk actions, and this
+  feature MUST NOT offer any other batch operation.
+- **FR-061**: A bulk action MUST be refused as a whole only when the caller's role or key scope does
+  not allow it (FR-002, FR-003). Otherwise each named client MUST be processed on its own, with the
+  same checks, effects and audit record as a single request for it (FR-047, FR-048, FR-052), and the
+  response MUST report one result per distinct client: `done`, `notFound`, `refused`, `outdated` or
+  `failed`. A failure on one client MUST NOT stop or undo the others. Each item MAY carry the version
+  tag the client read; an item whose tag no longer matches MUST be reported as `outdated` and left
+  unchanged, and items without a tag MUST be processed without a version check. A client named twice
+  MUST be processed once.
+- **FR-062**: For a Keycloak or LDAP configuration, the representation MUST report the
+  synchronisation status, derived read-only from the scheduled-job log that the legacy jobs write,
+  without changing legacy:
+  - whether a job is enabled (user import or periodic full synchronisation on);
+  - the end of the last completed run, or none when the log holds no completed run;
+  - the time of a run-level failure logged since the last completed run, if any;
+  - whether a run is in progress, and whether the next run is overdue;
+  - when the next run is expected, counted from the end of the last completed run and the sync
+    interval as the jobs count it (FR-018).
+
+  The contract MUST document that the status is derived from the log, which keeps a limited number
+  of entries, and that a failure that the jobs do not log shows only as an overdue run. The status
+  MUST NOT be part of the version tag (FR-050).
+- **FR-063**: When the provider sends the browser back with an error instead of a code, the client
+  MUST be able to report the provider's error code together with the state. The system MUST validate
+  the state as for a completion (FR-022) and consume it, MUST cancel the pending single sign-on, and
+  MUST audit a failed sign-in with the provider's error code. The error code MUST be 1 to 64
+  characters of the OAuth 2.0 error code character set. The provider's free-text description MUST NOT
+  be accepted or stored. An invalid state MUST be refused as "sign-in state invalid".
 
 ### Legacy Coverage
 
@@ -891,8 +973,10 @@ follows. Actions are `/api/v1` names; *form* marks legacy UI handlers and screen
 | `get/oauth2-client/all`, `get/oauth2-client/{id}`, *form* "OAuth2 Apps" table and edit page | `oauth2('get', 'clients')`, `oauth2('details', 'client')`, `admin/tab-config-oauth2.twig`, `edit/oauth2client.twig` | FR-041, FR-042 |
 | `edit/oauth2-client` (redirect URI) | `oauth2('edit', 'client')` | FR-044, FR-045 |
 | `edit/oauth2-client` with `renew_secret`, *form* "Generate new client secret" | `oauth2('edit', 'client')` | FR-046 |
-| `edit/oauth2-client` with `revoke_tokens`, *form* "Revoke all client tokens" | `oauth2('edit', 'client')` | FR-047 |
-| `delete/oauth2-client`, single and mass | `oauth2('delete', 'client')` | FR-048, FR-060 |
+| `edit/oauth2-client` with `revoke_tokens`, *form* "Revoke all client tokens", single and mass | `oauth2('edit', 'client')` | FR-047, FR-060, FR-061 |
+| `delete/oauth2-client`, single and mass | `oauth2('delete', 'client')` | FR-048, FR-060, FR-061 |
+| Mass "Generate new client secret" | `oauth2('edit', 'client')` with `renew_secret` | FR-046 per client; no bulk form (FR-060) |
+| Scheduled-job log entries of the synchronisation jobs (`CRON_LOG`) | `crons/keycloak-sync.php`, `crons/ldap-sync.php` | FR-062 (read-only status) |
 
 Not covered here, by design:
 
@@ -978,11 +1062,17 @@ feature:
 | Secret regeneration | New secret; tokens kept | Same; the secret is returned once (FR-046) |
 | Token revocation | Access and refresh tokens removed | Authorization codes removed as well (FR-047). **Deviation** |
 | Client deletion | Client row only; its access tokens stay valid for up to 24 hours | Client, tokens and codes removed (FR-048). **Deviation** (security) |
-| Mass actions | Several clients per request | One request per client (FR-060). **Deviation** |
+| Mass actions | Remove, revoke tokens and renew secrets of the selected clients in one request, without a result per client | Bulk deletion and bulk token revocation with one result and one audit record per client; secret regeneration only per client (FR-060, FR-061). **Deviation** |
+| Synchronisation status | Not shown; the jobs log to the scheduled-job log | Derived read-only from that log (FR-062). **New** |
+| Provider error on the return to the UI | Ignored; the state stays in the session | Reported by the client, state consumed, audited with the provider's error code (FR-063). **Deviation** |
 | Concurrent edits | Last write wins | Version tags (FR-050, FR-051). **Deviation** |
 | UI log entries | Written to the `logs` table | Written to this API's audit log, as in feature 001. **Deviation** |
-| "Force single sign-on" | Hides the login form and the passkey button of the mailbox-user login page; not enforced | Presentation option, documented, not enforced (FR-020) |
+| "Force single sign-on" | Hides the login form and the passkey button of the mailbox-user login page; not enforced | Presentation option, documented, not enforced; clients keep passkey sign-in (FR-020) |
 | OAuth2 endpoints and consent page | php-fpm | Unchanged (FR-049) |
+| Renewal answer without a new refresh token | The session stops renewing | The old refresh token is kept and renewal continues (FR-026). **Deviation** (added by the plan) |
+| HTTP redirects from the provider | Followed (library default, up to 5) | Not followed; a redirect is an unexpected response (FR-019, FR-022). **Deviation** (added by the plan) |
+| LDAP time-out | Library default of 5 s | 7 s, as every provider call (FR-056). **Deviation** (added by the plan) |
+| IPv6 LDAP hosts | Connection URIs without brackets, which fail | Bracketed in connection URIs; stored unchanged (FR-012). **Deviation** (added by the plan) |
 
 ### Key Entities *(include if feature involves data)*
 
@@ -1010,6 +1100,11 @@ feature:
 - **OAuth2 tokens and authorization codes** (existing mailcow data, issued by the legacy OAuth2
   endpoints): counted and removed per client by this feature.
 - **Connection test result**: success, or a failure category with the provider's status code.
+- **Synchronisation status** (derived, read-only): the last completed run, a later run-level
+  failure, whether a run is in progress or overdue, and the next expected run, read from the legacy
+  jobs' scheduled-job log.
+- **Bulk action result** (feature-independent, `docs/conventions.md`): one outcome per OAuth2 client
+  of a bulk deletion or token revocation.
 - **Audit record** (owned by this API, defined in feature 001): extended with the target types,
   sign-in methods and failure reasons of this feature.
 
@@ -1043,8 +1138,9 @@ feature:
   because the provider was unreachable.
 - **SC-009**: A user disabled at the provider loses their single sign-on session at their first
   request more than 5 minutes after their last renewal, in 100% of tests.
-- **SC-010**: 100% of changes sent with an outdated version tag are refused, and every request in
-  FR-052 and FR-053 produces exactly one audit record.
+- **SC-010**: 100% of changes sent with an outdated version tag are refused, every request in
+  FR-052 and FR-053 produces exactly one audit record, and a bulk action produces exactly one audit
+  record per distinct client.
 
 ## Assumptions
 
@@ -1079,7 +1175,7 @@ feature:
   - running, triggering or scheduling the synchronisation jobs;
   - more than one provider at a time, and group or role mapping beyond the template attribute;
   - the OAuth2 provider endpoints and their settings (token lifetimes, grant types, scopes);
-  - batch operations.
+  - batch operations other than the OAuth2 bulk actions of FR-060.
 - **Dependencies**:
   - feature 001, for sign-in, sessions, roles, API keys, throttling, fail2ban reporting, the public
     configuration, errors and the audit log;

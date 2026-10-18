@@ -1,0 +1,15 @@
+description: |
+  A whole identity provider configuration of one type: the body of a save (`PUT /identity-provider`)
+  and of a connection test. Settings not sent take their defaults. Members that are not settings of
+  the given type, including read-only members of the representation, are refused (rule code
+  `conflictsWith` with `field: type`).
+oneOf:
+  - $ref: './IdentityProviderKeycloakInput.yaml'
+  - $ref: './IdentityProviderGenericOidcInput.yaml'
+  - $ref: './IdentityProviderLdapInput.yaml'
+discriminator:
+  propertyName: type
+  mapping:
+    keycloak: './IdentityProviderKeycloakInput.yaml'
+    genericOidc: './IdentityProviderGenericOidcInput.yaml'
+    ldap: './IdentityProviderLdapInput.yaml'

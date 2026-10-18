@@ -1,0 +1,89 @@
+description: |
+  LDAP configuration. A mailbox with the LDAP source signs in with its directory password: the API
+  looks up the entry whose username field equals the username, below the base DN and within the
+  filter, and binds as that entry with the password.
+allOf:
+  - $ref: './IdentityProviderCommon.yaml'
+  - type: object
+    required:
+      - type
+      - hosts
+      - port
+      - effectivePort
+      - useSsl
+      - useStartTls
+      - baseDn
+      - usernameField
+      - filter
+      - attributeField
+      - bindDn
+      - bindPasswordSet
+      - importUsers
+      - periodicSync
+      - syncInterval
+      - synchronisation
+    properties:
+      type:
+        const: ldap
+      hosts:
+        type: array
+        description: Directory hosts, tried in order (`host`, stored comma-separated).
+        items:
+          type: string
+          examples: [ldap1.example.org]
+      port:
+        type: integer
+        minimum: 1
+        maximum: 65535
+        description: Stored port (`port`, default 389).
+      effectivePort:
+        type: integer
+        minimum: 1
+        maximum: 65535
+        readOnly: true
+        description: Port used for connections. 636 when SSL is on and the stored port is 389, as legacy does.
+      useSsl:
+        type: boolean
+        description: LDAPS (`use_ssl`).
+      useStartTls:
+        type: boolean
+        description: StartTLS (`use_tls`). Always `false` when `useSsl` is `true`.
+      baseDn:
+        oneOf:
+          - type: string
+          - type: 'null'
+        examples: ['ou=people,dc=example,dc=org']
+      usernameField:
+        type: string
+        description: Attribute compared with the username, lower-cased (`username_field`, default `mail`).
+      filter:
+        description: Additional search filter (`filter`), `null` when unset.
+        oneOf:
+          - type: string
+          - type: 'null'
+        examples: ['(objectClass=inetOrgPerson)']
+      attributeField:
+        description: Attribute holding the mapping value, lower-cased (`attribute_field`), `null` when unset.
+        oneOf:
+          - type: string
+          - type: 'null'
+      bindDn:
+        description: Service account DN (`binddn`).
+        oneOf:
+          - type: string
+          - type: 'null'
+      bindPasswordSet:
+        type: boolean
+        description: Whether a bind password is stored. The password itself is never returned.
+      importUsers:
+        type: boolean
+        description: Create mailboxes for directory users without one in each synchronisation run (`import_users`).
+      periodicSync:
+        type: boolean
+        description: Re-apply the mapped template to existing LDAP mailboxes in each run (`periodic_sync`).
+      syncInterval:
+        type: integer
+        minimum: 1
+        description: Minutes between the end of a run and the start of the next (`sync_interval`, default 15).
+      synchronisation:
+        $ref: './IdentityProviderSynchronisation.yaml'

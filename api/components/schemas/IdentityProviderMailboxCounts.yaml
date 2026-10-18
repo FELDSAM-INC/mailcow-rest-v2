@@ -1,0 +1,18 @@
+type: object
+description: |
+  Number of mailboxes per external authentication source, counted over all rows of mailcow's
+  `mailbox` table exactly as the "identity provider in use" checks count them. A deletion is
+  refused while any count is above zero; a save of another type is refused while a count of a type
+  other than the saved one is above zero. Usage figures: not part of the version tag.
+required: [keycloak, genericOidc, ldap]
+properties:
+  keycloak:
+    type: integer
+    minimum: 0
+  genericOidc:
+    type: integer
+    minimum: 0
+  ldap:
+    type: integer
+    minimum: 0
+additionalProperties: false

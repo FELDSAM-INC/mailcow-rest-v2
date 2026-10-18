@@ -1,0 +1,5 @@
+# Paths of the identity-provider module: the server's Keycloak, generic OIDC or LDAP configuration.
+/identity-provider:
+  $ref: './identity-provider.yaml'
+/identity-provider/connection-tests:
+  $ref: './identity-provider-connection-tests.yaml'

@@ -1,0 +1,68 @@
+get:
+  operationId: listOauth2Clients
+  tags: [OAuth2 clients]
+  summary: List OAuth2 clients
+  description: |
+    Lists the OAuth2 clients, by default ordered by identifier, without secrets. `q` searches the
+    client ID and the redirect URIs, case-insensitively. Administrators only: a signed-in
+    administrator or a key owned by an administrator, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/Oauth2ClientSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: hasActiveTokens
+      in: query
+      required: false
+      description: Only clients with (`true`) or without (`false`) an unexpired access or refresh token.
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/Oauth2ClientListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createOauth2Client
+  tags: [OAuth2 clients]
+  summary: Create an OAuth2 client
+  description: |
+    Registers an application. The server generates, from a cryptographically secure source, a
+    client ID of 12 lowercase hexadecimal characters that no other client has and a secret of 24
+    lowercase hexadecimal characters, and sets the scope `profile`. The response contains the
+    secret exactly once. The legacy UI lists the client at once.
+
+    Administrators only, with a session or a read-write key. Audited without the secret.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/Oauth2ClientCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/Oauth2ClientCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

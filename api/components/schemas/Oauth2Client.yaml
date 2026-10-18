@@ -1,0 +1,43 @@
+type: object
+description: |
+  An OAuth2 client of mailcow's own OAuth2 provider (table `oauth_clients`). Applications use the
+  unchanged legacy endpoints `/oauth/authorize`, `/oauth/token` and `/oauth/profile`. The client
+  secret is returned only when the client is created and when its secret is regenerated.
+required: [id, clientId, redirectUris, scope, activeAccessTokens, activeRefreshTokens, etag]
+properties:
+  id:
+    type: integer
+    minimum: 1
+    description: Numeric identifier, as in legacy.
+  clientId:
+    type: string
+    description: 12 lowercase hexadecimal characters for clients created by this API or the legacy UI.
+    examples: [3f9a1c0b7d2e]
+  redirectUris:
+    type: array
+    description: |
+      Registered redirect URIs in stored order (stored joined by single spaces). Legacy may have
+      stored values that break the rules of a change, for example an empty list; they are shown as
+      stored.
+    items:
+      type: string
+      examples: [https://wiki.example.org/oauth/callback]
+  scope:
+    description: Always `profile` for clients created by this API or the legacy UI.
+    oneOf:
+      - type: string
+      - type: 'null'
+    examples: [profile]
+  activeAccessTokens:
+    type: integer
+    minimum: 0
+    description: Number of unexpired access tokens. Usage figure, not part of the version tag.
+  activeRefreshTokens:
+    type: integer
+    minimum: 0
+    description: Number of unexpired refresh tokens. Usage figure, not part of the version tag.
+  etag:
+    type: string
+    description: |
+      Version tag over the stored client (redirect URIs and secret included, tokens excluded). Equal
+      to the `ETag` header of a single read; send it in `If-Match`.

@@ -54,6 +54,7 @@ content:
             defaultLanguage: en-gb
             externalIdentityProvider:
               configured: false
+              singleSignOnAvailable: false
             appsLabel: null
             appLinks:
               - name: Webmail

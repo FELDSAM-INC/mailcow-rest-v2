@@ -1,0 +1,22 @@
+type: object
+description: |
+  One entry of the attribute mapping: users whose mapping attribute equals `attributeValue`
+  (exactly, letter case included; the first value when the provider sends several) get the
+  mailbox template `template`. The mapping attribute is the `mailcow_template` value of the user
+  details for single sign-on, the user's `mailcow_template` attribute for the Keycloak
+  mailpassword flow, and the configured attribute field for LDAP.
+required: [attributeValue, template, templateExists]
+properties:
+  attributeValue:
+    type: string
+    examples: [staff]
+  template:
+    type: string
+    description: Name of a mailbox template (feature 003).
+    examples: [Staff]
+  templateExists:
+    type: boolean
+    description: |
+      `false` when no mailbox template of this name exists any more (renamed or deleted in feature
+      003). Mailbox creation with this entry then fails, and the update on sign-in is skipped.
+additionalProperties: false

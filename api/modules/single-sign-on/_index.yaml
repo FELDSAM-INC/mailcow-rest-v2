@@ -1,0 +1,7 @@
+# Paths of the single-sign-on module: mailbox-user sign-in through a Keycloak or generic OIDC provider.
+/session/single-sign-on:
+  $ref: './session-single-sign-on.yaml'
+/session/single-sign-on/completion:
+  $ref: './session-single-sign-on-completion.yaml'
+/session/single-sign-on/provider-error:
+  $ref: './session-single-sign-on-provider-error.yaml'

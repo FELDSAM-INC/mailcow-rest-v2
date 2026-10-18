@@ -1,0 +1,16 @@
+description: |
+  The server's external identity provider configuration. At most one exists. It is stored where
+  legacy stores it (table `identity_provider`), so the legacy UI, `/api/v1`, the legacy single
+  sign-on, the mail clients' sign-in check and the synchronisation jobs use the same settings.
+  Secrets (client secret, bind password) are write-only: only whether each is set is shown.
+  Settings of another type that legacy left stored are not shown and are removed by the next save.
+oneOf:
+  - $ref: './IdentityProviderKeycloak.yaml'
+  - $ref: './IdentityProviderGenericOidc.yaml'
+  - $ref: './IdentityProviderLdap.yaml'
+discriminator:
+  propertyName: type
+  mapping:
+    keycloak: './IdentityProviderKeycloak.yaml'
+    genericOidc: './IdentityProviderGenericOidc.yaml'
+    ldap: './IdentityProviderLdap.yaml'

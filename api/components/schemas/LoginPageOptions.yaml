@@ -13,4 +13,8 @@ properties:
     description: Hide the mailbox user login link (`hide_user_quicklink`).
   forceSingleSignOn:
     type: boolean
-    description: Legacy hides the password form in favour of identity-provider sign-in (`force_sso`).
+    description: |
+      Legacy hides the password form in favour of identity-provider sign-in (`force_sso`). When it
+      is set and `externalIdentityProvider.singleSignOnAvailable` is `true`, clients offer single
+      sign-on instead of the password form on the mailbox-user sign-in screen and keep passkey
+      sign-in. Display-only: the API refuses no sign-in method because of it (feature 012).

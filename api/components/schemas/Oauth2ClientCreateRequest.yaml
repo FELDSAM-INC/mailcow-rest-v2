@@ -1,0 +1,19 @@
+type: object
+description: |
+  A new OAuth2 client. The server generates the client ID, the secret and the scope `profile`.
+required: [redirectUris]
+properties:
+  redirectUris:
+    type: array
+    minItems: 1
+    description: |
+      Absolute URIs with a scheme, without a fragment and without whitespace (rule code
+      `invalidFormat`, format `redirectUri`). Duplicates are stored once. Joined by single spaces
+      they may not exceed 2,000 characters (rule code `tooLong` on `redirectUris`). When several are
+      registered, applications must name their redirect URI in the authorization request, because
+      the token endpoint then requires it.
+    items:
+      type: string
+      minLength: 1
+      maxLength: 2000
+additionalProperties: false

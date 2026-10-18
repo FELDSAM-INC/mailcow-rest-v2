@@ -1,0 +1,66 @@
+description: |
+  Keycloak configuration. Single sign-on uses the endpoints below
+  `<serverUrl>/realms/<realm>/protocol/openid-connect/` and requests the scopes `profile` and
+  `email`, plus `openid` when `version` is 20.0.0 or later. The mailpassword flow, user import and
+  synchronisation need a service account for the client with the `view-users` permission.
+allOf:
+  - $ref: './IdentityProviderCommon.yaml'
+  - $ref: './IdentityProviderReturnUrls.yaml'
+  - type: object
+    required:
+      - type
+      - serverUrl
+      - realm
+      - clientId
+      - clientSecretSet
+      - version
+      - mailpasswordFlow
+      - importUsers
+      - periodicSync
+      - syncInterval
+      - synchronisation
+    properties:
+      type:
+        const: keycloak
+      serverUrl:
+        description: Base URL of the Keycloak server, without trailing slashes (`server_url`).
+        oneOf:
+          - type: string
+            format: uri
+          - type: 'null'
+        examples: [https://sso.example.org]
+      realm:
+        oneOf:
+          - type: string
+          - type: 'null'
+        examples: [example]
+      clientId:
+        oneOf:
+          - type: string
+          - type: 'null'
+      clientSecretSet:
+        type: boolean
+        description: Whether a client secret is stored. The secret itself is never returned.
+      version:
+        description: Keycloak version (`version`), which selects the default scopes.
+        oneOf:
+          - type: string
+          - type: 'null'
+        examples: ['26.0.7']
+      mailpasswordFlow:
+        type: boolean
+        description: |
+          Password sign-in of Keycloak mailboxes against the password hash in the user's
+          `mailcow_password` attribute (`mailpassword_flow`).
+      importUsers:
+        type: boolean
+        description: Create mailboxes for provider users without one in each synchronisation run (`import_users`).
+      periodicSync:
+        type: boolean
+        description: Re-apply the mapped template to existing Keycloak mailboxes in each run (`periodic_sync`).
+      syncInterval:
+        type: integer
+        minimum: 1
+        description: Minutes between the end of a run and the start of the next (`sync_interval`, default 15).
+      synchronisation:
+        $ref: './IdentityProviderSynchronisation.yaml'

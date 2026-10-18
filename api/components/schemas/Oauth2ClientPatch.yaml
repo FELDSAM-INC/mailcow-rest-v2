@@ -1,0 +1,19 @@
+type: object
+description: |
+  JSON Merge Patch of an OAuth2 client. Only `redirectUris` can change; it replaces the whole list
+  under the rules of the creation. `clientId` and `scope` are accepted only with their current
+  values (rule code `immutable` otherwise).
+minProperties: 1
+properties:
+  redirectUris:
+    type: array
+    minItems: 1
+    items:
+      type: string
+      minLength: 1
+      maxLength: 2000
+  clientId:
+    type: string
+  scope:
+    type: string
+additionalProperties: false

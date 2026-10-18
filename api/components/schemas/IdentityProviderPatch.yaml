@@ -1,0 +1,134 @@
+type: object
+description: |
+  JSON Merge Patch (RFC 7396) of the stored configuration: only the members sent change, the others
+  keep their stored values, and the rules of a whole save apply to the result. Arrays
+  (`attributeMapping`, `additionalReturnUrls`, `hosts`) replace the stored list. `null` clears
+  `defaultTemplate`, `filter` and `attributeField`; secrets cannot be cleared.
+  - `type` may be sent only with the stored type (rule code `immutable`); change the type with a
+    whole save.
+  - Members that are not settings of the stored type are refused (rule code `conflictsWith`, `field: type`).
+  - A changed Keycloak `serverUrl`, generic OIDC `tokenEndpoint` or LDAP `hosts` requires the
+    secret in the same request (rule code `secretRequired`).
+minProperties: 1
+properties:
+  type:
+    $ref: './IdentityProviderType.yaml'
+  attributeMapping:
+    type: array
+    maxItems: 100
+    items:
+      $ref: './IdentityProviderMappingEntryInput.yaml'
+  defaultTemplate:
+    oneOf:
+      - type: string
+        minLength: 1
+        maxLength: 255
+      - type: 'null'
+  createMailboxOnSignIn:
+    type: boolean
+  ignoreTlsErrors:
+    type: boolean
+  legacyReturnUrl:
+    type: string
+    format: uri
+    maxLength: 2000
+  additionalReturnUrls:
+    type: array
+    maxItems: 100
+    items:
+      type: string
+      format: uri
+      maxLength: 2000
+  serverUrl:
+    type: string
+    format: uri
+    maxLength: 2000
+  realm:
+    type: string
+    minLength: 1
+    maxLength: 255
+  clientId:
+    type: string
+    minLength: 1
+    maxLength: 255
+  clientSecret:
+    type: string
+    minLength: 1
+    maxLength: 1000
+    writeOnly: true
+    format: password
+  version:
+    type: string
+    pattern: '^[0-9]+(\.[0-9]+){0,3}$'
+    maxLength: 64
+  mailpasswordFlow:
+    type: boolean
+  importUsers:
+    type: boolean
+  periodicSync:
+    type: boolean
+  syncInterval:
+    type: integer
+    minimum: 1
+    maximum: 10080
+  authorizationEndpoint:
+    type: string
+    format: uri
+    maxLength: 2000
+  tokenEndpoint:
+    type: string
+    format: uri
+    maxLength: 2000
+  userInfoEndpoint:
+    type: string
+    format: uri
+    maxLength: 2000
+  scopes:
+    type: string
+    pattern: '^[\x21\x23-\x5B\x5D-\x7E]+( [\x21\x23-\x5B\x5D-\x7E]+){0,49}$'
+    maxLength: 2000
+  hosts:
+    type: array
+    minItems: 1
+    maxItems: 10
+    items:
+      type: string
+      minLength: 1
+      maxLength: 253
+  port:
+    type: integer
+    minimum: 1
+    maximum: 65535
+  useSsl:
+    type: boolean
+  useStartTls:
+    type: boolean
+  baseDn:
+    type: string
+    minLength: 1
+    maxLength: 1000
+  usernameField:
+    type: string
+    maxLength: 255
+    pattern: '^[A-Za-z][A-Za-z0-9-]*$'
+  filter:
+    oneOf:
+      - type: string
+        maxLength: 1000
+      - type: 'null'
+  attributeField:
+    oneOf:
+      - type: string
+        maxLength: 255
+      - type: 'null'
+  bindDn:
+    type: string
+    minLength: 1
+    maxLength: 1000
+  bindPassword:
+    type: string
+    minLength: 1
+    maxLength: 1000
+    writeOnly: true
+    format: password
+additionalProperties: false

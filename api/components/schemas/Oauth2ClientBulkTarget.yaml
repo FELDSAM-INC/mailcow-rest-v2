@@ -1,0 +1,7 @@
+description: One OAuth2 client of a bulk action, by its numeric identifier, with an optional version tag.
+allOf:
+  - $ref: './BulkTarget.yaml'
+  - type: object
+    properties:
+      id:
+        pattern: '^[1-9][0-9]{0,9}$'

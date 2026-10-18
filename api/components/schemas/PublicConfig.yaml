@@ -62,13 +62,20 @@ properties:
     examples: [en-gb]
   externalIdentityProvider:
     type: object
-    required: [configured]
+    required: [configured, singleSignOnAvailable]
     properties:
       configured:
         type: boolean
         description: |
           `true` when mailcow has an external identity provider (Keycloak, generic OIDC or LDAP)
-          configured. Sign-in through it is not available in this API yet.
+          configured. Mailboxes of an LDAP provider, or of Keycloak with the mailpassword flow,
+          sign in with their password through `POST /session` (feature 012).
+      singleSignOnAvailable:
+        type: boolean
+        description: |
+          `true` when a complete Keycloak or generic OIDC configuration exists, so that mailbox
+          users can sign in with `POST /session/single-sign-on` (feature 012). Offer it on the
+          mailbox-user and role-neutral sign-in screens, never on the administrator screens.
   appsLabel:
     description: |
       Label of the apps menu set by the operator (`APPS_NAME`, plain text). `null` when unset; the
@@ -84,3 +91,11 @@ properties:
       login-page block only when at least one link has `showOnLoginPage: true`.
     items:
       $ref: './AppLink.yaml'
+  brandColors:
+    description: |
+      Brand colours in effect for the light and dark themes, with their foregrounds, set by
+      administrators through feature 013 (`PATCH /settings/brand-colors`) and stored by this API.
+      `null` for a theme means the client uses its own palette there. Every colour reaches at least
+      4.5:1 against its theme's reference surface and with its foreground. Added by feature 013:
+      a server without it omits the member, which clients treat like two `null` themes.
+    $ref: './EffectiveBrandColors.yaml'

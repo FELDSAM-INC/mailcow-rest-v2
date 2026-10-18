@@ -1,0 +1,43 @@
+description: |
+  Whole generic OIDC configuration. `clientSecret` is required when no generic OIDC configuration
+  is stored and when `tokenEndpoint` differs from the stored one (rule code `secretRequired`);
+  otherwise an omitted secret keeps the stored one.
+allOf:
+  - $ref: './IdentityProviderCommonInput.yaml'
+  - $ref: './IdentityProviderReturnUrlsInput.yaml'
+  - type: object
+    required: [type, authorizationEndpoint, tokenEndpoint, userInfoEndpoint, clientId, legacyReturnUrl]
+    properties:
+      type:
+        const: genericOidc
+      authorizationEndpoint:
+        type: string
+        format: uri
+        maxLength: 2000
+      tokenEndpoint:
+        type: string
+        format: uri
+        maxLength: 2000
+      userInfoEndpoint:
+        type: string
+        format: uri
+        maxLength: 2000
+      clientId:
+        type: string
+        minLength: 1
+        maxLength: 255
+      clientSecret:
+        type: string
+        minLength: 1
+        maxLength: 1000
+        writeOnly: true
+        format: password
+      scopes:
+        type: string
+        description: |
+          1 to 50 scope names separated by single spaces, each of printable characters other than
+          space, `"` and `\` (rule code `invalidFormat`, format `scopeList`).
+        pattern: '^[\x21\x23-\x5B\x5D-\x7E]+( [\x21\x23-\x5B\x5D-\x7E]+){0,49}$'
+        maxLength: 2000
+        default: openid profile email mailcow_template
+unevaluatedProperties: false

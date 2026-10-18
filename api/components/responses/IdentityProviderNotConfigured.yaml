@@ -1,0 +1,15 @@
+description: |
+  No identity provider configuration is stored (type
+  `/api/v2/problems/identity-provider-not-configured`).
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'
+    examples:
+      notConfigured:
+        value:
+          type: /api/v2/problems/identity-provider-not-configured
+          title: Identity provider not configured
+          status: 404
+          detail: No external identity provider is configured on this server.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736

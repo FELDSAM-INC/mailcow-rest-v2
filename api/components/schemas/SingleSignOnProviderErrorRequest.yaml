@@ -1,0 +1,19 @@
+type: object
+description: |
+  The `error` and `state` query parameters with which the provider returned the browser instead of a
+  code. Do not send `error_description` or `error_uri`; the provider's free text is never accepted.
+required: [error, state]
+properties:
+  error:
+    type: string
+    description: |
+      The OAuth 2.0 error code, for example `access_denied`, `login_required` or
+      `temporarily_unavailable` (rule code `invalidFormat`, format `oauthErrorCode`).
+    pattern: '^[\x20-\x21\x23-\x5B\x5D-\x7E]{1,64}$'
+    examples: [access_denied]
+  state:
+    type: string
+    minLength: 1
+    maxLength: 512
+    writeOnly: true
+additionalProperties: false

@@ -1,0 +1,18 @@
+type: object
+description: |
+  A started single sign-on. Send the browser to `authorizationUrl` in the same tab (no pop-up, no
+  frame). The provider returns it to the new web app's sign-in return address with `code` and
+  `state`, or with `error` and `state`.
+required: [authorizationUrl, expiresAt]
+properties:
+  authorizationUrl:
+    type: string
+    format: uri
+    description: |
+      The provider's authorization endpoint with the client ID, the return address for the host
+      name the client used, the scopes, a single-use `state` and a PKCE `code_challenge` (S256).
+  expiresAt:
+    type: string
+    format: date-time
+    description: The pending single sign-on expires 10 minutes after it was started.
+additionalProperties: false

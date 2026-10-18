@@ -1,0 +1,55 @@
+post:
+  operationId: startSingleSignOn
+  tags: [Authentication]
+  summary: Start a single sign-on
+  description: |
+    Starts a mailbox-user sign-in through the configured Keycloak or generic OIDC provider and
+    returns the provider's authorization address. Offer it to mailbox users when
+    `GET /public-config` reports `externalIdentityProvider.singleSignOnAvailable`. When the login
+    page option `forceSingleSignOn` is also set, offer single sign-on instead of the password form
+    on the mailbox-user sign-in screen and keep passkey sign-in; the API refuses no sign-in method
+    because of that option.
+
+    The pending single sign-on is bound to this browser session, carries a single-use random
+    `state` and a PKCE proof key (S256), and expires after 10 minutes. A new start replaces it. The
+    return address is the new web app's sign-in return address
+    (`https://<host>/ng/sso/return`) on the host name of this request when it is one of the server's
+    host names, and otherwise on `MAILCOW_HOSTNAME`. Keycloak is asked for `profile` and `email`,
+    plus `openid` from version 20.0.0; a generic OIDC provider for its configured scopes.
+
+    The provider returns the browser to the return address with `code` and `state`: submit them to
+    `POST /session/single-sign-on/completion`. With `error` and `state` instead: submit them to
+    `POST /session/single-sign-on/provider-error`. Not audited (ceremony); the completion is.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '200':
+      $ref: '../../components/responses/SingleSignOnStartResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SignInForbidden.yaml'
+    '409':
+      $ref: '../../components/responses/SingleSignOnNotAvailable.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: cancelSingleSignOn
+  tags: [Authentication]
+  summary: Cancel the pending single sign-on
+  description: |
+    Discards the session's pending single sign-on, so its state can no longer be used. Succeeds
+    and changes nothing when none is pending. Not audited (ceremony).
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SignInForbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

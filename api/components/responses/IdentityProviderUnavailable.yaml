@@ -1,0 +1,16 @@
+description: |
+  The identity provider could not be reached, did not answer within 7 seconds, answered with a
+  server error, or refused the service account (type
+  `/api/v2/problems/identity-provider-unavailable`). The attempt is not reported to fail2ban and
+  does not count towards sign-in throttling.
+headers:
+  Retry-After:
+    description: Seconds after which the request may be retried.
+    required: true
+    schema:
+      type: integer
+      minimum: 1
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

@@ -1,9 +1,14 @@
 type: object
-description: How the caller authenticated. `apiKey` is present only when `method` is `apiKey`.
+description: |
+  How the caller authenticated. `apiKey` is present only when `method` is `apiKey`.
+  `identityProvider` is present only for sign-ins through the identity provider (`singleSignOn`,
+  `directoryPassword*`, `providerPassword*`, feature 012).
 required: [method]
 properties:
   method:
     $ref: './AuthMethod.yaml'
+  identityProvider:
+    $ref: './IdentityProviderType.yaml'
   apiKey:
     type: object
     required: [id, name, prefix, accessLevel]

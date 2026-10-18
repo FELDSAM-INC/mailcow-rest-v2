@@ -1,0 +1,85 @@
+parameters:
+  - $ref: '../../components/parameters/Oauth2ClientId.yaml'
+get:
+  operationId: getOauth2Client
+  tags: [OAuth2 clients]
+  summary: Get an OAuth2 client
+  description: Returns one client without its secret. Administrators only, as for `listOauth2Clients`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/Oauth2ClientResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateOauth2Client
+  tags: [OAuth2 clients]
+  summary: Replace an OAuth2 client's redirect URIs
+  description: |
+    Replaces the redirect URIs under the rules of the creation. The client ID and the scope cannot
+    change. Issued tokens are kept. Administrators only, with a session or a read-write key.
+    Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/Oauth2ClientPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/Oauth2ClientResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteOauth2Client
+  tags: [OAuth2 clients]
+  summary: Delete an OAuth2 client
+  description: |
+    Removes the client together with its access tokens, refresh tokens and authorization codes, so
+    the profile endpoint refuses its access tokens at once. Administrators only, with a session or a
+    read-write key. Audited with the number of tokens and codes removed.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

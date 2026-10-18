@@ -1,0 +1,11 @@
+# Paths of the oauth2-clients module: clients of mailcow's own OAuth2 provider.
+/oauth2-clients:
+  $ref: './oauth2-clients.yaml'
+/oauth2-clients/bulk-actions:
+  $ref: './oauth2-client-bulk-actions.yaml'
+/oauth2-clients/{oauth2ClientId}:
+  $ref: './oauth2-client.yaml'
+/oauth2-clients/{oauth2ClientId}/secret-regeneration:
+  $ref: './oauth2-client-secret-regeneration.yaml'
+/oauth2-clients/{oauth2ClientId}/token-revocation:
+  $ref: './oauth2-client-token-revocation.yaml'

@@ -1,0 +1,8 @@
+description: |
+  Single sign-on is not available on this server (type
+  `/api/v2/problems/single-sign-on-not-available`): no Keycloak or generic OIDC provider is
+  configured, or its configuration is incomplete. Refresh the public configuration.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

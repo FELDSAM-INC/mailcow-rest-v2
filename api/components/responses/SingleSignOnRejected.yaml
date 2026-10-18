@@ -1,0 +1,12 @@
+description: |
+  The single sign-on could not be completed. Possible types:
+  - `/api/v2/problems/sign-in-state-invalid`: the state is unknown, expired, already used or was
+    issued to another browser session. The provider was not contacted. Start a new single sign-on.
+  - `/api/v2/problems/sign-in-failed`: the provider refused the code, its user details have no valid
+    e-mail address, the mailbox does not authenticate against the provider or is inactive, or no
+    mailbox exists and none could be created. It never reveals which.
+  - The API key types of `Unauthorized` when the request carries an invalid `X-API-Key`.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

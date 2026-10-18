@@ -1,0 +1,38 @@
+post:
+  operationId: bulkOauth2ClientAction
+  tags: [OAuth2 clients]
+  summary: Delete or revoke the tokens of several OAuth2 clients
+  description: |
+    Applies `delete` or `revokeTokens` to up to 100 clients, as the legacy mass actions of the
+    "OAuth2 Apps" table do. The whole request is refused only when the caller may never use the
+    action (role or key scope). Otherwise each distinct client is processed, checked and audited on
+    its own, as the single request for it would be, and gets one result: `done`, `notFound`,
+    `refused`, `outdated` (its `version` no longer matches) or `failed`. One failure does not stop
+    the others. A client named twice is processed once. Every audit record carries the bulk
+    request's identifier. Secret regeneration has no bulk form, because each new secret must be
+    shown and copied individually.
+
+    Administrators only, with a session or a read-write key.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/Oauth2ClientBulkActionRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -1,0 +1,33 @@
+type: object
+description: Return addresses of a Keycloak or generic OIDC provider.
+required: [legacyReturnUrl, additionalReturnUrls, appReturnUrls]
+properties:
+  legacyReturnUrl:
+    description: |
+      Return URL of the legacy UI's single sign-on (`redirect_url`). Required for a complete
+      configuration; the legacy UI uses it.
+    oneOf:
+      - type: string
+        format: uri
+      - type: 'null'
+  additionalReturnUrls:
+    type: array
+    description: |
+      Further legacy UI return URLs (`redirect_url_extra`); the legacy UI picks the one whose host
+      name is the host name the user is on.
+    items:
+      type: string
+      format: uri
+  appReturnUrls:
+    type: array
+    readOnly: true
+    description: |
+      Sign-in return addresses of the new web app, one per host name of the server
+      (`MAILCOW_HOSTNAME` first, then `ADDITIONAL_SERVER_NAMES`), of the form
+      `https://<host>/ng/sso/return`. The operator registers them at the provider as allowed
+      redirect URIs, in addition to the legacy return URLs. Derived from the server's
+      configuration, not stored.
+    items:
+      type: string
+      format: uri
+      examples: [https://mail.example.org/ng/sso/return]

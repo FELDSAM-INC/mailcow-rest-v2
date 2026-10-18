@@ -1,0 +1,9 @@
+description: Single sign-on started. Send the browser to `data.authorizationUrl`.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/SingleSignOnStart.yaml'

@@ -1,0 +1,15 @@
+type: object
+description: The `code` and `state` query parameters with which the provider returned the browser, unchanged.
+required: [code, state]
+properties:
+  code:
+    type: string
+    minLength: 1
+    maxLength: 4096
+    writeOnly: true
+  state:
+    type: string
+    minLength: 1
+    maxLength: 512
+    writeOnly: true
+additionalProperties: false

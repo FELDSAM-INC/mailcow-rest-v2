@@ -1,0 +1,53 @@
+post:
+  operationId: completeSingleSignOn
+  tags: [Authentication]
+  summary: Complete a single sign-on
+  description: |
+    Completes the pending single sign-on with the `code` and `state` the provider returned. The
+    state is consumed by the first attempt; an unknown, expired, used or foreign state is refused
+    with `sign-in-state-invalid` without contacting the provider. The completion uses the current
+    configuration.
+
+    The code is exchanged, with the client credentials and the PKCE proof key, for the provider's
+    tokens, and the user details are read from the user info endpoint. The e-mail address (trimmed,
+    lower-cased) must belong to a mailbox, not a resource, whose authentication source is the
+    configured type, and the mailbox and its domain must be active. When no mailbox exists and
+    automatic creation is on, a mailbox is created from the template that the user's
+    `mailcow_template` value maps to, or from the default template. An existing mailbox whose value
+    maps to a changed template is updated from it first.
+
+    The session becomes `active` for the mailbox user, with `authMethod: singleSignOn`: no mailcow
+    second factor is asked for, and forced password change and second-factor setup do not restrict
+    it. A recent-login entry is recorded. The provider's tokens stay on the server. When the
+    provider issued a renewal token, the session is re-validated with the provider on the first
+    request more than 5 minutes after the last renewal; when that fails, the session ends with
+    `identity-provider-session-ended`. Signing out ends the session here only, not at the provider.
+
+    Failures are audited; they are neither reported to fail2ban nor counted towards sign-in
+    throttling. The session identifier is renewed on success.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/SingleSignOnCompletionRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/SessionCreated.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/SingleSignOnRejected.yaml'
+    '403':
+      $ref: '../../components/responses/SignInForbidden.yaml'
+    '409':
+      $ref: '../../components/responses/SingleSignOnNotAvailable.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/IdentityProviderUnavailable.yaml'

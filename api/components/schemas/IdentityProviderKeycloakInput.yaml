@@ -1,0 +1,52 @@
+description: |
+  Whole Keycloak configuration. `clientSecret` is required when no Keycloak configuration is stored
+  and when `serverUrl` differs from the stored one (rule code `secretRequired`); otherwise an
+  omitted secret keeps the stored one.
+allOf:
+  - $ref: './IdentityProviderCommonInput.yaml'
+  - $ref: './IdentityProviderReturnUrlsInput.yaml'
+  - type: object
+    required: [type, serverUrl, realm, clientId, version, legacyReturnUrl]
+    properties:
+      type:
+        const: keycloak
+      serverUrl:
+        type: string
+        format: uri
+        maxLength: 2000
+        description: Absolute `https` or `http` URL; trailing slashes are removed.
+      realm:
+        type: string
+        minLength: 1
+        maxLength: 255
+        description: Without `/`.
+      clientId:
+        type: string
+        minLength: 1
+        maxLength: 255
+      clientSecret:
+        type: string
+        minLength: 1
+        maxLength: 1000
+        writeOnly: true
+        format: password
+      version:
+        type: string
+        pattern: '^[0-9]+(\.[0-9]+){0,3}$'
+        maxLength: 64
+        examples: ['26.0.7']
+      mailpasswordFlow:
+        type: boolean
+        default: false
+      importUsers:
+        type: boolean
+        default: false
+      periodicSync:
+        type: boolean
+        default: false
+      syncInterval:
+        type: integer
+        minimum: 1
+        maximum: 10080
+        default: 15
+unevaluatedProperties: false

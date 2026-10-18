@@ -5,6 +5,10 @@ description: |
   - `/api/v2/problems/second-factor-required`: the session's sign-in still awaits a second factor.
   - `/api/v2/problems/api-key-invalid`: the key matches no key, or its owner is inactive or deleted.
   - `/api/v2/problems/api-key-expired`, `/api/v2/problems/api-key-revoked`.
+  - `/api/v2/problems/identity-provider-session-ended`: a single sign-on session ended because the
+    provider refused or could not renew it, the provider returned another e-mail address, the
+    identity provider configuration changed, or the mailbox no longer authenticates against it
+    (feature 012). The session is gone; offer single sign-on again.
 content:
   application/problem+json:
     schema:

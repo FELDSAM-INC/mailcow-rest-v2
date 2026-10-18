@@ -1,0 +1,16 @@
+type: object
+properties:
+  legacyReturnUrl:
+    type: string
+    format: uri
+    maxLength: 2000
+    description: Required. Absolute `https` or `http` URL (rule code `invalidFormat`, format `httpUrl`).
+    examples: [https://mail.example.org]
+  additionalReturnUrls:
+    type: array
+    maxItems: 100
+    description: Absolute `https` or `http` URLs; duplicates are stored once. Default empty.
+    items:
+      type: string
+      format: uri
+      maxLength: 2000

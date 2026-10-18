@@ -1,0 +1,79 @@
+description: |
+  Whole LDAP configuration. `bindPassword` is required when no LDAP configuration is stored and when
+  `hosts` differ from the stored ones (rule code `secretRequired`); otherwise an omitted password
+  keeps the stored one. When both `useSsl` and `useStartTls` are `true`, StartTLS is stored off.
+allOf:
+  - $ref: './IdentityProviderCommonInput.yaml'
+  - type: object
+    required: [type, hosts, baseDn, bindDn]
+    properties:
+      type:
+        const: ldap
+      hosts:
+        type: array
+        minItems: 1
+        maxItems: 10
+        description: Host names or IP addresses (rule code `invalidFormat`, format `hostName`).
+        items:
+          type: string
+          minLength: 1
+          maxLength: 253
+      port:
+        type: integer
+        minimum: 1
+        maximum: 65535
+        default: 389
+      useSsl:
+        type: boolean
+        default: false
+      useStartTls:
+        type: boolean
+        default: false
+      baseDn:
+        type: string
+        minLength: 1
+        maxLength: 1000
+      usernameField:
+        type: string
+        maxLength: 255
+        pattern: '^[A-Za-z][A-Za-z0-9-]*$'
+        description: Stored lower-cased (format `ldapAttribute`).
+        default: mail
+      filter:
+        description: |
+          Empty or `null` for none, or a search filter of at most 1,000 characters that starts with
+          `(`, ends with `)` and has balanced parentheses (format `ldapFilter`).
+        oneOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+      attributeField:
+        description: |
+          Empty or `null` for none, or an attribute name, stored lower-cased (format
+          `ldapAttribute`). Required while `importUsers` or `periodicSync` is on.
+        oneOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+      bindDn:
+        type: string
+        minLength: 1
+        maxLength: 1000
+      bindPassword:
+        type: string
+        minLength: 1
+        maxLength: 1000
+        writeOnly: true
+        format: password
+      importUsers:
+        type: boolean
+        default: false
+      periodicSync:
+        type: boolean
+        default: false
+      syncInterval:
+        type: integer
+        minimum: 1
+        maximum: 10080
+        default: 15
+unevaluatedProperties: false

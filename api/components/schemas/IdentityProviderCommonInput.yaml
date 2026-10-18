@@ -1,0 +1,24 @@
+type: object
+description: |
+  Settings shared by every type in a whole-configuration save or a connection test. An omitted
+  value takes its default.
+properties:
+  attributeMapping:
+    type: array
+    maxItems: 100
+    description: Replaces the whole mapping. Default empty.
+    items:
+      $ref: './IdentityProviderMappingEntryInput.yaml'
+  defaultTemplate:
+    description: Name of an existing mailbox template, or `null` for none (default).
+    oneOf:
+      - type: string
+        minLength: 1
+        maxLength: 255
+      - type: 'null'
+  createMailboxOnSignIn:
+    type: boolean
+    default: true
+  ignoreTlsErrors:
+    type: boolean
+    default: false

@@ -1,0 +1,37 @@
+post:
+  operationId: testIdentityProviderConnection
+  tags: [Identity provider]
+  summary: Test the connection with candidate settings
+  description: |
+    Tests unsaved candidate settings and stores nothing. The settings must meet the rules of a
+    whole save, except that mapped templates need not exist. An omitted secret is replaced by the
+    stored one only when the stored type is the same and the address that receives the secret is
+    unchanged; otherwise the request is refused (rule code `secretRequired`). Each call to the
+    provider times out after 7 seconds, and the TLS certificate is verified unless
+    `ignoreTlsErrors` is `true`. Internal addresses are allowed.
+
+    The test sends credentials to a host, so it is an action: administrators only, with a session
+    or a read-write key, and audited with the provider type, the tested address and the outcome.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/IdentityProviderInput.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/IdentityProviderConnectionTestResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

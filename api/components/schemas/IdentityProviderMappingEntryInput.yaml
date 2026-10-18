@@ -1,0 +1,18 @@
+type: object
+description: |
+  One entry of the attribute mapping. `template` must name an existing mailbox template when the
+  configuration is saved (rule code `notFound`); a connection test does not check it.
+required: [attributeValue, template]
+properties:
+  attributeValue:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: Unique within the mapping, compared exactly (rule code `duplicate`).
+    examples: [staff]
+  template:
+    type: string
+    minLength: 1
+    maxLength: 255
+    examples: [Staff]
+additionalProperties: false

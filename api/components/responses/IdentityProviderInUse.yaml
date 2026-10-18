@@ -1,0 +1,21 @@
+description: |
+  Refused because mailboxes still authenticate against an external source that the request would
+  remove (type `/api/v2/problems/identity-provider-in-use`). Nothing changed. Switch those
+  mailboxes to another authentication source (feature 003) first.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/IdentityProviderInUseProblem.yaml'
+    examples:
+      inUse:
+        value:
+          type: /api/v2/problems/identity-provider-in-use
+          title: Identity provider in use
+          status: 409
+          detail: 12 mailboxes still authenticate against an external identity provider.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          blockingMailboxes: 12
+          mailboxCounts:
+            keycloak: 0
+            genericOidc: 0
+            ldap: 12

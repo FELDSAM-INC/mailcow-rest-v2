@@ -1,0 +1,155 @@
+get:
+  operationId: getIdentityProvider
+  tags: [Identity provider]
+  summary: Get the identity provider configuration
+  description: |
+    Returns the server's external identity provider configuration with the defaults legacy shows
+    for missing values, whether each secret is set (never the secret), whether each mapped template
+    exists, whether the configuration is complete for sign-in, the new web app's return addresses
+    to register at the provider, the number of mailboxes per external authentication source and,
+    for Keycloak and LDAP, the synchronisation status. Values are read from mailcow on every
+    request, so changes made in the legacy UI or `/api/v1` are visible at once.
+
+    Administrators only: a signed-in administrator or a key owned by an administrator, read-only
+    keys included. Reads are not audited.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/IdentityProviderResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/IdentityProviderNotConfigured.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+put:
+  operationId: saveIdentityProvider
+  tags: [Identity provider]
+  summary: Save the whole identity provider configuration
+  description: |
+    Creates the configuration (`201`) or replaces the stored one (`200`) with a whole configuration
+    of the given type. Settings not sent take their defaults. The configuration is stored with
+    legacy's setting names and encodings, so the legacy UI, the mail clients' sign-in check and the
+    next synchronisation run use it at once, without a restart. After the save, only the settings
+    of the saved type are stored: settings of a previous type are removed. The cached Keycloak
+    service token is cleared. No mailbox changes.
+
+    - **Secrets** are write-only. The client secret or bind password must be sent when no
+      configuration of the type is stored. Otherwise an omitted secret keeps the stored one, unless
+      the address that receives it changes (Keycloak `serverUrl`, generic OIDC `tokenEndpoint`,
+      LDAP `hosts`): then it must be sent again (rule code `secretRequired`) and nothing changes.
+    - **Type change**: refused with `identity-provider-in-use` while any mailbox authenticates
+      against an external source other than the new type.
+    - **Mapping**: every mapped template and the default template must exist (rule code
+      `notFound`); attribute values must be unique (rule code `duplicate`).
+    - Send the version tag you read in `If-Match`; the legacy UI edits the same settings.
+
+    Administrators only, with a session or a read-write key. Audited, with every changed setting
+    and secrets only as "changed".
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/IdentityProviderInput.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/IdentityProviderResponse.yaml'
+    '201':
+      $ref: '../../components/responses/IdentityProviderCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/IdentityProviderInUse.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateIdentityProvider
+  tags: [Identity provider]
+  summary: Change settings of the identity provider configuration
+  description: |
+    Changes only the settings sent (JSON Merge Patch) and keeps the others; the rules of a whole
+    save apply to the result. The type cannot change here: use `PUT`. A changed Keycloak
+    `serverUrl`, generic OIDC `tokenEndpoint` or LDAP `hosts` requires the secret in the same
+    request. A successful change clears the cached Keycloak service token, as every save does.
+
+    Administrators only, with a session or a read-write key. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/IdentityProviderPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/IdentityProviderResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/IdentityProviderNotConfigured.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteIdentityProvider
+  tags: [Identity provider]
+  summary: Remove the identity provider configuration
+  description: |
+    Removes every stored setting, including the secrets and the cached Keycloak service token.
+    Single sign-on becomes unavailable, password sign-in through the provider stops, and the
+    synchronisation jobs stop at their next run. Refused with `identity-provider-in-use` while any
+    mailbox authenticates against an external source.
+
+    Administrators only, with a session or a read-write key. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/IdentityProviderNotConfigured.yaml'
+    '409':
+      $ref: '../../components/responses/IdentityProviderInUse.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -1,0 +1,9 @@
+description: The test ran. `data.outcome` says whether the connection worked.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/IdentityProviderConnectionTestResult.yaml'

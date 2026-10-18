@@ -1,0 +1,55 @@
+type: object
+description: |
+  Status of the user import and periodic full synchronisation of a Keycloak or LDAP provider. The
+  jobs run in mailcow's legacy PHP container (`crons/keycloak-sync.php`, `crons/ldap-sync.php`),
+  started every minute by mailcow's scheduler; this API never runs or triggers them. Each run reads
+  the configuration when it starts, so a change applies to the next run; a run in progress finishes
+  with the settings it started with. A job runs only when user import or periodic full
+  synchronisation is on, at most once per sync interval counted from the end of its previous run.
+  User import creates a mailbox, authenticating against the provider, for each provider user that
+  has none, from the mapped template or else the default template. Periodic full synchronisation
+  re-applies the mapped template to each existing mailbox of the configured type; the default
+  template is never used for updates. The jobs log their progress to the scheduled-job log (feature
+  011).
+
+  The status is **derived read-only from that log** (mailcow's Redis list `CRON_LOG`, which keeps
+  `LOG_LINES` entries, 9,999 by default) and from the sync interval. A failure that the jobs do not
+  log (for example an LDAP server that cannot be reached at the start of a run) shows only as an
+  overdue run. Runtime status: not part of the version tag.
+required: [enabled, state, lastCompletedAt, lastFailedAt, nextRunExpectedAt]
+properties:
+  enabled:
+    type: boolean
+    description: User import or periodic full synchronisation is on.
+  state:
+    type: string
+    description: |
+      - `disabled`: neither user import nor periodic full synchronisation is on.
+      - `running`: the log shows progress of a run within the last 2 minutes and no end yet.
+      - `waiting`: the last run completed and the next run is not yet due.
+      - `overdue`: the next run was expected more than 2 minutes ago and the log shows neither its
+        progress nor its end.
+      - `unknown`: the log holds no entry of the job.
+    enum: [disabled, running, waiting, overdue, unknown]
+  lastCompletedAt:
+    description: End of the newest completed run found in the log.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  lastFailedAt:
+    description: Time of the newest run-level failure logged after the last completed run.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  nextRunExpectedAt:
+    description: |
+      When the scheduler is expected to start the next run: the first full minute at least one sync
+      interval after `lastCompletedAt`, or the next full minute after a logged failure. `null` when
+      disabled or unknown.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+additionalProperties: false

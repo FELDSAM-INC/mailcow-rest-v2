@@ -1,0 +1,30 @@
+parameters:
+  - $ref: '../../components/parameters/Oauth2ClientId.yaml'
+post:
+  operationId: revokeOauth2ClientTokens
+  tags: [OAuth2 clients]
+  summary: Revoke all tokens of an OAuth2 client
+  description: |
+    Removes the client's access tokens, refresh tokens and authorization codes, so every application
+    session ends at once and users must authorise again. A client without tokens is answered the
+    same way and nothing changes. Administrators only, with a session or a read-write key. Audited
+    with the number of tokens and codes removed.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/Oauth2ClientResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

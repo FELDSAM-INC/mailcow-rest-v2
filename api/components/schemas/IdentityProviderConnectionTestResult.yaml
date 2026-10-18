@@ -1,0 +1,44 @@
+type: object
+description: |
+  Result of a connection test of candidate settings. A failed connection is a successful request
+  that reports the failure. Nothing is stored. Contains no secret.
+  - Keycloak: a service token is requested from the token endpoint with the client credentials
+    (client credentials grant); success when one is issued. The `view-users` permission that the
+    mailpassword flow and the synchronisation need is not checked.
+  - Generic OIDC: an authorization code exchange with a random, invalid code is sent to the token
+    endpoint with the client credentials; success when the endpoint answers and does not reject the
+    client credentials (`invalid_client` or status 401 is "credentials rejected").
+  - LDAP: a connection with the SSL, StartTLS and certificate settings and a bind with the bind DN
+    and password.
+required: [type, testedAddress, testedAt, outcome, failureCategory, providerStatus]
+properties:
+  type:
+    $ref: './IdentityProviderType.yaml'
+  testedAddress:
+    type: string
+    description: The token endpoint, or the LDAP connection URIs separated by spaces.
+    examples: ['https://sso.example.org/realms/example/protocol/openid-connect/token', 'ldaps://ldap1.example.org:636']
+  testedAt:
+    type: string
+    format: date-time
+  outcome:
+    type: string
+    enum: [success, failure]
+  failureCategory:
+    description: |
+      `null` on success.
+      - `unreachable`: name resolution or connection failed.
+      - `timedOut`: no answer within 7 seconds.
+      - `tlsCertificateRejected`: the TLS handshake or certificate verification failed.
+      - `credentialsRejected`: the client credentials or the bind DN and password were rejected.
+      - `unexpectedResponse`: any other answer; `providerStatus` holds its status.
+    oneOf:
+      - type: string
+        enum: [unreachable, timedOut, tlsCertificateRejected, credentialsRejected, unexpectedResponse]
+      - type: 'null'
+  providerStatus:
+    description: HTTP status, or LDAP result code, of the provider's answer when one was received; `null` otherwise.
+    oneOf:
+      - type: integer
+      - type: 'null'
+additionalProperties: false

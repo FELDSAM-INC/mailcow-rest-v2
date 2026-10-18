@@ -1,0 +1,71 @@
+type: object
+description: Settings and derived values shared by every identity provider type.
+required:
+  - type
+  - attributeMapping
+  - defaultTemplate
+  - defaultTemplateExists
+  - createMailboxOnSignIn
+  - ignoreTlsErrors
+  - complete
+  - missingSettings
+  - mailboxCounts
+  - modifiedAt
+  - etag
+properties:
+  type:
+    $ref: './IdentityProviderType.yaml'
+  attributeMapping:
+    type: array
+    description: |
+      Attribute mapping in stored order (legacy settings `mappers` and `templates`). Entries of a
+      legacy-stored mapping whose two lists differ in length are shown only where they pair up.
+    items:
+      $ref: './IdentityProviderMappingEntry.yaml'
+  defaultTemplate:
+    description: |
+      Mailbox template for new mailboxes whose mapping attribute matches no entry (`default_template`).
+      Never used to update existing mailboxes. `null` when unset.
+    oneOf:
+      - type: string
+      - type: 'null'
+  defaultTemplateExists:
+    description: Whether `defaultTemplate` names an existing mailbox template; `null` when unset.
+    oneOf:
+      - type: boolean
+      - type: 'null'
+  createMailboxOnSignIn:
+    type: boolean
+    description: Create a mailbox at a user's first sign-in through the provider (`login_provisioning`, default `true`).
+  ignoreTlsErrors:
+    type: boolean
+    description: |
+      Do not verify the provider's TLS certificate (`ignore_ssl_error`, default `false`). Applies to
+      every connection to the provider, including the Keycloak service account calls.
+  complete:
+    type: boolean
+    description: |
+      The configuration has every setting legacy requires before it uses a provider. An incomplete
+      configuration (possible only when stored by legacy) is readable but used for no sign-in, and
+      single sign-on is unavailable.
+  missingSettings:
+    type: array
+    uniqueItems: true
+    description: Names of the members whose stored value is missing when `complete` is `false`; empty otherwise.
+    items:
+      type: string
+      examples: [clientSecret]
+  mailboxCounts:
+    $ref: './IdentityProviderMailboxCounts.yaml'
+  modifiedAt:
+    description: Last change of a stored setting (the cached Keycloak service token excluded).
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string
+    description: |
+      Version tag over every stored setting, secrets included, but not the cached Keycloak service
+      token, the mailbox counts or the synchronisation status. Equal to the `ETag` header of a
+      single read; send it in `If-Match`.

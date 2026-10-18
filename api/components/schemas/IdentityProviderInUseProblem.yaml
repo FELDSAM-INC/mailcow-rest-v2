@@ -1,0 +1,14 @@
+description: |
+  Problem of type `/api/v2/problems/identity-provider-in-use` (status `409`): mailboxes still
+  authenticate against an external source that the save or deletion would remove.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [blockingMailboxes, mailboxCounts]
+    properties:
+      blockingMailboxes:
+        type: integer
+        minimum: 1
+        description: Number of mailboxes that block the request.
+      mailboxCounts:
+        $ref: './IdentityProviderMailboxCounts.yaml'

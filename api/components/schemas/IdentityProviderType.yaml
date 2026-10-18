@@ -1,0 +1,10 @@
+type: string
+description: |
+  Type of the external identity provider, stored by mailcow as `keycloak`, `generic-oidc` or
+  `ldap` (setting `authsource` of table `identity_provider`, and `mailbox.authsource`).
+  - `keycloak`: a Keycloak realm. Single sign-on, and password sign-in through the mailpassword
+    flow when it is on. User import and periodic full synchronisation.
+  - `genericOidc`: any OpenID Connect provider. Single sign-on only, no synchronisation.
+  - `ldap`: an LDAP directory. Password sign-in against the directory, user import and periodic
+    full synchronisation. No single sign-on.
+enum: [keycloak, genericOidc, ldap]

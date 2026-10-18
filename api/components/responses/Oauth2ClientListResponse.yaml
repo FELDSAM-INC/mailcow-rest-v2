@@ -1,0 +1,13 @@
+description: OAuth2 clients matching the filters, without secrets.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/Oauth2Client.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

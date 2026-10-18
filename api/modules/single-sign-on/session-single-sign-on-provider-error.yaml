@@ -1,0 +1,31 @@
+post:
+  operationId: reportSingleSignOnProviderError
+  tags: [Authentication]
+  summary: Report an error returned by the provider
+  description: |
+    Reports that the provider returned the browser with `error` and `state` instead of a code, for
+    example because the user cancelled (`access_denied`). The state is validated and consumed as for
+    a completion, the pending single sign-on is cancelled, and a failed sign-in is audited with the
+    provider's error code. The provider's free-text description is never accepted or stored.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/SingleSignOnProviderErrorRequest.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/SingleSignOnRejected.yaml'
+    '403':
+      $ref: '../../components/responses/SignInForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

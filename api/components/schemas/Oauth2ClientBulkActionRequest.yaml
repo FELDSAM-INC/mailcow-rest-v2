@@ -1,0 +1,18 @@
+type: object
+description: |
+  A bulk action on up to 100 OAuth2 clients (rule code `tooMany` beyond). Each client is processed
+  as a single request for it would be: `delete` as `DELETE /oauth2-clients/{oauth2ClientId}`,
+  `revokeTokens` as `POST /oauth2-clients/{oauth2ClientId}/token-revocation`. Secret regeneration
+  has no bulk form.
+required: [action, targets]
+properties:
+  action:
+    type: string
+    enum: [delete, revokeTokens]
+  targets:
+    type: array
+    minItems: 1
+    maxItems: 100
+    items:
+      $ref: './Oauth2ClientBulkTarget.yaml'
+additionalProperties: false

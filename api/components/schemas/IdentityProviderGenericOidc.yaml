@@ -1,0 +1,47 @@
+description: |
+  Generic OpenID Connect configuration. Single sign-on only; a generic OIDC provider has no
+  synchronisation and no password sign-in.
+allOf:
+  - $ref: './IdentityProviderCommon.yaml'
+  - $ref: './IdentityProviderReturnUrls.yaml'
+  - type: object
+    required:
+      - type
+      - authorizationEndpoint
+      - tokenEndpoint
+      - userInfoEndpoint
+      - clientId
+      - clientSecretSet
+      - scopes
+    properties:
+      type:
+        const: genericOidc
+      authorizationEndpoint:
+        description: Authorization endpoint (`authorize_url`).
+        oneOf:
+          - type: string
+            format: uri
+          - type: 'null'
+      tokenEndpoint:
+        description: Token endpoint (`token_url`).
+        oneOf:
+          - type: string
+            format: uri
+          - type: 'null'
+      userInfoEndpoint:
+        description: User info endpoint (`userinfo_url`).
+        oneOf:
+          - type: string
+            format: uri
+          - type: 'null'
+      clientId:
+        oneOf:
+          - type: string
+          - type: 'null'
+      clientSecretSet:
+        type: boolean
+        description: Whether a client secret is stored. The secret itself is never returned.
+      scopes:
+        type: string
+        description: Requested scopes, separated by single spaces (`client_scopes`).
+        examples: [openid profile email mailcow_template]

@@ -798,7 +798,7 @@ toggle the spam filter, remove them, and check `WHITELISTED_FWD_HOST` and `KEEP_
 
 ### Tests for User Story 8 (write first, observe failing) ⚠️
 
-- [ ] T087 [P] [US8] Write `tests/Unit/Routing/SpfHostCollectorTest.php` (FR-076, R16) with
+- [X] T087 [P] [US8] Write `tests/Unit/Routing/SpfHostCollectorTest.php` (FR-076, R16) with
   `FakeDnsResolver`:
   - `ip4`, `ip6` with prefixes; `a`, `a:domain`, `a/24`, `a:domain/24//64`; `mx` and `mx:domain` with
     their exchangers' A and AAAA (at most 10 exchangers);
@@ -811,7 +811,7 @@ toggle the spam filter, remove them, and check `WHITELISTED_FWD_HOST` and `KEEP_
     `include` stops at the limit;
   - no SPF address → MX hosts' addresses; none → the name's own A and AAAA; none → empty;
   - a temporary failure anywhere → `DnsTemporaryFailure`.
-- [ ] T088 [P] [US8] Write `tests/Feature/Routing/ForwardingHosts/ForwardingHostCreateTest.php` for
+- [X] T088 [P] [US8] Write `tests/Feature/Routing/ForwardingHosts/ForwardingHostCreateTest.php` for
   `createForwardingHost` on the real Redis (FR-076 to FR-078, FR-081):
   - AS-1: `192.0.2.0/24` without `spamFilter` → `201`, `Location:
     /api/v2/forwarding-hosts?source=192.0.2.0%2F24`, `WHITELISTED_FWD_HOST[192.0.2.0/24] =
@@ -824,7 +824,7 @@ toggle the spam filter, remove them, and check `WHITELISTED_FWD_HOST` and `KEEP_
     `invalidFormat` `{format: ipNetwork}`;
   - a stored non-canonical `2001:0db8::0001` is updated in its stored form when `2001:db8::1` is
     added; the source is the trimmed input; one audit record lists every address with its outcome.
-- [ ] T089 [P] [US8] Write `tests/Feature/Routing/ForwardingHosts/ForwardingHostManageTest.php` for
+- [X] T089 [P] [US8] Write `tests/Feature/Routing/ForwardingHosts/ForwardingHostManageTest.php` for
   `listForwardingHosts`, `getForwardingHost`, `updateForwardingHost` and `deleteForwardingHost`
   (FR-074, FR-075, FR-079, FR-080): the list from two `HGETALL` calls whatever the page size;
   natural address order (IPv4 before IPv6, numeric, then prefix length); filters `spamFilter` and
@@ -833,32 +833,32 @@ toggle the spam filter, remove them, and check `WHITELISTED_FWD_HOST` and `KEEP_
   listed and editable; AS-7: disabling the spam filter sets `KEEP_SPAM`; `address` or `source` with
   a different value → `immutable`; deleting removes both hash fields; `404` for an unknown address;
   `412`.
-- [ ] T090 [P] [US8] Write `tests/Feature/Routing/ForwardingHosts/ForwardingHostFailureTest.php`
+- [X] T090 [P] [US8] Write `tests/Feature/Routing/ForwardingHosts/ForwardingHostFailureTest.php`
   (FR-082, edge cases): AS-8, with the `mailcow` Redis connection pointed at a closed port, create,
   update and delete answer `503 temporary-failure` with `Retry-After`, nothing changes, and a
   failure audit record is written; a temporary DNS failure while resolving a name → `503`; a failure
   of the audit commit after `EXEC` restores the previous hash fields (compensation, R17); a `MULTI`
   with several addresses is applied completely or not at all.
-- [ ] T091 [P] [US8] Write `tests/Feature/Routing/ForwardingHosts/ForwardingHostBulkActionAndAuthorizationTest.php`:
+- [X] T091 [P] [US8] Write `tests/Feature/Routing/ForwardingHosts/ForwardingHostBulkActionAndAuthorizationTest.php`:
   AS-9, five entries with the spam filter disabled in one request → five `done`; delete; `outdated`;
   ids are stored addresses (not percent-encoded); an unavailable Redis gives `failed` with
   `temporary-failure` per item; the caller matrix of T032 for the six operations.
 
 ### Implementation for User Story 8
 
-- [ ] T092 [US8] Create `app/Services/Routing/SpfHostCollector.php` and
+- [X] T092 [US8] Create `app/Services/Routing/SpfHostCollector.php` and
   `app/Services/Routing/ForwardingHostResolver.php` (classification, canonical forms, SPF, MX, A/AAAA
   fallbacks, the lookup limit from `restv2.routing.spf_lookup_limit`). This makes T087 pass.
-- [ ] T093 [US8] Create `app/Services/Routing/ForwardingHostStore.php` on 002's
+- [X] T093 [US8] Create `app/Services/Routing/ForwardingHostStore.php` on 002's
   `App\Clients\SharedStore\SharedStore` (`HGETALL` of both hashes, `MULTI`/`EXEC` writes, captured
   previous values and the compensation) and `app/Services/Routing/ForwardingHostService.php`
   (create with added/updated outcomes, edit, delete, the version tag, audit records written in the
   transaction whose callback runs `EXEC` last, the bulk item handlers).
-- [ ] T094 [P] [US8] Create `app/Http/Requests/Api/V2/ListForwardingHostsRequest.php`,
+- [X] T094 [P] [US8] Create `app/Http/Requests/Api/V2/ListForwardingHostsRequest.php`,
   `StoreForwardingHostRequest.php` ("host required, trimmed, at most 255"; `spamFilter` boolean
   default `true`) and `UpdateForwardingHostRequest.php`, and the resources
   `app/Http/Resources/Api/V2/ForwardingHostResource.php` and `ForwardingHostCreationResultResource.php`.
-- [ ] T095 [US8] Create `app/Http/Controllers/Api/V2/ForwardingHostController.php` (`store` answers
+- [X] T095 [US8] Create `app/Http/Controllers/Api/V2/ForwardingHostController.php` (`store` answers
   `201` with `Location` when an address was added, else `200`) and
   `ForwardingHostBulkActionController.php`, and register `POST /forwarding-hosts/bulk-actions` before
   `/forwarding-hosts/{forwardingHostAddress}` with `->where('forwardingHostAddress', '.+')` in
@@ -1142,4 +1142,18 @@ what exists map as listed.
 - **T080, T084**: the full caller matrix of these collections is
   `RoutingAuthorizationMatrixTest` (T098); the story files test bulk outcomes and the refusals of
   domain administrators and read-only keys.
+- **T090, T093**: an unavailable shared store answers 002's `temporary-failure` with
+  `dependency: sharedStore` and `Retry-After: 10` (the shared rendering of
+  `SharedStoreUnavailable`), not 5. The compensation snapshots the touched fields before the write
+  and restores them whenever the change fails after the Redis transaction was attempted (also when
+  the audit insert fails before it: restoring unchanged fields is harmless).
+  `ForwardingHostStore` builds its own `MULTI`/`EXEC` over both hashes on `SharedStore::run()`,
+  because 002's `setFields()` and `deleteFields()` each cover one operation; the test simulates a
+  failed commit with a store whose `apply()` throws after writing.
+- **T091**: a bulk target is resolved while the store may be down; it then counts as existing and
+  its item fails with `temporary-failure`, as the contract's per-item `failed` requires.
+- **T092**: a host name that is not a valid domain name is `invalidFormat` with
+  `format: domainName` (the forwarding host input is either a literal or a name).
+- **T094, T095**: no resource classes (the service builds the representations). The patch accepts
+  `etag` unchanged besides `address` and `source`, as its schema now says.
 

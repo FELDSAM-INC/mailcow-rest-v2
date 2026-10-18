@@ -1,7 +1,8 @@
 type: object
 description: |
-  JSON Merge Patch of a forwarding host. Only `spamFilter` can change. `address` and `source` are
-  read-only: accepted with their current value, refused (`immutable`) otherwise.
+  JSON Merge Patch of a forwarding host. Only `spamFilter` can change. `address`, `source` and
+  `etag` are read-only: accepted with their current value, refused (`immutable`) otherwise. Any
+  other member is refused (`immutable`).
 minProperties: 1
 properties:
   spamFilter:
@@ -10,5 +11,8 @@ properties:
     type: string
     description: Read-only.
   source:
+    type: string
+    description: Read-only.
+  etag:
     type: string
     description: Read-only.

@@ -7,6 +7,7 @@ use App\Http\RequestContext;
 use App\Http\Requests\Api\V2\RoutingBulkActionRequest;
 use App\Http\Resources\Api\V2\RoutingResource;
 use App\Services\Routing\BccMapService;
+use App\Services\Routing\ForwardingHostService;
 use App\Services\Routing\RecipientMapService;
 use App\Services\Routing\RelayhostService;
 use App\Services\Routing\RoutingBulkActions;
@@ -28,6 +29,7 @@ class RoutingBulkActionController extends Controller
     private const HANDLERS = [
         'relayhost' => RelayhostService::class,
         'bccMap' => BccMapService::class,
+        'forwardingHost' => ForwardingHostService::class,
         'recipientMap' => RecipientMapService::class,
         'tlsPolicyMap' => TlsPolicyMapService::class,
         'transport' => TransportService::class,

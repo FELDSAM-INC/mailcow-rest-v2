@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\V2\Fail2BanPermanentBanController;
 use App\Http\Controllers\Api\V2\Fail2BanRulesController;
 use App\Http\Controllers\Api\V2\Fail2BanRulesResetController;
 use App\Http\Controllers\Api\V2\Fail2BanSettingsController;
+use App\Http\Controllers\Api\V2\ForwardingHostController;
 use App\Http\Controllers\Api\V2\HostOverviewController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\IdentityProviderCapabilitiesController;
@@ -612,6 +613,11 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->name('relayhost-usage.index');
         Route::get('/transports', [TransportController::class, 'index'])->name('transports.index');
         Route::get('/bcc-maps', [BccMapController::class, 'index'])->name('bcc-maps.index');
+        Route::get('/forwarding-hosts', [ForwardingHostController::class, 'index'])->name('forwarding-hosts.index');
+        // The address carries a percent-encoded `/` (research R1), so it matches `.+`.
+        Route::get('/forwarding-hosts/{forwardingHostAddress}', [ForwardingHostController::class, 'show'])
+            ->where('forwardingHostAddress', '.+')
+            ->name('forwarding-hosts.show');
         Route::get('/recipient-maps', [RecipientMapController::class, 'index'])->name('recipient-maps.index');
         Route::get('/recipient-maps/{recipientMapId}', [RecipientMapController::class, 'show'])
             ->where('recipientMapId', '[1-9][0-9]{0,9}')
@@ -688,6 +694,20 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('tlsPolicyMapId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'tlsPolicyMapDeletion', 'target' => 'tlsPolicyMap'])
             ->name('tls-policy-maps.destroy');
+        Route::post('/forwarding-hosts/bulk-actions', [RoutingBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'forwardingHost'])
+            ->name('forwarding-host-bulk-actions.store');
+        Route::post('/forwarding-hosts', [ForwardingHostController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'forwardingHostCreation', 'target' => 'forwardingHost'])
+            ->name('forwarding-hosts.store');
+        Route::patch('/forwarding-hosts/{forwardingHostAddress}', [ForwardingHostController::class, 'update'])
+            ->where('forwardingHostAddress', '.+')
+            ->defaults('restv2.audit', ['event' => 'forwardingHostUpdate', 'target' => 'forwardingHost'])
+            ->name('forwarding-hosts.update');
+        Route::delete('/forwarding-hosts/{forwardingHostAddress}', [ForwardingHostController::class, 'destroy'])
+            ->where('forwardingHostAddress', '.+')
+            ->defaults('restv2.audit', ['event' => 'forwardingHostDeletion', 'target' => 'forwardingHost'])
+            ->name('forwarding-hosts.destroy');
         Route::post('/bcc-maps/bulk-actions', [RoutingBulkActionController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'bccMap'])
             ->name('bcc-map-bulk-actions.store');

@@ -314,12 +314,5 @@
             ]
         }
     },
-    "pendingOperations": [
-        "listForwardingHosts",
-        "createForwardingHost",
-        "applyForwardingHostBulkAction",
-        "getForwardingHost",
-        "updateForwardingHost",
-        "deleteForwardingHost"
-    ]
+    "pendingOperations": []
 }

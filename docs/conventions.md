@@ -158,3 +158,15 @@ this document next to the constitution.
 - Objects outside the caller's scope stay `404`, as described above.
 - Single-resource responses may carry `meta` next to `data` when an operation reports side
   information, for example affected objects.
+
+## Shared locks and helpers
+
+- **Address uniqueness** across mailboxes, aliases, alias domains and temporary aliases uses 003's
+  `AddressLock`, which is `GET_LOCK('restv2_address_<sha1 of the lower-cased address>')`. Features
+  003, 004 and 005 must take exactly this lock name before checking for and inserting an address.
+- **Shared helpers belong to the first feature that needs them**, and later features reuse them.
+  002 owns `DockerApiClient`, `SogoDirectory`, `AliasDomainCleanup`, `RateLimitStore`, the DKIM
+  classes and the ISPConfig client. 003 owns `AddressLock`, `NamedLock`, `TagSet`,
+  `BulkActionRunner`, `MailboxPasswordHasher` and `PasswordPolicyChecker`. 008 owns
+  `RefusalAuditor`, unless an earlier feature creates it first. 009 owns `app/Clients/Dns` and
+  `app/Clients/Smtp`.

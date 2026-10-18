@@ -190,6 +190,42 @@ Sync jobs (feature 008) use these settings:
 The imapsync runner in mailcow's dovecot container is unchanged: it runs active jobs on its own
 schedule, and the API never starts a run.
 
+### Identity providers and OAuth2 clients (feature 012)
+
+The API reads and writes mailcow's single identity provider configuration (Keycloak, a generic
+OpenID Connect provider or an LDAP directory, table `identity_provider`) with legacy's keys, so the
+legacy UI, `/api/v1`, the mail clients' sign-in check and the synchronisation jobs keep using it.
+Secrets are write-only. Mailbox users sign in to the new web app with single sign-on (Keycloak,
+generic OIDC) or with their LDAP or Keycloak (mailpassword flow) password through
+`POST /api/v2/session`; a provider user without a mailbox gets one from the mapped template.
+
+- **Return addresses to register at the provider**: `https://<host>/ng/sso/return` for
+  `MAILCOW_HOSTNAME` and each host name of `ADDITIONAL_SERVER_NAMES`, in addition to the legacy
+  return URLs. `GET /api/v2/capabilities/identity-provider` lists them, also before the first save.
+- **Synchronisation**: the user import and the periodic full synchronisation stay in mailcow's
+  php-fpm container (`crons/keycloak-sync.php`, `crons/ldap-sync.php`, run every minute by ofelia).
+  The API never runs them; it derives their status from mailcow's scheduled-job log (`CRON_LOG`).
+- **LDAP with a private certificate authority**: mount the CA certificate into the API container and
+  set `LDAPTLS_CACERT` to its path (the container uses its system bundle otherwise), or set
+  "ignore TLS certificate errors" in the configuration.
+- **OAuth2 clients**: applications keep using mailcow's `/oauth/authorize`, `/oauth/token` and
+  `/oauth/profile` in php-fpm; the API manages the clients (`/api/v2/oauth2-clients`). A client
+  secret is shown once, when the client is created or its secret renewed.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `RESTV2_IDP_TIMEOUT` | `7` | Seconds per call to the identity provider |
+| `RESTV2_IDP_RETRY_AFTER` | `30` | `Retry-After` of `identity-provider-unavailable` |
+| `RESTV2_SSO_PENDING_TTL` | `600` | Lifetime in seconds of a started single sign-on |
+| `RESTV2_SSO_RENEWAL_INTERVAL` | `300` | Seconds after which a single sign-on session is renewed with the provider |
+| `RESTV2_SSO_RETURN_PATH` | `/ng/sso/return` | Path of the new web app's sign-in return address |
+| `RESTV2_SSO_RETURN_SCHEME` | `https` | Scheme of the return address (`http` for development only) |
+| `RESTV2_ACCESS_TOKEN_LIFETIME`, `RESTV2_REFRESH_TOKEN_LIFETIME` | from `vars.inc.php`, else `86400`, `2678400` | OAuth2 token lifetimes reported by `GET /api/v2/capabilities/oauth2-clients` |
+
+The dev stack's `idp` profile (`docker compose --profile idp up -d`) adds OpenLDAP (the people of
+`tests/fixtures/ldap/bootstrap.ldif`, used by `vendor/bin/phpunit --group idp`) and Keycloak with
+the realm of `docker/keycloak/example-realm.json` on `http://localhost:8081` (admin `admin`/`admin`).
+
 ## Development
 
 The host needs only Docker with Compose v2; every PHP, Composer and Node command runs in the dev

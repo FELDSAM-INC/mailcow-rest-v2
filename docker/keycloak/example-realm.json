@@ -1,0 +1,99 @@
+{
+  "realm": "example",
+  "enabled": true,
+  "sslRequired": "none",
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\": [{\"name\": \"username\", \"displayName\": \"${username}\", \"validations\": {\"length\": {\"min\": 3, \"max\": 255}, \"username-prohibited-characters\": {}, \"up-username-not-idn-homograph\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"email\", \"displayName\": \"${email}\", \"validations\": {\"email\": {}, \"length\": {\"max\": 255}}, \"required\": {\"roles\": [\"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"firstName\", \"displayName\": \"${firstName}\", \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}, \"required\": {\"roles\": [\"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"lastName\", \"displayName\": \"${lastName}\", \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}, \"required\": {\"roles\": [\"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}], \"groups\": [{\"name\": \"user-metadata\", \"displayHeader\": \"User metadata\", \"displayDescription\": \"Attributes, which refer to user metadata\"}], \"unmanagedAttributePolicy\": \"ADMIN_EDIT\"}"
+          ]
+        }
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "mailcow",
+      "name": "mailcow",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "kc-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [
+        "http://localhost/*",
+        "https://localhost/*",
+        "http://localhost:18080/*",
+        "https://localhost:18443/*",
+        "https://127.0.0.1:18443/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      },
+      "protocolMappers": [
+        {
+          "name": "mailcow_template",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "mailcow_template",
+            "claim.name": "mailcow_template",
+            "jsonType.label": "String",
+            "multivalued": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-mailcow",
+      "enabled": true,
+      "serviceAccountClientId": "mailcow",
+      "clientRoles": {
+        "realm-management": [
+          "view-users"
+        ]
+      }
+    },
+    {
+      "username": "anna@example.org",
+      "email": "anna@example.org",
+      "emailVerified": true,
+      "firstName": "Anna",
+      "lastName": "Example",
+      "enabled": true,
+      "attributes": {
+        "mailcow_template": [
+          "staff"
+        ],
+        "mailcow_password": [
+          "{BLF-CRYPT}$2y$10$.vbNLDGlFHlyGR0gHnVL.ev.go/9At1oWEiFn1eQEH85JdYVHSmFy"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Passw0rd!dev",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

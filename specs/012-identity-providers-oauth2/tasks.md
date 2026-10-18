@@ -783,7 +783,7 @@ type and sign-in method.
 - [X] T091 [P] Write `tests/Feature/Performance/SingleSignOnLatencyTest.php` (SC-003): over 20 faked
   single sign-ons (start and completion, with creation in 5 of them), the API's own time at p95 is
   below 2 s, measured without the faked provider latency.
-- [ ] T092 [P] Document the feature in `README.md`: identity provider setup, the return addresses to
+- [X] T092 [P] Document the feature in `README.md`: identity provider setup, the return addresses to
   register (`https://<host>/ng/sso/return`), the `RESTV2_IDP_*` and `RESTV2_SSO_*` settings,
   `ADDITIONAL_SERVER_NAMES`, private CAs for LDAP (`LDAPTLS_CACERT`), and that the synchronisation
   jobs stay in php-fpm (FR-018). Add a `CHANGELOG.md` entry listing the 19 operations and the additive

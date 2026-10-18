@@ -116,15 +116,21 @@ services:
     volumes:
       - ./tests/fixtures/ldap/bootstrap.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/50-bootstrap.ldif:ro
 
-  # Keycloak, for the browser checks of single sign-on only (admin admin / admin). Its realm is set
-  # up by hand (quickstart Part B); the browser reaches it on the published port.
+  # Keycloak, for the manual single sign-on checks (API gap G21; admin admin / admin). It imports
+  # docker/keycloak/example-realm.json: realm `example`, confidential client `mailcow` (secret
+  # kc-secret, service account with view-users, a `mailcow_template` claim, the dev stack's return
+  # addresses) and the user anna@example.org (password Passw0rd!dev, mailcow_template staff,
+  # mailcow_password for the mailpassword flow). The app container reaches it as
+  # http://keycloak:8080, the browser on the published port.
   keycloak:
     image: quay.io/keycloak/keycloak:26.0.7
     profiles: [idp]
-    command: start-dev
+    command: ["start-dev", "--import-realm"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./docker/keycloak/example-realm.json:/opt/keycloak/data/import/example-realm.json:ro
     ports:
       - "127.0.0.1:${RESTV2_KEYCLOAK_PORT:-8081}:8080"
 

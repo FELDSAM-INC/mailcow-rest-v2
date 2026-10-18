@@ -220,3 +220,31 @@ Fixes:
   take effect.
 - Template rate limits are stored as legacy's string (`"50"`), and alias comments that were not
   sent as `NULL`, as legacy does; both forms are read.
+
+Contract: the 19 operations of feature 012 (identity providers, single sign-on and OAuth2 clients):
+
+- Identity provider configuration: `getIdentityProviderCapabilities`, `getIdentityProvider`,
+  `saveIdentityProvider`, `updateIdentityProvider`, `deleteIdentityProvider`,
+  `testIdentityProviderConnection`.
+- Single sign-on of mailbox users: `startSingleSignOn`, `cancelSingleSignOn`,
+  `completeSingleSignOn`, `reportSingleSignOnProviderError`.
+- OAuth2 clients: `getOauth2ClientsCapabilities`, `listOauth2Clients`, `createOauth2Client`,
+  `bulkOauth2ClientAction`, `getOauth2Client`, `updateOauth2Client`, `deleteOauth2Client`,
+  `regenerateOauth2ClientSecret`, `revokeOauth2ClientTokens`.
+
+Additive changes to feature 001's contract for mailcowui-ng: `createSession` verifies LDAP and
+Keycloak (mailpassword flow) passwords and may answer `503 identity-provider-unavailable`;
+`AuthMethod` and `Session.authMethod` gain `singleSignOn`, `directoryPassword[AndSecondFactor]` and
+`providerPassword[AndSecondFactor]`; `IdentityAuthentication.identityProvider`;
+`PublicConfig.externalIdentityProvider.singleSignOnAvailable` is now reported; `Unauthorized`
+documents `identity-provider-session-ended`; the shared enumerations gain feature 012's values.
+
+Contract changes made while implementing feature 012:
+
+- `saveIdentityProvider` honours `If-None-Match: *` (create only) and a listed version tag
+  (`IdentityProviderIfNoneMatch`, gap G20).
+- `bulkOauth2ClientAction` has the action `renewSecret`, which returns each new secret once in its
+  item result; the response is `Oauth2ClientBulkResultResponse` (`Oauth2ClientBulkResult`,
+  `Oauth2ClientBulkItemResult`), a `BulkResult` whose items may carry `clientSecret` (gap G42).
+
+Release checks of feature 012 (quickstart Part C): not run yet.

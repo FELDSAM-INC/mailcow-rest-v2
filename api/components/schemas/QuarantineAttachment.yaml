@@ -1,0 +1,29 @@
+type: object
+description: |
+  One attachment of the quarantined message. `sha256` lets clients build an external reputation
+  lookup, as the legacy UI links to `https://www.virustotal.com/file/<sha256>/analysis/`. Download
+  it with `GET /quarantine/{itemId}/attachments/{position}`; it is always delivered as a file to
+  save, whatever `contentType` says.
+required: [position, fileName, contentType, size, sha256]
+properties:
+  position:
+    type: integer
+    minimum: 0
+    description: Position in the message's attachment list, starting at 0.
+  fileName:
+    type: string
+    description: |
+      The attachment's file name with path separators and control characters removed. An unnamed
+      attachment is called `attachment-<position>`.
+  contentType:
+    type: string
+    description: Content type declared by the message. It is informational only and never trusted.
+    examples: [application/pdf, text/html]
+  size:
+    type: integer
+    minimum: 0
+    description: Decoded size in bytes.
+  sha256:
+    type: string
+    pattern: '^[0-9a-f]{64}$'
+    description: Hex SHA-256 of the decoded content.

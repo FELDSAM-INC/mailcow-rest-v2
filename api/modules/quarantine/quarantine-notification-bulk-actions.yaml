@@ -1,0 +1,37 @@
+post:
+  operationId: applyQuarantineNotificationBulkAction
+  tags: [Quarantine]
+  summary: Set the quarantine notifications of several mailboxes
+  description: |
+    Sets the frequency, the category, or both, for up to the bulk limit of mailboxes (100 by
+    default), as the legacy mailbox list's mass actions do. Administrators and domain
+    administrators only (`forbidden` for mailbox users); read-only keys are refused. More targets
+    than the limit are refused as a whole (`422`, `tooMany` on `targets`).
+
+    Otherwise each distinct mailbox is processed on its own and gets one result: `done` (with the
+    new version tag in `version`), `notFound` (not a mailbox, a resource, or outside the caller's
+    scope), `outdated` (the target's `version` no longer matches) or `failed`. Every audit record
+    carries the `bulkRequestId`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/QuarantineNotificationBulkRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

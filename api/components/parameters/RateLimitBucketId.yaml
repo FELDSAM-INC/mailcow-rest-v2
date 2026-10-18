@@ -1,0 +1,12 @@
+name: bucketId
+in: path
+required: true
+description: |
+  Identifier of a rate-limit bucket as it appears in the rate-limited log (feature 011): `RL`
+  followed by letters, digits and `=`. Matched case-sensitively against the spam filter's bucket
+  key and the log entries' bucket identifier.
+schema:
+  type: string
+  pattern: '^RL[0-9A-Za-z=]+$'
+  maxLength: 128
+  examples: [RLz8xq6dyb5fjb1kyn9n5wqhzq]

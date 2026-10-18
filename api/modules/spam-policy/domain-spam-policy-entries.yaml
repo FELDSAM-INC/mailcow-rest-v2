@@ -1,0 +1,85 @@
+parameters:
+  - $ref: '../../components/parameters/PolicyTargetDomain.yaml'
+get:
+  operationId: listDomainSpamPolicyEntries
+  tags: [Spam policy]
+  summary: List the allow and block lists of a domain
+  description: |
+    Returns the domain's own entries (`own: true`, owner kind `domain`) and, read-only, the
+    entries of the mailboxes of the domain (`own: false`, owner kind `mailbox`), as the legacy
+    domain page shows them. `q` searches the pattern.
+
+    Administrators: every domain; domain administrators: the domains they manage. Mailbox users are
+    refused (`forbidden`).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/SpamPolicyEntrySort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: list
+      in: query
+      required: false
+      description: Only entries of this list.
+      schema:
+        $ref: '../../components/schemas/SpamPolicyList.yaml'
+    - name: ownership
+      in: query
+      required: false
+      description: Only the owner's own entries (`own`) or only the related, read-only ones (`inherited`).
+      schema:
+        type: string
+        enum: [own, inherited]
+  responses:
+    '200':
+      $ref: '../../components/responses/SpamPolicyEntryListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createDomainSpamPolicyEntry
+  tags: [Spam policy]
+  summary: Add an entry to the allow or block list of a domain
+  description: |
+    Adds a pattern to the allow or block list (`SpamPolicyEntryCreateRequest`). The pattern is
+    trimmed and lower-cased before it is checked and stored. The same pattern on either list of
+    the same owner is refused with `409 spam-policy-entry-exists`, which names the list and the
+    existing entry. The spam filter applies the entry within one refresh of its settings map (at
+    most 1 minute). Administrators may always add; domain administrators need `spamPolicy`; mailbox users are refused (`forbidden`). Audited with the owner, the list and the pattern.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/SpamPolicyEntryCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/SpamPolicyEntryCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/SpamPolicyEntryConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

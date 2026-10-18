@@ -1,0 +1,6 @@
+type: string
+description: |
+  Which quarantine items the notifications cover (`attributes.quarantine_category`). `rejected`
+  (`reject`): items the filter rejected. `junk` (`add_header`): items delivered to the junk folder
+  with a copy in the quarantine. `all`: both. Same values as `MailboxQuarantineCategory`.
+enum: [rejected, junk, all]

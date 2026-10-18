@@ -1,0 +1,13 @@
+description: Quarantine items matching the filters.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/QuarantineItem.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

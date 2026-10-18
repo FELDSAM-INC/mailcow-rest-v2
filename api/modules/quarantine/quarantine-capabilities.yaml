@@ -1,0 +1,22 @@
+get:
+  operationId: getQuarantineCapabilities
+  tags: [Quarantine]
+  summary: Read the quarantine capabilities
+  description: |
+    Returns the limits and server settings that clients need before they submit quarantine, spam
+    policy and rate limit requests: the bulk limit, the page sizes, the content size limit, the
+    spam score range, the allow and block list pattern rules, the rate limit range, the limits of
+    the quarantine settings and whether virus scanning is enabled. Every role may read it,
+    read-only keys included. It changes nothing.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/QuarantineCapabilitiesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

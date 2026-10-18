@@ -102,6 +102,34 @@
   refused with an "item is being processed" conflict while the first runs (FR-026). (agent
   decision: legacy has no protection and can deliver a message twice, and learning it twice skews
   the filter's statistics.)
+- Q: Do bulk actions check version tags, and which representations carry one? → A: Each bulk target
+  may carry the version tag the client last read. An outdated tag gives that target the outcome
+  "outdated" while the others proceed, and a target without a tag is not version-checked. Every list
+  entry carries its version tag: quarantine items and allow or block list entries, which are never
+  changed, carry a tag over their identifying stored values, which stays the same for as long as
+  they exist. Single item actions and entry removals accept the tag too (FR-027, FR-037, FR-059,
+  FR-060). (orchestrator decision: `docs/conventions.md` "Bulk actions" and "Version tags" apply to
+  every feature and replace the earlier rule that bulk actions do not check versions.)
+- Q: Since when do the spam filter's action statistics count? → A: The statistics state the start
+  of the counting period when the spam filter reports it, and "unknown" otherwise. They also state
+  since when the spam filter has been running, with the note that its counters survive restarts
+  until they are reset (FR-058). (orchestrator decision: the UI 006 spec found that the statistics
+  page cannot say what period the counts cover.)
+- Q: Should the API check the notification template before saving it, and can an administrator see
+  how it renders? → A: Yes. Saving a template checks it the way the notifier parses and renders it,
+  with sample data, and refuses a template the notifier cannot use with a validation error naming the
+  field and the reason. The settings change accepts a validate-only option that applies every rule
+  but stores nothing and writes no audit record, as feature 013 FR-093 does. A preview operation
+  renders a given or the stored template with sample data and returns the result as text: the
+  rendered source and its plain-text version. Clients show the rendering as source and never as live
+  HTML (FR-032, FR-070, FR-071). (orchestrator decision: the UI 006 spec found that an administrator
+  can save a template the notifier silently replaces with the default.)
+- Q: How do clients learn the limits and server settings that shape the forms before they submit?
+  → A: A read-only "quarantine capabilities" operation, open to every role and to read-only keys,
+  returns the bulk limit, the page sizes, the content size limit, the spam score range and step, the
+  pattern rules of allow and block lists, the rate limit range and time units, the limits of the
+  quarantine settings, and whether virus scanning is enabled (FR-072). (orchestrator decision: the
+  pattern of feature 002 FR-064, so that clients never hard-code server limits.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -203,6 +231,12 @@ same item. Make the spam filter unreachable during learning.
 7. **Given** a spam filter that cannot be reached, **When** an administrator learns an item as
    spam, **Then** the item stays in the quarantine and the request is refused with a temporary
    failure.
+8. **Given** a bulk release in which one target carries a version tag that no longer matches,
+   **When** it is processed, **Then** that target is reported as outdated and left unchanged, and
+   the other targets are released.
+9. **Given** any role, including a read-only key, **When** it reads the quarantine capabilities,
+   **Then** it receives the bulk limit, the page sizes, the content size limit, the spam score range,
+   the list pattern rules, the rate limit range and whether virus scanning is enabled.
 
 ---
 
@@ -245,6 +279,15 @@ quarantine ingestion and the notifier use the values saved through the API.
 7. **Given** a domain administrator or a mailbox user, **When** they read the settings, **Then**
    they receive only whether the quarantine is active, the retention per mailbox and the maximum
    size. **When** they change them, **Then** the request is refused as forbidden.
+8. **Given** a template with an unclosed `{% for %}` block, or one that reads an attribute the
+   notifier's sandbox forbids, **When** an administrator saves it, **Then** the request is refused
+   with a validation error on the template field naming the reason and the line, and nothing
+   changes.
+9. **Given** a valid template sent with the validate-only option, **When** it is checked, **Then**
+   success is reported, the stored template is unchanged and no audit record is written.
+10. **Given** the default template, **When** an administrator previews it with quick actions,
+   **Then** they receive the rendered HTML as text, its plain-text version and the subject, built
+   from the documented sample data, including the release and delete links.
 
 ---
 
@@ -381,6 +424,9 @@ unreachable, and compare the counts with the legacy dashboard chart.
    the request is refused with a temporary failure.
 3. **Given** a domain administrator, **When** they read the statistics, **Then** the request is
    refused as forbidden.
+4. **Given** a spam filter that reports its uptime but not when its counters started, **When** an
+   administrator reads the statistics, **Then** the counting period start is reported as unknown
+   and the time since which the filter has been running is reported.
 
 ---
 
@@ -445,13 +491,16 @@ filtered by target.
 - **Bulk action naming the same item or mailbox twice**: it is processed and reported once.
 - **Bulk action with more than 100 targets**: refused with a validation error that states the
   limit.
-- **Version tag sent with a bulk action**: not supported; bulk actions do not check versions.
+- **Version tag sent with a bulk action**: checked per target. An outdated tag gives that target
+  the outcome "outdated", and the other targets proceed. A target without a tag is not checked.
 - **Notification for an item that was released or deleted through this API**: the item is gone, so
   later notifications skip it, and the quick links in notifications already sent stop working.
 - **Mailbox without stored notification values**: reported with the frequency "never" and no
   category. It receives no notifications, as with legacy.
-- **Notification template that the notifier cannot parse**: the API stores it as given. The
-  notifier falls back to the default template, as in legacy.
+- **Notification template that the notifier cannot parse or render**: refused with a validation
+  error naming the field and the reason (syntax, sandbox violation, rendering error or rendering
+  timeout), and nothing changes. A template saved through the legacy UI is still stored as given
+  there, and the notifier falls back to the default template when it cannot parse it, as in legacy.
 - **Excluded domain that was later deleted**: it stays stored and is shown. It can be kept when the
   settings are saved unchanged, but it cannot be added again.
 - **Spam score with only one of its two values stored**, for example by another tool: reported as
@@ -478,7 +527,9 @@ filtered by target.
   still overwrite a change made through this API, as before.
 - **Shared store unavailable**: changes to settings and rate limits and bucket resets are refused
   with a temporary failure and change nothing.
-- **Audit record cannot be written**: the change it would record does not succeed.
+- **Audit record cannot be written**: the change it would record does not succeed. A release whose
+  message the mail server already accepted cannot be taken back: the request then fails with an
+  unexpected error and the complete record is written to the service log instead.
 
 ## Requirements *(mandatory)*
 
@@ -538,6 +589,8 @@ filtered by target.
   | Reset a rate-limit bucket | Yes | Forbidden | Forbidden |
   | Read the spam filter's action statistics | Yes | Forbidden | Forbidden |
   | Read the audit log | Yes | Forbidden | Forbidden |
+  | Validate or preview the notification template | Yes | Forbidden | Forbidden |
+  | Read the quarantine capabilities | Yes | Yes | Yes |
 
 #### Quarantine items: listing and inspecting
 
@@ -660,9 +713,13 @@ filtered by target.
     the action, and with a validation error stating the limit when it names more than 100 items.
   - Otherwise each item MUST be processed on its own, with the same checks, side effects and audit
     record as a single request for it.
+  - Each item MAY carry the version tag the client read (FR-059). When it no longer matches, that
+    item MUST get the outcome "outdated" and MUST NOT be changed. An item without a tag MUST NOT be
+    version-checked.
   - The response MUST report one result per distinct item: done (with its action report), not
-    found, or failed (with the error type). A failure on one item MUST NOT stop or undo the others,
-    as in legacy.
+    found, refused (with the error type, for example an item being processed or a refused
+    delivery), outdated, or failed (with the error type). A failure on one item MUST NOT stop or
+    undo the others, as in legacy.
 - **FR-028**: This API MUST NOT change an item's notification state. An item that is released,
   learned or deleted through this API is gone, so later notifications skip it, and the quick links
   in notifications already sent for it stop working, as when the legacy UI removes it.
@@ -712,7 +769,8 @@ filtered by target.
   `subject`, `score`, `sender`, `created` and `action`, plus `username`, `counter`, `hostname` and
   `quarantine_acl`), that the legacy notifier renders it in a sandbox, that it falls back to the
   default template when the template cannot be parsed, and that quick links built from `qhash` lead
-  to the legacy quick release and delete pages. This API MUST NOT render the template.
+  to the legacy quick release and delete pages. This API MUST NOT send notifications, and it renders
+  the template only to validate it (FR-070) and to preview it (FR-071), with sample data.
 - **FR-033**: The settings MUST be stored where legacy stores them, so that the quarantine
   ingestion, the notifier and the cleanup of aged items use them unchanged. The contract MUST state
   when a change takes effect: for new items at once, for notifications at the notifier's next run
@@ -736,7 +794,8 @@ filtered by target.
 - **FR-037**: Administrators and domain administrators MUST be able to set the frequency, the
   category, or both, for up to 100 distinct mailboxes in one request, as the legacy mailbox list's
   mass actions do. The request MUST be refused as a whole, or processed per mailbox with one result
-  each, exactly as quarantine bulk actions are (FR-027).
+  each, exactly as quarantine bulk actions are (FR-027), including the optional version tag of each
+  mailbox's notification settings.
 - **FR-038**: The contract MUST state that the notifier applies a change at its next run, that a
   change neither resets the time of the last notification nor the notification state of items, and
   that a notification includes only items not yet notified, scoring below the notification score
@@ -839,17 +898,24 @@ filtered by target.
 - **FR-058**: Administrators MUST be able to read how many messages the spam filter handled with
   each action since its statistics were last reset: rejected, soft-rejected (including greylisted,
   which legacy merges into it), subject rewritten, moved to junk, and no action. When the filter
-  cannot be reached, the request MUST fail with a temporary failure.
+  cannot be reached, the request MUST fail with a temporary failure. The response MUST state the
+  start of the counting period when the spam filter reports it, and report it as unknown otherwise.
+  It MUST also state since when the spam filter has been running, as far as the filter reports its
+  uptime, and the contract MUST explain that the filter keeps its counters across restarts until
+  they are reset, so the counting period may begin before that time.
 
 #### Version tags
 
 - **FR-059**: The quarantine settings, each mailbox's notification settings, each mailbox's spam
   score and each object's rate limit MUST carry a version tag. The tag MUST change whenever the
   stored values change, whether the change was made through this API, the legacy UI or `/api/v1`.
-  Quarantine items and list entries are never changed, only removed, and carry no version tag.
-- **FR-060**: A client MAY send the version tag it read with a change, a reset or a removal. When
-  the tag no longer matches, the request MUST be refused as outdated and MUST change nothing. The
-  contract MUST recommend that interactive clients always send it.
+  Quarantine items and list entries are never changed, only removed. They MUST carry a version tag
+  over their identifying stored values, which stays the same for as long as they exist. Every list
+  entry of this feature MUST carry its version tag (`docs/conventions.md`).
+- **FR-060**: A client MAY send the version tag it read with a change, a reset, a removal, an item
+  action or a bulk target. When the tag no longer matches, the request MUST be refused as outdated
+  (for a bulk target: that target's outcome is "outdated") and MUST change nothing. The contract
+  MUST recommend that interactive clients always send it.
 
 #### Reliability
 
@@ -884,8 +950,9 @@ filtered by target.
   MUST document at least these error types: not found, permission flag required (naming the flag),
   outdated version, list entry already exists (naming the list and entry), message too large, item
   is being processed, delivery refused (with the mail server's answer), and temporary failure
-  (naming the shared store, the spam filter or the mail server). Validation errors MUST use stable rule codes with their parameters, including the bulk
-  limit.
+  (naming the shared store, the spam filter or the mail server). Validation errors MUST use stable
+  rule codes with their parameters, including the bulk limit and a code for a template the notifier
+  cannot use (FR-070).
 - **FR-066**: Every operation MUST be described in the published API contract before it is
   implemented, and its behaviour MUST match the contract.
 - **FR-067**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response
@@ -897,6 +964,43 @@ filtered by target.
   mailboxes for notification settings, spam scores, mailbox lists and mailbox rate limits; such a
   request MUST be answered "not found", as in feature 003 (FR-003 there). Quarantine items addressed
   to a resource MUST follow FR-001 like any other item.
+
+#### Notification template validation and preview
+
+- **FR-070**: Saving a notification template MUST check it the way the legacy notifier uses it: it
+  MUST be parsed by the same template engine in the same sandbox, then rendered with sample data,
+  once without and once with the quick-action links (`quarantine_acl` 0 and 1, one and three
+  items). A template that cannot be parsed, that violates the sandbox, that raises any error while
+  rendering, or that does not finish rendering within 5 seconds MUST be refused with a validation
+  error on the template field that states the reason and, when known, the line. An empty template
+  is not checked: it restores the default (FR-032). The change of the quarantine settings MUST
+  accept a validate-only option that applies every rule of the change, including the version tag
+  and the template check, and reports success or the same errors as a real change, but stores
+  nothing and writes no audit record (as feature 013 FR-093).
+- **FR-071**: Administrators MUST be able to preview a notification template: a given template, or
+  the stored one (or the default) when none is given. The preview MUST render it as FR-070 does,
+  with the documented sample data (sample items, user name, counter, the server's host name and the
+  chosen `quarantine_acl`), and return the rendered HTML as text, the plain-text version the notifier
+  would derive from it, and the subject the notifier would use. A template that fails FR-070 MUST be
+  refused with the same validation error. The contract MUST state that clients show the rendering
+  only as source text and never as live HTML. A preview changes nothing and MUST NOT be audited.
+
+#### Capabilities
+
+- **FR-072**: Every role MUST be able to read the quarantine capabilities, the limits and server
+  settings a client needs before it submits:
+  - the bulk limit (FR-027), and the default and maximum page sizes (FR-008);
+  - the content size limit for inspection and downloads (FR-014), and the largest message the mail
+    pipeline hands to the quarantine (FR-030);
+  - the spam score range and step (FR-040);
+  - the allow and block list pattern rules: allowed characters and maximum length (FR-046);
+  - the rate limit range and time units (FR-053);
+  - the limits of the quarantine settings (FR-030) and the release formats;
+  - whether virus scanning is enabled on the server (mailcow's `SKIP_CLAMD`), so that clients can
+    explain why no item carries the virus flag.
+
+  The values MUST reflect the server's current configuration and MUST NOT include any secret or
+  connection detail. The read MUST change nothing, and read-only keys MAY use it.
 
 ### Legacy Coverage
 
@@ -1015,6 +1119,7 @@ neither reads nor writes:
 | Quarantine settings validation | Invalid addresses silently emptied, unknown release format turned into raw, maximum age ≤ 0 turned into 365, other values unchecked | Invalid values refused with field errors; limits on subject and template (FR-030). **Deviation** |
 | Settings visible to non-administrators | The quarantine page shows retention and maximum size | Same subset (FR-034) |
 | Default template | Read from `/tpls/quarantine.tpl` when `Q_HTML` is empty | Same, marked as the default (FR-032) |
+| Template check and preview | None: any text is stored; the notifier falls back to the default template when it cannot parse it, and skips the mailbox when rendering fails | Checked with the notifier's engine and sandbox before saving, validate-only option, preview as text (FR-070, FR-071). **Addition** |
 | Notification settings | `mailbox.attributes` `quarantine_notification` (never, hourly, daily, weekly) and `quarantine_category` (reject, add_header, all), flags checked with `hasACLAccess` | Same storage, values and flags (FR-035, FR-036) |
 | Spam score | `filterconf` rows `lowspamlevel` and `highspamlevel` per mailbox; `default` deletes them; equal values raise the high one by 0.1; any numbers accepted, including a junk score above the reject score; defaults from Rspamd `/actions`, fallback `5, 15` | Same storage, reset and defaults; values 0 to 5,000 with one decimal, junk ≤ reject (FR-039 to FR-041). **Deviation** for the range |
 | Spam score permissions | `spam_score` from the session; domain administrators always hold it | Same (FR-005) |
@@ -1023,9 +1128,10 @@ neither reads nor writes:
 | Rate limit storage | Redis hash `RL_VALUE`, field = object as given, value `<n> / 1<s|m|h|d>`; value 0 or empty deletes the field; negative values stored | Same storage; objects normalised to lower case and ASCII, which the filter expects; removal is its own operation; values below 1 refused (FR-053, FR-054). **Deviation** |
 | Rate limit reading | Domain limits for administrators and domain administrators; mailbox limits not for mailbox users | Same (FR-006) |
 | Rate-limit bucket reset | Administrators; removes `RL_LOG` lines matching the identifier anywhere and deletes the bucket key; "hash not found" warning when the key is missing | Same effect; log entries matched on their bucket identifier; "not found" only when nothing matched (FR-057). **Deviation** |
-| Rspamd action statistics | Administrators; Rspamd `/stat` actions with greylist added to soft reject; `{}` on failure | Same counts; temporary failure on failure (FR-058). **Deviation** |
+| Rspamd action statistics | Administrators; Rspamd `/stat` actions with greylist added to soft reject; `{}` on failure | Same counts; temporary failure on failure; counting period start (or unknown) and the filter's running time (FR-058). **Deviation** |
+| Server settings for the forms | Rendered into the pages (bulk sizes, slider range, pattern hints) | Readable quarantine capabilities (FR-072). **Addition** |
 | Resources | Accepted wherever a mailbox address is | Not addressable for mailbox-level settings (FR-069). **Deviation**, as in feature 003 |
-| Concurrent settings edits | Last write wins | Version tags (FR-059, FR-060). **Deviation** |
+| Concurrent settings edits | Last write wins | Version tags (FR-059, FR-060), also per bulk target. **Deviation** |
 | UI log entries | Written to the `logs` table | Written to this API's audit log (FR-063), as in feature 001. **Deviation** |
 
 ### Key Entities *(include if feature involves data)*
@@ -1052,7 +1158,10 @@ neither reads nor writes:
 - **Rate-limit bucket** (data of the spam filter in the shared store): the counters behind one limit,
   named by its identifier, with entries in the rate-limited log.
 - **Spam filter action statistics** (read from the spam filter): message counts per action.
-- **Bulk action** (transient): one action, up to 100 targets and one result per target.
+- **Bulk action** (transient): one action, up to 100 targets, each with an optional version tag,
+  and one result per target.
+- **Template preview** (transient): a template rendered with sample data, returned as text.
+- **Quarantine capabilities** (computed): the limits and server settings of FR-072.
 - **Audit record** (owned by this API, defined in feature 001): extended with the target type, the
   target identifier, the changes and the step outcomes.
 
@@ -1085,12 +1194,17 @@ neither reads nor writes:
 - **SC-010**: Every request in FR-063 produces exactly one audit record per affected object, and a
   scan of all audit records after the full test run finds no message subject, content, attachment
   or quick-action hash.
+- **SC-011**: 100% of the templates in the template test set that the legacy notifier cannot parse
+  or render (syntax errors, sandbox violations, rendering errors, endless rendering) are refused,
+  and 100% of the templates it renders, including the default template, are accepted and previewed
+  with the same output as the notifier for the same sample data.
 
 ## Assumptions
 
 - The quarantine ingestion, the notifier, the cleanup of aged items, the quick release and delete
   pages, the spam filter's settings map and rate limit lookup, and the rate-limited log stay where
-  they are (constitution V). This API does not render or send notifications.
+  they are (constitution V). This API does not send notifications, and it renders the template only
+  to check and preview it (FR-070, FR-071).
 - The API can reach the spam filter's controller and mailcow's internal mail submission path in the
   same way the legacy web container does. The plan decides how.
 - Item arrival times are stored in the server's configured time zone and converted to UTC.
@@ -1103,10 +1217,11 @@ neither reads nor writes:
 - Domain administrator accounts and their flags are managed in feature 007, mailbox user flags in
   feature 003. This feature only reads them.
 - The legacy UI never sends version tags, so it can still overwrite changes made through this API.
-- These defaults can be changed by the operator: the list page size (25, maximum 1,000), the bulk
-  limit (100) and the content size limit (10 MiB).
+- The list page size follows the shared list convention (25 by default, at most 1,000,
+  `docs/conventions.md`). These defaults can be changed by the operator and are reported by the
+  capabilities read (FR-072): the bulk limit (100) and the content size limit (10 MiB).
 - **Out of scope**:
-  - quarantine ingestion, notification sending and previewing a notification;
+  - quarantine ingestion and notification sending;
   - the hash-based quick release and delete pages;
   - learning messages that are not in the quarantine, for example from a mailbox's junk folder;
   - spam scores for domains, which legacy does not offer;

@@ -1,0 +1,6 @@
+type: string
+description: |
+  `allow` (legacy whitelist, `whitelist_from`): mail from a matching sender is never classified as
+  spam. `block` (legacy blacklist, `blacklist_from`): mail from a matching sender is always
+  classified as spam and rejected, and it is not quarantined.
+enum: [allow, block]

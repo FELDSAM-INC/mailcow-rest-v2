@@ -1,0 +1,14 @@
+description: |
+  Problem of type `/api/v2/problems/quarantine-message-too-large` (status `409`): the stored message
+  is larger than the content size limit, so it is not parsed or downloaded.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [size, limit]
+    properties:
+      size:
+        type: integer
+        description: Size of the stored message in bytes.
+      limit:
+        type: integer
+        description: The content size limit in bytes.

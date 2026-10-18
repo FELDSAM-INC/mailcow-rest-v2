@@ -1,0 +1,15 @@
+description: The rate limit of one domain, alias domain or mailbox.
+headers:
+  ETag:
+    description: Version tag (strong ETag) of the resource, equal to `data.etag`. Send it in `If-Match` with a change.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/RateLimit.yaml'

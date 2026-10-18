@@ -1,0 +1,17 @@
+description: |
+  Problem of type `/api/v2/problems/quarantine-delivery-refused` (status `409`): the mail server
+  permanently refused the released message, for example because the recipient mailbox no longer
+  exists. The item is kept and nothing was learned.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [smtpCode, smtpResponse]
+    properties:
+      smtpCode:
+        type: integer
+        minimum: 500
+        maximum: 599
+      smtpResponse:
+        type: string
+        description: The mail server's answer.
+        examples: ['550 5.1.1 <gone@example.org>: Recipient address rejected: User unknown']

@@ -1,0 +1,15 @@
+description: |
+  Problem of type `/api/v2/problems/permission-flag-required` (status `403`): the caller's role
+  may use the operation, but only with permission flags it lacks. Nothing was changed.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [requiredFlags]
+    properties:
+      requiredFlags:
+        type: array
+        minItems: 1
+        description: The missing flags, named as in `PermissionFlags` (camelCase).
+        items:
+          type: string
+          examples: [quarantine, quarantineAttachments, spamPolicy, ratelimit]

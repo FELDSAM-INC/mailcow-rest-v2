@@ -1,0 +1,5 @@
+description: |
+  The new rate limit, replacing any previous one: a whole number of messages from 1 to 2147483647
+  (rule code `outOfRange`) per `second`, `minute`, `hour` or `day` (`notInList`).
+allOf:
+  - $ref: './RateLimitValue.yaml'

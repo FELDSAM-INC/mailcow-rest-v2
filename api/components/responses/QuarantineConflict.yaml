@@ -1,0 +1,40 @@
+description: |
+  The item's state does not permit the request. Possible types:
+  - `/api/v2/problems/quarantine-item-busy`: another request of this API is releasing, learning or
+    deleting the item right now. Nothing changed. Retry after `Retry-After` seconds: the item is
+    then gone (`404`) or available again.
+  - `/api/v2/problems/quarantine-delivery-refused`: the mail server permanently refused the
+    released message (extensions `smtpCode`, `smtpResponse`). The item is kept, nothing was learned.
+  - `/api/v2/problems/quarantine-message-too-large`: the stored message is larger than the content
+    size limit, so it is not downloaded (extensions `size`, `limit`).
+headers:
+  Retry-After:
+    description: Present for `quarantine-item-busy` (5 seconds).
+    required: false
+    schema:
+      type: integer
+      minimum: 1
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/QuarantineDeliveryRefusedProblem.yaml'
+        - $ref: '../schemas/QuarantineMessageTooLargeProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      busy:
+        value:
+          type: /api/v2/problems/quarantine-item-busy
+          title: Quarantine item is being processed
+          status: 409
+          detail: Another request is processing this item.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+      deliveryRefused:
+        value:
+          type: /api/v2/problems/quarantine-delivery-refused
+          title: Delivery refused
+          status: 409
+          detail: The mail server refused the released message. The item was kept.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          smtpCode: 550
+          smtpResponse: '550 5.1.1 <gone@example.org>: Recipient address rejected: User unknown'

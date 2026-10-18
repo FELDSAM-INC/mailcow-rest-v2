@@ -1,0 +1,17 @@
+type: object
+description: |
+  New custom scores, replacing any custom values. Each is a number from 0 to 5000 with at most one
+  decimal (rule codes `outOfRange`, `notMultipleOf` with `factor: 0.1`). `junkScore` must not be
+  above `rejectScore` (`mustNotExceed` with `field: rejectScore` and its `value`). When both are equal, the
+  reject score is raised by 0.1, as in legacy.
+required: [junkScore, rejectScore]
+properties:
+  junkScore:
+    type: number
+    minimum: 0
+    maximum: 5000
+  rejectScore:
+    type: number
+    minimum: 0
+    maximum: 5000
+additionalProperties: false

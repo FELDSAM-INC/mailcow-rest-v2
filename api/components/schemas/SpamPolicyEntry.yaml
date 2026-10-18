@@ -1,0 +1,38 @@
+type: object
+description: |
+  One allow or block list entry (a mailcow `filterconf` row). Patterns are matched
+  case-insensitively against the envelope sender and the `From` header; `*` matches any sequence
+  of characters. The spam filter's settings map applies a change within one refresh (at most 1
+  minute):
+  - a mailbox's entries apply to mail for the mailbox, its sub-addresses, the aliases whose only
+    target is the mailbox (not catch-all aliases), and its addresses in alias domains;
+  - a domain's entries apply to mail for every address in the domain and its alias domains; an
+    alias domain's entries apply to that alias domain only;
+  - a mailbox's entries take precedence over its domain's entries.
+  Entries are never changed, only removed, and only through their owner.
+required: [id, list, owner, pattern, createdAt, own, etag]
+properties:
+  id:
+    type: integer
+    minimum: 1
+    description: Entry identifier (`filterconf.prefid`).
+  list:
+    $ref: './SpamPolicyList.yaml'
+  owner:
+    $ref: './SpamPolicyOwner.yaml'
+  pattern:
+    type: string
+    maxLength: 100
+    examples: ['*@spam.example', newsletter@example.com]
+  createdAt:
+    type: string
+    format: date-time
+  own:
+    type: boolean
+    description: |
+      `true` when the entry belongs to the owner in the request path. `false` for an entry shown
+      read-only: a domain's entry in one of its mailboxes' lists ("inherited"), or a mailbox's entry
+      in its domain's list. Such entries can only be removed through their owner.
+  etag:
+    type: string
+    description: Version tag over the entry's stored values. It stays the same for as long as the entry exists.

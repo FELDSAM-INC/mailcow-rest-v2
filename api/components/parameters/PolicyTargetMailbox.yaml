@@ -1,0 +1,13 @@
+name: mailbox
+in: path
+required: true
+description: |
+  Username (address) of a mailbox (mailcow's `mailbox.username`), matched after trimming and
+  lower-casing. Resources (location, thing and group kinds) are not mailboxes here and answer
+  `404`, as does a mailbox outside the caller's scope. A mailbox user reaches only their own
+  mailbox.
+schema:
+  type: string
+  minLength: 3
+  maxLength: 255
+  examples: [alice@example.org]

@@ -1,0 +1,93 @@
+parameters:
+  - $ref: '../../components/parameters/PolicyTargetMailbox.yaml'
+get:
+  operationId: getMailboxRateLimit
+  tags: [Rate limits]
+  summary: Read the rate limit of a mailbox
+  description: |
+    Returns the limit set on a mailbox, or `limit: null` when none is set. It also gives the effective limit and whether it comes from the mailbox or from its domain, as the legacy mailbox page shows it. Administrators: every mailbox; domain administrators: mailboxes of their domains; resources answer `404`. Mailbox users are
+    refused (`forbidden`). Domain administrators may read without the `ratelimit` flag.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/RateLimitResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SpamFilterTemporaryFailure.yaml'
+put:
+  operationId: setMailboxRateLimit
+  tags: [Rate limits]
+  summary: Set the rate limit of a mailbox
+  description: |
+    Sets the limit, replacing any previous one, in mailcow's shared store where the spam filter
+    reads it (field = the normalised object name, value `<value> / 1<s|m|h|d>`). The spam filter
+    applies it from the next message on. Administrators always may; domain administrators need
+    `ratelimit`; mailbox users are refused (`forbidden`). Audited with the old and new values.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/RateLimitUpdate.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/RateLimitResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SpamFilterTemporaryFailure.yaml'
+delete:
+  operationId: removeMailboxRateLimit
+  tags: [Rate limits]
+  summary: Remove the rate limit of a mailbox
+  description: |
+    Removes the limit. Removing a limit that is not set succeeds and changes nothing (and is not
+    audited). Same permissions as `setMailboxRateLimit`. Audited with the old value.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SpamFilterTemporaryFailure.yaml'

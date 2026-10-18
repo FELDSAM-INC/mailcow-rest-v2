@@ -1,0 +1,10 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. Default `arrivedAt` with `order=desc` (newest first). Ties are always broken by `id`,
+  newest first. Items without a score sort before every scored item in ascending order.
+schema:
+  type: string
+  enum: [arrivedAt, id, queueId, score, sender, recipient, subject, action, virus, notified]
+  default: arrivedAt

@@ -1,0 +1,12 @@
+description: |
+  The bulk action was processed. The status is `200` even when some or all targets did not
+  succeed: check each result's `outcome`. The whole request is refused (`403`) only when the
+  caller's role, permission flags or key scope never allow the action.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/QuarantineBulkResult.yaml'

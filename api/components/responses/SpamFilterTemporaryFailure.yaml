@@ -1,0 +1,25 @@
+description: |
+  A service the request needs is temporarily unavailable (type `/api/v2/problems/temporary-failure`,
+  extension `dependency`: `sharedStore`, `spamFilter` or `mailServer`). Nothing was changed, unless
+  the operation's description says otherwise. Retry after `Retry-After` seconds.
+headers:
+  Retry-After:
+    description: Seconds after which the request may be retried.
+    required: true
+    schema:
+      type: integer
+      minimum: 1
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/SpamFilterTemporaryFailureProblem.yaml'
+    examples:
+      spamFilter:
+        value:
+          type: /api/v2/problems/temporary-failure
+          title: Temporary failure
+          status: 503
+          detail: The spam filter could not be reached. The item was kept.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          dependency: spamFilter
+          step: learning

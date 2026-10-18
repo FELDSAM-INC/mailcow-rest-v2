@@ -1,0 +1,46 @@
+post:
+  operationId: applyQuarantineBulkAction
+  tags: [Quarantine]
+  summary: Apply an action to several quarantine items
+  description: |
+    Releases (with or without learning), learns as spam or deletes up to the bulk limit of items
+    (100 by default) in one request, as the legacy quarantine page's mass actions do. The whole
+    request is refused (`403`) only when the caller's role, flags or key scope never allow the
+    action: domain administrators and mailbox users need `quarantine`, and read-only keys are
+    refused. More targets than the limit are refused as a whole (`422`, `tooMany` on `targets`,
+    with the limit as `max`).
+
+    Otherwise each distinct item is processed on its own, in request order, with the checks, side
+    effects and audit record of the single operation, and gets one result:
+    - `done`: carried out; `report` gives each step of a release or learning as spam;
+    - `notFound`: the item does not exist or is outside the caller's scope;
+    - `refused`: `quarantine-item-busy` or `quarantine-delivery-refused` (the item is kept);
+    - `outdated`: the target's `version` no longer matches (`412` problem); the item is unchanged;
+    - `failed`: an unexpected or downstream failure, for example `temporary-failure` (the item is
+      kept).
+
+    Targets without `version` are not version-checked. A failure on one item does not stop or undo
+    the others. Every audit record carries the `bulkRequestId`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/QuarantineBulkActionRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/QuarantineBulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

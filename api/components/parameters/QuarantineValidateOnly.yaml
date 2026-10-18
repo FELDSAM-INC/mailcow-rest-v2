@@ -1,0 +1,10 @@
+name: validateOnly
+in: query
+required: false
+description: |
+  When `true`, the request is checked by every rule of the change, including `If-Match` and the
+  notification template check, but nothing is stored and no audit record is written. Success
+  answers `204`; failures answer exactly as a real change would.
+schema:
+  type: boolean
+  default: false

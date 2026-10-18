@@ -1,0 +1,9 @@
+description: The action was carried out; the item is gone. `data` reports each step.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/QuarantineActionReport.yaml'

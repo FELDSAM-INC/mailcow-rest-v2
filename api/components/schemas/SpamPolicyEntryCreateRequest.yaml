@@ -1,0 +1,15 @@
+type: object
+description: |
+  A new allow or block list entry. The pattern is trimmed and lower-cased, and must then consist
+  only of `a`–`z`, digits, `@`, `_`, `.`, `-` and `*`, contain at least one letter or digit (rule
+  code `invalidFormat` with `format: senderPattern`), and be at most 100 characters long (`tooLong`). The same pattern on
+  the allow or the block list of the same owner is refused with `spam-policy-entry-exists`.
+required: [list, pattern]
+properties:
+  list:
+    $ref: './SpamPolicyList.yaml'
+  pattern:
+    type: string
+    minLength: 1
+    maxLength: 255
+additionalProperties: false

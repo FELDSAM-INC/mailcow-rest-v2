@@ -1,0 +1,39 @@
+get:
+  operationId: listRateLimits
+  tags: [Rate limits]
+  summary: List the rate limits set in my scope
+  description: |
+    Lists the rate limits that are set on existing domains, alias domains and mailboxes in the
+    caller's scope: every object for administrators; for domain administrators, the domains they
+    manage, the alias domains of those domains and their mailboxes. Mailbox users are refused
+    (`forbidden`). Objects without a limit are not listed. A stored value that does not match the
+    legacy format is listed with `limit: null` and `invalidStoredValue`. `q` searches the object
+    name.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/RateLimitSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: kind
+      in: query
+      required: false
+      description: Only limits of this kind of object.
+      schema:
+        $ref: '../../components/schemas/RateLimitObjectKind.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/RateLimitListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SpamFilterTemporaryFailure.yaml'

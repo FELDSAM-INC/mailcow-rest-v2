@@ -1,0 +1,6 @@
+type: string
+description: |
+  How often the mailbox user is told about new quarantine items (`attributes.quarantine_notification`).
+  A mailbox without a stored value, or with an unknown one, reports `never`: it gets no
+  notifications, as with the legacy notifier. Same values as `MailboxQuarantineNotification`.
+enum: [never, hourly, daily, weekly]

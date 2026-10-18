@@ -1,0 +1,12 @@
+# Paths of the rate-limits module (feature 006): sending rate limits of domains, alias domains and
+# mailboxes, and rate-limit bucket resets.
+/rate-limits:
+  $ref: './rate-limits.yaml'
+/domains/{domain}/rate-limit:
+  $ref: './domain-rate-limit.yaml'
+/alias-domains/{aliasDomain}/rate-limit:
+  $ref: './alias-domain-rate-limit.yaml'
+/mailboxes/{mailbox}/rate-limit:
+  $ref: './mailbox-rate-limit.yaml'
+/rate-limit-buckets/{bucketId}:
+  $ref: './rate-limit-bucket.yaml'

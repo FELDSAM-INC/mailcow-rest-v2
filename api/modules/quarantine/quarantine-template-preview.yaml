@@ -1,0 +1,39 @@
+post:
+  operationId: previewQuarantineTemplate
+  tags: [Quarantine]
+  summary: Preview a notification template
+  description: |
+    Renders the given template, or the stored one (or the default) when none is given, with the
+    documented sample data, exactly as the legacy notifier would, and returns the rendered HTML as
+    text, the plain-text version the notifier derives from it, and the subject. Administrators
+    only. A template the notifier cannot use is refused with the same validation error as on save
+    (`invalidTemplate` on `template`).
+
+    **Clients must show `html` only as source text, never as live HTML.** The preview changes
+    nothing and is not audited. It is a `POST` because it carries a template, so read-only keys are
+    refused like for any `POST`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/QuarantineTemplatePreviewRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/QuarantineTemplatePreviewResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SpamFilterTemporaryFailure.yaml'

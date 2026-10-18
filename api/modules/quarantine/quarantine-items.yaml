@@ -1,0 +1,98 @@
+get:
+  operationId: listQuarantineItems
+  tags: [Quarantine]
+  summary: List quarantine items
+  description: |
+    Lists the quarantine items in the caller's scope, newest first by default. Every role may list
+    whatever its permission flags (the `quarantine` flag gates only the actions):
+    - administrators: every item;
+    - domain administrators: items whose recipient mailbox belongs to a domain they manage
+      (recipient domain), including items of mailboxes that no longer exist;
+    - mailbox users: items addressed to their own mailbox.
+
+    `q` searches, case-insensitively and as a substring, the subject, the envelope sender, the
+    recipient and the queue identifier. Neither the stored message nor the quick-action hash is
+    ever returned.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/QuarantineItemSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: recipient
+      in: query
+      required: false
+      description: Only items for this recipient mailbox (case-insensitive exact match).
+      schema:
+        type: string
+        maxLength: 255
+    - name: domain
+      in: query
+      required: false
+      description: Only items whose recipient is in this domain (ASCII or Unicode form).
+      schema:
+        type: string
+        maxLength: 255
+    - name: action
+      in: query
+      required: false
+      description: Only items with one of these actions. Repeat the parameter for several.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 4
+        items:
+          $ref: '../../components/schemas/QuarantineItemAction.yaml'
+    - name: virus
+      in: query
+      required: false
+      description: Only items with (`true`) or without (`false`) the virus flag.
+      schema:
+        type: boolean
+    - name: notified
+      in: query
+      required: false
+      description: Only items that a notification already included (`true`) or not (`false`).
+      schema:
+        type: boolean
+    - name: from
+      in: query
+      required: false
+      description: Only items that arrived at or after this time.
+      schema:
+        type: string
+        format: date-time
+    - name: to
+      in: query
+      required: false
+      description: Only items that arrived before this time.
+      schema:
+        type: string
+        format: date-time
+    - name: minScore
+      in: query
+      required: false
+      description: Only items with a score of at least this value (items without a score are left out).
+      schema:
+        type: number
+    - name: maxScore
+      in: query
+      required: false
+      description: Only items with a score of at most this value (items without a score are left out).
+      schema:
+        type: number
+  responses:
+    '200':
+      $ref: '../../components/responses/QuarantineItemListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

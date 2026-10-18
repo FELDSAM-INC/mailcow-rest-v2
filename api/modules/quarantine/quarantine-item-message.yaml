@@ -1,0 +1,29 @@
+parameters:
+  - $ref: '../../components/parameters/QuarantineItemId.yaml'
+get:
+  operationId: downloadQuarantineMessage
+  tags: [Quarantine]
+  summary: Download the whole quarantined message
+  description: |
+    Returns the stored message as an e-mail file to save. Administrators may always download it;
+    domain administrators need `quarantine`; mailbox users need `quarantine` and
+    `quarantineAttachments`, because the file contains the attachments
+    (`permission-flag-required` names the missing flags). A message larger than the content size
+    limit is refused with `409 quarantine-message-too-large`. Read-only keys may download. Not
+    audited.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/QuarantineMessageDownload.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/QuarantineConflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

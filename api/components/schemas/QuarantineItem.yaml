@@ -1,0 +1,68 @@
+type: object
+description: |
+  A message that mailcow's spam filter kept in the quarantine for one recipient mailbox (mailcow's
+  `quarantine` table). Items are never changed, only released, learned or deleted, which removes
+  them. Neither the stored message nor the item's quick-action hash (`qhash`, the secret of the
+  legacy notification links) is ever returned.
+required:
+  - id
+  - queueId
+  - subject
+  - sender
+  - recipient
+  - score
+  - action
+  - filterAction
+  - virus
+  - notified
+  - arrivedAt
+  - etag
+properties:
+  id:
+    type: integer
+    minimum: 1
+    description: Item identifier (`quarantine.id`).
+  queueId:
+    type: string
+    maxLength: 30
+    description: The mail server's queue identifier (`quarantine.qid`).
+    examples: [4XyZ1q2w3eR]
+  subject:
+    type: string
+    maxLength: 500
+    description: Subject as recorded by the spam filter, empty when there is none.
+  sender:
+    type: string
+    maxLength: 255
+    description: Envelope sender as recorded by the spam filter (`quarantine.sender`), empty when none was recorded.
+  recipient:
+    type: string
+    maxLength: 255
+    description: Recipient mailbox (`quarantine.rcpt`). It may name a mailbox that no longer exists.
+  score:
+    description: Spam score, or `null` when none was recorded.
+    oneOf:
+      - type: number
+      - type: 'null'
+  action:
+    $ref: './QuarantineItemAction.yaml'
+  filterAction:
+    type: string
+    maxLength: 20
+    description: The stored action verbatim, for example `reject` or `add header`.
+  virus:
+    type: boolean
+    description: '`true` when the filter''s results contain the `VIRUS_FOUND` symbol.'
+  notified:
+    type: boolean
+    description: '`true` when a quarantine notification already included the item (set by the legacy notifier only).'
+  arrivedAt:
+    type: string
+    format: date-time
+    description: Arrival time (UTC).
+  etag:
+    type: string
+    description: |
+      Version tag over the item's identifying stored values (identifier, queue identifier,
+      recipient, arrival time). It stays the same for as long as the item exists. Send it in
+      `If-Match` or as a bulk target's `version`.

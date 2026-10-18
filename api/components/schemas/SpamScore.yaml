@@ -1,0 +1,35 @@
+type: object
+description: |
+  The spam score of a mailbox: from `junkScore` on, mail is moved to the junk folder; from
+  `rejectScore` on, it is rejected. Custom values are stored as the mailbox's `lowspamlevel` and
+  `highspamlevel` filter preferences, which the spam filter's settings map applies within one
+  refresh (at most 1 minute), to the same addresses as the mailbox's allow and block lists.
+required: [mailbox, junkScore, rejectScore, custom, defaults, etag]
+properties:
+  mailbox:
+    type: string
+  junkScore:
+    type: number
+    description: The junk score in effect.
+  rejectScore:
+    type: number
+    description: The reject score in effect.
+  custom:
+    type: boolean
+    description: |
+      `true` when the mailbox has custom values. A mailbox with only one of the two values stored
+      (written by another tool) is custom, and the missing value is taken from `defaults`.
+  defaults:
+    type: object
+    description: |
+      The server defaults: the spam filter's configured "add header" and "reject" thresholds. When
+      the filter cannot be asked, or a threshold is not configured, 5 and 15 with `fallback: true`,
+      as in legacy.
+    required: [junkScore, rejectScore, fallback]
+    properties:
+      junkScore: {type: number}
+      rejectScore: {type: number}
+      fallback: {type: boolean}
+  etag:
+    type: string
+    description: Version tag over the stored custom values (not over `defaults`), equal to the `ETag` header.

@@ -1,0 +1,78 @@
+get:
+  operationId: getQuarantineSettings
+  tags: [Quarantine]
+  summary: Read the quarantine settings
+  description: |
+    Administrators receive every setting (`visibility: full`), with the effective defaults of
+    unset values: retention 0, maximum size 0 (inactive), no notification score limit, maximum
+    age 365 days, release format `original`, sender `quarantine@localhost`, subject "Spam
+    Quarantine Notification", no copy or redirect recipient, and the default template.
+
+    Domain administrators and mailbox users receive only whether the quarantine is active, the
+    retention per mailbox and the maximum message size (`visibility: public`), as the legacy
+    quarantine page shows them. Read-only keys may read. Values saved through the legacy UI are
+    returned by the next request.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/QuarantineSettingsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SpamFilterTemporaryFailure.yaml'
+patch:
+  operationId: updateQuarantineSettings
+  tags: [Quarantine]
+  summary: Change the quarantine settings
+  description: |
+    Changes the settings sent and keeps the others (JSON Merge Patch). Administrators only
+    (`forbidden` for other roles). The values are stored where the legacy quarantine ingestion,
+    notifier and cleanup read them, atomically: on any invalid value, an outdated `If-Match` or an
+    unavailable shared store, nothing changes. Invalid values are refused with field errors; unlike
+    legacy, nothing is silently corrected.
+
+    A non-empty `notificationTemplate` is checked the way the legacy notifier uses it (see
+    `QuarantineSettingsPatch`). With `validateOnly=true`, every rule is applied, including
+    `If-Match` and the template check, but nothing is stored and nothing is audited; success answers
+    `204`.
+
+    Audited with each changed value (old and new); the template is recorded only as changed, with
+    its old and new sizes.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+    - $ref: '../../components/parameters/QuarantineValidateOnly.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/QuarantineSettingsPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/QuarantineSettingsResponse.yaml'
+    '204':
+      description: '`validateOnly=true`: the change would be accepted. Nothing was stored.'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SpamFilterTemporaryFailure.yaml'

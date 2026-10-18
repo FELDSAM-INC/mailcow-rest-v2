@@ -1,0 +1,15 @@
+type: object
+description: One symbol of the spam filter's result, as recorded with the item.
+required: [name, score, options]
+properties:
+  name:
+    type: string
+    examples: [BAYES_SPAM, VIRUS_FOUND]
+  score:
+    type: number
+    description: The symbol's score contribution (0 when none was recorded).
+  options:
+    type: array
+    description: The symbol's options, for example the matched URL or virus name. Empty when none.
+    items:
+      type: string

@@ -1,0 +1,3 @@
+type: string
+description: The kind of object a rate limit belongs to.
+enum: [domain, aliasDomain, mailbox]

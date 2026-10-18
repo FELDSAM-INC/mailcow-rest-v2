@@ -1,0 +1,60 @@
+parameters:
+  - $ref: '../../components/parameters/QuarantineItemId.yaml'
+post:
+  operationId: releaseQuarantineItem
+  tags: [Quarantine]
+  summary: Release a quarantine item to its mailbox
+  description: |
+    Delivers the stored message to the item's recipient mailbox through mailcow's internal mail
+    submission that bypasses the spam filter (Postfix port 590), in the configured release format
+    (`QuarantineReleaseFormat`; `original` when none is stored). The envelope sender is the stored
+    sender, or `sender-unknown@rspamd` when none is stored. Needs the `quarantine` flag for domain
+    administrators and mailbox users.
+
+    Steps, reported in the response:
+    1. **Delivery.** When the mail server accepts the message, the item is removed. When it refuses
+       it permanently, the item is kept, nothing is learned and the answer is
+       `409 quarantine-delivery-refused` with the server's answer. When it cannot be reached, times
+       out or answers temporarily, the same applies with `503 temporary-failure`
+       (`dependency: mailServer`, `step: delivery`).
+    2. **Learning** (unless `learnAsHam` is `false`, the legacy quick release): the spam filter
+       learns the message as ham, then stores its fuzzy hashes as wanted (flag 13). "Already
+       learned" counts as success, and "no content to generate fuzzy hashes" is reported as
+       skipped. A learning failure is reported in the response and never undoes the release.
+
+    An item is released, learned or deleted by at most one request of this API: while another
+    request processes it, the answer is `409 quarantine-item-busy`, and afterwards `404`. The
+    legacy UI does not take part in this protection. Audited, with the outcome of each step.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/QuarantineReleaseRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/QuarantineActionReportResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/QuarantineConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SpamFilterTemporaryFailure.yaml'

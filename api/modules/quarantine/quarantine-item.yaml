@@ -1,0 +1,67 @@
+parameters:
+  - $ref: '../../components/parameters/QuarantineItemId.yaml'
+get:
+  operationId: getQuarantineItem
+  tags: [Quarantine]
+  summary: Inspect a quarantine item
+  description: |
+    Returns one item in the caller's scope (see `listQuarantineItems`) with the spam filter's
+    symbols, fuzzy hashes, the sending server's address, the stored size and the parsed content:
+    headers, recipients, the plain-text part and the HTML part converted to plain text. HTML is
+    never returned.
+
+    Attachment details are returned only to callers who may download attachments: administrators,
+    domain administrators, and mailbox users with `quarantineAttachments`; for others
+    `content.attachments` is `null`. `authenticatedSender` is returned to administrators only.
+
+    A stored message larger than the content size limit (10 MiB by default) is not parsed:
+    `contentStatus` is `tooLarge` and `content` is `null`. Reading an item changes nothing and is
+    not audited.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/QuarantineItemResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteQuarantineItem
+  tags: [Quarantine]
+  summary: Delete a quarantine item
+  description: |
+    Removes the item permanently without calling the spam filter (legacy "Remove"). Needs the
+    `quarantine` flag for domain administrators and mailbox users (`permission-flag-required`
+    otherwise). An item is released, learned or deleted by at most one request of this API: while
+    another request processes it, the answer is `409 quarantine-item-busy`, and afterwards `404`.
+    The item's notification state is never changed; quick links already sent for it stop working.
+    Audited (queue identifier, recipient and envelope sender; never the subject or content).
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/QuarantineConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SpamFilterTemporaryFailure.yaml'

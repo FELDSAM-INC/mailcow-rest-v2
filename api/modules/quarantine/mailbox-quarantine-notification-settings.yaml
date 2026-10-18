@@ -1,0 +1,64 @@
+parameters:
+  - $ref: '../../components/parameters/PolicyTargetMailbox.yaml'
+get:
+  operationId: getMailboxQuarantineNotificationSettings
+  tags: [Quarantine]
+  summary: Read a mailbox's quarantine notification settings
+  description: |
+    Returns how often and for which items the mailbox user is notified about new quarantine items.
+    Administrators: every mailbox; domain administrators: mailboxes of their domains; mailbox
+    users: their own mailbox. Other mailboxes, and resources, answer `404`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/QuarantineNotificationSettingsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateMailboxQuarantineNotificationSettings
+  tags: [Quarantine]
+  summary: Change a mailbox's quarantine notification settings
+  description: |
+    Changes the frequency, the category, or both, in the mailbox's attributes, where the legacy
+    notifier reads them. A mailbox user needs `quarantineNotification` to change the frequency and
+    `quarantineCategory` to change the category (`permission-flag-required` names the missing
+    flags); administrators and domain administrators always may. The notifier applies the change
+    at its next run; the time of the last notification and the items' notification state are not
+    reset. Audited with the old and new values.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/QuarantineNotificationSettingsPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/QuarantineNotificationSettingsResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

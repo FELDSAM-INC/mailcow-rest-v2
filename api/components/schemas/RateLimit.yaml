@@ -1,0 +1,43 @@
+type: object
+description: |
+  The rate limit of a domain, alias domain or mailbox. The spam filter applies a change from the
+  next message on, and only to mail sent by authenticated clients:
+  - a mailbox's limit applies to mail sent by a client authenticated as that mailbox, whatever
+    sender address it uses, and overrides the domain's limit;
+  - a domain's or alias domain's limit applies to mail whose envelope sender is in that domain or
+    alias domain, when the authenticated mailbox has no limit of its own;
+  - mail whose only recipient is the authenticated mailbox itself is not counted.
+required: [object, kind, limit, invalidStoredValue, etag]
+properties:
+  object:
+    type: string
+    description: Domain name (ASCII form) or mailbox username.
+  kind:
+    $ref: './RateLimitObjectKind.yaml'
+  limit:
+    description: The limit set on the object, or `null` when none is set or the stored value is invalid.
+    oneOf:
+      - $ref: './RateLimitValue.yaml'
+      - type: 'null'
+  invalidStoredValue:
+    description: |
+      The stored text when it does not match the legacy format `<n> / 1<s|m|h|d>` (written by
+      another tool), otherwise `null`. Such a value can be replaced or removed.
+    oneOf:
+      - type: string
+      - type: 'null'
+  effectiveLimit:
+    description: |
+      Mailboxes only: the limit that applies, the mailbox's own or else its domain's, or `null`.
+    oneOf:
+      - $ref: './RateLimitValue.yaml'
+      - type: 'null'
+  effectiveSource:
+    type: string
+    description: Mailboxes only. Where `effectiveLimit` comes from.
+    enum: [mailbox, domain, none]
+  etag:
+    type: string
+    description: |
+      Version tag over the stored value (also when none is set), equal to the `ETag` header. Send
+      it in `If-Match` with a change or a removal.

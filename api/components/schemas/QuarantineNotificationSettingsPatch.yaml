@@ -1,0 +1,12 @@
+type: object
+description: |
+  JSON Merge Patch of `QuarantineNotificationSettings`. A member that is not sent keeps its value.
+  A mailbox user needs `quarantineNotification` to change `frequency` and `quarantineCategory` to
+  change `category`.
+minProperties: 1
+properties:
+  frequency:
+    $ref: './QuarantineNotificationFrequency.yaml'
+  category:
+    $ref: './QuarantineNotificationCategory.yaml'
+additionalProperties: false

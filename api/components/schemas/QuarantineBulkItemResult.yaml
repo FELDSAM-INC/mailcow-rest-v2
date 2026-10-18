@@ -1,0 +1,20 @@
+type: object
+description: |
+  Outcome of one target of a quarantine bulk action. It has the members of `BulkItemResult` plus
+  `report`, the action report of a `done` release or learning as spam.
+required: [id, outcome]
+properties:
+  id:
+    type: string
+    description: Identifier of the target, as sent.
+  outcome:
+    $ref: './BulkItemOutcome.yaml'
+  problem:
+    $ref: './Problem.yaml'
+    description: |
+      Present for `refused` (for example `quarantine-item-busy` or `quarantine-delivery-refused`),
+      `outdated` and `failed` (for example `temporary-failure`).
+  report:
+    $ref: './QuarantineActionReport.yaml'
+    description: Present for a `done` release or learning as spam. Absent for a deletion.
+additionalProperties: false

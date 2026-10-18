@@ -1,0 +1,11 @@
+name: domain
+in: path
+required: true
+description: |
+  Name of a domain (mailcow's `domain.domain`). It is matched after trimming, lower-casing and
+  conversion to its ASCII (IDNA) form. A domain outside the caller's scope answers `404`.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 255
+  examples: [example.org]

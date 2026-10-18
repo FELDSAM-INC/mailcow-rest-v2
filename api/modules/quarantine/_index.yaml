@@ -1,0 +1,27 @@
+# Paths of the quarantine module (feature 006): quarantine items and their actions, bulk actions,
+# downloads, the quarantine settings with template preview, the capabilities read, and the
+# quarantine notification settings of mailboxes.
+/quarantine:
+  $ref: './quarantine-items.yaml'
+/quarantine/bulk-actions:
+  $ref: './quarantine-bulk-actions.yaml'
+/quarantine/settings:
+  $ref: './quarantine-settings.yaml'
+/quarantine/settings/template-preview:
+  $ref: './quarantine-template-preview.yaml'
+/quarantine/{itemId}:
+  $ref: './quarantine-item.yaml'
+/quarantine/{itemId}/release:
+  $ref: './quarantine-item-release.yaml'
+/quarantine/{itemId}/spam-learning:
+  $ref: './quarantine-item-spam-learning.yaml'
+/quarantine/{itemId}/message:
+  $ref: './quarantine-item-message.yaml'
+/quarantine/{itemId}/attachments/{position}:
+  $ref: './quarantine-item-attachment.yaml'
+/quarantine-capabilities:
+  $ref: './quarantine-capabilities.yaml'
+/quarantine-notification-settings/bulk-actions:
+  $ref: './quarantine-notification-bulk-actions.yaml'
+/mailboxes/{mailbox}/quarantine-notification-settings:
+  $ref: './mailbox-quarantine-notification-settings.yaml'

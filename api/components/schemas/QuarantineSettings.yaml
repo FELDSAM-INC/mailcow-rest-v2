@@ -1,0 +1,105 @@
+type: object
+description: |
+  The quarantine settings, stored where the legacy components read them (mailcow's shared store:
+  `Q_RETENTION_SIZE`, `Q_MAX_SIZE`, `Q_MAX_SCORE`, `Q_MAX_AGE`, `Q_EXCLUDE_DOMAINS`,
+  `Q_RELEASE_FORMAT`, `Q_SENDER`, `Q_SUBJ`, `Q_BCC`, `Q_REDIRECT`, `Q_HTML`).
+
+  Administrators receive every member (`visibility: full`). Domain administrators and mailbox
+  users receive only `active`, `retentionPerMailbox` and `maxMessageSize` (`visibility: public`),
+  as the legacy quarantine page shows them.
+
+  When a change takes effect: for new items at once; for notifications at the notifier's next run
+  (every 20 minutes); for `maxAgeDays` at the next daily cleanup; for `retentionPerMailbox` when
+  the mailbox's next item arrives. A change never removes existing items by itself.
+required: [visibility, active, retentionPerMailbox, maxMessageSize, etag]
+properties:
+  visibility:
+    type: string
+    enum: [full, public]
+  active:
+    type: boolean
+    description: '`true` when both `retentionPerMailbox` and `maxMessageSize` are above 0. Read-only.'
+  retentionPerMailbox:
+    type: integer
+    minimum: 0
+    maximum: 2147483647
+    description: How many of a mailbox's newest items are kept. 0 means the quarantine is inactive.
+  maxMessageSize:
+    type: integer
+    minimum: 0
+    maximum: 2251799812636672
+    description: |
+      Largest message that is quarantined, in bytes, a whole multiple of 1 MiB (1048576). Larger
+      messages are not quarantined. 0 means the quarantine is inactive, not unlimited. The mail
+      pipeline hands no message larger than 10 MiB to the quarantine, so larger values act as
+      10 MiB.
+  notificationScoreLimit:
+    description: |
+      Items scoring at or above this value are left out of notifications. `null`: no limit (the
+      notifier uses 9999.0).
+    oneOf:
+      - type: number
+      - type: 'null'
+  maxAgeDays:
+    type: integer
+    minimum: 1
+    maximum: 2147483647
+    description: Items older than this many days are removed by the daily cleanup. 365 when unset.
+  excludedDomains:
+    type: array
+    description: |
+      Domains and alias domains (ASCII form) whose recipients' mail is never quarantined, sorted.
+      It may contain names that no longer exist (see `missingExcludedDomains`).
+    items:
+      type: string
+  missingExcludedDomains:
+    type: array
+    description: |
+      Read-only. The entries of `excludedDomains` that are no longer a domain or alias domain on the
+      server. They may be sent back unchanged, but not added again.
+    items:
+      type: string
+  releaseFormat:
+    $ref: './QuarantineReleaseFormat.yaml'
+  notificationSender:
+    type: string
+    description: Sender of notifications. `quarantine@localhost` when unset (`notificationSenderIsDefault`).
+  notificationSenderIsDefault:
+    type: boolean
+  notificationSubject:
+    type: string
+    maxLength: 255
+    description: Subject of notifications. "Spam Quarantine Notification" when unset (`notificationSubjectIsDefault`).
+  notificationSubjectIsDefault:
+    type: boolean
+  copyRecipient:
+    description: Receives a blind copy of every notification, or `null`.
+    oneOf:
+      - type: string
+      - type: 'null'
+  redirectRecipient:
+    description: Receives every notification instead of the mailbox user, or `null`.
+    oneOf:
+      - type: string
+      - type: 'null'
+  notificationTemplate:
+    type: string
+    description: |
+      The HTML template of notifications: the stored one, or the default template
+      (`notificationTemplateIsDefault`). It is a Jinja2 template that the legacy notifier renders in
+      a sandbox with these placeholders:
+      - `meta`: the list of items to report, each with `qhash`, `id`, `subject`, `score`, `sender`,
+        `created` and `action`;
+      - `username` (the mailbox), `counter` (number of items), `hostname` (the server's host name)
+        and `quarantine_acl` (1 when the mailbox may act on its quarantine, else 0).
+
+      Quick links built from `qhash` (`https://{{ hostname }}/qhandler/release/{{ line.qhash }}` and
+      `/qhandler/delete/...`) lead to the legacy quick release and delete pages, which work without
+      sign-in for anyone holding the link. The notifier uses the default template when it cannot
+      parse the stored one. This API checks a template before saving it and can preview it
+      (`POST /quarantine/settings/template-preview`). Clients show a template only as source text.
+  notificationTemplateIsDefault:
+    type: boolean
+  etag:
+    type: string
+    description: Version tag over the eleven stored values, equal to the `ETag` header. Send it in `If-Match`.

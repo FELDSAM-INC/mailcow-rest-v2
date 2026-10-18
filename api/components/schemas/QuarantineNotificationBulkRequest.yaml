@@ -1,0 +1,18 @@
+type: object
+description: |
+  Sets the frequency, the category, or both, for several mailboxes (the legacy mailbox list's mass
+  actions). Targets are mailbox usernames, each with the optional version tag of its notification
+  settings. A mailbox named twice is processed once. At most the bulk limit of targets.
+required: [targets]
+minProperties: 2
+properties:
+  frequency:
+    $ref: './QuarantineNotificationFrequency.yaml'
+  category:
+    $ref: './QuarantineNotificationCategory.yaml'
+  targets:
+    type: array
+    minItems: 1
+    items:
+      $ref: './BulkTarget.yaml'
+additionalProperties: false

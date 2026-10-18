@@ -1,0 +1,9 @@
+description: The spam filter's message counts per action.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/SpamFilterActionStatistics.yaml'

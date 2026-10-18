@@ -1,0 +1,8 @@
+type: string
+description: |
+  What the spam filter did with the message (mailcow's `quarantine.action`):
+  - `rejected` (`reject`): the message was rejected and only kept in the quarantine;
+  - `junk` (`add header`): the message was delivered to the junk folder, with a copy kept here;
+  - `subjectRewritten` (`rewrite subject`): the message was delivered with a rewritten subject;
+  - `other`: any other stored value, given verbatim in `filterAction`.
+enum: [rejected, junk, subjectRewritten, other]

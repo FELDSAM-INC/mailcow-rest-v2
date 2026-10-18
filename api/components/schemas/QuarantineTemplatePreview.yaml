@@ -1,0 +1,41 @@
+type: object
+description: |
+  A notification rendered with sample data, exactly as the legacy notifier would render it.
+  **Clients show `html` only as source text, never as live HTML**, and never load anything it
+  references.
+required: [subject, html, text, sample]
+properties:
+  subject:
+    type: string
+    description: The subject the notifier would use (the stored notification subject or its default).
+  html:
+    type: string
+    description: The rendered template, as text.
+  text:
+    type: string
+    description: The plain-text alternative the notifier derives from the rendering.
+  sample:
+    type: object
+    description: |
+      The sample data used: three items (one rejected, one moved to junk, one with a rewritten
+      subject) with fixed values and an all-zero `qhash`, the user name `user@example.org`, the
+      server's host name and the chosen `quarantine_acl`.
+    required: [username, counter, hostname, quarantineAcl, items]
+    properties:
+      username: {type: string}
+      counter: {type: integer}
+      hostname: {type: string}
+      quarantineAcl: {type: integer, enum: [0, 1]}
+      items:
+        type: array
+        items:
+          type: object
+          required: [qhash, id, subject, score, sender, created, action]
+          properties:
+            qhash: {type: string}
+            id: {type: integer}
+            subject: {type: string}
+            score: {type: number}
+            sender: {type: string}
+            created: {type: string}
+            action: {type: string}

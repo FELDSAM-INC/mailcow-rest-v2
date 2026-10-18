@@ -1,0 +1,9 @@
+description: The template rendered with sample data, as text.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/QuarantineTemplatePreview.yaml'

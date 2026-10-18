@@ -1,0 +1,92 @@
+parameters:
+  - $ref: '../../components/parameters/PolicyTargetMailbox.yaml'
+get:
+  operationId: getMailboxSpamScore
+  tags: [Spam policy]
+  summary: Read a mailbox's spam score
+  description: |
+    Returns the junk and reject scores in effect, whether they are custom, and the server defaults
+    (the spam filter's "add header" and "reject" thresholds, or 5 and 15 marked `fallback` when the
+    filter cannot be asked or a threshold is not configured). Administrators: every mailbox;
+    domain administrators: mailboxes of their domains; mailbox users: their own mailbox. Resources
+    and other mailboxes answer `404`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/SpamScoreResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+put:
+  operationId: setMailboxSpamScore
+  tags: [Spam policy]
+  summary: Set a mailbox's custom spam score
+  description: |
+    Replaces the mailbox's custom scores (`SpamScoreUpdate`). Administrators and domain
+    administrators always may; mailbox users need `spamScore` for their own mailbox. When both
+    scores are equal, the reject score is raised by 0.1, as in legacy. The spam filter applies the
+    scores within one refresh of its settings map (at most 1 minute). Audited with the old and new
+    values.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/SpamScoreUpdate.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/SpamScoreResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: resetMailboxSpamScore
+  tags: [Spam policy]
+  summary: Reset a mailbox's spam score to the server defaults
+  description: |
+    Removes the mailbox's custom scores, so that the server defaults apply again (legacy
+    `default`). Same permissions as `setMailboxSpamScore`. Resetting a mailbox without custom
+    scores succeeds and changes nothing. Audited with the old values.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

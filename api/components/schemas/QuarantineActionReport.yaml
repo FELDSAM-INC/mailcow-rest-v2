@@ -1,0 +1,51 @@
+type: object
+description: |
+  Outcome of each step of a release or of a learning as spam. Once the response is sent, the item
+  is gone (`itemRemoved`), whatever the learning steps reported.
+required: [itemId, queueId, action, delivery, learning, fuzzy, itemRemoved, learningError, fuzzyError]
+properties:
+  itemId:
+    type: integer
+    minimum: 1
+  queueId:
+    type: string
+  action:
+    type: string
+    description: '`release`, `releaseWithoutLearning` or `learnAsSpam`.'
+    enum: [release, releaseWithoutLearning, learnAsSpam]
+  delivery:
+    type: string
+    description: |
+      `done`: the mail server accepted the message for the recipient mailbox. `notApplicable`: a
+      learning as spam delivers nothing.
+    enum: [done, notApplicable]
+  learning:
+    type: string
+    description: |
+      Bayesian learning by the spam filter (ham for a release, spam for a learning as spam).
+      `done`; `alreadyLearned` (the filter had learned this message before, counted as success);
+      `failed` (release only: the message stays released, see `learningError`); `notRequested`
+      (release without learning).
+    enum: [done, alreadyLearned, failed, notRequested]
+  fuzzy:
+    type: string
+    description: |
+      Storing the message's fuzzy hashes in the local fuzzy storage, as "wanted" (flag 13) after a
+      release or "unwanted" (flag 11) after a learning as spam. `done`; `skipped` (the message has
+      no content to generate fuzzy hashes from); `failed` (see `fuzzyError`, the item is removed
+      anyway); `notRequested`.
+    enum: [done, skipped, failed, notRequested]
+  itemRemoved:
+    type: boolean
+    description: Always `true` in a successful response.
+    const: true
+  learningError:
+    description: The spam filter's answer when `learning` is `failed`, otherwise `null`.
+    oneOf:
+      - type: string
+      - type: 'null'
+  fuzzyError:
+    description: The spam filter's answer when `fuzzy` is `failed`, otherwise `null`.
+    oneOf:
+      - type: string
+      - type: 'null'

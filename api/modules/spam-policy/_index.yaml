@@ -1,0 +1,18 @@
+# Paths of the spam-policy module (feature 006): allow and block lists of domains, alias domains
+# and mailboxes, mailbox spam scores, and the spam filter's action statistics.
+/domains/{domain}/spam-policy-entries:
+  $ref: './domain-spam-policy-entries.yaml'
+/domains/{domain}/spam-policy-entries/{entryId}:
+  $ref: './domain-spam-policy-entry.yaml'
+/alias-domains/{aliasDomain}/spam-policy-entries:
+  $ref: './alias-domain-spam-policy-entries.yaml'
+/alias-domains/{aliasDomain}/spam-policy-entries/{entryId}:
+  $ref: './alias-domain-spam-policy-entry.yaml'
+/mailboxes/{mailbox}/spam-policy-entries:
+  $ref: './mailbox-spam-policy-entries.yaml'
+/mailboxes/{mailbox}/spam-policy-entries/{entryId}:
+  $ref: './mailbox-spam-policy-entry.yaml'
+/mailboxes/{mailbox}/spam-score:
+  $ref: './mailbox-spam-score.yaml'
+/spam-filter-action-statistics:
+  $ref: './spam-filter-action-statistics.yaml'

@@ -1,0 +1,21 @@
+description: The entry was created.
+headers:
+  Location:
+    description: Path of the new entry, under its owner.
+    required: true
+    schema:
+      type: string
+      examples: [/api/v2/mailboxes/alice@example.org/spam-policy-entries/42]
+  ETag:
+    description: Version tag of the new entry, equal to `data.etag`.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/SpamPolicyEntry.yaml'

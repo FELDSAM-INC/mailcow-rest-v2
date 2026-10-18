@@ -1,0 +1,18 @@
+type: object
+description: |
+  What to preview. Without `template` (or with `null`), the stored template is previewed, or the
+  default template when none is stored. The body may be omitted.
+properties:
+  template:
+    description: A template to preview instead of the stored one. At most 1 MiB, checked as on save.
+    oneOf:
+      - type: string
+        minLength: 1
+      - type: 'null'
+  quarantineAcl:
+    type: boolean
+    default: true
+    description: |
+      Value of the `quarantine_acl` placeholder: `true` renders the quick release and delete links,
+      as for mailboxes with the `quarantine` permission.
+additionalProperties: false

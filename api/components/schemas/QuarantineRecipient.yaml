@@ -1,0 +1,11 @@
+type: object
+description: A recipient of the quarantined message.
+required: [address, source]
+properties:
+  address:
+    type: string
+    description: E-mail address. Only syntactically valid addresses are listed, as in legacy.
+  source:
+    type: string
+    description: Where the address comes from. `envelope` is the item's recipient mailbox.
+    enum: [to, cc, bcc, envelope]

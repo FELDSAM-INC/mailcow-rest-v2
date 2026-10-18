@@ -1,0 +1,11 @@
+type: object
+description: Options of a release. The body may be omitted, which releases with learning.
+properties:
+  learnAsHam:
+    type: boolean
+    default: true
+    description: |
+      `true` (default, legacy "Deliver to inbox"): after the delivery, the spam filter learns the
+      message as ham and stores its fuzzy hashes as wanted. `false` (legacy quick release): the
+      message is only delivered and the item removed; the spam filter is not called.
+additionalProperties: false

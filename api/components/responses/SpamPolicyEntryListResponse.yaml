@@ -1,0 +1,15 @@
+description: |
+  Allow and block list entries matching the filters: the owner's own entries and, read-only, the
+  related entries (`own: false`).
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/SpamPolicyEntry.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

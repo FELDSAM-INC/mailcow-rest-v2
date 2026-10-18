@@ -1,0 +1,10 @@
+type: object
+description: The domain, alias domain or mailbox an allow or block list entry belongs to (`filterconf.object`).
+required: [kind, name]
+properties:
+  kind:
+    type: string
+    enum: [domain, aliasDomain, mailbox]
+  name:
+    type: string
+    description: Domain name (ASCII form) or mailbox username.

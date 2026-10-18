@@ -1,0 +1,9 @@
+description: Limits and server settings for quarantine, spam policy and rate limit requests.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/QuarantineCapabilities.yaml'

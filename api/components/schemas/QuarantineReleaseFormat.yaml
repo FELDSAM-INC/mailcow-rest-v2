@@ -1,0 +1,9 @@
+type: string
+description: |
+  How a released message is delivered (`Q_RELEASE_FORMAT`). `original` (`raw`): the stored message
+  unmodified, except that its `X-Spam-Flag` header is renamed `X-Pre-Release-Spam-Flag`.
+  `attachment`: a new message from the stored envelope sender with the subject "Potentially
+  damaging quarantine item <queue identifier>", the body "We have attached your message as eml file
+  to this message." (in the acting user's language, as the legacy translations give it) and the
+  stored message attached as `<queue identifier>.eml`.
+enum: [original, attachment]

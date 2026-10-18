@@ -1,0 +1,33 @@
+description: |
+  The stored message as an e-mail file. The file name is derived from the subject as legacy does
+  (tags and unsafe characters removed, at most 30 characters) with the extension `.eml`, or from the
+  queue identifier when the subject is empty. Browsers save it; it is never displayed or run in the
+  API's origin.
+headers:
+  Content-Disposition:
+    description: Always `attachment`, with a safe `filename` and an RFC 8187 `filename*` (UTF-8).
+    required: true
+    schema:
+      type: string
+      examples: ['attachment; filename="invoice.pdf"; filename*=UTF-8''invoice.pdf']
+  X-Content-Type-Options:
+    description: Always `nosniff`.
+    required: true
+    schema:
+      type: string
+      const: nosniff
+  Content-Security-Policy:
+    description: Always `default-src 'none'; sandbox`, so that nothing in the file can run in the API's origin.
+    required: true
+    schema:
+      type: string
+  Cache-Control:
+    description: Always `private, no-store`.
+    required: true
+    schema:
+      type: string
+content:
+  message/rfc822:
+    schema:
+      type: string
+      contentMediaType: message/rfc822

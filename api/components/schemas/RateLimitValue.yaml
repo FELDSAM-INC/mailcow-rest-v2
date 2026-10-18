@@ -1,0 +1,17 @@
+type: object
+description: |
+  A rate limit: at most `value` messages per `frame`, stored in mailcow's shared store (Redis hash
+  `RL_VALUE`, field = the object, value `<value> / 1<s|m|h|d>`). Same shape as `DomainRateLimit`,
+  `AliasDomainRateLimit` and `MailboxRateLimit`.
+required: [value, frame]
+properties:
+  value:
+    type: integer
+    minimum: 1
+    maximum: 2147483647
+    description: Number of messages.
+  frame:
+    type: string
+    enum: [second, minute, hour, day]
+    description: Time frame (legacy `s`, `m`, `h`, `d`).
+additionalProperties: false

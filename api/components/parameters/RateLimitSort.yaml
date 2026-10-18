@@ -1,0 +1,8 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `object` with `order=asc`. Ties are broken by `object`, ascending.
+schema:
+  type: string
+  enum: [object, kind]
+  default: object

@@ -1,0 +1,29 @@
+type: object
+description: |
+  Result of a quarantine bulk action: the shape of `BulkResult`, whose results also carry the
+  action report of each released or learned item. Every audit record of the request carries
+  `bulkRequestId`.
+required: [bulkRequestId, results, summary]
+properties:
+  bulkRequestId:
+    type: string
+    pattern: '^[0-9a-f]{32}$'
+    description: Identifier of the bulk request (its request ID).
+  results:
+    type: array
+    description: One result per distinct target, in request order.
+    items:
+      $ref: './QuarantineBulkItemResult.yaml'
+  summary:
+    type: object
+    description: Number of targets per outcome.
+    required: [total, done, notFound, refused, outdated, failed]
+    properties:
+      total: {type: integer, minimum: 0}
+      done: {type: integer, minimum: 0}
+      notFound: {type: integer, minimum: 0}
+      refused: {type: integer, minimum: 0}
+      outdated: {type: integer, minimum: 0}
+      failed: {type: integer, minimum: 0}
+    additionalProperties: false
+additionalProperties: false

@@ -1,0 +1,11 @@
+name: entryId
+in: path
+required: true
+description: |
+  `id` of an allow or block list entry (mailcow's `filterconf.prefid`). The entry must belong to
+  the owner named in the path: an entry of another owner, such as a domain entry addressed through
+  one of its mailboxes, answers `404`.
+schema:
+  type: integer
+  minimum: 1
+  maximum: 2147483647

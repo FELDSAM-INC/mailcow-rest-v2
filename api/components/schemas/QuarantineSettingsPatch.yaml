@@ -1,0 +1,75 @@
+type: object
+description: |
+  JSON Merge Patch of `QuarantineSettings`. Omitted members stay unchanged. `null` or an empty
+  string restores the default of `notificationScoreLimit` (no limit), `notificationSender`,
+  `notificationSubject`, `copyRecipient`, `redirectRecipient` and `notificationTemplate`. Invalid
+  values are refused with a field error and nothing changes; nothing is silently corrected.
+minProperties: 1
+properties:
+  retentionPerMailbox:
+    type: integer
+    minimum: 0
+    maximum: 2147483647
+  maxMessageSize:
+    type: integer
+    minimum: 0
+    maximum: 2251799812636672
+    description: Bytes, a whole multiple of 1048576 (rule code `notMultipleOf`, `factor` 1048576).
+  notificationScoreLimit:
+    oneOf:
+      - type: number
+      - type: 'null'
+  maxAgeDays:
+    type: integer
+    minimum: 1
+    maximum: 2147483647
+  excludedDomains:
+    type: array
+    description: |
+      Replaces the whole list. Each entry must name an existing domain or alias domain (rule code
+      `notFound`), or be an entry that is already stored. Entries are trimmed, lower-cased,
+      converted to ASCII and stored once.
+    maxItems: 10000
+    items:
+      type: string
+      maxLength: 255
+  releaseFormat:
+    $ref: './QuarantineReleaseFormat.yaml'
+  notificationSender:
+    description: |
+      A valid e-mail address (rule code `invalidFormat`, `format: email`), or `null`/empty for
+      `quarantine@localhost`.
+    oneOf:
+      - type: string
+        maxLength: 255
+      - type: 'null'
+  notificationSubject:
+    description: At most 255 characters, or `null`/empty for the default subject.
+    oneOf:
+      - type: string
+      - type: 'null'
+  copyRecipient:
+    description: A valid e-mail address, or `null`/empty for none.
+    oneOf:
+      - type: string
+        maxLength: 255
+      - type: 'null'
+  redirectRecipient:
+    description: A valid e-mail address, or `null`/empty for none.
+    oneOf:
+      - type: string
+        maxLength: 255
+      - type: 'null'
+  notificationTemplate:
+    description: |
+      At most 1 MiB (1048576 bytes of UTF-8, rule code `tooLong` with `max` and `unit: bytes`), or
+      `null`/empty to restore the default template. A non-empty template is checked the way the
+      legacy notifier uses it: parsed with Jinja2 in its sandbox, then rendered with sample data
+      without and with quick links. A template that cannot be parsed, violates the sandbox, raises
+      any error while rendering, or does not finish within 5 seconds is refused with rule code
+      `invalidTemplate` (params `reason`: `syntax`, `security`, `render` or `timeout`, and `line`
+      when known).
+    oneOf:
+      - type: string
+      - type: 'null'
+additionalProperties: false

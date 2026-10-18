@@ -1,0 +1,13 @@
+description: |
+  Problem of type `/api/v2/problems/spam-policy-entry-exists` (status `409`): the owner already has
+  this pattern on its allow or block list.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [list, entryId]
+    properties:
+      list:
+        $ref: './SpamPolicyList.yaml'
+      entryId:
+        type: integer
+        description: Identifier of the existing entry.

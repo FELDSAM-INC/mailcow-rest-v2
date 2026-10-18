@@ -1,0 +1,32 @@
+description: |
+  The decoded attachment, always as `application/octet-stream` whatever its declared type, so that
+  browsers save it and never display, sniff or run it in the API's origin. The file name is the
+  attachment's name with path separators and control characters removed.
+headers:
+  Content-Disposition:
+    description: Always `attachment`, with a safe `filename` and an RFC 8187 `filename*` (UTF-8).
+    required: true
+    schema:
+      type: string
+      examples: ['attachment; filename="invoice.pdf"; filename*=UTF-8''invoice.pdf']
+  X-Content-Type-Options:
+    description: Always `nosniff`.
+    required: true
+    schema:
+      type: string
+      const: nosniff
+  Content-Security-Policy:
+    description: Always `default-src 'none'; sandbox`, so that nothing in the file can run in the API's origin.
+    required: true
+    schema:
+      type: string
+  Cache-Control:
+    description: Always `private, no-store`.
+    required: true
+    schema:
+      type: string
+content:
+  application/octet-stream:
+    schema:
+      type: string
+      contentMediaType: application/octet-stream

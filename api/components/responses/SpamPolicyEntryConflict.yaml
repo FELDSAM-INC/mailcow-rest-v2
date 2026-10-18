@@ -1,0 +1,17 @@
+description: |
+  The owner already has this pattern on its allow or block list (type
+  `/api/v2/problems/spam-policy-entry-exists`, extensions `list` and `entryId`). Nothing changed.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/SpamPolicyEntryExistsProblem.yaml'
+    examples:
+      exists:
+        value:
+          type: /api/v2/problems/spam-policy-entry-exists
+          title: List entry already exists
+          status: 409
+          detail: '*@spam.example is already on the block list of alice@example.org.'
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          list: block
+          entryId: 42

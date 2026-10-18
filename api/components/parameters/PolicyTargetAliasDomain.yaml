@@ -1,0 +1,12 @@
+name: aliasDomain
+in: path
+required: true
+description: |
+  Name of an alias domain (mailcow's `alias_domain.alias_domain`), matched like a domain name. A
+  domain administrator reaches the alias domains whose target domain they manage. Others answer
+  `404`.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 255
+  examples: [example.net]

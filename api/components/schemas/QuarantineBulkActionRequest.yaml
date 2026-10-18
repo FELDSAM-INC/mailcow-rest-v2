@@ -1,0 +1,19 @@
+type: object
+description: |
+  One action for several quarantine items. Targets are item identifiers as decimal strings, each
+  with the optional version tag (`etag`) the client last read. An item named twice is processed
+  once. At most the bulk limit of targets (100 by default, `GET /quarantine-capabilities`).
+required: [action, targets]
+properties:
+  action:
+    type: string
+    description: |
+      `release`: deliver, then learn as ham. `releaseWithoutLearning`: deliver only.
+      `learnAsSpam`: learn as spam, then remove. `delete`: remove without calling the spam filter.
+    enum: [release, releaseWithoutLearning, learnAsSpam, delete]
+  targets:
+    type: array
+    minItems: 1
+    items:
+      $ref: './BulkTarget.yaml'
+additionalProperties: false

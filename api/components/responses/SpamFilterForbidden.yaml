@@ -1,0 +1,28 @@
+description: |
+  The caller is authenticated but may not perform this request. Possible types:
+  - `/api/v2/problems/permission-flag-required`: the caller's role may use the operation, but only
+    with permission flags it lacks (extension `requiredFlags`). Nothing changed.
+  - `/api/v2/problems/forbidden`: the caller's role may never use the operation, for example a
+    mailbox user and rate limits, or a domain administrator and the quarantine settings.
+  - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request.
+  - `/api/v2/problems/csrf-token-mismatch`, `/api/v2/problems/pending-action-required`,
+    `/api/v2/problems/api-key-source-not-allowed`: see `Forbidden`.
+
+  Flags are checked before the object is looked up, so a refusal never reveals whether an object
+  exists.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/SpamFilterPermissionFlagProblem.yaml'
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      permissionFlagRequired:
+        value:
+          type: /api/v2/problems/permission-flag-required
+          title: Permission flag required
+          status: 403
+          detail: This operation needs the quarantine permission.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          requiredFlags: [quarantine]

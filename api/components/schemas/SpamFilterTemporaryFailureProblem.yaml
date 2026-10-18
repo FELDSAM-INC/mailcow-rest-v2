@@ -1,0 +1,20 @@
+description: |
+  Problem of type `/api/v2/problems/temporary-failure` (status `503`): a service the request needs
+  is unavailable. Nothing was changed, unless the operation states otherwise. The `Retry-After`
+  header suggests when to retry.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [dependency]
+    properties:
+      dependency:
+        type: string
+        description: |
+          `sharedStore`: mailcow's Redis. `spamFilter`: the Rspamd controller. `mailServer`: the
+          Postfix submission used for releases (the mail server could not be reached, timed out or
+          answered with a temporary `4xx` code).
+        enum: [sharedStore, spamFilter, mailServer]
+      step:
+        type: string
+        description: For item actions, the step that failed.
+        enum: [delivery, learning]

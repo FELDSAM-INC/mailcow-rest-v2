@@ -1,0 +1,42 @@
+parameters:
+  - $ref: '../../components/parameters/QuarantineItemId.yaml'
+post:
+  operationId: learnQuarantineItemAsSpam
+  tags: [Quarantine]
+  summary: Learn a quarantine item as spam and remove it
+  description: |
+    Asks the spam filter to learn the message as spam, then to store its fuzzy hashes as unwanted
+    (flag 11), then removes the item (legacy "Learn as spam and delete"). Needs the `quarantine`
+    flag for domain administrators and mailbox users.
+
+    The item is removed only after the spam learning succeeded or was answered "already learned".
+    When the spam filter cannot be reached, times out (30 s) or refuses to learn, the item is kept
+    and the answer is `503 temporary-failure` (`dependency: spamFilter`, `step: learning`). A
+    failure of the fuzzy step is reported in the response and does not keep the item.
+
+    An item is released, learned or deleted by at most one request of this API (`409
+    quarantine-item-busy` while another one runs, `404` afterwards). Audited, with the outcome of
+    each step.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/QuarantineActionReportResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/QuarantineConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SpamFilterTemporaryFailure.yaml'

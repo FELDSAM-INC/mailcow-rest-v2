@@ -1,0 +1,87 @@
+type: object
+description: |
+  Limits and server settings that clients need before they submit quarantine, spam policy and
+  rate limit requests. The values reflect the server's current configuration and contain no
+  secret or connection detail.
+required: [bulkLimit, defaultPageSize, maxPageSize, contentSizeLimit, pipelineMaxMessageSize, spamScore, senderPattern, rateLimit, settings, virusScanning]
+properties:
+  bulkLimit:
+    type: integer
+    minimum: 1
+    description: Most targets in one bulk request (`RESTV2_BULK_LIMIT`, 100 by default).
+  defaultPageSize:
+    type: integer
+    description: Default `limit` of lists (25).
+  maxPageSize:
+    type: integer
+    description: Largest `limit` of lists (1000).
+  contentSizeLimit:
+    type: integer
+    description: |
+      Largest stored message, in bytes, whose content is parsed and downloadable
+      (`RESTV2_QUARANTINE_CONTENT_LIMIT`, 10 MiB by default).
+  pipelineMaxMessageSize:
+    type: integer
+    description: Largest message, in bytes, that the mail pipeline hands to the quarantine (10 MiB).
+  spamScore:
+    type: object
+    description: Range of the junk and reject scores of a mailbox spam score.
+    required: [min, max, step]
+    properties:
+      min: {type: number, const: 0}
+      max: {type: number, const: 5000}
+      step: {type: number, const: 0.1}
+  senderPattern:
+    type: object
+    description: Rules of allow and block list patterns, applied after trimming and lower-casing.
+    required: [maxLength, allowedCharacters, wildcard]
+    properties:
+      maxLength: {type: integer, const: 100}
+      allowedCharacters:
+        type: string
+        description: The allowed characters, as a character class.
+        const: 'a-z0-9@_.*-'
+      wildcard:
+        type: string
+        description: '`*` matches any sequence of characters. A pattern needs at least one letter or digit.'
+        const: '*'
+  rateLimit:
+    type: object
+    required: [min, max, frames]
+    properties:
+      min: {type: integer, const: 1}
+      max: {type: integer, const: 2147483647}
+      frames:
+        type: array
+        items:
+          type: string
+          enum: [second, minute, hour, day]
+  settings:
+    type: object
+    description: Limits of the quarantine settings.
+    required: [maxRetentionPerMailbox, maxMessageSizeStep, maxMessageSize, maxAgeDays, notificationSubjectMaxLength, notificationTemplateMaxBytes, templateRenderTimeoutSeconds, releaseFormats]
+    properties:
+      maxRetentionPerMailbox: {type: integer}
+      maxMessageSizeStep:
+        type: integer
+        description: '`maxMessageSize` must be a whole multiple of this many bytes (1 MiB).'
+      maxMessageSize: {type: integer}
+      maxAgeDays:
+        type: object
+        required: [min, max, default]
+        properties:
+          min: {type: integer}
+          max: {type: integer}
+          default: {type: integer}
+      notificationSubjectMaxLength: {type: integer}
+      notificationTemplateMaxBytes: {type: integer}
+      templateRenderTimeoutSeconds: {type: integer}
+      releaseFormats:
+        type: array
+        items:
+          $ref: './QuarantineReleaseFormat.yaml'
+  virusScanning:
+    type: boolean
+    description: |
+      `false` when mailcow runs without its virus scanner (`SKIP_CLAMD=y`), so no new item carries
+      the virus flag.

@@ -1,0 +1,47 @@
+description: |
+  A quarantine item with the spam filter's results and the parsed content. `authenticatedSender`
+  is present for administrators only.
+allOf:
+  - $ref: './QuarantineItem.yaml'
+  - type: object
+    required: [sourceAddress, symbols, fuzzyHashes, size, contentStatus, content]
+    properties:
+      sourceAddress:
+        description: Address of the server that sent the message (`quarantine.ip`), or `null`.
+        oneOf:
+          - type: string
+          - type: 'null'
+      authenticatedSender:
+        description: |
+          Administrators only: the authenticated sender the filter recorded (`quarantine.user`), or
+          `null` when none was recorded. Absent for other roles.
+        oneOf:
+          - type: string
+          - type: 'null'
+      symbols:
+        type: array
+        description: The filter's symbols, in stored order.
+        items:
+          $ref: './QuarantineSymbol.yaml'
+      fuzzyHashes:
+        type: array
+        description: Fuzzy hashes the filter computed for the message.
+        items:
+          type: string
+      size:
+        type: integer
+        minimum: 0
+        description: Size of the stored message in bytes.
+      contentStatus:
+        type: string
+        description: |
+          `available`: `content` holds the parsed message. `tooLarge`: the stored message is larger
+          than the content size limit (10 MiB by default, see `GET /quarantine-capabilities`), so
+          only the summary and the filter's results are returned, and downloads are refused with
+          `quarantine-message-too-large`. `missing`: no message is stored with the item.
+        enum: [available, tooLarge, missing]
+      content:
+        description: The parsed content when `contentStatus` is `available`, otherwise `null`.
+        oneOf:
+          - $ref: './QuarantineMessageContent.yaml'
+          - type: 'null'

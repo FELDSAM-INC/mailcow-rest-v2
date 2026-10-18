@@ -1,0 +1,21 @@
+type: object
+description: |
+  The quarantine notification settings of one mailbox, stored in the mailbox's attributes. The
+  legacy notifier applies a change at its next run (every 20 minutes). A change neither resets the
+  time of the last notification nor the notification state of items. A notification includes only
+  items not yet notified, scoring below the notification score limit, in the chosen category.
+required: [mailbox, frequency, category, etag]
+properties:
+  mailbox:
+    type: string
+    description: Mailbox username.
+  frequency:
+    $ref: './QuarantineNotificationFrequency.yaml'
+  category:
+    description: The category, or `null` when none (or an unknown value) is stored.
+    oneOf:
+      - $ref: './QuarantineNotificationCategory.yaml'
+      - type: 'null'
+  etag:
+    type: string
+    description: Version tag over the two stored values, equal to the `ETag` header. Send it in `If-Match`.

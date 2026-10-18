@@ -1,0 +1,26 @@
+get:
+  operationId: getSpamFilterActionStatistics
+  tags: [Spam policy]
+  summary: Read the spam filter's action statistics
+  description: |
+    Returns how many messages the spam filter (Rspamd) rejected, soft-rejected (including
+    greylisted), marked by rewriting the subject, moved to the junk folder or let through, since
+    its statistics were last reset, as the legacy dashboard chart shows them. `countedSince` gives
+    the start of the counting period when the filter reports it (`null`: unknown);
+    `spamFilterRunningSince` gives since when the filter has been running. Administrators only
+    (`forbidden` for other roles). When the filter cannot be reached within 30 seconds, the answer
+    is `503 temporary-failure` (`dependency: spamFilter`).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/SpamFilterActionStatisticsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SpamFilterTemporaryFailure.yaml'

@@ -1,0 +1,30 @@
+parameters:
+  - $ref: '../../components/parameters/RateLimitBucketId.yaml'
+delete:
+  operationId: resetRateLimitBucket
+  tags: [Rate limits]
+  summary: Reset a rate-limit bucket
+  description: |
+    Deletes the spam filter's counters of the bucket and removes the rate-limited log entries whose
+    bucket identifier equals `bucketId`, so the sender can send again at once (legacy "Remove
+    hash"). When neither counters nor log entries exist, the answer is `404`. A bucket that already
+    expired while its log entries remain is reset by removing the entries. Administrators only
+    (`forbidden` for other roles). Audited with the identifier, whether counters existed and the
+    number of log entries removed.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SpamFilterForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SpamFilterTemporaryFailure.yaml'

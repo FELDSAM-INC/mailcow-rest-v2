@@ -930,15 +930,20 @@ what exists map as listed.
   and never in lists or reads.
 - **G21**: Keycloak 26.0.7 in the `idp` profile imports `docker/keycloak/example-realm.json` (realm
   `example`, client `mailcow`, user `anna@example.org`); the import skips an existing realm.
-- **T093**: after the rebase onto main 80d0c4b (features 003, 004 and 011 merged; timing tests
-  moved out of `composer test`) and a rebuild of the app image, `composer test` ran 4,091 tests
-  (19,591 assertions), all green; contract coverage 150 of 150 registered operations, 0 pending.
-  `composer test:performance` (group `performance`) was run under a load average of about 50 from
-  other worktrees' suites: 012's `SingleSignOnLatencyTest` passed, while 002's
-  `DomainListLatencyTest` and 004's `AliasListPerformanceTest` missed their budgets (they pass when
-  the machine is quieter). `pint --test`, `phpstan analyse`, `phpunit --group idp` (8 tests against
-  OpenLDAP), the Redocly lint and the production image build (`ldap`, `intl`, `pdo_mysql`, Python,
-  league/oauth2-client, no bshaffer) pass. The group exclusions in `phpunit.xml` and the CI steps of
+- **T003 (after the rebase onto 91c0c67)**: the `RESTV2_IDP_*`, `RESTV2_SSO_*` and
+  `RESTV2_ACCESS_TOKEN_LIFETIME`/`RESTV2_REFRESH_TOKEN_LIFETIME` settings are read through main's
+  `Env::get`, so the deploy example's empty values take their defaults (with `env()`, an empty
+  `RESTV2_IDP_TIMEOUT` became a 1-second timeout); `EmptyEnvironmentSettingsTest` lists them.
+- **T093**: final run after the rebase onto main 91c0c67 (features 003, 004, 008 and 011 merged;
+  timing tests moved out of `composer test`; empty settings read as unset) with the app image
+  rebuilt for 011's Dockerfile: `composer test` ran 4,701 tests (21,766 assertions), all green;
+  contract coverage 159 of 159 registered operations, 0 pending. `pint --test`, `phpstan analyse`,
+  `phpunit --group idp` (8 tests against OpenLDAP), the Redocly lint and 012's
+  `SingleSignOnLatencyTest` pass. `composer test:performance` was also run under a load average of
+  about 50 from other worktrees' suites: 012's test passed, 002's `DomainListLatencyTest` and 004's
+  `AliasListPerformanceTest` missed their budgets (they pass on a quieter machine). The production
+  image (Dockerfile unchanged since 80d0c4b) builds with `ldap`, `intl`, `pdo_mysql`, Python and
+  league/oauth2-client, without bshaffer. The group exclusions in `phpunit.xml` and the CI steps of
   `performance` and `idp` were merged.
 - **T094**: Part B was run by hand against the dev stack (inside a compose project without host
   ports, from the `app` container) with the real OpenLDAP and Keycloak: every expected result held,

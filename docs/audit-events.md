@@ -520,3 +520,265 @@ stored ones is recorded too, with empty `changes`. The target is the sender sett
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
+
+<!-- Feature 011: monitoring and operations. -->
+
+## containerStart
+
+Feature 011. Written for every start of a container (`POST /containers/{containerName}/start`),
+also when it was already running, and for every refusal. The target is the container
+(`type: container`, `id` and `name` the service name as sent). A failure after a start was sent
+(`failureReason: serviceFailure` or `outcomeUnknown`) is written by the operation itself, retried
+until the container-service timeout; when it still cannot be written, the response carries
+`Audit-Recorded: false`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `outcome` | string | `done`, or `alreadyInState` when nothing had to change. | on success |
+| `stateBefore` | string | The container state before the action (`running`, `exited` and the other `ContainerState` values). | on success, on a `container-protected` refusal and on failures after an attempt |
+| `stateAfter` | string | The container state read again after the action (on an unknown outcome: the last state read). | as `stateBefore` |
+| `serviceMessage` | string | The container service's message, or `The container did not start.` | on `failureReason: serviceFailure` |
+| `step` | string | The action whose outcome is unknown (`start`). | on `failureReason: outcomeUnknown` |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## containerStop
+
+Feature 011. Written for every stop of a container (`POST /containers/{containerName}/stop`), also
+when it was not running, and for every refusal, as `containerStart` (`serviceMessage` defaults to
+`The container did not stop.`, `step` is `stop`).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `outcome` | string | `done` or `alreadyInState`. | on success |
+| `stateBefore` | string | The container state before the action. | on success, on a `container-protected` refusal and on failures after an attempt |
+| `stateAfter` | string | The container state after the action. | as `stateBefore` |
+| `serviceMessage` | string | The container service's message. | on `failureReason: serviceFailure` |
+| `step` | string | `stop`. | on `failureReason: outcomeUnknown` |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## containerRestart
+
+Feature 011. Written for every restart of a container (`POST /containers/{containerName}/restart`)
+and for every refusal, as `containerStart` (`step` is `restart`).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `outcome` | string | `done`. | on success |
+| `stateBefore` | string | The container state before the restart. | on success, on a `container-protected` refusal and on failures after the restart was sent |
+| `stateAfter` | string | The container state after the restart. | as `stateBefore` |
+| `serviceMessage` | string | The container service's message. | on `failureReason: serviceFailure` |
+| `step` | string | `restart`. | on `failureReason: outcomeUnknown` |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailQueueDelivery
+
+Feature 011. Written once per `POST /mail-queue/messages/bulk-actions` with `action: deliver` (one
+record for all its queue IDs, the spec's documented exception to one record per object), and for
+every refusal of such a request. The target is `{type: mailQueue, id: null}`; the record's
+`requestId` is the result's `bulkRequestId`. A Postfix failure or an unknown outcome is written by
+the operation itself, with retries (`Audit-Recorded: false` when it still fails).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `results` | array of objects | Every distinct queue ID in request order with its result: `{id, outcome}`, `outcome` `done`, `notFound` (not in the queue when the request was processed) or `failed`. | on success and on `failureReason: serviceFailure` or `outcomeUnknown` |
+| `serviceMessage` | string | Postfix's or the container service's message. | on `failureReason: serviceFailure` |
+| `step` | string | `deliver`. | on `failureReason: outcomeUnknown` |
+| `itemIds` | array of strings | The hexadecimal queue IDs the refused request named (at most 1,000). | on a refusal of the whole request |
+| `bulkAction` | string or null | The action the refused request named, as sent (cut to 32 characters). | on a refusal of the whole request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailQueueHold
+
+Feature 011. As `mailQueueDelivery`, for `action: hold` (`step` is `hold`).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `results` | array of objects | Every distinct queue ID with its result (`done`, `notFound`, `failed`). | on success and on failures after the command was sent |
+| `serviceMessage` | string | Postfix's or the container service's message. | on `failureReason: serviceFailure` |
+| `step` | string | `hold`. | on `failureReason: outcomeUnknown` |
+| `itemIds` | array of strings | The hexadecimal queue IDs the refused request named. | on a refusal of the whole request |
+| `bulkAction` | string or null | The action the refused request named. | on a refusal of the whole request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailQueueRelease
+
+Feature 011. As `mailQueueDelivery`, for `action: release` (`step` is `release`).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `results` | array of objects | Every distinct queue ID with its result (`done`, `notFound`, `failed`). | on success and on failures after the command was sent |
+| `serviceMessage` | string | Postfix's or the container service's message. | on `failureReason: serviceFailure` |
+| `step` | string | `release`. | on `failureReason: outcomeUnknown` |
+| `itemIds` | array of strings | The hexadecimal queue IDs the refused request named. | on a refusal of the whole request |
+| `bulkAction` | string or null | The action the refused request named. | on a refusal of the whole request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailQueueDeletion
+
+Feature 011. As `mailQueueDelivery`, for `action: delete` (`step` is `delete`). A refused request
+whose action is missing or unknown is recorded under this type, with the sent action in
+`bulkAction`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `results` | array of objects | Every distinct queue ID with its result (`done`, `notFound`, `failed`). | on success and on failures after the command was sent |
+| `serviceMessage` | string | Postfix's or the container service's message. | on `failureReason: serviceFailure` |
+| `step` | string | `delete`. | on `failureReason: outcomeUnknown` |
+| `itemIds` | array of strings | The hexadecimal queue IDs the refused request named. | on a refusal of the whole request |
+| `bulkAction` | string or null | The action the refused request named. | on a refusal of the whole request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailQueueFlush
+
+Feature 011. Written for every `POST /mail-queue/flush` and every refusal. The target is
+`{type: mailQueue, id: null}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `serviceMessage` | string | Postfix's or the container service's message. | on `failureReason: serviceFailure` |
+| `step` | string | `flush`. | on `failureReason: outcomeUnknown` |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailQueuePurge
+
+Feature 011. Written for every `POST /mail-queue/purge` (delete all) and every refusal, as
+`mailQueueFlush` (`step` is `purge`).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `serviceMessage` | string | Postfix's or the container service's message. | on `failureReason: serviceFailure` |
+| `step` | string | `purge`. | on `failureReason: outcomeUnknown` |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailQueueMessageView
+
+Feature 011. Written for every view of a queued message's content
+(`GET /mail-queue/messages/{queueId}/content`), the one audited read, also for a message that left
+the queue (`failureReason: notFound`) and for refused views. The target is the queue ID
+(`type: mailQueueMessage`). The content is never recorded; a view whose record cannot be written
+returns no content.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## fail2banSettingsUpdate
+
+Feature 011. Written for every change of the ban service settings (`PATCH /fail2ban/settings`) and
+every refusal. The target is `{type: fail2banSettings, id: null}`. The ban list ID is never
+recorded, also not when the first save generates it.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed parameter in contract names (`banTime`, `maxBanTime`, `banTimeIncrement`, `maxAttempts`, `retryWindow`, `ipv4PrefixLength`, `ipv6PrefixLength`, `externallyEnforced`) as `{old, new}`. Empty when no parameter changed. | on success |
+| `allowlistAdded` | array of strings | Allowlist entries the change added. | when entries were added |
+| `allowlistRemoved` | array of strings | Allowlist entries the change removed. | when entries were removed |
+| `denylistAdded` | array of strings | Denylist entries the change added. | when entries were added |
+| `denylistRemoved` | array of strings | Denylist entries the change removed. | when entries were removed |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records" (rule codes and parameters only, never the sent entries). | on `422` failures |
+
+## fail2banRulesReplacement
+
+Feature 011. Written for every replacement of the ban rules (`PUT /fail2ban/rules`) and every
+refusal. The target is `{type: fail2banRules, id: null}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `oldRules` | array of strings | The rules before, in order (empty when none were stored). | on success |
+| `newRules` | array of strings | The rules after, in order. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## fail2banRulesReset
+
+Feature 011. Written for every reset of the ban rules (`POST /fail2ban/rules/reset`) and every
+refusal. The target is `{type: fail2banRules, id: null}`. Outcomes after the rules were removed
+(restored, `rulesNotRestored`, `serviceFailure`, `outcomeUnknown`) are written by the operation
+itself, with retries.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `oldRules` | array of strings | The rules before the reset. | on success and on failures after the rules were removed |
+| `newRules` | array of strings or null | The defaults the ban service stored, or `null` when they did not appear. | as `oldRules` |
+| `serviceMessage` | string | The container service's message about the restart. | on `failureReason: serviceFailure` |
+| `step` | string | `rulesReset`. | on `failureReason: outcomeUnknown` |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## fail2banBanLift
+
+Feature 011. Written for every lift of an active ban
+(`POST /fail2ban/active-bans/{network}/lift`) and every refusal. The target is the banned network
+(`type: fail2banActiveBan`, `id` and `name` the network as stored, or as sent for a refusal).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `network` | string | The banned network as stored. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## fail2banBanAllowlisting
+
+Feature 011. Written for every allowlisting of an actively banned network
+(`POST /fail2ban/active-bans/{network}/allowlist`) and every refusal; target as
+`fail2banBanLift`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `network` | string | The banned network as stored. | on success |
+| `allowlistAdded` | array of strings | The network, when it was not on the allowlist yet. | when it was added |
+| `denylistRemoved` | array of strings | The network, when it was on the denylist. | when it was removed |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## fail2banBanDenylisting
+
+Feature 011. Written for every denylisting of an actively banned network
+(`POST /fail2ban/active-bans/{network}/denylist`) and every refusal; target as `fail2banBanLift`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `network` | string | The banned network as stored. | on success |
+| `allowlistRemoved` | array of strings | The network, when it was on the allowlist. | when it was removed |
+| `denylistAdded` | array of strings | The network, when it was not on the denylist yet. | when it was added |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## fail2banBanListIdRotation
+
+Feature 011. Written for every rotation of the ban list ID (`POST /fail2ban/ban-list-rotation`)
+and every refusal. The target is `{type: fail2banBanListId, id: null}`. Neither the old nor the new
+ID is recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |

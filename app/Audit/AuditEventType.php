@@ -139,7 +139,9 @@ enum AuditEventType: string
             self::Fail2banSettingsUpdate => ['changes', ...self::BAN_LISTS, ...self::REFUSAL],
             self::Fail2banRulesReplacement => ['oldRules', 'newRules', ...self::REFUSAL],
             self::Fail2banRulesReset => ['oldRules', 'newRules', 'serviceMessage', 'step', ...self::REFUSAL],
-            self::Fail2banBanLift, self::Fail2banBanAllowlisting, self::Fail2banBanDenylisting => ['network', ...self::BAN_LISTS, ...self::REFUSAL],
+            self::Fail2banBanLift => ['network', ...self::REFUSAL],
+            self::Fail2banBanAllowlisting => ['network', 'allowlistAdded', 'denylistRemoved', ...self::REFUSAL],
+            self::Fail2banBanDenylisting => ['network', 'denylistAdded', 'allowlistRemoved', ...self::REFUSAL],
             self::Fail2banBanListIdRotation => self::REFUSAL,
         };
     }

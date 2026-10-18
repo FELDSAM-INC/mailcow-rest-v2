@@ -15,4 +15,11 @@ headers:
 content:
   application/problem+json:
     schema:
-      $ref: '../schemas/Problem.yaml'
+      allOf:
+        - $ref: '../schemas/Problem.yaml'
+        - type: object
+          properties:
+            step:
+              type: string
+              description: '`rulesReset`, present with `outcome-unknown`.'
+              enum: [rulesReset]

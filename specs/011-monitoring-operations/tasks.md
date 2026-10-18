@@ -811,7 +811,7 @@ refused ones, and each content view, then filter the audit log.
 
 ### Tests for User Story 8 (write first, observe failing) ⚠️
 
-- [ ] T105 [US8] Write `tests/Feature/Audit/MonitoringAuditTrailTest.php` (US8 AS-1 to AS-3, FR-062,
+- [X] T105 [US8] Write `tests/Feature/Audit/MonitoringAuditTrailTest.php` (US8 AS-1 to AS-3, FR-062,
   FR-063, SC-006): run every state-changing operation of the feature once with success and once
   refused (protected container, `412`, absent ban, Postfix stopped, `422`, a read-only key and a
   domain administrator), plus one content view and one
@@ -824,7 +824,7 @@ refused ones, and each content view, then filter the audit log.
 
 ### Implementation for User Story 8
 
-- [ ] T106 [US8] Add the `details` whitelist entries of research R24 for the seventeen new event
+- [X] T106 [US8] Add the `details` whitelist entries of research R24 for the seventeen new event
   types to `app/Services/Audit/AuditLogger.php` (001), and fix any service that writes a key outside
   it. This makes T105 pass.
 
@@ -1018,3 +1018,10 @@ Deviations and decisions made while implementing, with the reason:
   controller, the release source and the IP check service are `App\Clients\Development\Null*`
   classes (002's pattern), which answer the recorded payloads of `tests/fixtures/monitoring`; test
   fakes are not bound outside tests.
+- **T105, T106** (US8): the `details` keys of the seventeen event types were whitelisted in
+  `App\Audit\AuditEventType` while the stories were built (each story's audit tests needed them),
+  so T105 passed when it was written; T106 documented them in `docs/audit-events.md` (G3) and
+  narrowed the ban actions to the keys each one writes. The audit whitelist lives in
+  `AuditEventType::detailKeys()` (001's mechanism), not in `AuditLogger`. Contract gap G11 is fixed
+  with `MonitoringOutcomeUnknownProblem` (`step` with the action names) and `step` on
+  `Fail2BanRulesNotRestored`.

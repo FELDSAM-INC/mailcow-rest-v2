@@ -14,4 +14,4 @@ headers:
 content:
   application/problem+json:
     schema:
-      $ref: '../schemas/Problem.yaml'
+      $ref: '../schemas/MonitoringOutcomeUnknownProblem.yaml'

@@ -22,11 +22,6 @@ class AuditEventDetailsDocumentedTest extends TestCase
         // Feature 010: only the DKIM core is implemented (with feature 002); its operations follow.
         'dkimKeyImport', 'dkimKeyCopy', 'dkimKeyDeletion', 'dkimPrivateKeyExport',
         'dkimDnsPublication', 'mtaStsPolicyCreation', 'mtaStsPolicyUpdate',
-        // Feature 011: documented by its US8 phase (T106).
-        'containerStart', 'containerStop', 'containerRestart', 'mailQueueDelivery', 'mailQueueHold',
-        'mailQueueRelease', 'mailQueueDeletion', 'mailQueueFlush', 'mailQueuePurge', 'mailQueueMessageView',
-        'fail2banSettingsUpdate', 'fail2banRulesReplacement', 'fail2banRulesReset', 'fail2banBanLift',
-        'fail2banBanAllowlisting', 'fail2banBanDenylisting', 'fail2banBanListIdRotation',
     ];
 
     /**

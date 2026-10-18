@@ -741,6 +741,9 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     `ofelia.job-exec.restv2_audit_purge.schedule: "@daily"`). mailcow's `ofelia-mailcow` already
     watches every container of the compose project
     (`daemon --docker -f label=com.docker.compose.project=…`).
+  - **What is not audited**: ceremony requests that touch only the caller's own short-lived
+    session data: the CSRF bootstrap, challenges, registration options and cancelling a pending
+    sign-in. The plan's Complexity Tracking justifies this against constitution VI.
   - **What is audited**: exactly the events of FR-045. Sign-out is audited only when a signed-in
     principal existed. Idempotent no-ops are not audited: revoking a revoked key, cancelling with
     nothing pending, and signing out without a session.
@@ -911,8 +914,11 @@ PHP extension `redis` (phpredis) is part of the runtime image, as in mailcow's p
     accepts `sort`, `order` and `q` (shared parameter `api/components/parameters/Search.yaml`).
     The search fields: passkeys search the name and authenticator description; API keys the
     name, prefix and owner username; possible owners the username; audit records the actor
-    username, target name and user agent. `q` is a case-insensitive `LIKE` with `%` and `_`
-    escaped.
+    username, target name and user agent. `q` is the shared parameter: at most 255 characters,
+    trimmed, empty meaning no search. It becomes a case-insensitive `LIKE` with `%`, `_` and `\`
+    escaped. Per-resource `sort` parameters, and values appended to the shared enumerations
+    (`KnownProblemType`, `AuditEventType`, `ValidationRuleCode`, `AuditTarget`), follow the
+    "Shared contract components" section.
   - **Version tags**: strong ETags over stored settings only (R19, R21, data-model). Every
     representation of a mutable resource carries the same value in `etag`, list entries included.
     `If-Match` is optional, and a mismatch answers `412`.

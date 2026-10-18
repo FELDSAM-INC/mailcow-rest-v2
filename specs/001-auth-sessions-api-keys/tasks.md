@@ -267,7 +267,8 @@ this phase is complete.**
   It also asserts the error keys: dot paths, query names, and `body` (FR-055). It also tests
   `App\Support\Http\ListQuery`: `limit` defaults to 25, accepts 1–1000 (`outOfRange` beyond), and
   `offset` ≥ 0; `sort` and `order` are checked against each list's allowed values (`notInList`);
-  `q` is 1–255 characters, with `%`, `_` and `\` escaped in the generated `LIKE` pattern; `meta`
+  `q` is at most 255 characters, trimmed, empty means no search (shared `Search.yaml`), with `%`,
+  `_` and `\` escaped in the generated `LIKE` pattern; `meta`
   is `{total, limit, offset}` (FR-058, R29).
 - [ ] T026 [P] Write `tests/Feature/Auth/CsrfTokenTest.php` for `getCsrfToken` (FR-011, R6, R7).
   It must return `200` with `data.token` (at least 40 characters) and `headerName "X-CSRF-Token"`,

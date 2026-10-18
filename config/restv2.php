@@ -98,6 +98,32 @@ return [
         'timeout' => (int) env('RESTV2_ISPCONFIG_TIMEOUT', 15),
     ],
 
+    /*
+    |----------------------------------------------------------------------
+    | Mailboxes (feature 003 research R23)
+    |----------------------------------------------------------------------
+    */
+
+    // Hash scheme of new mailbox passwords (mailcow.conf; legacy hash_password()): BLF-CRYPT,
+    // SSHA, SSHA256 or SSHA512; any other value falls back to BLF-CRYPT.
+    'mailcow_pass_scheme' => (string) env('MAILCOW_PASS_SCHEME', 'BLF-CRYPT'),
+
+    // Minutes mailcow keeps the mail of a deleted mailbox in the garbage area (mailcow.conf).
+    'maildir_gc_time' => max(0, (int) env('MAILDIR_GC_TIME', 7200)),
+
+    // `replication`: maildir moves are confirmed on this node and broadcast to every mail node.
+    'cluster_mode' => (string) env('CLUSTERMODE', ''),
+
+    // Usage figures come from `quota2` on the master node and from `quota2replica` otherwise
+    // (legacy matches MASTER with /y|yes/i).
+    'master' => preg_match('/y|yes/i', (string) env('MASTER', 'y')) === 1,
+
+    // Custom attributes per mailbox (1 to 100; a setting can lower the limit, never raise it).
+    'mailbox_custom_attribute_limit' => max(1, min(100, (int) env('RESTV2_MAILBOX_CUSTOM_ATTRIBUTE_LIMIT', 100))),
+
+    // Targets per mailbox bulk action (1 to 100; a setting can lower the limit, never raise it).
+    'bulk_limit' => max(1, min(100, (int) env('RESTV2_BULK_LIMIT', 100))),
+
     // Development only (APP_ENV=local): binds the dockerapi, memcached and ISPConfig fakes, because
     // the dev stack runs none of these services. Ignored in every other environment.
     'fake_outbound' => env('RESTV2_FAKE_OUTBOUND', 'n') === 'y',
@@ -126,6 +152,8 @@ return [
         'MAILCOW_APPS' => env('RESTV2_MAILCOW_APPS'),
         'TAGGING_LIMIT' => env('RESTV2_TAGGING_LIMIT'),
         'DOCKER_TIMEOUT' => env('RESTV2_DOCKER_TIMEOUT'),
+        'SHOW_LAST_LOGIN' => env('RESTV2_SHOW_LAST_LOGIN'),
+        'MAILBOX_DEFAULT_ATTRIBUTES' => env('RESTV2_MAILBOX_DEFAULT_ATTRIBUTES'),
     ],
 
     // Upstream defaults of mailcow-dockerized 2026-09a (data/web/inc/vars.inc.php).
@@ -182,6 +210,25 @@ return [
         ],
         'TAGGING_LIMIT' => 25,
         'DOCKER_TIMEOUT' => 60,
+        'SHOW_LAST_LOGIN' => true,
+        // Merged over the built-in mailbox defaults (feature 003 research R5).
+        'MAILBOX_DEFAULT_ATTRIBUTES' => [
+            'tls_enforce_in' => false,
+            'tls_enforce_out' => false,
+            'force_pw_update' => false,
+            'force_tfa' => false,
+            'sogo_access' => true,
+            'tagged_mail_handler' => 'none',
+            'quarantine_notification' => 'hourly',
+            'imap_access' => true,
+            'pop3_access' => true,
+            'smtp_access' => true,
+            'sieve_access' => true,
+            'eas_access' => true,
+            'dav_access' => true,
+            'quarantine_category' => 'reject',
+            'mailbox_format' => 'maildir:',
+        ],
     ],
 
 ];

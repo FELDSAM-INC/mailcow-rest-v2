@@ -92,7 +92,45 @@
                 "temporary-failure",
                 "permission-flag-required"
             ]
+        },
+        "003-mailboxes": {
+            "operations": [
+                "listMailboxes",
+                "createMailbox",
+                "getMailboxCapabilities",
+                "listMailboxTags",
+                "applyMailboxBulkAction",
+                "getMailbox",
+                "updateMailbox",
+                "deleteMailbox",
+                "previewMailboxDeletion",
+                "renameMailbox",
+                "listMailboxTemplates",
+                "createMailboxTemplate",
+                "getMailboxTemplate",
+                "updateMailboxTemplate",
+                "deleteMailboxTemplate",
+                "getPasswordPolicy"
+            ],
+            "problemTypes": []
         }
     },
-    "pendingOperations": []
+    "pendingOperations": [
+        "listMailboxes",
+        "createMailbox",
+        "getMailboxCapabilities",
+        "listMailboxTags",
+        "applyMailboxBulkAction",
+        "getMailbox",
+        "updateMailbox",
+        "deleteMailbox",
+        "previewMailboxDeletion",
+        "renameMailbox",
+        "listMailboxTemplates",
+        "createMailboxTemplate",
+        "getMailboxTemplate",
+        "updateMailboxTemplate",
+        "deleteMailboxTemplate",
+        "getPasswordPolicy"
+    ]
 }

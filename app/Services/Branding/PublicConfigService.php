@@ -4,6 +4,7 @@ namespace App\Services\Branding;
 
 use App\Models\Mailcow\IdentityProviderSetting;
 use App\Services\Config\MailcowConfig;
+use App\Services\IdentityProvider\IdentityProviderRepository;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -44,6 +45,7 @@ class PublicConfigService
         private readonly RedisFactory $redis,
         private readonly MailcowConfig $config,
         private readonly ProductName $productName,
+        private readonly IdentityProviderRepository $identityProviders,
     ) {}
 
     /**
@@ -89,9 +91,8 @@ class PublicConfigService
             'defaultLanguage' => $this->config->defaultLanguage(),
             'externalIdentityProvider' => [
                 'configured' => in_array(IdentityProviderSetting::query()->whereKey('authsource')->value('value'), self::EXTERNAL_PROVIDERS, true),
-                // Single sign-on through this API arrives with feature 012 (POST
-                // /session/single-sign-on); until then it is never available here.
-                'singleSignOnAvailable' => false,
+                // Feature 012 (FR-020): a complete Keycloak or generic OIDC configuration.
+                'singleSignOnAvailable' => $this->identityProviders->usable()?->type->offersSingleSignOn() ?? false,
             ],
             'appsLabel' => $appsLabel === null ? null : htmlspecialchars_decode($appsLabel, ENT_QUOTES),
             'appLinks' => [...$this->builtInApps(), ...$this->operatorLinks()],

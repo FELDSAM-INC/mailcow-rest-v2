@@ -8,10 +8,19 @@ namespace App\Rules;
  */
 class LdapAttributeName extends CodedRule
 {
+    /**
+     * @param  bool  $allowEmpty  an empty string means "none" (the optional settings)
+     */
+    public function __construct(private readonly bool $allowEmpty = false) {}
+
     protected function check(mixed $value): ?array
     {
         if (! is_string($value)) {
             return $this->violation('invalidType', ['expected' => 'string']);
+        }
+
+        if ($value === '' && $this->allowEmpty) {
+            return null;
         }
 
         if (strlen($value) > 255) {

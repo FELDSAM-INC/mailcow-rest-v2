@@ -50,6 +50,10 @@ final class OpenApiContract
         $this->validator->setMaxErrors(5);
         $this->validator->setStopAtFirstError(false);
         $this->validator->parser()->setDefaultDraftVersion('2020-12');
+        // Validate as JSON Schema specifies: `default` is an annotation and never fills in data.
+        // Opis applies defaults otherwise, which breaks `unevaluatedProperties` under `allOf`
+        // (feature 012's IdentityProvider*Input schemas) and relaxes `required`.
+        $this->validator->parser()->setOption('allowDefaults', false);
         $this->validator->resolver()?->registerRaw($document, self::DOCUMENT_ID);
     }
 

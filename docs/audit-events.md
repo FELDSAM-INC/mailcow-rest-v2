@@ -851,3 +851,68 @@ deleted sync job with its target mailbox.
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
+
+<!-- Feature 012: identity providers and OAuth2 clients. -->
+
+## identityProviderCreation
+
+Feature 012. Written when a whole save (`PUT /identity-provider`) created the configuration, in the
+transaction that stores it, and for every refusal of a save while no configuration is stored. The
+target is the configuration (`type: identityProvider`, `id` null, `name` the provider type, or the
+requested type on a refusal). Secrets appear only as changed, never their values.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `type` | string | The saved provider type (`keycloak`, `genericOidc`, `ldap`). | on success |
+| `changes` | object | Each stored setting, in contract names, as `{old, new}` (`old` is `null`); `clientSecret` and `bindPassword` as `{changed: true}`. | on success |
+| `mailboxCounts` | object | The mailboxes per external source that blocked the save. | on `409 identity-provider-in-use` failures |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## identityProviderUpdate
+
+Feature 012. Written for every whole save over a stored configuration (`PUT`) and every change
+(`PATCH /identity-provider`), also when nothing changed, and for every refusal of them while a
+configuration is stored. The target is the configuration (`name` the type after the save).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `type` | string | The provider type after the save. | on success |
+| `previousType` | string | The provider type before the save; differs from `type` after a type change. | on success |
+| `changes` | object | Each changed setting, in contract names, as `{old, new}`; settings of a previous type that were removed have `new: null`; `clientSecret` and `bindPassword` as `{changed: true}`. Empty when nothing changed. | on success |
+| `mailboxCounts` | object | The mailboxes per external source that blocked a type change. | on `409 identity-provider-in-use` failures |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## identityProviderDeletion
+
+Feature 012. Written when `DELETE /identity-provider` removed the configuration and for every
+refusal. The target is the configuration (`name` the type it had).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `type` | string | The provider type that was removed. | on success |
+| `mailboxCounts` | object | The mailboxes per external source (`keycloak`, `genericOidc`, `ldap`) that blocked the deletion. | on `409 identity-provider-in-use` failures |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## identityProviderConnectionTest
+
+Feature 012. Written for every connection test (`POST /identity-provider/connection-tests`), with
+`outcome: success` when the connection worked and `outcome: failure` with
+`failureReason: connectionTestFailed` when it did not, and for every refusal of the request. The
+target is the configuration (`name` the tested type). The secret is never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `type` | string | The tested provider type. | when the test ran |
+| `testedAddress` | string | The token endpoint, or the LDAP connection URIs separated by spaces. | when the test ran |
+| `outcome` | string | `success` or `failure`. | when the test ran |
+| `failureCategory` | string or null | `unreachable`, `timedOut`, `tlsCertificateRejected`, `credentialsRejected` or `unexpectedResponse`; `null` on success. | when the test ran |
+| `providerStatus` | integer or null | The HTTP status or LDAP result code of the provider's answer, `null` when none was received. | when the test ran |
+| `problemType` | string | See "Refusal records". | on refusals of the request |
+| `status` | integer | See "Refusal records". | on refusals of the request |
+| `errors` | object | See "Refusal records". | on `422` refusals |

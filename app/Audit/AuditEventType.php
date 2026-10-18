@@ -80,6 +80,12 @@ enum AuditEventType: string
     case SyncJobReschedule = 'syncJobReschedule';
     case SyncJobDeletion = 'syncJobDeletion';
 
+    // Feature 012: identity provider configuration.
+    case IdentityProviderCreation = 'identityProviderCreation';
+    case IdentityProviderUpdate = 'identityProviderUpdate';
+    case IdentityProviderDeletion = 'identityProviderDeletion';
+    case IdentityProviderConnectionTest = 'identityProviderConnectionTest';
+
     /**
      * Keys of refusal records written by App\Services\Audit\RefusalAuditor (docs/conventions.md
      * "Refusal auditing"): the problem type, the status and, for `422`, the field errors (rule codes
@@ -152,6 +158,10 @@ enum AuditEventType: string
             self::SyncJobUpdate => ['mailbox', 'changes', ...self::BULK, ...self::REFUSAL],
             self::SyncJobReschedule => ['mailbox', 'cleared', 'previous', ...self::BULK, ...self::REFUSAL],
             self::SyncJobDeletion => ['mailbox', 'remoteHost', 'remoteUser', ...self::BULK, ...self::REFUSAL],
+            self::IdentityProviderCreation => ['type', 'changes', 'mailboxCounts', ...self::REFUSAL],
+            self::IdentityProviderUpdate => ['type', 'previousType', 'changes', 'mailboxCounts', ...self::REFUSAL],
+            self::IdentityProviderDeletion => ['type', 'mailboxCounts', ...self::REFUSAL],
+            self::IdentityProviderConnectionTest => ['type', 'testedAddress', 'outcome', 'failureCategory', 'providerStatus', ...self::REFUSAL],
         };
     }
 }

@@ -975,6 +975,12 @@ each filter.
   `REFRESH_TOKEN_LIFETIME`), the redirect URI length limit, the bulk limit and the page sizes. Both
   reads MUST change nothing, MUST contain no secret, and MAY be used by read-only keys.
 
+- **FR-065** (API gap G20, found by UI 012): A whole save MUST honour `If-None-Match`. With `*` it
+  MUST be refused as outdated (`412`) when a configuration is stored, so that two administrators
+  setting up the provider at the same time cannot overwrite each other; with a version tag it MUST
+  be refused when that tag is the stored configuration's. Nothing changes on a refusal, and the
+  refusal is audited.
+
 ### Legacy Coverage
 
 Every legacy capability allocated to feature 012 in `docs/roadmap.md` maps to requirements as

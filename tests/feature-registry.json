@@ -260,12 +260,6 @@
         }
     },
     "pendingOperations": [
-        "getIdentityProviderCapabilities",
-        "getIdentityProvider",
-        "saveIdentityProvider",
-        "updateIdentityProvider",
-        "deleteIdentityProvider",
-        "testIdentityProviderConnection",
         "startSingleSignOn",
         "cancelSingleSignOn",
         "completeSingleSignOn",

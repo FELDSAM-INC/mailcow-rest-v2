@@ -1,0 +1,10 @@
+name: If-None-Match
+in: header
+required: false
+description: |
+  `*` makes the save create-only: it fails with `412` when a configuration is stored, so that two
+  administrators setting up the provider at the same time cannot overwrite each other. A listed
+  version tag fails with `412` when it is the stored configuration's tag. Nothing changes on `412`.
+schema:
+  type: string
+  examples: ['*']

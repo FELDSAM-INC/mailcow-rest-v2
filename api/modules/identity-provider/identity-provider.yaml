@@ -46,7 +46,8 @@ put:
       against an external source other than the new type.
     - **Mapping**: every mapped template and the default template must exist (rule code
       `notFound`); attribute values must be unique (rule code `duplicate`).
-    - Send the version tag you read in `If-Match`; the legacy UI edits the same settings.
+    - Send the version tag you read in `If-Match`; the legacy UI edits the same settings. For a
+      first setup, send `If-None-Match: *` so that the save only creates.
 
     Administrators only, with a session or a read-write key. Audited, with every changed setting
     and secrets only as "changed".
@@ -56,6 +57,7 @@ put:
     - apiKeyAuth: []
   parameters:
     - $ref: '../../components/parameters/IfMatch.yaml'
+    - $ref: '../../components/parameters/IdentityProviderIfNoneMatch.yaml'
   requestBody:
     required: true
     content:

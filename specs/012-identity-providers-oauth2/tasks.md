@@ -257,7 +257,7 @@ legacy reference rows of T010.
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T030 [P] [US1] Write `tests/Feature/IdentityProvider/ReadIdentityProviderTest.php` (FR-004 to
+- [X] T030 [P] [US1] Write `tests/Feature/IdentityProvider/ReadIdentityProviderTest.php` (FR-004 to
   FR-008, FR-059):
   - no rows → `404 identity-provider-not-configured`;
   - one representation per type from `MailcowFactory` configs, with FR-007 defaults for a minimal
@@ -271,7 +271,7 @@ legacy reference rows of T010.
   - a row changed directly in the database (as the legacy UI does) is visible in the next response
     with a new tag (FR-059);
   - a read-only administrator key reads it (AS-8).
-- [ ] T031 [P] [US1] Write `tests/Feature/IdentityProvider/SaveIdentityProviderTest.php`:
+- [X] T031 [P] [US1] Write `tests/Feature/IdentityProvider/SaveIdentityProviderTest.php`:
   - first `PUT` of an LDAP configuration → `201`, `Location: /api/v2/identity-provider`, `ETag`,
     `bindPasswordSet: true`, no password in the body, and the rows of `identity_provider` equal the
     legacy reference rows of T010 (AS-1, FR-005, SC-002);
@@ -283,7 +283,7 @@ legacy reference rows of T010.
   - no `mailbox` row changes (FR-016);
   - one audit record `identityProviderCreation` / `identityProviderUpdate` with `changes` old/new
     values and `{changed: true}` for secrets, never their text (FR-052).
-- [ ] T032 [P] [US1] Write `tests/Feature/IdentityProvider/SaveIdentityProviderInvalidTest.php`
+- [X] T032 [P] [US1] Write `tests/Feature/IdentityProvider/SaveIdentityProviderInvalidTest.php`
   (table-driven, `withoutRequestValidation()` where the body violates the schema): every rule of
   FR-010 to FR-013 with its rule code and params; a mapping entry naming a missing template "Staff" →
   `notFound` with `resource: mailboxTemplate` on `attributeMapping.0.template` (AS-5); duplicate
@@ -291,26 +291,26 @@ legacy reference rows of T010.
   (`field: type`); `attributeField` empty with `periodicSync` on → `conflictsWith`; 101 mapping
   entries → `tooMany`; several violations reported together; nothing stored; audited
   `validationFailed`.
-- [ ] T033 [P] [US1] Write `tests/Feature/IdentityProvider/IdentityProviderSecretTest.php` (FR-014):
+- [X] T033 [P] [US1] Write `tests/Feature/IdentityProvider/IdentityProviderSecretTest.php` (FR-014):
   first save without a secret → `secretRequired` `noStoredSecret`; type change without → 
   `typeChanged`; a later save without the secret keeps it (rows unchanged, AS-2); a changed Keycloak
   `serverUrl`, generic OIDC `tokenEndpoint` or LDAP `hosts` without the secret → `secretRequired`
   `addressChanged` with `field`, nothing changed (AS-3); trailing-slash-only changes of `serverUrl`
   do not count as a change; with the secret sent, the save succeeds and the tag changes.
-- [ ] T034 [P] [US1] Write `tests/Feature/IdentityProvider/PatchIdentityProviderTest.php`: a merge
+- [X] T034 [P] [US1] Write `tests/Feature/IdentityProvider/PatchIdentityProviderTest.php`: a merge
   patch of `syncInterval` keeps everything else and clears `access_token` (AS-2); `null` clears
   `defaultTemplate`, `filter`, `attributeField`; arrays replace; `type` different → `immutable`;
   a member of another type → `conflictsWith`; `{}` → `422`; no configuration → `404
   identity-provider-not-configured`; a stale `If-Match` → `412` and nothing changes (AS-9);
   audited.
-- [ ] T035 [P] [US1] Write `tests/Feature/IdentityProvider/TypeChangeAndDeletionTest.php`: with 12
+- [X] T035 [P] [US1] Write `tests/Feature/IdentityProvider/TypeChangeAndDeletionTest.php`: with 12
   LDAP mailboxes, a Keycloak `PUT` and a `DELETE` → `409 identity-provider-in-use` with
   `blockingMailboxes: 12` and `mailboxCounts`, nothing changed (AS-4); a type change is allowed
   when only mailboxes of the new type exist; `DELETE` without external mailboxes → `204`, every row
   including `access_token` gone, `GET /public-config` reports `singleSignOnAvailable: false` (AS-7);
   `DELETE` with none stored → `404`; stale `If-Match` → `412`; audited `identityProviderDeletion`
   (refusals with `conflict`).
-- [ ] T036 [P] [US1] Write `tests/Feature/IdentityProvider/ConnectionTestTest.php` (FR-019):
+- [X] T036 [P] [US1] Write `tests/Feature/IdentityProvider/ConnectionTestTest.php` (FR-019):
   - Keycloak: client credentials grant to `…/realms/<realm>/protocol/openid-connect/token` →
     success; `401`/`invalid_client` → `credentialsRejected`; `400 unauthorized_client` →
     `unexpectedResponse` with `providerStatus: 400`; cURL 28 → `timedOut`; cURL 60 →
@@ -323,13 +323,13 @@ legacy reference rows of T010.
     `secretRequired`; templates are not checked; `ignoreTlsErrors: true` sends `verify: false`;
   - nothing is stored; one audit record `identityProviderConnectionTest` with type, address and
     category, never the secret; a read-only key gets `403 insufficient-key-scope` (AS-8).
-- [ ] T037 [P] [US1] Write `tests/Feature/IdentityProvider/SynchronisationStatusTest.php` (FR-062):
+- [X] T037 [P] [US1] Write `tests/Feature/IdentityProvider/SynchronisationStatusTest.php` (FR-062):
   with `cronLog()` fixtures and `travelTo()`: periodic synchronisation on, completed run 4 minutes
   ago, interval 15 → `waiting`, `lastCompletedAt`, `nextRunExpectedAt` 11 minutes ahead (AS-10);
   progress 30 s ago → `running`; `Received HTTP 401` after the last completion → `lastFailedAt` and
   the next minute; nothing for 30 minutes → `overdue`; empty log → `unknown`; import and sync off →
   `disabled`; the other job's entries are ignored; the `ETag` does not change when the log changes.
-- [ ] T038 [P] [US1] Write `tests/Feature/IdentityProvider/IdentityProviderAccessTest.php` (FR-001 to
+- [X] T038 [P] [US1] Write `tests/Feature/IdentityProvider/IdentityProviderAccessTest.php` (FR-001 to
   FR-003, FR-052, AS-8): domain-administrator and mailbox-user sessions get `403 forbidden` on all
   six operations of the module; anonymous `401`; restricted session `403 pending-action-required`;
   domain-administrator key `403 forbidden`; read-only administrator key: the two reads `200`, the
@@ -337,7 +337,7 @@ legacy reference rows of T010.
   of a write or test by an authenticated caller (role, read-only key, restricted session) writes one
   failure record through `RefusalAuditor` with target type `identityProvider`; a CSRF failure and a
   `401` write none.
-- [ ] T039 [P] [US1] Write `tests/Feature/IdentityProvider/IdentityProviderCapabilitiesTest.php`
+- [X] T039 [P] [US1] Write `tests/Feature/IdentityProvider/IdentityProviderCapabilitiesTest.php`
   (FR-064): with no configuration `GET /capabilities/identity-provider` → `200` with
   `configured: false`, `configuredType: null`, the three `appReturnUrls` of `.env.testing`, the
   types and what each offers, the FR-007 defaults and the FR-010 to FR-013 limits,
@@ -347,10 +347,10 @@ legacy reference rows of T010.
 
 ### Implementation for User Story 1
 
-- [ ] T040 [US1] Create `app/Services/IdentityProvider/SecretRetentionPolicy.php`
+- [X] T040 [US1] Create `app/Services/IdentityProvider/SecretRetentionPolicy.php`
   (`resolve(?IdentityProviderConfig $stored, IdentityProviderConfig $candidate, ?string $sentSecret):
   string` or a `secretRequired` violation with `reason` and `field`, R9) and use it in T041 and T043.
-- [ ] T041 [US1] Create `app/Services/IdentityProvider/IdentityProviderConfigService.php`:
+- [X] T041 [US1] Create `app/Services/IdentityProvider/IdentityProviderConfigService.php`:
   `save(IdentityProviderConfig, ?string $secret, ?string $ifMatch, Principal)`,
   `change(array $patch, ?string $secret, ?string $ifMatch, Principal)` and
   `delete(?string $ifMatch, Principal)`. Each runs under `GET_LOCK('restv2_identity_provider', 5)`
@@ -361,26 +361,26 @@ legacy reference rows of T010.
   `AuditLogger` with the changed settings (secrets as `{changed: true}`). Refusals (`409`, `412`,
   `404`, `422`) are thrown as problems and recorded by `RefusalAuditor`, never twice. FR-009 to
   FR-017, FR-050 to FR-052.
-- [ ] T042 [US1] Create `app/Http/Requests/Api/V2/Concerns/IdentityProviderRules.php` (rule sets per
+- [X] T042 [US1] Create `app/Http/Requests/Api/V2/Concerns/IdentityProviderRules.php` (rule sets per
   type built from the T022 rules and the limits of FR-010 to FR-013; the type-scoped member check →
   `conflictsWith`; `attributeField` with import or sync; all violations collected) and the requests
   `SaveIdentityProviderRequest.php` (whole body, `ExistingMailboxTemplate` on),
   `UpdateIdentityProviderRequest.php` (merge patch: at least one member, `type` → `immutable`,
   validated against the merged result) and `TestIdentityProviderConnectionRequest.php`
   (`ExistingMailboxTemplate` off), all extending `ApiFormRequest`.
-- [ ] T043 [US1] Create `app/Services/IdentityProvider/ConnectionTestResult.php` and
+- [X] T043 [US1] Create `app/Services/IdentityProvider/ConnectionTestResult.php` and
   `ConnectionTester.php` (`test(IdentityProviderConfig $candidate, string $secret)`) with the
   per-type checks and failure classification of R11, using `KeycloakAdminClient::serviceToken()`,
   `OidcClient` (invalid-code exchange through the token endpoint) and `LdapDirectory::testBind()`,
   and the audit record `identityProviderConnectionTest`.
-- [ ] T044 [US1] Create `app/Http/Resources/Api/V2/IdentityProviderResource.php` (per type, contract
+- [X] T044 [US1] Create `app/Http/Resources/Api/V2/IdentityProviderResource.php` (per type, contract
   `IdentityProvider*`: settings, `clientSecretSet`/`bindPasswordSet`, template flags, `complete`,
   `missingSettings`, `mailboxCounts`, `appReturnUrls`, `synchronisation` from T029, `modifiedAt`,
   `etag`) and `IdentityProviderConnectionTestResource.php`.
-- [ ] T045 [US1] Create `app/Services/IdentityProvider/IdentityProviderAuditTargetResolver.php`
+- [X] T045 [US1] Create `app/Services/IdentityProvider/IdentityProviderAuditTargetResolver.php`
   (target `identityProvider`, `id` null, `name` = the stored type or the requested one) and register
   it with `RefusalAuditor` for the target type `identityProvider` in `AppServiceProvider` (R15).
-- [ ] T046 [US1] Create `app/Http/Controllers/Api/V2/IdentityProviderController.php` (`show`,
+- [X] T046 [US1] Create `app/Http/Controllers/Api/V2/IdentityProviderController.php` (`show`,
   `save` for `PUT` with `201` + `Location` or `200`, `update` for `PATCH`, `destroy` → `204`; `ETag`
   header on every representation; policy checks) and `IdentityProviderConnectionTestController.php`
   (`store` → `200`). Register in `routes/api.php`: `GET|PUT|PATCH|DELETE /identity-provider` and
@@ -388,7 +388,7 @@ legacy reference rows of T010.
   `restv2.pending:enforce`, and the route default `restv2.audit` (`identityProviderCreation` for
   `PUT`, resolved to `identityProviderUpdate` when a configuration exists; `identityProviderUpdate`,
   `identityProviderDeletion`, `identityProviderConnectionTest`; target `identityProvider`).
-- [ ] T047 [US1] Create `app/Http/Controllers/Api/V2/IdentityProviderCapabilitiesController.php`
+- [X] T047 [US1] Create `app/Http/Controllers/Api/V2/IdentityProviderCapabilitiesController.php`
   (`show`) and `app/Http/Resources/Api/V2/IdentityProviderCapabilitiesResource.php` (data model,
   "Capabilities"), and register `GET /capabilities/identity-provider` with
   `restv2.auth:authenticated` and `restv2.pending:enforce` and the policy check. This and T046 make

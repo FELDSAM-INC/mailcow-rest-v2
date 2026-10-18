@@ -51,6 +51,7 @@ use App\Services\Audit\RefusalAuditor;
 use App\Services\Config\MailcowConfig;
 use App\Services\Domains\DomainAuditTargets;
 use App\Services\Groupware\GroupwareCacheFlush;
+use App\Services\IdentityProvider\IdentityProviderAuditTargetResolver;
 use App\Services\Mailboxes\MailboxAuditTargets;
 use App\Services\Monitoring\MonitoringAuditTargetResolver;
 use App\Services\Monitoring\SharedSnapshotCache;
@@ -131,6 +132,7 @@ class AppServiceProvider extends ServiceProvider
         MailboxAuditTargets::register($this->app->make(RefusalAuditor::class));
         AliasAuditTargets::register($this->app->make(RefusalAuditor::class));
         MonitoringAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
+        IdentityProviderAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
 
         // Feature 011: administrators only (research R26).
         Gate::define('operate-monitoring', [MonitoringPolicy::class, 'operate']);

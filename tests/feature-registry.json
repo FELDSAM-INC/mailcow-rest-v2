@@ -155,7 +155,5 @@
             ]
         }
     },
-    "pendingOperations": [
-        "renameMailbox"
-    ]
+    "pendingOperations": []
 }

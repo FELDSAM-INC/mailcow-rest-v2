@@ -767,7 +767,7 @@ inject a failure into each step (spec US8).
 
 ### Tests for User Story 8 (write first, observe failing) ⚠️
 
-- [ ] T079 [P] [US8] Write `tests/Feature/Mailboxes/RenameMailboxTest.php` for `renameMailbox`:
+- [X] T079 [P] [US8] Write `tests/Feature/Mailboxes/RenameMailboxTest.php` for `renameMailbox`:
   AS-1 `anna@example.org` with every row of data-model.md's rename column, an app password, two
   ACL entries from `get_acl` (one granted, one received), `RL_VALUE` and a `RCPT_WANTS_*` field,
   renamed to `anna.smith` with `keepOldAddressAsAlias: true` → `200` with `previousAddress`,
@@ -783,7 +783,7 @@ inject a failure into each step (spec US8).
   `GET /mailboxes/anna@example.org` → `404`; the audit record `mailboxRename` lists all six steps
   `done`. Without `keepOldAddressAsAlias`, no alias row. With `SKIP_SOGO=y`, no SOGo call and the
   step `skipped`. A mailbox with `authsource = ldap` is renamed as well (spec edge case).
-- [ ] T080 [P] [US8] Write `tests/Feature/Mailboxes/RenameMailboxPreflightTest.php`, each case
+- [X] T080 [P] [US8] Write `tests/Feature/Mailboxes/RenameMailboxPreflightTest.php`, each case
   asserting that no row, Redis field or container write changed: AS-2 new address held by a
   mailbox, resource, alias or temporary alias → `409 address-in-use` with the holder; AS-3 an
   inactive mailbox → `409 mailbox-not-renamable`; the same local part and one differing only in
@@ -792,7 +792,7 @@ inject a failure into each step (spec US8).
   rename without the alias succeeds; dovecot or (unless `SKIP_SOGO=y`) sogo unreachable → `503
   temporary-failure` with the dependency; shared store down → `503`; outdated `If-Match` → `412`;
   foreign mailbox for a domain administrator → `404`; read-only key → `403`; mailbox user → `403`.
-- [ ] T081 [P] [US8] Write `tests/Feature/Mailboxes/RenameMailboxRollbackTest.php` (FR-048,
+- [X] T081 [P] [US8] Write `tests/Feature/Mailboxes/RenameMailboxRollbackTest.php` (FR-048,
   AS-4): for each step 1–6, inject a failure (the fake's scripted `failed` for container steps, a
   closed Redis port for step 2, a failing SQL statement for step 3) → `503 temporary-failure` with
   `steps` (`done` steps reported `undone`, the failing one `failed`, later ones `notDone`), and the
@@ -803,25 +803,25 @@ inject a failure into each step (spec US8).
   naming it, the done steps undone and the unknown step not repeated; a failing final audit write
   → steps undone and `500`; each outcome has exactly one audit record with the steps and the
   failure reason (`temporaryFailure`, `partiallyCompleted`, `outcomeUnknown`).
-- [ ] T082 [P] [US8] Write `tests/Feature/Mailboxes/RenameMailboxSecondFactorTest.php` (AS-5,
+- [X] T082 [P] [US8] Write `tests/Feature/Mailboxes/RenameMailboxSecondFactorTest.php` (AS-5,
   SC-008): a mailbox with a TOTP secret and a passkey is renamed; 001's password sign-in as the new
   address offers and accepts the TOTP code, the passkey's `fido2` row belongs to the new address
   and 001's passkey sign-in with the virtual authenticator resolves the new address.
 
 ### Implementation for User Story 8
 
-- [ ] T083 [US8] Create `app/Services/Mailboxes/MailboxDataMover.php` (`move(string $from, string
+- [X] T083 [US8] Create `app/Services/Mailboxes/MailboxDataMover.php` (`move(string $from, string
   $to, bool $forward, ?string $aliasComment)`: research R18 statements in one transaction with
   `SET FOREIGN_KEY_CHECKS = 0`/`1`, element-wise `goto` rewrite, carry-overs, OAuth revocation on
   the forward move, the optional alias insert and its removal on the reverse move,
   `SogoDirectory::refresh`).
-- [ ] T084 [US8] Create `app/Services/Mailboxes/RenameStep.php` and `RenameStepOutcome.php`
+- [X] T084 [US8] Create `app/Services/Mailboxes/RenameStep.php` and `RenameStepOutcome.php`
   (enums of the contract) and `app/Services/Mailboxes/MailboxRenamer.php` implementing research
   R17: preflight, `AddressLock` on the old and the new address (held until the audit record is
   written), the six steps with their undo in reverse order, the `503`/`500`/`504`
   outcomes, step logging with the request ID, the final audit record in its own transaction (undo
   and `500` when it fails), memcached flush on success.
-- [ ] T085 [US8] Create `app/Http/Requests/Api/V2/RenameMailboxRequest.php` (`newLocalPart` string
+- [X] T085 [US8] Create `app/Http/Requests/Api/V2/RenameMailboxRequest.php` (`newLocalPart` string
   1–255, `keepOldAddressAsAlias` boolean, both required, no unknown members),
   `app/Http/Resources/Api/V2/MailboxRenamedResource.php` and
   `app/Http/Controllers/Api/V2/MailboxRenameController.php` (`store`, `200`, `Content-Location`,
@@ -1013,3 +1013,12 @@ what exists map as listed.
   `BulkActionRunner` records each refused item); a protocol action of a domain administrator without
   `protocolAccess` is refused as a whole before any item and recorded once with a `null` target.
   A `protocol` sent with another action is `conflictsWith` (`field: action`).
+- **T083–T085**: the own alias is renamed by address and then rewritten with every other
+  destination list (element-wise), so a forwarding own alias (`anna,ext@…`) keeps its other
+  recipients; legacy overwrote its destination with the new address. Before the forward move, stale
+  rows of the (free) new address in tables keyed by the address (`quota2`, `quota2replica`,
+  `pushover`, `sasl_log`, `restv2_preferences`) are removed, so they cannot block the rename. A
+  failing database step answers `503` with `dependency: database`. A step that cannot revert its own
+  partial changes (an ACL delete or set in the middle of its list) is `undoFailed`. The new local
+  part is validated (`422`) before the address locks are taken, because the locks name the new
+  address; `ignore_user_abort()`/`set_time_limit(0)` are set by the renamer after the preflight.

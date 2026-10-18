@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V2\MailboxBulkActionController;
 use App\Http\Controllers\Api\V2\MailboxCapabilitiesController;
 use App\Http\Controllers\Api\V2\MailboxController;
 use App\Http\Controllers\Api\V2\MailboxDeletionPreviewController;
+use App\Http\Controllers\Api\V2\MailboxRenameController;
 use App\Http\Controllers\Api\V2\MailboxSenderSettingsController;
 use App\Http\Controllers\Api\V2\MailboxTagController;
 use App\Http\Controllers\Api\V2\MailboxTemplateController;
@@ -244,6 +245,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'mailboxUpdate', 'target' => 'mailbox'])
             ->name('mailboxes.update');
+        Route::post('/mailboxes/{mailbox}/rename', [MailboxRenameController::class, 'store'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'mailboxRename', 'target' => 'mailbox'])
+            ->name('mailbox-rename.store');
         Route::delete('/mailboxes/{mailbox}', [MailboxController::class, 'destroy'])
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'mailboxDeletion', 'target' => 'mailbox'])

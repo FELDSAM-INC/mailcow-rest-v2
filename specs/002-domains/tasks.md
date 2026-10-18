@@ -837,6 +837,58 @@ and list the audit log filtered by target.
   UI, deletion scan (SC-003), the ISPConfig publication and `SKIP_SOGO=y`. Record the results in the
   release notes.
 
+  *Staging run (2026-10-18), partly done*: Part C ran on maildev.feldhost.cz, the FeldHost fork at
+  `1b7c446` (upstream `2026-09a` plus fork changes), with the production image built from `e6ee28c`
+  and deployed with `scripts/deploy/push-to-mailcow.sh`. The mode-600 `restv2/restv2.env` gained
+  `COMPOSE_PROJECT_NAME=mailcowdockerized`, `RESTV2_DEFAULT_DKIM_SELECTOR=feldhost` (the selector of
+  the fork's Default template and DKIM form) and `RESTV2_DKIM_DNS_PUBLICATION=n`. The new
+  `site.restv2.custom` (`client_max_body_size 5m`) was loaded with `nginx -t` and `nginx -s reload`,
+  and only `restv2-mailcow` was recreated. The legacy side was the real legacy UI (Playwright) or its
+  own `/api/v1` requests with a legacy session, signed in as `restv2-test-admin`. The test objects
+  had `*.example` names and were deleted afterwards through the API.
+  - Step 2 (SC-001) passes. Every figure of `GET /domains/{domain}` matched the legacy Domains table
+    data and the Edit domain page for 11 domains: settings, tags, relayhost, rate limit, timestamps,
+    usage, domain administrators and the footer summary. The domains covered backup MX with both
+    relay options, an inactive domain, two alias domains with a resource and stored mail, a 1 MiB
+    default quota, a 500 GiB domain quota, the Global Address List off, a fully allocated quota, two
+    tags, three mailboxes, and an IDN domain with a footer. Resources, alias domains and the largest
+    mailbox quota, which legacy does not show, matched SQL.
+  - Step 3 (SC-002, SC-008) passes, with one deviation. `parity-a.example` (legacy UI, "Add domain
+    and restart SOGo", Default template) and `parity-b.example` (`POST /domains` with `templateId`
+    1, the same description and tags, and `restartGroupware`) have identical `domain` and
+    `tags_domain` rows, `DOMAIN_MAP`, `RL_VALUE` (`30 / 1m`) and DKIM entries (`feldhost`, 2048 bits,
+    the same storage formats). Both restarted `sogo-mailcow` through dockerapi. A mailbox created in
+    `parity-b.example` in the legacy UI received a message sent from inside `postfix-mailcow` 1.4 s
+    after sending, 18 s after its creation. **Deviation**: legacy's domain creation returns before
+    the closing `update_sogo_static_view()` of `mailbox()` (upstream `2026-09a` too), so it neither
+    rebuilds `_sogo_static_view` nor flushes memcached. The API does both
+    (`DomainCreator::followUps()`, `groupwareDirectoryUpdate: done`, memcached `cmd_flush` +1),
+    because spec.md's parity table assumes legacy does. It is harmless here, but a full rebuild
+    takes minutes on very large hosts (T090 note).
+  - Step 4 passes. After an edit in the legacy UI, the domain's version tag changed: a `PATCH` with
+    the old tag answered `412` and one with the new tag `200`. A template created and edited through
+    the API and a footer set through the API show every value in the legacy edit pages, stored in
+    legacy's formats.
+  - Step 5 (SC-003) passes. The test domain had an alias domain (with its own DKIM key and rate
+    limit), aliases in both domains, a footer, domain BCC maps in the `@` form and the bare form (the
+    bare form inserted directly, because legacy never writes it), spam block lists for both domains
+    and two domain administrators. Its deletion was first refused (`409 domain-not-empty`). After the
+    mailbox was deleted in the legacy UI, the deletion answered `204`. A full database dump and every
+    Redis key were searched for both names. Only the DKIM keys remain, apart from legacy's logs,
+    legacy session data and the API's audit records. The administrator who managed only this domain
+    was deleted with its permissions; the other kept its second domain. `_garbage` shows the
+    domain's directory (`<time>_paritybexample`), and the deletion record has `maildirCleanup: done`.
+  - Step 6 was not run. It writes to the owner's ISPConfig DNS and needs the owner's approval and
+    the `RESTV2_ISPCONFIG_*` settings: a remote user allowed `dns_zone_get`,
+    `dns_rr_get_all_by_zone`, `dns_txt_add`, `dns_txt_update` and `dns_txt_delete`, a JSON endpoint
+    reachable from the container, and two domains, one whose zone exists in ISPConfig and one without.
+  - Step 7 passes with `SKIP_SOGO=y` set for `restv2-mailcow` alone and restored afterwards:
+    `groupwareEnabled: false`, and a creation with `restartGroupware: true` reported
+    `groupwareDisabled` for both steps, without a SOGo restart, a directory rebuild or a memcached
+    flush.
+
+  Still open: step 6, a host on plain upstream `2026-09a`, and a decision on the step 3 deviation.
+
 ---
 
 ## Dependencies and execution order
@@ -950,5 +1002,6 @@ Deviations and decisions made while implementing, with the reason:
   mailboxes (in legacy too).
 - **G28, G29, G33, G34** were fixed with this feature (`docs/api-gaps.md`); **G30** (optional bulk
   deletion preview) was not implemented.
-- **T097** (quickstart Part C on a mailcow host) is open until the release checks run.
+- **T097** (quickstart Part C on a mailcow host) ran partly on 2026-10-18 (see the task) and stays
+  open for step 6, a plain upstream host and the creation rebuild deviation.
 

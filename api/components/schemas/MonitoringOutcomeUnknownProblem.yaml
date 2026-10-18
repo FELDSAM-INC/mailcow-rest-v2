@@ -2,13 +2,15 @@ description: |
   Problem of type `/api/v2/problems/outcome-unknown` (status `504`) of feature 011: mailcow's
   container service did not answer within its timeout (`DOCKER_TIMEOUT`, 60 seconds), or could not
   be reached after the action was sent, so the action may or may not have been carried out. `step`
-  names the action. Read the container, the queue or the rules again.
+  names the action. Read the container, the queue or the rules again. Extends the shared
+  `OutcomeUnknownProblem` (G11) with the action names.
 allOf:
-  - $ref: './Problem.yaml'
+  - $ref: './OutcomeUnknownProblem.yaml'
   - type: object
     required: [step]
     properties:
       step:
         type: string
         description: The action whose outcome is unknown.
+        examples: [restart]
         enum: [start, stop, restart, deliver, hold, release, delete, flush, purge, rulesReset]

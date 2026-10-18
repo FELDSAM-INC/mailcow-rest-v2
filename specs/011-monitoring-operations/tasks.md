@@ -1023,8 +1023,9 @@ Deviations and decisions made while implementing, with the reason:
   so T105 passed when it was written; T106 documented them in `docs/audit-events.md` (G3) and
   narrowed the ban actions to the keys each one writes. The audit whitelist lives in
   `AuditEventType::detailKeys()` (001's mechanism), not in `AuditLogger`. Contract gap G11 is fixed
-  with `MonitoringOutcomeUnknownProblem` (`step` with the action names) and `step` on
-  `Fail2BanRulesNotRestored`.
+  with `MonitoringOutcomeUnknownProblem`, which extends 003's shared `OutcomeUnknownProblem` with
+  the action names as `step` (rebased onto 003); `Fail2BanRulesNotRestored` answers it (`anyOf`)
+  or a plain `ban-rules-not-restored` problem.
 - **T107–T111** (polish): the matrix check maps each provider row to its contract operation and
   compares the set with the registry's 42 operations (the bulk queue action has one row per action
   value). The architecture check forbids the outbound clients, Redis and the database in this

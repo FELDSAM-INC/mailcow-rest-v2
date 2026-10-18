@@ -168,7 +168,7 @@ Contract changes made while implementing feature 011:
   `before`, `meta.total` counts the remaining entries (G6, G9).
 - `Fail2BanSettingsPatch` declares the parameter ranges as `minimum`/`maximum` (G7).
 - The shared `BulkResultResponse` declares the optional `Audit-Recorded: false` header (G8).
-- `MonitoringOutcomeUnknownProblem` declares `step` with the action names, and
-  `Fail2BanRulesNotRestored` an optional `step` (G11).
+- `MonitoringOutcomeUnknownProblem` extends 003's shared `OutcomeUnknownProblem` with the action
+  names as `step`; `Fail2BanRulesNotRestored` answers it or `ban-rules-not-restored` (G11).
 
 Release checks of feature 011 (quickstart Part C): not run yet.

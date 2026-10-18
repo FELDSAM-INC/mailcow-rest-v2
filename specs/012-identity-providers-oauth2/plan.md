@@ -195,6 +195,7 @@ app/
 │   │                       Oauth2ClientSecretRegenerationController,Oauth2ClientTokenRevocationController,
 │   │                       Oauth2ClientBulkActionController}.php
 │   ├── Middleware/RequireAuth.php                          # 001; calls IdentityProviderSessionGuard
+│   ├── Requests/Api/V2/Concerns/IdentityProviderRules.php      # shared per-type rule sets
 │   ├── Requests/Api/V2/{SaveIdentityProviderRequest,UpdateIdentityProviderRequest,
 │   │                    TestIdentityProviderConnectionRequest,CompleteSingleSignOnRequest,
 │   │                    ReportSingleSignOnProviderErrorRequest,StoreOauth2ClientRequest,
@@ -206,40 +207,46 @@ app/
 ├── Policies/{IdentityProviderPolicy,Oauth2ClientPolicy}.php
 ├── Rules/{HttpUrl,KeycloakRealm,KeycloakVersion,ScopeList,HostName,LdapAttributeName,LdapFilter,
 │          ExistingMailboxTemplate,UniqueAttributeValues,RedirectUri}.php
+├── Logging/RedactSecrets.php                               # 001; more redacted keys
 ├── Services/
 │   ├── IdentityProvider/
 │   │   ├── IdentityProviderConfig.php, IdentityProviderSettingsCodec.php
 │   │   ├── IdentityProviderRepository.php                  # reads rows, ETag, modifiedAt, counts
 │   │   ├── IdentityProviderConfigService.php               # save, change, delete (upstream writes)
 │   │   ├── SecretRetentionPolicy.php, IdentityProviderUsage.php, AppReturnUrls.php
-│   │   ├── SynchronisationStatusReader.php, ConnectionTester.php
+│   │   ├── SynchronisationStatusReader.php, SynchronisationStatus.php
+│   │   ├── ConnectionTester.php, ConnectionTestResult.php
 │   │   ├── KeycloakServiceTokenCache.php                   # access_token row (upstream write)
 │   │   ├── ProviderPasswordVerifier.php, ProviderVerification.php
 │   │   ├── SingleSignOnService.php, IdentityProviderSessionGuard.php, SsoLinkStore.php
 │   │   └── MailboxProvisioner.php, TemplateMarker.php
 │   ├── Oauth2/Oauth2ClientService.php                      # oauth_* writes
 │   └── Auth/{AccountResolver,PasswordSignInService,PendingActionEvaluator,SessionManager}.php  # 001, extended
-└── Support/Http/ProblemType.php                            # 001; six cases added
+└── Support/Http/{ProblemType,BulkResult}.php               # 001: six cases added; BulkResult unless 002 has it
 
 config/restv2.php                                            # RESTV2_IDP_*, RESTV2_SSO_* settings
 docker/php/Dockerfile                                        # ext-ldap
 compose.yaml                                                 # profile idp: openldap, keycloak
+deploy/docker-compose.override.yml                           # ADDITIONAL_SERVER_NAMES, optional settings
+scripts/legacy/extract-sync-log-texts.sh                     # cron log texts of a tag (R12)
 routes/api.php                                               # 17 routes
 
 tests/
 ├── Support/
 │   ├── Fakes/FakeLdapDirectory.php
-│   ├── IdentityProvider/{IdentityProviderFixtures,FakeOidcProvider,CronLogWriter}.php
-│   └── Mailcow/MailcowFactory.php                          # identityProviderSettings, oauth rows
+│   ├── IdentityProvider/{IdentityProviderFixtures,FakeOidcProvider}.php
+│   └── Mailcow/MailcowFactory.php                          # IdP configs, oauth rows, cronLog
 ├── Feature/IdentityProvider/*Test.php
 ├── Feature/SingleSignOn/*Test.php
 ├── Feature/Auth/{LdapPasswordSignIn,KeycloakPasswordSignIn,ProviderPasswordFailures,
 │                ProviderPasswordProvisioning}Test.php
 ├── Feature/Oauth2/*Test.php
+├── Feature/{PublicConfig/PublicConfigSingleSignOn,Audit/IdentityProviderAudit,
+│            Performance/SingleSignOnLatency}Test.php
 ├── Feature/Security/{IdentityProviderAuthorizationMatrix,IdentityProviderSecretScan}Test.php
-├── Unit/IdentityProvider/*Test.php
+├── Unit/{IdentityProvider,Rules,Clients}/*Test.php
 ├── Integration/Ldap/ExtLdapDirectoryTest.php               # group idp, OpenLDAP container
-└── fixtures/{cron-log/2026-09a.json,ldap/bootstrap.ldif}
+└── fixtures/{cron-log/2026-09a.json,cron-log/2026-09a-messages.json,ldap/bootstrap.ldif}
 ```
 
 **Structure Decision**: The single Laravel project of feature 001. Business logic lives in

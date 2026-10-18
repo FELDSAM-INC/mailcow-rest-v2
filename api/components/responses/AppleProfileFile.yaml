@@ -8,11 +8,11 @@ headers:
     schema:
       type: string
   Cache-Control:
-    description: Always `no-store`.
+    description: Always contains `no-store` (as `no-store, private`), so that nothing caches the response.
     required: true
     schema:
       type: string
-      const: no-store
+      pattern: '(^|,\s*)no-store(\s*,|$)'
 content:
   application/x-apple-aspen-config:
     schema:

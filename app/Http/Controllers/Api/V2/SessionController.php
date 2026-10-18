@@ -10,6 +10,7 @@ use App\Http\Resources\Api\V2\SessionResource;
 use App\Services\Audit\AuditLogger;
 use App\Services\Auth\PasswordSignInService;
 use App\Services\Auth\SessionManager;
+use App\Services\Webmail\WebmailHandOffService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -46,11 +47,19 @@ class SessionController extends Controller
      * deleteSession (FR-010): ends a live session in any state and audits the sign-out of a
      * signed-in account. Without a live session nothing changes.
      */
-    public function destroy(Request $request, SessionManager $sessions, AuditLogger $audit): Response
+    public function destroy(Request $request, SessionManager $sessions, AuditLogger $audit, WebmailHandOffService $handOffs): Response
     {
+        $response = response()->noContent();
+
         if (RequestContext::hasLiveSession($request)) {
             $session = $request->session();
             $principal = $sessions->principal($session);
+            $handle = $sessions->handle($session);
+
+            // Feature 005: the session's webmail hand-off ends with it, and its cookie is removed.
+            if ($handle !== null && $handOffs->hasHandOff($handle)) {
+                $response->headers->setCookie($handOffs->expiredCookie());
+            }
 
             if ($principal !== null) {
                 DB::transaction(fn () => $audit->record(
@@ -67,6 +76,6 @@ class SessionController extends Controller
             $sessions->end($session);
         }
 
-        return response()->noContent();
+        return $response;
     }
 }

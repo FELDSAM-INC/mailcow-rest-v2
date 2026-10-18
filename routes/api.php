@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V2\ApiDocsController;
 use App\Http\Controllers\Api\V2\ApiKeyController;
 use App\Http\Controllers\Api\V2\ApiKeyOwnerCandidateController;
 use App\Http\Controllers\Api\V2\ApiKeyRevocationController;
+use App\Http\Controllers\Api\V2\AppPasswordController;
 use App\Http\Controllers\Api\V2\AuditEventController;
 use App\Http\Controllers\Api\V2\BccMapController;
 use App\Http\Controllers\Api\V2\ContainerController;
@@ -75,6 +76,7 @@ use App\Http\Controllers\Api\V2\Oauth2ClientController;
 use App\Http\Controllers\Api\V2\Oauth2ClientSecretRegenerationController;
 use App\Http\Controllers\Api\V2\Oauth2ClientTokenRevocationController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
+use App\Http\Controllers\Api\V2\OwnMailboxOverviewController;
 use App\Http\Controllers\Api\V2\OwnPasswordController;
 use App\Http\Controllers\Api\V2\OwnPasswordPolicyController;
 use App\Http\Controllers\Api\V2\OwnRecoveryEmailController;
@@ -120,9 +122,11 @@ use App\Http\Controllers\Api\V2\SyncJobCapabilitiesController;
 use App\Http\Controllers\Api\V2\SyncJobController;
 use App\Http\Controllers\Api\V2\SyncJobLogController;
 use App\Http\Controllers\Api\V2\SyncJobScheduleResetController;
+use App\Http\Controllers\Api\V2\TemporaryAliasController;
 use App\Http\Controllers\Api\V2\TlsPolicyMapController;
 use App\Http\Controllers\Api\V2\TransportController;
 use App\Http\Controllers\Api\V2\UpdateStatusController;
+use App\Http\Controllers\Api\V2\WebmailHandOffController;
 use App\Http\Middleware\AuthorizeMonitoring;
 use App\Rules\MailQueueId;
 use App\Services\Logs\LogType;
@@ -881,6 +885,64 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::post('/password-resets/token-check', [PasswordResetController::class, 'check'])->name('password-reset-token-check.store');
         Route::post('/password-resets/webauthn-challenge', [PasswordResetController::class, 'webauthnChallenge'])->name('password-reset-webauthn-challenge.store');
         Route::post('/password-resets/completion', [PasswordResetController::class, 'complete'])->name('password-reset-completion.store');
+    });
+
+    // The signed-in mailbox user's own mailbox (feature 005 US5): overview and webmail hand-off.
+    Route::middleware(['restv2.own', 'restv2.auth:session'])->group(function (): void {
+        Route::get('/me/mailbox', [OwnMailboxOverviewController::class, 'show'])
+            ->middleware('restv2.pending')
+            ->name('own-mailbox.show');
+        Route::post('/me/webmail-handoff', [WebmailHandOffController::class, 'store'])
+            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->defaults('restv2.audit', ['event' => 'webmailHandOff', 'target' => 'webmailHandOff'])
+            ->name('webmail-handoff.store');
+    });
+
+    // Self-service objects of the mailboxes in the caller's scope (feature 005 US4, US6–US10):
+    // sessions and keys; reads need no permission flag. Literal paths before {mailbox} ones.
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/mailboxes/{mailbox}/app-passwords', [AppPasswordController::class, 'index'])
+            ->where('mailbox', '[^/]+')
+            ->name('app-passwords.index');
+        Route::get('/mailboxes/{mailbox}/app-passwords/{appPasswordId}', [AppPasswordController::class, 'show'])
+            ->where(['mailbox' => '[^/]+', 'appPasswordId' => '[1-9][0-9]{0,9}'])
+            ->name('app-passwords.show');
+        Route::get('/mailboxes/{mailbox}/temporary-aliases', [TemporaryAliasController::class, 'index'])
+            ->where('mailbox', '[^/]+')
+            ->name('temporary-aliases.index');
+        Route::get('/mailboxes/{mailbox}/temporary-aliases/{temporaryAlias}', [TemporaryAliasController::class, 'show'])
+            ->where(['mailbox' => '[^/]+', 'temporaryAlias' => '[^/]+'])
+            ->name('temporary-aliases.show');
+        Route::get('/mailboxes/{mailbox}/temporary-alias-domains', [TemporaryAliasController::class, 'domains'])
+            ->where('mailbox', '[^/]+')
+            ->name('temporary-alias-domains.index');
+    });
+
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::post('/mailboxes/{mailbox}/app-passwords', [AppPasswordController::class, 'store'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'appPasswordCreation', 'target' => 'appPassword'])
+            ->name('app-passwords.store');
+        Route::patch('/mailboxes/{mailbox}/app-passwords/{appPasswordId}', [AppPasswordController::class, 'update'])
+            ->where(['mailbox' => '[^/]+', 'appPasswordId' => '[1-9][0-9]{0,9}'])
+            ->defaults('restv2.audit', ['event' => 'appPasswordUpdate', 'target' => 'appPassword'])
+            ->name('app-passwords.update');
+        Route::delete('/mailboxes/{mailbox}/app-passwords/{appPasswordId}', [AppPasswordController::class, 'destroy'])
+            ->where(['mailbox' => '[^/]+', 'appPasswordId' => '[1-9][0-9]{0,9}'])
+            ->defaults('restv2.audit', ['event' => 'appPasswordDeletion', 'target' => 'appPassword'])
+            ->name('app-passwords.destroy');
+        Route::post('/mailboxes/{mailbox}/temporary-aliases', [TemporaryAliasController::class, 'store'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'temporaryAliasCreation', 'target' => 'temporaryAlias'])
+            ->name('temporary-aliases.store');
+        Route::patch('/mailboxes/{mailbox}/temporary-aliases/{temporaryAlias}', [TemporaryAliasController::class, 'update'])
+            ->where(['mailbox' => '[^/]+', 'temporaryAlias' => '[^/]+'])
+            ->defaults('restv2.audit', ['event' => 'temporaryAliasUpdate', 'target' => 'temporaryAlias'])
+            ->name('temporary-aliases.update');
+        Route::delete('/mailboxes/{mailbox}/temporary-aliases/{temporaryAlias}', [TemporaryAliasController::class, 'destroy'])
+            ->where(['mailbox' => '[^/]+', 'temporaryAlias' => '[^/]+'])
+            ->defaults('restv2.audit', ['event' => 'temporaryAliasDeletion', 'target' => 'temporaryAlias'])
+            ->name('temporary-aliases.destroy');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

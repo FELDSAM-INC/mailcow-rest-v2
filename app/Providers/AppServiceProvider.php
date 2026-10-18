@@ -55,6 +55,7 @@ use App\Policies\Oauth2ClientPolicy;
 use App\Policies\SyncJobPolicy;
 use App\Services\Aliases\AliasAuditTargets;
 use App\Services\Audit\RefusalAuditor;
+use App\Services\Auth\SessionRegistry;
 use App\Services\Config\MailcowConfig;
 use App\Services\Dkim\DkimAuditTargets;
 use App\Services\Domains\DomainAuditTargets;
@@ -70,6 +71,7 @@ use App\Services\Oauth2\Oauth2ClientService;
 use App\Services\Routing\RoutingAuditTargets;
 use App\Services\SyncJobs\SyncJobAuditTargets;
 use App\Services\SelfService\SelfServiceAuditTargets;
+use App\Services\Webmail\WebmailHandOffService;
 use App\Support\Clock\Clock;
 use App\Support\Clock\Sleeper;
 use App\Support\Clock\SystemClock;
@@ -95,6 +97,8 @@ class AppServiceProvider extends ServiceProvider
         // Outbound services of features 002 and 010, faked in tests (tests/TestCase.php) and, in
         // development only, with RESTV2_FAKE_OUTBOUND=y.
         $this->app->singleton(RefusalAuditor::class);
+        // Feature 005: what ends with a session of this API (the webmail hand-off).
+        $this->app->tag([WebmailHandOffService::class], SessionRegistry::LISTENER_TAG);
         $this->app->scoped(GroupwareCacheFlush::class);
         $this->app->bind(Clock::class, SystemClock::class);
         $this->app->bind(DockerApiClient::class, HttpDockerApiClient::class);

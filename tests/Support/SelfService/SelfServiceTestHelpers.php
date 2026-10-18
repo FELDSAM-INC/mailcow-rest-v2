@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Redis;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Process\PhpExecutableFinder;
+use Symfony\Component\Process\Process;
 use Tests\Support\Auth\AuthRequests;
 use Tests\Support\Mailboxes\MailboxTestHelpers;
 
@@ -128,6 +130,48 @@ trait SelfServiceTestHelpers
         }
 
         return $messages;
+    }
+
+    /**
+     * `POST /me/webmail-handoff`; returns the response and the legacy session ID of its cookie.
+     *
+     * @return array{TestResponse<Response>, string|null}
+     */
+    protected function webmailHandOff(): array
+    {
+        $response = $this->postEmpty('/api/v2/me/webmail-handoff', $this->csrf());
+        $id = null;
+
+        foreach ($response->headers->getCookies() as $cookie) {
+            if ($cookie->getName() === 'MCSESSID' && ! $cookie->isCleared()) {
+                $id = (string) $cookie->getValue();
+            }
+        }
+
+        return [$response, $id];
+    }
+
+    /**
+     * The decoded legacy PHP session `PHPREDIS_SESSION:<id>` in mailcow's Redis, or null.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function legacySession(string $id): ?array
+    {
+        $raw = $this->redis()->get('PHPREDIS_SESSION:'.$id);
+
+        if (! is_string($raw)) {
+            return null;
+        }
+
+        // PHP's own session_decode() in a subprocess, with legacy's `php` serialiser.
+        $php = (new PhpExecutableFinder)->find(false) ?: 'php';
+        $process = new Process([$php, '-n', '-d', 'session.serialize_handler=php', '-d', 'session.save_handler=files', '-d', 'session.save_path='.sys_get_temp_dir(), '-d', 'session.use_cookies=0', '-d', 'session.cache_limiter=', '-r', 'session_start(); session_decode(base64_decode($argv[1])); echo base64_encode(serialize($_SESSION));', base64_encode($raw)]);
+        $process->mustRun();
+        $session = unserialize((string) base64_decode($process->getOutput()), ['allowed_classes' => false]);
+        $this->assertIsArray($session);
+
+        return $session;
     }
 
     /**

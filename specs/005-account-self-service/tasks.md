@@ -524,11 +524,11 @@ passwords shown once (FR-037 to FR-041).
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T062 [P] [US4] Write `tests/Unit/Services/AppPasswordGeneratorTest.php`: length `max(32,
+- [X] T062 [P] [US4] Write `tests/Unit/Services/AppPasswordGeneratorTest.php`: length `max(32,
   policy minLength)`, at least one lower, upper, digit and special character of `!@#$%^&*()?=`,
   passes `PasswordPolicyChecker` for policies up to length 64 with every class required, uses
   `random_int`.
-- [ ] T063 [P] [US4] Write `tests/Feature/AppPasswords/AppPasswordCrudTest.php` (FR-037 to FR-041,
+- [X] T063 [P] [US4] Write `tests/Feature/AppPasswords/AppPasswordCrudTest.php` (FR-037 to FR-041,
   AS-1, AS-3, AS-5, AS-6):
   - create with a password and `[imap, smtp]` → `201`, `Location`, `ETag`, no password in the body,
     row with BLF-CRYPT hash, `domain` = mailbox domain, `imap_access 1`, `smtp_access 1`, others 0,
@@ -550,7 +550,7 @@ passwords shown once (FR-037 to FR-041).
     passwords only as `set`/`changed`;
   - a row inserted or changed directly in the database between two requests, as the legacy UI would
     do it, is visible in the next response, and its `etag` changes (FR-078, no caching).
-- [ ] T064 [P] [US4] Write `tests/Feature/AppPasswords/AppPasswordAuthorizationTest.php` (AS-2, AS-4,
+- [X] T064 [P] [US4] Write `tests/Feature/AppPasswords/AppPasswordAuthorizationTest.php` (AS-2, AS-4,
   SC-007): admin any mailbox; domain admin with `da_acl.app_passwds` inside scope → allowed, outside
   → `404` for every operation (also with a guessed `appPasswordId` of a foreign mailbox); domain
   admin without the flag → reads allowed, changes `403 permission-flag-required` (`requiredFlags: [appPasswds]`);
@@ -558,20 +558,20 @@ passwords shown once (FR-037 to FR-041).
   refused; read-only keys (admin, domain admin) → reads allowed, changes `insufficient-key-scope`;
   read-write domain-admin key → inside scope only; resource address → `404`; restricted session →
   `pending-action-required`; every refusal audited.
-- [ ] T065 [P] [US4] Write `tests/Feature/AppPasswords/AppPasswordParityTest.php` (SC-009): a row
+- [X] T065 [P] [US4] Write `tests/Feature/AppPasswords/AppPasswordParityTest.php` (SC-009): a row
   created through the API equals, column by column apart from `id`, `password` and timestamps, the
   row legacy's `app_passwd('add')` inserts for the same input (fixture of the expected row from the
   legacy function at `2026-09a`).
 
 ### Implementation for User Story 4
 
-- [ ] T066 [P] [US4] Create `app/Models/Mailcow/AppPassword.php` (table `app_passwd`, `password`
+- [X] T066 [P] [US4] Create `app/Models/Mailcow/AppPassword.php` (table `app_passwd`, `password`
   hidden, casts for the access flags) and `app/Services/AppPasswords/AppPasswordGenerator.php`. This
   makes T062 pass.
-- [ ] T067 [US4] Create `app/Services/AppPasswords/AppPasswordService.php` (R11: encoding, insert,
+- [X] T067 [US4] Create `app/Services/AppPasswords/AppPasswordService.php` (R11: encoding, insert,
   update without rewriting `mailbox`, delete, `ETag` per R20 with `hmac(password)`, `PermissionGate`
   `appPasswds`, audit).
-- [ ] T068 [US4] Create `app/Http/Requests/Api/V2/{ListAppPasswordsRequest,StoreAppPasswordRequest,UpdateAppPasswordRequest}.php`
+- [X] T068 [US4] Create `app/Http/Requests/Api/V2/{ListAppPasswordsRequest,StoreAppPasswordRequest,UpdateAppPasswordRequest}.php`
   (constraints of DM `app_passwd`), `app/Http/Resources/Api/V2/AppPasswordResource.php` and
   `app/Http/Controllers/Api/V2/AppPasswordController.php`; register the five routes
   (`restv2.auth:authenticated`, `restv2.csrf` on unsafe methods, `restv2.audit` target
@@ -591,14 +591,14 @@ out and run it again; compare the overview with the legacy user page data.
 
 ### Tests for User Story 5 ⚠️
 
-- [ ] T069 [P] [US5] Create `tests/Support/Legacy/LegacyFpmRunner.php`: writes a php-fpm pool config
+- [X] T069 [P] [US5] Create `tests/Support/Legacy/LegacyFpmRunner.php`: writes a php-fpm pool config
   to a temp directory (listen `127.0.0.1:9901`, `session.save_handler=redis`, `session.save_path`
   to the test Redis with `database=15`, `clear_env=no`), starts `php-fpm -F -y` as a subprocess,
   sends a FastCGI request with `cgi-fcgi -bind -connect 127.0.0.1:9901` (`SCRIPT_FILENAME` =
   `tests/fixtures/legacy/sogo-auth/2026-09a/sogo-auth.php`, `DOCUMENT_ROOT` = that directory,
   `SOGO_AUTH_INTERNAL=1`, `HTTP_X_ORIGINAL_URI=/SOGo/so/`, `HTTP_COOKIE`, `HTTP_USER_AGENT`) and
   parses the response headers; stops the process in `tearDown`.
-- [ ] T070 [P] [US5] Write `tests/Feature/Webmail/WebmailHandOffTest.php` for `createWebmailHandOff`
+- [X] T070 [P] [US5] Write `tests/Feature/Webmail/WebmailHandOffTest.php` for `createWebmailHandOff`
   (FR-067, FR-068, AS-1, AS-4, AS-5, AS-7): a mailbox user's full session → `200 {mailbox, url:
   "/SOGo/so/"}`, `Cache-Control: no-store`, `Set-Cookie: MCSESSID=<32 hex>; Path=/; Secure; HttpOnly;
   SameSite=Lax` (name and policy from `SESSION_NAME`/`SESSION_SAMESITE_POLICY` overrides too);
@@ -608,19 +608,19 @@ out and run it again; compare the overview with the legacy user page data.
   `SKIP_SOGO=y` → `403 groupware-disabled`; restricted session → `pending-action-required`; admin
   and domain admin → `forbidden`; key → `session-required`; Redis down → `503 temporary-failure`
   (`sharedStore`), no `sasl_log` row.
-- [ ] T071 [P] [US5] Write `tests/Feature/Webmail/WebmailHandOffEndingTest.php` (FR-011, FR-025,
+- [X] T071 [P] [US5] Write `tests/Feature/Webmail/WebmailHandOffEndingTest.php` (FR-011, FR-025,
   FR-068, AS-3): the legacy session key is deleted by sign-out (and the response expires the
   `MCSESSID` cookie), by session invalidation (user agent change, account deactivated), by another
   session's password change with `endOtherSessions`, by a completed reset, and by
   `restv2:webmail-handoffs:sweep` after the API session key expired (simulate the TTL); the sweeper
   also removes records whose legacy key expired and leaves live hand-offs alone; the current
   session's own hand-off survives its password change.
-- [ ] T072 [P] [US5] Write `tests/Feature/Webmail/SogoAuthCompatibilityTest.php` (R3) with
+- [X] T072 [P] [US5] Write `tests/Feature/Webmail/SogoAuthCompatibilityTest.php` (R3) with
   `LegacyFpmRunner`: after a hand-off the unmodified legacy `sogo-auth.php` answers
   `X-User: <mailbox>`; after sign-out, `endAll` and the sweeper it answers an empty `X-User`; a
   session value with `pending_pw_update` (written by the test) answers empty; the run also proves
   the legacy script reads the API's encoding.
-- [ ] T073 [P] [US5] Write `tests/Feature/OwnAccount/MailboxOverviewTest.php` for
+- [X] T073 [P] [US5] Write `tests/Feature/OwnAccount/MailboxOverviewTest.php` for
   `getOwnMailboxOverview` (FR-069, AS-6, AS-7): quota and usage from `quota2` (and `quota2replica`
   with `MASTER=n`), percent `null` for unlimited; protocol access with missing keys as `true`;
   `webmail` flags; `passwordChangedAt` converted from `TZ`; recovery address only for the mailcow
@@ -632,23 +632,23 @@ out and run it again; compare the overview with the legacy user page data.
 
 ### Implementation for User Story 5
 
-- [ ] T074 [US5] Create `app/Services/Webmail/WebmailHandOff.php` (value object) and
+- [X] T074 [US5] Create `app/Services/Webmail/WebmailHandOff.php` (value object) and
   `app/Services/Webmail/WebmailHandOffService.php` (R3: checks, ID generation with `SET NX EX`
   through `SharedStore`, `PhpSessionEncoder` payload, cookie, `RecentLoginRecorder` with service
   `SSO`, records `restv2:webmail-handoff:<id>` and `restv2:session-handoffs:<handle>`,
   `endForHandle()`, audit). Expose `handOff(Principal $creator, string $mailbox, Request $request)`
   for feature 007.
-- [ ] T075 [US5] Create `app/Console/Commands/SweepWebmailHandOffsCommand.php`
+- [X] T075 [US5] Create `app/Console/Commands/SweepWebmailHandOffsCommand.php`
   (`restv2:webmail-handoffs:sweep`, `SCAN restv2:webmail-handoff:*`, `SessionRegistry::isAlive`,
   deletes per R3, logs a summary line).
-- [ ] T076 [US5] Register `WebmailHandOffService::endForHandle()` as a `SessionEndListener` (T020)
+- [X] T076 [US5] Register `WebmailHandOffService::endForHandle()` as a `SessionEndListener` (T020)
   and make 001's `SessionController@destroy` add `Set-Cookie: <SESSION_NAME>=deleted; Max-Age=0;
   Path=/` when the session had a hand-off (extends 001).
-- [ ] T077 [US5] Create `app/Http/Resources/Api/V2/WebmailHandOffResource.php` and
+- [X] T077 [US5] Create `app/Http/Resources/Api/V2/WebmailHandOffResource.php` and
   `app/Http/Controllers/Api/V2/WebmailHandOffController.php`; register `POST /me/webmail-handoff`
   in group `restv2.own` (`restv2.auth:session`, `restv2.csrf`, `restv2.pending:enforce`,
   `restv2.audit` target `webmailHandOff`). This makes T070–T072 pass.
-- [ ] T078 [US5] Create `app/Services/Account/MailboxOverviewService.php` (queries of R18 through
+- [X] T078 [US5] Create `app/Services/Account/MailboxOverviewService.php` (queries of R18 through
   003's `MailboxReader`, 004's `Alias`/`AliasDomain`, 003's `SenderAcl`, `SpamAlias`, `Pushover`),
   `app/Http/Resources/Api/V2/MailboxOverviewResource.php` and
   `app/Http/Controllers/Api/V2/OwnMailboxOverviewController.php`; register `GET /me/mailbox` in group
@@ -668,12 +668,12 @@ domain; change lifetimes; let them expire; repeat as each role.
 
 ### Tests for User Story 6 ⚠️
 
-- [ ] T079 [P] [US6] Write `tests/Unit/Services/TemporaryAliasAddressGeneratorTest.php` (FR-044):
+- [X] T079 [P] [US6] Write `tests/Unit/Services/TemporaryAliasAddressGeneratorTest.php` (FR-044):
   1,000 generated local parts match `^[bcdfghjklmnprstvwxyz][aeiou]...` alternating, two parts of 6–8
   letters joined by `.`; a candidate equal to an existing mailbox, resource, alias, temporary alias
   or (for an alias domain) target-domain address is skipped; ten collisions in a row → `503
   temporary-failure` (`addressGeneration`); the generator uses `random_int` (seeded fake).
-- [ ] T080 [P] [US6] Write `tests/Feature/TemporaryAliases/TemporaryAliasCrudTest.php` (FR-042 to
+- [X] T080 [P] [US6] Write `tests/Feature/TemporaryAliases/TemporaryAliasCrudTest.php` (FR-042 to
   FR-046, AS-1 to AS-3, AS-5): create in the mailbox domain → `201`, `Location` with the address,
   `validity` ≈ now + 8,760 h, `permanent 0`, `goto` = mailbox, description stored (`''` when absent);
   in an alias domain (Unicode input) → created; in an unrelated domain → `422 notInList` with
@@ -683,28 +683,28 @@ domain; change lifetimes; let them expire; repeat as each role.
   not listed and get, patch and delete answer `404`; delete → row gone; list sort, order,
   `permanent` filter and `q`; each entry's `etag` equals the single read's `ETag`; changes audited
   with target id = mailbox and `details.temporaryAlias`.
-- [ ] T081 [P] [US6] Write `tests/Feature/TemporaryAliases/TemporaryAliasAuthorizationTest.php`
+- [X] T081 [P] [US6] Write `tests/Feature/TemporaryAliases/TemporaryAliasAuthorizationTest.php`
   (AS-4): mailbox user without `spam_alias` → reads allowed, changes `403 permission-flag-required`
   (`spamAlias`); domain admin inside scope → allowed (holds the flag), outside → `404`; admin any;
   keys per scope (read-only refused for changes); an alias of another mailbox addressed under the
   caller's mailbox → `404`; refusals audited.
-- [ ] T082 [P] [US6] Write `tests/Feature/TemporaryAliases/TemporaryAliasDomainsTest.php` for
+- [X] T082 [P] [US6] Write `tests/Feature/TemporaryAliases/TemporaryAliasDomainsTest.php` for
   `listTemporaryAliasDomains` (FR-081): the mailbox domain first (`mailboxDomain`) then its alias
   domains by name (`aliasDomain`, ASCII and Unicode forms), equal to the overview's list; admin,
   domain admin inside scope (outside → `404`), the user themself and read-only keys may read; `q`
   filters.
-- [ ] T083 [P] [US6] Write `tests/Feature/TemporaryAliases/TemporaryAliasConcurrencyTest.php`: a
+- [X] T083 [P] [US6] Write `tests/Feature/TemporaryAliases/TemporaryAliasConcurrencyTest.php`: a
   temporary alias creation and a 004 alias creation for the same generated address (forced through a
   seeded generator) in parallel processes never both succeed (domain row lock).
 
 ### Implementation for User Story 6
 
-- [ ] T084 [P] [US6] Create `app/Services/TemporaryAliases/TemporaryAliasAddressGenerator.php` (uses
+- [X] T084 [P] [US6] Create `app/Services/TemporaryAliases/TemporaryAliasAddressGenerator.php` (uses
   003's `AddressAvailability` plus the alias-domain check). This makes T079 pass.
-- [ ] T085 [US6] Create `app/Services/TemporaryAliases/TemporaryAliasService.php` (R12: domains,
+- [X] T085 [US6] Create `app/Services/TemporaryAliases/TemporaryAliasService.php` (R12: domains,
   domain row lock `FOR UPDATE`, insert, change, delete, visibility rule, `ETag`, `PermissionGate`
   `spamAlias`, audit) on 003's `SpamAlias` model.
-- [ ] T086 [US6] Create `app/Http/Requests/Api/V2/{ListTemporaryAliasesRequest,StoreTemporaryAliasRequest,UpdateTemporaryAliasRequest,ListTemporaryAliasDomainsRequest}.php`
+- [X] T086 [US6] Create `app/Http/Requests/Api/V2/{ListTemporaryAliasesRequest,StoreTemporaryAliasRequest,UpdateTemporaryAliasRequest,ListTemporaryAliasDomainsRequest}.php`
   (constraints of DM `spamalias`), `app/Http/Resources/Api/V2/{TemporaryAliasResource,TemporaryAliasDomainResource}.php`
   and the controllers `TemporaryAliasController.php` and `TemporaryAliasDomainController.php`;
   register the six routes (`restv2.auth:authenticated`, `restv2.csrf` on unsafe methods,
@@ -1163,3 +1163,31 @@ that differ from what exists map as listed.
   checks, in this order, the role and source (`403`), the body (`422`), `If-Match` (`412`), the
   current password and the `pwReset` flag. The `EmailAddress` rule (`invalidFormat`, `format:
   email`) is shared with the reset request and the Pushover senders.
+- **T065**: the expected rows are derived line by line from legacy app_passwd('add')
+  (`tests/fixtures/legacy/app_passwd_add_expected.php`, with the source's SHA-256), as 002's
+  `domain_add_expected.php` does, instead of running the legacy function.
+- **T066–T068**: the version tag carries `SHA2(app key ‖ hash)` computed by MariaDB, so the hash
+  never leaves the database, inside 001's HMAC tag. `generatedPassword` is `null` unless the system
+  generated one. A change whose values equal the stored ones needs no flag and is audited with empty
+  `changes`. `ExcludesMember` (a data-aware coded rule) reports `mutuallyExclusive` with `with`.
+  No resource classes: the services build the contract arrays, as 004's presenters do.
+  `MailcowDateTime::toUtcString()` converts query-builder DATETIME values.
+- **T069–T072**: `LegacyFpmRunner` starts `php-fpm -F -y` with its own pool (phpredis sessions in
+  the test Redis database) and asks the unmodified legacy `sogo-auth.php` through `cgi-fcgi`; the
+  test passes, so legacy reads the API's encoding. The `Cache-Control` headers that 005's contract
+  declared as `const: no-store` are now a pattern containing `no-store`: Symfony always answers
+  `no-store, private` (WebmailHandOffResponse, AppleProfileFile, AppleProfileCreated).
+- **T074–T076**: `RecentLoginRecorder::record()` takes an optional service (`SSO`). The sign-out
+  answer expires the legacy cookie (`Max-Age=0`) when the session had a hand-off. The listener is
+  tagged in `AppServiceProvider`.
+- **T078**: the overview reuses 003's `MailboxReader::present()` (tolerating an unavailable shared
+  store) for quota, usage, protocols, webmail preference, password-changed time, recovery address,
+  temporary aliases and push notifications; aliases follow legacy user_get_alias_details().
+- **T083, T085 (deviation from research R12)**: temporary aliases take 003's shared address lock
+  (`AddressLock`) on the candidate and, in an alias domain, on the target-domain address, instead of
+  the domain row lock: `docs/conventions.md` requires features 003–005 to take exactly this lock, and
+  004's alias creation uses it. The concurrency test holds that lock from a second database session.
+  The controller's `store()` resolves the service per request (Laravel caches controller instances
+  on the route, which kept a seeded generator between test requests).
+- **T086**: no `List…Request` or resource classes; the controllers use `ListQuery` and validate
+  the boolean filters with `QueryBoolean`.

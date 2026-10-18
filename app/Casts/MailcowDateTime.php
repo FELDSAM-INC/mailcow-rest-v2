@@ -42,6 +42,19 @@ class MailcowDateTime implements CastsAttributes
         return $time->setTimezone(self::zone())->format('Y-m-d H:i:s');
     }
 
+    /**
+     * A raw mailcow DATETIME value as an RFC 3339 UTC string (`Y-m-d\TH:i:s\Z`), or null for an
+     * empty or zero value; for query-builder rows that bypass the cast (feature 005).
+     */
+    public static function toUtcString(mixed $value): ?string
+    {
+        if (! is_string($value) || $value === '' || str_starts_with($value, '0000-00-00')) {
+            return null;
+        }
+
+        return CarbonImmutable::parse($value, self::zone())->utc()->format('Y-m-d\TH:i:s\Z');
+    }
+
     public static function zone(): string
     {
         return (string) (config('restv2.timezone') ?: 'UTC');

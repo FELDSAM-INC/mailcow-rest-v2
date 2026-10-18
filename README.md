@@ -89,6 +89,10 @@ mailcow's ofelia scheduler runs the audit retention purge daily through the cont
 `IPV4_NETWORK`, `IPV6_NETWORK`, `WEBAUTHN_ONLY_TRUSTED_VENDORS` and `SKIP_SOGO`. `DBHOST`
 (default `mysql-mailcow`) and `REDISHOST` (default `redis-mailcow`) locate the services.
 
+An empty or whitespace-only value counts as unset and takes the default listed here, so the
+`NAME=${NAME:-}` lines of the deploy example are safe. The only exception is
+`RESTV2_MAILCOW_INC_DIR`, where empty means "not mounted".
+
 Settings of this API:
 
 | Variable | Default | Meaning | FeldHost |

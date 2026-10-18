@@ -4,9 +4,10 @@ namespace App\Services\DomainTemplates;
 
 /**
  * The `attributes` JSON of domain templates (research D22), with the legacy keys that legacy's add
- * form reads: quotas in bytes, `rl_value` `""` for no rate limit, flags as 0/1. Reading is
- * tolerant of what legacy has stored over time (numeric strings, `tags` as a JSON string, missing
- * keys); writing produces exactly the legacy keys. Values use the contract's names.
+ * form reads: quotas in bytes, `rl_value` a numeric string as legacy's form stores it (`""` for no
+ * rate limit), flags as 0/1. Reading is tolerant of what legacy and earlier API versions have
+ * stored (numeric strings or integers, `tags` as a JSON string, missing keys); writing produces
+ * exactly the legacy keys. Values use the contract's names.
  *
  * The default mailbox quota (`def_quota_for_mbox`) is not one of the values (owner decision
  * 2026-10-18): storedDefaultQuota() reads it and encode() takes it separately, so that legacy's
@@ -112,7 +113,7 @@ class DomainTemplateAttributes
             'max_quota_for_mbox' => (int) $values['maxMailboxQuota'],
             'max_quota_for_domain' => (int) $values['domainQuota'],
             'rl_frame' => is_array($rate) ? (string) (array_search($rate['frame'], self::FRAMES, true) ?: 's') : 's',
-            'rl_value' => is_array($rate) ? (int) $rate['value'] : '',
+            'rl_value' => is_array($rate) ? (string) (int) $rate['value'] : '',
             'active' => (int) (bool) $values['active'],
             'gal' => (int) (bool) $values['globalAddressList'],
             'backupmx' => (int) (bool) $values['backupMx'],

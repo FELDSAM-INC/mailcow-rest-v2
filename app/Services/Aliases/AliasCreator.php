@@ -23,9 +23,10 @@ use Illuminate\Support\Facades\DB;
  *  2. the `aliasExternalGoto` permission for external destinations of domain administrators (`403`);
  *  3. under 003's address lock, in one transaction: lock the primary domain row, check that the
  *     address is free (`409 address-in-use`) and that the alias limit has room
- *     (`409 domain-alias-limit-reached`), insert with legacy's column list, remove the explicit
- *     sender permissions the alias makes redundant, refresh the destinations' groupware entries in
- *     a savepoint, write the audit record;
+ *     (`409 domain-alias-limit-reached`), insert with legacy's column list (a comment that was not
+ *     sent is NULL, as legacy's add form, which has no comment fields, stores it), remove the
+ *     explicit sender permissions the alias makes redundant, refresh the destinations' groupware
+ *     entries in a savepoint, write the audit record;
  *  4. after the commit, flush the groupware cache.
  *
  * Copies over alias domains use it too, as creations by the caller (FR-037).
@@ -80,10 +81,15 @@ class AliasCreator
             'publicComment' => (string) ($input['publicComment'] ?? ''),
             'privateComment' => (string) ($input['privateComment'] ?? ''),
         ];
+        // Stored comments: NULL when not sent, like legacy; reads give "" for both forms.
+        $comments = [
+            'public_comment' => isset($input['publicComment']) ? (string) $input['publicComment'] : null,
+            'private_comment' => isset($input['privateComment']) ? (string) $input['privateComment'] : null,
+        ];
         $primary = AliasLimit::primaryOf($address->domain);
 
         [$id, $outcome] = $this->locks->run([$address->address], fn (): array => DB::transaction(
-            fn (): array => $this->store($principal, $address, $destination, $values, $primary, $bulkRequestId, $copiedFromAliasId),
+            fn (): array => $this->store($principal, $address, $destination, $values, $comments, $primary, $bulkRequestId, $copiedFromAliasId),
             3,
         ));
 
@@ -96,9 +102,10 @@ class AliasCreator
 
     /**
      * @param  array<string, mixed>  $values
+     * @param  array{public_comment: string|null, private_comment: string|null}  $comments
      * @return array{int, GroupwareOutcome}
      */
-    private function store(Principal $principal, AliasAddress $address, AliasDestination $destination, array $values, string $primary, ?string $bulkRequestId, ?int $copiedFromAliasId): array
+    private function store(Principal $principal, AliasAddress $address, AliasDestination $destination, array $values, array $comments, string $primary, ?string $bulkRequestId, ?int $copiedFromAliasId): array
     {
         $this->limit->lockPrimaryDomain($primary);
         $this->availability->assertFree($address->address);
@@ -107,8 +114,8 @@ class AliasCreator
         try {
             $id = (int) DB::table('alias')->insertGetId([
                 'address' => $address->address,
-                'public_comment' => $values['publicComment'],
-                'private_comment' => $values['privateComment'],
+                'public_comment' => $comments['public_comment'],
+                'private_comment' => $comments['private_comment'],
                 'goto' => $destination->toGoto(),
                 'domain' => $address->domain,
                 'sogo_visible' => (int) $values['groupwareVisible'],

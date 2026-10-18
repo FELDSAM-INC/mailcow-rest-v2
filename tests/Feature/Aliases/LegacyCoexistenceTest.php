@@ -64,7 +64,8 @@ class LegacyCoexistenceTest extends TestCase
         // mailbox('get', 'alias_details')
         $alias = DB::selectOne('SELECT `id`, `domain`, `goto`, `address`, `public_comment`, `private_comment`, `internal`, `active`, `sogo_visible`, `sender_allowed`, `created`, `modified`
             FROM `alias` WHERE (`id` = :id OR `address` = :address) AND `address` != `goto`', ['id' => $id, 'address' => $id]);
-        $this->assertSame(['Sales@example.org', 'example.org', 'anna@example.org', 'pub', '', 1, 1, 1, 1], [$alias->address, $alias->domain, $alias->goto, $alias->public_comment, $alias->private_comment, (int) $alias->internal, (int) $alias->active, (int) $alias->sogo_visible, (int) $alias->sender_allowed]);
+        // The private comment was not sent: NULL, as legacy's add form stores it (its list shows "-").
+        $this->assertSame(['Sales@example.org', 'example.org', 'anna@example.org', 'pub', null, 1, 1, 1, 1], [$alias->address, $alias->domain, $alias->goto, $alias->public_comment, $alias->private_comment, (int) $alias->internal, (int) $alias->active, (int) $alias->sogo_visible, (int) $alias->sender_allowed]);
 
         // mailbox('get', 'alias_domain_details')
         $aliasDomain = DB::selectOne('SELECT `alias_domain`, `target_domain`, `active`, `created`, `modified` FROM `alias_domain` WHERE `alias_domain` = :aliasdomain', ['aliasdomain' => 'example.net']);

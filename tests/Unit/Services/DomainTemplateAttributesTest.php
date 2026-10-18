@@ -120,7 +120,8 @@ class DomainTemplateAttributesTest extends TestCase
             'max_quota_for_mbox' => 10240 * self::MIB,
             'max_quota_for_domain' => 10240 * self::MIB,
             'rl_frame' => 'd',
-            'rl_value' => 10,
+            // A string, as legacy's form stores it.
+            'rl_value' => '10',
             'active' => 1,
             'gal' => 1,
             'backupmx' => 1,

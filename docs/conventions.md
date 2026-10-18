@@ -76,6 +76,17 @@ this document next to the constitution.
 - Clients that need such a setting before they submit read it from the owning feature's
   capabilities read (for example 002 FR-064).
 
+## Configuration
+
+- An empty environment value means unset; settings read through `Env::get`
+  (`App\Support\Config\Env`), which returns the default for an empty or whitespace-only value.
+  mailcow's compose override passes optional settings as `NAME=${NAME:-}`, and Laravel's `env()`
+  would return the empty string instead of the default.
+- A setting whose empty value means something keeps `env()` and says so in a comment and in
+  `tests/Unit/Architecture/ConfigEnvironmentReadsTest.php`. Today that is only
+  `RESTV2_MAILCOW_INC_DIR` (empty: not mounted). An empty `RESTV2_<legacy variable>` is unset too,
+  so mailcow's vars files apply.
+
 ## Settings owned by another feature
 
 - A setting owned by another feature may be given **at creation**, wherever legacy's add form or

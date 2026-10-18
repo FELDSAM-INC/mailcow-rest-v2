@@ -21,11 +21,11 @@ use Throwable;
  * The legacy action "Expand alias over alias domains" (feature 004 FR-036, FR-037, research R17):
  * for an alias of a primary domain (otherwise `409 not-primary-domain-alias`), one copy per alias
  * domain of its domain, in name order: `<local part>@<alias domain>` (`@<alias domain>` for a
- * catch-all) with the same destination and the four flags, and no comments. An address in use is
- * skipped, as legacy never tries it; every other copy is a creation by the caller (AliasCreator), in
- * its own transaction with its own audit record carrying `copiedFromAliasId`. A refused copy is
- * skipped with its reason (`aliasLimitReached`, `destinationNotPermitted`) or failed with its
- * problem, and audited as a refused creation.
+ * catch-all) with the same destination and the four flags, and no comments (NULL, as legacy's
+ * expand action stores them). An address in use is skipped, as legacy never tries it; every other
+ * copy is a creation by the caller (AliasCreator), in its own transaction with its own audit record
+ * carrying `copiedFromAliasId`. A refused copy is skipped with its reason (`aliasLimitReached`,
+ * `destinationNotPermitted`) or failed with its problem, and audited as a refused creation.
  */
 class AliasCopier
 {
@@ -82,8 +82,6 @@ class AliasCopier
             'senderAllowed' => $source['senderAllowed'],
             'groupwareVisible' => $source['groupwareVisible'],
             'internal' => $source['internal'],
-            'publicComment' => '',
-            'privateComment' => '',
         ];
 
         if ($source['destinationType'] === AliasDestination::ADDRESSES) {

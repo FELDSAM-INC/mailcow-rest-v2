@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Config\Env;
 use Pdo\Mysql;
 
 /*
@@ -15,10 +16,13 @@ use Pdo\Mysql;
 | Redis is mailcow's Redis. The `restv2` connection prefixes every API-owned key with `restv2:`;
 | the `mailcow` connection reads mailcow's own keys (branding) and publishes to F2B_CHANNEL.
 |
+| Settings keep their mailcow.conf names and are read with Env::get: an empty value means unset
+| (docs/conventions.md "Configuration").
+|
 */
 
-$redisHost = env('REDIS_SLAVEOF_IP') ?: env('REDISHOST', 'redis-mailcow');
-$redisPort = env('REDIS_SLAVEOF_IP') ? (env('REDIS_SLAVEOF_PORT') ?: 6379) : 6379;
+$redisHost = Env::get('REDIS_SLAVEOF_IP') ?? Env::get('REDISHOST', 'redis-mailcow');
+$redisPort = Env::get('REDIS_SLAVEOF_IP') !== null ? Env::get('REDIS_SLAVEOF_PORT', 6379) : 6379;
 
 return [
 
@@ -29,11 +33,11 @@ return [
 
         'mysql' => [
             'driver' => 'mariadb',
-            'host' => env('DBHOST', 'mysql-mailcow'),
-            'port' => env('DBPORT', '3306'),
-            'database' => env('DBNAME', 'mailcow'),
-            'username' => env('DBUSER', 'mailcow'),
-            'password' => env('DBPASS', ''),
+            'host' => Env::get('DBHOST', 'mysql-mailcow'),
+            'port' => Env::get('DBPORT', '3306'),
+            'database' => Env::get('DBNAME', 'mailcow'),
+            'username' => Env::get('DBUSER', 'mailcow'),
+            'password' => Env::get('DBPASS', ''),
             'unix_socket' => '',
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
@@ -42,7 +46,7 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                Mysql::ATTR_SSL_CA => Env::get('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 
@@ -67,8 +71,8 @@ return [
         'restv2' => [
             'host' => $redisHost,
             'port' => $redisPort,
-            'password' => env('REDISPASS'),
-            'database' => env('REDIS_DB', '0'),
+            'password' => Env::get('REDISPASS'),
+            'database' => Env::get('REDIS_DB', '0'),
             'prefix' => 'restv2:',
             'read_timeout' => 5,
             'timeout' => 5,
@@ -78,8 +82,8 @@ return [
         'mailcow' => [
             'host' => $redisHost,
             'port' => $redisPort,
-            'password' => env('REDISPASS'),
-            'database' => env('REDIS_DB', '0'),
+            'password' => Env::get('REDISPASS'),
+            'database' => Env::get('REDIS_DB', '0'),
             'prefix' => '',
             'read_timeout' => 5,
             'timeout' => 5,

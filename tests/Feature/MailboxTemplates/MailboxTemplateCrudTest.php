@@ -53,7 +53,7 @@ class MailboxTemplateCrudTest extends TestCase
         $this->assertSame(['mailbox', 'Students'], [$row?->type, $row?->template]);
         $this->assertSame([
             'quota' => self::GIB, 'tags' => ['Student'], 'tagged_mail_handler' => 'none', 'quarantine_notification' => 'hourly',
-            'quarantine_category' => 'reject', 'rl_frame' => 'm', 'rl_value' => 10, 'force_pw_update' => 0, 'force_tfa' => 0,
+            'quarantine_category' => 'reject', 'rl_frame' => 'm', 'rl_value' => '10', 'force_pw_update' => 0, 'force_tfa' => 0,
             'sogo_access' => 1, 'active' => 1, 'tls_enforce_in' => 0, 'tls_enforce_out' => 0, 'imap_access' => 1, 'pop3_access' => 0,
             'smtp_access' => 1, 'sieve_access' => 1, 'eas_access' => 1, 'dav_access' => 1, 'acl_spam_alias' => 1, 'acl_tls_policy' => 1,
             'acl_spam_score' => 1, 'acl_spam_policy' => 1, 'acl_delimiter_action' => 1, 'acl_syncjobs' => 1, 'acl_eas_reset' => 1,
@@ -109,6 +109,22 @@ class MailboxTemplateCrudTest extends TestCase
         $this->patchTemplate($id, ['rateLimit' => null])->assertOk()->assertJsonPath('data.rateLimit', null);
         $this->assertSame('', json_decode((string) DB::table('templates')->where('id', $id)->value('attributes'), true)['rl_value']);
         $this->patchTemplate($id, ['quota' => 3 * self::GIB], ['If-Match' => $etag])->assertStatus(412);
+    }
+
+    public function test_rate_limits_are_stored_as_legacy_strings_and_read_in_both_forms(): void
+    {
+        // Legacy's form stores the string "5"; earlier API versions stored the integer 5.
+        $legacy = $this->mailcow()->mailboxTemplate('Legacy', ['rl_value' => '5', 'rl_frame' => 'h']);
+        $earlier = $this->mailcow()->mailboxTemplate('Earlier', ['rl_value' => 5, 'rl_frame' => 'h']);
+        $this->asAdmin();
+
+        foreach ([$legacy, $earlier] as $id) {
+            $this->getJson('/api/v2/mailbox-templates/'.$id)->assertOk()->assertJsonPath('data.rateLimit', ['value' => 5, 'frame' => 'hour']);
+        }
+
+        $this->patchTemplate($earlier, ['rateLimit' => ['value' => 8, 'frame' => 'day']])->assertOk();
+        $stored = json_decode((string) DB::table('templates')->where('id', $earlier)->value('attributes'), true);
+        $this->assertSame(['8', 'd'], [$stored['rl_value'], $stored['rl_frame']]);
     }
 
     public function test_names_are_unique_without_regard_to_case(): void

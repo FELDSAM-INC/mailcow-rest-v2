@@ -278,7 +278,9 @@ class MailcowConfig
     }
 
     /**
-     * The effective value of a legacy variable listed in config/restv2.php.
+     * The effective value of a legacy variable listed in config/restv2.php. An empty or blank
+     * server setting is unset. `true` and `false` arrive as booleans (Laravel's env conversion)
+     * and are settings like any other text.
      *
      * @phpstan-impure
      */
@@ -286,7 +288,11 @@ class MailcowConfig
     {
         $override = config("restv2.vars_overrides.{$name}");
 
-        if (is_string($override) && $override !== '') {
+        if (is_bool($override)) {
+            $override = $override ? 'true' : 'false';
+        }
+
+        if (is_string($override) && trim($override) !== '') {
             $parsed = $this->parseOverride($name, $override);
 
             if ($parsed !== null) {

@@ -1,5 +1,9 @@
 <?php
 
+use App\Support\Config\Env;
+
+// Settings are read with Env::get: an empty value means unset (docs/conventions.md "Configuration").
+
 return [
 
     /*
@@ -13,7 +17,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'mailcow REST API v2'),
+    'name' => Env::get('APP_NAME', 'mailcow REST API v2'),
 
     /*
     |--------------------------------------------------------------------------
@@ -26,7 +30,7 @@ return [
     |
     */
 
-    'env' => env('APP_ENV', 'production'),
+    'env' => Env::get('APP_ENV', 'production'),
 
     /*
     |--------------------------------------------------------------------------
@@ -39,7 +43,7 @@ return [
     |
     */
 
-    'debug' => (bool) env('APP_DEBUG', false),
+    'debug' => (bool) Env::get('APP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -52,7 +56,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => Env::get('APP_URL', 'http://localhost'),
 
     /*
     |--------------------------------------------------------------------------
@@ -78,11 +82,11 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'locale' => Env::get('APP_LOCALE', 'en'),
 
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+    'fallback_locale' => Env::get('APP_FALLBACK_LOCALE', 'en'),
 
-    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+    'faker_locale' => Env::get('APP_FAKER_LOCALE', 'en_US'),
 
     /*
     |--------------------------------------------------------------------------
@@ -97,11 +101,11 @@ return [
 
     'cipher' => 'AES-256-CBC',
 
-    'key' => env('APP_KEY') ?: env('RESTV2_APP_KEY'),
+    'key' => Env::get('APP_KEY') ?? Env::get('RESTV2_APP_KEY'),
 
     'previous_keys' => [
         ...array_filter(
-            explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
+            explode(',', (string) Env::get('APP_PREVIOUS_KEYS', ''))
         ),
     ],
 
@@ -119,8 +123,8 @@ return [
     */
 
     'maintenance' => [
-        'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
-        'store' => env('APP_MAINTENANCE_STORE', 'restv2'),
+        'driver' => Env::get('APP_MAINTENANCE_DRIVER', 'file'),
+        'store' => Env::get('APP_MAINTENANCE_STORE', 'restv2'),
     ],
 
 ];

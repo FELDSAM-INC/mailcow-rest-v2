@@ -209,3 +209,14 @@ Contract changes made while implementing feature 008:
 
 Release checks of feature 008 (quickstart Part C): not run yet.
 
+Fixes:
+
+- An empty or blank environment setting now means unset and takes its documented default
+  (`App\Support\Config\Env::get`), except `RESTV2_MAILCOW_INC_DIR` (empty: not mounted). The
+  deploy example's `NAME=${NAME:-}` lines had turned `RESTV2_BULK_LIMIT` and
+  `RESTV2_MAILBOX_CUSTOM_ATTRIBUTE_LIMIT` into 1 (every mailbox bulk action with two targets got
+  `422 tooMany`) and `RESTV2_CONTAINER_ROLES` into `""`. `true`/`false` legacy variable settings
+  (for example `RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS=true`) and `RESTV2_UPDATE_CHECK=false` now
+  take effect.
+- Template rate limits are stored as legacy's string (`"50"`), and alias comments that were not
+  sent as `NULL`, as legacy does; both forms are read.

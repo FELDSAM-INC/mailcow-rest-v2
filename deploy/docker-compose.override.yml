@@ -16,8 +16,9 @@
 # image was loaded locally (docker save | docker load) instead of pulled from a registry.
 #
 # No other mailcow service is changed (constitution V). Variables keep their mailcow.conf names;
-# settings new to this API use the RESTV2_ prefix. Empty RESTV2_<legacy variable> settings leave the
-# value to mailcow's mounted data/web/inc/vars{,.local}.inc.php.
+# settings new to this API use the RESTV2_ prefix. An empty setting means unset and takes its default
+# (README "Configuration"); empty RESTV2_<legacy variable> settings leave the value to mailcow's
+# mounted data/web/inc/vars{,.local}.inc.php.
 services:
   restv2-mailcow:
     image: ${RESTV2_IMAGE:-ghcr.io/feldsam-inc/mailcow-rest-v2:0.1.0}

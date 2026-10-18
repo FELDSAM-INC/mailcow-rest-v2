@@ -2,6 +2,7 @@
 
 use App\Logging\RedactSecrets;
 use App\Logging\RequestContextProcessor;
+use App\Support\Config\Env;
 use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
@@ -18,7 +19,7 @@ use Monolog\Handler\StreamHandler;
 |
 */
 
-$stream = (string) (env('LOG_STREAM') ?: 'php://stderr');
+$stream = (string) Env::get('LOG_STREAM', 'php://stderr');
 
 if (! str_contains($stream, '://') && ! str_starts_with($stream, '/')) {
     $stream = base_path($stream);
@@ -37,7 +38,7 @@ return [
 
         'stderr_json' => [
             'driver' => 'monolog',
-            'level' => env('LOG_LEVEL', 'info'),
+            'level' => Env::get('LOG_LEVEL', 'info'),
             'handler' => StreamHandler::class,
             'handler_with' => [
                 'stream' => $stream,

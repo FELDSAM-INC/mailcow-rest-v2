@@ -58,7 +58,8 @@ class DomainTemplateLegacyRowsTest extends TestCase
         // What legacy's add-domain form computes from the template (functions.mailbox.inc.php 514).
         $row = json_decode((string) DB::table('templates')->where('id', $id)->value('attributes'), true);
         $this->assertSame(2048, $row['def_quota_for_mbox'] / 1024 ** 2);
-        $this->assertSame(3, $row['rl_value']);
+        // A string, as legacy's own form stores it.
+        $this->assertSame('3', $row['rl_value']);
         $this->assertSame('h', $row['rl_frame']);
         $this->assertIsArray($row['tags']);
     }

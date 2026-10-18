@@ -42,8 +42,9 @@ class AliasCopyTest extends TestCase
         $this->assertSame(['created', null, 'Sales@example.com', 'Sales@example.com'], [$created['outcome'], $created['reason'], $created['address'], $created['addressUnicode']]);
         $this->assertSame(['skipped', 'addressInUse', null], [$skipped['outcome'], $skipped['reason'], $skipped['aliasId']]);
 
+        // No comments: NULL, as legacy's expand action stores them.
         $copy = $this->aliasRow((int) $created['aliasId']);
-        $this->assertSame(['anna@example.org,bob@example.org', 1, 0, 0, 1, '', ''], [$copy?->goto, (int) $copy?->active, (int) $copy?->sender_allowed, (int) $copy?->sogo_visible, (int) $copy?->internal, $copy?->public_comment, $copy?->private_comment]);
+        $this->assertSame(['anna@example.org,bob@example.org', 1, 0, 0, 1, null, null], [$copy?->goto, (int) $copy?->active, (int) $copy?->sender_allowed, (int) $copy?->sogo_visible, (int) $copy?->internal, $copy?->public_comment, $copy?->private_comment]);
 
         $records = array_values(array_filter($this->auditOf('aliasCreation'), fn (object $r): bool => $r->outcome === 'success'));
         $this->assertCount(1, $records);

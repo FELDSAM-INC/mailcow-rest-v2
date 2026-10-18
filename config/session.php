@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Config\Env;
+
 /*
 |--------------------------------------------------------------------------
 | Browser sessions (research R6, R7)
@@ -33,7 +35,7 @@ return [
 
     'lottery' => [2, 100],
 
-    'cookie' => env('SESSION_COOKIE', '__Host-restv2_session'),
+    'cookie' => Env::get('SESSION_COOKIE', '__Host-restv2_session'),
 
     'path' => '/',
 

@@ -148,7 +148,8 @@ class MailboxDefaults
 
     /**
      * Legacy's template attributes of complete values: every key, in legacy's order, with integer
-     * flags, the quota in bytes and `rl_value: ""` / `rl_frame: "s"` for no rate limit.
+     * flags, the quota in bytes, `rl_value` a numeric string as legacy's form stores it, and
+     * `rl_value: ""` / `rl_frame: "s"` for no rate limit. Reading accepts integers too.
      *
      * @param  array<string, mixed>  $values
      * @return array<string, mixed>
@@ -163,7 +164,7 @@ class MailboxDefaults
             'quarantine_notification' => (string) $values['quarantineNotification'],
             'quarantine_category' => MailboxValues::QUARANTINE_CATEGORIES[$values['quarantineCategory']] ?? 'reject',
             'rl_frame' => is_array($rateLimit) ? (RateLimitStore::FRAMES[$rateLimit['frame']] ?? 's') : 's',
-            'rl_value' => is_array($rateLimit) ? (int) $rateLimit['value'] : '',
+            'rl_value' => is_array($rateLimit) ? (string) (int) $rateLimit['value'] : '',
             'force_pw_update' => (int) $values['forcePasswordChange'],
             'force_tfa' => (int) $values['forceSecondFactorSetup'],
             'sogo_access' => (int) $values['webmailRedirect'],

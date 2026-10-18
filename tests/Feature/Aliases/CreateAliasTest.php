@@ -41,13 +41,14 @@ class CreateAliasTest extends TestCase
         $this->assertSame($this->getJson("/api/v2/aliases/{$id}")->headers->get('ETag'), $response->headers->get('ETag'));
         $row = $this->aliasRow($id);
         $this->assertNotNull($row);
+        // Comments that were not sent are NULL, as legacy's add form (which has no comment fields) stores them.
         $this->assertSame(
-            ['sales@example.org', 'anna@example.org,bob@example.org', 'example.org', 1, 1, 0, 1, '', ''],
+            ['sales@example.org', 'anna@example.org,bob@example.org', 'example.org', 1, 1, 0, 1, null, null],
             [$row->address, $row->goto, $row->domain, (int) $row->sogo_visible, (int) $row->sender_allowed, (int) $row->internal, (int) $row->active, $row->public_comment, $row->private_comment],
         );
         $response->assertJsonPath('data.active', true)->assertJsonPath('data.senderAllowed', true)
             ->assertJsonPath('data.groupwareVisible', true)->assertJsonPath('data.internal', false)
-            ->assertJsonPath('data.kind', 'regular');
+            ->assertJsonPath('data.kind', 'regular')->assertJsonPath('data.publicComment', '')->assertJsonPath('data.privateComment', '');
         $this->assertStringContainsString('sales@example.org', (string) $this->viewRow('anna@example.org')?->aliases);
         $this->assertStringContainsString('sales@example.org', (string) $this->viewRow('bob@example.org')?->aliases);
         $this->assertSame(1, $this->memcached()->flushCount());
@@ -92,6 +93,25 @@ class CreateAliasTest extends TestCase
 
         $row = $this->aliasRow($id);
         $this->assertSame([0, 0, 0, 1, 'Public', 'Private'], [(int) $row?->active, (int) $row?->sender_allowed, (int) $row?->sogo_visible, (int) $row?->internal, $row?->public_comment, $row?->private_comment]);
+    }
+
+    public function test_comments_sent_empty_are_stored_empty_and_both_forms_read_as_empty(): void
+    {
+        $this->asAdmin();
+
+        $sent = (int) $this->createAlias(['address' => 'blank@example.org', 'destinations' => ['anna@example.org'], 'publicComment' => '', 'privateComment' => ''])
+            ->assertCreated()->json('data.id');
+        $omitted = (int) $this->createAlias(['address' => 'none@example.org', 'destinations' => ['anna@example.org']])->assertCreated()->json('data.id');
+
+        $this->assertSame(['', ''], [$this->aliasRow($sent)?->public_comment, $this->aliasRow($sent)?->private_comment]);
+        $this->assertSame([null, null], [$this->aliasRow($omitted)?->public_comment, $this->aliasRow($omitted)?->private_comment]);
+
+        foreach ([$sent, $omitted] as $id) {
+            $this->getJson("/api/v2/aliases/{$id}")->assertOk()->assertJsonPath('data.publicComment', '')->assertJsonPath('data.privateComment', '');
+        }
+
+        $records = $this->auditOf('aliasCreation');
+        $this->assertSame(['', ''], [$records[1]->details['values']['publicComment'], $records[1]->details['values']['privateComment']]);
     }
 
     public function test_addresses_and_destinations_are_normalised_and_deduplicated(): void

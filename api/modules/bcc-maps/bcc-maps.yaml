@@ -1,0 +1,94 @@
+get:
+  operationId: listBccMaps
+  tags: [BCC maps]
+  summary: List BCC maps
+  description: |
+    Lists the BCC maps in the caller's scope. Administrators see all maps, including orphaned ones
+    whose domain no longer exists. Domain administrators see the maps of their domains and of those
+    domains' alias domains, without a permission flag, and never orphaned maps. Read-only keys may
+    list. `q` searches the local and the BCC destination.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/BccMapSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: type
+      in: query
+      required: false
+      schema:
+        $ref: '../../components/schemas/BccMapType.yaml'
+    - name: active
+      in: query
+      required: false
+      schema:
+        type: boolean
+    - name: domain
+      in: query
+      required: false
+      description: Only maps of these domains or alias domains (ASCII or Unicode). Repeat for several; any matches.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 100
+        items:
+          type: string
+          maxLength: 255
+    - name: orphaned
+      in: query
+      required: false
+      description: Only orphaned (`true`) or not orphaned (`false`) maps. Domain administrators never see orphaned maps.
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/BccMapListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createBccMap
+  tags: [BCC maps]
+  summary: Create a BCC map
+  description: |
+    Creates a BCC map, active unless `active: false` is sent. Administrators, and domain
+    administrators with the `bccMaps` permission flag for local destinations in their scope
+    (otherwise `403 permission-flag-required`). A local destination that does not exist and one
+    outside the caller's scope get the same validation error. A second map of the same type for the
+    same local destination is refused (`409 routing-entry-exists`). Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/BccMapCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/BccMapCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/RoutingForbidden.yaml'
+    '409':
+      $ref: '../../components/responses/RoutingConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/RoutingTemporaryFailure.yaml'

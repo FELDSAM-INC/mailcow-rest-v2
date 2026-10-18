@@ -1,0 +1,69 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+get:
+  operationId: getMailboxRelayhostAssignment
+  tags: [Relayhost assignments]
+  summary: Get a mailbox's relayhost assignment
+  description: |
+    Returns the mailbox's own relayhost, its domain's relayhost, the relayhost the mail server
+    connects to for mail from the mailbox, and the relayhost whose credentials it sends.
+    Administrators for every mailbox; domain administrators for the mailboxes of their own domains,
+    without a permission flag. Resources and alias-domain addresses answer `404`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxRelayhostAssignmentResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+put:
+  operationId: replaceMailboxRelayhostAssignment
+  tags: [Relayhost assignments]
+  summary: Replace a mailbox's relayhost assignment
+  description: |
+    Assigns an existing relayhost to the mailbox, or none (`null`). It applies to mail sent from the
+    mailbox's own address and from aliases whose only destination is the mailbox, not to its
+    addresses in alias domains, and it overrides the domain's relayhost for the host the mail server
+    connects to (see `MailboxRelayhostAssignment` for the credential lookup order). Only the
+    assignment changes (and the mailbox's modification time), so the mailbox's version tag in the
+    mailboxes API changes too.
+
+    Administrators for every mailbox. Domain administrators for the mailboxes of their own domains,
+    only with the `mailboxRelayhost` permission flag (otherwise `403 permission-flag-required`,
+    checked before the mailbox is looked up). Audited, including refused attempts.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/RelayhostAssignmentReplaceRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxRelayhostAssignmentResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/RoutingForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

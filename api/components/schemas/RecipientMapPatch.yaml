@@ -1,0 +1,19 @@
+type: object
+description: |
+  JSON Merge Patch of a recipient map, with the rules of creation (also normalised on edit, unlike
+  legacy). `id` is read-only.
+minProperties: 1
+properties:
+  originalDestination:
+    type: string
+    minLength: 1
+    maxLength: 255
+  newDestination:
+    type: string
+    minLength: 1
+    maxLength: 255
+  active:
+    type: boolean
+  id:
+    type: integer
+    description: Read-only.

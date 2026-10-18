@@ -1,0 +1,6 @@
+type: string
+description: |
+  Kind of a BCC local destination: `domain`, `aliasDomain`, `mailbox`, `alias` (not a catch-all,
+  not a mailbox's own alias) or `aliasDomainAddress` (a mailbox's local part at an alias domain of
+  its domain).
+enum: [domain, aliasDomain, mailbox, alias, aliasDomainAddress]

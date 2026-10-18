@@ -1,0 +1,11 @@
+description: |
+  The test ran. The status is `200` whatever its outcome: check `data.accepted`, `data.step` and
+  `data.failure`.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/RoutingConnectionTestResult.yaml'

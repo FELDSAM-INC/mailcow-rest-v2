@@ -1,0 +1,26 @@
+type: object
+description: |
+  A forwarding host: a server that forwards mail to mailcow, for example a customer's old mail
+  server. Mail from it is accepted unconditionally, is not checked against blocklists, is not
+  greylisted and is never rejected as spam. With the spam filter enabled, spam from it is still
+  filed as spam (into the Junk folder); with the spam filter disabled, spam from it is delivered
+  like other mail. Stored in mailcow's Redis, where the mail filter, greylisting and connection
+  screening read it. Administrators only.
+required: [address, source, spamFilter, etag]
+properties:
+  address:
+    type: string
+    description: |
+      IPv4 or IPv6 address or prefix, in its stored form. Entries added through this API are
+      canonical (compressed lower-case IPv6, prefixes with their host bits cleared); entries added
+      in the legacy UI keep their spelling. It identifies the entry in paths (percent-encoded).
+    examples: ['192.0.2.0/24', '203.0.113.7', '2001:db8::/32']
+  source:
+    type: string
+    description: What the administrator entered when the address was added (an address or a host name).
+    examples: [forwarder.example]
+  spamFilter:
+    type: boolean
+    description: Whether spam from this host is still filed as spam (legacy "filter spam").
+  etag:
+    type: string

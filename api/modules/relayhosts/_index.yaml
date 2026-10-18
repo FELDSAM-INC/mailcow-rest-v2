@@ -1,0 +1,14 @@
+# Paths of the relayhosts module (feature 009): relayhosts (legacy "sender-dependent transports"),
+# bulk actions, usage, connection test, and the top-level helper list of relayhost choices.
+/relayhosts:
+  $ref: './relayhosts.yaml'
+/relayhost-choices:
+  $ref: './relayhost-choices.yaml'
+/relayhosts/bulk-actions:
+  $ref: './relayhost-bulk-actions.yaml'
+/relayhosts/{relayhostId}:
+  $ref: './relayhost.yaml'
+/relayhosts/{relayhostId}/usage:
+  $ref: './relayhost-usage.yaml'
+/relayhosts/{relayhostId}/connection-test:
+  $ref: './relayhost-connection-test.yaml'

@@ -1,0 +1,10 @@
+name: forwardingHostAddress
+in: path
+required: true
+description: |
+  Stored address or prefix of the forwarding host, exactly as listed, percent-encoded: `/` becomes
+  `%2F` and `:` may be sent as `%3A` (for example `192.0.2.0%2F24` or `2001%3Adb8%3A%3A1`).
+schema:
+  type: string
+  minLength: 1
+  maxLength: 255

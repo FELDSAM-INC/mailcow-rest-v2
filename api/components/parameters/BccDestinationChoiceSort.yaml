@@ -1,0 +1,10 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. `kind` (default) orders by kind (domains, alias domains, mailboxes, aliases,
+  alias-domain addresses), then by value; `value` sorts by value only. Default `order=asc`.
+schema:
+  type: string
+  enum: [kind, value]
+  default: kind

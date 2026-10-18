@@ -1,0 +1,87 @@
+parameters:
+  - $ref: '../../components/parameters/RelayhostId.yaml'
+get:
+  operationId: getRelayhost
+  tags: [Relayhosts]
+  summary: Get a relayhost
+  description: Returns one relayhost with its usage and version tag. Administrators only.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/RelayhostResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateRelayhost
+  tags: [Relayhosts]
+  summary: Change a relayhost
+  description: |
+    Changes the host, the username, the password or the active state. Administrators only.
+    Omitted members keep their values; an omitted password is kept and `""` removes it. Changes
+    apply to the next message, without any service reload. Audited; a password change is recorded
+    only as "set", "changed" or "removed".
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/RelayhostPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/RelayhostResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteRelayhost
+  tags: [Relayhosts]
+  summary: Delete a relayhost
+  description: |
+    Deletes the relayhost, whether or not it is in use. In the same step, every domain and mailbox
+    assigned to it loses its assignment (their mail is then delivered directly, or through the
+    domain's relayhost for a mailbox). Administrators only. The audit record lists the cleared
+    domains and mailboxes.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

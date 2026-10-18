@@ -1,0 +1,29 @@
+get:
+  operationId: listRelayhostChoices
+  tags: [Relayhosts]
+  summary: List relayhost choices
+  description: |
+    Lists every relayhost with only its identifier, host and active state, for the relayhost
+    selectors of the domain and mailbox screens. Administrators, and domain administrators who hold
+    the `domainRelayhost` or the `mailboxRelayhost` permission flag (otherwise
+    `403 permission-flag-required`). Read-only keys may use it. `q` searches the host.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/RelayhostChoiceSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/RelayhostChoiceListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/RoutingForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

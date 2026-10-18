@@ -1,0 +1,68 @@
+type: object
+description: |
+  The relayhost assignment of a mailbox, with its domain's assignment and the result for mail sent
+  from the mailbox.
+
+  - A mailbox's relayhost applies to mail sent from the mailbox's own address and from aliases
+    whose only destination is the mailbox. It does **not** apply to the mailbox's addresses in
+    alias domains, which follow the domain's relayhost.
+  - It overrides the domain's relayhost for the host the mail server connects to
+    (`effectiveRelayhost`).
+  - For the credentials, mailcow's mail server looks up the domain's active relayhost **first**
+    and the mailbox's only when the domain has none (`credentialsRelayhost`). When both apply, the
+    mail server connects to the mailbox's relayhost with the domain relayhost's credentials, and
+    sends none if the domain relayhost has no username. This is upstream mailcow behaviour.
+required: [mailbox, domain, relayhost, domainRelayhost, effectiveRelayhost, credentialsRelayhost, etag]
+properties:
+  mailbox:
+    type: string
+    description: The mailbox address.
+  domain:
+    type: string
+    description: The mailbox's domain (ASCII).
+  relayhost:
+    description: The mailbox's own assignment, or `null`.
+    oneOf:
+      - $ref: './RelayhostReference.yaml'
+      - type: 'null'
+  domainRelayhost:
+    description: The domain's assignment, read-only here.
+    oneOf:
+      - $ref: './RelayhostReference.yaml'
+      - type: 'null'
+  effectiveRelayhost:
+    description: |
+      The relayhost the mail server connects to for mail from the mailbox's own address: the
+      mailbox's relayhost when it is set and active, otherwise the domain's when it is set and
+      active, otherwise `null` (direct delivery).
+    oneOf:
+      - type: object
+        required: [id, host, source]
+        properties:
+          id:
+            type: integer
+            minimum: 1
+          host:
+            type: string
+          source:
+            type: string
+            enum: [mailbox, domain]
+      - type: 'null'
+  credentialsRelayhost:
+    description: |
+      The relayhost whose stored credentials the mail server sends for this mailbox's own address,
+      or `null` when it does not log in.
+    oneOf:
+      - type: object
+        required: [id, source]
+        properties:
+          id:
+            type: integer
+            minimum: 1
+          source:
+            type: string
+            enum: [mailbox, domain]
+      - type: 'null'
+  etag:
+    type: string
+    description: Version tag of the mailbox's stored assignment only, equal to the `ETag` header.

@@ -1,0 +1,27 @@
+description: |
+  Problem of status `409` raised by the routing operations. Types:
+  - `/api/v2/problems/routing-entry-exists`: a unique key is taken. `field` names the request
+    member, `conflictingId` the existing entry.
+  - `/api/v2/problems/next-hop-credentials-differ`: transports with this next hop have a different
+    username. `nextHop` and `transportIds` name them.
+  - `/api/v2/problems/next-hop-interferes`: `host` and `[host]…` would both be next hops.
+    `nextHop` is the interfering stored next hop, `transportIds` its transports.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    properties:
+      field:
+        type: string
+        examples: [destination]
+      conflictingId:
+        type: string
+        description: Identifier of the existing entry, as used in its path.
+        examples: ['12']
+      nextHop:
+        type: string
+        examples: [relay.net]
+      transportIds:
+        type: array
+        items:
+          type: integer
+          minimum: 1

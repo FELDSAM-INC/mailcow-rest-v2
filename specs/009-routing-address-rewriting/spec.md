@@ -1152,6 +1152,9 @@ name. There is no fork-only routing capability to make configurable.
 | Concurrent edits | Last write wins | Version tags (FR-008). **Deviation** |
 | Change log | Entries in the `logs` table, with the request data including passwords | This API's audit log without passwords (FR-085). **Deviation** |
 | Service reloads and other side effects | None: Postfix reads the tables through `proxy:mysql` on each lookup, Rspamd reads Redis and the internal endpoints per message or map refresh; no dockerapi or memcached calls | Same (FR-092) |
+| Connection test login mechanism (plan-level row) | PHPMailer chooses CRAM-MD5, then LOGIN, then PLAIN | PLAIN, then LOGIN, as the mail server itself does (`smtp_sasl_mechanism_filter = plain, login`), so that the test checks what Postfix will do (FR-042). **Deviation** |
+| Connection test transcript form (plan-level row) | Full dialogue including the message content, as coloured HTML | The message content is one line with its size; server text is sanitised; the transcript is cut to 500 lines of at most 1,000 characters (FR-043). **Deviation** |
+| SPF record parsing for forwarding hosts (plan-level row) | Only the first character string of a TXT record is read; `a/<len>` and `mx//<len>` forms are ignored | All character strings of a TXT record are concatenated, and the CIDR forms of `a` and `mx` are honoured; the order SPF, MX, A/AAAA is unchanged (FR-076). **Deviation** |
 
 ### Key Entities *(include if feature involves data)*
 

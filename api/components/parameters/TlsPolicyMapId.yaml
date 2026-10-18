@@ -1,0 +1,7 @@
+name: tlsPolicyMapId
+in: path
+required: true
+description: Identifier of the TLS policy map (mailcow's numeric `id`).
+schema:
+  type: integer
+  minimum: 1

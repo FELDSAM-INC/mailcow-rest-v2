@@ -1,0 +1,26 @@
+type: object
+description: |
+  A new TLS policy map. The destination is trimmed, lower-cased and converted to ASCII; `.`, `*`,
+  `@` and a port without brackets (`example.org:587`) are refused, because the mail server never
+  looks them up.
+required: [destination, policy]
+properties:
+  destination:
+    type: string
+    minLength: 1
+    maxLength: 255
+  policy:
+    type: string
+    description: One of the `TlsPolicy` values, in any letter case; stored in lower case.
+    examples: [dane-only]
+  parameters:
+    type: string
+    maxLength: 255
+    default: ''
+    description: |
+      Empty, or `name=value` items separated by whitespace, each with a non-empty name and value
+      (for example `protocols=!SSLv2 ciphers=medium`). Runs of whitespace are stored as single
+      spaces.
+  active:
+    type: boolean
+    default: true

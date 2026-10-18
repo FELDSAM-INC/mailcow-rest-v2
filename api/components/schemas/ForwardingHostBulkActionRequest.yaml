@@ -1,0 +1,15 @@
+type: object
+description: |
+  One action applied to up to 100 forwarding hosts, as the legacy mass actions do. Each target's
+  `id` is the stored address (not percent-encoded in the body).
+required: [action, targets]
+properties:
+  action:
+    type: string
+    enum: [enableSpamFilter, disableSpamFilter, delete]
+  targets:
+    type: array
+    minItems: 1
+    maxItems: 100
+    items:
+      $ref: './BulkTarget.yaml'

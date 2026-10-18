@@ -1,0 +1,19 @@
+type: object
+description: |
+  Optional addresses for a connection test. An omitted address takes the server's default (see
+  `RoutingCapabilities.administration.connectionTest`; upstream defaults `relay@example.org` and
+  `null@hosted.mailcow.de`). A given address that is not a valid e-mail address is refused, never
+  replaced by the default.
+properties:
+  sender:
+    type: string
+    maxLength: 255
+    description: Envelope sender (`MAIL FROM`) and `From:` address of the test message.
+    examples: [relay@example.org]
+  recipient:
+    type: string
+    maxLength: 255
+    description: |
+      Envelope recipient (`RCPT TO`). Use an external address, such as the default
+      `null@hosted.mailcow.de`, to test relaying to a foreign destination.
+    examples: [null@hosted.mailcow.de]

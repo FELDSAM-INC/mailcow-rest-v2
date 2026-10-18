@@ -1,0 +1,7 @@
+name: transportId
+in: path
+required: true
+description: Identifier of the transport (mailcow's numeric `id`).
+schema:
+  type: integer
+  minimum: 1

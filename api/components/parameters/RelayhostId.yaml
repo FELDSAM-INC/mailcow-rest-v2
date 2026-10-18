@@ -1,0 +1,7 @@
+name: relayhostId
+in: path
+required: true
+description: Identifier of the relayhost (mailcow's numeric `id`).
+schema:
+  type: integer
+  minimum: 1

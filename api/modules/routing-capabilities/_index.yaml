@@ -1,0 +1,3 @@
+# Paths of the routing-capabilities module (feature 009): server settings for routing clients.
+/capabilities/routing:
+  $ref: './routing-capabilities.yaml'

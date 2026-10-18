@@ -1,0 +1,34 @@
+type: object
+description: |
+  An outbound TLS policy override for one destination. It overrides both the mailbox users' outbound
+  TLS settings and mailcow's automatic TLS policy service (`postfix-tlspol`) for that destination.
+  The mail server applies `policy` followed by `parameters`, as documented for Postfix's
+  `smtp_tls_policy_maps`. Administrators only.
+required: [id, destination, policy, parameters, active, createdAt, modifiedAt, etag]
+properties:
+  id:
+    type: integer
+    minimum: 1
+  destination:
+    type: string
+    description: |
+      A domain (`example.org`), its subdomains (`.example.org`) or a next hop in brackets with an
+      optional port (`[mail.example.org]:25`), in ASCII. Unique among TLS policy maps.
+  policy:
+    $ref: './TlsPolicy.yaml'
+  parameters:
+    type: string
+    description: '`name=value` items separated by single spaces, or `""`.'
+    examples: ['protocols=!SSLv2 ciphers=medium', '']
+  active:
+    type: boolean
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string

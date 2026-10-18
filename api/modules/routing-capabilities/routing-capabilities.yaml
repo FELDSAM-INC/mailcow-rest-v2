@@ -1,0 +1,22 @@
+get:
+  operationId: getRoutingCapabilities
+  tags: [Routing capabilities]
+  summary: Read the routing capabilities
+  description: |
+    Returns the server settings and limits clients need before they submit routing changes, for
+    example the default test addresses that the web app shows as placeholders. Administrators get
+    every value; domain administrators get the bulk limit, the page sizes and the BCC field limits
+    (`administration: null`). Read on every request from the current configuration. Read-only keys
+    may use it.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/RoutingCapabilitiesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

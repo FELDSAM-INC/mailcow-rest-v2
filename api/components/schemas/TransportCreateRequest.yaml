@@ -1,0 +1,45 @@
+type: object
+description: |
+  A new transport with exactly one destination (the legacy form's comma-separated list is sent as
+  one request per destination). Leading and trailing whitespace is removed from every string,
+  including the password. When other transports already use the next hop (compared without regard
+  to letter case):
+  - without `username` and `password`, the new transport inherits their credentials;
+  - with a `username` that differs from theirs, the request is refused
+    (`next-hop-credentials-differ`): change the next hop's credentials on an existing transport
+    first;
+  - with a `password` (and their username or none), the new password applies to **every**
+    transport with that next hop. The response's `meta.affectedTransports` names them.
+required: [destination, nextHop]
+properties:
+  destination:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: |
+      See `Transport.destination`. Not MX-based destinations are normalised (lower-case, Unicode
+      domains converted to ASCII); MX-based patterns are stored as given. Unique among all
+      transports.
+  nextHop:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: Same grammar as a relayhost host. A bare IP address is stored in brackets.
+  mxBased:
+    type: boolean
+    default: false
+  active:
+    type: boolean
+    default: false
+    description: |
+      Transports are created inactive unless stated otherwise, because an active `*` transport
+      reroutes all outbound mail at once.
+  username:
+    type: string
+    maxLength: 255
+    description: Must not contain `:`.
+  password:
+    type: string
+    format: password
+    writeOnly: true
+    maxLength: 255

@@ -1,0 +1,9 @@
+description: The routing capabilities for the caller's role.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/RoutingCapabilities.yaml'

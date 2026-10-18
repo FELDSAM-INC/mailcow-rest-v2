@@ -1,0 +1,32 @@
+type: object
+description: |
+  A new relayhost. Leading and trailing whitespace is removed from every string. Several relayhosts
+  may have the same host, for example two accounts on one smarthost.
+required: [host]
+properties:
+  host:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: |
+      `host`, `host:port`, `[host]` or `[host]:port`. Outside brackets, `host` is a domain name
+      (single labels such as a container name are allowed, Unicode names are converted to ASCII).
+      Inside brackets, it is a domain name, an IPv4 address or an IPv6 address (optionally written
+      `ipv6:…`). The port is 1 to 65535. A bare IP address is stored in brackets; a bare IPv6
+      address never carries a port. Brackets turn off the MX lookup. Do not use port 465: implicit
+      TLS is not supported.
+    examples: ['[smtp.example.net]:587']
+  username:
+    type: string
+    maxLength: 255
+    description: SMTP username. Must not contain `:`. Omit or send `""` for no login.
+  password:
+    type: string
+    format: password
+    writeOnly: true
+    maxLength: 255
+    description: |
+      SMTP password, stored verbatim after trimming. Requires a username. Never returned.
+  active:
+    type: boolean
+    default: true

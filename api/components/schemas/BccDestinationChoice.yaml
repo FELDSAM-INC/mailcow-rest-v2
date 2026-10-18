@@ -1,0 +1,20 @@
+type: object
+description: A local destination the caller may use for a BCC map, as it would be stored.
+required: [kind, value, domain, deliversTo]
+properties:
+  kind:
+    $ref: './BccDestinationChoiceKind.yaml'
+  value:
+    type: string
+    description: The value as stored (`@domain` for domains and alias domains).
+    examples: ['@example.org', 'user@example.org', 'user@example.net']
+  domain:
+    type: string
+    description: Domain or alias domain of the value (ASCII), which becomes the map's `domain`.
+  deliversTo:
+    type: array
+    description: |
+      For aliases and alias-domain addresses, the mailboxes in the caller's scope that the address
+      delivers to; empty for other kinds.
+    items:
+      type: string

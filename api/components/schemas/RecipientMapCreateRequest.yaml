@@ -1,0 +1,18 @@
+type: object
+description: |
+  A new recipient map. Each destination is trimmed, lower-cased and stripped of a leading `@`, then
+  must be a domain name (stored as `@` plus its ASCII name) or an e-mail address (its domain in
+  ASCII), at most 255 characters as stored.
+required: [originalDestination, newDestination]
+properties:
+  originalDestination:
+    type: string
+    minLength: 1
+    maxLength: 255
+  newDestination:
+    type: string
+    minLength: 1
+    maxLength: 255
+  active:
+    type: boolean
+    default: true

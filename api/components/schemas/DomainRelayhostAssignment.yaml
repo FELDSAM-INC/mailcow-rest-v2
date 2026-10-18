@@ -1,0 +1,18 @@
+type: object
+description: |
+  The relayhost through which mailcow sends mail from a domain. It applies to mail sent from
+  addresses of the domain **and of its alias domains**, unless a mailbox has its own active
+  relayhost. `relayhost: null` means direct delivery (legacy "None / Inherit"). The domain's
+  representation in the domains API shows the same value read-only.
+required: [domain, relayhost, etag]
+properties:
+  domain:
+    type: string
+    description: ASCII domain name.
+  relayhost:
+    oneOf:
+      - $ref: './RelayhostReference.yaml'
+      - type: 'null'
+  etag:
+    type: string
+    description: Version tag of the stored assignment, equal to the `ETag` header.

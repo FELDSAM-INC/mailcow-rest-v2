@@ -1,0 +1,68 @@
+get:
+  operationId: listRecipientMaps
+  tags: [Recipient maps]
+  summary: List recipient maps
+  description: |
+    Lists recipient maps. Administrators only, with a session or a key (read-only keys included).
+    `q` searches the original and the new destination.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/RecipientMapSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: active
+      in: query
+      required: false
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/RecipientMapListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createRecipientMap
+  tags: [Recipient maps]
+  summary: Create a recipient map
+  description: |
+    Creates a recipient map, active unless `active: false` is sent. Administrators only. The mail
+    server rewrites matching envelope recipients before delivery, also when the original
+    destination is a mailbox. A second map for the same original destination is refused
+    (`409 routing-entry-exists`). Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/RecipientMapCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/RecipientMapCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/RoutingConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/RoutingTemporaryFailure.yaml'

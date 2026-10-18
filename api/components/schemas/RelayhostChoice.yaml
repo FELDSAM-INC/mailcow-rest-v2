@@ -1,0 +1,13 @@
+type: object
+description: |
+  A relayhost reduced to what a selector needs. Domain administrators see no usernames, password
+  states or usage.
+required: [id, host, active]
+properties:
+  id:
+    type: integer
+    minimum: 1
+  host:
+    type: string
+  active:
+    type: boolean

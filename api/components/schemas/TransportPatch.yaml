@@ -1,0 +1,41 @@
+type: object
+description: |
+  JSON Merge Patch of a transport, validated as at creation with the transport itself excluded from
+  the uniqueness and interference checks. Credentials belong to the next hop:
+  - sending `username` or `password` applies the resulting credentials to every transport with the
+    resulting next hop;
+  - moving the transport to a next hop used by other transports without sending credentials makes
+    it adopt their credentials; moved to an unused next hop, it keeps its own.
+
+  An omitted `password` is kept, `""` removes it, and an empty `username` without a password also
+  removes the password. `id` and `nextHopSharedWith` are read-only (accepted with their current
+  value only). The response's `meta.affectedTransports` names the other transports whose
+  credentials changed.
+minProperties: 1
+properties:
+  destination:
+    type: string
+    minLength: 1
+    maxLength: 255
+  nextHop:
+    type: string
+    minLength: 1
+    maxLength: 255
+  mxBased:
+    type: boolean
+  active:
+    type: boolean
+  username:
+    type: string
+    maxLength: 255
+  password:
+    type: string
+    format: password
+    writeOnly: true
+    maxLength: 255
+  id:
+    type: integer
+    description: Read-only.
+  nextHopSharedWith:
+    type: integer
+    description: Read-only.

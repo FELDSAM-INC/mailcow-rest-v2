@@ -1,0 +1,5 @@
+type: string
+description: |
+  `recipient`: copy mail **to** the local destination (legacy `rcpt`). `sender`: copy mail **sent
+  by** the local destination.
+enum: [sender, recipient]

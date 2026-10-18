@@ -1,0 +1,7 @@
+# Paths of the relayhost-assignments module (feature 009): the relayhost a domain or a mailbox
+# sends through. The domain and mailbox representations of features 002 and 003 show the same
+# value read-only.
+/domains/{domain}/relayhost-assignment:
+  $ref: './domain-relayhost-assignment.yaml'
+/mailboxes/{mailbox}/relayhost-assignment:
+  $ref: './mailbox-relayhost-assignment.yaml'

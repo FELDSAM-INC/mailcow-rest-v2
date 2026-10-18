@@ -1,0 +1,16 @@
+type: object
+description: |
+  One action applied to up to 100 BCC maps, as the legacy mass actions do ("BCC to sender",
+  "BCC to recipient"). Maps outside the caller's scope are reported `notFound`. A type switch that
+  would duplicate another map is reported `refused` with `routing-entry-exists`.
+required: [action, targets]
+properties:
+  action:
+    type: string
+    enum: [activate, deactivate, switchToSender, switchToRecipient, delete]
+  targets:
+    type: array
+    minItems: 1
+    maxItems: 100
+    items:
+      $ref: './BulkTarget.yaml'

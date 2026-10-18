@@ -1,0 +1,14 @@
+type: object
+description: Another transport whose stored credentials the request changed.
+required: [id, destination, nextHop, etag]
+properties:
+  id:
+    type: integer
+    minimum: 1
+  destination:
+    type: string
+  nextHop:
+    type: string
+  etag:
+    type: string
+    description: The transport's new version tag.

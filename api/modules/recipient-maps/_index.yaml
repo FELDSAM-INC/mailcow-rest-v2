@@ -1,0 +1,7 @@
+# Paths of the recipient-maps module (feature 009): recipient maps (envelope recipient rewriting) and bulk actions.
+/recipient-maps:
+  $ref: './recipient-maps.yaml'
+/recipient-maps/bulk-actions:
+  $ref: './recipient-map-bulk-actions.yaml'
+/recipient-maps/{recipientMapId}:
+  $ref: './recipient-map.yaml'

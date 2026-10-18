@@ -1,0 +1,13 @@
+description: TLS policy maps matching the filters.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/TlsPolicyMap.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

@@ -1,0 +1,17 @@
+type: object
+description: |
+  A forwarding host to add. `host` is trimmed and is either an IPv4 or IPv6 address or prefix
+  (one entry), or a host or domain name, which is resolved: the hosts its SPF record permits
+  (following `include` and `redirect`, at most 10 DNS lookups), else the addresses of its mail
+  exchangers, else its own addresses. All resulting addresses are stored together or not at all.
+  An address that is already listed gets the new source and spam filter setting.
+required: [host]
+properties:
+  host:
+    type: string
+    minLength: 1
+    maxLength: 255
+    examples: ['192.0.2.0/24', forwarder.example]
+  spamFilter:
+    type: boolean
+    default: true

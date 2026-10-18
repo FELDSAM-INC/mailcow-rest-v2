@@ -1,0 +1,27 @@
+description: |
+  The request conflicts with existing routing entries. Nothing changed. Possible types:
+  `/api/v2/problems/routing-entry-exists`, `/api/v2/problems/next-hop-credentials-differ` and
+  `/api/v2/problems/next-hop-interferes` (see `RoutingConflictProblem`).
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/RoutingConflictProblem.yaml'
+    examples:
+      entryExists:
+        value:
+          type: /api/v2/problems/routing-entry-exists
+          title: Entry already exists
+          status: 409
+          detail: A transport for this destination already exists.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          field: destination
+          conflictingId: '12'
+      nextHopInterferes:
+        value:
+          type: /api/v2/problems/next-hop-interferes
+          title: Next hop interferes
+          status: 409
+          detail: relay.net interferes with the next hop [relay.net]:587.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          nextHop: relay.net
+          transportIds: [3]

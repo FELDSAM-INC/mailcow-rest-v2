@@ -1,0 +1,8 @@
+# Paths of the forwarding-hosts module (feature 009): servers that forward mail to mailcow, stored
+# in mailcow's Redis, and bulk actions.
+/forwarding-hosts:
+  $ref: './forwarding-hosts.yaml'
+/forwarding-hosts/bulk-actions:
+  $ref: './forwarding-host-bulk-actions.yaml'
+/forwarding-hosts/{forwardingHostAddress}:
+  $ref: './forwarding-host.yaml'

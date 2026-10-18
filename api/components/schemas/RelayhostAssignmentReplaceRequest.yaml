@@ -1,0 +1,11 @@
+type: object
+description: |
+  The new assignment: the identifier of an existing relayhost, or `null` for none. An inactive
+  relayhost is accepted; it takes effect when it is activated.
+required: [relayhostId]
+properties:
+  relayhostId:
+    oneOf:
+      - type: integer
+        minimum: 1
+      - type: 'null'

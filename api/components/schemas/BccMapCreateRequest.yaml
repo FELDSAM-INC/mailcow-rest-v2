@@ -1,0 +1,28 @@
+type: object
+description: |
+  A new BCC map. At most one map may exist per local destination and type.
+required: [localDestination, type, bccDestination]
+properties:
+  localDestination:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: |
+      Within the caller's scope: a domain or alias domain (with or without a leading `@`, stored as
+      `@` plus its ASCII name); a mailbox address (not a resource); an alias address that is
+      neither a catch-all nor a mailbox's own alias; or a mailbox's local part at one of its
+      domain's alias domains. `GET /bcc-destination-choices` lists the accepted values. An
+      unknown value and a value outside the caller's scope get the same validation error
+      (`notFound`).
+  type:
+    $ref: './BccMapType.yaml'
+  bccDestination:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: |
+      Exactly one valid e-mail address. A list of addresses is refused (`tooMany`): create an alias
+      with several destinations and use it here.
+  active:
+    type: boolean
+    default: true

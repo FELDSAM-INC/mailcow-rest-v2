@@ -1,0 +1,7 @@
+name: bccMapId
+in: path
+required: true
+description: Identifier of the BCC map (mailcow's numeric `id`).
+schema:
+  type: integer
+  minimum: 1

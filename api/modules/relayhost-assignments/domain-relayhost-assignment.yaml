@@ -1,0 +1,66 @@
+parameters:
+  - $ref: '../../components/parameters/DomainName.yaml'
+get:
+  operationId: getDomainRelayhostAssignment
+  tags: [Relayhost assignments]
+  summary: Get a domain's relayhost assignment
+  description: |
+    Returns the relayhost assigned to the domain, with its host and state, or `null`.
+    Administrators for every domain; domain administrators for their own domains, without a
+    permission flag. An alias domain name answers `404`: alias domains follow their target domain.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainRelayhostAssignmentResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+put:
+  operationId: replaceDomainRelayhostAssignment
+  tags: [Relayhost assignments]
+  summary: Replace a domain's relayhost assignment
+  description: |
+    Assigns an existing relayhost to the domain, or none (`null`). Mail sent from the domain and its
+    alias domains then leaves through that relayhost while it is active; mailboxes with their own
+    active relayhost keep it. Only the assignment changes (and the domain's modification time), so
+    the domain's version tag in the domains API changes too. No service is reloaded.
+
+    Administrators for every domain. Domain administrators for their own domains, only with the
+    `domainRelayhost` permission flag (otherwise `403 permission-flag-required`, checked before the
+    domain is looked up). Audited, including refused attempts.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/RelayhostAssignmentReplaceRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/DomainRelayhostAssignmentResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/RoutingForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

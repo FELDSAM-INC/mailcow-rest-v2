@@ -1,0 +1,10 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. Default `address` with `order=asc`: IPv4 before IPv6, numerically, then by prefix
+  length. Ties are broken by address.
+schema:
+  type: string
+  enum: [address, source, spamFilter]
+  default: address

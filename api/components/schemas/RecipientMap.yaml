@@ -1,0 +1,29 @@
+type: object
+description: |
+  A recipient map: the envelope recipient is rewritten before delivery. A domain map
+  (`@old.example` to `@new.example`) keeps the local part (`user@old.example` is delivered to
+  `user@new.example`). The new destination may be outside mailcow. Administrators only.
+required: [id, originalDestination, newDestination, active, createdAt, modifiedAt, etag]
+properties:
+  id:
+    type: integer
+    minimum: 1
+  originalDestination:
+    type: string
+    description: '`@domain` or an address, unique among recipient maps.'
+    examples: ['@old.example', 'info@example.org']
+  newDestination:
+    type: string
+    examples: ['@new.example', 'sales@example.org']
+  active:
+    type: boolean
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string

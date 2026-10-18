@@ -1,0 +1,36 @@
+parameters:
+  - $ref: '../../components/parameters/TransportId.yaml'
+post:
+  operationId: testTransportConnection
+  tags: [Transports]
+  summary: Test a transport
+  description: |
+    Connects to the transport's next hop with its stored credentials and sends a short test message,
+    as the legacy transport check does (see `RoutingConnectionTestResult`). Inactive transports can
+    be tested. A state-changing, audited request (session with anti-forgery token or read-write
+    key). It answers within about 60 seconds. Administrators only.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/RoutingConnectionTestRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/RoutingConnectionTestResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

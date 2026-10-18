@@ -1,0 +1,80 @@
+get:
+  operationId: listForwardingHosts
+  tags: [Forwarding hosts]
+  summary: List forwarding hosts
+  description: |
+    Lists the forwarding hosts stored in mailcow's Redis. Administrators only, with a session or a
+    key (read-only keys included). `q` searches the address and the source.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/ForwardingHostSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: spamFilter
+      in: query
+      required: false
+      schema:
+        type: boolean
+    - name: source
+      in: query
+      required: false
+      description: Only entries with exactly this source, for example all addresses added for one host name.
+      schema:
+        type: string
+        maxLength: 255
+  responses:
+    '200':
+      $ref: '../../components/responses/ForwardingHostListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/RoutingTemporaryFailure.yaml'
+post:
+  operationId: createForwardingHost
+  tags: [Forwarding hosts]
+  summary: Add a forwarding host
+  description: |
+    Adds an address or prefix, or resolves a host name and adds every resulting address (see
+    `ForwardingHostCreateRequest`), with the spam filter enabled unless `spamFilter: false` is sent.
+    All addresses are stored together or not at all. Addresses already listed are updated with the
+    new source and spam filter setting. Answers `201` when at least one address was added and `200`
+    when all were already listed. A name without addresses is refused (`422`, `notResolvable`); a
+    temporary DNS failure or an unavailable Redis answers `503` and changes nothing.
+    Administrators only. Audited with every address and its outcome.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/ForwardingHostCreateRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/ForwardingHostUpdatedResponse.yaml'
+    '201':
+      $ref: '../../components/responses/ForwardingHostCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/RoutingTemporaryFailure.yaml'

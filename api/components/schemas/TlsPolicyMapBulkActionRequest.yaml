@@ -1,0 +1,13 @@
+type: object
+description: One action applied to up to 100 TLS policy maps, as the legacy mass actions do.
+required: [action, targets]
+properties:
+  action:
+    type: string
+    enum: [activate, deactivate, delete]
+  targets:
+    type: array
+    minItems: 1
+    maxItems: 100
+    items:
+      $ref: './BulkTarget.yaml'

@@ -1,0 +1,52 @@
+get:
+  operationId: listBccDestinationChoices
+  tags: [BCC maps]
+  summary: List BCC local destination choices
+  description: |
+    Lists the local destinations that `createBccMap` accepts from the caller: domains, alias
+    domains, mailboxes, aliases (not catch-alls, not mailboxes' own aliases) and mailbox addresses
+    in alias domains, each within the caller's scope. Administrators and domain administrators,
+    without a permission flag; read-only keys may use it. `q` searches the value.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/BccDestinationChoiceSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: kind
+      in: query
+      required: false
+      description: Only these kinds. Repeat for several.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 5
+        items:
+          $ref: '../../components/schemas/BccDestinationChoiceKind.yaml'
+    - name: domain
+      in: query
+      required: false
+      description: Only values of these domains or alias domains. Repeat for several.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 100
+        items:
+          type: string
+          maxLength: 255
+  responses:
+    '200':
+      $ref: '../../components/responses/BccDestinationChoiceListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

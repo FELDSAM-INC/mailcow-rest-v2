@@ -1,0 +1,38 @@
+parameters:
+  - $ref: '../../components/parameters/RelayhostId.yaml'
+get:
+  operationId: listRelayhostUsage
+  tags: [Relayhosts]
+  summary: List the domains and mailboxes using a relayhost
+  description: |
+    Lists the domains and mailboxes assigned to the relayhost (legacy "in use by"). Administrators
+    only. `q` searches the name.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/RelayhostUsageSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: kind
+      in: query
+      required: false
+      description: Only domains or only mailboxes.
+      schema:
+        type: string
+        enum: [domain, mailbox]
+  responses:
+    '200':
+      $ref: '../../components/responses/RelayhostUsageListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

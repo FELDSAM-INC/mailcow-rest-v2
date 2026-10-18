@@ -1,0 +1,10 @@
+# Paths of the transports module (feature 009): transport maps, bulk actions and the connection
+# test (legacy "transport check").
+/transports:
+  $ref: './transports.yaml'
+/transports/bulk-actions:
+  $ref: './transport-bulk-actions.yaml'
+/transports/{transportId}:
+  $ref: './transport.yaml'
+/transports/{transportId}/connection-test:
+  $ref: './transport-connection-test.yaml'

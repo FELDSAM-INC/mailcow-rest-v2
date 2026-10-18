@@ -1,0 +1,10 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. `kind` (default) lists domains before mailboxes, each by name; `name` sorts by name
+  only. Default `order=asc`.
+schema:
+  type: string
+  enum: [kind, name]
+  default: kind

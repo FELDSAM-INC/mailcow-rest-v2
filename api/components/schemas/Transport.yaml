@@ -1,0 +1,60 @@
+type: object
+description: |
+  A transport map entry: mail for matching recipients is routed to a next hop, regardless of the
+  sender. Administrators only.
+
+  - A transport **overrules** a relayhost. MX-based transports are used in preference.
+  - Mailbox outbound TLS settings do not apply to mail routed by a transport; only TLS policy maps
+    can enforce TLS for it.
+  - The service is always `smtp:` with opportunistic STARTTLS; implicit TLS (port 465) is not
+    supported.
+  - Addresses matching `/localhost$/` are always delivered locally, so `*` does not apply to them.
+    `*` applies to every other recipient, including hosted domains.
+  - All transports with the same next hop share one username and password: the mail server looks
+    credentials up by next hop.
+  - Because the mail server looks up the credentials of `host` before those of `[host]:port`,
+    `host` and `[host]…` cannot be used as next hops at the same time.
+
+  The password is never returned.
+required: [id, destination, nextHop, mxBased, username, passwordSet, active, nextHopSharedWith, etag]
+properties:
+  id:
+    type: integer
+    minimum: 1
+  destination:
+    type: string
+    maxLength: 255
+    description: |
+      Not MX-based: `*`, a domain (`example.com`), its subdomains (`.example.com`) or an address
+      (`user@example.com`). MX-based: a regular expression matched against the recipient domain's
+      mail exchanger host names, without regard to letter case.
+    examples: [example.com, '.example.com', '*', 'user@example.com', '.*\.google\.com']
+  nextHop:
+    type: string
+    maxLength: 255
+    description: '`host`, `host:port`, `[host]` or `[host]:port`. Brackets turn off the MX lookup.'
+    examples: ['[mx.partner.net]:25']
+  mxBased:
+    type: boolean
+  username:
+    description: Username of the next hop's credentials, or `null` when it sends without logging in.
+    oneOf:
+      - type: string
+        maxLength: 255
+      - type: 'null'
+  passwordSet:
+    type: boolean
+  active:
+    type: boolean
+  nextHopSharedWith:
+    type: integer
+    minimum: 0
+    description: |
+      Number of other transports with the same next hop (compared without regard to letter case),
+      which share these credentials. Filter the list by `nextHop` to see them. Not covered by
+      `etag`.
+  etag:
+    type: string
+    description: |
+      Version tag of the stored settings, including the credentials. It also changes when another
+      transport changes the shared credentials of this next hop.

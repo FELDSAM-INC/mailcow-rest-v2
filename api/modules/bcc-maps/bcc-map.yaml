@@ -1,0 +1,90 @@
+parameters:
+  - $ref: '../../components/parameters/BccMapId.yaml'
+get:
+  operationId: getBccMap
+  tags: [BCC maps]
+  summary: Get a BCC map
+  description: |
+    Returns one BCC map in the caller's scope with its version tag. A map outside the caller's scope
+    answers `404`, exactly like one that does not exist.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/BccMapResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateBccMap
+  tags: [BCC maps]
+  summary: Change a BCC map
+  description: |
+    Changes the type, the BCC destination or the active state. The local destination and the domain
+    are read-only. Administrators, and domain administrators with the `bccMaps` permission flag
+    (otherwise `403 permission-flag-required`), for maps in their scope. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/BccMapPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BccMapResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/RoutingForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/RoutingConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/RoutingTemporaryFailure.yaml'
+delete:
+  operationId: deleteBccMap
+  tags: [BCC maps]
+  summary: Delete a BCC map
+  description: |
+    Deletes the map. Administrators (also orphaned maps), and domain administrators with the
+    `bccMaps` permission flag for maps in their scope. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/RoutingForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

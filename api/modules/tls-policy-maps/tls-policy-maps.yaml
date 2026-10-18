@@ -1,0 +1,76 @@
+get:
+  operationId: listTlsPolicyMaps
+  tags: [TLS policy maps]
+  summary: List TLS policy maps
+  description: |
+    Lists TLS policy maps. Administrators only, with a session or a key (read-only keys included).
+    `q` searches the destination and the parameters.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/TlsPolicyMapSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: policy
+      in: query
+      required: false
+      description: Only these policies. Repeat for several; any matches.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 8
+        items:
+          $ref: '../../components/schemas/TlsPolicy.yaml'
+    - name: active
+      in: query
+      required: false
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/TlsPolicyMapListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createTlsPolicyMap
+  tags: [TLS policy maps]
+  summary: Create a TLS policy map
+  description: |
+    Creates a TLS policy map, active unless `active: false` is sent. Administrators only. A second
+    entry for the same destination (compared without regard to letter case) is refused
+    (`409 routing-entry-exists`). Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/TlsPolicyMapCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/TlsPolicyMapCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/RoutingConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

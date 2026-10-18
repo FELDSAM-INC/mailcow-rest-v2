@@ -1,0 +1,10 @@
+type: object
+description: A domain or mailbox assigned to a relayhost.
+required: [kind, name]
+properties:
+  kind:
+    type: string
+    enum: [domain, mailbox]
+  name:
+    type: string
+    description: The domain name (ASCII) or the mailbox address.

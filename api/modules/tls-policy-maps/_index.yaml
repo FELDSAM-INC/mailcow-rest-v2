@@ -1,0 +1,7 @@
+# Paths of the tls-policy-maps module (feature 009): outbound TLS policy overrides and bulk actions.
+/tls-policy-maps:
+  $ref: './tls-policy-maps.yaml'
+/tls-policy-maps/bulk-actions:
+  $ref: './tls-policy-map-bulk-actions.yaml'
+/tls-policy-maps/{tlsPolicyMapId}:
+  $ref: './tls-policy-map.yaml'

@@ -1,0 +1,83 @@
+get:
+  operationId: listTransports
+  tags: [Transports]
+  summary: List transports
+  description: |
+    Lists transport map entries. Administrators only, with a session or a key (read-only keys
+    included). Passwords are never included. `q` searches the destination, the next hop and the
+    username.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/TransportSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: active
+      in: query
+      required: false
+      schema:
+        type: boolean
+    - name: mxBased
+      in: query
+      required: false
+      schema:
+        type: boolean
+    - name: nextHop
+      in: query
+      required: false
+      description: |
+        Only transports with exactly this next hop, compared without regard to letter case: the
+        transports that share one set of credentials.
+      schema:
+        type: string
+        maxLength: 255
+  responses:
+    '200':
+      $ref: '../../components/responses/TransportListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createTransport
+  tags: [Transports]
+  summary: Create a transport
+  description: |
+    Creates a transport with one destination, inactive unless `active: true` is sent.
+    Administrators only. See `TransportCreateRequest` for how credentials are shared with existing
+    transports of the same next hop. Duplicate destinations, a different username for an existing
+    next hop and interfering next hops are refused with `409`. Audited without the password.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/TransportCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/TransportCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/RoutingConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/RoutingTemporaryFailure.yaml'

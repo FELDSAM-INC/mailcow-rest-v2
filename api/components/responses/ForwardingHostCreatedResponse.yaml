@@ -1,0 +1,19 @@
+description: |
+  At least one address was added. `Location` points to the forwarding host list filtered by the
+  request's source. `data.entries` lists every stored address as `added` or `updated`.
+headers:
+  Location:
+    description: Absolute path of the forwarding host list filtered by this source.
+    required: true
+    schema:
+      type: string
+      format: uri-reference
+      examples: ['/api/v2/forwarding-hosts?source=forwarder.example']
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/ForwardingHostCreationResult.yaml'

@@ -1,0 +1,20 @@
+type: object
+description: |
+  The relayhost an assignment refers to. `state` is `active` or `inactive` after the relayhost's
+  active flag, or `dangling` when no relayhost with the stored identifier exists (left behind by
+  legacy or `/api/v1`). A dangling or inactive reference has no effect; for a mailbox, the domain's
+  relayhost applies meanwhile.
+required: [id, host, state]
+properties:
+  id:
+    type: integer
+    minimum: 1
+    description: The stored relayhost identifier.
+  host:
+    description: The relayhost's host, or `null` when dangling.
+    oneOf:
+      - type: string
+      - type: 'null'
+  state:
+    type: string
+    enum: [active, inactive, dangling]

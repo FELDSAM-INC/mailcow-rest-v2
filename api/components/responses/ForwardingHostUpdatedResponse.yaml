@@ -1,0 +1,11 @@
+description: |
+  Every resolved address was already listed. Each entry is `updated` with the new source and spam
+  filter setting; nothing was added.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/ForwardingHostCreationResult.yaml'

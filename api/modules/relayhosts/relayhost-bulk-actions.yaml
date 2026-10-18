@@ -1,0 +1,38 @@
+post:
+  operationId: applyRelayhostBulkAction
+  tags: [Relayhosts]
+  summary: Apply an action to several relayhosts
+  description: |
+    Activates, deactivates or deletes up to 100 relayhosts in one request, as the legacy mass
+    actions do. Administrators only, with a session or a read-write key; any other caller is
+    refused as a whole (`403`). More than 100 targets are refused as a whole (`422`, `tooMany` on
+    `targets`, with `max: 100`).
+
+    Otherwise each distinct relayhost is processed on its own, with the checks, side effects and
+    audit record of the single operation, and gets one result in request order: `done` (with the
+    new version tag unless deleted), `notFound`, `refused`, `outdated` (the target's `version` no
+    longer matches; unchanged) or `failed`. Targets without `version` are not version-checked. A
+    target named twice is processed once. Every audit record carries the `bulkRequestId`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/RelayhostBulkActionRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

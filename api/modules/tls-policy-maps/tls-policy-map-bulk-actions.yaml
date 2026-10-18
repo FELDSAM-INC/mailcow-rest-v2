@@ -1,0 +1,35 @@
+post:
+  operationId: applyTlsPolicyMapBulkAction
+  tags: [TLS policy maps]
+  summary: Apply an action to several TLS policy maps
+  description: |
+    Activates, deactivates or deletes up to 100 TLS policy maps in one request, as the legacy mass
+    actions do. Administrators only, with a session or a read-write key; any other caller is
+    refused as a whole (`403`). More than 100 targets are refused as a whole (`422`, `tooMany`).
+
+    Each distinct entry is otherwise processed on its own, with the checks and audit record of the
+    single operation: `done`, `notFound`, `refused`, `outdated` or `failed`. Targets without
+    `version` are not version-checked. Every audit record carries the `bulkRequestId`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/TlsPolicyMapBulkActionRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -1,0 +1,8 @@
+type: string
+description: |
+  Step of a connection test, in order: `resolve` (MX lookup and name resolution), `connect` (TCP),
+  `greeting` (the server's `220` and `EHLO`), `tls` (`STARTTLS`, only when offered), `login` (only
+  when a username is stored), `sender` (`MAIL FROM`), `recipient` (`RCPT TO`) and `message`
+  (`DATA` and the message). For an accepted message the step is `message`; otherwise it is the step
+  that failed.
+enum: [resolve, connect, greeting, tls, login, sender, recipient, message]

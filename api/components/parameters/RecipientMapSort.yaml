@@ -1,0 +1,8 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `id` with `order=asc`. Ties are broken by `id`.
+schema:
+  type: string
+  enum: [id, originalDestination, newDestination, active, createdAt, modifiedAt]
+  default: id

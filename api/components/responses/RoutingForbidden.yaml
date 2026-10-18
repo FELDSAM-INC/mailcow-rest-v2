@@ -1,0 +1,26 @@
+description: |
+  The caller is authenticated but may not perform this request. Possible types:
+  - `/api/v2/problems/permission-flag-required`: a domain administrator lacks the permission flag
+    the operation needs (extension `requiredFlags`). Nothing changed.
+  - `/api/v2/problems/forbidden`: the caller's role may never use the operation, for example a
+    mailbox user, or a domain administrator on an administrator-only operation.
+  - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request,
+    including a connection test.
+  - `/api/v2/problems/csrf-token-mismatch`, `/api/v2/problems/pending-action-required`,
+    `/api/v2/problems/api-key-source-not-allowed`: see `Forbidden`.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/RoutingPermissionFlagProblem.yaml'
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      permissionFlagRequired:
+        value:
+          type: /api/v2/problems/permission-flag-required
+          title: Permission flag required
+          status: 403
+          detail: Changing a domain's relayhost needs the domainRelayhost permission.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          requiredFlags: [domainRelayhost]

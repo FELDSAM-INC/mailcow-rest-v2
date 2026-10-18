@@ -1,0 +1,25 @@
+type: object
+description: |
+  JSON Merge Patch of a BCC map. `type`, `bccDestination` and `active` can change; a type change
+  that would duplicate another map of the same local destination is refused. `id`,
+  `localDestination` and `domain` are read-only: accepted with their current value, refused
+  (`immutable`) otherwise.
+minProperties: 1
+properties:
+  type:
+    $ref: './BccMapType.yaml'
+  bccDestination:
+    type: string
+    minLength: 1
+    maxLength: 255
+  active:
+    type: boolean
+  id:
+    type: integer
+    description: Read-only.
+  localDestination:
+    type: string
+    description: Read-only.
+  domain:
+    type: string
+    description: Read-only.

@@ -1,0 +1,71 @@
+get:
+  operationId: listRelayhosts
+  tags: [Relayhosts]
+  summary: List relayhosts
+  description: |
+    Lists relayhosts with their usage, as the legacy "System › Routing" screen does. Administrators
+    only, with a session or a key (read-only keys included); domain administrators use
+    `listRelayhostChoices`. Passwords are never included. `q` searches the host and the username.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/RelayhostSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: active
+      in: query
+      required: false
+      description: Only active (`true`) or inactive (`false`) relayhosts.
+      schema:
+        type: boolean
+    - name: inUse
+      in: query
+      required: false
+      description: Only relayhosts assigned (`true`) or not assigned (`false`) to any domain or mailbox.
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/RelayhostListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createRelayhost
+  tags: [Relayhosts]
+  summary: Create a relayhost
+  description: |
+    Creates a relayhost, active unless `active: false` is sent. Administrators only. The response
+    shows the username and whether a password is set, never the password. Audited without the
+    password.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/RelayhostCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/RelayhostCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -1,0 +1,22 @@
+type: object
+description: |
+  The entries a forwarding host request stored, one per resolved address, in address order.
+  `added`: the address was not listed. `updated`: an equal address (compared in canonical form)
+  was listed and now has the new source and spam filter setting; it keeps its stored form.
+required: [source, entries]
+properties:
+  source:
+    type: string
+    description: The trimmed `host` of the request, stored as each entry's source.
+  entries:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required: [outcome, forwardingHost]
+      properties:
+        outcome:
+          type: string
+          enum: [added, updated]
+        forwardingHost:
+          $ref: './ForwardingHost.yaml'

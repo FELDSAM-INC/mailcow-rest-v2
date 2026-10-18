@@ -1,0 +1,53 @@
+type: object
+description: |
+  A relayhost, called "sender-dependent transport" in the legacy UI: an SMTP server through which
+  mailcow sends the outbound mail of the domains and mailboxes assigned to it. Administrators only.
+
+  The mail server always uses the `smtp:` service with opportunistic STARTTLS. Implicit TLS
+  (SMTPS, mostly port 465) is **not** supported: use a port that offers STARTTLS, and enforce TLS
+  with a TLS policy map if needed. A mailbox's own outbound TLS setting is taken into account.
+  A domain's relayhost applies to the domain and its alias domains.
+
+  The password is never returned: `passwordSet` says whether one is stored. Credentials are stored
+  in clear text, because the mail server needs them.
+required: [id, host, username, passwordSet, active, usage, etag]
+properties:
+  id:
+    type: integer
+    minimum: 1
+  host:
+    type: string
+    maxLength: 255
+    description: |
+      Next hop: `host`, `host:port`, `[host]` or `[host]:port`. Brackets turn off the mail
+      exchanger (MX) lookup, so the mail server connects to the host itself. A bare IP address is
+      stored in brackets.
+    examples: ['[smtp.example.net]:587', 'relay.example.net', '[192.0.2.10]:25']
+  username:
+    description: SMTP username, or `null` when the relayhost sends without logging in.
+    oneOf:
+      - type: string
+        maxLength: 255
+      - type: 'null'
+  passwordSet:
+    type: boolean
+    description: Whether a password is stored. The password itself is write-only.
+  active:
+    type: boolean
+    description: An inactive relayhost stays assigned but has no effect until it is activated.
+  usage:
+    type: object
+    description: Number of domains and mailboxes assigned to the relayhost. Not covered by `etag`.
+    required: [domains, mailboxes]
+    properties:
+      domains:
+        type: integer
+        minimum: 0
+      mailboxes:
+        type: integer
+        minimum: 0
+  etag:
+    type: string
+    description: |
+      Version tag of the stored settings, including the credentials (but not of `usage`), equal to
+      the `ETag` header of a single read. Send it in `If-Match` when changing the relayhost.

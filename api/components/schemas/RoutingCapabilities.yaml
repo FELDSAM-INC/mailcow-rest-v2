@@ -1,0 +1,93 @@
+type: object
+description: |
+  Server settings and limits that clients of the routing operations need before they submit. They
+  reflect the server's current configuration and contain no secret. Domain administrators receive
+  only what they use: `administration` is `null` for them.
+required: [bulkLimit, pageSize, bccMaps, administration]
+properties:
+  bulkLimit:
+    type: integer
+    minimum: 1
+    description: Maximum number of targets of one bulk action.
+    examples: [100]
+  pageSize:
+    type: object
+    required: [default, maximum]
+    properties:
+      default:
+        type: integer
+        minimum: 1
+        examples: [25]
+      maximum:
+        type: integer
+        minimum: 1
+        examples: [1000]
+  bccMaps:
+    type: object
+    required: [localDestinationMaxLength, bccDestinationMaxLength]
+    properties:
+      localDestinationMaxLength:
+        type: integer
+        minimum: 1
+        examples: [255]
+      bccDestinationMaxLength:
+        type: integer
+        minimum: 1
+        examples: [255]
+  administration:
+    description: Values for administrators only; `null` for domain administrators.
+    oneOf:
+      - type: object
+        required: [connectionTest, maxLengths, tlsPolicies, forwardingHostDnsLookupLimit]
+        properties:
+          connectionTest:
+            type: object
+            required: [defaultSender, defaultRecipient, stepTimeoutSeconds, totalTimeoutSeconds]
+            properties:
+              defaultSender:
+                type: string
+                description: Used when a test request gives no sender. Shown as a placeholder.
+                examples: [relay@example.org]
+              defaultRecipient:
+                type: string
+                examples: [null@hosted.mailcow.de]
+              stepTimeoutSeconds:
+                type: integer
+                minimum: 1
+                examples: [15]
+              totalTimeoutSeconds:
+                type: integer
+                minimum: 1
+                examples: [60]
+          maxLengths:
+            type: object
+            description: Maximum lengths, in characters, after trimming and normalisation.
+            required:
+              - host
+              - nextHop
+              - username
+              - password
+              - transportDestination
+              - recipientMapDestination
+              - tlsPolicyDestination
+              - tlsPolicyParameters
+            properties:
+              host: {type: integer, minimum: 1}
+              nextHop: {type: integer, minimum: 1}
+              username: {type: integer, minimum: 1}
+              password: {type: integer, minimum: 1}
+              transportDestination: {type: integer, minimum: 1}
+              recipientMapDestination: {type: integer, minimum: 1}
+              tlsPolicyDestination: {type: integer, minimum: 1}
+              tlsPolicyParameters: {type: integer, minimum: 1}
+          tlsPolicies:
+            type: array
+            description: The policies a TLS policy map accepts.
+            items:
+              $ref: './TlsPolicy.yaml'
+          forwardingHostDnsLookupLimit:
+            type: integer
+            minimum: 1
+            description: Maximum number of DNS lookups when a forwarding host name is resolved through SPF.
+            examples: [10]
+      - type: 'null'

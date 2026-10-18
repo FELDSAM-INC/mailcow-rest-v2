@@ -1,0 +1,46 @@
+type: object
+description: |
+  A BCC map: every message sent to (`recipient`) or by (`sender`) the local destination is silently
+  copied to the BCC destination, for example an archive.
+
+  - A domain-wide map (`@example.org`) matches every address of the domain.
+  - Sub-address tags (`user+tag@`) are ignored when maps are matched.
+  - Copies are sent only for mail that mailcow's spam filter does not reject, soft-reject or
+    greylist.
+  - The local destination is not told about failed copies.
+required: [id, type, localDestination, bccDestination, domain, orphaned, active, createdAt, modifiedAt, etag]
+properties:
+  id:
+    type: integer
+    minimum: 1
+  type:
+    $ref: './BccMapType.yaml'
+  localDestination:
+    type: string
+    description: '`@domain` for a domain or alias domain, otherwise an address. Read-only after creation.'
+    examples: ['@example.org', 'user@example.org']
+  bccDestination:
+    type: string
+    description: Exactly one address, inside or outside mailcow. Use an alias for several recipients.
+  domain:
+    type: string
+    description: Domain or alias domain of the local destination (ASCII). It decides who may see the map. Read-only.
+  orphaned:
+    type: boolean
+    description: |
+      `true` when the domain no longer exists as a domain or alias domain (left behind by a legacy
+      deletion). Only administrators see orphaned maps, so it is always `false` for domain
+      administrators. Not covered by `etag`.
+  active:
+    type: boolean
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    description: '`null` when the map was never modified.'
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string

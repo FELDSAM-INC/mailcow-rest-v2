@@ -1,0 +1,10 @@
+# Paths of the bcc-maps module (feature 009): BCC maps, the local destination choices (legacy
+# `bcc-destination-options`) and bulk actions.
+/bcc-maps:
+  $ref: './bcc-maps.yaml'
+/bcc-destination-choices:
+  $ref: './bcc-destination-choices.yaml'
+/bcc-maps/bulk-actions:
+  $ref: './bcc-map-bulk-actions.yaml'
+/bcc-maps/{bccMapId}:
+  $ref: './bcc-map.yaml'

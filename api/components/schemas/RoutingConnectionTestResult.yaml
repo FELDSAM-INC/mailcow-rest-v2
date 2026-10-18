@@ -1,0 +1,140 @@
+type: object
+description: |
+  Result of one connection test. The test connects directly from this API's container, as the legacy
+  test does from the web container, without the mail server: TLS policy maps and mailbox TLS
+  settings do not apply to it. It looks up the most preferred mail exchanger of a next hop without
+  brackets (the host itself when there is none), uses the next hop's port or 25, uses STARTTLS when
+  offered without verifying the certificate, logs in with the stored credentials (PLAIN or LOGIN,
+  as the mail server does) when a username is stored, and sends a short test message. Each network
+  step times out after 15 seconds and the whole test after 60 seconds (server settings). Nothing is
+  stored. Credentials never appear: every login argument and server login challenge in the
+  transcript is replaced by `[redacted]`.
+required:
+  - accepted
+  - step
+  - failure
+  - nextHop
+  - host
+  - port
+  - hostSource
+  - tls
+  - login
+  - sender
+  - recipient
+  - lastReply
+  - transcript
+  - startedAt
+  - durationMs
+properties:
+  accepted:
+    type: boolean
+    description: Whether the server accepted the test message (`250` after the message data).
+  step:
+    $ref: './RoutingConnectionTestStep.yaml'
+  failure:
+    description: Why the test failed at `step`, or `null` when the message was accepted.
+    oneOf:
+      - type: object
+        required: [reason, message]
+        properties:
+          reason:
+            type: string
+            description: |
+              `nameNotResolved`: the host has no address. `dnsTemporaryFailure`: DNS could not be
+              queried. `connectionRefused`, `connectionFailed`: the TCP connection failed.
+              `timeout`: no answer within the step or test deadline. `connectionClosed`: the server
+              closed the connection. `rejected`: the server answered with an error reply (see
+              `lastReply`). `tlsFailed`: the TLS handshake failed. `loginNotOffered`: a username is
+              stored but the server offers no login. `loginMechanismNotSupported`: the server
+              offers neither PLAIN nor LOGIN. Clients must tolerate unknown values.
+            enum:
+              - nameNotResolved
+              - dnsTemporaryFailure
+              - connectionRefused
+              - connectionFailed
+              - timeout
+              - connectionClosed
+              - rejected
+              - tlsFailed
+              - loginNotOffered
+              - loginMechanismNotSupported
+          message:
+            type: string
+            description: English explanation for logs and scripts.
+      - type: 'null'
+  nextHop:
+    type: string
+    description: The stored host or next hop that was tested.
+  host:
+    description: The host connected to, or `null` when the test stopped before connecting.
+    oneOf:
+      - type: string
+      - type: 'null'
+  port:
+    type: integer
+    minimum: 1
+    maximum: 65535
+  hostSource:
+    type: string
+    enum: [nextHop, mailExchanger]
+    description: |
+      `mailExchanger` when the host is the most preferred MX of a next hop without brackets
+      (several exchangers with the same preference: the first one returned); `nextHop` otherwise.
+  tls:
+    type: boolean
+    description: Whether the dialogue switched to TLS with STARTTLS.
+  login:
+    type: string
+    enum: [notConfigured, notReached, succeeded, failed]
+    description: |
+      `notConfigured`: no username is stored, so the test does not log in. `notReached`: the test
+      stopped before the login step.
+  sender:
+    type: string
+    description: The envelope sender used.
+  recipient:
+    type: string
+    description: The envelope recipient used.
+  lastReply:
+    description: The last reply of the server, or `null` when it never answered.
+    oneOf:
+      - type: object
+        required: [code, text]
+        properties:
+          code:
+            type: integer
+            minimum: 200
+            maximum: 599
+          text:
+            type: string
+      - type: 'null'
+  transcript:
+    type: array
+    maxItems: 501
+    description: |
+      The dialogue, one entry per line. `client` lines were sent, `server` lines received, `info`
+      lines are notes of the test (for example the chosen mail exchanger). Login data is
+      `[redacted]`, the message content is one line `[message: N bytes]`, control characters are
+      replaced by `?`, lines are cut to 1,000 characters and the transcript to 500 lines.
+    items:
+      type: object
+      required: [direction, text]
+      properties:
+        direction:
+          type: string
+          enum: [client, server, info]
+        text:
+          type: string
+          maxLength: 1000
+    examples:
+      - - {direction: info, text: 'Using the most preferred mail exchanger of partner.net: mx1.partner.net'}
+        - {direction: server, text: '220 mx1.partner.net ESMTP'}
+        - {direction: client, text: 'EHLO mail.example.org'}
+        - {direction: client, text: 'AUTH PLAIN [redacted]'}
+        - {direction: server, text: '235 2.7.0 Authentication successful'}
+  startedAt:
+    type: string
+    format: date-time
+  durationMs:
+    type: integer
+    minimum: 0

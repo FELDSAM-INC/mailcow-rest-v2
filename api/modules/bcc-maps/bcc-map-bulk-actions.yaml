@@ -1,0 +1,38 @@
+post:
+  operationId: applyBccMapBulkAction
+  tags: [BCC maps]
+  summary: Apply an action to several BCC maps
+  description: |
+    Activates, deactivates, switches the type of, or deletes up to 100 BCC maps in one request, as
+    the legacy mass actions do. Administrators, and domain administrators with the `bccMaps`
+    permission flag; any other caller is refused as a whole (`403`). More than 100 targets are
+    refused as a whole (`422`, `tooMany`).
+
+    Each distinct map is otherwise processed on its own, with the checks and audit record of the
+    single operation: `done`, `notFound` (also for maps outside the caller's scope), `refused` (for
+    example `routing-entry-exists` when a type switch would duplicate another map), `outdated` or
+    `failed`. Targets without `version` are not version-checked. Every audit record carries the
+    `bulkRequestId`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/BccMapBulkActionRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/RoutingForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

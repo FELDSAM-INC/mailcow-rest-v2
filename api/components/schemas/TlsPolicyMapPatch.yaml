@@ -1,0 +1,18 @@
+type: object
+description: JSON Merge Patch of a TLS policy map, with the rules of creation. `id` is read-only.
+minProperties: 1
+properties:
+  destination:
+    type: string
+    minLength: 1
+    maxLength: 255
+  policy:
+    type: string
+  parameters:
+    type: string
+    maxLength: 255
+  active:
+    type: boolean
+  id:
+    type: integer
+    description: Read-only.

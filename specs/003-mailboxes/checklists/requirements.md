@@ -62,6 +62,10 @@
   - the Input and Assumptions now say that only editing the policy is out of scope.
 
   Re-validated: 16/16 → 16/16 items passing, no state changes. Spec totals: 63 FRs, 11 SCs.
+- Iteration 6 (orchestrator follow-up): the FR-063 read now carries the version tag that feature
+  013 edits the policy with (FR-008, FR-036 and FR-037 there), computed over the same effective
+  values. Added a pointer in FR-038, a twelfth clarification (orchestrator decision) and a note in
+  the parity row. Re-validated: 16/16 → 16/16 items passing, no state changes.
 - The FeldHost fork was diffed against upstream `2026-09a` for every file in the parity reference.
   Mailbox logic is identical. The only differences are display labels (authentication source
   "mailcow", `pw_reset` permission label), which do not change the contract.

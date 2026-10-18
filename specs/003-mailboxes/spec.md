@@ -99,6 +99,9 @@
   defaults, so that the web app shows the rules before a password is submitted. Editing the policy
   stays in feature 013 (FR-063). (orchestrator decision: the create and edit screens of this
   feature need the rules before submit, and feature 013 comes much later.)
+- Q: Must the policy read carry a version tag? → A: Yes, the same tag over the same values as
+  feature 013's policy edit (FR-063). (orchestrator decision: a client can read here and edit in 013
+  without a conflict.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -774,7 +777,8 @@ into each external step and check that the mailbox is left as it was.
   of its changeable values changes, whether the change was made through this API, the legacy UI or
   `/api/v1`. Usage figures and last logins MUST NOT change it. A client MAY send the version it read
   with a change, a deletion or a rename. When the version no longer matches, the request MUST be
-  refused as outdated and change nothing.
+  refused as outdated and change nothing. The password policy read carries feature 013's version
+  tag (FR-063).
 
 #### Deleting a mailbox
 
@@ -925,6 +929,11 @@ into each external step and check that the mailbox is left as it was.
     rules is accepted.
   - The policy MUST be returned as structured rules, not as legacy's ready-made HTML text, so that
     the web app renders and translates it.
+  - The response MUST carry the policy's version tag. It MUST be the same version tag that feature
+    013 uses to edit the policy (FR-008, FR-036 and FR-037 there), computed over the same effective
+    policy values, including the legacy defaults for rules never saved. A client can then read the
+    policy here and send the tag with a change in feature 013 without a conflict. The tag MUST change
+    whenever a policy value changes, whether through feature 013, the legacy UI or `/api/v1`.
   - The policy MUST NOT be changed through this feature. Editing it belongs to feature 013.
 
 ### Legacy Coverage
@@ -1014,7 +1023,7 @@ other default change, the DKIM selector of the Default domain template, belongs 
 | Out-of-scope objects | `access_denied` | "Not found" (FR-003). **Deviation**: existence is not revealed |
 | Change log | Entries in the `logs` table | This API's audit log (FR-056), as in feature 001. **Deviation**: changes made through the new API do not appear in the legacy log viewer |
 | Dovecot credential cache | Old password may work for up to `auth_cache_ttl` (300 s) | Same; documented (Edge Cases) |
-| Password policy read | `get/passwordpolicy` returns the `PASSWD_POLICY` hash from Redis as raw strings, and `get/passwordpolicy/html` returns a translated HTML list; any signed-in role can call them. php-fpm seeds the defaults (length 6, other rules 0) at start-up | Same source and defaults, as structured rules for administrators and domain administrators only (FR-063). **Deviation**: no HTML, because the client translates; mailbox users are refused here, as their own password change is feature 005 |
+| Password policy read | `get/passwordpolicy` returns the `PASSWD_POLICY` hash from Redis as raw strings, and `get/passwordpolicy/html` returns a translated HTML list; any signed-in role can call them. php-fpm seeds the defaults (length 6, other rules 0) at start-up | Same source and defaults, as structured rules for administrators and domain administrators only, with the version tag that feature 013 edits against (FR-063). **Deviation**: no HTML, because the client translates; mailbox users are refused here, as their own password change is feature 005 |
 
 ### Key Entities *(include if feature involves data)*
 

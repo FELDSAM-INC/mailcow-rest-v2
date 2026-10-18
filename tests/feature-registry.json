@@ -229,14 +229,11 @@
         }
     },
     "pendingOperations": [
-        "listSyncJobs",
         "createSyncJob",
         "getSyncJobsCapabilities",
         "applySyncJobBulkAction",
-        "getSyncJob",
         "updateSyncJob",
         "deleteSyncJob",
-        "getSyncJobLog",
         "rescheduleSyncJob"
     ]
 }

@@ -287,7 +287,7 @@ values for the same rows (spec US1, Independent Test).
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T022 [P] [US1] Write `tests/Feature/SyncJobs/ListSyncJobsTest.php` (FR-011–FR-015, AS-1,
+- [X] T022 [P] [US1] Write `tests/Feature/SyncJobs/ListSyncJobsTest.php` (FR-011–FR-015, AS-1,
   AS-2, AS-5, AS-8):
   - **Scope**:
     - a user's 3 jobs are returned with remote server, interval, active, run status and no
@@ -314,7 +314,7 @@ values for the same rows (spec US1, Independent Test).
     - `logAvailable` is correct for a job with a log, an empty log and NULL;
     - the response body never contains `password1`, the seeded passwords or `returned_text`
       content.
-- [ ] T023 [P] [US1] Write `tests/Feature/SyncJobs/GetSyncJobTest.php` (FR-007, FR-008, AS-3, AS-4):
+- [X] T023 [P] [US1] Write `tests/Feature/SyncJobs/GetSyncJobTest.php` (FR-007, FR-008, AS-3, AS-4):
   - a job whose runner finished with `success = 0` and `EXIT_AUTHENTICATION_FAILURE_USER1` (through
     `ImapsyncRunnerSimulator`) shows `lastResult failed`, `exitStatus
     EXIT_AUTHENTICATION_FAILURE_USER1` and `logAvailable true` (AS-3);
@@ -324,7 +324,7 @@ values for the same rows (spec US1, Independent Test).
   - a domain admin requesting a foreign-domain job gets `404 about:blank`, identical in status,
     type and body shape to a non-existent ID (AS-5);
   - a non-numeric ID → `404` (route constraint).
-- [ ] T024 [P] [US1] Write `tests/Feature/SyncJobs/SyncJobLogTest.php` (FR-009, R14):
+- [X] T024 [P] [US1] Write `tests/Feature/SyncJobs/SyncJobLogTest.php` (FR-009, R14):
   - the stored `returned_text` is returned unchanged in `data.log`, with `runStatus`;
   - NULL → `""`;
   - a log containing invalid UTF-8 bytes is returned with U+FFFD and valid JSON;
@@ -332,7 +332,7 @@ values for the same rows (spec US1, Independent Test).
   - a foreign job → `404`;
   - no flag → `403`;
   - reading writes no audit record.
-- [ ] T025 [P] [US1] Write `tests/Feature/SyncJobs/SyncJobReadAccessTest.php` (FR-001, FR-003,
+- [X] T025 [P] [US1] Write `tests/Feature/SyncJobs/SyncJobReadAccessTest.php` (FR-001, FR-003,
   FR-004, AS-6, AS-7). For `listSyncJobs`, `getSyncJob` and `getSyncJobLog`:
   - a domain admin without `da_acl.syncjobs` → `403 permission-flag-required` with `requiredFlags: [syncjobs]` (AS-6);
   - a mailbox user without `user_acl.syncjobs` → `403 permission-flag-required` (AS-7), also for a job in their
@@ -345,7 +345,7 @@ values for the same rows (spec US1, Independent Test).
 
 ### Implementation for User Story 1
 
-- [ ] T026 [US1] Create `app/Services/SyncJobs/SyncJobQuery.php` (R19). It provides:
+- [X] T026 [US1] Create `app/Services/SyncJobs/SyncJobQuery.php` (R19). It provides:
   - `list(Principal, ListParams): array{items, total}`, which applies `SyncJobScope`, the filters
     `mailbox` (`user2 = ?`), `domain` (`m.domain = ?`), `active`, `running` and `lastResult` (`=
     1`, `= 0`, `IS NULL`), and `q` over `user2`, `user1` and `host1` through 001's `ListQuery`;
@@ -355,20 +355,20 @@ values for the same rows (spec US1, Independent Test).
   - `logAvailability(list<int> $ids): array<int, bool>`, which runs one query over the page's IDs
     (`returned_text IS NOT NULL AND returned_text <> ''`);
   - `findWithLog(int $id, Principal)`.
-- [ ] T027 [P] [US1] Create `app/Http/Requests/Api/V2/ListSyncJobsRequest.php` on 001's
+- [X] T027 [P] [US1] Create `app/Http/Requests/Api/V2/ListSyncJobsRequest.php` on 001's
   `ApiFormRequest` and `ListQuery`. It accepts `sort` from the `SyncJobSort` enum (default `id`),
   `order` (default `asc`), `mailbox` and `domain` (strings ≤ 255), `active` and `running`
   (`true`/`false`) and `lastResult` (enum). `authorize()` calls the `syncJobs.use` gate. If 001's
   `OpenApiContract` does not coerce boolean query values, extend
   `tests/Support/Contract/OpenApiContract.php` so that `true` and `false` validate as JSON
   booleans.
-- [ ] T028 [P] [US1] Create `app/Http/Resources/Api/V2/SyncJobLogResource.php`, which renders
+- [X] T028 [P] [US1] Create `app/Http/Resources/Api/V2/SyncJobLogResource.php`, which renders
   `{syncJobId, runStatus, log}` and encodes with `JSON_INVALID_UTF8_SUBSTITUTE` (R14).
-- [ ] T029 [US1] Create `app/Http/Controllers/Api/V2/SyncJobController.php` with `index`, which
+- [X] T029 [US1] Create `app/Http/Controllers/Api/V2/SyncJobController.php` with `index`, which
   returns the `{data, meta}` envelope through `ListQuery`, and `show`, which returns `200` with an
   `ETag` header, or `404` through `SyncJobScope::findInScope`. Create
   `app/Http/Controllers/Api/V2/SyncJobLogController.php` (`show`). Both run the gate first.
-- [ ] T030 [US1] Register in `routes/api.php`, inside the `api.v2` group, with
+- [X] T030 [US1] Register in `routes/api.php`, inside the `api.v2` group, with
   `restv2.auth:authenticated`:
   - `GET sync-jobs` → `index`;
   - `GET sync-jobs/{syncJob}` → `show`, `whereNumber('syncJob')`;
@@ -1038,3 +1038,14 @@ Checked on `main` at `e21f5ee`:
   `App\Services\SyncJobs\SyncJobAuditTargets` (named like 002's, 003's and 004's), and its test is
   `tests/Feature/Audit/SyncJobRefusalAuditTest.php`. 002's `RefusalAuditorTest` already covers the
   generic cases (every mapped reason, CSRF, `401`, undeclared routes).
+- **T024**: MariaDB's strict mode refuses invalid UTF-8 in the `utf8mb4` column `returned_text`
+  (`1366 Incorrect string value`), so such a log cannot be stored, by the runner or by a test. The
+  U+FFFD substitution of `SyncJobLogResource` is therefore tested on a model whose attribute holds
+  the bytes, not through the database.
+- **T026, T029**: the scope joins `mailbox` once (`SyncJobScope::query()`), and the list counts and
+  pages through 001's `ListQuery`, with `imapsync.id` as the tie-breaker. `active` and `running`
+  treat any non-zero flag as `true`, as the representation does, and `lastResult=failed` matches
+  every stored result other than 1. A job is read in one query plus one for its log availability.
+- **T030**: the path parameter is `{syncJobId}` (the contract's name), constrained to
+  `[1-9][0-9]{0,9}` like 004's `{aliasId}`, so `0` and non-numeric identifiers are `404`.
+

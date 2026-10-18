@@ -81,6 +81,8 @@ use App\Http\Middleware\AuthorizeMonitoring;
 use App\Rules\MailQueueId;
 use App\Services\Logs\LogType;
 use App\Services\Monitoring\ContainerRegistry;
+use App\Http\Controllers\Api\V2\SyncJobController;
+use App\Http\Controllers\Api\V2\SyncJobLogController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -473,6 +475,18 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('network', '.+')
             ->defaults('restv2.audit', ['event' => 'fail2banBanDenylisting', 'target' => 'fail2banActiveBan'])
             ->name('fail2ban-ban-denylist.store');
+    });
+
+    // Feature 008: sync jobs. Literal paths (bulk-actions) come before `{syncJobId}`, which is
+    // digits only; the capabilities live at the top-level path /capabilities/sync-jobs.
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/sync-jobs', [SyncJobController::class, 'index'])->name('sync-jobs.index');
+        Route::get('/sync-jobs/{syncJobId}', [SyncJobController::class, 'show'])
+            ->where('syncJobId', '[1-9][0-9]{0,9}')
+            ->name('sync-jobs.show');
+        Route::get('/sync-jobs/{syncJobId}/log', [SyncJobLogController::class, 'show'])
+            ->where('syncJobId', '[1-9][0-9]{0,9}')
+            ->name('sync-job-log.show');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

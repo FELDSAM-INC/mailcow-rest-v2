@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\SyncJobs;
 
+use App\Http\Resources\Api\V2\SyncJobLogResource;
+use App\Models\Mailcow\SyncJob;
+use App\Services\SyncJobs\SyncJobQuery;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\SyncJobs\SyncJobTestHelpers;
 use Tests\TestCase;
@@ -50,18 +53,16 @@ class SyncJobLogTest extends TestCase
 
     public function test_invalid_utf8_is_replaced_and_the_response_stays_valid_json(): void
     {
+        // MariaDB's strict mode refuses invalid UTF-8 in the utf8mb4 column, so such bytes cannot be
+        // stored; the representation still never fails on them (research R14).
         $id = $this->mailcow()->syncJob('alice@example.org');
-        // The runner may store bytes of remote folder names that are not UTF-8: written here
-        // without the server's conversion, as raw bytes.
-        DB::statement('SET NAMES binary');
-        DB::update('UPDATE imapsync SET returned_text = ? WHERE id = ?', ["folder \xC3\x28 and \xFF end", $id]);
-        DB::statement("SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'");
-        $this->asAdmin();
+        $job = SyncJob::query()->select([...SyncJobQuery::columns(), 'imapsync.returned_text'])->findOrFail($id);
+        $job->setRawAttributes(['returned_text' => "folder \xC3\x28 and \xFF end"] + $job->getAttributes());
 
-        $response = $this->getJson('/api/v2/sync-jobs/'.$id.'/log')->assertOk();
+        $response = SyncJobLogResource::response($job);
 
-        $this->assertNotNull(json_decode((string) $response->getContent(), true));
-        $this->assertSame("folder \u{FFFD}( and \u{FFFD} end", $response->json('data.log'));
+        $this->assertIsArray(json_decode((string) $response->getContent(), true));
+        $this->assertSame("folder \u{FFFD}( and \u{FFFD} end", $response->getData(true)['data']['log']);
     }
 
     public function test_a_five_megabyte_log_is_returned_whole(): void

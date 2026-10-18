@@ -788,10 +788,10 @@ type and sign-in method.
   `ADDITIONAL_SERVER_NAMES`, private CAs for LDAP (`LDAPTLS_CACERT`), and that the synchronisation
   jobs stay in php-fpm (FR-018). Add a `CHANGELOG.md` entry listing the 19 operations and the additive
   changes to feature 001's contract for mailcowui-ng.
-- [ ] T093 Run `composer test` (contract coverage must list all 19 operations of this feature, FR-058),
+- [X] T093 Run `composer test` (contract coverage must list all 19 operations of this feature, FR-058),
   `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and `vendor/bin/phpunit --group idp`, and
   fix every finding.
-- [ ] T094 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
+- [X] T094 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
   result; record deviations in `specs/012-identity-providers-oauth2/quickstart.md`.
 
 ---
@@ -930,6 +930,12 @@ what exists map as listed.
   and never in lists or reads.
 - **G21**: Keycloak 26.0.7 in the `idp` profile imports `docker/keycloak/example-realm.json` (realm
   `example`, client `mailcow`, user `anna@example.org`); the import skips an existing realm.
+- **T093**: after the rebase onto main 1351d9e, `composer test` ran 2,874 tests (16,069
+  assertions); contract coverage 108 of 108 registered operations, 0 pending. The only failure, in
+  both full runs, was 002's `DomainListLatencyTest` (p95 2.3–2.4 s against 2 s, load average 18 from
+  the other worktrees' suites); it passes alone, with 012's `SingleSignOnLatencyTest`. `pint --test`,
+  `phpstan analyse`, `phpunit --group idp` (8 tests against OpenLDAP), the Redocly lint and the
+  production image build (`ldap`, `intl`, `pdo_mysql`, league/oauth2-client, no bshaffer) pass.
 - **T094**: Part B was run by hand against the dev stack (inside a compose project without host
   ports, from the `app` container) with the real OpenLDAP and Keycloak: every expected result held,
   including single sign-on with creation from "Staff", renewal after 5 minutes against Keycloak, the

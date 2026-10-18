@@ -12,6 +12,9 @@ parameters:
         - database
         - bootstrap/app.php
     tmpDir: storage/framework/cache/phpstan
+    # Symbols of the excluded legacy fixtures that tests call (legacy_verify_hash()).
+    scanFiles:
+        - tests/fixtures/legacy/verify_hash.php
     excludePaths:
         # Legacy code copied verbatim from mailcow (tests/fixtures/legacy) and mailcow's vars files.
         - tests/fixtures/*

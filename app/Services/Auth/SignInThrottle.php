@@ -5,8 +5,10 @@ namespace App\Services\Auth;
 use App\Exceptions\ProblemException;
 use App\Support\Clock\Sleeper;
 use App\Support\Http\ProblemType;
+use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
+use Illuminate\Contracts\Cache\Repository;
 
 /**
  * Sign-in throttling (FR-007, R17), shared by password, second-factor and passkey sign-in.
@@ -16,14 +18,20 @@ use Illuminate\Contracts\Cache\Factory as CacheFactory;
  * (`restv2:passkey:<hash>`). Each failure is answered 0.5 s × (earlier failures) later; after
  * `RESTV2_SIGNIN_MAX_FAILURES` failures attempts are refused with `429` without checking
  * credentials.
+ *
+ * The window ends at the time Laravel's rate limiter records with the first failure, compared with
+ * the application clock, so that it also ends when the Redis key outlives it.
  */
 class SignInThrottle
 {
     private readonly RateLimiter $limiter;
 
+    private readonly Repository $store;
+
     public function __construct(CacheFactory $cache, private readonly Sleeper $sleeper)
     {
-        $this->limiter = new RateLimiter($cache->store('restv2'));
+        $this->store = $cache->store('restv2');
+        $this->limiter = new RateLimiter($this->store);
     }
 
     /**
@@ -31,6 +39,8 @@ class SignInThrottle
      */
     public function assertNotThrottled(string $key): void
     {
+        $this->expireIfDue($key);
+
         if (! $this->limiter->tooManyAttempts($key, $this->maxFailures())) {
             return;
         }
@@ -50,6 +60,7 @@ class SignInThrottle
      */
     public function hit(string $key): int
     {
+        $this->expireIfDue($key);
         $previous = (int) $this->limiter->attempts($key);
         $this->limiter->hit($key, $this->window());
 
@@ -85,6 +96,18 @@ class SignInThrottle
     public function passkeyKey(string $ip): string
     {
         return 'passkey:'.hash('sha256', $ip);
+    }
+
+    /**
+     * Ends the window when its end has passed.
+     */
+    private function expireIfDue(string $key): void
+    {
+        $endsAt = $this->store->get($key.':timer');
+
+        if (is_numeric($endsAt) && (int) $endsAt <= CarbonImmutable::now()->getTimestamp()) {
+            $this->limiter->clear($key);
+        }
     }
 
     private function maxFailures(): int

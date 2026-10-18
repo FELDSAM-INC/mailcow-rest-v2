@@ -90,7 +90,7 @@ class SessionManager
     /**
      * The pending sign-in, unless it is missing or expired.
      *
-     * @return array{username: string, role: Role, accountKind: AccountKind, methodIds: list<int>, expiresAt: CarbonImmutable}|null
+     * @return array{username: string, role: Role, accountKind: AccountKind, methodIds: list<int>, expiresAt: CarbonImmutable, requestedRole: Role|null}|null
      */
     public function pending(Session $session): ?array
     {
@@ -113,6 +113,7 @@ class SessionManager
             'accountKind' => $kind,
             'methodIds' => array_values(array_map('intval', (array) ($data['methodIds'] ?? []))),
             'expiresAt' => CarbonImmutable::createFromTimestampUTC((int) $data['expiresAt']),
+            'requestedRole' => Role::tryFrom((string) ($data['requestedRole'] ?? '')),
         ];
     }
 
@@ -121,8 +122,9 @@ class SessionManager
      * replaces any earlier sign-in of the session. Returns its expiry.
      *
      * @param  list<int>  $methodIds  the usable second factors, in presentation order
+     * @param  Role|null  $requestedRole  the role the sign-in named, kept for the audit record
      */
-    public function beginPending(Session $session, string $username, Role $role, AccountKind $kind, array $methodIds, ?string $userAgent): CarbonImmutable
+    public function beginPending(Session $session, string $username, Role $role, AccountKind $kind, array $methodIds, ?string $userAgent, ?Role $requestedRole = null): CarbonImmutable
     {
         $expiresAt = CarbonImmutable::now('UTC')->addSeconds($this->challengeTtl());
 
@@ -135,6 +137,7 @@ class SessionManager
             'methodIds' => $methodIds,
             'expiresAt' => $expiresAt->getTimestamp(),
             'userAgentHash' => self::userAgentHash($userAgent),
+            'requestedRole' => $requestedRole?->value,
         ]);
         $this->touch($session);
 

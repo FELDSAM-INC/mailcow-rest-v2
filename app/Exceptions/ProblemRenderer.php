@@ -45,6 +45,12 @@ final class ProblemRenderer
      */
     private static function validation(array $errors, Request $request): Response
     {
+        // `params` is a JSON object, also when the rule has none.
+        $errors = array_map(
+            fn (array $violations): array => array_map(fn (array $v): array => ['params' => (object) $v['params']] + $v, $violations),
+            $errors,
+        );
+
         return Problem::response(ProblemType::ValidationFailed, $request, null, ['errors' => (object) $errors]);
     }
 

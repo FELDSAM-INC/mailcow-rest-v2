@@ -203,6 +203,10 @@ final class OpenApiContract
                 $violations[] = "{$label}: status {$status} documents no body, but one was sent";
             }
 
+            if ($violations === [] && $status >= 200 && $status < 400) {
+                $this->recordCoverage($match->operationId);
+            }
+
             return $violations;
         }
 

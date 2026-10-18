@@ -617,7 +617,7 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T053 [P] [US1] Write `tests/Unit/Hashing/LegacyPasswordVerifierTest.php` (FR-004, SC-001, R12). For
+- [X] T053 [P] [US1] Write `tests/Unit/Hashing/LegacyPasswordVerifierTest.php` (FR-004, SC-001, R12). For
   every scheme in `ARGON2I`, `ARGON2ID`, `BLF-CRYPT`, `CRYPT`, `DES-CRYPT`, `MD5-CRYPT`, `MD5`,
   `SHA256-CRYPT`, `SHA512-CRYPT`, `CLEAR`, `CLEARTEXT`, `PLAIN`, `LDAP-MD5`, `PBKDF2`,
   `PBKDF2-SHA512`, `PLAIN-MD4`, `PLAIN-MD5`, `PLAIN-TRUNC`, `SHA`, `SHA1`, `SHA256`, `SHA512`,
@@ -627,7 +627,13 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
     `2026-09a`, with the command recorded in a comment;
   - the result equals `legacy_verify_hash()` from `tests/fixtures/legacy/verify_hash.php`;
   - a lower-case scheme name works, and an unknown scheme or a missing `{…}` fails.
-- [ ] T054 [P] [US1] Write `tests/Feature/Auth/PasswordSignInTest.php` for `createSession`:
+
+  *Implementation note*: Dovecot (`ghcr.io/mailcow/dovecot:2.3.21.1-2`) has no FreeIPA-style
+  `PBKDF2-SHA512` scheme, so that vector is computed with `hash_pbkdf2()` in the FreeIPA form, and
+  the `{PLAIN-TRUNC}<length>-<password>` form is written by hand. DES-CRYPT uses only the first 8
+  characters, so the wrong passwords differ at the start. Where legacy throws (a non-numeric
+  PLAIN-TRUNC length, a truncated PBKDF2 value), the port returns false.
+- [X] T054 [P] [US1] Write `tests/Feature/Auth/PasswordSignInTest.php` for `createSession`:
   - AS-1: admin without second factor → `201`, `Location: /api/v2/session`, `state active`,
     `role admin`, `authMethod password`.
   - AS-6: a username that is an admin and a mailbox → admin without `role`, mailbox with
@@ -647,7 +653,7 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
   - A missing CSRF token → `403 csrf-token-mismatch` (FR-011).
   - Missing fields → `422` `required`, not counted towards throttling.
   - A malformed JSON body (with a valid CSRF token) → `400` `about:blank` problem.
-- [ ] T055 [P] [US1] Write `tests/Feature/Auth/PasswordSignInSideEffectsTest.php`. Use
+- [X] T055 [P] [US1] Write `tests/Feature/Auth/PasswordSignInSideEffectsTest.php`. Use
   `ChannelSpy`, and assert database rows exactly:
   - `UPDATE tfa SET active = '1'` re-activates all of the user's rows, including `u2f` and `hotp`
     rows, after a sign-in of an account with no active `tfa` row of any type (FR-026). An account
@@ -665,7 +671,7 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
   - `force_tfa` without `tfa` rows and without an active passkey → `[secondFactorSetup]`; with an
     inactive `tfa` row → not restricted; with an active `fido2` row → not restricted (FR-014,
     FR-054).
-- [ ] T056 [P] [US1] Write `tests/Feature/Auth/SignInThrottleTest.php` (FR-007, AS-7, R17). Bind a
+- [X] T056 [P] [US1] Write `tests/Feature/Auth/SignInThrottleTest.php` (FR-007, AS-7, R17). Bind a
   fake `App\Support\Clock\Sleeper` that records durations.
   - Failures 1..10 for `(user, ip)` sleep 0, 0.5, 1.0, …, 4.5 s.
   - The 11th attempt (even with the correct password) → `429 too-many-requests`, with
@@ -678,7 +684,12 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
   - A verified password resets it.
   - `RESTV2_SIGNIN_MAX_FAILURES=3` and `RESTV2_SIGNIN_FAILURE_WINDOW=60` are honoured, and the
     window expires (`travel`).
-- [ ] T057 [P] [US1] Write `tests/Feature/Auth/SecondFactorTotpTest.php` for `verifySecondFactor`
+
+  *Implementation note*: Laravel's rate limiter keeps its keys with a real Redis TTL, which `travel()`
+  cannot move. `SignInThrottle` therefore also ends the window when the end time that the limiter
+  records with the first failure has passed on the application clock (same result in
+  production). Tests bind `Tests\Support\Clock\FakeSleeper` for every test (`sleeper()`).
+- [X] T057 [P] [US1] Write `tests/Feature/Auth/SecondFactorTotpTest.php` for `verifySecondFactor`
   (FR-019 order within the second-factor step, SC-001):
   - AS-2: a mailbox with WebAuthn, TOTP and Yubico rows → `state pendingSecondFactor`, methods
     ordered `webauthn`, `totp`, `yubiOtp`, with tiers `primary`, `primary`, `advanced`, `id` from
@@ -696,7 +707,7 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
     `secondFactorUnavailable`.
   - A code of `"12345"` → `422 invalidFormat` (`format: totpCode`), and the pending sign-in is
     kept.
-- [ ] T058 [P] [US1] Write `tests/Feature/Auth/SecondFactorWebAuthnTest.php` for
+- [X] T058 [P] [US1] Write `tests/Feature/Auth/SecondFactorWebAuthnTest.php` for
   `createSecondFactorWebAuthnChallenge` and `verifySecondFactor` with `type: webauthn` (AS-3,
   FR-021, FR-022):
   - The challenge has `allowCredentials` = the base64url IDs of the active `tfa` webauthn rows
@@ -708,7 +719,7 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
   - The challenge reused after a failure → `sign-in-expired`; after 301 s → `sign-in-expired`.
   - Without a pending sign-in → `401 sign-in-expired`.
   - A pending sign-in without webauthn methods → `409` (`about:blank`).
-- [ ] T059 [P] [US1] Write `tests/Feature/Auth/SecondFactorYubicoTest.php`, with
+- [X] T059 [P] [US1] Write `tests/Feature/Auth/SecondFactorYubicoTest.php`, with
   `YubicoOtpVerifier` bound to a fake:
   - A valid OTP selects the row by modhex prefix → `active`.
   - An unknown modhex → `second-factor-failed`.
@@ -723,13 +734,13 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
   - `status=OK` with an echoed `otp` and `nonce` → valid.
   - `REPLAYED_OTP`, `BAD_OTP` or a bad response signature → invalid.
   - HTTP 500, `BACKEND_ERROR`, a connection exception or a 5 s timeout → temporary failure.
-- [ ] T060 [P] [US1] Write `tests/Feature/Auth/PendingSignInLifecycleTest.php`:
+- [X] T060 [P] [US1] Write `tests/Feature/Auth/PendingSignInLifecycleTest.php`:
   - `GET /session` during the pending sign-in shows `pendingSignIn.methods` and `expiresAt`.
   - After 301 s, `verifySecondFactor` → `401 sign-in-expired` (FR-024).
   - `cancelPendingSignIn` → `204` and `anonymous`, keeping the same CSRF token.
   - `cancelPendingSignIn` without a pending sign-in → `204`.
   - A new password sign-in replaces the pending one.
-- [ ] T061 [P] [US1] Write `tests/Feature/Auth/SignOutTest.php` for `deleteSession` (AS-5, FR-010):
+- [X] T061 [P] [US1] Write `tests/Feature/Auth/SignOutTest.php` for `deleteSession` (AS-5, FR-010):
   - Signed in → `204`, an audit `signOut`, then `GET /session` → `anonymous` and the old session
     key deleted.
   - No cookie → `204` with no audit.
@@ -739,14 +750,19 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
 
 ### Implementation for User Story 1
 
-- [ ] T062 [P] [US1] Create `app/Support/Hashing/LegacyPasswordVerifier.php`, the port of
+- [X] T062 [P] [US1] Create `app/Support/Hashing/LegacyPasswordVerifier.php`, the port of
   `verify_hash()` and `verify_salted_hash()` (R12), which makes T053 pass.
-- [ ] T063 [US1] Extend `app/Services/Auth/AccountResolver.php` with
+- [X] T063 [US1] Extend `app/Services/Auth/AccountResolver.php` with
   `resolveForPassword(string $normalisedUsername, ?Role $role): iterable<Candidate>`. It yields the
   admin, domain-admin and mailbox candidates in legacy order and filters by `role`, applies
   legacy's malformed-username check, and tags each candidate with its inactive, resource or
   external-authsource status (R16).
-- [ ] T064 [US1] Create `app/Services/Auth/PasswordSignInService.php`, which implements the
+
+  *Implementation note*: candidates are `App\Services\Auth\AccountCandidate` with a
+  `CandidateStatus` (`Usable`, `Inactive` for inactive accounts, inactive domains and resources,
+  `ExternalIdentitySource`). `accountInactive` is audited only when the inactive account's password
+  verified; otherwise the reason is `invalidCredentials`.
+- [X] T064 [US1] Create `app/Services/Auth/PasswordSignInService.php`, which implements the
   `createSession` flow. The success path (re-activation, `sasl_log`, audit) runs in one
   `DB::transaction`. A failure's audit record is written in its own transaction after any partial
   work has been rolled back, so that it is never lost with the failure (R22). The steps:
@@ -759,13 +775,20 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
      when no `tfa` row is active, `UPDATE tfa SET active = '1'` + `promote()` + audit;
   5. restricted state via `PendingActionEvaluator`.
 
+  *Implementation note*: `App\Services\Auth\SignInAudit` writes the sign-in records (success inside
+  the caller's transaction, failure in its own) for password, second-factor and passkey sign-in.
+  The session is promoted only after the audited transaction commits. The pending sign-in keeps
+  `requestedRole` for the audit record (`SessionManager::beginPending()` takes it as an optional
+  argument). A `second-factor-unavailable` sign-in keeps its `sasl_log` row, as legacy writes it
+  once the password verified.
+
   Use `RESTV2_*` settings from `config/restv2.php`. FR-001–FR-008, FR-014, FR-026, FR-027.
-- [ ] T065 [P] [US1] Create `app/Clients/Yubico/YubicoOtpVerifier.php` (interface),
+- [X] T065 [P] [US1] Create `app/Clients/Yubico/YubicoOtpVerifier.php` (interface),
   `YubicoVerificationResult.php` (`valid`, `invalid`, `temporaryFailure`) and
   `HttpYubicoOtpVerifier.php` (R11, endpoint `config('restv2.yubico_verify_url')`, 5 s timeout),
   bound in `AppServiceProvider`. Create `app/Support/Totp/NoQrCodeProvider.php`. This makes the
   unit part of T059 pass.
-- [ ] T066 [US1] Create `app/Services/Auth/SecondFactorService.php`. It provides:
+- [X] T066 [US1] Create `app/Services/Auth/SecondFactorService.php`. It provides:
   - `usableMethods(username)`: active `tfa` rows without `u2f` and `hotp`, ordered `webauthn`,
     `totp`, `yubi_otp`, then by `id`;
   - `hasOnlyUnusableActiveMethods(username)`;
@@ -779,17 +802,32 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
       unchanged and `$WEBAUTHN_USER_PRESENT_FLAG`;
     - Yubico through `YubicoOtpVerifier`, with the row selected by `secret LIKE '%<modhex>'`.
 
+  *Implementation note*: lbuchs 2.2 has an extra `allowHybrid` transport parameter, so legacy's
+  `getGetArgs($ids, …, false, false, false, false, $uv)` is
+  `getGetArgs($ids, 300, false, false, false, false, false, $uv)` (no transports, as legacy). The
+  replay script runs through `command('eval', …)`, and phpredis prefixes its key like any other.
+  A second factor completed for an account that was deactivated after the password step answers
+  `sign-in-failed` (audited `accountInactive`). `verifySecondFactor` without a pending sign-in is
+  audited as `challengeExpired`.
+
   On success it calls `promote()` and audits. On failure it cancels the pending sign-in, counts a
   throttle failure (except for a vanished method or a temporary failure) and audits.
   FR-020–FR-025, R9, R10.
-- [ ] T067 [P] [US1] Create `app/Http/Requests/Api/V2/PasswordSignInRequest.php`: `username`
+- [X] T067 [P] [US1] Create `app/Http/Requests/Api/V2/PasswordSignInRequest.php`: `username`
   "required, string, 1–255", `password` "required, string, 1–4096", `role` "optional, in admin,
   domainAdmin, mailboxUser". Create `app/Http/Requests/Api/V2/SecondFactorVerificationRequest.php`:
   `type` "required, in totp, webauthn, yubiOtp"; for `totp`, `methodId` "required, integer ≥ 1"
   and `code` "required, regex ^[0-9]{6}$"; for `yubiOtp`, `otp` "required, regex
   ^[A-Za-z0-9]{44}$"; for `webauthn`, `credential.id`, `rawId` and `response.{clientDataJSON,
   authenticatorData, signature}` "required, base64url". All extend `ApiFormRequest`.
-- [ ] T068 [US1] Add `SessionController@store` (`createSession`, `201` + `Location`) and
+
+  *Implementation note*: `App\Rules\MatchesFormat` reports `invalidFormat` with the contract's
+  format name (`totpCode`, `yubicoOtp`, `base64url`), and the trait
+  `App\Http\Requests\Api\V2\Concerns\WebAuthnCredentialRules` validates WebAuthn responses (also
+  used by US2). Phase 2 fixes found here: an empty `params` of a field violation is rendered as a
+  JSON object (the contract's type), and the contract coverage now also records operations whose
+  documented 2xx response has no body (204).
+- [X] T068 [US1] Add `SessionController@store` (`createSession`, `201` + `Location`) and
   `@destroy` (`deleteSession`, `204`, audit when a principal existed) in
   `app/Http/Controllers/Api/V2/SessionController.php`, and create
   `PendingSignInController.php` (`@destroy`), `SecondFactorChallengeController.php` (`@store`) and

@@ -26,6 +26,7 @@ class TfaEntry extends MailcowModel
     protected function casts(): array
     {
         return [
+            'id' => 'integer',
             'active' => 'boolean',
             'counter' => 'integer',
         ];

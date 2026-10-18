@@ -7,6 +7,7 @@ use App\Auth\AuthMethod;
 use App\Auth\Principal;
 use App\Auth\Role;
 use App\Services\Auth\SessionManager;
+use App\Support\Clock\Sleeper;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -16,6 +17,7 @@ use Illuminate\Testing\TestResponse;
 use LogicException;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\Support\Clock\FakeSleeper;
 use Tests\Support\Contract\OpenApiContract;
 use Tests\Support\Mailcow\MailcowFactory;
 
@@ -28,6 +30,7 @@ use Tests\Support\Mailcow\MailcowFactory;
  *  - Validates every request and response against the contract. Response validation cannot be
  *    turned off; request validation only in tests named *Invalid* or *Malformed*.
  *  - Keeps the cookies a response sets, like a browser, for the following requests.
+ *  - Records sign-in throttling delays instead of waiting (`sleeper()`).
  */
 abstract class TestCase extends BaseTestCase
 {
@@ -38,6 +41,8 @@ abstract class TestCase extends BaseTestCase
 
     private bool $validateRequests = true;
 
+    private FakeSleeper $sleeper;
+
     /** @var array<string, string> */
     private array $cookieJar = [];
 
@@ -46,6 +51,15 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         $this->flushTestRedis();
+        $this->app->instance(Sleeper::class, $this->sleeper = new FakeSleeper);
+    }
+
+    /**
+     * The recording Sleeper bound for the test: the throttling delays the requests asked for.
+     */
+    protected function sleeper(): FakeSleeper
+    {
+        return $this->sleeper;
     }
 
     /**
@@ -106,6 +120,17 @@ abstract class TestCase extends BaseTestCase
         }
 
         return parent::json($method, $uri, $data, $headers, $options);
+    }
+
+    /**
+     * A POST without a request body, for operations that document none (challenges).
+     *
+     * @param  array<string, string>  $headers
+     * @return TestResponse<Response>
+     */
+    public function postEmpty(string $uri, array $headers = []): TestResponse
+    {
+        return $this->call('POST', $uri, [], [], [], $this->transformHeadersToServerVars(array_merge(['Accept' => 'application/json'], $headers)));
     }
 
     /**
@@ -183,6 +208,14 @@ abstract class TestCase extends BaseTestCase
     protected function forgetCookies(): void
     {
         $this->cookieJar = [];
+    }
+
+    /**
+     * Sends the given session identifier as the session cookie from now on.
+     */
+    protected function useSessionCookie(string $sessionId): void
+    {
+        $this->cookieJar[$this->sessionCookieName()] = $sessionId;
     }
 
     protected function sessionCookieName(): string

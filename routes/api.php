@@ -76,16 +76,16 @@ use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
 use App\Http\Controllers\Api\V2\SessionController;
-use App\Http\Controllers\Api\V2\UpdateStatusController;
-use App\Http\Middleware\AuthorizeMonitoring;
-use App\Rules\MailQueueId;
-use App\Services\Logs\LogType;
-use App\Services\Monitoring\ContainerRegistry;
 use App\Http\Controllers\Api\V2\SyncJobBulkActionController;
 use App\Http\Controllers\Api\V2\SyncJobCapabilitiesController;
 use App\Http\Controllers\Api\V2\SyncJobController;
 use App\Http\Controllers\Api\V2\SyncJobLogController;
 use App\Http\Controllers\Api\V2\SyncJobScheduleResetController;
+use App\Http\Controllers\Api\V2\UpdateStatusController;
+use App\Http\Middleware\AuthorizeMonitoring;
+use App\Rules\MailQueueId;
+use App\Services\Logs\LogType;
+use App\Services\Monitoring\ContainerRegistry;
 use Illuminate\Support\Facades\Route;
 
 /*

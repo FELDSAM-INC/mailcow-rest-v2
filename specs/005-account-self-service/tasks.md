@@ -409,7 +409,7 @@ resets with and without second factors and with tokens issued by the legacy UI.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T050 [P] [US3] Write `tests/Feature/OwnAccount/OwnRecoveryEmailTest.php` for
+- [X] T050 [P] [US3] Write `tests/Feature/OwnAccount/OwnRecoveryEmailTest.php` for
   `getOwnRecoveryEmail` and `replaceOwnRecoveryEmail` (FR-018, AS-1): read with `ETag`; set with the
   current password and `pw_reset` → `attributes.recovery_email` stored, new `ETag`, audited with old
   and new value; `""` and `null` remove it (stored `''`); an invalid address → `422 invalidFormat`
@@ -418,7 +418,7 @@ resets with and without second factors and with tokens issued by the legacy UI.
   → `412`; wrong current password → `403 current-password-incorrect`, throttled; admin and domain
   admin → `forbidden`; LDAP mailbox → `password-managed-externally`; key → `session-required`;
   restricted session → `pending-action-required`.
-- [ ] T051 [P] [US3] Write `tests/Feature/PasswordReset/PasswordResetRequestTest.php` for
+- [X] T051 [P] [US3] Write `tests/Feature/PasswordReset/PasswordResetRequestTest.php` for
   `requestPasswordReset` (FR-019 to FR-022, AS-2, AS-3, AS-7) with the `array` mailer:
   - an eligible mailbox → `200 {tokenLifetimeMinutes: 15}`; after the deferred callbacks ran, one
     `reset_password` row (token `^[0-9A-F]{6}(-[0-9A-F]{6}){4}$`), one message to the recovery
@@ -442,17 +442,17 @@ resets with and without second factors and with tokens issued by the legacy UI.
   - ten concurrent requests for one account create at most three tokens (named lock);
   - the `restv2_postfix` mailer is configured as legacy's PHPMailer: host `postfix-mailcow`, port 25,
     no authentication, `verify_peer` false, timeout 10 s (configuration assertion, R6).
-- [ ] T052 [P] [US3] Write `tests/Feature/PasswordReset/PasswordResetTimingTest.php` (`@group timing`,
+- [X] T052 [P] [US3] Write `tests/Feature/PasswordReset/PasswordResetTimingTest.php` (`@group timing`,
   SC-005): 200 requests each for an eligible address (with a slow fake transport of 300 ms), an
   ineligible one and an unknown one; the response bodies are byte-identical and the medians of the
   time to the response's end differ by less than 50 ms (deferred work measured separately).
-- [ ] T053 [P] [US3] Write `tests/Feature/PasswordReset/PasswordResetTokenCheckTest.php` for
+- [X] T053 [P] [US3] Write `tests/Feature/PasswordReset/PasswordResetTokenCheckTest.php` for
   `checkPasswordResetToken` (FR-023, AS-4): a valid token → address, `expiresAt` (`created` + 15 min
   in UTC from `TZ`), 003's `PasswordPolicy`, `secondFactorRequired` and the usable methods in 001's
   order; lower-case token and characters outside `[A-Za-z0-9-]` handled as legacy; expired, unknown,
   inactive mailbox, non-mailcow source → `400 invalid-reset-token`; the check changes nothing and is
   not audited.
-- [ ] T054 [P] [US3] Write `tests/Feature/PasswordReset/PasswordResetCompletionTest.php` for
+- [X] T054 [P] [US3] Write `tests/Feature/PasswordReset/PasswordResetCompletionTest.php` for
   `createPasswordResetWebAuthnChallenge` and `completePasswordReset` (FR-024, FR-025, AS-5, AS-6,
   AS-8):
   - no second factor, forced change pending → `200 {address}`; new hash in `MAILCOW_PASS_SCHEME`,
@@ -472,36 +472,36 @@ resets with and without second factors and with tokens issued by the legacy UI.
   - a token inserted as the legacy reset page inserts it (legacy format, `created` default) completes
     here; a token issued here is accepted by legacy's `reset_password('check')` query run verbatim;
   - policy failure and prefix → `422`, token still valid.
-- [ ] T055 [P] [US3] Write `tests/Feature/PasswordReset/PasswordResetThrottleTest.php` (FR-026): the
+- [X] T055 [P] [US3] Write `tests/Feature/PasswordReset/PasswordResetThrottleTest.php` (FR-026): the
   11th request, the 11th check and the 11th completion from one address within 15 minutes → `429`
   with `Retry-After`, independently of each other; another address is not affected.
 
 ### Implementation for User Story 3
 
-- [ ] T056 [P] [US3] Create `app/Models/Mailcow/PasswordResetToken.php` (table `reset_password`, no
+- [X] T056 [P] [US3] Create `app/Models/Mailcow/PasswordResetToken.php` (table `reset_password`, no
   primary key model writes; reads only) and `app/Services/Account/RecoveryEmailService.php` (read,
   `JSON_SET` write, tag, flag, current password, audit `ownRecoveryEmailChange`).
-- [ ] T057 [P] [US3] Create `app/Http/Requests/Api/V2/ReplaceOwnRecoveryEmailRequest.php` (`address`
+- [X] T057 [P] [US3] Create `app/Http/Requests/Api/V2/ReplaceOwnRecoveryEmailRequest.php` (`address`
   "null or string ≤ 255, empty or `FILTER_VALIDATE_EMAIL`", `currentPassword` "required, 1–4096"),
   `app/Http/Resources/Api/V2/OwnRecoveryEmailResource.php` and
   `app/Http/Controllers/Api/V2/OwnRecoveryEmailController.php` (`show`, `update`, `ETag`). Register
   the routes in group `restv2.own` (`restv2.auth:session`, `restv2.csrf`, `restv2.pending:enforce`,
   `restv2.audit` target `recoveryEmail`). This makes T050 pass.
-- [ ] T058 [US3] Create `app/Services/PasswordReset/ResetLinkBuilder.php` (host rule, page setting)
+- [X] T058 [US3] Create `app/Services/PasswordReset/ResetLinkBuilder.php` (host rule, page setting)
   and `app/Services/PasswordReset/PasswordResetMailer.php` (Redis template keys, file fallback,
   placeholders with `IntlDateFormatter` FULL/FULL in `TZ`, legacy send checks, mailer
   `restv2_postfix`, `X-Mailer: MooMail`).
-- [ ] T059 [US3] Create `app/Services/PasswordReset/PasswordResetService.php` (R6): availability,
+- [X] T059 [US3] Create `app/Services/PasswordReset/PasswordResetService.php` (R6): availability,
   limiters `pwreset:{request|check|complete}`, the deferred request work through
   `Illuminate\Support\defer()` (make sure `InvokeDeferredCallbacks` is in the `api.v2` group,
   extends 001's `bootstrap/app.php`), token lifecycle of DM under `NamedLock`
   `restv2_pwreset_<sha1(username)>`, token check, WebAuthn challenge in the session, completion with
   the transaction and side effects of R6, `SessionRegistry::endAll('mailbox', …)`, audit records for
   requests and completions.
-- [ ] T060 [US3] Add `verifyForAccount(string $username, array $proof, ?array $webauthnChallenge)` to
+- [X] T060 [US3] Add `verifyForAccount(string $username, array $proof, ?array $webauthnChallenge)` to
   `app/Services/Auth/SecondFactorService.php` (extends 001; same verification code as the pending
   sign-in, replay protection, throttle hit on failure, no session promotion).
-- [ ] T061 [US3] Create `app/Http/Requests/Api/V2/{RequestPasswordResetRequest,CheckPasswordResetTokenRequest,PasswordResetWebAuthnChallengeRequest,CompletePasswordResetRequest}.php`
+- [X] T061 [US3] Create `app/Http/Requests/Api/V2/{RequestPasswordResetRequest,CheckPasswordResetTokenRequest,PasswordResetWebAuthnChallengeRequest,CompletePasswordResetRequest}.php`
   (`address` "required, ≤ 255, e-mail after normalisation"; `token` "required, 1–64";
   `newPassword` via `NewPasswordValidator`; `secondFactor` per 001's
   `SecondFactorVerificationRequest` rules), `app/Http/Resources/Api/V2/PasswordResetTokenInfoResource.php`
@@ -1140,3 +1140,26 @@ that differ from what exists map as listed.
   (`restv2.principal.secondFactorId`).
 - **T048**: no `ListOwnSecondFactorsRequest`; the controller uses 001's `ListQuery`. Sorting by
   `type` sorts by the type name (`CAST(authmech AS CHAR)`), not by the ENUM's index.
+- **T051, G27**: the default reset page is `/ng/reset-password#token={token}`: the token travels in
+  the URL fragment, which browsers never send to a server, so it cannot reach an access log (UI 005's
+  gap G27, later than the orchestrator's query-string decision in analysis.md). Operators keep the
+  legacy page with `RESTV2_PW_RESET_PAGE=/reset-password?token={token}`.
+- **T052**: the timing test runs 100 requests per class with a 100 ms fake transport (instead of 200
+  with 300 ms), measures to the end of the response by driving the kernel itself and runs the
+  deferred work in `terminate()`, outside the measurement. It is in the `performance` group, which
+  main now runs apart from `composer test` (`composer test:performance`).
+- **T053, T061**: token checks do not depend on the reset being configured: a token issued earlier
+  can always be checked and used. `createPasswordResetWebAuthnChallenge` counts on the token-check
+  limit. `InvokeDeferredCallbacks` is in Laravel's default global middleware, so `bootstrap/app.php`
+  needed no change (T059).
+- **T054, T060**: a failed reset second factor counts on 001's second-factor count
+  (`restv2:secondfactor:<sha256(username|ip)>`), not on the password count: 001 split the two after
+  005 was planned, and only a completed sign-in or reset clears the second-factor count.
+  `SecondFactorService::verifyForAccount()` reuses the sign-in's checks (and their replay
+  protection) without promoting a session; `issueWebAuthnChallengeFor()` issues the reset challenge
+  under `restv2.passwordResetWebauthn`, bound to the token's SHA-256. A completion without a proof
+  answers `401 second-factor-required` with `methods` and is not audited; failures are.
+- **T056**: the recovery address is read from the decoded `attributes`; `RecoveryEmailService`
+  checks, in this order, the role and source (`403`), the body (`422`), `If-Match` (`412`), the
+  current password and the `pwReset` flag. The `EmailAddress` rule (`invalidFormat`, `format:
+  email`) is shared with the reset request and the Pushover senders.

@@ -407,17 +407,11 @@
         }
     },
     "pendingOperations": [
-        "getOwnRecoveryEmail",
-        "replaceOwnRecoveryEmail",
         "getOwnMailboxOverview",
         "createWebmailHandOff",
         "getOwnClientConfiguration",
         "getOwnAppleProfile",
         "createOwnAppleProfileWithAppPassword",
-        "requestPasswordReset",
-        "checkPasswordResetToken",
-        "createPasswordResetWebAuthnChallenge",
-        "completePasswordReset",
         "applyMailboxMailSettingsBulkAction",
         "listAppPasswords",
         "createAppPassword",

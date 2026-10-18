@@ -77,6 +77,7 @@ use App\Http\Controllers\Api\V2\Oauth2ClientTokenRevocationController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
 use App\Http\Controllers\Api\V2\OwnPasswordController;
 use App\Http\Controllers\Api\V2\OwnPasswordPolicyController;
+use App\Http\Controllers\Api\V2\OwnRecoveryEmailController;
 use App\Http\Controllers\Api\V2\OwnSecondFactorController;
 use App\Http\Controllers\Api\V2\OwnSecondFactorRemovalController;
 use App\Http\Controllers\Api\V2\OwnSecondFactorWebAuthnOptionsController;
@@ -86,6 +87,7 @@ use App\Http\Controllers\Api\V2\PasskeyChallengeController;
 use App\Http\Controllers\Api\V2\PasskeyController;
 use App\Http\Controllers\Api\V2\PasskeyRegistrationOptionsController;
 use App\Http\Controllers\Api\V2\PasswordPolicyController;
+use App\Http\Controllers\Api\V2\PasswordResetController;
 use App\Http\Controllers\Api\V2\PendingSignInController;
 use App\Http\Controllers\Api\V2\PreferencesController;
 use App\Http\Controllers\Api\V2\ProblemTypeController;
@@ -859,6 +861,26 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('secondFactorId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'ownSecondFactorRemoval', 'target' => 'secondFactor'])
             ->name('own-second-factors.destroy');
+    });
+
+    // The signed-in mailbox user's recovery address (feature 005 US3).
+    Route::middleware(['restv2.own', 'restv2.auth:session'])->group(function (): void {
+        Route::get('/me/recovery-email', [OwnRecoveryEmailController::class, 'show'])
+            ->middleware('restv2.pending')
+            ->name('own-recovery-email.show');
+        Route::put('/me/recovery-email', [OwnRecoveryEmailController::class, 'update'])
+            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->defaults('restv2.audit', ['event' => 'ownRecoveryEmailChange', 'target' => 'recoveryEmail'])
+            ->name('own-recovery-email.update');
+    });
+
+    // Password reset through the recovery address (feature 005 US3): browser sessions, signed in or
+    // not, with the anti-forgery token, like sign-in. The service audits requests and completions.
+    Route::middleware(['restv2.auth:browser', 'restv2.csrf', 'restv2.pending:allow'])->group(function (): void {
+        Route::post('/password-resets', [PasswordResetController::class, 'store'])->name('password-resets.store');
+        Route::post('/password-resets/token-check', [PasswordResetController::class, 'check'])->name('password-reset-token-check.store');
+        Route::post('/password-resets/webauthn-challenge', [PasswordResetController::class, 'webauthnChallenge'])->name('password-reset-webauthn-challenge.store');
+        Route::post('/password-resets/completion', [PasswordResetController::class, 'complete'])->name('password-reset-completion.store');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

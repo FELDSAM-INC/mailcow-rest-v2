@@ -265,8 +265,9 @@ return [
     */
 
     // Path of the password reset page in the reset message's link; `{token}` is replaced by the
-    // token. The web app's page by default; `/reset-password?token={token}` keeps the legacy page.
-    'pw_reset_page' => (string) (env('RESTV2_PW_RESET_PAGE') ?: '/ng/reset-password?token={token}'),
+    // token. The web app's page by default, with the token in the fragment so that it never reaches
+    // a server log (G27); `/reset-password?token={token}` keeps the legacy page.
+    'pw_reset_page' => (string) (env('RESTV2_PW_RESET_PAGE') ?: '/ng/reset-password#token={token}'),
 
     // Reset requests, token checks and completions per client address and window (seconds).
     'pw_reset_max_attempts' => max(1, (int) env('RESTV2_PW_RESET_MAX_ATTEMPTS', 10)),

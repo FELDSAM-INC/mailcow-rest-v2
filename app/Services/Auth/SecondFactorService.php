@@ -135,6 +135,74 @@ class SecondFactorService
     }
 
     /**
+     * Issues a WebAuthn challenge for the account's active WebAuthn second factors outside a
+     * sign-in (feature 005: the password reset), kept in the session under $sessionKey with $extra.
+     *
+     * @param  array<string, mixed>  $extra
+     * @return array{publicKey: array<string, mixed>, expiresAt: CarbonImmutable}|null null without WebAuthn second factors
+     */
+    public function issueWebAuthnChallengeFor(Request $request, string $username, string $sessionKey, array $extra = []): ?array
+    {
+        $credentialIds = TfaEntry::query()
+            ->where('username', $username)
+            ->where('authmech', 'webauthn')
+            ->where('active', 1)
+            ->orderBy('id')
+            ->pluck('keyHandle')
+            ->map(fn (mixed $handle): string|false => base64_decode((string) $handle, true))
+            ->filter(fn (string|false $id): bool => $id !== false && $id !== '')
+            ->values()
+            ->all();
+
+        if ($credentialIds === []) {
+            return null;
+        }
+
+        $server = $this->webauthn->make($request);
+        $args = $server->getGetArgs($credentialIds, $this->ttl(), false, false, false, false, false, $this->config->webauthnUvLogin());
+        $expiresAt = $this->sessions->issue($request->session(), $sessionKey, $server->getChallenge()->getBinaryString(), $extra);
+
+        return [
+            'publicKey' => OptionsJson::request($args, 'https://'.WebAuthnServerFactory::rpId($request)),
+            'expiresAt' => $expiresAt,
+        ];
+    }
+
+    /**
+     * Verifies a second factor of an account outside a sign-in (feature 005 FR-024: the password
+     * reset), with the same checks as the sign-in's second-factor step and its replay protection,
+     * but without promoting a session. A WebAuthn assertion answers the challenge under
+     * $webauthnChallengeKey. Failures count on 001's second-factor count of the username and client
+     * address and are delayed like sign-in failures; a throttled account answers `429` before the
+     * factor is checked; a success resets the count.
+     *
+     * @param  array<string, mixed>  $proof  a validated `SecondFactorVerification`
+     *
+     * @throws ProblemException too-many-requests
+     */
+    public function verifyForAccount(Request $request, string $username, array $proof, string $webauthnChallengeKey): SecondFactorOutcome
+    {
+        $key = $this->throttle->secondFactorKey($username, (string) $request->ip());
+        $this->throttle->assertNotThrottled($key);
+
+        $pending = ['username' => $username, 'methodIds' => $this->usableMethods($username)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all()];
+
+        $outcome = match ((string) $proof['type']) {
+            'totp' => $this->checkTotp($pending, (int) $proof['methodId'], (string) $proof['code']),
+            'webauthn' => $this->checkWebAuthn($request, $pending, (array) $proof['credential'], $webauthnChallengeKey),
+            default => $this->checkYubicoOtp($pending, (string) $proof['otp']),
+        };
+
+        if ($outcome === SecondFactorOutcome::Verified) {
+            $this->throttle->clear($key);
+        } elseif ($outcome !== SecondFactorOutcome::ServiceUnavailable) {
+            $this->throttle->delay($this->throttle->hit($key));
+        }
+
+        return $outcome;
+    }
+
+    /**
      * Completes the pending sign-in with a second factor, or throws the problem of the failure.
      *
      * @param  array<string, mixed>  $input  a validated `SecondFactorVerification`
@@ -285,10 +353,11 @@ class SecondFactorService
     /**
      * @param  array{username: string, methodIds: list<int>}  $pending
      * @param  array<string, mixed>  $credential  a validated `WebAuthnAuthenticationResponse`
+     * @param  string|null  $challengeKey  the session key of the challenge (the pending sign-in's by default)
      */
-    private function checkWebAuthn(Request $request, array $pending, array $credential): SecondFactorOutcome
+    private function checkWebAuthn(Request $request, array $pending, array $credential, ?string $challengeKey = null): SecondFactorOutcome
     {
-        $challenge = $this->sessions->consume($request->session(), SessionManager::PENDING_WEBAUTHN);
+        $challenge = $this->sessions->consume($request->session(), $challengeKey ?? SessionManager::PENDING_WEBAUTHN);
 
         if ($challenge === null) {
             return SecondFactorOutcome::ChallengeExpired;

@@ -26,7 +26,8 @@
 >
 > Out of scope, allocated elsewhere: sender ACL and external sender addresses (004), self-service
 > (005), quarantine notification settings and rate limits (006), relayhost assignment (009), sync
-> jobs (008), login-as (007), identity-provider provisioning (012), password policy (013).
+> jobs (008), login-as (007), identity-provider provisioning (012), editing the password policy
+> (013).
 >
 > Constraints: every legacy side effect is reproduced, so Postfix, Dovecot, Rspamd and SOGo behave
 > the same whichever implementation made the change. The legacy UI and `/api/v1` keep working on
@@ -92,6 +93,12 @@
   "Edit mailbox" form is part of `edit/mailbox`, which row 003 allocates here. The user's own
   recovery e-mail stays in feature 005 (FR-029, FR-033). (agent decision: allocation follows the
   legacy action, and row 005 covers self-service only.)
+- Q: Should this feature expose the current password policy, although the roadmap allocates the
+  password policy to feature 013? → A: Yes, read-only. Administrators and domain administrators can
+  read the rules and their parameters, taken from where legacy keeps them and with the legacy
+  defaults, so that the web app shows the rules before a password is submitted. Editing the policy
+  stays in feature 013 (FR-063). (orchestrator decision: the create and edit screens of this
+  feature need the rules before submit, and feature 013 comes much later.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -197,6 +204,9 @@ mailbox. Repeat at each domain limit.
     mailbox with the LDAP authentication source and no password, **Then** it is created. **When**
     it sends a password for such a mailbox, or chooses Keycloak, which is not configured, **Then**
     the request is refused with a validation error.
+11. **Given** an operator who set the policy to a minimum length of 10 with digits required in the
+    legacy UI, **When** a domain administrator's client reads the password policy, **Then** it
+    receives exactly those rules, and a password that meets them is accepted at creation.
 
 ---
 
@@ -483,7 +493,12 @@ into each external step and check that the mailbox is left as it was.
 - **Audit record cannot be written**: the operation it would record does not succeed (feature 001
   convention).
 - **Shared store unavailable** during a creation, change, deletion or rename that needs it: the
-  request fails with a temporary-failure error, and nothing is changed.
+  request fails with a temporary-failure error, and nothing is changed. Reading the password policy
+  fails the same way.
+- **Password policy changed between reading it and submitting a password**: the password is
+  checked against the current policy, and the validation error names the rules it fails.
+- **Password policy never saved by the operator**: the legacy defaults apply, both when the policy
+  is read and when a password is checked.
 
 ## Requirements *(mandatory)*
 
@@ -514,6 +529,7 @@ into each external step and check that the mailbox is left as it was.
   | User permissions, tags, custom attributes | All mailboxes | Mailboxes of own domains; permissions subject to FR-035 | Refused |
   | List and inspect mailbox templates | Yes | Yes | Refused |
   | Create, change and delete mailbox templates | Yes | Refused | Refused |
+  | Read the password policy | Yes | Yes | Refused |
   | Read the audit records of this feature | Yes | Refused | Refused |
 
 - **FR-006**: A domain administrator MUST hold these permission flags to choose these settings:
@@ -653,10 +669,10 @@ into each external step and check that the mailbox is left as it was.
   These limits MUST hold when several requests run at the same time.
 - **FR-024**: A password set by an administrator or a domain administrator MUST:
   - be given once. The API MUST NOT require a confirmation field;
-  - meet the operator's existing password policy, which legacy keeps in the shared store: a minimum
-    length (6 by default) and, optionally, letters, digits, special characters, and both lower and
-    upper case. A password that fails MUST be refused with a validation error that names each unmet
-    rule and its parameter;
+  - meet the operator's existing password policy (FR-063), which legacy keeps in the shared store: a
+    minimum length (6 by default) and, optionally, letters, digits, special characters, and both
+    lower and upper case. A password that fails MUST be refused with a validation error that names
+    each unmet rule and its parameter;
   - be stored in the hash scheme the operator configured for mailcow (`MAILCOW_PASS_SCHEME`:
     BLF-CRYPT by default, or SSHA, SSHA256 or SSHA512), so that Dovecot verifies it;
   - when it begins with one of the hash-scheme prefixes legacy recognises (for example
@@ -748,8 +764,9 @@ into each external step and check that the mailbox is left as it was.
 - **FR-037**: A mailbox's custom attributes MUST be a set of named text values. Each name MUST be 1
   to 255 characters long without whitespace, and each value a text of at most 4,096 characters; a
   mailbox MUST NOT have more than 100 attributes. A change MUST add or replace the attributes it
-  sends with a value and remove those it sends without a value (null). The attributes MUST be stored where legacy
-  stores them, so that domain footers substitute `{= name =}` with their values unchanged.
+  sends with a value and remove those it sends without a value (null). The attributes MUST be
+  stored where legacy stores them, so that domain footers substitute `{= name =}` with their values
+  unchanged.
 
 #### Version tags
 
@@ -893,6 +910,23 @@ into each external step and check that the mailbox is left as it was.
 - **FR-062**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response
   of this API.
 
+#### Password policy
+
+- **FR-063**: Administrators and domain administrators, who may set mailbox passwords, MUST be able
+  to read the current password policy. Mailbox users MUST be refused. Read-only API keys MAY read
+  it.
+  - The policy MUST list each rule with its parameter: the minimum length, and whether letters,
+    digits, special characters, and both lower and upper case are required.
+  - The values MUST be read from where legacy keeps them (the shared store). Rules the operator
+    never saved MUST be reported with the legacy defaults: a minimum length of 6 and no other rule
+    required.
+  - A change made in the legacy UI MUST be visible in the next response, without caching. The
+    password checks of FR-024 MUST use the same values, so that a password meeting the reported
+    rules is accepted.
+  - The policy MUST be returned as structured rules, not as legacy's ready-made HTML text, so that
+    the web app renders and translates it.
+  - The policy MUST NOT be changed through this feature. Editing it belongs to feature 013.
+
 ### Legacy Coverage
 
 Each allocated legacy action and screen, and the requirements that cover it.
@@ -916,6 +950,7 @@ Each allocated legacy action and screen, and the requirements that cover it.
 | Quota against domain limits | FR-009, FR-023, FR-030 |
 | Protocol access | FR-008, FR-029, FR-006, FR-054 |
 | Admin-set password | FR-024, FR-032, FR-060 |
+| `get/passwordpolicy` and `get/passwordpolicy/html` (read only) | FR-063; editing (`edit/passwordpolicy`) belongs to feature 013 |
 | Forced password change and forced 2FA flags | FR-008, FR-025, FR-029, FR-033 |
 | Mailbox list mass actions: activate, disable login, deactivate, delete, protocol on/off | FR-054, FR-055 |
 | Mass actions for TLS policy and quarantine notifications | Not covered: features 005 and 006 |
@@ -930,8 +965,9 @@ for `mailbox`, `mailbox_templates`, `mailbox_custom_attribute`, `mailbox_rename`
 `delimiter_action`), `functions.acl.inc.php` (`acl` for `user`, `to_session`), `functions.inc.php`
 (`hash_password`, `password_check`, `password_complexity`, `hasDomainAccess`,
 `hasMailboxObjectAccess`, `hasACLAccess`, `update_sogo_static_view`, `flush_memcached`),
-`functions.ratelimit.inc.php`, `json_api.php`, `vars.inc.php` (`MAILBOX_DEFAULT_ATTRIBUTES`,
-`TAGGING_LIMIT`, `SHOW_LAST_LOGIN`), `init_db.inc.php` (`mailbox`, `quota2`, `quota2replica`,
+`functions.ratelimit.inc.php`, `json_api.php` (including `get/passwordpolicy`),
+`Dockerfiles/phpfpm/docker-entrypoint.sh` (`PASSWD_POLICY` defaults), `vars.inc.php`
+(`MAILBOX_DEFAULT_ATTRIBUTES`, `TAGGING_LIMIT`, `SHOW_LAST_LOGIN`), `init_db.inc.php` (`mailbox`, `quota2`, `quota2replica`,
 `user_acl`, `da_acl`, `tags_mailbox`, `templates` and the Default mailbox template), the templates
 `modals/mailbox.twig`, `edit/mailbox.twig`, `mailbox/tab-mailboxes.twig`, `js/site/mailbox.js`,
 `Dockerfiles/dockerapi/modules/DockerApi.py` (`maildir cleanup|move`, `sogo rename_user`,
@@ -978,6 +1014,7 @@ other default change, the DKIM selector of the Default domain template, belongs 
 | Out-of-scope objects | `access_denied` | "Not found" (FR-003). **Deviation**: existence is not revealed |
 | Change log | Entries in the `logs` table | This API's audit log (FR-056), as in feature 001. **Deviation**: changes made through the new API do not appear in the legacy log viewer |
 | Dovecot credential cache | Old password may work for up to `auth_cache_ttl` (300 s) | Same; documented (Edge Cases) |
+| Password policy read | `get/passwordpolicy` returns the `PASSWD_POLICY` hash from Redis as raw strings, and `get/passwordpolicy/html` returns a translated HTML list; any signed-in role can call them. php-fpm seeds the defaults (length 6, other rules 0) at start-up | Same source and defaults, as structured rules for administrators and domain administrators only (FR-063). **Deviation**: no HTML, because the client translates; mailbox users are refused here, as their own password change is feature 005 |
 
 ### Key Entities *(include if feature involves data)*
 
@@ -1002,6 +1039,8 @@ other default change, the DKIM selector of the Default domain template, belongs 
 - **Groupware directory entry** (existing mailcow data): the denormalised record through which SOGo
   sees an active mailbox.
 - **Shared-store entries** (existing mailcow data): a mailbox's rate limit and tagged-mail handling.
+- **Password policy** (existing mailcow data, edited in feature 013): the minimum length and the
+  required character classes for passwords, read-only here.
 - **Recent-login record** (existing mailcow data): the last login of a mailbox per service and
   address.
 - **Bulk action** (transient): an action, up to 100 mailboxes and one result per mailbox.
@@ -1046,9 +1085,9 @@ other default change, the DKIM selector of the Default domain template, belongs 
 - Feature 001 provides sign-in, roles, permission flags, API keys, the error conventions and the
   audit log. Feature 002 provides the domains and their limits and usage figures, which the web app
   uses to suggest a quota before creation.
-- The password policy is read and edited in feature 013. Until then, validation errors carry the
-  unmet rules and their parameters, and the web app generates passwords in the browser, as legacy
-  does. The API does not generate passwords.
+- This feature exposes the password policy read-only (FR-063). Editing it comes with feature 013,
+  and until then operators edit it in the legacy UI. The web app shows the rules before submit and
+  generates passwords in the browser, as legacy does. The API does not generate passwords.
 - The external identity provider is configured in the legacy UI until feature 012. This feature only
   reads which provider type is configured.
 - The mail store, the webmail service and the shared-folder permissions are reached through
@@ -1071,7 +1110,7 @@ other default change, the DKIM selector of the Default domain template, belongs 
   - sync jobs (008);
   - relayhost assignment (009);
   - identity-provider provisioning and synchronisation (012);
-  - password policy and quota notifications (013);
+  - editing the password policy, and quota notifications (013);
   - resources (004).
 - **Dependencies**:
   - the upstream mailcow database schema of the supported release;

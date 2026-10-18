@@ -51,6 +51,17 @@
 - Iteration 4: the cross-references to feature 002 were checked against its committed spec. Its tag
   requirements had been renumbered, so FR-036 now cites FR-043 and FR-044 there. FR-006, FR-008 and
   FR-009 there, and its page-size and "not found" rules (FR-011, FR-003), match.
+- Iteration 5 (orchestrator decision on owner question 3): the spec now exposes the password policy
+  read-only. The changes are:
+  - FR-063: authorisation, legacy source and defaults, no caching, same values as FR-024,
+    structured rules instead of HTML;
+  - a row in the FR-005 authorisation table, a Legacy Coverage row for `get/passwordpolicy` (the
+    edit stays in 013) and a parity row;
+  - an eleventh clarification, recorded as an orchestrator decision;
+  - acceptance scenario 11 of User Story 2, two edge cases and a key entity;
+  - the Input and Assumptions now say that only editing the policy is out of scope.
+
+  Re-validated: 16/16 → 16/16 items passing, no state changes. Spec totals: 63 FRs, 11 SCs.
 - The FeldHost fork was diffed against upstream `2026-09a` for every file in the parity reference.
   Mailbox logic is identical. The only differences are display labels (authentication source
   "mailcow", `pw_reset` permission label), which do not change the contract.

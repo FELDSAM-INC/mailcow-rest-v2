@@ -12,6 +12,7 @@ use App\Http\Middleware\EnsureSessionIntegrity;
 use App\Http\Middleware\RequireAuth;
 use App\Http\Middleware\StartSessionUnlessApiKey;
 use App\Http\Middleware\VerifyCsrfToken;
+use App\Services\Audit\RefusalAuditor;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -65,6 +66,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontReport([ProblemException::class, ValidationProblemException::class, SharedStoreUnavailable::class]);
 
-        // Every error is an RFC 9457 problem (FR-049).
-        $exceptions->render(fn (Throwable $e, Request $request) => ProblemRenderer::render($e, $request));
+        // Every error is an RFC 9457 problem (FR-049). Refusals on routes that declare
+        // `restv2.audit` are audited (docs/conventions.md "Refusal auditing").
+        $exceptions->render(function (Throwable $e, Request $request) {
+            $response = ProblemRenderer::render($e, $request);
+            app(RefusalAuditor::class)->recordResponse($request, $response);
+
+            return $response;
+        });
     })->create();

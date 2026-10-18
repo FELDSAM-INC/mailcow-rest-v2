@@ -16,7 +16,9 @@ use App\Models\Mailcow\Domain;
 use App\Models\Mailcow\DomainTemplate;
 use App\Policies\DomainPolicy;
 use App\Policies\DomainTemplatePolicy;
+use App\Services\Audit\RefusalAuditor;
 use App\Services\Config\MailcowConfig;
+use App\Services\Domains\DomainAuditTargets;
 use App\Support\Clock\Clock;
 use App\Support\Clock\Sleeper;
 use App\Support\Clock\SystemClock;
@@ -38,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Outbound services of features 002 and 010, faked in tests (tests/TestCase.php) and, in
         // development only, with RESTV2_FAKE_OUTBOUND=y.
+        $this->app->singleton(RefusalAuditor::class);
         $this->app->bind(Clock::class, SystemClock::class);
         $this->app->bind(DockerApiClient::class, HttpDockerApiClient::class);
         $this->app->bind(MemcachedFlusher::class, SocketMemcachedFlusher::class);
@@ -52,6 +55,9 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(Domain::class, DomainPolicy::class);
         Gate::policy(DomainTemplate::class, DomainTemplatePolicy::class);
+
+        // Refusal auditing: target resolvers of the features whose routes declare `restv2.audit`.
+        DomainAuditTargets::register($this->app->make(RefusalAuditor::class));
 
         // mailcow's SESSION_LIFETIME (seconds) is the idle lifetime of browser sessions (R6).
         try {

@@ -1,16 +1,20 @@
 description: |
   Problem of type `/api/v2/problems/permission-flag-required` (status `403`): the caller's role
   may use the operation, but only with a permission flag (`user_acl` or `da_acl`) it lacks. Nothing
-  was changed. When several flags are missing, `flag` names the first in the order `quarantine`,
-  `quarantine_attachments`.
+  was changed. The whole-message download needs two flags for mailbox users; when both are
+  missing, `requiredFlags` names `quarantine` first, and `quarantineAttachments` once
+  `quarantine` is held.
 allOf:
   - $ref: './Problem.yaml'
   - type: object
-    required: [flag]
+    required: [requiredFlags]
     properties:
-      flag:
-        type: string
+      requiredFlags:
+        type: array
+        minItems: 1
         description: |
-          The missing flag, named as its legacy column. Feature 006 uses `quarantine`,
-          `quarantine_attachments`, `spam_score`, `spam_policy` and `ratelimit`.
-        examples: [quarantine, quarantine_attachments, spam_policy, ratelimit]
+          Flags named as in `PermissionFlags`; any one of them would allow the operation. Feature
+          006 uses `quarantine`, `quarantineAttachments`, `spamScore`, `spamPolicy` and `ratelimit`.
+        items:
+          type: string
+          examples: [quarantine, quarantineAttachments, spamPolicy, ratelimit]

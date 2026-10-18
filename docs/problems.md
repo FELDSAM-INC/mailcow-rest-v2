@@ -772,14 +772,15 @@ response header `Audit-Recorded: false`.
   - An item, mailbox, domain, alias domain, list entry or bucket that does not exist or lies outside
     the caller's scope is `404` (`about:blank`), and so is a resource addressed as a mailbox. An
     outdated `If-Match` is `412` (`about:blank`); in a bulk action the target is `outdated`.
-  - `permission-flag-required` (403, extension `flag`, the legacy column name) is also used for
-    mailbox users: `quarantine` (item actions, whole-message download), `quarantine_attachments`
-    (attachment downloads, whole-message download), `spam_score` and `spam_policy`; and for domain
-    administrators: `quarantine`, `spam_policy` and `ratelimit`. A mailbox user who would change a
-    notification setting without `quarantine_notification` or `quarantine_category` gets
-    `attribute-not-permitted` (`attributes`, `requiredFlags`). A role or key type that may never use
-    an operation (a mailbox user and rate limits, a domain administrator and the quarantine
-    settings) gets `forbidden`.
+  - `permission-flag-required` (403, `requiredFlags`) is also used for mailbox users: `quarantine`
+    (item actions, whole-message download), `quarantineAttachments` (attachment downloads,
+    whole-message download), `spamScore` and `spamPolicy`; and for domain administrators:
+    `quarantine`, `spamPolicy` and `ratelimit`. The whole-message download needs both `quarantine`
+    and `quarantineAttachments` for mailbox users; when both are missing, `requiredFlags` names
+    `quarantine` first. A mailbox user who would change a notification setting without
+    `quarantineNotification` or `quarantineCategory` gets `attribute-not-permitted` (`attributes`,
+    `requiredFlags` per attribute). A role or key type that may never use an operation (a mailbox
+    user and rate limits, a domain administrator and the quarantine settings) gets `forbidden`.
   - `temporary-failure` (503) carries, in feature 006, the extension members `dependency`
     (`sharedStore`, `spamFilter` or `mailServer`) and, for item actions, `step` (`delivery` or
     `learning`). A release whose learning fails after the delivery is not an error: the action

@@ -28,8 +28,8 @@ patch:
   summary: Change a mailbox's quarantine notification settings
   description: |
     Changes the frequency, the category, or both, in the mailbox's attributes, where the legacy
-    notifier reads them. A mailbox user needs `quarantine_notification` to change the frequency and
-    `quarantine_category` to change the category: a member that would change without its flag is
+    notifier reads them. A mailbox user needs `quarantineNotification` to change the frequency and
+    `quarantineCategory` to change the category: a member that would change without its flag is
     refused with `attribute-not-permitted` (`attributes`, `requiredFlags`), while a member sent with
     its current value is accepted. Administrators and domain administrators always may. The notifier applies the change
     at its next run; the time of the last notification and the items' notification state are not

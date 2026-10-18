@@ -30,7 +30,7 @@ put:
   summary: Set a mailbox's custom spam score
   description: |
     Replaces the mailbox's custom scores (`SpamScoreUpdate`). Administrators and domain
-    administrators always may; mailbox users need `spam_score` for their own mailbox. When both
+    administrators always may; mailbox users need `spamScore` for their own mailbox. When both
     scores are equal, the reject score is raised by 0.1, as in legacy. The spam filter applies the
     scores within one refresh of its settings map (at most 1 minute). Audited with the old and new
     values.

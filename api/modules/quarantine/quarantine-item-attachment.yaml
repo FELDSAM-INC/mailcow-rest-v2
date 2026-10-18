@@ -7,8 +7,8 @@ get:
   summary: Download one attachment of a quarantined message
   description: |
     Returns the decoded attachment at `position` as a file to save, never to display. Allowed for
-    administrators, domain administrators, and mailbox users with `quarantine_attachments`
-    (`permission-flag-required` with `flag: quarantine_attachments` otherwise). An unknown position answers `404`. A message larger
+    administrators, domain administrators, and mailbox users with `quarantineAttachments`
+    (`permission-flag-required` with `requiredFlags: [quarantineAttachments]` otherwise). An unknown position answers `404`. A message larger
     than the content size limit is refused with `409 quarantine-message-too-large`. Read-only keys
     may download. Not audited.
   security:

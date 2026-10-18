@@ -174,8 +174,8 @@ plumbing that every story needs.
     user-only flags always held (a `da_acl` row with `quarantine = 0` and a `user_acl`-style
     restriction cannot remove `quarantine_attachments`); mailbox user: its `user_acl` row;
   - whole-message download requires `quarantine` and, for mailbox users, `quarantine_attachments`;
-    the problem names the first missing flag in `flag` as its legacy column (`quarantine` before
-    `quarantine_attachments` when both are missing);
+    `requiredFlags` names the missing flag as in `PermissionFlags` (`["quarantine"]` first when both
+    `quarantine` and `quarantineAttachments` are missing, then `["quarantineAttachments"]`);
   - role refusals (mailbox user and rate limits, domain admin and settings) are `forbidden`, not
     `permission-flag-required`;
   - the flags of the target mailbox never restrict admins or domain admins (FR-005).
@@ -206,14 +206,14 @@ plumbing that every story needs.
 - [ ] T021 Add the four problem types to `app/Support/Http/ProblemType.php` with their English
   titles ("Quarantine item is being processed", "Delivery refused", "Quarantine message too large",
   "List entry already exists"), and factory methods in `app/Exceptions/ProblemException.php`:
-  `permissionFlagRequired(string $flag)`, `attributeNotPermitted(array $attributes, array
+  `permissionFlagRequired(array $requiredFlags)`, `attributeNotPermitted(array $attributes, array
   $requiredFlags)` (if 002 has no factory for it), `quarantineItemBusy()`, `quarantineDeliveryRefused(int
   $code, string $reply)`, `quarantineMessageTooLarge(int $size, int $limit)`,
   `spamPolicyEntryExists(string $list, int $entryId)`, `temporaryFailure(string $dependency, ?string
   $step = null)` (on top of 002's case). This makes T017 pass.
 - [ ] T022 Create `app/Policies/QuarantinePolicy.php`, `app/Policies/SpamPolicyPolicy.php` and
   `app/Policies/RateLimitPolicy.php` with the abilities of FR-006 (role check → `forbidden`, flag
-  check → `permissionFlagRequired(flag)`, or `attributeNotPermitted(attributes, requiredFlags)` for a
+  check → `permissionFlagRequired(requiredFlags)`, or `attributeNotPermitted(attributes, requiredFlags)` for a
   mailbox user's notification members that would change), using 001's effective flags, and
   `app/Services/Access/SpamFilterScope.php` with `itemScope(Principal): Closure` (admin: none;
   domain admin: `SUBSTRING_INDEX(rcpt, '@', -1) IN (<managed domains>)`; mailbox user:
@@ -295,8 +295,8 @@ for a mailbox user; compare deliveries, remaining rows and Rspamd calls with leg
   attachments; every download carries `Content-Disposition: attachment`,
   `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` and
   `Cache-Control: private, no-store`; a mailbox user without `quarantine` → `403
-  permission-flag-required` `flag: quarantine` for the message; without `quarantine_attachments` →
-  `flag: quarantine_attachments` for both downloads; position 9 → `404`; >10 MiB →
+  permission-flag-required` `requiredFlags: ["quarantine"]` for the message; without
+  `quarantineAttachments` → `requiredFlags: ["quarantineAttachments"]` for both downloads; position 9 → `404`; >10 MiB →
   `409 quarantine-message-too-large` with `size` and `limit`; a read-only key of an admin may
   download; not audited.
 - [ ] T030 [P] [US1] Write `tests/Feature/Quarantine/ReleaseQuarantineItemTest.php` for
@@ -579,8 +579,8 @@ singly and in bulk; confirm the stored attributes the legacy pages and the notif
   `PATCH {"frequency":"daily"}` with `quarantine_notification` → `JSON_VALUE(attributes,
   '$.quarantine_notification')` = `daily`, the category unchanged, `quarantine.notified` and
   `Q_LAST_NOTIFIED` untouched; `{"category":"junk"}` stores `add_header`; without
-  `quarantine_category` → `403 attribute-not-permitted` with `attributes: [category]` and
-  `requiredFlags: {category: quarantine_category}`, while the same request sending the current
+  `quarantineCategory` → `403 attribute-not-permitted` with `attributes: [category]` and
+  `requiredFlags: {category: quarantineCategory}`, while the same request sending the current
   category is accepted; a domain admin
   and an admin may always change; another mailbox → `404`; a resource → `404`; `{"frequency":
   "monthly"}` → `notInList`; `{}` → `required` on `body`; `If-Match` mismatch → `412`; audit with
@@ -628,7 +628,7 @@ and `spam_policy`; confirm the `filterconf` rows the settings map reads.
   `422 mustNotExceed` `field: rejectScore`, rows unchanged; `5000.1` → `outOfRange`; `6.55` →
   `notMultipleOf` `factor: 0.1`; only one stored row → `custom: true` with the other from the
   defaults; `DELETE` → both rows removed, `204`, defaults again; resetting without rows → `204`,
-  no audit; a mailbox user without `spam_score` → `403 permission-flag-required` `flag: spam_score`; a
+  no audit; a mailbox user without `spam_score` → `403 permission-flag-required` `requiredFlags: ["spamScore"]`; a
   domain admin always may within scope; another domain's mailbox → `404`; a resource → `404`;
   `If-Match` mismatch → `412`; audit with old and new values.
 - [ ] T063 [P] [US5] Write `tests/Feature/SpamPolicy/MailboxSpamPolicyEntryTest.php` for the mailbox
@@ -648,7 +648,7 @@ and `spam_policy`; confirm the `filterconf` rows the settings map reads.
   list operations (FR-043, FR-045 to FR-048, AS-5.8): the list contains the domain's entries
   (`own: true`, kind `domain`) and the mailbox entries of the domain (`own: false`, kind
   `mailbox`); a domain admin with `spam_policy` adds and removes; without it → `403
-  permission-flag-required` `flag: spam_policy` (reads allowed); a mailbox user → `403 forbidden` for
+  permission-flag-required` `requiredFlags: ["spamPolicy"]` (reads allowed); a mailbox user → `403 forbidden` for
   read and write; a domain outside the scope → `404`; an alias domain name in the domain path →
   `404`; the same pattern may exist for another owner.
 - [ ] T065 [P] [US5] Write `tests/Feature/SpamPolicy/AliasDomainSpamPolicyEntryTest.php` (FR-043,
@@ -704,7 +704,7 @@ reset existing and missing buckets; confirm `RL_VALUE` and `RL_LOG`.
   → the domain limit again; `value` 0 and -1 → `outOfRange`; `frame: week` → `notInList`; a
   legacy-written invalid value is reported with `invalidStoredValue` and can be replaced and
   removed; removing an unset limit → `204`, no audit; a domain admin without `ratelimit` reads
-  (`200`) but cannot set (`403 permission-flag-required` `flag: ratelimit`); a mailbox user → `403
+  (`200`) but cannot set (`403 permission-flag-required` `requiredFlags: ["ratelimit"]`); a mailbox user → `403
   forbidden` for every operation; an alias domain limit is stored under the alias domain; a
   resource → `404`; `If-Match` mismatch → `412`, unchanged; Redis down → `503 sharedStore`; audit
   with old and new values.

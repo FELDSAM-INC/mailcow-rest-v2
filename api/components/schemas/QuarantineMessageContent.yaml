@@ -36,7 +36,7 @@ properties:
   attachments:
     description: |
       The attachments, or `null` when the caller may not see attachment details (a mailbox user
-      without the `quarantine_attachments` permission). An empty list means the message has none.
+      without the `quarantineAttachments` permission). An empty list means the message has none.
     oneOf:
       - type: array
         items:

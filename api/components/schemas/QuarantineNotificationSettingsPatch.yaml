@@ -1,7 +1,7 @@
 type: object
 description: |
   JSON Merge Patch of `QuarantineNotificationSettings`. A member that is not sent keeps its value.
-  A mailbox user needs `quarantine_notification` to change `frequency` and `quarantine_category` to
+  A mailbox user needs `quarantineNotification` to change `frequency` and `quarantineCategory` to
   change `category`.
 minProperties: 1
 properties:

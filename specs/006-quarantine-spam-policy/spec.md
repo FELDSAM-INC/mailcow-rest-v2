@@ -131,12 +131,12 @@
   quarantine settings, and whether virus scanning is enabled (FR-072). (orchestrator decision: the
   pattern of feature 002 FR-064, so that clients never hard-code server limits.)
 - Q: Which errors express permission refusals? → A: A role or key type that may never use an
-  operation gets "forbidden". A missing permission flag gets "permission flag required", which names
-  the flag by its legacy name (`quarantine`, `quarantine_attachments`, `spam_score`, `spam_policy`,
-  `ratelimit`; the first missing one when several are). A mailbox user who would change a
-  notification member whose flag they lack (`quarantine_notification`, `quarantine_category`) gets
-  "attribute not permitted", which names each member and its flag; a member sent with its current
-  value is accepted. Bulk request bodies name their targets `targets` (FR-003, FR-036, FR-065).
+  operation gets "forbidden". A missing permission flag gets "permission flag required", which lists
+  the flags any one of which would allow the operation (for the whole-message download, which needs
+  both `quarantine` and `quarantine_attachments`, the first missing one). A mailbox user who would
+  change a notification member whose flag they lack (`quarantine_notification`,
+  `quarantine_category`) gets "attribute not permitted", which names each member and its flag; a
+  member sent with its current value is accepted. Bulk request bodies name their targets `targets` (FR-003, FR-036, FR-065).
   (orchestrator decision: `docs/conventions.md` "Permission refusals" and "Bulk paths and identity
   changes".)
 

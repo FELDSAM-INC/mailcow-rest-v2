@@ -1,7 +1,7 @@
 description: |
   Problem of type `/api/v2/problems/attribute-not-permitted` (status `403`) for a mailbox user's
   change of their quarantine notification settings: a member that would change needs a flag the
-  user lacks (`frequency`: `quarantine_notification`, `category`: `quarantine_category`). A member
+  user lacks (`frequency`: `quarantineNotification`, `category`: `quarantineCategory`). A member
   sent with its current value is accepted. The whole request is refused and nothing changed.
 allOf:
   - $ref: './Problem.yaml'
@@ -17,9 +17,9 @@ allOf:
           enum: [frequency, category]
       requiredFlags:
         type: object
-        description: The flag each member needs, named as its legacy column.
+        description: The flag each member needs, named as in `PermissionFlags`.
         additionalProperties:
           type: string
-          enum: [quarantine_notification, quarantine_category]
+          enum: [quarantineNotification, quarantineCategory]
         examples:
-          - category: quarantine_category
+          - category: quarantineCategory

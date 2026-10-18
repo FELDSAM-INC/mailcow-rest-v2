@@ -3,8 +3,9 @@ description: |
   - `/api/v2/problems/forbidden`: the caller's role or key type may never use the operation, for
     example a mailbox user and rate limits, or a domain administrator and the quarantine settings.
   - `/api/v2/problems/permission-flag-required`: the caller's role may use the operation, but only
-    with a permission flag it lacks (extension `flag`, for example `quarantine`,
-    `quarantine_attachments`, `spam_score`, `spam_policy` or `ratelimit`). Nothing changed.
+    with a permission flag it lacks (extension `requiredFlags`, for example `["quarantine"]`,
+    `["quarantineAttachments"]`, `["spamScore"]`, `["spamPolicy"]` or `["ratelimit"]`). Nothing
+    changed.
   - `/api/v2/problems/attribute-not-permitted`: a mailbox user would change a notification setting
     whose flag they lack (extensions `attributes` and `requiredFlags`). Nothing changed.
   - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request.
@@ -29,4 +30,4 @@ content:
           status: 403
           detail: This operation needs the quarantine permission.
           requestId: 4bf92f3577b34da6a3ce929d0e0e4736
-          flag: quarantine
+          requiredFlags: [quarantine]

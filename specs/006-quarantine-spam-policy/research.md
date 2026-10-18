@@ -382,10 +382,12 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
 ### R15. Authorisation order and scope
 
 - **Decision**: For every operation: (1) role allowed at all, else `403 forbidden`; (2) flags
-  (FR-005/FR-006, effective flags from 001), else `403 permission-flag-required` with `flag`, the
-  legacy column name of the first missing flag (`quarantine` before `quarantine_attachments`), or,
-  for a mailbox user's notification change, `403 attribute-not-permitted` with `attributes` and
-  `requiredFlags` for the members that would change (conventions "Permission refusals"); (3) object
+  (FR-005/FR-006, effective flags from 001), else `403 permission-flag-required` with
+  `requiredFlags` (names as in `PermissionFlags`, any one of which would allow the operation; for
+  the whole-message download, which needs two flags, the first missing one, `quarantine` before
+  `quarantineAttachments`), or, for a mailbox user's notification change, `403
+  attribute-not-permitted` with `attributes` and the flag of each (conventions "Permission
+  refusals"); (3) object
   in scope, else `404`; (4) `If-Match`; (5)
   validation; (6) the action. The flag check precedes the lookup, so a refusal never reveals
   whether an object exists (same order as 009). Policies:
@@ -506,8 +508,8 @@ The override adds the volumes `rspamd-vol-1:/var/lib/rspamd:ro` and
   `quarantine-item-busy` (409, `Retry-After: 5`), `quarantine-delivery-refused` (409, `smtpCode`,
   `smtpResponse`), `quarantine-message-too-large` (409, `size`, `limit`),
   `spam-policy-entry-exists` (409, `list`, `entryId`). Reused: `permission-flag-required`
-  (`flag`), `attribute-not-permitted` (002; `attributes`, plus `requiredFlags` for the notification
-  settings), `temporary-failure` (002, with the 006 extensions `dependency` and `step`),
+  (`requiredFlags`), `attribute-not-permitted` (002; `attributes`, plus `requiredFlags` per
+  attribute for the notification settings), `temporary-failure` (002, with the 006 extensions `dependency` and `step`),
   `forbidden`, `validation-failed`, `412`/`404` `about:blank`. `409` is chosen for the item states
   (busy, too large, delivery refused) because the request is valid but the item's current state
   does not permit it.

@@ -29,7 +29,16 @@ class SecondFactorTotpTest extends TestCase
         return (new TwoFactorAuth(new NoQrCodeProvider))->getCode($secret, CarbonImmutable::now()->getTimestamp());
     }
 
+    /**
+     * The second-factor count (FR-024): separate from the password count, which a correct
+     * password resets.
+     */
     private function failures(string $username = 'alice@example.org'): int
+    {
+        return (int) Redis::connection('mailcow')->get('restv2:secondfactor:'.hash('sha256', $username.'|'.self::IP));
+    }
+
+    private function passwordFailures(string $username = 'alice@example.org'): int
     {
         return (int) Redis::connection('mailcow')->get('restv2:signin:'.hash('sha256', $username.'|'.self::IP));
     }
@@ -166,13 +175,14 @@ class SecondFactorTotpTest extends TestCase
             ->assertJsonPath('type', '/api/v2/problems/second-factor-failed');
         $this->assertSame(1, $this->failures());
 
-        // The next verified password resets the count (FR-007), the next failure counts again.
+        // A verified password does not reset the second-factor count (FR-024); the next failure
+        // adds to it.
         $this->passwordSignIn('alice@example.org')->assertCreated();
-        $this->assertSame(0, $this->failures());
+        $this->assertSame(1, $this->failures('alice@example.org'));
         $this->verifySecondFactor(['type' => 'totp', 'methodId' => $yubi, 'code' => $this->code()])
             ->assertUnauthorized()
             ->assertJsonPath('type', '/api/v2/problems/second-factor-failed');
-        $this->assertSame(1, $this->failures());
+        $this->assertSame(2, $this->failures());
     }
 
     public function test_a_method_deactivated_after_the_password_step_fails_without_counting(): void
@@ -204,6 +214,7 @@ class SecondFactorTotpTest extends TestCase
         $audit = $this->onlyAuditRecord('signIn');
         $this->assertSame('secondFactorUnavailable', $audit->failure_reason);
         // The password was right: the throttle is reset, not counted.
+        $this->assertSame(0, $this->passwordFailures());
         $this->assertSame(0, $this->failures());
     }
 

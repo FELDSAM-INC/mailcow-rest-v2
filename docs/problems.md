@@ -120,7 +120,9 @@ extension members.
 - **Status**: 429
 - **Meaning**: A rate limit was reached. Two operations use it:
   - Sign-in throttling (feature 001). After 10 failed sign-ins for the same username and client
-    address within 15 minutes, further attempts are refused without checking credentials. For
+    address within 15 minutes, further attempts are refused without checking credentials. Failed
+    second factors have their own count per username and client address, which a correct password
+    does not reset; reaching it refuses the password and second-factor steps of that pair too. For
     passkeys, the limit counts failures per client address. The operator can configure both values.
   - DNS diagnostics (feature 010). Each caller (a user or an API key) may start 10 runs per minute
     (configurable). Every diagnostics result and every refusal carry `RateLimit-Limit`,

@@ -220,6 +220,6 @@ class SecondFactorWebAuthnTest extends TestCase
         DB::table('tfa')->where('keyHandle', base64_encode($credential->id))->update(['active' => 0]);
 
         $this->verifyWith($credential, $options)->assertUnauthorized()->assertJsonPath('type', '/api/v2/problems/second-factor-failed');
-        $this->assertSame([], Redis::connection('mailcow')->keys('restv2:signin:*'));
+        $this->assertSame([], Redis::connection('mailcow')->keys('restv2:secondfactor:*'));
     }
 }

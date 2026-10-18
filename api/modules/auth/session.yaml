@@ -40,7 +40,9 @@ post:
     mailboxes that authenticate against an external identity provider). Each failure for the same
     username and client address is answered 0.5 s later than the previous one; after 10 failures
     within 15 minutes attempts are refused with `429` without checking the password. A correct
-    password resets the count.
+    password resets the count. Failed second factors have their own count per username and client
+    address, which a correct password does not reset: after 10 of them within 15 minutes the
+    password step is refused with `429` as well, until a sign-in completes or the window ends.
 
     The session identifier is renewed when the step succeeds. A previous sign-in of the same
     session is replaced.

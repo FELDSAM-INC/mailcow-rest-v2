@@ -144,6 +144,8 @@ class PasskeySignInService
         });
 
         $this->throttle->clear($key);
+        // A completed sign-in also resets the account's second-factor count (FR-024).
+        $this->throttle->clear($this->throttle->secondFactorKey($principal->username, $ip));
         $this->sessions->promote($session, $principal, $request->userAgent());
 
         return $principal;

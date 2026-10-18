@@ -10,7 +10,10 @@ post:
     and the sign-in is audited with `authMethod: passwordAndSecondFactor`.
 
     One failed attempt cancels the pending sign-in (`second-factor-failed`), counts towards the
-    sign-in throttling of the username and client address, and is audited. A method that was
+    second-factor throttling of the username and client address, and is audited. That count is
+    not reset by a correct password, only by a completed sign-in: after 10 failures within 15
+    minutes, password steps and second-factor steps of the pair answer `429` without checking
+    credentials, and each failure is answered 0.5 s later than the previous one. A method that was
     deactivated or deleted since the password step also cancels it. A TOTP code is accepted only
     once within its validity window. When the Yubico service is unreachable the answer is `503`,
     the pending sign-in stays open and nothing is counted. A malformed request (`422`) changes

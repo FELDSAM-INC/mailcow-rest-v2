@@ -14,10 +14,12 @@ use Illuminate\Contracts\Cache\Repository;
  * Sign-in throttling (FR-007, R17), shared by password, second-factor and passkey sign-in.
  *
  * Failures are counted in a fixed window (`RESTV2_SIGNIN_FAILURE_WINDOW`, from the first failure)
- * per sha256(username|address) (`restv2:signin:<hash>`) or, for passkeys, per sha256(address)
- * (`restv2:passkey:<hash>`). Each failure is answered 0.5 s × (earlier failures) later; after
- * `RESTV2_SIGNIN_MAX_FAILURES` failures attempts are refused with `429` without checking
- * credentials.
+ * per sha256(username|address): password failures on `restv2:signin:<hash>`, which a verified
+ * password resets, and second-factor failures on `restv2:secondfactor:<hash>`, which only a
+ * completed sign-in resets (FR-024, orchestrator decision). Passkey failures are counted per
+ * sha256(address) (`restv2:passkey:<hash>`). Each failure is answered 0.5 s × (earlier failures of
+ * its count) later; after `RESTV2_SIGNIN_MAX_FAILURES` failures attempts are refused with `429`
+ * without checking credentials.
  *
  * The window ends at the time Laravel's rate limiter records with the first failure, compared with
  * the application clock, so that it also ends when the Redis key outlives it.
@@ -91,6 +93,15 @@ class SignInThrottle
     public function passwordKey(string $username, string $ip): string
     {
         return 'signin:'.hash('sha256', $username.'|'.$ip);
+    }
+
+    /**
+     * The second-factor count of a username and address: not reset by a correct password, only by
+     * a completed sign-in, so that repeating the password step gives no fresh second-factor guesses.
+     */
+    public function secondFactorKey(string $username, string $ip): string
+    {
+        return 'secondfactor:'.hash('sha256', $username.'|'.$ip);
     }
 
     public function passkeyKey(string $ip): string

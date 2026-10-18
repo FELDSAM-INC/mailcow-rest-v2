@@ -88,6 +88,12 @@
   vendors only (`WEBAUTHN_ONLY_TRUSTED_VENDORS=y`, which verifies attestation certificates), and
   `none` when only the `none` format is accepted. (orchestrator decision during implementation:
   `direct` makes some browsers show an attestation privacy prompt that legacy never shows.)
+- Q: Can someone who knows the password guess second factors by repeating the password step, which
+  resets the failure count? → A: No. Second-factor failures have their own count per username and
+  client address, which a correct password does not reset; only a completed sign-in resets it.
+  Reaching the same limit (10 within 15 minutes) refuses further attempts for that pair as "too
+  many requests", like FR-007 (FR-007, FR-024). (orchestrator decision during implementation:
+  security fix, recorded as a deviation in the parity table.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -375,8 +381,9 @@ with each filter and confirm exactly the expected entries appear and contain no 
   the pending sign-in fails, and the client must start again. The attempt does not count towards
   throttling, because no wrong factor was submitted.
 - **Wrong second factor**: one failed second-factor attempt cancels the pending sign-in (legacy
-  behaviour), and the client must start again with the password. The failure counts towards
-  throttling.
+  behaviour), and the client must start again with the password. The failure counts towards the
+  second-factor throttling of the username and address, which the correct password of the next
+  attempt does not reset (FR-024).
 - **Pending sign-in left unfinished**: it expires after 5 minutes. The client can also cancel it.
 - **Same TOTP code submitted twice**: the second use is rejected, even within the code's validity
   window.
@@ -447,7 +454,8 @@ with each filter and confirm exactly the expected entries appear and contain no 
   client address, not per session, so that discarding the cookie does not reset it. A successful
   password verification resets it. After 10 failures for the same username and address within 15
   minutes, the system MUST refuse further attempts for that pair with a "too many requests" error
-  and a retry hint, without checking the password.
+  and a retry hint, without checking the password. Second-factor failures are counted separately
+  (FR-024), and reaching their limit refuses the pair's password attempts in the same way.
 - **FR-008**: The session identifier MUST be renewed whenever authentication advances: when the
   password step succeeds, when the second-factor step succeeds, and when a passkey sign-in
   succeeds.
@@ -534,8 +542,13 @@ with each filter and confirm exactly the expected entries appear and contain no 
 - **FR-023**: A TOTP code that has been accepted once MUST NOT be accepted again for the same account
   within its validity window.
 - **FR-024**: A failed second-factor attempt MUST cancel the pending sign-in and MUST count towards
-  the throttling in FR-007. A pending sign-in MUST expire 5 minutes after the password step. The
-  client MUST be able to cancel a pending sign-in.
+  a second-factor failure count per username and client address, delayed like FR-007 (no delay for
+  the first failure, then 0.5 seconds more for each further one). A correct password MUST NOT reset
+  this count; only a completed sign-in of the account from that address resets it. After 10
+  second-factor failures for the same username and address within 15 minutes, the system MUST
+  refuse further password and second-factor attempts for that pair with a "too many requests"
+  error and a retry hint, without checking credentials. A pending sign-in MUST expire 5 minutes
+  after the password step. The client MUST be able to cancel a pending sign-in.
 - **FR-025**: Deprecated U2F entries and HOTP entries MUST NOT be accepted as a second factor.
 - **FR-026**: When a password sign-in succeeds and the account has no active second factor, the
   system MUST re-activate all of the account's second-factor entries. This reproduces legacy's
@@ -763,7 +776,7 @@ product name (FR-043).
 | Yubico service unreachable | The verification fails and the pending login is cancelled | Temporary-failure error; the pending sign-in stays open and nothing is counted (edge case). **Deviation** |
 | Passkey sign-in failures | Not throttled | Counted per client address towards the same limit (FR-018). **Deviation** |
 | Ceremony timeout hint | WebAuthn options carry a 30 s `timeout`; the challenge lives until the session ends | Options carry 300 s, and challenges expire after 5 minutes (FR-017, FR-052). **Deviation** |
-| Failed second factor | Cancels the pending login | Same, and also counts towards throttling (FR-024). **Deviation** |
+| Failed second factor | Cancels the pending login and is not counted. Repeating the password step, which resets the delay, gives unlimited second-factor guesses to anyone who knows the password | Cancels the pending sign-in and counts on a separate second-factor count per username and address, which a correct password does not reset; only a completed sign-in does. 10 failures within 15 minutes refuse the pair's password and second-factor steps as "too many requests" (FR-007, FR-024). **Deviation** (security fix, orchestrator decision) |
 | TOTP replay | A code may be reused within its window | Rejected (FR-023). **Deviation** (ASVS L2) |
 | U2F | A "u2f" method deletes the U2F keys and grants login without verification | Never accepted (FR-025). **Deviation** (security fix) |
 | Pending login lifetime | Until the session expires | 5 minutes (FR-024). **Deviation** |

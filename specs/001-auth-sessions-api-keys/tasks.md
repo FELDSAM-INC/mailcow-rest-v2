@@ -707,6 +707,14 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
     `secondFactorUnavailable`.
   - A code of `"12345"` → `422 invalidFormat` (`format: totpCode`), and the pending sign-in is
     kept.
+
+  *Orchestrator decision (Phase 6, FR-024)*: second-factor failures count on their own key,
+  `restv2:secondfactor:<sha256(username|ip)>`, which a correct password does not reset and only a
+  completed sign-in (password only, password plus second factor, or passkey) clears. Reaching the
+  limit refuses the pair's password steps (before the password is checked, published and audited
+  `throttled` like FR-007) and second-factor steps with `429`.
+  `tests/Feature/Auth/SecondFactorThrottleTest.php` covers it; the TOTP, WebAuthn and Yubico tests
+  read the new key.
 - [X] T058 [P] [US1] Write `tests/Feature/Auth/SecondFactorWebAuthnTest.php` for
   `createSecondFactorWebAuthnChallenge` and `verifySecondFactor` with `type: webauthn` (AS-3,
   FR-021, FR-022):

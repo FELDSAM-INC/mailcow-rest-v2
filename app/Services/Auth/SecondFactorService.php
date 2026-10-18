@@ -35,8 +35,9 @@ use Throwable;
  *  - WebAuthn is verified with the row's PEM key against the pending sign-in's challenge;
  *  - Yubico OTP selects the row by the OTP's public ID and asks the Yubico service.
  *
- * A wrong factor cancels the pending sign-in and counts towards throttling. A vanished method
- * cancels it without counting. A Yubico outage keeps it open.
+ * A wrong factor cancels the pending sign-in and counts on the second-factor count of the username
+ * and address, which a correct password does not reset (FR-024); only a completed sign-in resets
+ * it. A vanished method cancels it without counting. A Yubico outage keeps it open.
  */
 class SecondFactorService
 {
@@ -151,7 +152,7 @@ class SecondFactorService
         }
 
         $username = $pending['username'];
-        $key = $this->throttle->passwordKey($username, (string) $request->ip());
+        $key = $this->throttle->secondFactorKey($username, (string) $request->ip());
         $details['requestedRole'] = $pending['requestedRole']?->value;
         $fail = fn (string $reason) => $this->audit->failure($username, $pending['role'], AuthMethod::PasswordAndSecondFactor, $reason, $details);
 
@@ -216,6 +217,7 @@ class SecondFactorService
         ]));
 
         $this->sessions->promote($session, $principal, $request->userAgent());
+        $this->throttle->clear($key);
 
         return $principal;
     }

@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\DB;
  * Password sign-in, `createSession` (FR-001–FR-008, FR-014, FR-026, FR-027, R12, R16–R18), ported
  * from legacy `check_login()` and the role login functions:
  *
- *  1. refuse a throttled username and address (429, still published to fail2ban and audited);
+ *  1. refuse a throttled username and address (429, still published to fail2ban and audited),
+ *     also when its second-factor count is exhausted (FR-024);
  *  2. try the accounts in legacy order; an unknown account verifies a dummy hash instead;
  *  3. on failure: publish to fail2ban (not for external identity sources), count, delay, audit,
  *     and answer one generic error;
@@ -49,6 +50,10 @@ class PasswordSignInService
 
         try {
             $this->throttle->assertNotThrottled($key);
+            // A correct password does not reset second-factor failures (FR-024): an exhausted
+            // second-factor count refuses the password step too, before the password is checked,
+            // so that the answer reveals nothing about the password.
+            $this->throttle->assertNotThrottled($this->throttle->secondFactorKey($username, $ip));
         } catch (ProblemException $e) {
             // fail2ban sees every attempt, also beyond the hard limit (R17).
             $this->fail2ban->invalidPassword($username, $ip);
@@ -146,6 +151,7 @@ class PasswordSignInService
             });
 
             $this->sessions->promote($session, $principal, $request->userAgent());
+            $this->throttle->clear($this->throttle->secondFactorKey($account->username, $ip));
 
             return;
         }

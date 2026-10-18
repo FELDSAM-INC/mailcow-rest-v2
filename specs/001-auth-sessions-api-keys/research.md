@@ -621,8 +621,9 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
 ### R17. Throttling
 
 - **Decision**: Laravel's `RateLimiter` on the `restv2` Redis cache store.
-  - **Keys**: `signin:` + sha256(username|client address) for password and second-factor failures,
-    and `passkey:` + sha256(client address) for passkey failures.
+  - **Keys**: `signin:` + sha256(username|client address) for password failures,
+    `secondfactor:` + sha256(username|client address) for second-factor failures, and `passkey:` +
+    sha256(client address) for passkey failures.
   - **Delay**: before answering a failure, the request sleeps `0.5 × (failures before this one)`
     seconds with `usleep`. The first failure is not delayed (FR-007). Legacy truncates its float
     delay to whole seconds through `sleep()`. The spec's 0.5 s steps are used instead.
@@ -631,10 +632,16 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     `Retry-After` = `max(1, availableIn())`, without checking credentials, audited as `throttled`.
     The Redis keys are `restv2:signin:<hash>` and `restv2:passkey:<hash>` (plus Laravel's `:timer`
     keys).
-  - **Reset**: a verified password clears its key (legacy `unset($_SESSION['ldelay'])`), and a
-    successful passkey sign-in clears the passkey key.
-  - **What counts**: a failed second factor counts on the `signin:` key of the pending username.
-    A Yubico outage, a vanished method and a `422` do not count.
+  - **Reset**: a verified password clears its `signin:` key (legacy `unset($_SESSION['ldelay'])`),
+    and a successful passkey sign-in clears the passkey key. The `secondfactor:` key is cleared
+    only by a completed sign-in of that username from that address (password without second
+    factor, password plus second factor, or passkey), never by the password step alone
+    (orchestrator decision, FR-024).
+  - **What counts**: a failed second factor counts on the `secondfactor:` key of the pending
+    username and the client address, and its delay follows that key. A Yubico outage, a vanished
+    method and a `422` do not count. The password step checks both the `signin:` and the
+    `secondfactor:` key before verifying the password, so that a `429` never depends on whether the
+    password was right.
   - **Fail2ban**: throttled *password* attempts are still published to fail2ban with the normal
     message.
 - **Rationale**: Counting per username and address cannot be reset by dropping the cookie, which

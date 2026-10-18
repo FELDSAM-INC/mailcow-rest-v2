@@ -75,7 +75,7 @@ class SecondFactorYubicoTest extends TestCase
             ->assertUnauthorized()
             ->assertJsonPath('type', '/api/v2/problems/second-factor-failed');
 
-        $this->assertSame('1', Redis::connection('mailcow')->get('restv2:signin:'.hash('sha256', 'alice@example.org|127.0.0.1')));
+        $this->assertSame('1', Redis::connection('mailcow')->get('restv2:secondfactor:'.hash('sha256', 'alice@example.org|127.0.0.1')));
         $this->assertSame('secondFactorFailed', $this->onlyAuditRecord('signIn')->failure_reason);
     }
 
@@ -89,7 +89,7 @@ class SecondFactorYubicoTest extends TestCase
             ->assertHeader('Retry-After', '30');
 
         $this->getJson('/api/v2/session')->assertJsonPath('data.state', 'pendingSecondFactor');
-        $this->assertSame([], Redis::connection('mailcow')->keys('restv2:signin:*'));
+        $this->assertSame([], Redis::connection('mailcow')->keys('restv2:secondfactor:*'));
         $audit = $this->onlyAuditRecord('signIn');
         $this->assertSame('failure', $audit->outcome);
         $this->assertSame('verificationUnavailable', $audit->failure_reason);

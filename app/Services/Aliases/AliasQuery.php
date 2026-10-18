@@ -3,6 +3,7 @@
 namespace App\Services\Aliases;
 
 use App\Auth\Principal;
+use App\Auth\Role;
 use App\Support\Http\ListQuery;
 use App\Support\Mailcow\UnicodeSearch;
 use Illuminate\Database\Query\Builder;
@@ -32,22 +33,20 @@ class AliasQuery
     public function __construct(private readonly AliasScope $scope) {}
 
     /**
-     * Aliases in the caller's scope with the derived columns.
+     * Aliases in the caller's scope with the derived columns. The exclusion of mailboxes' own rows
+     * comes last, so that MariaDB evaluates it only for rows that pass the other conditions.
      */
     public function base(Principal $principal): Builder
     {
-        $query = DB::table('alias as a')
-            ->leftJoin('alias_domain as ad', 'ad.alias_domain', '=', 'a.domain')
-            ->leftJoin('domain as d', 'd.domain', '=', 'a.domain')
-            ->whereNotExists(fn ($sub) => $sub->selectRaw('1')->from('mailbox as own')->whereColumn('own.username', 'a.address'));
-
-        return $this->scope->restrict($query, $principal);
+        return self::withDerived(self::notOwn($this->scope->restrict(DB::table('alias as a'), $principal)));
     }
 
     /** One alias in the caller's scope with its derived columns, or null. */
     public function find(Principal $principal, int $id): ?object
     {
-        return $this->base($principal)->where('a.id', $id)->first(self::columns());
+        $query = self::notOwn($this->scope->restrict(DB::table('alias as a')->where('a.id', $id), $principal));
+
+        return self::withDerived($query)->first(self::columns());
     }
 
     /**
@@ -61,7 +60,7 @@ class AliasQuery
             return null;
         }
 
-        return $this->base($principal)->where('a.id', (int) $raw)->exists() ? (int) $raw : null;
+        return self::notOwn($this->scope->restrict(DB::table('alias as a')->where('a.id', (int) $raw), $principal))->exists() ? (int) $raw : null;
     }
 
     /**
@@ -86,15 +85,44 @@ class AliasQuery
             });
         }
 
-        $total = (clone $query)->count();
+        $total = $this->count($principal, $query, $filters, $list->search === null);
         $direction = $list->order === 'desc' ? 'desc' : 'asc';
-        $query->orderBy(self::SORTS[$list->sort], $direction);
+        $query = self::withDerived(self::notOwn($query))->orderBy(self::SORTS[$list->sort], $direction);
 
         if ($list->sort !== 'id') {
             $query->orderBy('a.id', $direction);
         }
 
         return ['rows' => $query->offset($list->offset)->limit($list->limit)->get(self::columns())->all(), 'total' => $total];
+    }
+
+    /**
+     * The number of matching aliases. Without any condition (an administrator's unfiltered list),
+     * all rows minus the mailboxes' own rows is counted, which reads the primary keys instead of
+     * looking up every alias in `mailbox` (SC-005).
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function count(Principal $principal, Builder $query, array $filters, bool $noSearch): int
+    {
+        $unfiltered = $noSearch && $principal->role === Role::Admin
+            && array_filter($filters, fn (mixed $f): bool => $f !== [] && $f !== null) === [];
+
+        if ($unfiltered) {
+            return DB::table('alias')->count() - DB::table('alias as a')->join('mailbox as own', 'own.username', '=', 'a.address')->count();
+        }
+
+        return self::notOwn(clone $query)->count();
+    }
+
+    private static function notOwn(Builder $query): Builder
+    {
+        return $query->whereNotExists(fn ($sub) => $sub->selectRaw('1')->from('mailbox as own')->whereColumn('own.username', 'a.address'));
+    }
+
+    private static function withDerived(Builder $query): Builder
+    {
+        return $query->leftJoin('alias_domain as ad', 'ad.alias_domain', '=', 'a.domain')->leftJoin('domain as d', 'd.domain', '=', 'a.domain');
     }
 
     /**
@@ -110,7 +138,7 @@ class AliasQuery
      */
     private function filtered(Principal $principal, array $filters): Builder
     {
-        $query = $this->base($principal);
+        $query = $this->scope->restrict(DB::table('alias as a'), $principal);
 
         if ($filters['address'] !== []) {
             $query->whereIn('a.address', $filters['address']);

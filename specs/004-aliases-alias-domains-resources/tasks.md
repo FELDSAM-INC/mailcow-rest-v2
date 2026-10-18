@@ -727,21 +727,21 @@ FR-064).
 
 ## Phase 11: Polish and cross-cutting concerns
 
-- [ ] T082 [P] Write `tests/Feature/Security/Feature004AuthorizationMatrixTest.php`: every one of the
+- [X] T082 [P] Write `tests/Feature/Security/Feature004AuthorizationMatrixTest.php`: every one of the
   23 operations × {anonymous, admin session without CSRF, admin session, admin read-write key, admin
   read-only key, domain-admin session, domain-admin read-only key, mailbox session, restricted
   session} with the expected status and problem `type` from a table derived from the contract and
   FR-005.
-- [ ] T083 [P] Write `tests/Feature/Groupware/AliasGroupwareRefreshTest.php` (R9, SC-002): seed a
+- [X] T083 [P] Write `tests/Feature/Groupware/AliasGroupwareRefreshTest.php` (R9, SC-002): seed a
   varied fixture; after each of create, change and delete of an alias, a catch-all, an alias with
   external destinations, a resource and external sender addresses, and after a bulk action,
   `_sogo_static_view` (all columns but `c_password`) equals the result of 002's
   `SogoDirectory::rebuild()` run on the same data.
-- [ ] T084 [P] Write `tests/Feature/Performance/AliasListPerformanceTest.php` (group `performance`;
+- [X] T084 [P] Write `tests/Feature/Performance/AliasListPerformanceTest.php` (group `performance`;
   SC-005, SC-010): seed 5,000 domains, 100,000 mailboxes (with own-alias rows) and 200,000 aliases
   with multi-row inserts; the p95 of 20 `listAliases` calls (default, with `q`, with `destination`,
   as a domain administrator) is below 1 s; a bulk deactivation of 100 aliases completes below 10 s.
-- [ ] T085 [P] Write `tests/Feature/Aliases/LegacyCoexistenceTest.php` (FR-067, SC-001): rows written
+- [X] T085 [P] Write `tests/Feature/Aliases/LegacyCoexistenceTest.php` (FR-067, SC-001): rows written
   with legacy's own statements (copied from `functions.mailbox.inc.php` into the test) for an alias,
   an alias domain, a resource and sender permissions appear unchanged in the next API response, and
   rows written by the API are read back by legacy's `alias_details`, `alias_domain_details`,
@@ -905,3 +905,10 @@ what exists map as listed.
 - **T080, T081**: the target IDs and names of R20 were completed with the write stories (services
   and `AliasAuditTargets`), whose tests saw the audit assertions fail first; T080 therefore passed on
   its first run and T081 needed no further code.
+- **T084**: the performance test commits its seed rows and removes them again in `tearDown()`
+  instead of running in one transaction: inside an open transaction InnoDB checks the visibility of
+  each uncommitted row, which made full counts about four times slower than on committed data. The
+  alias list evaluates the exclusion of mailboxes' own rows after the other conditions, and counts
+  an administrator's unfiltered list as all rows minus the own rows (two primary-key scans instead
+  of 300,000 lookups). The bulk timing runs with the groupware disabled, as 002's does.
+- **T082, T083, T085** were written after the stories they verify and passed on their first run.

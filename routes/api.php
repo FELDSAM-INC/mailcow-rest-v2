@@ -146,6 +146,13 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->name('domains.show');
     });
 
+    // State-changing domain routes: refusals of authenticated callers are audited (`restv2.audit`).
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::post('/domains', [DomainController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'domainCreation', 'target' => 'domain'])
+            ->name('domains.store');
+    });
+
     Route::get('/audit-events', [AuditEventController::class, 'index'])
         ->middleware(['restv2.auth:authenticated', 'restv2.pending'])
         ->name('audit-events.index');

@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V2;
 use App\Http\Controllers\Controller;
 use App\Http\RequestContext;
 use App\Http\Requests\Api\V2\ListDomainsRequest;
+use App\Http\Requests\Api\V2\StoreDomainRequest;
 use App\Http\Resources\Api\V2\DomainResource;
 use App\Models\Mailcow\Domain;
+use App\Services\Domains\DomainCreator;
 use App\Services\Domains\DomainPresenter;
 use App\Services\Domains\DomainQuery;
 use App\Services\Domains\DomainScope;
@@ -45,5 +47,16 @@ class DomainController extends Controller
         $row = DB::table('domain')->where('domain', $name)->first() ?? throw new NotFoundHttpException('The domain does not exist.');
 
         return DomainResource::response($this->presenter->presentOne($row, $principal));
+    }
+
+    public function store(StoreDomainRequest $request, DomainCreator $creator): JsonResponse
+    {
+        $principal = RequestContext::requirePrincipal($request);
+        $creation = $creator->create($principal, $request->members());
+        $row = DB::table('domain')->where('domain', $creation->name)->first() ?? throw new NotFoundHttpException('The domain does not exist.');
+        $data = $this->presenter->presentOne($row, $principal);
+        $data['creationReport'] = $creation->report->toArray();
+
+        return DomainResource::response($data, 201)->header('Location', '/api/v2/domains/'.rawurlencode($creation->name));
     }
 }

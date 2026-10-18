@@ -372,7 +372,7 @@ compare rows, Redis entries and fake calls with legacy's behaviour.
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T047 [P] [US2] Write `tests/Feature/Domains/CreateDomainTest.php` for `createDomain`
+- [X] T047 [P] [US2] Write `tests/Feature/Domains/CreateDomainTest.php` for `createDomain`
   (FR-017–FR-022, FR-029):
   - AS-1: `{name: example.org}` with the seeded Default template → `201`,
     `Location: /api/v2/domains/example.org`, `ETag`, the template's values, `description`
@@ -399,7 +399,7 @@ compare rows, Redis entries and fake calls with legacy's behaviour.
   - AS-10: a domain administrator → `403 forbidden`; a read-only administrator key → `403
     insufficient-key-scope`; a mailbox user → `403 forbidden`; missing CSRF → `403
     csrf-token-mismatch`.
-- [ ] T048 [P] [US2] Write `tests/Feature/Domains/CreateDomainSideEffectsTest.php` (FR-023,
+- [X] T048 [P] [US2] Write `tests/Feature/Domains/CreateDomainSideEffectsTest.php` (FR-023,
   FR-025–FR-027):
   - `DOMAIN_MAP` field `example.org` = `1`;
   - rate limit from the request (`10 / 1h` in `RL_VALUE`), from the template, and `rateLimit: null`
@@ -415,7 +415,7 @@ compare rows, Redis entries and fake calls with legacy's behaviour.
     (FR-026);
   - a failing rate limit write after the commit (Redis connection broken after the commit by a
     `SharedStore` double) → `rateLimit failed`, the domain stays.
-- [ ] T049 [P] [US2] Write `tests/Feature/Domains/CreateDomainDnsPublicationTest.php` (AS-9, FR-027,
+- [X] T049 [P] [US2] Write `tests/Feature/Domains/CreateDomainDnsPublicationTest.php` (AS-9, FR-027,
   D10) with `FakeIspconfigDnsClient`:
   - publication off → `notConfigured`, no call;
   - on, zone `example.org.` with a TXT record `dkim._domainkey` → `updateTxt` with
@@ -425,7 +425,7 @@ compare rows, Redis entries and fake calls with legacy's behaviour.
     domain is created; on but URL missing → `notConfigured` and one warning;
   - the FeldHost selector setting (`RESTV2_DEFAULT_DKIM_SELECTOR=feldhost`) is the published
     selector (FR-028).
-- [ ] T050 [P] [US2] Write `tests/Feature/Domains/CreateDomainAtomicityTest.php` (FR-024, FR-056):
+- [X] T050 [P] [US2] Write `tests/Feature/Domains/CreateDomainAtomicityTest.php` (FR-024, FR-056):
   - shared store down before the creation → `503 temporary-failure` with `Retry-After`, no `domain`
     or `tags_domain` row, a failure audit record with `temporaryFailure`;
   - `HSET DOMAIN_MAP` failing inside the transaction (`SharedStore` double) → `503`, no rows;
@@ -434,14 +434,14 @@ compare rows, Redis entries and fake calls with legacy's behaviour.
     (`Symfony\Component\Process\Process` running `php artisan tinker` with the same
     `DomainCreator` call) and the HTTP request create the same name in parallel → exactly one
     succeeds, the other gets `domain-exists`, and exactly one row exists.
-- [ ] T051 [P] [US2] Write `tests/Feature/Domains/CreateDomainParityTest.php` (SC-002): create
+- [X] T051 [P] [US2] Write `tests/Feature/Domains/CreateDomainParityTest.php` (SC-002): create
   `tests/fixtures/legacy/domain_add_expected.php` with the rows and Redis entries that legacy
   `mailbox('add', 'domain')` of `2026-09a` writes for three inputs (default template, template with
   overrides and rate limit, relay options), each value annotated with the legacy line it comes
   from. The API creation with the same input leaves identical `domain` and `tags_domain` rows
   (apart from `created`), `DOMAIN_MAP`, `RL_VALUE` and `DKIM_SELECTORS` values, and the same fake
   calls.
-- [ ] T052 [P] [US2] Write `tests/Feature/Domains/CreateDomainAuditTest.php` (FR-057, SC-007): one
+- [X] T052 [P] [US2] Write `tests/Feature/Domains/CreateDomainAuditTest.php` (FR-057, SC-007): one
   `domainCreation` record with actor, target `{type: domain, id: example.org, name}`, client
   address, `values`, `templateId` and `creationReport` equal to the response's (completed, not
   `"pending"`); refused creations (`409`, `422`) give one failure record with `conflict` or
@@ -450,25 +450,25 @@ compare rows, Redis entries and fake calls with legacy's behaviour.
 
 ### Implementation for User Story 2
 
-- [ ] T053 [P] [US2] Create `app/Services/Dkim/DkimKeyGenerator.php` (D10: legacy key generation and
+- [X] T053 [P] [US2] Create `app/Services/Dkim/DkimKeyGenerator.php` (D10: legacy key generation and
   the three Redis hashes through `SharedStore`; private keys never logged).
-- [ ] T054 [P] [US2] Create `app/Services/Dkim/DkimDnsOutcome.php` (enum) and
+- [X] T054 [P] [US2] Create `app/Services/Dkim/DkimDnsOutcome.php` (enum) and
   `app/Services/Dkim/DkimDnsPublisher.php` (D10: enabled check, zone and record lookup, add or
   update, 15-second budget, outcome).
-- [ ] T055 [US2] Create `app/Services/Domains/DomainRules.php` (D11 step 8: quota order, whole MiB,
+- [X] T055 [US2] Create `app/Services/Domains/DomainRules.php` (D11 step 8: quota order, whole MiB,
   usage floors for changed limits, host name, template existence, tags through `DomainTagSet`,
   relay normalisation), reporting through `FieldViolations`.
-- [ ] T056 [US2] Create `app/Http/Requests/Api/V2/StoreDomainRequest.php`: `name` "required, string,
+- [X] T056 [US2] Create `app/Http/Requests/Api/V2/StoreDomainRequest.php`: `name` "required, string,
   1–255"; `templateId` "integer ≥ 1"; `description` "string, max 255"; `maxMailboxes`, `maxAliases`
   "integer 0–2147483647"; the three quotas "integer 1048576–9007199254740992, `WholeMebibytes`";
   relay options, `active`, `globalAddressList`, `restartGroupware` "boolean"; `tags` "array of
   strings"; `rateLimit` "null or {value: integer 1–2147483647, frame: second|minute|hour|day}";
   `dkimSelector` "string, max 255, `DkimSelector`"; `dkimKeySize` "in 1024, 2048, 3072, 4096".
-- [ ] T057 [US2] Create `app/Services/Domains/DomainCreationReport.php` and
+- [X] T057 [US2] Create `app/Services/Domains/DomainCreationReport.php` and
   `app/Services/Domains/DomainCreator.php` (D8: template resolution, validation, ping, transaction
   with locks, `sender_acl` cleanup, insert, tags, `DOMAIN_MAP` with undo, pending audit record,
   follow-ups, audit completion).
-- [ ] T058 [US2] Add `store` to `DomainController`, create
+- [X] T058 [US2] Add `store` to `DomainController`, create
   `app/Http/Resources/Api/V2/DomainCreatedResource.php` (`Domain` plus `creationReport`, `Location`
   and `ETag` headers), and register `POST /domains` with `restv2.auth:authenticated`,
   `restv2.csrf` and `restv2.pending`. This makes the US2 tests pass.

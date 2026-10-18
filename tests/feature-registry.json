@@ -94,7 +94,6 @@
         }
     },
     "pendingOperations": [
-        "createDomain",
         "applyDomainBulkAction",
         "updateDomain",
         "deleteDomain",

@@ -83,3 +83,62 @@ target is the key.
 | Key | Type | Meaning | Present |
 |---|---|---|---|
 | `ownerUsername` | string | The account the key acted as. | always |
+
+<!-- Feature 002: domains, their footer and domain templates. -->
+
+## Refusal records (features 002 onwards)
+
+State-changing operations from feature 002 onwards declare refusal auditing
+(`docs/conventions.md`, "Refusal auditing"): every refusal of an authenticated caller writes one
+record with `outcome: failure`, a shared `failureReason` and these keys, whatever refused it (the
+request pipeline, the role, the scope, a conflict, an outdated version, a validation failure or
+mailcow's unavailable shared store). CSRF failures and requests without credentials write none. The
+keys below appear only in refusal records and are listed in the table of every event type that can
+be refused:
+
+- `problemType` (string): the problem's `type`, a `/api/v2/problems/<name>` URI or `about:blank`.
+- `status` (integer): the HTTP status of the refusal.
+- `errors` (object, only for `422`): each invalid field with its violations as `{code, params}`,
+  never the submitted values.
+
+A refused bulk request is recorded once, with a `null` target, `targetIds` (the requested IDs, at
+most 100, each cut to 255 characters) and `bulkAction`. Items of a processed bulk request are
+recorded one by one, each with `bulkRequestId`.
+
+## domainCreation
+
+Feature 002. Written for every creation of a domain (`POST /domains`), in the transaction that
+stores it, and for every refused creation. The target is the domain (`id` its ASCII name, `name` its
+readable name). The record is written with `creationReport: "pending"` and completed once after the
+follow-up steps have run.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The stored attributes in contract names: `description`, `active`, `maxMailboxes`, `maxAliases`, `defaultMailboxQuota`, `maxMailboxQuota`, `domainQuota` (bytes), `backupMx`, `relayAllRecipients`, `relayUnknownOnly`, `globalAddressList`, `tags`, the initial `rateLimit` (`{value, frame}` or `null`), `dkimSelector` (empty: no key) and `dkimKeySize`. | on success |
+| `templateId` | integer or null | The domain template the values came from; `null` when the built-in values applied because no Default template exists. | on success |
+| `creationReport` | object | The creation report of the response (`DomainCreationReport`): `rateLimit`, `dkimKey`, `dkimDnsPublication`, `groupwareDirectoryUpdate`, `groupwareRestart` and, when a step failed, `messages`. `"pending"` only until the follow-up steps complete. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+<!-- Feature 010: DKIM keys. The DKIM core is delivered with feature 002. -->
+
+## dkimKeyGeneration
+
+Feature 010, written since feature 002. Written when a DKIM key is generated, also as a follow-up
+step of a domain creation (and, with feature 004, of an alias domain creation): the key's history is
+complete even though the creation has its own record. The target is the key (`type: dkimKey`, `id`
+the name, `name` its readable form). No private key material and no ISPConfig password ever appear.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `selector` | string | The selector of the new key. | on success |
+| `keyLength` | integer or null | Bits of the new key. | on success |
+| `overwriteRequested` | boolean | Whether the request asked to replace an existing key (always `false` for creations). | on success |
+| `old` | object | The replaced key: `selector`, `keyLength`, `publicKeySha256` (hex SHA-256 of the DER public key). | when a key was replaced (feature 010) |
+| `new` | object | The new key: `selector`, `keyLength`, `publicKeySha256`. | on success |
+| `trigger` | string | What generated the key: `api` (feature 010), `domainCreation` or `aliasDomainCreation`. | on success |
+| `dnsPublication` | object | The FeldHost ISPConfig publication: `status` (`DkimDnsPublicationStatus`), `reasonCode` (`DkimDnsPublicationReasonCode` or `null`) and `detail` (technical text without secrets, or `null`). | on success |
+| `problemType` | string | See "Refusal records". | on failure (feature 010) |
+| `status` | integer | See "Refusal records". | on failure (feature 010) |
+| `errors` | object | See "Refusal records". | on `422` failures (feature 010) |

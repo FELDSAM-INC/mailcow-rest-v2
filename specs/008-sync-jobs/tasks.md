@@ -735,7 +735,7 @@ deleted just before processing, and stale and missing version tags (spec US5).
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T057 [P] [US5] Write `tests/Feature/SyncJobs/SyncJobBulkActionTest.php` (FR-023, FR-024,
+- [X] T057 [P] [US5] Write `tests/Feature/SyncJobs/SyncJobBulkActionTest.php` (FR-023, FR-024,
   AS-1 to AS-7, SC-005):
   - **Deactivate many** (AS-1): an admin deactivates 50 active jobs. The answer is `200` with 50
     `done` results in request order, `summary {total: 50, done: 50, …}` and `bulkRequestId` equal
@@ -765,14 +765,14 @@ deleted just before processing, and stale and missing version tags (spec US5).
 
 ### Implementation for User Story 5
 
-- [ ] T058 [P] [US5] Create `app/Http/Requests/Api/V2/SyncJobBulkActionRequest.php`:
+- [X] T058 [P] [US5] Create `app/Http/Requests/Api/V2/SyncJobBulkActionRequest.php`:
   - `authorize()` runs the gate;
   - `action` uses the `SyncJobBulkAction` enum;
   - `targets` must be a list with at least 1 and at most `config('restv2.sync_jobs.bulk_limit')`
     entries (`tooMany {max}`);
   - `targets.*.id` must match `^[1-9][0-9]{0,9}$` (`invalidFormat`), and `targets.*.version` is an
     optional string.
-- [ ] T059 [US5] Create `app/Services/SyncJobs/SyncJobBulkService.php` (R15):
+- [X] T059 [US5] Create `app/Services/SyncJobs/SyncJobBulkService.php` (R15):
   - it processes targets in order, deduplicates by `id` and keeps the first occurrence;
   - per item, it runs one transaction: `findInScopeForUpdate` (`notFound`); for `activate`,
     `deactivate` and `delete` with a version, an unquoted comparison with `SyncJobVersion`
@@ -781,7 +781,7 @@ deleted just before processing, and stale and missing version tags (spec US5).
   - every `Throwable` becomes `failed`;
   - it builds the shared `BulkResult` through 002's plumbing, or, only if T001 found none, through
     a new `app/Support/Bulk/BulkResultBuilder.php`.
-- [ ] T060 [US5] Create `app/Http/Controllers/Api/V2/SyncJobBulkActionController.php` (`store`,
+- [X] T060 [US5] Create `app/Http/Controllers/Api/V2/SyncJobBulkActionController.php` (`store`,
   `200` with `BulkResultResponse`). Register `POST sync-jobs/bulk-actions`
   (`restv2.auth:authenticated`, `restv2.csrf`) in `routes/api.php` **above**
   `sync-jobs/{syncJob}`. Its `restv2.audit` default is `['event' => 'fromBulkAction', 'target' =>
@@ -1071,4 +1071,16 @@ Checked on `main` at `e21f5ee`:
   `id`) is `required` on `body`, through 001's `memberViolations()` hook.
 - **T054, T056**: US4's deletion was implemented together with US3's change (same service and
   controller); its tests (T055) were written and seen failing first.
+- **T057, T059 (contract change)**: a `done` item's `version` is the job's new tag exactly as its
+  `ETag` header shows it, quoted, not unquoted as the first contract text and T057 said: 002, 003
+  and 004 return the quoted tag through the shared `BulkActionRunner`, and G33 makes the quoted
+  value the canonical form (a target's `version` accepts both). `sync-jobs-bulk-actions.yaml` says
+  so now.
+- **T059**: 002's `BulkActionRunner` is reused unchanged (resolution and deduplication of every
+  target before any is applied, `If-Match` from `version`, refusal records with `bulkRequestId`);
+  `SyncJobBulkService` only supplies the resolution in scope, the per-item service call and the
+  audit target. An item's unexpected exception is `failed` with an `about:blank` `500` problem.
+- **T060**: the whole-request refusal record comes from `SyncJobAuditTargets` through 002's
+  `RefusalAuditor::bulkRefusal()`, with the event of the requested action; it is covered by
+  `SyncJobRefusalAuditTest` (T021) and `SyncJobBulkActionTest`.
 

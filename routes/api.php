@@ -81,6 +81,7 @@ use App\Http\Middleware\AuthorizeMonitoring;
 use App\Rules\MailQueueId;
 use App\Services\Logs\LogType;
 use App\Services\Monitoring\ContainerRegistry;
+use App\Http\Controllers\Api\V2\SyncJobBulkActionController;
 use App\Http\Controllers\Api\V2\SyncJobCapabilitiesController;
 use App\Http\Controllers\Api\V2\SyncJobController;
 use App\Http\Controllers\Api\V2\SyncJobLogController;
@@ -494,6 +495,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
 
     // State-changing sync-job routes: refusals of authenticated callers are audited (`restv2.audit`).
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        // POST-only bulk path: object paths never accept POST.
+        Route::post('/sync-jobs/bulk-actions', [SyncJobBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'syncJob'])
+            ->name('sync-job-bulk-actions.store');
         Route::post('/sync-jobs', [SyncJobController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'syncJobCreation', 'target' => 'syncJob'])
             ->name('sync-jobs.store');

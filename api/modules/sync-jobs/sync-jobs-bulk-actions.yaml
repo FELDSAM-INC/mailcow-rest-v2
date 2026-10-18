@@ -13,9 +13,10 @@ post:
     processed and audited on its own, as a single request for it would be, and gets one result in
     request order:
 
-    - `done`: the action was applied. `version` carries the job's version tag without its
-      surrounding quotes (the form a target's `version` takes), except after `delete`. Activating
-      an active job or deactivating an inactive one is `done` and changes nothing.
+    - `done`: the action was applied. `version` carries the job's new version tag exactly as its
+      `ETag` header and `etag` member show it (quoted), except after `delete`; a target's `version`
+      accepts it with or without the quotes. Activating an active job or deactivating an inactive
+      one is `done` and changes nothing.
     - `notFound`: the job does not exist or its mailbox lies outside the caller's scope.
     - `outdated`: the target's `version` no longer matches; the job is unchanged. Not checked for
       `reschedule`, and not checked for targets without `version`.

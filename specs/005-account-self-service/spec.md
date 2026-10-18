@@ -142,7 +142,7 @@
   stay in php-fpm. (orchestrator decision: the owner wants every legacy feature; the roadmap
   allocation was updated.)
 - Q: Which error refuses a change that needs a permission flag, and how are bulk TLS changes
-  addressed? → A: The shared "permission flag required" error, which names the flag (FR-006,
+  addressed? → A: The shared "permission flag required" error, which names the flag in `requiredFlags` (FR-006,
   FR-075), and the bulk TLS change is a `setTlsEnforcement` action sent with `targets` to the mail
   settings' bulk-action path (FR-060). (orchestrator decision: cross-feature conventions on
   permission refusals and bulk paths; this feature no longer defines its own "permission flag
@@ -1219,8 +1219,8 @@ configuration with the groupware enabled and disabled and compare it with the le
   enrolment expired, last second factor, second factor required by policy, push notifications not
   configured, groupware disabled, outdated version and temporary failure (with the unavailable
   service), and reuse feature 001's second factor required, second factor failed, too many requests
-  and pending action required, and the shared "permission flag required" error, which names the flag
-  (`docs/conventions.md`). Validation errors MUST carry stable rule codes with their parameters,
+  and pending action required, and the shared "permission flag required" error, which names the flag in
+  `requiredFlags` (`docs/conventions.md`). Validation errors MUST carry stable rule codes with their parameters,
   including each unmet password rule, the lifetime range, the period range, the size limits and the
   parser message.
 - **FR-076**: Passwords, current passwords, second-factor secrets after the enrolment start, Yubico

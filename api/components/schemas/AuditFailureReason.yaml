@@ -47,7 +47,7 @@ description: |
     refused in demo mode), `featureDisabled` (license verification disabled) and `fileUnavailable`
     (the shared map or filter file does not exist).
   - Account self-service (feature 005) uses `externalIdentitySource` (password managed
-    externally), `permissionDenied` (a missing permission flag, `details.flag`), `versionOutdated`,
+    externally), `permissionDenied` (a missing permission flag, `details.requiredFlags`), `versionOutdated`,
     `validationFailed`, `temporaryFailure`, `notFound`, `throttled`, `challengeExpired` (enrolment
     expired), `registrationFailed` (enrolment rejected), `secondFactorFailed`,
     `secondFactorUnavailable`, `verificationUnavailable` and `featureDisabled` (groupware disabled,

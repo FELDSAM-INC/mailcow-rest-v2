@@ -592,6 +592,10 @@ tested against the legacy `sogo-auth.php` of each supported release.
 
 ### R15. Mailbox mail settings and bulk TLS (FR-058 to FR-060)
 
+The spec's "mailbox settings" (tagged-mail handling and TLS enforcement) are the contract's
+`mail-settings` resource (`MailboxMailSettings`), named so to stay apart from 003's mailbox
+resource itself.
+
 - **Decision** (`App\Services\MailSettings\MailSettingsService`):
   - Tagged-mail handling: `RCPT_WANTS_SUBJECT_TAG` / `RCPT_WANTS_SUBFOLDER_TAG` hashes on the
     `mailcow` Redis connection (subject wins when both are set, as legacy `get`), read and written
@@ -742,7 +746,7 @@ tested against the legacy `sogo-auth.php` of each supported release.
   | `push-notifications-not-configured` | 409 | — |
   | `groupware-disabled` | 403 | — |
 
-  Reused: `permission-flag-required` (403; `docs/conventions.md`; with `flag` and, as 006 and 009 report it, `requiredFlags`), `temporary-failure` (503, feature 002's type; this feature adds the extension
+  Reused: `permission-flag-required` (403; `docs/conventions.md`; `requiredFlags` with the one missing flag), `temporary-failure` (503, feature 002's type; this feature adds the extension
   `dependency` as 003 does: `sharedStore`, `mailStore`, `pushover`, `addressGeneration`),
   `temporary-verification-failure` (Yubico), `second-factor-required` (with `methods` for the reset),
   `second-factor-failed`, `second-factor-unavailable`, `too-many-requests`, `pending-action-required`,
@@ -781,7 +785,7 @@ tested against the legacy `sogo-auth.php` of each supported release.
     `recoveryEmail`, `passwordReset`, `appPassword`, `temporaryAlias`, `sieveFilter`,
     `pushNotificationSettings`, `mailSettings`, `recentLogins`, `groupwareData`, `webmailHandOff`.
   - **Failure reasons**: existing values are reused where they fit: `externalIdentitySource`
-    (password managed externally), `permissionDenied` (missing flag, with `details.flag`, as 008
+    (password managed externally), `permissionDenied` (missing flag, with `details.problemType` and `details.requiredFlags`, as 008
     uses it), `versionOutdated`, `validationFailed`, `temporaryFailure`, `notFound`, `throttled`,
     `challengeExpired` (enrolment expired), `registrationFailed` (enrolment rejected),
     `secondFactorFailed`, `secondFactorUnavailable`, `verificationUnavailable`, `featureDisabled`
@@ -862,8 +866,8 @@ No package for: the Sieve parser (legacy copy, R13), SMTP (Laravel Mail), HTTP c
   - Real MariaDB (schema fixture) and Redis, as 001. Fakes behind interfaces only for outbound
     services: `SieveScriptReader` (dockerapi), `PushoverClient`, `CountryLookup`, 001's
     `YubicoOtpVerifier`; the HTTP adapters are tested with `Http::fake()`. Reset mail uses Laravel's
-    `array` mailer in tests (`Mail::fake()` is not used, so the real message building runs); a
-    transport test runs against a throw-away SMTP sink only in the transport unit test.
+    `array` mailer in tests (`Mail::fake()` is not used, so the real message building runs); the SMTP transport
+    settings are asserted on the mailer configuration.
   - `tests/Feature/Webmail/SogoAuthCompatibilityTest.php` runs the legacy `sogo-auth.php` (R3).
   - Parity tests compare stored rows with what the legacy functions write: the tests insert rows
     "as legacy" through `MailcowFactory` and compare after API calls (SC-009).

@@ -4,7 +4,7 @@ description: |
     administrator reading a mailbox overview, a mailbox user changing a Sieve filter, a domain
     administrator reading the audit log).
   - `/api/v2/problems/permission-flag-required`: the change needs a permission flag the caller
-    lacks (extensions `flag` and `requiredFlags`). Values sent with their current value never need
+    lacks (extension `requiredFlags`). Values sent with their current value never need
     it.
   - `/api/v2/problems/current-password-incorrect`: the current password is wrong. Audited; repeated
     failures are delayed and then refused with `429`.
@@ -34,5 +34,4 @@ content:
           status: 403
           detail: Changing app passwords needs the appPasswds permission.
           requestId: 4bf92f3577b34da6a3ce929d0e0e4736
-          flag: appPasswds
           requiredFlags: [appPasswds]

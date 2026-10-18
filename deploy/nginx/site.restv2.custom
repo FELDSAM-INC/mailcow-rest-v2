@@ -23,6 +23,15 @@ location ^~ /api/v2/ {
     fastcgi_pass $restv2_upstream;
 }
 
+# The web app lives under /ng/; /ng without the slash redirects there. A relative Location keeps
+# whatever host and port the client used.
+location = /ng {
+    absolute_redirect off;
+    return 301 /ng/$is_args$args;
+}
+
+# proxy_pass with a variable and no URI part passes the original request path (/ng/...) and query
+# through to the mailcowui-ng container unchanged.
 location ^~ /ng/ {
     resolver 127.0.0.11 valid=30s;
     set $ng_upstream http://ng-mailcow:8080;

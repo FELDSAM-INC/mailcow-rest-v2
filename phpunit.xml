@@ -27,7 +27,7 @@
         </include>
     </source>
     <extensions>
-        <!-- T018: the contract coverage extension is registered here. -->
+        <bootstrap class="Tests\Support\Contract\ContractCoverageExtension"/>
     </extensions>
     <php>
         <env name="APP_ENV" value="testing" force="true"/>

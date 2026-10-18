@@ -1,20 +1,57 @@
 <?php
 
+use App\Exceptions\ProblemException;
+use App\Exceptions\ProblemRenderer;
+use App\Exceptions\ValidationProblemException;
+use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnforcePendingActions;
+use App\Http\Middleware\EnsureSessionIntegrity;
+use App\Http\Middleware\RequireAuth;
+use App\Http\Middleware\StartSessionUnlessApiKey;
+use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
+use Illuminate\Foundation\Http\Middleware\TrimStrings;
+use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
+        apiPrefix: '',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // The client address is nginx-mailcow's REMOTE_ADDR, which mailcow's real_ip module has
+        // already resolved: no X-Forwarded-* header is trusted (R23).
+        $middleware->trustProxies(at: []);
+
+        // No CORS headers: the API is same-origin only, which is what keeps the header-only
+        // anti-forgery token unforgeable (R7). Input is never trimmed or rewritten, passwords
+        // included; usernames are normalised where legacy does it.
+        $middleware->remove([HandleCors::class, TrimStrings::class, ConvertEmptyStringsToNull::class]);
+
+        // Request pipeline of every /api/v2 route, in this order (R8). T088 inserts
+        // AuthenticateApiKey and EnforceKeyScope after AssignRequestId.
+        $middleware->group('api.v2', [
+            AssignRequestId::class,
+            StartSessionUnlessApiKey::class,
+            EnsureSessionIntegrity::class,
+        ]);
+
+        // Per route, in this order: restv2.auth:<mode>, restv2.csrf, restv2.pending:<mode>.
+        $middleware->alias([
+            'restv2.auth' => RequireAuth::class,
+            'restv2.csrf' => VerifyCsrfToken::class,
+            'restv2.pending' => EnforcePendingActions::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
-        );
+        $exceptions->dontReport([ProblemException::class, ValidationProblemException::class]);
+
+        // Every error is an RFC 9457 problem (FR-049).
+        $exceptions->render(fn (Throwable $e, Request $request) => ProblemRenderer::render($e, $request));
     })->create();

@@ -1,5 +1,7 @@
 <?php
 
+use App\Logging\RedactSecrets;
+use App\Logging\RequestContextProcessor;
 use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
@@ -9,10 +11,10 @@ use Monolog\Handler\StreamHandler;
 | Logging (research R24)
 |--------------------------------------------------------------------------
 |
-| One JSON line per event on stderr (`docker logs`). The request context (request ID, route,
-| method, principal, client address) and the redaction of secrets are added by processors that
-| App\Providers\AppServiceProvider registers on the `stderr_json` channel. LOG_STREAM redirects
-| the stream (the test environment writes to storage/logs/testing.log).
+| One JSON line per event on stderr (`docker logs`). The processors of the `stderr_json` channel
+| add the request context (request ID, route, method, principal, client address) and remove
+| secrets from the context. LOG_STREAM redirects the stream (the test environment writes to
+| storage/logs/testing.log).
 |
 */
 
@@ -44,6 +46,11 @@ return [
             'formatter_with' => [
                 'batchMode' => JsonFormatter::BATCH_MODE_NEWLINES,
                 'appendNewline' => true,
+                'includeStacktraces' => true,
+            ],
+            'processors' => [
+                RequestContextProcessor::class,
+                RedactSecrets::class,
             ],
         ],
 

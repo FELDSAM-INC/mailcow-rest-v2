@@ -816,9 +816,10 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
       `set $restv2_upstream restv2-mailcow:9000;`, `include /etc/nginx/fastcgi_params;`,
       `fastcgi_param SCRIPT_FILENAME /app/public/index.php;`, `fastcgi_param HTTP_PROXY "";`,
       `client_max_body_size 1m;` and `fastcgi_pass $restv2_upstream;`;
-    - `location ^~ /ng/`, which proxies with the same variable technique to `http://ng-mailcow:8080`.
-      That is the static image of mailcowui-ng (`ghcr.io/feldsam-inc/mailcowui-ng`), which the UI
-      repository adds to the same override.
+    - `location ^~ /ng/`, which proxies with the same variable technique to `http://ng-mailcow:8080`,
+      passing the original request path through unchanged. That is the static image of
+      mailcowui-ng (`ghcr.io/feldsam-inc/mailcowui-ng`), which the UI repository adds to the same
+      override. `location = /ng` redirects to `/ng/` with a relative `301`.
       Until it is deployed, `/ng/` answers `502`.
 
     The `^~` prefix match beats the legacy regex locations, and `/api/v1` is untouched. The

@@ -116,3 +116,21 @@ this document next to the constitution.
   removed or renamed.
 - **New components:** each one carries its resource's name (for example `DomainTag`,
   `MailboxTag`, `DomainCapabilities`), so that features never collide.
+
+## Capabilities, history and refusals
+
+- **Capabilities reads** use the path `/{collection}/capabilities`, for example
+  `/domains/capabilities`, `/mailboxes/capabilities` and `/sync-jobs/capabilities`. The operation
+  ID is `get<Resource>Capabilities`. Read-only keys may use them, and they never contain secrets.
+- **History:** clients filter `GET /audit-events` with the generic `targetType` and `targetId`
+  parameters. A feature adds values to `AuditTarget` and never adds its own audit filter
+  parameter. Impersonation filters belong to 007.
+- **Shared enumerations** also include `AuditFailureReason`, which is append-only like the others.
+- **Refusal auditing:** state-changing routes are marked so that refusals by authenticated callers
+  are audited. This covers read-only keys, restricted sessions, missing flags and out-of-scope
+  objects, but not CSRF failures or 401s. Use 008's `RefusalAuditor` mechanism, or the equivalent
+  that the first implemented feature creates.
+- **Version tags** never contain a plain hash of a stored secret. They use an HMAC keyed with the
+  app key.
+- **Uniqueness that upstream enforces only in code** is protected with MariaDB `GET_LOCK()` around
+  check-and-insert, never with a new index on an upstream table.

@@ -77,6 +77,7 @@ use App\Services\Oauth2\Oauth2ClientService;
 use App\Services\Routing\RoutingAuditTargets;
 use App\Services\SyncJobs\SyncJobAuditTargets;
 use App\Services\SelfService\SelfServiceAuditTargets;
+use App\Services\SyncJobs\SyncJobAuditTargets;
 use App\Services\Webmail\WebmailHandOffService;
 use App\Support\Clock\Clock;
 use App\Support\Clock\Sleeper;

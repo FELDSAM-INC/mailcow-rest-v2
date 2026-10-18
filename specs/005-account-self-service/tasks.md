@@ -895,7 +895,7 @@ disabled; compare the remaining `sogo_*` rows.
 
 ### Tests for User Story 10 ⚠️
 
-- [ ] T113 [P] [US10] Write `tests/Feature/Groupware/GroupwareResetTest.php` (AS-1 to AS-4): with
+- [X] T113 [P] [US10] Write `tests/Feature/Groupware/GroupwareResetTest.php` (AS-1 to AS-4): with
   `MailcowFactory::sogoProfileRows` for two mailboxes, the ActiveSync reset removes only the
   mailbox's `sogo_cache_folder` rows; the profile reset removes exactly the rows of DM (including
   `sogo_acl` grants to the mailbox and objects of the mailbox, with `_` and `%` in the address not
@@ -906,7 +906,7 @@ disabled; compare the remaining `sogo_*` rows.
 
 ### Implementation for User Story 10
 
-- [ ] T114 [US10] Create `app/Services/Groupware/GroupwareResetService.php` (R17, one transaction
+- [X] T114 [US10] Create `app/Services/Groupware/GroupwareResetService.php` (R17, one transaction
   with the audit record) and the controllers `ActiveSyncCacheController.php` and
   `GroupwareProfileController.php` (`destroy`); register the two routes (`restv2.audit` target
   `groupwareData`). This makes T113 pass.
@@ -923,14 +923,14 @@ target, and scan every record for secrets.
 
 ### Tests for User Story 11 ⚠️
 
-- [ ] T115 [P] [US11] Write `tests/Feature/Audit/SelfServiceAuditTest.php` (AS-1 to AS-3): after a
+- [X] T115 [P] [US11] Write `tests/Feature/Audit/SelfServiceAuditTest.php` (AS-1 to AS-3): after a
   password change and an app password creation, `GET /audit-events?targetId=<mailbox>` (002's
   filter) as admin returns both with actor, time and client address; `targetType=appPassword`
   narrows; a reset request for an unknown address appears with the attempted address and
   `unknownAccount`; every event type of R22 is produced once by its operation (table-driven over
   T030–T114 fixtures) and validates against `AuditEventType`, `AuditTarget` and
   `AuditFailureReason`; a mailbox user → `403 forbidden` (001).
-- [ ] T116 [P] [US11] Write `tests/Feature/Security/SelfServiceSecretLeakTest.php` (FR-076, SC-006):
+- [X] T116 [P] [US11] Write `tests/Feature/Security/SelfServiceSecretLeakTest.php` (FR-076, SC-006):
   runs a scripted pass over every operation with known secrets (passwords, TOTP secret after the
   start, Yubico key, codes, WebAuthn response, reset token, app password, Pushover token and key)
   and asserts that none appears in any response body after creation (except the TOTP start and the
@@ -939,7 +939,7 @@ target, and scan every record for secrets.
 
 ### Implementation for User Story 11
 
-- [ ] T117 [US11] Complete the `details` whitelists and target resolvers of T024 for any event type
+- [X] T117 [US11] Complete the `details` whitelists and target resolvers of T024 for any event type
   the tests show missing, and add a data-provider of all self-service event types to
   `tests/Feature/Audit/SelfServiceAuditTest.php`. This makes T115 and T116 pass.
 
@@ -955,7 +955,7 @@ them with legacy `mobileconfig.php`; read the client configuration with the grou
 
 ### Tests for User Story 12 ⚠️
 
-- [ ] T118 [P] [US12] Write `tests/Feature/OwnAccount/ClientConfigurationTest.php` for
+- [X] T118 [P] [US12] Write `tests/Feature/OwnAccount/ClientConfigurationTest.php` for
   `getOwnClientConfiguration` (FR-083, AS-3, AS-4, AS-5): IMAP `tlsPort` 993 and `starttlsPort` 143
   from the env (`IMAPS_PORT=127.0.0.1:10993` → 10993); SMTP 465/587; POP3 995/110; CalDAV/CardDAV on
   443 with principal path `/SOGo/dav/<address>/`, and on 8443 when the request's host carries
@@ -963,7 +963,7 @@ them with legacy `mobileconfig.php`; read the client configuration with the grou
   → `caldav`, `carddav`, `activeSync` `null`; `outlookUsesActiveSync` from `useEASforOutlook`;
   `documentationUrl` equals the legacy link built from `clientconfigstr`; admin → `forbidden`; key →
   `session-required`.
-- [ ] T119 [P] [US12] Write `tests/Feature/OwnAccount/AppleProfileTest.php` for `getOwnAppleProfile`
+- [X] T119 [P] [US12] Write `tests/Feature/OwnAccount/AppleProfileTest.php` for `getOwnAppleProfile`
   and `createOwnAppleProfileWithAppPassword` (FR-082, AS-1 to AS-3, AS-5):
   - `variant=email` → `200`, `Content-Type: application/x-apple-aspen-config`,
     `Content-Disposition: attachment; filename="<product name>.mobileconfig"`, `Cache-Control:
@@ -987,15 +987,15 @@ them with legacy `mobileconfig.php`; read the client configuration with the grou
 
 ### Implementation for User Story 12
 
-- [ ] T120 [P] [US12] Create `tests/fixtures/legacy/mobileconfig/2026-09a-email.plist` and
+- [X] T120 [P] [US12] Create `tests/fixtures/legacy/mobileconfig/2026-09a-email.plist` and
   `2026-09a-full.plist` by rendering the tag's `mobileconfig.php` template body with fixed values
   (address, display name, product name, ports, UUIDs `00000000-…`), documented in a `README` next to
   them.
-- [ ] T121 [US12] Create `app/Services/Account/ClientConfigurationService.php` (R18) and
+- [X] T121 [US12] Create `app/Services/Account/ClientConfigurationService.php` (R18) and
   `app/Http/Resources/Api/V2/MailboxClientConfigurationResource.php` and
   `app/Http/Controllers/Api/V2/OwnClientConfigurationController.php`; register `GET
   /me/mailbox/client-configuration` in group `restv2.own`. This makes T118 pass.
-- [ ] T122 [US12] Create `app/Services/Account/AppleProfileBuilder.php` (`XMLWriter`, legacy key
+- [X] T122 [US12] Create `app/Services/Account/AppleProfileBuilder.php` (`XMLWriter`, legacy key
   order, identifiers, v4 UUIDs), `app/Http/Requests/Api/V2/{GetAppleProfileRequest,CreateAppleProfileRequest}.php`
   and `app/Http/Controllers/Api/V2/OwnAppleProfileController.php` (`show`; `store` creates the app
   password through `AppPasswordService` with `source: appleProfile`); register `GET` and `POST
@@ -1010,19 +1010,19 @@ them with legacy `mobileconfig.php`; read the client configuration with the grou
   performance`, SC-010): 25-entry pages of app passwords, temporary aliases, filters and recent
   logins (with 200,000 `sasl_log` rows) answer within 1 s at p95 over 50 runs; a recent-login page
   needing lookups (fake lookup with 1.8 s latency) within 2 s.
-- [ ] T124 [P] Write `tests/Feature/Security/SelfServiceAuthorizationMatrixTest.php` (SC-007): one
+- [X] T124 [P] Write `tests/Feature/Security/SelfServiceAuthorizationMatrixTest.php` (SC-007): one
   data-driven test over all 51 operations × {admin, domain admin in scope, domain admin out of
   scope, mailbox user own, mailbox user foreign, read-only admin key, read-write admin key, read-only
   and read-write domain-admin keys, restricted session, anonymous} asserting the status of plan
   "Contract Operations" and FR-005 (`404` for out-of-scope objects, `403` for roles, flags and key
   scope, `401` without credentials).
-- [ ] T125 Extend `database/seeders/DevelopmentSeeder.php` with the Part B data of quickstart.md
+- [X] T125 Extend `database/seeders/DevelopmentSeeder.php` with the Part B data of quickstart.md
   (`PW_RESET_FROM`/`PW_RESET_SUBJ`, an alias domain, two app passwords, a filter, `sasl_log` rows).
 - [ ] T126 Run quickstart.md Part A and Part B against the dev stack and fix any deviation; confirm
   `build/contract/coverage.json` lists the 51 operations and that no migration was added.
-- [ ] T127 [P] Run `vendor/bin/pint --test` and `vendor/bin/phpstan analyse` (level 6) and fix all
+- [X] T127 [P] Run `vendor/bin/pint --test` and `vendor/bin/phpstan analyse` (level 6) and fix all
   findings in the files of this feature.
-- [ ] T128 [P] Add the release note entry for the contract additions of feature 005 (51 operations,
+- [X] T128 [P] Add the release note entry for the contract additions of feature 005 (51 operations,
   shared enumeration values, problem types) to the release notes file the project keeps, so that
   mailcowui-ng can bump its pinned contract (constitution workflow).
 
@@ -1223,3 +1223,32 @@ that differ from what exists map as listed.
   `sieve` tasks as text), not `exec`. `SieveScriptUnavailable` maps to `503 temporary-failure`
   (`mailStore`). G23: `GET /sieve-filters?id=`. Refusals that name an existing app password or
   filter now record `appPasswordId` / `sieveFilterId`, as `docs/audit-events.md` already said.
+- **T113–T114**: one `GroupwareResetController` (`activeSyncCache`, `profile`). The test reuses
+  `MailcowRows::sogoData()` (the webmail data that 003's deletion test seeds) instead of a new
+  `sogoProfileRows` helper. `groupware-disabled` is checked before the flag; the profile reset's
+  `removed` counts are keyed by table in legacy's statement order.
+- **T115–T117**: no whitelist or resolver was missing. The coverage test produces all 23 event types
+  and lists them through `GET /audit-events`, so the response validation checks `AuditEventType`,
+  `AuditTarget` and `AuditFailureReason`; a refused completion is recorded only with a valid token,
+  as `docs/audit-events.md` says, so the test completes a real reset. Six-digit codes are left out
+  of the response scan of the leak test (digit runs occur in tags and times by chance); the
+  WebAuthn response is covered by 001's and T046's tests. The Apple profile's app password refusal
+  records the caller's own address as target (own routes name no mailbox).
+- **T118–T122**: one `OwnAppleProfileController` (`show`, `store`) and no resource classes. The
+  fixtures are rendered by `scripts/legacy/render-mobileconfig-fixtures.sh` (the tag's template
+  body, unmodified, with fixed values; `README.md` next to them), and the test compares element by
+  element after replacing UUIDs, since XMLWriter's whitespace differs from the template's. The
+  embedded app password's name is cut so that its stored (HTML-encoded) form fits 255 characters.
+  The documentation link's `ui` is the request's host, as legacy's `HTTP_HOST`.
+- **T123**: run with `composer test:performance`.
+- **T124**: callers are anonymous, a restricted mailbox session, administrator, domain
+  administrator in and out of scope, the mailbox user and a foreign mailbox user, and read-only and
+  read-write keys of an administrator and of the domain administrator (plus a foreign domain
+  administrator's key). A read-only key's change is refused with `insufficient-key-scope` before
+  `session-required` (001's pipeline order). Flags are covered by each story's tests.
+- **Cross-feature test fix**: `tests/TestCase::setUp()` resets `set_time_limit(0)`. 011's
+  controllers set an 80-second limit for their request, which outlived the request in the one
+  PHPUnit process and ended the full run (`Premature end of PHP process`) once this feature's tests
+  used up its CPU seconds.
+- **Configuration**: after the rebase onto main, 005's settings are read with
+  `App\Support\Config\Env::get` (the architecture test of main), `config/mail.php` included.

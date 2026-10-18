@@ -91,6 +91,10 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        // Some controllers bound their request with set_time_limit() (feature 011: the container
+        // service timeout plus 20 s). In the one PHPUnit process that limit would outlive the
+        // request and end the whole run once later tests used up its CPU seconds.
+        set_time_limit(0);
         $this->flushTestRedis();
         $this->app->instance(Sleeper::class, $this->sleeper = new FakeSleeper);
         $this->app->instance(Clock::class, $this->clock = new FakeClock);

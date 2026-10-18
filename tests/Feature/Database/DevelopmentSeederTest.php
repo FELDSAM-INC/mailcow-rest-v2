@@ -6,6 +6,7 @@ use App\Clients\SharedStore\DkimKeyStore;
 use App\Services\Dkim\DkimPublicKey;
 use Database\Seeders\DevelopmentSeeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -59,5 +60,12 @@ class DevelopmentSeederTest extends TestCase
         $this->assertTrue($domainKey->complete());
         $this->assertSame(['dkim', 2048], [$domainKey->selector, (new DkimPublicKey((string) $domainKey->publicKey))->bits()]);
         $this->assertTrue((bool) $this->app->make(DkimKeyStore::class)->read('old.example')?->complete());
+
+        // Feature 005 T125: the self-service data of quickstart Part B.
+        $this->assertSame(['noreply@example.org', 'Reset your password'], Redis::connection('mailcow')->mget(['PW_RESET_FROM', 'PW_RESET_SUBJ']));
+        $this->assertSame(['Old laptop', 'Phone'], DB::table('app_passwd')->where('mailbox', 'alice@example.org')->orderBy('name')->pluck('name')->all());
+        $this->assertSame(1, DB::table('sieve_filters')->where('username', 'alice@example.org')->count());
+        $this->assertSame(3, DB::table('sasl_log')->where('username', 'alice@example.org')->count());
+        $this->assertSame('alice.private@example.net', json_decode((string) DB::table('mailbox')->where('username', 'alice@example.org')->value('attributes'), true)['recovery_email']);
     }
 }

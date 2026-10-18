@@ -6,6 +6,7 @@ use App\Services\Dkim\DkimKeyGenerator;
 use Database\Factories\MailcowRows;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use RuntimeException;
 
 /**
@@ -28,6 +29,10 @@ use RuntimeException;
  *  - feature 010: the alias domain example.com of example.org, a 2,048-bit DKIM key (selector
  *    `dkim`) for example.org and an unused 1,024-bit key for old.example, in mailcow's Redis
  *    hashes as legacy writes them.
+ *  - feature 005: the reset message's sender and subject in mailcow's Redis (`PW_RESET_FROM`,
+ *    `PW_RESET_SUBJ`), alice's recovery address, two app passwords of alice (one inactive), a
+ *    prefilter of alice and recent logins of alice (IMAP from a public address, a web UI sign-in,
+ *    SMTP with an app password); feature 010's alias domain example.com is a temporary-alias domain.
  *
  * Run by scripts/dev/reset-dev-database.sh. It refuses to run outside APP_ENV=local, so that it
  * can never write accounts into a real mailcow database.
@@ -86,5 +91,15 @@ class DevelopmentSeeder extends Seeder
         $rows->dkimKeyHashes('example.org', 'dkim', $domainKey->publicKey, $domainKey->privateKey);
         $unusedKey = $generator->generate(1024);
         $rows->dkimKeyHashes('old.example', 'dkim', $unusedKey->publicKey, $unusedKey->privateKey);
+
+        // Feature 005: account self-service (quickstart Part B).
+        Redis::connection('mailcow')->mset(['PW_RESET_FROM' => 'noreply@example.org', 'PW_RESET_SUBJ' => 'Reset your password']);
+        DB::statement("UPDATE `mailbox` SET `attributes` = JSON_SET(`attributes`, '$.recovery_email', 'alice.private@example.net') WHERE `username` = 'alice@example.org'");
+        $phone = $rows->appPasswd('alice@example.org', 'Phone', self::PASSWORD.'-phone');
+        $rows->appPasswd('alice@example.org', 'Old laptop', self::PASSWORD.'-laptop', active: 0);
+        $rows->sieveFilterRow('alice@example.org', 'Spam to Junk', 'prefilter', "require \"fileinto\";\nif header :contains \"subject\" \"[SPAM]\" {\n  fileinto \"Junk\";\n}");
+        $rows->saslLogEntry('alice@example.org', 'imap', '203.0.113.7', (string) DB::scalar('SELECT NOW() - INTERVAL 2 HOUR'));
+        $rows->saslLogEntry('alice@example.org', 'WEBUI', '198.51.100.20', (string) DB::scalar('SELECT NOW() - INTERVAL 1 DAY'));
+        $rows->saslLogEntry('alice@example.org', 'smtp', '203.0.113.7', (string) DB::scalar('SELECT NOW() - INTERVAL 3 DAY'), $phone);
     }
 }

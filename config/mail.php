@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Config\Env;
+
 /*
 |--------------------------------------------------------------------------
 | Mail (feature 005 research R6)
@@ -14,19 +16,19 @@
 
 return [
 
-    'default' => env('MAIL_MAILER', 'restv2_postfix'),
+    'default' => Env::get('MAIL_MAILER', 'restv2_postfix'),
 
     'mailers' => [
 
         'restv2_postfix' => [
             'transport' => 'smtp',
             'scheme' => 'smtp',
-            'host' => (string) env('RESTV2_SMTP_HOST', 'postfix-mailcow'),
-            'port' => (int) env('RESTV2_SMTP_PORT', 25),
+            'host' => (string) Env::get('RESTV2_SMTP_HOST', 'postfix-mailcow'),
+            'port' => (int) Env::get('RESTV2_SMTP_PORT', 25),
             'username' => null,
             'password' => null,
             'timeout' => 10,
-            'local_domain' => env('MAILCOW_HOSTNAME'),
+            'local_domain' => Env::get('MAILCOW_HOSTNAME'),
             'auto_tls' => true,
             'verify_peer' => false,
         ],
@@ -34,8 +36,8 @@ return [
     ],
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'noreply@localhost'),
-        'name' => env('MAIL_FROM_NAME', 'mailcow'),
+        'address' => Env::get('MAIL_FROM_ADDRESS', 'noreply@localhost'),
+        'name' => Env::get('MAIL_FROM_NAME', 'mailcow'),
     ],
 
 ];

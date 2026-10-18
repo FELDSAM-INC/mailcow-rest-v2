@@ -326,3 +326,48 @@ Contract changes made while implementing feature 010:
 
 Release checks of feature 010 (quickstart Part C): not run yet; the ISPConfig publication on staging
 is skipped by the owner.
+
+Contract: the 51 operations of feature 005 (account self-service):
+
+- Capabilities: `getSelfServiceCapabilities` (also signed out, for the reset availability).
+- Own password and second factors (sessions of every role): `changeOwnPassword`,
+  `getOwnPasswordPolicy`, `listOwnSecondFactors`, `enrolOwnSecondFactor`, `startOwnTotpEnrolment`,
+  `createOwnSecondFactorWebAuthnOptions`, `removeAllOwnSecondFactors`, `getOwnSecondFactor`,
+  `deleteOwnSecondFactor`.
+- Recovery address and password reset: `getOwnRecoveryEmail`, `replaceOwnRecoveryEmail`,
+  `requestPasswordReset`, `checkPasswordResetToken`, `createPasswordResetWebAuthnChallenge`,
+  `completePasswordReset`.
+- Own mailbox: `getOwnMailboxOverview`, `createWebmailHandOff`, `getOwnClientConfiguration`,
+  `getOwnAppleProfile`, `createOwnAppleProfileWithAppPassword`.
+- Mailbox self-service objects (the mailbox in the caller's scope): `listAppPasswords`,
+  `createAppPassword`, `getAppPassword`, `updateAppPassword`, `deleteAppPassword`,
+  `listTemporaryAliases`, `createTemporaryAlias`, `getTemporaryAlias`, `updateTemporaryAlias`,
+  `deleteTemporaryAlias`, `listTemporaryAliasDomains`, `getPushNotificationSettings`,
+  `replacePushNotificationSettings`, `deletePushNotificationSettings`,
+  `verifyPushNotificationSettings`, `getMailboxMailSettings`, `updateMailboxMailSettings`,
+  `applyMailboxMailSettingsBulkAction`, `listRecentLogins`, `clearRecentLogins`,
+  `resetActiveSyncCache`, `resetGroupwareProfile`.
+- Sieve filters: `listSieveFilters`, `validateSieveScript`, `listMailboxSieveFilters`,
+  `createSieveFilter`, `getSieveFilter`, `updateSieveFilter`, `deleteSieveFilter`,
+  `getActiveSieveScript`.
+
+Problem types: `current-password-incorrect`, `password-managed-externally`,
+`password-reset-unavailable`, `invalid-reset-token`, `second-factor-enrolment-expired`,
+`second-factor-enrolment-failed`, `last-second-factor`, `second-factor-required-by-policy`,
+`push-notifications-not-configured`, `groupware-disabled`. The shared enumerations gain feature
+005's audit event types, targets and failure reasons and its rule codes (`preHashedPassword`,
+`sieveSyntax`, `secretRequired`, `invalidRegex`, `notInList`).
+
+Contract changes made while implementing feature 005:
+
+- `Mailbox.mailSettingsVersion` (feature 003's representation): the version tag of the mailbox's
+  mail settings, sent as a bulk TLS target's `version` (gap G22).
+- `GET /sieve-filters` has an `id` filter (gap G23).
+- `RecentLogin.service` lists the known codes (`anyOf` an enumeration and any other code, gap G24).
+- The `PendingAction` and `pending-action-required` texts point to `PUT /me/password` and
+  `POST /me/second-factors` (gap G25); the reset link is `/ng/reset-password#token={token}` by
+  default, so the token stays out of server logs (gap G27).
+- The `Cache-Control` headers of the TOTP start, the webmail hand-off and the Apple profile contain
+  `no-store` (the server sends `no-store, private`) instead of being exactly `no-store`.
+
+Release checks of feature 005 (quickstart Part C): not run yet.

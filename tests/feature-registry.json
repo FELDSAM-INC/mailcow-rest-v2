@@ -94,17 +94,13 @@
         }
     },
     "pendingOperations": [
-        "listDomains",
         "createDomain",
         "applyDomainBulkAction",
-        "getDomain",
         "updateDomain",
         "deleteDomain",
         "previewDomainDeletion",
         "getDomainFooter",
         "replaceDomainFooter",
-        "getDomainsCapabilities",
-        "listDomainTags",
         "listDomainTemplates",
         "createDomainTemplate",
         "getDomainTemplate",

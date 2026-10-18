@@ -277,7 +277,7 @@ queries.
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T037 [P] [US1] Write `tests/Feature/Domains/ListDomainsTest.php` for `listDomains`
+- [X] T037 [P] [US1] Write `tests/Feature/Domains/ListDomainsTest.php` for `listDomains`
   (FR-001, FR-002, FR-011–FR-015):
   - AS-1: 60 domains, no parameters → the first 25 by name, `meta {total: 60, limit: 25, offset: 0}`;
     `limit=1000` returns all; `limit=1001` and `offset=-1` → `422`;
@@ -297,7 +297,7 @@ queries.
   - AS-6: a mailbox user → `403 forbidden`; a restricted session → `403 pending-action-required`;
     no authentication → `401`;
   - AS-10: each entry's `etag` equals the `ETag` of `getDomain` for that domain.
-- [ ] T038 [P] [US1] Write `tests/Feature/Domains/GetDomainTest.php` for `getDomain` (FR-006–FR-010,
+- [X] T038 [P] [US1] Write `tests/Feature/Domains/GetDomainTest.php` for `getDomain` (FR-006–FR-010,
   FR-016):
   - every member of `Domain` from seeded columns: quotas in bytes (`defquota 3072` → `3221225472`),
     booleans, `description`, `createdAt` converted from `TZ=Europe/Prague` to UTC, `modifiedAt`
@@ -312,14 +312,14 @@ queries.
     an invalid name → `404`;
   - the `ETag` header equals `data.etag`; a change made through SQL (the legacy UI) is visible in the
     next read (FR-061); mailbox user → `403 forbidden`.
-- [ ] T039 [P] [US1] Write `tests/Feature/Domains/DomainUsageParityTest.php` (SC-001): create
+- [X] T039 [P] [US1] Write `tests/Feature/Domains/DomainUsageParityTest.php` (SC-001): create
   `tests/fixtures/legacy/domain_details_queries.php`, holding the SQL statements of legacy
   `mailbox('get', 'domain_details')` copied verbatim from `2026-09a` with the tag and source SHA-256
   in a header. For a fixture of 12 domains in every relay state with mailboxes, resources, aliases,
   alias domains, aliases that are mailbox addresses and `quota2` rows, every figure of `getDomain`
   equals the legacy query result (`mboxes_in_domain`, `aliases_in_domain`, `quota_used_in_domain`,
   `bytes_total`, `msgs_total`, `max_new_mailbox_quota` where non-negative, `def_new_mailbox_quota`).
-- [ ] T040 [P] [US1] Write `tests/Feature/Domains/DomainCapabilitiesTest.php` for
+- [X] T040 [P] [US1] Write `tests/Feature/Domains/DomainCapabilitiesTest.php` for
   `getDomainsCapabilities` (FR-028, FR-064, SC-012, AS-11 of US2):
   - administrator: `groupwareEnabled true`, `taggingLimit 25`, `maxTagLength 255`,
     `maxDescriptionLength 255`, `footerTextMaxBytes 1048576`, `bulkLimit 100`, `defaultPageSize 25`,
@@ -330,7 +330,7 @@ queries.
     user and password → `dnsPublicationEnabled true`, with the URL missing → `false`;
   - a domain administrator gets no `dkim`; a read-only key works; a mailbox user → `403`;
   - the body never contains the ISPConfig URL, user or password.
-- [ ] T041 [P] [US1] Write `tests/Feature/Domains/ListDomainTagsTest.php` for `listDomainTags`
+- [X] T041 [P] [US1] Write `tests/Feature/Domains/ListDomainTagsTest.php` for `listDomainTags`
   (FR-066): AS-9 (three domains tagged `gold`, one outside the domain administrator's scope →
   `{name: gold, domainCount: 2}`); `Gold` and `gold` on different domains count together; a tag only
   on out-of-scope domains is absent; `q`, `sort=domainCount`, `order`, paging and `meta.total`;
@@ -338,21 +338,21 @@ queries.
 
 ### Implementation for User Story 1
 
-- [ ] T042 [US1] Create `app/Services/Domains/DomainPresenter.php` (rows + tags + usage + rate limit
+- [X] T042 [US1] Create `app/Services/Domains/DomainPresenter.php` (rows + tags + usage + rate limit
   + relayhost + version → the `Domain` shape, `domainAdmins` only for administrators) and
   `app/Http/Resources/Api/V2/DomainResource.php`.
-- [ ] T043 [US1] Create `app/Services/Domains/DomainQuery.php` (D6: scope, `q` including the Unicode
+- [X] T043 [US1] Create `app/Services/Domains/DomainQuery.php` (D6: scope, `q` including the Unicode
   match, filters, sorts with derived usage tables, ties by name, total) and
   `app/Http/Requests/Api/V2/ListDomainsRequest.php` (`ListQuery` with the `DomainSort` values;
   `active`, `backupMx` booleans; `tag` array of at most 100 strings of 1–255 characters).
-- [ ] T044 [US1] Create `app/Http/Controllers/Api/V2/DomainController.php` with `index` and `show`
+- [X] T044 [US1] Create `app/Http/Controllers/Api/V2/DomainController.php` with `index` and `show`
   (`ETag` header), and register `GET /domains` and `GET /domains/{domain}` in `routes/api.php` with
   `restv2.auth:authenticated` and `restv2.pending`. This makes the list, get and parity tests pass.
-- [ ] T045 [P] [US1] Create `app/Services/Domains/DomainCapabilitiesService.php`,
+- [X] T045 [P] [US1] Create `app/Services/Domains/DomainCapabilitiesService.php`,
   `app/Http/Resources/Api/V2/DomainCapabilitiesResource.php` and
   `app/Http/Controllers/Api/V2/DomainCapabilitiesController.php` (`show`); register
   `GET /capabilities/domains`.
-- [ ] T046 [P] [US1] Create `app/Services/Domains/DomainTagSummaryQuery.php` (D23),
+- [X] T046 [P] [US1] Create `app/Services/Domains/DomainTagSummaryQuery.php` (D23),
   `app/Http/Requests/Api/V2/ListDomainTagsRequest.php`,
   `app/Http/Resources/Api/V2/DomainTagSummaryResource.php` and
   `app/Http/Controllers/Api/V2/DomainTagController.php` (`index`); register `GET /domain-tags`.

@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\V2\ApiKeyOwnerCandidateController;
 use App\Http\Controllers\Api\V2\ApiKeyRevocationController;
 use App\Http\Controllers\Api\V2\AuditEventController;
 use App\Http\Controllers\Api\V2\CsrfTokenController;
+use App\Http\Controllers\Api\V2\DomainCapabilitiesController;
+use App\Http\Controllers\Api\V2\DomainController;
+use App\Http\Controllers\Api\V2\DomainTagController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\LivenessController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
@@ -131,6 +134,18 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     });
 
     // The audit log (FR-047): administrators, with a session or a key. Read only.
+    // Feature 002: domains. Specific routes (bulk-actions, sub-resources) before /domains/{domain};
+    // the capabilities and the distinct tags live at top-level paths, so that single-label domain
+    // names such as "tags" stay addressable.
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/domains', [DomainController::class, 'index'])->name('domains.index');
+        Route::get('/capabilities/domains', [DomainCapabilitiesController::class, 'show'])->name('domain-capabilities.show');
+        Route::get('/domain-tags', [DomainTagController::class, 'index'])->name('domain-tags.index');
+        Route::get('/domains/{domain}', [DomainController::class, 'show'])
+            ->where('domain', '[^/]+')
+            ->name('domains.show');
+    });
+
     Route::get('/audit-events', [AuditEventController::class, 'index'])
         ->middleware(['restv2.auth:authenticated', 'restv2.pending'])
         ->name('audit-events.index');

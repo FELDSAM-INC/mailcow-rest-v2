@@ -15,6 +15,7 @@ parameters:
     # Symbols of the excluded legacy fixtures that tests call (legacy_verify_hash()).
     scanFiles:
         - tests/fixtures/legacy/verify_hash.php
+        - tests/fixtures/legacy/syncjob_validation.php
     excludePaths:
         # Legacy code copied verbatim from mailcow (tests/fixtures/legacy) and mailcow's vars files.
         - tests/fixtures/*

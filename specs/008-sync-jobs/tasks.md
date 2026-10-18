@@ -57,7 +57,7 @@ first. Create a new one only when none exists (`docs/conventions.md`: implemente
 
 **Purpose**: Settings, legacy oracles and fixtures. No business logic.
 
-- [ ] T001 Check the prerequisites and record the names you find in the PR description. Search
+- [X] T001 Check the prerequisites and record the names you find in the PR description. Search
   `app/` for each of the following:
   - 002's port of `is_valid_domain_name`;
   - 002's bulk-result plumbing (a class building `BulkResult`);
@@ -70,12 +70,12 @@ first. Create a new one only when none exists (`docs/conventions.md`: implemente
   refused requests from the problem rendering in `bootstrap/app.php`). Record the names you find in
   a short "Resolved shared components" note at the end of this file, so later tasks use them. Then
   run `composer contract:lint`. It must report no problem in `api/modules/sync-jobs/`.
-- [ ] T002 Add the sync-job settings to `config/restv2.php` (R18):
+- [X] T002 Add the sync-job settings to `config/restv2.php` (R18):
   - `'sync_jobs' => ['custom_params_admin_only' => env('RESTV2_SYNC_JOBS_CUSTOM_PARAMS_ADMIN_ONLY', 'n') === 'y', 'bulk_limit' => max(1, min(1000, (int) env('RESTV2_SYNC_JOBS_BULK_LIMIT', 100)))]`;
   - `'IMAPSYNC_OPTIONS' => 'RESTV2_IMAPSYNC_OPTIONS'` in `vars_overrides`.
 
   Document the three variables in `.env.example`, commented out.
-- [ ] T003 [P] Create `scripts/legacy/extract-syncjob-validation.sh <tag>`, modelled on 001's
+- [X] T003 [P] Create `scripts/legacy/extract-syncjob-validation.sh <tag>`, modelled on 001's
   `scripts/legacy/extract-verify-hash.sh` (R20). It works from two upstream files:
   - from `git show <tag>:data/web/inc/functions.mailbox.inc.php`: the first block from the line
     `// validate custom params` to the line before `if (empty($subfolder2)) {` (the add path). It
@@ -91,7 +91,7 @@ first. Create a new one only when none exists (`docs/conventions.md`: implemente
   It writes both to `tests/fixtures/legacy/syncjob_validation.php` with a header (tag, SHA-256 of
   both source files, GPL-3.0 notice). Run it for `2026-09a` and commit the output. The script
   refuses non-tag refs.
-- [ ] T004 [P] Create `tests/fixtures/mailcow-inc-imapsync/vars.inc.php` (a copy of 001's
+- [X] T004 [P] Create `tests/fixtures/mailcow-inc-imapsync/vars.inc.php` (a copy of 001's
   `tests/fixtures/mailcow-inc/vars.inc.php`) and `tests/fixtures/mailcow-inc-imapsync/vars.local.inc.php`.
   The local file sets `$IMAPSYNC_OPTIONS['whitelist'] = ['maxsize', 'minage', 'showpasswords',
   'MixedCase']`, used by T007.
@@ -964,3 +964,48 @@ operations.
   upstream table. The only migration touches `restv2_audit_events`.
 - Never log or audit request bodies of this feature: they can contain the remote password.
 - Commit after each task or logical group, with short imperative subjects and no AI attribution.
+
+## Implementation notes (2026-10-18)
+
+Deviations and decisions made while implementing, with the reason. Names in tasks that differ from
+what exists map as listed.
+
+### Resolved shared components (T001)
+
+Checked on `main` at `e21f5ee`:
+
+- **002's port of `is_valid_domain_name()`**: `App\Support\Domain\DomainName::isValid()`.
+  `App\Rules\SyncJobHostName` wraps it; no `LegacyDomainName` was created.
+- **Bulk plumbing**: `App\Support\Bulk\BulkActionRunner` (dedupe, `If-Match` from `version`, item
+  outcomes, refusal records with `bulkRequestId`) and `BulkOutcome`. No `BulkResultBuilder` was
+  created.
+- **Refusal hook**: `App\Services\Audit\RefusalAuditor` (route default `restv2.audit`,
+  `resolveTargetsWith()`), wired into the problem rendering of `bootstrap/app.php`, with
+  `App\Exceptions\CarriesAuditDetails`. This feature only registers its `syncJob` resolver
+  (`App\Services\SyncJobs\SyncJobAuditTargets`), as 002, 003 and 004 do.
+- **Permission refusals**: `App\Exceptions\PermissionFlagRequiredException` and the
+  `ProblemType::PermissionFlagRequired` case (002).
+- **Detail whitelists**: `App\Audit\AuditEventType::detailKeys()` (001's design), not
+  `AuditLogger`, as 004 noted.
+- **004 models and helpers**: `App\Models\Mailcow\Alias`, `App\Models\Mailcow\AliasDomain`,
+  `MailcowRows::alias()` and `MailcowRows::aliasDomain()` exist.
+- **003**: `App\Support\Database\NamedLock` (named locks), `App\Services\Mailboxes\MailboxScope`
+  and `App\Services\Domains\DomainScope` (domain scope), `MailcowRows::syncJob(string $user2)`
+  (extended here with overrides, see T006). The mailbox rename and deletion stories, which move and
+  remove `imapsync` rows, are still in `wt/003`; this feature does not duplicate them, and none of
+  its tasks depends on them.
+- **001**: `MailcowConfig` (extended with `imapsyncOptions()`), `ListQuery`, `ETag`,
+  `ApiFormRequest`, `FieldViolations`, `StrictBoolean`, `QueryBoolean`, `MailcowDateTime`,
+  `IdentityService::permissions()` and `scope()`.
+- **History filters**: `targetType` and `targetId` exist in `api/modules/audit/audit-events.yaml`;
+  `ListAuditEventsRequest` accepts any `targetType` string, so T062 needs no code.
+- `composer contract:lint` reports no problem (`api/modules/sync-jobs/` included).
+
+### Decisions
+
+- **T002**: `RESTV2_SYNC_JOBS_BULK_LIMIT` is clamped to 1–100, not 1–1000: `docs/conventions.md`
+  allows at most 100 objects per bulk request, and 003's `RESTV2_BULK_LIMIT` is clamped the same
+  way (a setting can lower the limit, never raise it).
+- **T004**: the override fixtures are written at test time into a copy of 001's
+  `tests/fixtures/mailcow-inc` (as 003 T003 and 004 T002 did), instead of committing a second copy
+  of upstream's `vars.inc.php`.

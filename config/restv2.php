@@ -124,6 +124,20 @@ return [
     // Targets per mailbox bulk action (1 to 100; a setting can lower the limit, never raise it).
     'bulk_limit' => max(1, min(100, (int) env('RESTV2_BULK_LIMIT', 100))),
 
+    /*
+    |----------------------------------------------------------------------
+    | Sync jobs (feature 008 research R18)
+    |----------------------------------------------------------------------
+    */
+
+    'sync_jobs' => [
+        // `y` restricts custom imapsync parameters to administrators (FR-006). Legacy: unrestricted.
+        'custom_params_admin_only' => env('RESTV2_SYNC_JOBS_CUSTOM_PARAMS_ADMIN_ONLY', 'n') === 'y',
+        // Targets per sync-job bulk action (1 to 100, docs/conventions.md "Bulk actions"; a setting
+        // can lower the limit, never raise it).
+        'bulk_limit' => max(1, min(100, (int) env('RESTV2_SYNC_JOBS_BULK_LIMIT', 100))),
+    ],
+
     // Development only (APP_ENV=local): binds the dockerapi, memcached and ISPConfig fakes, because
     // the dev stack runs none of these services. Ignored in every other environment. Feature 011
     // adds its stand-ins (Rspamd, release source, IP check) and recorded monitoring payloads.
@@ -232,6 +246,9 @@ return [
         'MAILCOW_GIT_COMMIT' => env('RESTV2_MAILCOW_GIT_COMMIT'),
         'MAILCOW_GIT_COMMIT_DATE' => env('RESTV2_MAILCOW_GIT_COMMIT_DATE'),
         'MAILCOW_BRANCH' => env('RESTV2_MAILCOW_BRANCH'),
+        // Feature 008: the custom imapsync parameter allow-list, JSON {"whitelist": [...],
+        // "blacklist": [...]} (research R7). `showpasswords` is always removed.
+        'IMAPSYNC_OPTIONS' => env('RESTV2_IMAPSYNC_OPTIONS'),
     ],
 
     // Upstream defaults of mailcow-dockerized 2026-09a (data/web/inc/vars.inc.php).
@@ -316,6 +333,36 @@ return [
         'MAILCOW_GIT_COMMIT' => null,
         'MAILCOW_GIT_COMMIT_DATE' => null,
         'MAILCOW_BRANCH' => null,
+        // $IMAPSYNC_OPTIONS of vars.inc.php at 2026-09a, verbatim: 114 allowed and 8 blocked
+        // options (feature 008 research R7). Legacy checks only the whitelist.
+        'IMAPSYNC_OPTIONS' => [
+            'whitelist' => [
+                'abort', 'authmd51', 'authmd52', 'authmech1', 'authmech2', 'authuser1', 'authuser2',
+                'debug', 'debugcontent', 'debugcrossduplicates', 'debugflags', 'debugfolders',
+                'debugimap', 'debugimap1', 'debugimap2', 'debugmemory', 'debugssl',
+                'delete1emptyfolders', 'delete2folders', 'disarmreadreceipts', 'domain1', 'domain2',
+                'domino1', 'domino2', 'dry', 'errorsmax', 'exchange1', 'exchange2', 'exitwhenover',
+                'expunge1', 'f1f2', 'filterbuggyflags', 'folder', 'folderfirst', 'folderlast',
+                'folderrec', 'gmail1', 'gmail2', 'idatefromheader', 'include', 'inet4', 'inet6',
+                'justconnect', 'justfolders', 'justfoldersizes', 'justlogin', 'keepalive1',
+                'keepalive2', 'log', 'logdir', 'logfile', 'maxbytesafter', 'maxlinelength',
+                'maxmessagespersecond', 'maxsize', 'maxsleep', 'minage', 'minsize', 'noabletosearch',
+                'noabletosearch1', 'noabletosearch2', 'noexpunge1', 'noexpunge2',
+                'nofoldersizesatend', 'noid', 'nolog', 'nomixfolders', 'noresyncflags', 'nossl1',
+                'nossl2', 'nosyncacls', 'notls1', 'notls2', 'nouidexpunge2', 'nousecache',
+                'oauthaccesstoken1', 'oauthaccesstoken2', 'oauthdirect1', 'oauthdirect2', 'office1',
+                'office2', 'pidfile', 'pidfilelocking', 'prefix1', 'prefix2', 'proxyauth1',
+                'proxyauth2', 'resyncflags', 'resynclabels', 'search', 'search1', 'search2', 'sep1',
+                'sep2', 'showpasswords', 'skipemptyfolders', 'ssl2', 'sslargs1', 'sslargs2',
+                'subfolder1', 'subscribe', 'subscribed', 'syncacls', 'syncduplicates',
+                'syncinternaldates', 'synclabels', 'tests', 'testslive', 'testslive6', 'tls2',
+                'truncmess', 'usecache', 'useheader', 'useuid',
+            ],
+            'blacklist' => [
+                'skipmess', 'delete2foldersonly', 'delete2foldersbutnot', 'regexflag', 'regexmess',
+                'pipemess', 'regextrans2', 'maxlinelengthcmd',
+            ],
+        ],
     ],
 
 ];

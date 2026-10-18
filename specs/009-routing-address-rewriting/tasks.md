@@ -876,7 +876,7 @@ audit log filtered by target type and identifier.
 
 ### Tests for User Story 9 (write first, observe failing) ⚠️
 
-- [ ] T096 [P] [US9] Write `tests/Feature/Routing/Audit/RoutingAuditTrailTest.php` against 001's
+- [X] T096 [P] [US9] Write `tests/Feature/Routing/Audit/RoutingAuditTrailTest.php` against 001's
   `listAuditEvents` with 002's `targetType` and `targetId` filters (FR-085, FR-086, SC-008):
   - AS-1: a relayhost password change is listed for `targetType=relayhost&targetId=<id>` with the
     actor, time, client address and `password: changed`, and no password;
@@ -892,7 +892,7 @@ audit log filtered by target type and identifier.
 
 ### Implementation for User Story 9
 
-- [ ] T097 [US9] Confirm that 002's `targetType` filter accepts the eight new `AuditTarget` values
+- [X] T097 [US9] Confirm that 002's `targetType` filter accepts the eight new `AuditTarget` values
   (it references `AuditTarget.yaml#/properties/type`) and that assignment records store the ASCII
   domain name or the normalised address as `target_id`. Fix only this feature's code
   (`RoutingAudit`) if T096 fails. This makes T096 pass.
@@ -1156,4 +1156,8 @@ what exists map as listed.
   `format: domainName` (the forwarding host input is either a literal or a name).
 - **T094, T095**: no resource classes (the service builds the representations). The patch accepts
   `etag` unchanged besides `address` and `source`, as its schema now says.
+- **T096, T097**: the trail test passed on its first run: the target IDs of the success records
+  (services) and of the refusal records (`RoutingAuditTargets`) already match 002's `targetType`
+  and `targetId` filters, so no code changed. The audit-count check covers one scenario per
+  collection (success and refusal) and a bulk request instead of a helper over every other test.
 

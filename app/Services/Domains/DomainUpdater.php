@@ -22,6 +22,10 @@ use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
  * owns), the tag set replacement and the audit record with each change's old and new value. A
  * patch that changes nothing writes nothing but is audited with empty changes. After the commit the
  * groupware directory is rebuilt, unless nothing changed or the bulk caller defers it.
+ *
+ * The default mailbox quota (`defquota`) is not editable (owner decision 2026-10-18). A change of
+ * the maximum mailbox quota lowers a larger stored default to it, so that legacy's edit form keeps
+ * accepting the domain; this is not one of the audited changes.
  */
 class DomainUpdater
 {
@@ -33,7 +37,6 @@ class DomainUpdater
         'active' => 'active',
         'maxMailboxes' => 'mailboxes',
         'maxAliases' => 'aliases',
-        'defaultMailboxQuota' => 'defquota',
         'maxMailboxQuota' => 'maxquota',
         'domainQuota' => 'quota',
         'backupMx' => 'backupmx',
@@ -91,7 +94,13 @@ class DomainUpdater
             $changes = self::changes($current, $values);
 
             if ($changes !== []) {
-                $this->write($name, $values, isset($changes['tags']));
+                $defquota = (int) $row->defquota;
+
+                if (isset($changes['maxMailboxQuota'])) {
+                    $defquota = min($defquota, intdiv($values['maxMailboxQuota'], self::MIB));
+                }
+
+                $this->write($name, $values, $defquota, isset($changes['tags']));
             }
 
             $details = ['changes' => $changes === [] ? new stdClass : $changes];
@@ -125,7 +134,6 @@ class DomainUpdater
             'active' => (bool) $row->active,
             'maxMailboxes' => (int) $row->mailboxes,
             'maxAliases' => (int) $row->aliases,
-            'defaultMailboxQuota' => (int) $row->defquota * self::MIB,
             'maxMailboxQuota' => (int) $row->maxquota * self::MIB,
             'domainQuota' => (int) $row->quota * self::MIB,
             'backupMx' => (bool) $row->backupmx,
@@ -241,8 +249,9 @@ class DomainUpdater
 
     /**
      * @param  array<string, mixed>  $values
+     * @param  int  $defquota  the default mailbox quota to keep for legacy, MiB
      */
-    private function write(string $name, array $values, bool $tagsChanged): void
+    private function write(string $name, array $values, int $defquota, bool $tagsChanged): void
     {
         DB::table('domain')->where('domain', $name)->update([
             'relay_all_recipients' => (int) $values['relayAllRecipients'],
@@ -251,7 +260,7 @@ class DomainUpdater
             'gal' => (int) $values['globalAddressList'],
             'active' => (int) $values['active'],
             'quota' => intdiv($values['domainQuota'], self::MIB),
-            'defquota' => intdiv($values['defaultMailboxQuota'], self::MIB),
+            'defquota' => $defquota,
             'maxquota' => intdiv($values['maxMailboxQuota'], self::MIB),
             'mailboxes' => $values['maxMailboxes'],
             'aliases' => $values['maxAliases'],

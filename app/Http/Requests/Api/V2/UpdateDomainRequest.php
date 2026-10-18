@@ -49,7 +49,6 @@ class UpdateDomainRequest extends ApiFormRequest
             'active' => $flag,
             'maxMailboxes' => $limit,
             'maxAliases' => $limit,
-            'defaultMailboxQuota' => $quota,
             'maxMailboxQuota' => $quota,
             'domainQuota' => $quota,
             'backupMx' => $flag,

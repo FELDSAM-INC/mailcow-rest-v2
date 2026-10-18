@@ -41,10 +41,6 @@ class DomainUsageParityTest extends TestCase
         if ($maxNew > ($row['maxquota'] * 1048576)) {
             $maxNew = ($row['maxquota'] * 1048576);
         }
-        $defNew = $maxNew;
-        if ($defNew > ($row['defquota'] * 1048576)) {
-            $defNew = ($row['defquota'] * 1048576);
-        }
 
         return [
             'mboxes_in_domain' => (int) $mailboxes['count'],
@@ -55,7 +51,6 @@ class DomainUsageParityTest extends TestCase
             'bytes_total' => (int) ($quota['bytes_total'] ?? 0),
             'msgs_total' => (int) ($quota['msgs_total'] ?? 0),
             'max_new_mailbox_quota' => (int) $maxNew,
-            'def_new_mailbox_quota' => (int) $defNew,
         ];
     }
 
@@ -115,7 +110,8 @@ class DomainUsageParityTest extends TestCase
             $this->assertSame($legacy['msgs_total'], $usage['messages'], "{$d} messages");
             // Legacy can go below zero; FR-008 floors at zero.
             $this->assertSame(max(0, $legacy['max_new_mailbox_quota']), $usage['maxNewMailboxQuota'], "{$d} maxNewMailboxQuota");
-            $this->assertSame(max(0, $legacy['def_new_mailbox_quota']), $usage['defaultNewMailboxQuota'], "{$d} defaultNewMailboxQuota");
+            // def_new_mailbox_quota derives from the default mailbox quota, which the API does not expose (owner decision 2026-10-18).
+            $this->assertArrayNotHasKey('defaultNewMailboxQuota', $usage, "{$d} defaultNewMailboxQuota");
         }
     }
 }

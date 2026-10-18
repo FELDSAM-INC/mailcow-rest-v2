@@ -113,16 +113,20 @@ class CreateMailboxTemplatesTest extends TestCase
         $this->assertFalse($data['userPermissions']['syncjobs']);
     }
 
-    public function test_without_a_named_template_the_default_template_applies_except_its_quota(): void
+    public function test_without_a_named_template_the_default_template_applies_with_its_quota(): void
     {
-        $this->mailcow()->defaultMailboxTemplate(['pop3_access' => 0, 'quota' => 0]);
+        // Owner decision 2026-10-18: the domain's default mailbox quota (3,072 MiB here) no longer applies.
+        $this->mailcow()->defaultMailboxTemplate(['pop3_access' => 0, 'quota' => 2 * self::GIB]);
         $this->asAdmin();
 
         $data = $this->createMailbox(['localPart' => 'anna', 'domain' => 'example.org', 'password' => '{PLAIN}x'])->assertCreated()->json('data');
 
         $this->assertFalse($data['protocolAccess']['pop3']);
-        $this->assertSame(3072 * self::MIB, $data['quota'], 'The domain default, not the Default template\'s unlimited quota.');
+        $this->assertSame(2 * self::GIB, $data['quota'], 'The Default template\'s quota, not the domain\'s default mailbox quota.');
         $this->assertNull($this->auditOf('mailboxCreation')[0]->details['templateId']);
+
+        DB::table('templates')->where('type', 'mailbox')->update(['attributes' => json_encode(['quota' => 0])]);
+        $this->createMailbox(['localPart' => 'bob', 'domain' => 'example.org', 'password' => '{PLAIN}x'])->assertCreated()->assertJsonPath('data.quota', 0);
     }
 
     public function test_without_any_template_the_built_in_defaults_apply_and_follow_the_server_setting(): void
@@ -136,6 +140,7 @@ class CreateMailboxTemplatesTest extends TestCase
         $this->assertSame('never', $data['quarantineNotification']);
         $this->assertSame('active', $data['status']);
         $this->assertSame('rejected', $data['quarantineCategory']);
+        $this->assertSame(0, $data['quota'], 'The built-in unlimited quota.');
         $this->assertSame('0', $this->mailboxAttributes('anna@example.org')['sogo_access']);
     }
 

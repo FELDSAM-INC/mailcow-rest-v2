@@ -30,7 +30,7 @@ class ValidationRuleCodeTest extends TestCase
         Route::middleware('api.v2')->post('/api/v2/__testing/domain-rules', fn (DomainRulesProbeRequest $request) => response()->noContent());
         Route::middleware('api.v2')->post('/api/v2/__testing/field-violations', function (): never {
             $violations = new FieldViolations;
-            $violations->add('defaultMailboxQuota', 'mustNotExceed', ['field' => 'maxMailboxQuota', 'value' => 1048576]);
+            $violations->add('maxMailboxQuota', 'mustNotExceed', ['field' => 'domainQuota', 'value' => 1048576]);
             $violations->add('maxMailboxes', 'belowInUse', ['inUse' => 8]);
             $violations->add('name', 'reserved');
             $violations->add('createdAt', 'immutable');
@@ -268,7 +268,7 @@ class ValidationRuleCodeTest extends TestCase
     {
         $errors = $this->errors([], '/api/v2/__testing/field-violations');
 
-        $this->assertViolation($errors, 'defaultMailboxQuota', 'mustNotExceed', ['field' => 'maxMailboxQuota', 'value' => 1048576]);
+        $this->assertViolation($errors, 'maxMailboxQuota', 'mustNotExceed', ['field' => 'domainQuota', 'value' => 1048576]);
         $this->assertViolation($errors, 'maxMailboxes', 'belowInUse', ['inUse' => 8]);
         $this->assertViolation($errors, 'name', 'reserved');
         $this->assertViolation($errors, 'createdAt', 'immutable');

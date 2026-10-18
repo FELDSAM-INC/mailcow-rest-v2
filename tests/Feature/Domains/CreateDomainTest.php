@@ -42,7 +42,7 @@ class CreateDomainTest extends TestCase
         $this->assertSame('example.org', $data['description']);
         $this->assertSame(10, $data['maxMailboxes']);
         $this->assertSame(400, $data['maxAliases']);
-        $this->assertSame(3072 * self::MIB, $data['defaultMailboxQuota']);
+        $this->assertArrayNotHasKey('defaultMailboxQuota', $data);
         $this->assertSame(10240 * self::MIB, $data['maxMailboxQuota']);
         $this->assertSame(10240 * self::MIB, $data['domainQuota']);
         $this->assertTrue($data['active']);
@@ -97,11 +97,6 @@ class CreateDomainTest extends TestCase
     public function test_quotas_must_be_in_order(): void
     {
         $this->asAdmin();
-
-        $this->create(['name' => 'a.example', 'defaultMailboxQuota' => 2048 * self::MIB, 'maxMailboxQuota' => 1024 * self::MIB])
-            ->assertStatus(422)
-            ->assertJsonPath('errors.defaultMailboxQuota.0.code', 'mustNotExceed')
-            ->assertJsonPath('errors.defaultMailboxQuota.0.params', ['field' => 'maxMailboxQuota', 'value' => 1024 * self::MIB]);
 
         $this->create(['name' => 'b.example', 'maxMailboxQuota' => 20480 * self::MIB, 'domainQuota' => 10240 * self::MIB])
             ->assertStatus(422)
@@ -200,7 +195,7 @@ class CreateDomainTest extends TestCase
 
         $this->assertSame(10, $data['maxMailboxes']);
         $this->assertSame(400, $data['maxAliases']);
-        $this->assertSame(3072 * self::MIB, $data['defaultMailboxQuota']);
+        $this->assertSame(10240, (int) $this->domainRow('example.org')?->defquota);
         $this->assertSame('feldhost', $this->redis()->hGet('DKIM_SELECTORS', 'example.org'));
     }
 

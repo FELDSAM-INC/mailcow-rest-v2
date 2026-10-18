@@ -185,9 +185,9 @@ class MailboxDefaults
 
     /**
      * Creation values (FR-022): each value from the request, else the named template, else the
-     * Default template, else the built-in defaults. The quota is the request's or the named
-     * template's; null means the domain's default quota for a new mailbox applies. The baseline is
-     * what the mailbox would get without the request (MailboxPermissionGuard compares with it).
+     * Default template, else the built-in defaults, the quota included (owner decision 2026-10-18:
+     * the domain's default mailbox quota no longer applies). The baseline is what the mailbox would
+     * get without the request (MailboxPermissionGuard compares with it).
      *
      * @param  array<string, mixed>  $request  the request's value members (contract names)
      * @param  array<string, mixed>|null  $named  the named template's decoded values
@@ -196,7 +196,6 @@ class MailboxDefaults
     public function resolve(array $request, ?array $named, ?array $default): ResolvedMailboxValues
     {
         $baseline = self::merge(self::merge($this->builtIn(), $default ?? []), $named ?? []);
-        $baseline['quota'] = $named !== null && array_key_exists('quota', $named) ? $named['quota'] : null;
 
         return new ResolvedMailboxValues(self::merge($baseline, $request), $baseline);
     }

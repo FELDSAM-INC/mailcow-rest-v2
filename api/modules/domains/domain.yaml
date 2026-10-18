@@ -5,9 +5,9 @@ get:
   tags: [Domains]
   summary: Get a domain
   description: |
-    Returns one domain in the caller's scope with its usage figures, including the values a
-    mailbox form needs (`usage.maxNewMailboxQuota`, `usage.defaultNewMailboxQuota`) and the numbers
-    a deletion would remove. Domain administrators never receive `domainAdmins`.
+    Returns one domain in the caller's scope with its usage figures, including the value a mailbox
+    form needs (`usage.maxNewMailboxQuota`) and the numbers a deletion would remove. Domain
+    administrators never receive `domainAdmins`.
   security:
     - sessionCookie: []
     - apiKeyAuth: []

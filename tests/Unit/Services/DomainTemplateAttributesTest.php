@@ -27,7 +27,6 @@ class DomainTemplateAttributesTest extends TestCase
             'tags' => [],
             'maxMailboxes' => 10,
             'maxAliases' => 400,
-            'defaultMailboxQuota' => 3072 * self::MIB,
             'maxMailboxQuota' => 10240 * self::MIB,
             'domainQuota' => 10240 * self::MIB,
             'rateLimit' => null,
@@ -57,12 +56,22 @@ class DomainTemplateAttributesTest extends TestCase
         $this->assertSame(['gold', 'silver'], $values['tags']);
         $this->assertSame(5, $values['maxMailboxes']);
         $this->assertSame(400, $values['maxAliases']);
-        $this->assertSame(1024 * self::MIB, $values['defaultMailboxQuota']);
+        $this->assertArrayNotHasKey('defaultMailboxQuota', $values);
         $this->assertSame(['value' => 10, 'frame' => 'hour'], $values['rateLimit']);
         $this->assertSame(512, $values['dkimKeySize']);
         $this->assertFalse($values['globalAddressList']);
         $this->assertTrue($values['active']);
         $this->assertSame('dkim', $values['dkimSelector']);
+    }
+
+    public function test_the_legacy_default_mailbox_quota_is_read_apart_from_the_values(): void
+    {
+        // Owner decision 2026-10-18: kept for legacy's add form, never one of the values.
+        $this->assertSame(1024 * self::MIB, $this->codec()->storedDefaultQuota('{"def_quota_for_mbox":"1073741824"}'));
+        $this->assertSame(0, $this->codec()->storedDefaultQuota('{"def_quota_for_mbox":0}'));
+        $this->assertNull($this->codec()->storedDefaultQuota('{"def_quota_for_mbox":"x"}'));
+        $this->assertNull($this->codec()->storedDefaultQuota('{}'));
+        $this->assertNull($this->codec()->storedDefaultQuota(null));
     }
 
     public function test_rate_limits_of_every_legacy_spelling(): void
@@ -101,13 +110,13 @@ class DomainTemplateAttributesTest extends TestCase
             'backupMx' => true,
         ]);
 
-        $stored = json_decode($this->codec()->encode($values), true);
+        $stored = json_decode($this->codec()->encode($values, 2048 * self::MIB), true);
 
         $this->assertSame([
             'tags' => ['gold'],
             'max_num_aliases_for_domain' => 0,
             'max_num_mboxes_for_domain' => 5,
-            'def_quota_for_mbox' => 3072 * self::MIB,
+            'def_quota_for_mbox' => 2048 * self::MIB,
             'max_quota_for_mbox' => 10240 * self::MIB,
             'max_quota_for_domain' => 10240 * self::MIB,
             'rl_frame' => 'd',
@@ -121,7 +130,7 @@ class DomainTemplateAttributesTest extends TestCase
             'key_size' => 2048,
         ], $stored);
 
-        $none = json_decode($this->codec()->encode($this->codec()->defaults()), true);
+        $none = json_decode($this->codec()->encode($this->codec()->defaults(), 10240 * self::MIB), true);
         $this->assertSame('', $none['rl_value']);
         $this->assertSame('s', $none['rl_frame']);
     }

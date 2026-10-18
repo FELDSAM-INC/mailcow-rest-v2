@@ -1158,3 +1158,13 @@ what exists map as listed.
 - **T097** (Part C on a mailcow host) ran partly on 2026-10-18 (see the task) and stays open for
   step 2's run with `MAILCOW_PASS_SCHEME=SSHA512`, the outage checks of steps 4 and 5 and a
   multi-target bulk action, which the empty `RESTV2_BULK_LIMIT` of the deploy example blocks.
+- **Quota default without the domain default (owner decision, 2026-10-18)**: feature 002 removed the
+  domain's default mailbox quota from the API, so `MailboxCreator` no longer falls back to
+  `usage.defaultNewMailboxQuota` (now gone). The quota follows the template chain like every other
+  value (`MailboxDefaults::resolve()`): request, named template, Default template, built-in
+  unlimited quota, as legacy's server does. Plan parity note 6 (a domain default of 0 only because no
+  quota is left) no longer applies and its special refusal was removed; a template's quota is
+  checked against the quota left like a sent one. A domain administrator without `unlimitedQuota`
+  who sends no quota while the chain gives 0 is refused with `403 attribute-not-permitted`, as for
+  any template-given unlimited quota. FR-022, US2 scenario 7, the quota clarification, the two
+  parity rows, `MailboxCreateRequest` and `MailboxTemplateDefaults` were updated.

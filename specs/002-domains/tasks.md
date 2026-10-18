@@ -1014,3 +1014,18 @@ Deviations and decisions made while implementing, with the reason:
   lost `groupwareDirectoryUpdate` (contract and audit record). The requested SOGo restart is
   unchanged. The parity table, FR-023, FR-025 and T048 were corrected.
 
+- **Default mailbox quota removed (owner decision, 2026-10-18)**: the owner found `domain.defquota`
+  and templates' `def_quota_for_mbox` useless (an upstream leftover since mailbox templates carry the
+  quota of a new mailbox). `defaultMailboxQuota` left `Domain`, `DomainCreateRequest`, `DomainPatch`,
+  the four template schemas and the `sort` enumeration, and `defaultNewMailboxQuota` left
+  `DomainUsage`; a sent `defaultMailboxQuota` is ignored like any undeclared member of these bodies.
+  The columns stay valid for the classic interface (`DomainRules::legacyDefaultQuota()`):
+  `DomainCreator` stores the template's default capped at the maximum mailbox quota (the maximum
+  when the template has none or no template applies), `DomainUpdater` lowers a larger `defquota` to
+  a changed maximum and leaves it alone otherwise, and `DomainTemplateService` stores the maximum at
+  creation and on edits lowers a larger value to it and replaces a missing or zero one. None of it
+  is audited: the `values` and `changes` of the domain and template records no longer carry the
+  key. The domain version tag still covers `defquota`. The spec's FR-007, FR-008, FR-014, FR-017,
+  FR-020, FR-045, FR-046, US2 scenario 4, a clarification and a parity row were updated; tests in
+  `LegacyDefaultQuotaTest` and `DomainTemplateLegacyDefaultQuotaTest`. Feature 003's mailbox
+  creation no longer falls back to the domain default (see its tasks).

@@ -39,6 +39,10 @@ use Throwable;
  *
  * Like legacy, which returns before the closing update_sogo_static_view(), a creation does not
  * rebuild the groupware directory or flush memcached: the new domain has no mailboxes yet.
+ *
+ * The default mailbox quota is not part of the API (owner decision 2026-10-18). For legacy, which
+ * requires 0 < default ≤ maximum mailbox quota, `defquota` gets the template's default capped at the
+ * maximum mailbox quota, or the maximum when the template has none (also for the built-in values).
  */
 class DomainCreator
 {
@@ -59,15 +63,16 @@ class DomainCreator
     {
         $violations = new FieldViolations;
         $name = $this->rules->name($input['name'] ?? null, $violations);
-        [$templateId, $base] = $this->template($input, $violations);
+        [$templateId, $base, $templateDefaultQuota] = $this->template($input, $violations);
         $values = $this->merge($base, $input, $name ?? '');
         $values = $this->rules->check($values, $violations);
         $violations->throwIfAny();
         assert($name !== null);
+        $defquota = intdiv(DomainRules::legacyDefaultQuota($templateDefaultQuota, (int) $values['maxMailboxQuota']), 1048576);
 
         $this->store->ping();
 
-        $eventId = $this->store($principal, $name, $values, $templateId);
+        $eventId = $this->store($principal, $name, $values, $defquota, $templateId);
         $report = $this->followUps($principal, $name, $values, (bool) ($input['restartGroupware'] ?? false));
 
         try {
@@ -80,8 +85,10 @@ class DomainCreator
     }
 
     /**
+     * The template's ID, values and stored default mailbox quota (bytes, null when it has none).
+     *
      * @param  array<string, mixed>  $input
-     * @return array{int|null, array<string, mixed>}
+     * @return array{int|null, array<string, mixed>, int|null}
      */
     private function template(array $input, FieldViolations $violations): array
     {
@@ -93,15 +100,15 @@ class DomainCreator
             if ($row === null) {
                 $violations->add('templateId', 'notFound', [], 'The domain template does not exist.');
 
-                return [null, $this->templates->defaults()];
+                return [null, $this->templates->defaults(), null];
             }
         } else {
             $row = (clone $query)->whereRaw('LOWER(`template`) = ?', ['default'])->orderBy('id')->first();
         }
 
         return $row === null
-            ? [null, $this->templates->defaults()]
-            : [(int) $row->id, $this->templates->decode($row->attributes)];
+            ? [null, $this->templates->defaults(), null]
+            : [(int) $row->id, $this->templates->decode($row->attributes), $this->templates->storedDefaultQuota($row->attributes)];
     }
 
     /**
@@ -113,7 +120,7 @@ class DomainCreator
     {
         $values = $base;
 
-        foreach (['maxMailboxes', 'maxAliases', 'defaultMailboxQuota', 'maxMailboxQuota', 'domainQuota'] as $field) {
+        foreach (['maxMailboxes', 'maxAliases', 'maxMailboxQuota', 'domainQuota'] as $field) {
             if (array_key_exists($field, $input)) {
                 $values[$field] = $input[$field];
             }
@@ -145,13 +152,14 @@ class DomainCreator
      * The atomic part: row, tags and domain map entry, with the pending audit record.
      *
      * @param  array<string, mixed>  $values
+     * @param  int  $defquota  the default mailbox quota kept for legacy, MiB
      */
-    private function store(Principal $principal, string $name, array $values, ?int $templateId): string
+    private function store(Principal $principal, string $name, array $values, int $defquota, ?int $templateId): string
     {
         $undo = null;
 
         try {
-            return DB::transaction(function () use ($principal, $name, $values, $templateId, &$undo): string {
+            return DB::transaction(function () use ($principal, $name, $values, $defquota, $templateId, &$undo): string {
                 $undo = null;
 
                 if (DB::table('alias_domain')->where('alias_domain', $name)->lockForUpdate()->exists()
@@ -167,7 +175,7 @@ class DomainCreator
                         'description' => $values['description'],
                         'aliases' => $values['maxAliases'],
                         'mailboxes' => $values['maxMailboxes'],
-                        'defquota' => intdiv($values['defaultMailboxQuota'], 1048576),
+                        'defquota' => $defquota,
                         'maxquota' => intdiv($values['maxMailboxQuota'], 1048576),
                         'quota' => intdiv($values['domainQuota'], 1048576),
                         'backupmx' => (int) $values['backupMx'],
@@ -282,9 +290,9 @@ class DomainCreator
     private static function auditValues(array $values): array
     {
         return array_intersect_key($values, array_flip([
-            'description', 'active', 'maxMailboxes', 'maxAliases', 'defaultMailboxQuota', 'maxMailboxQuota',
-            'domainQuota', 'backupMx', 'relayAllRecipients', 'relayUnknownOnly', 'globalAddressList', 'tags',
-            'rateLimit', 'dkimSelector', 'dkimKeySize',
+            'description', 'active', 'maxMailboxes', 'maxAliases', 'maxMailboxQuota', 'domainQuota', 'backupMx',
+            'relayAllRecipients', 'relayUnknownOnly', 'globalAddressList', 'tags', 'rateLimit', 'dkimSelector',
+            'dkimKeySize',
         ]));
     }
 }

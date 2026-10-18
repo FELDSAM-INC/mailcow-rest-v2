@@ -32,7 +32,7 @@ Models live in `app/Models/Mailcow/` (connection `mysql`, explicit `$table` and 
 | `description` | VARCHAR(255) NULL | `description` | `null` read as `''`; empty on write → the domain name; max 255 |
 | `aliases` | INT(10) DEFAULT 0 | `maxAliases` | integer; write 0–2,147,483,647 |
 | `mailboxes` | INT(10) DEFAULT 0 | `maxMailboxes` | integer; write 0–2,147,483,647 |
-| `defquota` | BIGINT(20) DEFAULT 3072 | `defaultMailboxQuota` | `App\Casts\Mebibytes`: MiB × 1,048,576; write ≥ 1 MiB, whole MiB, ≤ `maxquota` |
+| `defquota` | BIGINT(20) DEFAULT 3072 | — (not exposed, owner decision 2026-10-18) | kept for legacy: creation writes the template's default capped at `maxquota` (else `maxquota`); an edit that changes `maxquota` lowers a larger value to it |
 | `maxquota` | BIGINT(20) DEFAULT 102400 | `maxMailboxQuota` | MiB ↔ bytes; write ≥ 1 MiB, whole MiB, ≤ `quota`, ≥ largest mailbox quota when changed |
 | `quota` | BIGINT(20) DEFAULT 102400 | `domainQuota` | MiB ↔ bytes; write ≥ 1 MiB, whole MiB, ≥ quota allocated when changed |
 | `relayhost` | VARCHAR(255) DEFAULT '0' | `relayhost` | `'0'`, empty or non-numeric → `null`; else `{id, hostname}` from `relayhosts`. Never written here except legacy's own value kept by the full-row `UPDATE` |
@@ -93,7 +93,7 @@ FROM tags_domain WHERE domain IN (<scope>) GROUP BY LOWER(tag_name)`.
 | `tags` | array of strings | `tags` | `[]` |
 | `max_num_aliases_for_domain` | int | `maxAliases` | 400 |
 | `max_num_mboxes_for_domain` | int | `maxMailboxes` | 10 |
-| `def_quota_for_mbox` | int **bytes** | `defaultMailboxQuota` | 3,221,225,472 (3,072 MiB) |
+| `def_quota_for_mbox` | int **bytes** | — (not exposed, owner decision 2026-10-18) | `max_quota_for_mbox` at creation; edits lower a larger value to it and replace a missing or zero one |
 | `max_quota_for_mbox` | int bytes | `maxMailboxQuota` | 10,737,418,240 (10,240 MiB) |
 | `max_quota_for_domain` | int bytes | `domainQuota` | 10,737,418,240 |
 | `rl_value` | int, or `""` for none | `rateLimit.value` | `""` |

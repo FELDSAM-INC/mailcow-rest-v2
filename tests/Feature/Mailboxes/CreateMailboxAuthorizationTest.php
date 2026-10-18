@@ -43,7 +43,8 @@ class CreateMailboxAuthorizationTest extends TestCase
         $this->mailcow()->domainAdmin('reseller', ['example.org']);
 
         $this->postJson('/api/v2/mailboxes', self::BODY, $this->keyHeader($this->apiKey('admin')))->assertCreated();
-        $this->postJson('/api/v2/mailboxes', ['localPart' => 'bob'] + self::BODY, $this->keyHeader($this->apiKey('reseller', name: 'da')))->assertCreated();
+        // A quota, since the built-in unlimited one needs the `unlimitedQuota` flag.
+        $this->postJson('/api/v2/mailboxes', ['localPart' => 'bob', 'quota' => 1073741824] + self::BODY, $this->keyHeader($this->apiKey('reseller', name: 'da')))->assertCreated();
     }
 
     public function test_restricted_sessions_and_missing_tokens_are_refused(): void

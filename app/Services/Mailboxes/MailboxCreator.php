@@ -30,8 +30,8 @@ use Throwable;
  * FR-018–FR-028, research R5–R9):
  *
  *  1. the domain in scope, the address, the named and the Default template; then the values from
- *     the request, the templates and the built-in defaults (the quota from the request, the named
- *     template or the domain's default for a new mailbox);
+ *     the request, the templates and the built-in defaults, the quota included (owner decision
+ *     2026-10-18: never the domain's default mailbox quota);
  *  2. the domain administrator's permission flags (`403 attribute-not-permitted`);
  *  3. every business rule, the password policy included (`422`, reported together; a plain
  *     password needs mailcow's shared store, `503` when it is down);
@@ -84,9 +84,6 @@ class MailboxCreator
         $values = $resolved->values;
         $baseline = $resolved->baseline;
         $domainUsage = $domain === null ? null : $this->usage->forDomain($domain->domain);
-        $defaultQuota = $domainUsage->defaultNewMailboxQuota ?? 0;
-        $baseline['quota'] ??= $defaultQuota;
-        $values['quota'] ??= $baseline['quota'];
         $authSource = (string) ($input['authSource'] ?? 'mailcow');
 
         if (MailboxValues::isExternal($authSource)) {
@@ -109,12 +106,7 @@ class MailboxCreator
         $values['tags'] = TagSet::normalise((array) $values['tags'], [], $this->config->taggingLimit(), $violations);
 
         if ($this->validator->wholeMebibytes($values['quota'], $violations) && $referencesValid) {
-            if (! array_key_exists('quota', $request) && $named === null && (int) $domain->defquota > 0 && $defaultQuota === 0) {
-                // Plan parity note 6: a default of 0 only because no quota is left is not "unlimited".
-                $violations->add('quota', 'outOfRange', ['min' => 0, 'max' => 0, 'limit' => 'domainQuotaLeft'], 'The domain has no quota left for a new mailbox.');
-            } else {
-                $this->validator->creationQuota((int) $values['quota'], $domain, $domainUsage->quotaAllocated ?? 0, $violations);
-            }
+            $this->validator->creationQuota((int) $values['quota'], $domain, $domainUsage->quotaAllocated ?? 0, $violations);
         }
 
         $violations->throwIfAny();

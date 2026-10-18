@@ -32,7 +32,6 @@ class DomainQuery
         'storageUsed' => '(SELECT COALESCE(SUM(`q2`.`bytes`), 0) FROM `mailbox` `sm2` JOIN `quota2` `q2` ON `q2`.`username` = `sm2`.`username` WHERE `sm2`.`domain` = `d`.`domain`)',
         'maxMailboxes' => '`d`.`mailboxes`',
         'maxAliases' => '`d`.`aliases`',
-        'defaultMailboxQuota' => '`d`.`defquota`',
         'maxMailboxQuota' => '`d`.`maxquota`',
         'domainQuota' => '`d`.`quota`',
         'createdAt' => '`d`.`created`',

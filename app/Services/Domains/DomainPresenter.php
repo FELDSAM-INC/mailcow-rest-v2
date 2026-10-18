@@ -69,7 +69,6 @@ class DomainPresenter
                 'active' => (bool) $row->active,
                 'maxMailboxes' => (int) $row->mailboxes,
                 'maxAliases' => (int) $row->aliases,
-                'defaultMailboxQuota' => (int) $row->defquota * self::MIB,
                 'maxMailboxQuota' => (int) $row->maxquota * self::MIB,
                 'domainQuota' => (int) $row->quota * self::MIB,
                 'backupMx' => (bool) $row->backupmx,

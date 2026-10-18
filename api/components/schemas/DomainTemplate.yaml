@@ -11,7 +11,6 @@ required:
   - tags
   - maxMailboxes
   - maxAliases
-  - defaultMailboxQuota
   - maxMailboxQuota
   - domainQuota
   - rateLimit
@@ -41,10 +40,6 @@ properties:
     type: integer
   maxAliases:
     type: integer
-  defaultMailboxQuota:
-    type: integer
-    minimum: 0
-    description: Bytes.
   maxMailboxQuota:
     type: integer
     minimum: 0

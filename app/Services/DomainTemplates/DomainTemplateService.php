@@ -25,13 +25,18 @@ use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
  * lock of every domain template row); the template named "Default" cannot be renamed or deleted.
  * Values follow the domain rules and are stored with the legacy keys, so that legacy's add form keeps
  * working. Every change is audited; templates never change existing domains.
+ *
+ * The default mailbox quota of the legacy format is not one of the values (owner decision
+ * 2026-10-18). It is kept valid for legacy's add-domain form (0 < default ≤ maximum mailbox quota):
+ * a creation stores the maximum mailbox quota, an edit lowers a larger value to it and replaces a
+ * missing or zero one with it. It is never audited.
  */
 class DomainTemplateService
 {
     public const SORTS = ['name' => 'template', 'id' => 'id', 'createdAt' => 'created', 'modifiedAt' => 'modified'];
 
     public const VALUE_FIELDS = [
-        'tags', 'maxMailboxes', 'maxAliases', 'defaultMailboxQuota', 'maxMailboxQuota', 'domainQuota', 'rateLimit',
+        'tags', 'maxMailboxes', 'maxAliases', 'maxMailboxQuota', 'domainQuota', 'rateLimit',
         'active', 'globalAddressList', 'backupMx', 'relayAllRecipients', 'relayUnknownOnly', 'dkimSelector', 'dkimKeySize',
     ];
 
@@ -81,7 +86,6 @@ class DomainTemplateService
             'tags' => DomainTagSet::sort(array_values($values['tags'])),
             'maxMailboxes' => $values['maxMailboxes'],
             'maxAliases' => $values['maxAliases'],
-            'defaultMailboxQuota' => $values['defaultMailboxQuota'],
             'maxMailboxQuota' => $values['maxMailboxQuota'],
             'domainQuota' => $values['domainQuota'],
             'rateLimit' => $values['rateLimit'],
@@ -108,7 +112,7 @@ class DomainTemplateService
 
         return DB::transaction(function () use ($principal, $name, $values): stdClass {
             $this->assertUnique($name, null);
-            $id = (int) DB::table('templates')->insertGetId(['type' => 'domain', 'template' => $name, 'attributes' => $this->codec->encode($values)]);
+            $id = (int) DB::table('templates')->insertGetId(['type' => 'domain', 'template' => $name, 'attributes' => $this->codec->encode($values, DomainRules::legacyDefaultQuota(null, (int) $values['maxMailboxQuota']))]);
             $this->audit->record(AuditEventType::DomainTemplateCreation, true, $principal, self::target($id, $name), null, null, ['values' => $values]);
 
             return $this->find($id) ?? throw new NotFoundHttpException('The domain template does not exist.');
@@ -164,7 +168,7 @@ class DomainTemplateService
                 }
             }
 
-            $encoded = $this->codec->encode($values);
+            $encoded = $this->codec->encode($values, DomainRules::legacyDefaultQuota($this->codec->storedDefaultQuota($row->attributes), (int) $values['maxMailboxQuota']));
 
             if ($changes !== [] || $encoded !== (string) $row->attributes) {
                 DB::table('templates')->where('id', $id)->where('type', 'domain')->update(['template' => $name, 'attributes' => $encoded]);

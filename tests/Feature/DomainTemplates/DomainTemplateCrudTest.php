@@ -82,7 +82,7 @@ class DomainTemplateCrudTest extends TestCase
         $data = $response->json('data');
         $this->assertSame(5, $data['maxMailboxes']);
         $this->assertSame(0, $data['maxAliases']);
-        $this->assertSame(3072 * self::MIB, $data['defaultMailboxQuota']);
+        $this->assertArrayNotHasKey('defaultMailboxQuota', $data);
         $this->assertSame('feldhost', $data['dkimSelector']);
         $this->assertSame(2048, $data['dkimKeySize']);
         $this->assertNull($data['rateLimit']);
@@ -92,7 +92,7 @@ class DomainTemplateCrudTest extends TestCase
             'max_quota_for_domain', 'rl_frame', 'rl_value', 'active', 'gal', 'backupmx', 'relay_all_recipients',
             'relay_unknown_only', 'dkim_selector', 'key_size',
         ], array_keys($this->stored($id)));
-        $this->assertSame(3072 * self::MIB, $this->stored($id)['def_quota_for_mbox']);
+        $this->assertSame(10240 * self::MIB, $this->stored($id)['def_quota_for_mbox'], 'The maximum mailbox quota, for legacy\'s add form.');
         $this->assertSame(0, $this->stored($id)['max_num_aliases_for_domain']);
     }
 
@@ -140,11 +140,11 @@ class DomainTemplateCrudTest extends TestCase
 
         $errors = $this->createTemplate([
             'name' => 'Bad',
-            'defaultMailboxQuota' => 20480 * self::MIB,
+            'maxMailboxQuota' => 20480 * self::MIB,
             'domainQuota' => 1572864,
             'tags' => array_map(fn (int $i): string => "t{$i}", range(1, 26)),
         ])->assertStatus(422)->json('errors');
-        $this->assertSame('mustNotExceed', $errors['defaultMailboxQuota'][0]['code']);
+        $this->assertSame('mustNotExceed', $errors['maxMailboxQuota'][0]['code']);
         $this->assertSame('notMultipleOf', $errors['domainQuota'][0]['code']);
         $this->assertSame('tooMany', $errors['tags'][0]['code']);
 

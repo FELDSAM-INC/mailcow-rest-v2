@@ -52,7 +52,7 @@ class DomainTemplateLegacyRowsTest extends TestCase
     public function test_legacys_add_form_reads_api_templates(): void
     {
         $this->asAdmin();
-        $id = (int) $this->postJson('/api/v2/domain-templates', ['name' => 'Api', 'defaultMailboxQuota' => 2048 * self::MIB, 'rateLimit' => ['value' => 3, 'frame' => 'hour']], $this->csrf())
+        $id = (int) $this->postJson('/api/v2/domain-templates', ['name' => 'Api', 'maxMailboxQuota' => 2048 * self::MIB, 'rateLimit' => ['value' => 3, 'frame' => 'hour']], $this->csrf())
             ->assertCreated()->json('data.id');
 
         // What legacy's add-domain form computes from the template (functions.mailbox.inc.php 514).

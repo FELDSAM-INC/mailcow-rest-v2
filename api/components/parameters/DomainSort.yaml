@@ -17,7 +17,6 @@ schema:
     - storageUsed
     - maxMailboxes
     - maxAliases
-    - defaultMailboxQuota
     - maxMailboxQuota
     - domainQuota
     - createdAt

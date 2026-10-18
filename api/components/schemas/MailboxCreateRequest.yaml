@@ -4,10 +4,12 @@ description: |
   template, and the built-in defaults (server settings with the upstream values: active, no forced
   password change or second-factor setup, webmail redirect on, all six protocols allowed, no TLS
   enforcement, no tagged-mail handling, hourly quarantine notifications of rejected mail, no rate
-  limit, every user permission except `syncjobs` and `sogoProfileReset`). Exceptions:
+  limit, every user permission except `syncjobs` and `sogoProfileReset`, an unlimited quota).
+  Exceptions:
 
-  - `quota` comes from the named template when one is named, and otherwise from the domain's
-    default quota for a new mailbox (feature 002);
+  - `quota` follows the same order; the domain's default mailbox quota does not apply (owner
+    decision 2026-10-18), so without a quota from the request or a template the mailbox is
+    unlimited, as in legacy's server;
   - `displayName`, when absent or empty, is the local part;
   - for an external `authSource`, `forcePasswordChange` (and for `genericOidc` also
     `forceSecondFactorSetup`) is off whatever the template says.

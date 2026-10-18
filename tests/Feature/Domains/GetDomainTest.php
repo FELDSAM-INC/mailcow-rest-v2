@@ -39,7 +39,7 @@ class GetDomainTest extends TestCase
         $this->assertTrue($data['active']);
         $this->assertSame(20, $data['maxMailboxes']);
         $this->assertSame(50, $data['maxAliases']);
-        $this->assertSame(3221225472, $data['defaultMailboxQuota']);
+        $this->assertArrayNotHasKey('defaultMailboxQuota', $data);
         $this->assertSame(5120 * self::MIB, $data['maxMailboxQuota']);
         $this->assertSame(20480 * self::MIB, $data['domainQuota']);
         $this->assertTrue($data['backupMx']);

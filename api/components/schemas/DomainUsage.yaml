@@ -15,7 +15,6 @@ required:
   - storageUsed
   - messages
   - maxNewMailboxQuota
-  - defaultNewMailboxQuota
 properties:
   mailboxes:
     type: integer
@@ -67,7 +66,3 @@ properties:
     description: |
       Largest quota a new mailbox may get: `domainQuota` minus `quotaAllocated`, capped at
       `maxMailboxQuota`, never below zero.
-  defaultNewMailboxQuota:
-    type: integer
-    minimum: 0
-    description: Default quota for a new mailbox, `maxNewMailboxQuota` capped at `defaultMailboxQuota`.

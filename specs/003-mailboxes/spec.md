@@ -49,7 +49,11 @@
 - Q: When a creation request names no quota, which default applies? → A: The named template's
   quota when a template is named, otherwise the domain's default quota for a new mailbox (FR-022).
   (agent decision: the legacy UI pre-fills the domain default. The legacy server falls back to the
-  Default template's unlimited quota, which silently creates unlimited mailboxes.)
+  Default template's unlimited quota, which silently creates unlimited mailboxes.) **Superseded on
+  2026-10-18** (owner decision: the domain's default mailbox quota is an upstream leftover and is
+  no longer part of the API, feature 002): the quota follows the template chain like every other
+  value, named template, then Default template, then the built-in unlimited quota, as the legacy
+  server does. Clients pre-fill a quota themselves.
 - Q: What happens when a domain administrator sets a field their permission flags do not allow? →
   A: The whole request is refused with an error that names the field and the flag, at creation,
   on change and in bulk actions. Values equal to the current value or to the template's value are
@@ -224,8 +228,9 @@ mailbox. Repeat at each domain limit.
    **Then** the mailbox gets the template's protocol access.
 7. **Given** a template "Small" with a 1 GiB quota, POP3 off and the sync-jobs permission on,
    **When** a client creates a mailbox naming "Small" and giving only the address and a password,
-   **Then** the mailbox gets those values. **Given** no template and no quota in the request,
-   **When** the mailbox is created, **Then** it gets the domain's default quota for a new mailbox.
+   **Then** the mailbox gets those values. **Given** no named template and no quota in the request,
+   **When** the mailbox is created, **Then** it gets the Default template's quota, or an unlimited
+   quota without one (owner decision 2026-10-18).
 8. **Given** a password policy with a minimum length of 10 and digits required, **When** a client
    creates a mailbox with the password "short", **Then** the request is refused with a validation
    error on the password that names both unmet rules and their parameters.
@@ -713,8 +718,8 @@ into each external step and check that the mailbox is left as it was.
   built-in defaults MUST be API server settings with the upstream values above. The operator keeps
   them aligned with legacy's overrides (`MAILBOX_DEFAULT_ATTRIBUTES`), which the API cannot read.
   Exceptions:
-  - the quota comes from the named template when one is named, and otherwise from the domain's
-    default quota for a new mailbox (feature 002, FR-008);
+  - the quota follows the same order, with an unlimited quota as the built-in default; the domain's
+    default mailbox quota never applies (owner decision 2026-10-18, feature 002 FR-020);
   - the display name, when absent or empty, is the local part. Leading `<` and trailing `>` are
     removed from it, as legacy does;
   - a template that does not exist MUST be refused with a validation error on the template.
@@ -1131,7 +1136,7 @@ other default change, the DKIM selector of the Default domain template, belongs 
 | Address uniqueness | `mailbox` (any kind), `alias` and `spamalias` checked, each with its own message | Same, as one conflict that names the holder (FR-021) |
 | Domain of a new mailbox | Must be in `domain`; alias domains rejected; inactive and backup-MX domains accepted | Same (FR-020) |
 | Mailbox count and quota limits | Count of `kind = ''` mailboxes, `maxquota` per mailbox, sum of quotas in MiB against `quota`; `0` not counted; domain admins need `unlimited_quota` | Same, in bytes (FR-009, FR-023, FR-030). Limits also hold under concurrency. **Deviation**: negative quotas are rejected |
-| Quota default | Server: named template, else first template (Default: 0 = unlimited). UI: pre-fills the domain's default quota | Named template, else the domain's default quota for a new mailbox (FR-022). **Deviation** from the server, matches the UI |
+| Quota default (owner decision, 2026-10-18) | Server: named template, else first template (Default: 0 = unlimited). UI: pre-fills the domain's default quota (`domain.defquota`, an upstream leftover since mailbox templates carry the quota) | Named template, else Default template, else unlimited, like every other value (FR-022). Same as the server. The domain's default mailbox quota is not exposed (feature 002 FR-020), and the API keeps the column valid for legacy. Until 2026-10-18 the API took the domain's default quota for a new mailbox |
 | Display name default | Meant to default to the local part, but an ordering bug stores an empty name | Local part (FR-022). **Deviation** (bug fix) |
 | Template application | Server merges the named or first template into the defaults, but applies the template's tagged-mail handling only when the form sends it. The seeded Default template lacks the password-reset permission, so `/api/v1` creations without ACLs get it off while the UI pre-selects it | Every template value applies, and a value the template lacks comes from the built-in defaults (FR-022). **Deviation** (bug fix) |
 | Password input | `password` and `password2` must match | One field (FR-024). **Deviation**: confirmation is the client's job |
@@ -1171,7 +1176,7 @@ other default change, the DKIM selector of the Default domain template, belongs 
 | Rename with the groupware disabled (plan) | `sogo-tool rename-user` is called even when `SKIP_SOGO=y`, and its result is ignored | The webmail rename step is skipped and recorded as skipped (FR-045, FR-048). **Deviation** |
 | Maildir moves in replicated clusters (plan) | Broadcast to every node through `MC_CHANNEL`, without any confirmation | Confirmed on the current node, then broadcast to every node (FR-040, FR-045). **Deviation** |
 | API-owned data of the mailbox user (plan) | Not applicable | Feature 001's stored preferences follow a rename and are removed by a deletion, so that a later mailbox with the same address inherits nothing (FR-041, FR-046) |
-| Quota default when the domain quota is exhausted (plan) | The UI pre-fills the domain's default quota, which can be 0 (unlimited) when no quota is left | A creation without quota and template whose domain default is 0 only because no quota is left is refused with a quota validation error; a domain default quota of 0 set by the operator still means unlimited (FR-022, FR-023). **Deviation** |
+| Quota default when the domain quota is exhausted (plan) | The UI pre-fills the domain's default quota, which can be 0 (unlimited) when no quota is left | Withdrawn on 2026-10-18 with the domain default (owner decision): a template's quota counts against the quota left like a sent one, and an unlimited quota from the template chain is not counted, as in legacy's server (FR-022, FR-023) |
 
 ### Key Entities *(include if feature involves data)*
 
@@ -1190,7 +1195,7 @@ other default change, the DKIM selector of the Default domain template, belongs 
 - **Own alias** (existing mailcow data): the alias row through which a mailbox receives mail at its
   own address. Its status follows the mailbox.
 - **Domain** (feature 002): supplies the limits checked here (maximum mailboxes, maximum mailbox
-  quota, domain quota, default quota for a new mailbox) and the backup MX flag.
+  quota, domain quota) and the backup MX flag.
 - **Domain-administrator permissions** (existing mailcow data, feature 007 manages them): the flags
   that gate what a domain administrator may choose here.
 - **Groupware directory entry** (existing mailcow data): the denormalised record through which SOGo

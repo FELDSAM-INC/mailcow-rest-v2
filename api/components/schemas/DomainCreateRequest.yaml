@@ -2,13 +2,18 @@ type: object
 description: |
   A new domain. Only `name` is required. Every omitted attribute takes its value from the chosen
   template (`templateId`), or from the Default template when none is named. When the Default
-  template is missing, the built-in values apply: 10 mailboxes, 400 aliases, 3,072 MiB default and
-  10,240 MiB maximum mailbox quota, 10,240 MiB domain quota, active, Global Address List on, no
-  relay options, no tags, no rate limit, the server's default DKIM selector and 2,048-bit keys.
+  template is missing, the built-in values apply: 10 mailboxes, 400 aliases, 10,240 MiB maximum
+  mailbox quota, 10,240 MiB domain quota, active, Global Address List on, no relay options, no tags,
+  no rate limit, the server's default DKIM selector and 2,048-bit keys.
 
-  Rules: quotas are whole multiples of 1 MiB (`notMultipleOf`); `defaultMailboxQuota` ≤
-  `maxMailboxQuota` ≤ `domainQuota` (`mustNotExceed`); relay options are normalised
-  (`relayUnknownOnly` implies `relayAllRecipients`, which implies `backupMx`).
+  Rules: quotas are whole multiples of 1 MiB (`notMultipleOf`); `maxMailboxQuota` ≤ `domainQuota`
+  (`mustNotExceed`); relay options are normalised (`relayUnknownOnly` implies `relayAllRecipients`,
+  which implies `backupMx`).
+
+  mailcow's default mailbox quota of a domain is not part of this API (owner decision 2026-10-18:
+  an upstream leftover that mailbox templates replace). The server keeps the column valid for the
+  classic interface: a new domain gets the template's default mailbox quota capped at
+  `maxMailboxQuota`, or `maxMailboxQuota` when the template has none.
 required: [name]
 properties:
   name:
@@ -40,11 +45,6 @@ properties:
     type: integer
     minimum: 0
     maximum: 2147483647
-  defaultMailboxQuota:
-    type: integer
-    minimum: 1048576
-    maximum: 9007199254740992
-    description: Bytes, a whole multiple of 1 MiB.
   maxMailboxQuota:
     type: integer
     minimum: 1048576

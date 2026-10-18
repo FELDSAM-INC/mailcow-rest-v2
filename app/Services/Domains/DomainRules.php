@@ -15,10 +15,13 @@ use App\Support\Http\FieldViolations;
  *  - name: legacy syntax (`invalidFormat`, `format: domainName`), not the server host name
  *    (`reserved`);
  *  - limits 0 to 2,147,483,647, quotas 1 MiB to 2^53 bytes (`outOfRange`), whole MiB
- *    (`notMultipleOf`), default ≤ maximum mailbox quota ≤ domain quota (`mustNotExceed`);
+ *    (`notMultipleOf`), maximum mailbox quota ≤ domain quota (`mustNotExceed`);
  *  - changed limits not below usage (`belowInUse`, with the value in use);
  *  - tags (DomainTagSet); the DKIM selector syntax;
  *  - relay normalisation: "unknown only" implies "all recipients", which implies backup MX.
+ *
+ * The default mailbox quota (`domain.defquota`, templates' `def_quota_for_mbox`) is not part of the
+ * API (owner decision 2026-10-18); legacyDefaultQuota() keeps it valid for the classic interface.
  */
 class DomainRules
 {
@@ -73,7 +76,7 @@ class DomainRules
 
         $quotasValid = true;
 
-        foreach (['defaultMailboxQuota', 'maxMailboxQuota', 'domainQuota'] as $field) {
+        foreach (['maxMailboxQuota', 'domainQuota'] as $field) {
             $value = $values[$field];
 
             if (! is_int($value) || $value < WholeMebibytes::MIB || $value > self::MAX_QUOTA) {
@@ -84,14 +87,8 @@ class DomainRules
             }
         }
 
-        if ($quotasValid) {
-            if ($values['defaultMailboxQuota'] > $values['maxMailboxQuota']) {
-                $violations->add('defaultMailboxQuota', 'mustNotExceed', ['field' => 'maxMailboxQuota', 'value' => $values['maxMailboxQuota']]);
-            }
-
-            if ($values['maxMailboxQuota'] > $values['domainQuota']) {
-                $violations->add('maxMailboxQuota', 'mustNotExceed', ['field' => 'domainQuota', 'value' => $values['domainQuota']]);
-            }
+        if ($quotasValid && $values['maxMailboxQuota'] > $values['domainQuota']) {
+            $violations->add('maxMailboxQuota', 'mustNotExceed', ['field' => 'domainQuota', 'value' => $values['domainQuota']]);
         }
 
         if ($usage !== null) {
@@ -120,6 +117,16 @@ class DomainRules
         }
 
         return self::normaliseRelay($values);
+    }
+
+    /**
+     * The default mailbox quota (bytes) to store for legacy, which requires 0 < default ≤ maximum
+     * mailbox quota: the given value capped at the (valid) maximum, or the maximum when there is no
+     * usable value (missing or below 1 MiB), so never 0.
+     */
+    public static function legacyDefaultQuota(?int $current, int $maxMailboxQuota): int
+    {
+        return $current === null || $current < WholeMebibytes::MIB ? $maxMailboxQuota : min($current, $maxMailboxQuota);
     }
 
     /**

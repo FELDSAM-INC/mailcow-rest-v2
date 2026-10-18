@@ -7,6 +7,10 @@ namespace App\Services\DomainTemplates;
  * form reads: quotas in bytes, `rl_value` `""` for no rate limit, flags as 0/1. Reading is
  * tolerant of what legacy has stored over time (numeric strings, `tags` as a JSON string, missing
  * keys); writing produces exactly the legacy keys. Values use the contract's names.
+ *
+ * The default mailbox quota (`def_quota_for_mbox`) is not one of the values (owner decision
+ * 2026-10-18): storedDefaultQuota() reads it and encode() takes it separately, so that legacy's
+ * add-domain form keeps finding it.
  */
 class DomainTemplateAttributes
 {
@@ -27,7 +31,6 @@ class DomainTemplateAttributes
             'tags' => [],
             'maxMailboxes' => 10,
             'maxAliases' => 400,
-            'defaultMailboxQuota' => 3072 * self::MIB,
             'maxMailboxQuota' => 10240 * self::MIB,
             'domainQuota' => 10240 * self::MIB,
             'rateLimit' => null,
@@ -59,7 +62,6 @@ class DomainTemplateAttributes
 
         $values['maxAliases'] = self::int($stored, 'max_num_aliases_for_domain', $values['maxAliases']);
         $values['maxMailboxes'] = self::int($stored, 'max_num_mboxes_for_domain', $values['maxMailboxes']);
-        $values['defaultMailboxQuota'] = self::int($stored, 'def_quota_for_mbox', $values['defaultMailboxQuota']);
         $values['maxMailboxQuota'] = self::int($stored, 'max_quota_for_mbox', $values['maxMailboxQuota']);
         $values['domainQuota'] = self::int($stored, 'max_quota_for_domain', $values['domainQuota']);
 
@@ -83,11 +85,22 @@ class DomainTemplateAttributes
     }
 
     /**
-     * The legacy JSON of contract values (as decode() returns them).
+     * The stored default mailbox quota in bytes, or null when the key is missing or not a number.
+     */
+    public function storedDefaultQuota(?string $json): ?int
+    {
+        $stored = $json === null ? null : json_decode($json, true);
+
+        return is_array($stored) && isset($stored['def_quota_for_mbox']) && is_numeric($stored['def_quota_for_mbox']) ? (int) $stored['def_quota_for_mbox'] : null;
+    }
+
+    /**
+     * The legacy JSON of contract values (as decode() returns them) and the default mailbox quota
+     * kept for legacy (bytes).
      *
      * @param  array<string, mixed>  $values
      */
-    public function encode(array $values): string
+    public function encode(array $values, int $defaultMailboxQuota): string
     {
         $rate = $values['rateLimit'] ?? null;
 
@@ -95,7 +108,7 @@ class DomainTemplateAttributes
             'tags' => array_values($values['tags'] ?? []),
             'max_num_aliases_for_domain' => (int) $values['maxAliases'],
             'max_num_mboxes_for_domain' => (int) $values['maxMailboxes'],
-            'def_quota_for_mbox' => (int) $values['defaultMailboxQuota'],
+            'def_quota_for_mbox' => $defaultMailboxQuota,
             'max_quota_for_mbox' => (int) $values['maxMailboxQuota'],
             'max_quota_for_domain' => (int) $values['domainQuota'],
             'rl_frame' => is_array($rate) ? (string) (array_search($rate['frame'], self::FRAMES, true) ?: 's') : 's',

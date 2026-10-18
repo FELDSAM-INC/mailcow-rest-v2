@@ -73,6 +73,13 @@ Contract changes made while implementing feature 002:
   feature's `*PermissionFlag*Problem` extends it (G34).
 - `DomainCreationReport` has no `groupwareDirectoryUpdate`: like legacy, a domain creation does not
   rebuild the groupware directory.
+- `defaultMailboxQuota` removed from domains and domain templates (owner decision, 2026-10-18: an
+  upstream leftover that mailbox templates replace): from `Domain`, `DomainCreateRequest`,
+  `DomainPatch`, `DomainTemplate`, `DomainTemplateCreateRequest`, `DomainTemplatePatch` and
+  `DomainTemplateDefaults` (so also `DomainCapabilities.templateDefaults`), and from the `sort`
+  values of `listDomains`. `DomainUsage.defaultNewMailboxQuota`, derived from it, is removed too.
+  A sent `defaultMailboxQuota` is ignored like any undeclared member. The server keeps mailcow's
+  columns valid for the classic interface without exposing or auditing them.
 
 Release checks of feature 002 (quickstart Part C: SC-001, SC-002, SC-003, SC-008): not run yet.
 
@@ -102,6 +109,10 @@ Contract changes made while implementing feature 003:
   stops after the first template; the API deletes every target.
 - Bulk actions resolve and deduplicate every target before applying any, so an object named twice
   in different spellings is deleted and reported once.
+- `createMailbox` without a quota takes it from the template chain (named template, Default
+  template, unlimited) instead of the domain's default mailbox quota, which the API no longer has
+  (owner decision, 2026-10-18); the texts of `MailboxCreateRequest` and `MailboxTemplateDefaults`
+  say so.
 
 Release checks of feature 003 (quickstart Part C: SC-001, SC-003, SC-007, SC-008): not run yet.
 

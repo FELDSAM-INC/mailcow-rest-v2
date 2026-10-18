@@ -39,7 +39,6 @@ class DomainCapabilitiesTest extends TestCase
                 'tags' => [],
                 'maxMailboxes' => 10,
                 'maxAliases' => 400,
-                'defaultMailboxQuota' => 3221225472,
                 'maxMailboxQuota' => 10737418240,
                 'domainQuota' => 10737418240,
                 'rateLimit' => null,

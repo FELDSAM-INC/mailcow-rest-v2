@@ -19,7 +19,6 @@ final readonly class DomainUsage
         public int $storageUsed,
         public int $messages,
         public int $maxNewMailboxQuota,
-        public int $defaultNewMailboxQuota,
     ) {}
 
     /**

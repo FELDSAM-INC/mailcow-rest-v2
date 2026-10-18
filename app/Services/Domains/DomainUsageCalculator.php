@@ -32,7 +32,7 @@ class DomainUsageCalculator
         }
 
         $limits = DB::table('domain')->whereIn('domain', $domains)
-            ->get(['domain', 'mailboxes', 'aliases', 'defquota', 'maxquota', 'quota'])
+            ->get(['domain', 'mailboxes', 'aliases', 'maxquota', 'quota'])
             ->keyBy('domain');
 
         $mailboxes = DB::table('mailbox')
@@ -99,7 +99,6 @@ class DomainUsageCalculator
                 storageUsed: (int) ($storage->get($domain)->bytes ?? 0),
                 messages: (int) ($storage->get($domain)->messages ?? 0),
                 maxNewMailboxQuota: $maxNew,
-                defaultNewMailboxQuota: min($maxNew, (int) $row->defquota * self::MIB),
             );
         }
 

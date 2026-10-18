@@ -75,7 +75,7 @@ class MailboxAuthorizationMatrixTest extends TestCase
     {
         return [
             'listMailboxes' => ['GET', '/api/v2/mailboxes', null, 200],
-            'createMailbox' => ['POST', '/api/v2/mailboxes', ['localPart' => 'new', 'domain' => 'example.org', 'password' => '{PLAIN}x'], 201],
+            'createMailbox' => ['POST', '/api/v2/mailboxes', ['localPart' => 'new', 'domain' => 'example.org', 'password' => '{PLAIN}x', 'quota' => 1073741824], 201],
             'getMailboxCapabilities' => ['GET', '/api/v2/capabilities/mailboxes', null, 200],
             'listMailboxTags' => ['GET', '/api/v2/mailbox-tags', null, 200],
             'applyMailboxBulkAction' => ['POST', '/api/v2/mailboxes/bulk-actions', ['action' => 'disallowProtocol', 'protocol' => 'pop3', 'targets' => [['id' => 'anna@example.org']]], 200],

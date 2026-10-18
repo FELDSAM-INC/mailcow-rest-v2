@@ -8,8 +8,9 @@ use Tests\TestCase;
 
 /**
  * Feature 003 T036 (FR-022, FR-023, research R6): the domain's mailbox limit, maximum mailbox quota
- * and domain quota hold for creations, resources and unlimited quotas are not counted, and the
- * domain's default quota applies without a quota and a template.
+ * and domain quota hold for creations, resources and unlimited quotas are not counted, and without
+ * a quota the template chain applies, never the domain's default mailbox quota (owner decision
+ * 2026-10-18).
  */
 class CreateMailboxLimitsTest extends TestCase
 {
@@ -62,27 +63,30 @@ class CreateMailboxLimitsTest extends TestCase
         $this->createMailbox(['localPart' => 'b', 'domain' => 'example.org', 'password' => self::PASSWORD, 'quota' => 0])->assertCreated()->assertJsonPath('data.quota', 0);
     }
 
-    public function test_without_quota_and_template_the_domain_default_applies(): void
+    public function test_without_quota_the_template_chain_applies_not_the_domain_default(): void
     {
-        $this->mailcow()->domain('example.org', attributes: ['defquota' => 2048, 'maxquota' => 10240, 'quota' => 3072]);
-        $this->mailcow()->legacyMailbox('big@example.org', quota: 2048 * self::MIB);
+        $this->mailcow()->domain('example.org', attributes: ['defquota' => 2048, 'maxquota' => 10240, 'quota' => 10240]);
         $this->asAdmin();
 
-        // The default is capped at the quota left (1 GiB).
-        $this->createMailbox(['localPart' => 'a', 'domain' => 'example.org', 'password' => self::PASSWORD])->assertCreated()->assertJsonPath('data.quota', self::GIB);
+        // No template: the built-in unlimited quota, as legacy's server applies the Default template's 0.
+        $this->createMailbox(['localPart' => 'a', 'domain' => 'example.org', 'password' => self::PASSWORD])->assertCreated()->assertJsonPath('data.quota', 0);
+
+        $this->mailcow()->defaultMailboxTemplate(['quota' => 512 * self::MIB]);
+        $this->createMailbox(['localPart' => 'b', 'domain' => 'example.org', 'password' => self::PASSWORD])->assertCreated()->assertJsonPath('data.quota', 512 * self::MIB);
     }
 
-    public function test_an_exhausted_domain_quota_is_not_taken_for_unlimited(): void
+    public function test_a_template_quota_counts_against_the_domain_quota_left(): void
     {
         $this->mailcow()->domain('example.org', attributes: ['defquota' => 1024, 'maxquota' => 10240, 'quota' => 2048]);
         $this->mailcow()->legacyMailbox('big@example.org', quota: 2048 * self::MIB);
+        $this->mailcow()->defaultMailboxTemplate(['quota' => self::GIB]);
         $this->asAdmin();
 
         $this->createMailbox(['localPart' => 'a', 'domain' => 'example.org', 'password' => self::PASSWORD])
             ->assertStatus(422)
             ->assertJsonPath('errors.quota.0.params', ['min' => 0, 'max' => 0, 'limit' => 'domainQuotaLeft']);
 
-        DB::table('domain')->where('domain', 'example.org')->update(['defquota' => 0]);
+        DB::table('templates')->where('type', 'mailbox')->update(['attributes' => json_encode(['quota' => 0])]);
         $this->createMailbox(['localPart' => 'a', 'domain' => 'example.org', 'password' => self::PASSWORD])->assertCreated()->assertJsonPath('data.quota', 0);
     }
 }

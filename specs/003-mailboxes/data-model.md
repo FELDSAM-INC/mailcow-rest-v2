@@ -170,7 +170,7 @@ on change; renamed with `FOREIGN_KEY_CHECKS = 0` as legacy.
 
 | Table | Columns | Use |
 |---|---|---|
-| `domain` | `domain`, `mailboxes`, `maxquota`, `quota`, `defquota` (MiB), `backupmx`, `aliases`, `active` | limits, quota defaults, `domainRelayed`, alias limit; row lock at creation and on quota changes |
+| `domain` | `domain`, `mailboxes`, `maxquota`, `quota`, `backupmx`, `aliases`, `active` | limits, `domainRelayed`, alias limit; row lock at creation and on quota changes (`defquota` is not used since 2026-10-18, owner decision) |
 | `domain_admins` | `username`, `domain`, `active` | domain-administrator scope (001) |
 | `da_acl` | the nineteen flags | effective flags (001); never written here |
 | `alias_domain` | `alias_domain`, `target_domain` | alias-domain refusal; alias count |

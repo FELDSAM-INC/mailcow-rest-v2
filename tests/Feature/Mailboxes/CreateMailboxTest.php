@@ -36,14 +36,14 @@ class CreateMailboxTest extends TestCase
         $this->assertSame($response->headers->get('ETag'), $response->json('data.etag'));
         $this->assertSame('anna.smith@example.org', $response->json('data.address'));
         $this->assertSame('anna.smith', $response->json('data.displayName'));
-        $this->assertSame(3072 * self::MIB, $response->json('data.quota'), 'The domain default quota for a new mailbox.');
+        $this->assertSame(0, $response->json('data.quota'), 'The built-in unlimited quota, not the domain\'s default mailbox quota.');
         $this->assertSame(0, $response->json('data.quotaUsed'));
         $this->assertStringNotContainsString('BLF-CRYPT', (string) $response->getContent());
         $this->assertStringNotContainsString(self::PASSWORD, (string) $response->getContent());
 
         $row = $this->mailboxRow('anna.smith@example.org');
         $this->assertNotNull($row);
-        $this->assertSame(['anna.smith', 'example.org', 'anna.smith', 3072 * self::MIB, 'mailcow', 1, ''], [$row->local_part, $row->domain, $row->name, (int) $row->quota, $row->authsource, (int) $row->active, $row->kind]);
+        $this->assertSame(['anna.smith', 'example.org', 'anna.smith', 0, 'mailcow', 1, ''], [$row->local_part, $row->domain, $row->name, (int) $row->quota, $row->authsource, (int) $row->active, $row->kind]);
         $this->assertTrue((new LegacyPasswordVerifier)->verify((string) $row->password, self::PASSWORD));
         $this->assertSame('{}', $row->custom_attributes);
 
@@ -105,7 +105,7 @@ class CreateMailboxTest extends TestCase
         $this->assertFalse($record->details['preHashed']);
         $this->assertNull($record->details['templateId']);
         $this->assertSame(['rateLimit' => 'notRequested', 'taggedMailHandling' => 'notRequested', 'groupwareDirectoryUpdate' => 'done'], $record->details['creationReport']);
-        $this->assertSame(3072 * self::MIB, $record->details['values']['quota']);
+        $this->assertSame(0, $record->details['values']['quota']);
         $this->assertArrayNotHasKey('password', $record->details['values']);
         $this->assertStringNotContainsString(self::PASSWORD, json_encode($record->details) ?: '');
     }

@@ -72,9 +72,9 @@ class DomainUsageCalculatorTest extends TestCase
         $this->assertSame(8 * self::GIB, $usage->quotaAllocated);
         $this->assertSame(3300, $usage->storageUsed);
         $this->assertSame(33, $usage->messages);
-        // min(10 GiB - 8 GiB, 10 GiB) = 2 GiB; the default 3 GiB is capped at it.
+        // min(10 GiB - 8 GiB, 10 GiB) = 2 GiB.
         $this->assertSame(2 * self::GIB, $usage->maxNewMailboxQuota);
-        $this->assertSame(2 * self::GIB, $usage->defaultNewMailboxQuota);
+        $this->assertArrayNotHasKey('defaultNewMailboxQuota', $usage->toArray());
     }
 
     public function test_left_figures_may_be_negative_and_new_quotas_never_are(): void
@@ -90,17 +90,15 @@ class DomainUsageCalculatorTest extends TestCase
         $this->assertSame(-1, $usage->mailboxesLeft);
         $this->assertSame(-1, $usage->aliasesLeft);
         $this->assertSame(0, $usage->maxNewMailboxQuota);
-        $this->assertSame(0, $usage->defaultNewMailboxQuota);
     }
 
-    public function test_the_default_new_quota_is_capped_at_the_default_mailbox_quota(): void
+    public function test_the_legacy_default_mailbox_quota_does_not_cap_the_new_quota(): void
     {
         $this->mailcow()->domain('example.org', attributes: ['defquota' => 1024, 'maxquota' => 4096, 'quota' => 10240]);
 
         $usage = $this->usage('example.org');
 
         $this->assertSame(4 * self::GIB, $usage->maxNewMailboxQuota);
-        $this->assertSame(self::GIB, $usage->defaultNewMailboxQuota);
         $this->assertSame(0, $usage->storageUsed);
         $this->assertSame(0, $usage->largestMailboxQuota);
     }

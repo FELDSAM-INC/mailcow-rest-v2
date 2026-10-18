@@ -37,7 +37,6 @@ class UpdateDomainAdminTest extends TestCase
             'active' => false,
             'maxMailboxes' => 42,
             'maxAliases' => 43,
-            'defaultMailboxQuota' => 1024 * self::MIB,
             'maxMailboxQuota' => 2048 * self::MIB,
             'domainQuota' => 4096 * self::MIB,
             'globalAddressList' => false,
@@ -50,7 +49,7 @@ class UpdateDomainAdminTest extends TestCase
         $this->assertSame(0, (int) $row->active);
         $this->assertSame(42, (int) $row->mailboxes);
         $this->assertSame(43, (int) $row->aliases);
-        $this->assertSame(1024, (int) $row->defquota);
+        $this->assertSame(2048, (int) $row->defquota, 'The legacy default is lowered to the new maximum.');
         $this->assertSame(2048, (int) $row->maxquota);
         $this->assertSame(4096, (int) $row->quota);
         $this->assertSame(0, (int) $row->gal);
@@ -112,9 +111,7 @@ class UpdateDomainAdminTest extends TestCase
         $this->patchDomain(['maxAliases' => 0])->assertOk()->assertJsonPath('data.maxAliases', 0);
         $this->assertSame(0, (int) $this->domainRow('example.org')?->aliases);
 
-        $this->patchDomain(['defaultMailboxQuota' => 20480 * self::MIB])->assertStatus(422)
-            ->assertJsonPath('errors.defaultMailboxQuota.0.code', 'mustNotExceed');
-        $this->patchDomain(['domainQuota' => 1536 * self::MIB, 'maxMailboxQuota' => 1024 * self::MIB, 'defaultMailboxQuota' => 1024 * self::MIB])->assertOk();
+        $this->patchDomain(['domainQuota' => 1536 * self::MIB, 'maxMailboxQuota' => 1024 * self::MIB])->assertOk();
         $this->patchDomain(['maxMailboxQuota' => 2048 * self::MIB])->assertStatus(422)
             ->assertJsonPath('errors.maxMailboxQuota.0.params', ['field' => 'domainQuota', 'value' => 1536 * self::MIB]);
     }

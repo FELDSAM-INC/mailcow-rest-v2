@@ -6,6 +6,10 @@ description: |
   template is refused with `409 domain-template-protected` (sending its current name is accepted).
   The read-only members (`id`, `isDefault`, `createdAt`, `modifiedAt`, `etag`) are accepted when
   equal to the current value and refused with the rule code `immutable` otherwise.
+
+  The stored default mailbox quota of the template, which this API does not expose (owner decision
+  2026-10-18), is lowered to `maxMailboxQuota` when it exceeds it and set to `maxMailboxQuota` when
+  it is missing or zero; this is not recorded as a change.
 properties:
   name:
     type: string
@@ -21,10 +25,6 @@ properties:
     type: integer
     minimum: 0
     maximum: 2147483647
-  defaultMailboxQuota:
-    type: integer
-    minimum: 1048576
-    maximum: 9007199254740992
   maxMailboxQuota:
     type: integer
     minimum: 1048576

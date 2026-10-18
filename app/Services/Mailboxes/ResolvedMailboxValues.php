@@ -5,7 +5,7 @@ namespace App\Services\Mailboxes;
 /**
  * The values of a new mailbox (feature 003 FR-022): `values` with the request applied, and the
  * `baseline` the mailbox would get from the named template, the Default template and the built-in
- * defaults alone. A `quota` of null means the domain's default quota for a new mailbox applies.
+ * defaults alone.
  */
 final readonly class ResolvedMailboxValues
 {

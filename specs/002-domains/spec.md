@@ -140,6 +140,12 @@
   carries them as `default` keywords where they are fixed (FR-068). (orchestrator decision:
   `docs/api-gaps.md` G29, found by UI 002. The default selector is a server setting, so it can only
   come from the capabilities.)
+- Q: Should domains and domain templates expose mailcow's default mailbox quota (`domain.defquota`,
+  `def_quota_for_mbox`)? → A: No. The API neither shows nor accepts it, and no longer derives a
+  default quota for a new mailbox from it; the server keeps the stored values valid for the classic
+  interface (FR-020, FR-046). (owner decision, 2026-10-18: "it is completely useless", an upstream
+  leftover since mailbox templates carry the quota of a new mailbox. Supersedes the earlier
+  contract, which exposed and validated the value.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -233,7 +239,7 @@ that mail for the new domain is accepted once a mailbox exists.
    20 mailboxes, a 50 GiB domain quota and every other value from "Reseller".
 3. **Given** an existing domain or alias domain `example.org`, **When** an administrator creates
    `Example.org`, **Then** creation is refused as a conflict and nothing changes.
-4. **Given** a request whose default mailbox quota exceeds the maximum mailbox quota, **When** it is
+4. **Given** a request whose maximum mailbox quota exceeds the domain quota, **When** it is
    submitted, **Then** it is refused with a validation error naming the field and its rule, and
    nothing is created.
 5. **Given** a request for the server's own host name, **When** it is submitted, **Then** it is
@@ -574,7 +580,8 @@ and list the audit log filtered by target.
   - its description;
   - its active state;
   - its limits: maximum number of mailboxes and maximum number of aliases;
-  - its quotas: default mailbox quota, maximum mailbox quota and total domain quota;
+  - its quotas: maximum mailbox quota and total domain quota (not the default mailbox quota,
+    FR-020);
   - its relay options: "relay this domain" (backup MX), "relay all recipients" and "relay
     non-existing mailboxes only";
   - its Global Address List flag;
@@ -598,9 +605,8 @@ and list the audit log filtered by target.
   - storage used and message count: the totals stored for all of the domain's mailboxes, including
     resources;
   - largest quota for a new mailbox: the domain quota minus the quota allocated, capped at the
-    maximum mailbox quota and never below zero;
-  - default quota for a new mailbox: the largest quota for a new mailbox, capped at the default
-    mailbox quota.
+    maximum mailbox quota and never below zero. Legacy's default quota for a new mailbox is not
+    reported (FR-020).
 - **FR-009**: Quotas MUST be expressed in bytes. Because mailcow stores them in whole mebibytes
   (MiB), quota values in requests MUST be whole multiples of 1 MiB.
 - **FR-010**: Times MUST be RFC 3339 UTC timestamps. A domain that was never modified MUST report no
@@ -618,8 +624,8 @@ and list the audit log filtered by target.
   any of them.
 - **FR-014**: The list MUST be sortable, ascending or descending, by: name, description, active
   state, "relay this domain", mailboxes in use, aliases in use, quota allocated, storage used,
-  maximum mailboxes, maximum aliases, default mailbox quota, maximum mailbox quota, domain quota,
-  creation time and modification time. The default MUST be by name, ascending. Ties MUST be broken
+  maximum mailboxes, maximum aliases, maximum mailbox quota, domain quota, creation time and
+  modification time. The default MUST be by name, ascending. Ties MUST be broken
   by name.
 - **FR-015**: Each list entry MUST carry the full domain representation (FR-007) and the domain's
   version tag (FR-041), equal to the one an inspection returns, so that the list screen needs no
@@ -656,9 +662,8 @@ and list the audit log filtered by target.
 - **FR-017**: Administrators MUST be able to create a domain. Only the name is required. Every other
   attribute MAY be given, and an omitted attribute MUST take its value from the chosen template
   (FR-018). The attributes are: description, active state, maximum mailboxes, maximum aliases,
-  default mailbox quota, maximum mailbox quota, domain quota, the three relay options, the Global
-  Address List flag, tags, an initial rate limit, a DKIM selector, a DKIM key size, and whether to
-  restart the groupware.
+  maximum mailbox quota, domain quota, the three relay options, the Global Address List flag, tags,
+  an initial rate limit, a DKIM selector, a DKIM key size, and whether to restart the groupware.
 - **FR-018**: A creation request MAY name a domain template by its identifier. When it does not, the
   Default template MUST be used. A named template that does not exist MUST be refused with a
   validation error.
@@ -672,7 +677,12 @@ and list the audit log filtered by target.
   - description: at most 255 characters. An empty or omitted description at creation, and an empty
     description sent with an edit, MUST be stored as the domain name;
   - maximum mailboxes and maximum aliases: whole numbers from 0 to 2,147,483,647;
-  - default mailbox quota: at least 1 MiB and not more than the maximum mailbox quota;
+  - default mailbox quota: not part of the API (owner decision 2026-10-18). The stored value MUST
+    be kept valid for the classic interface, which requires it to be above zero and not more than
+    the maximum mailbox quota: a creation MUST store the template's default capped at the maximum
+    mailbox quota, or the maximum mailbox quota when the template has none (or no template
+    applies); an edit that changes the maximum mailbox quota MUST lower a larger default to it,
+    and any other edit MUST leave it unchanged. These values MUST NOT be audited;
   - maximum mailbox quota: at least 1 MiB and not more than the domain quota;
   - tags: as in FR-043;
   - initial rate limit: a whole number from 1 to 2,147,483,647 together with a time frame of
@@ -828,16 +838,18 @@ and list the audit log filtered by target.
 #### Domain templates
 
 - **FR-045**: Administrators MUST be able to list, create, inspect, edit and delete domain templates.
-  A template MUST hold: a name, tags, maximum mailboxes, maximum aliases, default mailbox quota,
-  maximum mailbox quota, domain quota, a rate limit, the active state, the Global Address List flag,
+  A template MUST hold: a name, tags, maximum mailboxes, maximum aliases, maximum mailbox quota,
+  domain quota, a rate limit, the active state, the Global Address List flag,
   the three relay options, a DKIM selector and a DKIM key size. It MUST also report an identifier,
   whether it is the Default template, its creation and modification times, and a version tag
   (FR-041).
 - **FR-046**: A template created without some values MUST get the legacy defaults for them: 400
-  aliases, 10 mailboxes, 3,072 MiB default mailbox quota, 10,240 MiB maximum mailbox quota, 10,240
-  MiB domain quota, no rate limit, active, Global Address List enabled, no relay options, no tags,
-  the configured default DKIM selector (FR-028) and 2,048-bit keys. An explicitly sent value,
-  including zero, MUST be kept when it is valid.
+  aliases, 10 mailboxes, 10,240 MiB maximum mailbox quota, 10,240 MiB domain quota, no rate limit,
+  active, Global Address List enabled, no relay options, no tags, the configured default DKIM
+  selector (FR-028) and 2,048-bit keys. An explicitly sent value, including zero, MUST be kept when
+  it is valid. The template's default mailbox quota, which the API does not expose (FR-020), MUST
+  be stored as the maximum mailbox quota at creation; an edit MUST lower a larger stored value to
+  the maximum mailbox quota and replace a missing or zero one with it, without auditing it.
 - **FR-047**: A template name MUST NOT be empty, MUST be at most 255 characters long, and MUST be
   unique among domain templates, compared case-insensitively. A duplicate, at creation or on a
   rename, MUST be refused as a conflict. The values of a template MUST meet the rules in FR-020 and
@@ -997,7 +1009,8 @@ in three ways:
 | Alias domain name in a domain lookup | `get/domain/{alias}` returns the target domain's details | "Not found" (FR-006). **Deviation** |
 | Duplicate and host name checks | Exists as domain or alias domain; equal to `MAILCOW_HOSTNAME` | Same; the host name compared case-insensitively (FR-019) |
 | Values at creation | From the chosen template. An unknown or empty template silently falls back to the first domain template | From the chosen template or Default; an unknown template is refused; built-in seed values when Default is missing (FR-018, FR-022). **Deviation** |
-| Quota and limit rules | Default ≤ maximum mailbox quota ≤ domain quota, neither mailbox quota 0. Negative limits accepted | Same, plus limits ≥ 0 and whole MiB (FR-009, FR-020). **Deviation**: negative limits refused |
+| Quota and limit rules | Default ≤ maximum mailbox quota ≤ domain quota, neither mailbox quota 0. Negative limits accepted | Maximum mailbox quota ≤ domain quota, plus limits ≥ 0 and whole MiB (FR-009, FR-020). **Deviation**: negative limits refused |
+| Default mailbox quota (owner decision, 2026-10-18) | `domain.defquota` and templates' `def_quota_for_mbox` are shown, edited and validated (default ≤ maximum mailbox quota, not 0); `domain_details` derives `def_new_mailbox_quota` from it, and the UI pre-fills new mailboxes with it | Not exposed, accepted or reported: an upstream leftover that mailbox templates replace. The API maintains the columns so that legacy's rules hold: creation stores the template's default capped at the maximum mailbox quota (else the maximum), a changed maximum lowers a larger default, templates store the maximum (FR-020, FR-046). **Deviation** |
 | Quota units | MiB in requests and storage, bytes in details | Bytes, whole MiB (FR-009) |
 | Relay options | "Unknown only" implies "all", which implies backup MX | Same, also for templates (FR-021) |
 | Zero and omitted values on edit | Alias limit, maximum mailbox quota and domain quota treat 0 as "keep". Template edits reset omitted values to 0 or defaults | Sent values applied, omitted values kept, for domains and templates (FR-030, FR-048). **Deviation** |

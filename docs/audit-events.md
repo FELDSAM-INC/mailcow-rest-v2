@@ -114,7 +114,7 @@ follow-up steps have run.
 
 | Key | Type | Meaning | Present |
 |---|---|---|---|
-| `values` | object | The stored attributes in contract names: `description`, `active`, `maxMailboxes`, `maxAliases`, `defaultMailboxQuota`, `maxMailboxQuota`, `domainQuota` (bytes), `backupMx`, `relayAllRecipients`, `relayUnknownOnly`, `globalAddressList`, `tags`, the initial `rateLimit` (`{value, frame}` or `null`), `dkimSelector` (empty: no key) and `dkimKeySize`. | on success |
+| `values` | object | The stored attributes in contract names: `description`, `active`, `maxMailboxes`, `maxAliases`, `maxMailboxQuota`, `domainQuota` (bytes), `backupMx`, `relayAllRecipients`, `relayUnknownOnly`, `globalAddressList`, `tags`, the initial `rateLimit` (`{value, frame}` or `null`), `dkimSelector` (empty: no key) and `dkimKeySize`. The default mailbox quota that the server keeps for the classic interface is not recorded; records written before 2026-10-18 also carry `defaultMailboxQuota` (bytes), from before the owner removed it from the API. | on success |
 | `templateId` | integer or null | The domain template the values came from; `null` when the built-in values applied because no Default template exists. | on success |
 | `creationReport` | object | The creation report of the response (`DomainCreationReport`): `rateLimit`, `dkimKey`, `dkimDnsPublication`, `groupwareRestart` and, when a step failed, `messages`. `"pending"` only until the follow-up steps complete. Records written before 2026-10-18 also carry `groupwareDirectoryUpdate`, from the directory rebuild that creations no longer run (legacy never did). | on success |
 | `problemType` | string | See "Refusal records". | on failure |
@@ -129,7 +129,7 @@ changes nothing is recorded too, with empty `changes`.
 
 | Key | Type | Meaning | Present |
 |---|---|---|---|
-| `changes` | object | Each changed attribute (contract names) as `{old, new}`: quotas in bytes, `tags` as sorted lists, `description` after the empty-means-name rule, relay options after normalisation. Empty when nothing changed. | on success |
+| `changes` | object | Each changed attribute (contract names) as `{old, new}`: quotas in bytes, `tags` as sorted lists, `description` after the empty-means-name rule, relay options after normalisation. Empty when nothing changed. The default mailbox quota that a lowered `maxMailboxQuota` lowers with it is not recorded; records written before 2026-10-18 may carry `defaultMailboxQuota`. | on success |
 | `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
 | `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
 | `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
@@ -179,7 +179,7 @@ creation has no ID).
 
 | Key | Type | Meaning | Present |
 |---|---|---|---|
-| `values` | object | The template's values in contract names: `tags`, `maxMailboxes`, `maxAliases`, `defaultMailboxQuota`, `maxMailboxQuota`, `domainQuota` (bytes), `rateLimit` (`{value, frame}` or `null`), `active`, `globalAddressList`, `backupMx`, `relayAllRecipients`, `relayUnknownOnly`, `dkimSelector` and `dkimKeySize`. | on success |
+| `values` | object | The template's values in contract names: `tags`, `maxMailboxes`, `maxAliases`, `maxMailboxQuota`, `domainQuota` (bytes), `rateLimit` (`{value, frame}` or `null`), `active`, `globalAddressList`, `backupMx`, `relayAllRecipients`, `relayUnknownOnly`, `dkimSelector` and `dkimKeySize`. The stored default mailbox quota (`def_quota_for_mbox`), kept for the classic interface, is not recorded; records written before 2026-10-18 also carry `defaultMailboxQuota`. | on success |
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
@@ -191,7 +191,7 @@ also when nothing changes, and every refusal. The target carries the name after 
 
 | Key | Type | Meaning | Present |
 |---|---|---|---|
-| `changes` | object | Each changed member (`name` and the values of `domainTemplateCreation`) as `{old, new}`. Empty when nothing changed. | on success |
+| `changes` | object | Each changed member (`name` and the values of `domainTemplateCreation`) as `{old, new}`. Empty when nothing changed. An adjustment of the stored default mailbox quota is not recorded; records written before 2026-10-18 may carry `defaultMailboxQuota`. | on success |
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |

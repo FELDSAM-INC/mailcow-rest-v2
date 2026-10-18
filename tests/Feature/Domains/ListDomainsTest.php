@@ -90,7 +90,6 @@ class ListDomainsTest extends TestCase
             'storageUsed' => ['storageUsed', ['a.example', 'b.example', 'c.example']],
             'maxMailboxes' => ['maxMailboxes', ['c.example', 'a.example', 'b.example']],
             'maxAliases' => ['maxAliases', ['a.example', 'b.example', 'c.example']],
-            'defaultMailboxQuota' => ['defaultMailboxQuota', ['c.example', 'b.example', 'a.example']],
             'maxMailboxQuota' => ['maxMailboxQuota', ['c.example', 'b.example', 'a.example']],
             'domainQuota' => ['domainQuota', ['c.example', 'b.example', 'a.example']],
             'createdAt' => ['createdAt', ['a.example', 'c.example', 'b.example']],

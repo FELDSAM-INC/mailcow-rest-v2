@@ -11,7 +11,6 @@ required:
   - active
   - maxMailboxes
   - maxAliases
-  - defaultMailboxQuota
   - maxMailboxQuota
   - domainQuota
   - backupMx
@@ -51,11 +50,6 @@ properties:
   maxAliases:
     type: integer
     description: Maximum number of aliases (`domain.aliases`).
-  defaultMailboxQuota:
-    type: integer
-    minimum: 0
-    multipleOf: 1048576
-    description: Default quota of a new mailbox, bytes (`domain.defquota`).
   maxMailboxQuota:
     type: integer
     minimum: 0

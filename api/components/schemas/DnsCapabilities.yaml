@@ -27,6 +27,7 @@ properties:
       - privateKeyMaxBytes
       - importKeyLengthMin
       - importKeyLengthMax
+      - bulkLimit
       - dnsPublicationEnabled
       - privateKeyExportEnabled
     properties:
@@ -58,6 +59,10 @@ properties:
         type: integer
         description: Largest RSA key length in bits accepted by an import.
         examples: [8192]
+      bulkLimit:
+        type: integer
+        description: Most targets one `applyDkimKeyBulkAction` request may name.
+        examples: [100]
       dnsPublicationEnabled:
         type: boolean
         description: |

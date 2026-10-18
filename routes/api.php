@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\V2\ContainerRestartController;
 use App\Http\Controllers\Api\V2\ContainerStartController;
 use App\Http\Controllers\Api\V2\ContainerStopController;
 use App\Http\Controllers\Api\V2\CsrfTokenController;
+use App\Http\Controllers\Api\V2\DkimKeyController;
+use App\Http\Controllers\Api\V2\DnsCapabilitiesController;
 use App\Http\Controllers\Api\V2\DomainBulkActionController;
 use App\Http\Controllers\Api\V2\DomainCapabilitiesController;
 use App\Http\Controllers\Api\V2\DomainController;
@@ -751,6 +753,11 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     // `/dkim-keys/{dkimName}`, which never accepts POST (a key named `bulk-actions` stays readable
     // and deletable). State-changing routes and the export declare `restv2.audit` (research R22).
     Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/capabilities/dns', [DnsCapabilitiesController::class, 'show'])->name('dns-capabilities.show');
+        Route::get('/dkim-keys', [DkimKeyController::class, 'index'])->name('dkim-keys.index');
+        Route::get('/dkim-keys/{dkimName}', [DkimKeyController::class, 'show'])
+            ->where('dkimName', '[^/]+')
+            ->name('dkim-keys.show');
     });
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
     });

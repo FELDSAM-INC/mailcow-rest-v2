@@ -62,6 +62,136 @@ class DkimKeyStore
         return $this->store->run(fn (Redis $redis): bool => (bool) $redis->hExists(self::PUB_KEYS, $name) || (bool) $redis->hExists(self::SELECTORS, $name));
     }
 
+    /**
+     * The names that have a key: the fields of `DKIM_PUB_KEYS` and `DKIM_SELECTORS` (FR-008), as a
+     * set (name => true), without reading any value.
+     *
+     * @return array<string, true>
+     */
+    public function keyNames(): array
+    {
+        return $this->store->run(function (Redis $redis): array {
+            $names = [];
+
+            foreach ([self::PUB_KEYS, self::SELECTORS] as $hash) {
+                $fields = $redis->hKeys($hash);
+
+                foreach (is_array($fields) ? $fields : [] as $field) {
+                    $names[(string) $field] = true;
+                }
+            }
+
+            return $names;
+        });
+    }
+
+    /**
+     * Every stored selector (name => selector).
+     *
+     * @return array<string, string>
+     */
+    public function selectors(): array
+    {
+        return $this->hashValues(self::SELECTORS);
+    }
+
+    /**
+     * Every stored public key text (name => public key).
+     *
+     * @return array<string, string>
+     */
+    public function publicKeys(): array
+    {
+        return $this->hashValues(self::PUB_KEYS);
+    }
+
+    /**
+     * Whether `DKIM_PRIV_KEYS[<selector>.<name>]` exists, for each given field, in one pipeline,
+     * without reading the private keys.
+     *
+     * @param  list<string>  $fields  `<selector>.<name>`
+     * @return array<string, bool>
+     */
+    public function privateKeysExist(array $fields): array
+    {
+        if ($fields === []) {
+            return [];
+        }
+
+        return $this->store->run(function (Redis $redis) use ($fields): array {
+            $pipeline = $redis->multi(Redis::PIPELINE);
+
+            foreach ($fields as $field) {
+                $pipeline->hExists(self::PRIV_KEYS, $field);
+            }
+
+            $answers = $pipeline->exec();
+
+            if (! is_array($answers)) {
+                throw new SharedStoreUnavailable('mailcow\'s shared store did not answer the pipeline.');
+            }
+
+            return array_combine($fields, array_map(fn (mixed $a): bool => (bool) $a, array_values($answers)));
+        });
+    }
+
+    /**
+     * The stored keys of several names (null for a name without a key), in three round trips.
+     *
+     * @param  list<string>  $names
+     * @return array<string, StoredDkimKey|null>
+     */
+    public function readMany(array $names): array
+    {
+        if ($names === []) {
+            return [];
+        }
+
+        $pubs = $this->store->getFields(self::PUB_KEYS, $names);
+        $selectors = $this->store->getFields(self::SELECTORS, $names);
+        $privateFields = [];
+
+        foreach ($names as $name) {
+            if ($selectors[$name] !== null) {
+                $privateFields[] = $selectors[$name].'.'.$name;
+            }
+        }
+
+        $privs = $this->store->getFields(self::PRIV_KEYS, array_values(array_unique($privateFields)));
+        $keys = [];
+
+        foreach ($names as $name) {
+            $pub = $pubs[$name];
+            $selector = $selectors[$name];
+
+            if ($pub === null && $selector === null) {
+                $keys[$name] = null;
+
+                continue;
+            }
+
+            $priv = $selector === null ? null : ($privs[$selector.'.'.$name] ?? null);
+            $keys[$name] = new StoredDkimKey(
+                name: $name,
+                selector: $selector,
+                publicKey: $pub,
+                hasPrivateKey: $priv !== null,
+                privateKeyHmac: $priv === null ? null : hash_hmac('sha256', $priv, (string) config('app.key')),
+                fingerprint: self::fingerprint($name, $selector, $pub, $priv),
+            );
+        }
+
+        return $keys;
+    }
+
+    /**
+     * The private key text of a name's current selector, for the gated export only (FR-026).
+     */
+    public function privateKey(string $name, string $selector): ?string
+    {
+        return $this->store->getField(self::PRIV_KEYS, $selector.'.'.$name);
+    }
+
     public function create(string $name, string $selector, DkimKeyMaterial $material): DkimStoreResult
     {
         return $this->run('create', $name, null, $selector, $material->publicKey, $material->privateKey);
@@ -153,6 +283,18 @@ class DkimKeyStore
             }
 
             return array_values($result);
+        });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function hashValues(string $hash): array
+    {
+        return $this->store->run(function (Redis $redis) use ($hash): array {
+            $values = $redis->hGetAll($hash);
+
+            return is_array($values) ? array_map('strval', array_combine(array_map('strval', array_keys($values)), $values)) : [];
         });
     }
 

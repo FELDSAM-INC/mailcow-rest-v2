@@ -340,16 +340,13 @@
         }
     },
     "pendingOperations": [
-        "listDkimKeys",
         "generateDkimKey",
-        "getDkimKey",
         "deleteDkimKey",
         "applyDkimKeyBulkAction",
         "importDkimKey",
         "copyDkimKey",
         "exportDkimPrivateKey",
         "publishDkimDnsRecord",
-        "getDnsCapabilities",
         "listMtaStsPolicies",
         "createMtaStsPolicy",
         "getMtaStsPolicy",

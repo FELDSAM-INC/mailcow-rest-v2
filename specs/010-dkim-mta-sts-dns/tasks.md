@@ -326,7 +326,7 @@ compare with legacy's screen values.
 
 ### Tests for User Story 1
 
-- [ ] T034 [P] [US1] Write `tests/Feature/Dkim/ListDkimKeysTest.php`:
+- [X] T034 [P] [US1] Write `tests/Feature/Dkim/ListDkimKeysTest.php`:
   - AS1: 3 domains with keys, 1 without, 1 alias domain with a key, 1 key of a deleted domain → 6
     entries, 4 `valid`, 1 `missing`, 1 `unused`, sorted by name;
   - filters: `state` repeated (`missing`, `unused`), `kind`, `selector` (exact), `complete`
@@ -343,7 +343,7 @@ compare with legacy's screen values.
   - `etag` is set for every entry with a key and `null` for `missing`; no response contains
     `PRIVATE KEY`;
   - Redis unavailable → `503 temporary-failure` with `Retry-After`.
-- [ ] T035 [P] [US1] Write `tests/Feature/Dkim/GetDkimKeyTest.php`: AS2 (2,048-bit key, selector
+- [X] T035 [P] [US1] Write `tests/Feature/Dkim/GetDkimKeyTest.php`: AS2 (2,048-bit key, selector
   `dkim` → `keyLength 2048`, record name `dkim._domainkey.<domain>`, value
   `v=DKIM1;k=rsa;t=s;s=email;p=<pub>`, `valueParts` of ≤ 255 characters joining to the value); the
   `ETag` header equals `data.etag`; a key changed directly in Redis (as legacy would) changes the
@@ -351,7 +351,7 @@ compare with legacy's screen values.
   `xn--bcher-kva.example`; an administrator reaches an unused key by its exact stored name; an
   unknown name → `404`; a domain without a key → `200` with `state: missing`, `key: null`, no
   `ETag`.
-- [ ] T036 [P] [US1] Write `tests/Feature/Dkim/DnsCapabilitiesTest.php`: an administrator gets
+- [X] T036 [P] [US1] Write `tests/Feature/Dkim/DnsCapabilitiesTest.php`: an administrator gets
   `serverHostname` (lower-case `MAILCOW_HOSTNAME`), `dkim.defaultSelector` from
   `RESTV2_DEFAULT_DKIM_SELECTOR` (`feldhost` when set), `defaultKeySize 2048`, `allowedKeySizes`,
   `selectorMaxLength 255`, `privateKeyMaxBytes 16384`, `importKeyLengthMin 1024`,
@@ -362,7 +362,7 @@ compare with legacy's screen values.
   `runTimeoutSeconds 30`, `serverChecks true`, `defaultPageSize 25`, `maxPageSize 1000`; a domain
   administrator gets `privateKeyExportEnabled: null` and `serverChecks: false`; no ISPConfig URL,
   user or password appears.
-- [ ] T037 [P] [US1] Write `tests/Feature/Dkim/DkimReadAuthorizationTest.php`: the role and key
+- [X] T037 [P] [US1] Write `tests/Feature/Dkim/DkimReadAuthorizationTest.php`: the role and key
   matrix for `listDkimKeys`, `getDkimKey` and `getDnsCapabilities` (AS3, AS4, AS6): a domain
   administrator with one domain and one alias domain lists exactly those 2 entries and never an
   unused key; a foreign domain or an unused key's name → the same `404` body shape as a
@@ -372,23 +372,23 @@ compare with legacy's screen values.
 
 ### Implementation for User Story 1
 
-- [ ] T038 [US1] Create `app/Services/Dkim/DkimEntryQuery.php` (research R8: names and kinds from
+- [X] T038 [US1] Create `app/Services/Dkim/DkimEntryQuery.php` (research R8: names and kinds from
   `domain` and `alias_domain` restricted to the scope, `HKEYS` of both hashes, values loaded only
   for the filters and sorts that need them, page values in one pipeline, key lengths memoised per
   public key hash) and `app/Services/Dkim/DkimEntry.php`.
-- [ ] T039 [US1] Create `app/Http/Requests/Api/V2/ListDkimKeysRequest.php` (`state` array of at most
+- [X] T039 [US1] Create `app/Http/Requests/Api/V2/ListDkimKeysRequest.php` (`state` array of at most
   3 values of `valid|missing|unused`, `kind` of `domain|aliasDomain|none`, `selector` max 255,
   `complete` boolean, `domain` max 255, `q` max 255, `sort` of `name|state|selector|keyLength`,
   `order`, `limit` 1–1000, `offset` ≥ 0; rule codes `notInList`, `tooMany`, `tooLong`,
   `outOfRange`, `invalidType`).
-- [ ] T040 [US1] Create `app/Http/Resources/Api/V2/DkimKeyResource.php` (contract `DkimKey`:
+- [X] T040 [US1] Create `app/Http/Resources/Api/V2/DkimKeyResource.php` (contract `DkimKey`:
   `name`, `displayName` via `idn_to_utf8`, `kind`, `targetDomain`, `state`, `key` with `selector`,
   `keyLength`, `publicKey`, `record`, `complete`, `missingParts`, and `etag`; never a private key).
-- [ ] T041 [US1] Implement `index` and `show` in `app/Http/Controllers/Api/V2/DkimKeyController.php`
+- [X] T041 [US1] Implement `index` and `show` in `app/Http/Controllers/Api/V2/DkimKeyController.php`
   (policy `viewAny`/`view`, `DkimNameResolver`, `ETag` header when a key exists, `503` mapping of
   the shared-store unavailable exception) and register `GET /dkim-keys` and `GET /dkim-keys/{dkimName}` in
   `routes/api.php`. T034, T035 and the read part of T037 pass.
-- [ ] T042 [US1] Create `app/Http/Controllers/Api/V2/DnsCapabilitiesController.php` and
+- [X] T042 [US1] Create `app/Http/Controllers/Api/V2/DnsCapabilitiesController.php` and
   `app/Http/Resources/Api/V2/DnsCapabilitiesResource.php` (contract `DnsCapabilities`,
   values from `config('restv2.*')`, `IspconfigSettings`, `MailcowConfig` and the principal's role)
   and register `GET /capabilities/dns` in `routes/api.php`. T036 and T037 pass.

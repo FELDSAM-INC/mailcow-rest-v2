@@ -77,3 +77,27 @@ Constraints: existing accounts, password hashes and second factors MUST keep wor
 in both implementations. See docs/legacy-inventory.md (Auth and sessions, Public REST API) for
 current behaviour.
 ```
+
+## Legacy surface allocation
+
+Every legacy capability belongs to exactly one feature. A feature spec MUST cover everything
+allocated to it, with a coverage table in the spec that maps each legacy action or form handler
+to requirements. Actions are `/api/v1` names unless marked *form*. Fork-only (FeldHost)
+capabilities are included and configurable.
+
+| # | Allocated legacy surface |
+|---|---|
+| 001 | Login for all roles, 2FA verification step, FIDO2/passkey login, registration (`fido2-registration`), rename (`edit/fido2-fn`) and removal of own passkeys, logout, session, *form* API key management, identity, branding read (`UI_*`, `CUSTOM_LOGIN`, logos, languages) |
+| 002 | `domain` add/get/edit/delete, `domain/template` add/get/edit/delete, `edit/domain/footer`, `delete/domain/tag`, domain quotas and limits, relay/backup MX flags, GAL, domain tags |
+| 003 | `mailbox` add/get (all, reduced, id)/edit/delete, `mailbox/template`, `edit/mailbox/custom-attribute`, `edit/rename-mbox`, `edit/user-acl`, `delete/mailbox/tag`, quota, protocol access, admin-set password, forced password change and forced 2FA flags |
+| 004 | `alias`, `alias-domain`, `resource` add/get/edit/delete, sender ACL / send-as (`extend_sender_acl`, external sender addresses) |
+| 005 | Account self-service for every role: own password (`edit/self`, user password), forced password change, password reset via recovery e-mail (*form* `pw_reset_request`/`pw_reset`), recovery e-mail, TOTP/WebAuthn/Yubi OTP enrolment and removal (`webauthn-tfa-registration`, *form* `set_tfa`/`unset_tfa_key`), forced 2FA setup, app passwords (`app-passwd`), temporary aliases (`time_limited_alias`), mailbox sieve filters (`filter`, `filters`, `active-user-sieve`), Pushover (`edit/pushover`, `pushover-test`), tagging (`delimiter_action`), user TLS policy (`edit/tls_policy`), recent logins (`last-login`, `reset-last-login`), EAS cache and SOGo profile reset (`delete/eas_cache`, `delete/sogo_profile`), webmail SSO from the new web app |
+| 006 | Quarantine items and actions (`quarantine`, `qitem`, release, learn, delete), quarantine settings and per-mailbox notification settings (`edit/quarantine*`), spam score (`spam-score`), Rspamd actions (`rspamd/actions`), allow/block lists (`domain-policy`, `mailbox-policy`, `policy_{wl,bl}_*`), rate limits (`rl-domain`, `rl-mbox`, `edit/ratelimit`, `delete/rlhash`) |
+| 007 | Administrator accounts (`admin`), domain administrators (`domain-admin`), `edit/da-acl`, login-as / dual login, domain-admin SSO tokens (`sso/domain-admin`) |
+| 008 | Sync jobs (`syncjob`, `syncjobs`) for admins, domain admins and users |
+| 009 | Relayhosts (incl. test), transports (incl. transport check), relayhost assignment to domains and mailboxes, forwarding hosts (`fwdhost`), BCC maps (`bcc`, `bcc-destination-options`), recipient maps, TLS policy maps |
+| 010 | DKIM (`dkim`, `dkim_duplicate`, `dkim_import`, ISPConfig DNS push — fork-only), MTA-STS (`mta-sts`), DNS diagnostics (`ajax/dns_diagnostics.php`) |
+| 011 | Container status and control, host and vmail stats, version (`status/*`), all log types (`logs/*`), mail queue (`mailq`, `postcat`, flush, hold, delete), fail2ban settings and ban list (`fail2ban`, `edit/fail2ban`), Rspamd history and stats |
+| 012 | Identity providers (`identity-provider` incl. test, Keycloak, generic OIDC, LDAP, mapping, provisioning), IdP sign-in for the new web app, OAuth2 clients (`oauth2-client`) |
+| 013 | Customisation writes (*form* logos, `edit/ui_texts`, `edit/app_links`, `edit/custom_login`, `edit/ip_check`), branding colours (new, API-owned), password policy (`passwordpolicy`), password reset notification template (`edit/reset-password-notification`), quota notifications (`quota_notification`, `_bcc`), Rspamd settings maps (`rsetting`, `edit/rspamd-map`), *form* Rspamd UI password, global filters (`global-filter`, `global_filters`), CORS (`edit/cors`), *form* mass mail, presets (`presets`), *form* license/GUID verification |
+| 014 | Optional: taking over php-fpm internal endpoints, each with a parity suite. Decided by the owner after 013 |

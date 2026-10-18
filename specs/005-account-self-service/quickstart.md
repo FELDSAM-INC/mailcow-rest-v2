@@ -51,23 +51,27 @@ docker compose run --rm app vendor/bin/phpstan analyse
 
 Run `docker compose run --rm app scripts/dev/reset-dev-database.sh` first (001's seeder: `admin`,
 `reseller`, `alice@example.org` with TOTP `JBSWY3DPEHPK3PXP`, `bob@example.org` with a forced
-password change; password `Passw0rd!dev`). Set the reset template once:
-`docker compose exec redis redis-cli -a "$REDISPASS" MSET PW_RESET_FROM noreply@example.org PW_RESET_SUBJ "Reset"`.
+password change; password `Passw0rd!dev`). Feature 005's seed data (T125) adds the reset message's
+sender and subject (`PW_RESET_FROM`, `PW_RESET_SUBJ` in mailcow's Redis), the alias domain
+example.com of example.org, alice's recovery address, two app passwords and a prefilter of alice and
+three recent logins of alice. The session cookie is `__Host-` (Secure), so the API is used over the
+dev stack's HTTPS listener, as in 001's quickstart.
 
 ```bash
-B=http://localhost:8080/api/v2; J='-H Content-Type:application/json'; C='-c jar -b jar'
+B=https://127.0.0.1:18443/api/v2; J='-H Content-Type:application/json'; C='-k -c jar -b jar'
 T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 
 # Capabilities: signed out only passwordReset, signed in everything plus account.
-curl -s $B/capabilities/self-service | jq '.data'                      # {"passwordReset":{"available":true,...}}
+curl -sk $B/capabilities/self-service | jq '.data'                     # {"passwordReset":{"available":true,"tokenLifetimeMinutes":15}}
 
 # US1: bob resolves the forced password change without the current password.
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session -d '{"username":"bob@example.org","password":"Passw0rd!dev"}' | jq .data.state   # restricted
 curl -s $C $B/me/password-policy | jq '.data'
-curl -s $C $J -H "X-CSRF-Token: $T" -X PUT $B/me/password -d '{"newPassword":"short"}' | jq '.errors'           # tooShort / missingCharacterClass
+curl -s $C $J -H "X-CSRF-Token: $T" -X PUT $B/me/password -d '{"newPassword":"short"}' | jq '.errors'           # tooShort (and missingCharacterClass under a stricter policy)
 curl -s $C $J -H "X-CSRF-Token: $T" -X PUT $B/me/password -d '{"newPassword":"{SSHA512}abc"}' | jq '.errors'    # preHashedPassword
-curl -s $C $J -H "X-CSRF-Token: $T" -X PUT $B/me/password -d '{"newPassword":"N3w!Passw0rd"}' | jq '.data'      # sessionsEnded, activeAppPasswords
+curl -s $C $J -H "X-CSRF-Token: $T" -X PUT $B/me/password -d '{"newPassword":"N3w!Passw0rd"}' | jq '.data'      # sessionsEnded, activeAppPasswords, mailServerCacheSeconds
 curl -s $C $B/session | jq .data.state                                                                          # active
+T=$(curl -s $C $B/csrf-token | jq -r .data.token)                                                               # the session was renewed
 
 # US4: app passwords (generated password shown once).
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST "$B/mailboxes/bob@example.org/app-passwords" -d '{"name":"Phone","protocols":["imap","smtp"]}' | jq '.data | {id, generatedPassword}'
@@ -90,8 +94,8 @@ curl -s $C -D - -H "X-CSRF-Token: $T" -X POST $B/me/webmail-handoff -o /dev/null
 docker compose exec redis redis-cli -a "$REDISPASS" --scan --pattern 'PHPREDIS_SESSION:*'              # one key
 
 # US3: password reset (the message goes to the array mailer in local; see storage/logs).
-curl -s $J -c rjar -b rjar -H "X-CSRF-Token: $(curl -s -c rjar -b rjar $B/csrf-token | jq -r .data.token)" \
-  -X POST $B/password-resets -d '{"address":"nobody@example.org"}' | jq '.data'                          # same answer for any address
+curl -sk $J -c rjar -b rjar -H "X-CSRF-Token: $(curl -sk -c rjar -b rjar $B/csrf-token | jq -r .data.token)" \
+  -X POST $B/password-resets -d '{"address":"nobody@example.org"}' | jq '.data'                          # {"tokenLifetimeMinutes":15} for any address
 
 # US12: client configuration and Apple profile.
 curl -s $C $B/me/mailbox/client-configuration | jq '.data | {imap, smtp, caldav}'

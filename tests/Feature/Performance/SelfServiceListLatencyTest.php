@@ -80,7 +80,7 @@ class SelfServiceListLatencyTest extends TestCase
         return $seconds[(int) ceil(0.95 * count($seconds)) - 1];
     }
 
-    public function test_pages_answer_within_one_second_at_p95(): void
+    public function test_pages_answer_within_one_second_at_p95_and_slow_lookups_within_two(): void
     {
         $this->assertSame(0, DB::table('domain')->where('domain', 'perf005.example')->count(), 'Leftovers of an earlier run.');
         $this->startedAt = now('UTC')->subSecond()->format('Y-m-d H:i:s');
@@ -122,17 +122,9 @@ class SelfServiceListLatencyTest extends TestCase
         }
 
         $this->assertSame([], $countries->calls);
-    }
 
-    public function test_a_page_with_slow_lookups_answers_within_two_seconds(): void
-    {
-        $this->assertSame(0, DB::table('domain')->where('domain', 'perf005.example')->count(), 'Leftovers of an earlier run.');
-        $this->startedAt = now('UTC')->subSecond()->format('Y-m-d H:i:s');
-        $this->seedServer();
-        $countries = new FakeCountryLookup;
-        $this->app->instance(CountryLookup::class, $countries);
-        $this->signInAs('admin', Role::Admin);
-
+        // A page whose addresses are not cached and whose lookups take 1.8 s answers within 2 s.
+        $this->redis()->del('IP_SHORTCOUNTRY');
         $uri = '/api/v2/mailboxes/u1@perf005.example/recent-logins?days=31&limit=25';
         // The fake knows no country, so nothing is cached and the same page looks up again.
         $data = $this->getJson($uri)->assertOk()->json('data');
@@ -144,6 +136,6 @@ class SelfServiceListLatencyTest extends TestCase
         $elapsed = (hrtime(true) - $start) / 1e9;
 
         $this->assertCount(1, $countries->calls);
-        $this->assertLessThan(2.0, $elapsed, sprintf('%.3f s', $elapsed));
+        $this->assertLessThan(2.0, $elapsed, sprintf('slow lookups: %.3f s', $elapsed));
     }
 }

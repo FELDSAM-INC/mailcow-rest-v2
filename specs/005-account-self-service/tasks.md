@@ -1018,7 +1018,7 @@ them with legacy `mobileconfig.php`; read the client configuration with the grou
   scope, `401` without credentials).
 - [X] T125 Extend `database/seeders/DevelopmentSeeder.php` with the Part B data of quickstart.md
   (`PW_RESET_FROM`/`PW_RESET_SUBJ`, an alias domain, two app passwords, a filter, `sasl_log` rows).
-- [ ] T126 Run quickstart.md Part A and Part B against the dev stack and fix any deviation; confirm
+- [X] T126 Run quickstart.md Part A and Part B against the dev stack and fix any deviation; confirm
   `build/contract/coverage.json` lists the 51 operations and that no migration was added.
 - [X] T127 [P] Run `vendor/bin/pint --test` and `vendor/bin/phpstan analyse` (level 6) and fix all
   findings in the files of this feature.
@@ -1252,3 +1252,11 @@ that differ from what exists map as listed.
   used up its CPU seconds.
 - **Configuration**: after the rebase onto main, 005's settings are read with
   `App\Support\Config\Env::get` (the architecture test of main), `config/mail.php` included.
+- **T126**: Part B ran on 2026-10-19 against this worktree's dev stack (compose project
+  `restv2-005`, no host ports: curl from a container of the project's network through
+  `--connect-to localhost:443:web:443`); every command printed the value of its comment. Fixed
+  drift: the base URL is the HTTPS listener (`https://127.0.0.1:18443`, `-k`), as in 001's
+  quickstart, because the `__Host-` session cookie is Secure; the reset message's sender and subject
+  come from the seeder; the token is fetched again after the password change; the comments name
+  `mailServerCacheSeconds` and the reset answer. No migration was added. Part C stays open (it needs
+  a mailcow host).

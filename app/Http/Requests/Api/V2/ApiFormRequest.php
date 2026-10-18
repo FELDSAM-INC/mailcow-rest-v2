@@ -27,6 +27,9 @@ abstract class ApiFormRequest extends FormRequest
     /** @var array<string, list<array{code: string, params: array<string, mixed>, message: string}>> */
     private array $bodyViolations = [];
 
+    /** @var array<string, list<array{code: string, params: array<string, mixed>, message: string}>> */
+    private array $additionalViolations = [];
+
     public function authorize(): bool
     {
         return true;
@@ -69,6 +72,18 @@ abstract class ApiFormRequest extends FormRequest
         return [];
     }
 
+    /**
+     * Violations that need more than one rule code per field or the outcome of the other rules,
+     * computed after the rules ran (feature 008: every bad custom imapsync option at once). They are
+     * reported together with the rules' violations, after them for the same field.
+     *
+     * @return array<string, list<array{code: string, params: array<string, mixed>, message: string}>>
+     */
+    protected function additionalViolations(Validator $validator): array
+    {
+        return [];
+    }
+
     public function withValidator(Validator $validator): void
     {
         if ($this->bodyViolations !== []) {
@@ -77,11 +92,25 @@ abstract class ApiFormRequest extends FormRequest
                 $validator->errors()->add($field, $this->bodyViolations[$field][0]['message']);
             });
         }
+
+        $validator->after(function (Validator $validator): void {
+            $this->additionalViolations = array_filter($this->additionalViolations($validator));
+
+            foreach ($this->additionalViolations as $field => $violations) {
+                $validator->errors()->add($field, $violations[0]['message']);
+            }
+        });
     }
 
     protected function failedValidation(Validator $validator): never
     {
-        throw new ValidationProblemException(array_merge($this->bodyViolations, self::violations($validator)));
+        $errors = array_merge($this->bodyViolations, self::violations($validator));
+
+        foreach ($this->additionalViolations as $field => $violations) {
+            $errors[$field] = [...($errors[$field] ?? []), ...$violations];
+        }
+
+        throw new ValidationProblemException($errors);
     }
 
     /**

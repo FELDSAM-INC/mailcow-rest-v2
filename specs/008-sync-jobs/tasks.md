@@ -393,7 +393,7 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T031 [P] [US2] Write `tests/Unit/SyncJobs/CustomParametersValidatorTest.php` (R7, FR-019,
+- [X] T031 [P] [US2] Write `tests/Unit/SyncJobs/CustomParametersValidatorTest.php` (R7, FR-019,
   SC-004). Use a corpus of at least 40 values: `''`, `'--maxsize=1000'`, `'--maxsize=1000
   --nofoldersizesatend'`, `'--MaxSize=1'`, `'maxsize=5'`, `'--maxsize 1000'`, `'--maxsize =5'`,
   `'--folder=a-b'`, `'--=5'`, `'-0'`, `' --maxsize=1'`, `'--showpasswords'`, `'--SHOWPASSWORDS'`,
@@ -411,7 +411,7 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
   - on edit, a value equal to the stored one gives no violation, a different one gives
     `customParamsNotPermitted`, and an empty string differing from a non-empty stored value is
     refused.
-- [ ] T032 [P] [US2] Write `tests/Unit/SyncJobs/HostNameRuleTest.php` and
+- [X] T032 [P] [US2] Write `tests/Unit/SyncJobs/HostNameRuleTest.php` and
   `tests/Unit/SyncJobs/ExcludePatternRuleTest.php` (R6).
   - **Host rule**: for a corpus of at least 25 values, the rule agrees with
     `legacy_syncjob_is_valid_domain_name()`. The corpus includes `imap.example.com`, `localhost`,
@@ -420,7 +420,7 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
     trailing dot and an underscore. A refusal gives `invalidFormat {format: hostName}`.
   - **Exclusion rule**: `(?i)spam|(?i)junk`, `''`, `^INBOX\/Junk$` and `Trash|Spam` are valid;
     `(`, `[a-` and `INBOX/Junk` (unescaped `/`, refused as legacy refuses it) give `invalidRegex`.
-- [ ] T033 [P] [US2] Write `tests/Feature/SyncJobs/SyncJobTargetResolverTest.php` (R8, FR-003,
+- [X] T033 [P] [US2] Write `tests/Feature/SyncJobs/SyncJobTargetResolverTest.php` (R8, FR-003,
   FR-017, AS-9):
   - **Mailbox user**: an omitted `mailbox`, or their own address in another case, resolves to their
     own username; another existing address → `404`.
@@ -435,7 +435,7 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
   - **Domain admin**: a mailbox of a foreign domain → `404`, and an alias of a foreign domain →
     `404`, not `notEligible`.
   - **Inactive target mailbox**: accepted.
-- [ ] T034 [P] [US2] Write `tests/Feature/SyncJobs/CreateSyncJobTest.php` (FR-016–FR-018, AS-1,
+- [X] T034 [P] [US2] Write `tests/Feature/SyncJobs/CreateSyncJobTest.php` (FR-016–FR-018, AS-1,
   AS-2, AS-9, AS-10):
   - **Minimal user creation** (AS-1): a user with the flag sends only `remoteHost`, `remotePort`,
     `remoteUser` and `remotePassword`. The answer is `201` with `Location: /api/v2/sync-jobs/<id>`
@@ -456,7 +456,7 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
   - **Atomic audit** (spec edge case "Audit record cannot be written"): when the audit insert fails
     (a test listener on `AuditEvent::creating` throws), the answer is `500` and no `imapsync` row
     exists.
-- [ ] T035 [P] [US2] Write `tests/Feature/SyncJobs/CreateSyncJobValidationTest.php` (FR-017, AS-4 to
+- [X] T035 [P] [US2] Write `tests/Feature/SyncJobs/CreateSyncJobValidationTest.php` (FR-017, AS-4 to
   AS-8, clarifications 4 and 5):
   - **Ranges**: `intervalMinutes` 0 and 43801, `remotePort` 0 and 65536, `maxAgeDays` 32001,
     `maxBytesPerSecond` 125000001, and timeouts 0 and 32001 each give `outOfRange` with `min` and
@@ -476,7 +476,7 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
   - **Normalisation**: `remoteHost: "IMAP.Example.COM"` is stored as `imap.example.com`;
     `customParameters: "  --maxsize=1 "` is stored trimmed; `exclude: ""` is stored as `''`, not
     the default.
-- [ ] T036 [P] [US2] Write `tests/Feature/SyncJobs/CreateSyncJobRowParityTest.php` (SC-002, R10):
+- [X] T036 [P] [US2] Write `tests/Feature/SyncJobs/CreateSyncJobRowParityTest.php` (SC-002, R10):
   - **Minimal input**: the inserted row equals, column by column, the row legacy's `INSERT`
     produces from the add modal's defaults. Legacy's row is built in the test from data-model.md's
     insert list with a comment naming `functions.mailbox.inc.php` `mailbox('add', 'syncjob')`.
@@ -488,18 +488,18 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
   - **No other effect**: no other table changes, apart from `restv2_audit_events` (row counts of
     `mailbox`, `alias`, `user_acl` and `_sogo_static_view`), and no Redis key is written (scan of
     database 15).
-- [ ] T037 [P] [US2] Write `tests/Feature/SyncJobs/CreateSyncJobDuplicateTest.php` (FR-017, AS-3):
+- [X] T037 [P] [US2] Write `tests/Feature/SyncJobs/CreateSyncJobDuplicateTest.php` (FR-017, AS-3):
   - an identical `(mailbox, remoteUser, remoteHost)` → `409 sync-job-exists` with `syncJobId` of
     the existing job, and no new row;
   - `remoteHost` in other case and `remoteUser` in other case are also duplicates (collation, as
     legacy);
   - the same remote account for another mailbox is accepted.
-- [ ] T038 [P] [US2] Write `tests/Feature/SyncJobs/ConcurrentCreateSyncJobTest.php` (group
+- [X] T038 [P] [US2] Write `tests/Feature/SyncJobs/ConcurrentCreateSyncJobTest.php` (group
   `concurrency`, no `DatabaseTransactions`; it deletes its rows in `tearDown`). It seeds an admin and
   a key, starts two `Process` runs of `tests/bin/create-sync-job-once.php` with the same body, waits
   for both, and asserts one `201`, one `409` and exactly one `imapsync` row (spec edge case
   "Concurrent creation", R9).
-- [ ] T039 [P] [US2] Write `tests/Feature/SyncJobs/SyncJobCapabilitiesTest.php` (FR-030, AS-11):
+- [X] T039 [P] [US2] Write `tests/Feature/SyncJobs/SyncJobCapabilitiesTest.php` (FR-030, AS-11):
   - with the defaults, every caller with the flag gets `customParameters.allowed: true`,
     `restrictedToAdministrators: false`, the 113 upstream options (114 minus `showpasswords`),
     `bulkLimit: 100`, `pageSize {25, 1000}`, the limits of R6, `encryptions [ssl, starttls,
@@ -517,13 +517,13 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
 
 ### Implementation for User Story 2
 
-- [ ] T040 [P] [US2] Create `app/Rules/SyncJobHostName.php`. It wraps 002's port of
+- [X] T040 [P] [US2] Create `app/Rules/SyncJobHostName.php`. It wraps 002's port of
   `is_valid_domain_name()`. Only if T001 found none, create
   `app/Support/Validation/LegacyDomainName.php` (line-by-line port with `idn_to_ascii(…, 0,
   INTL_IDNA_VARIANT_UTS46)`). It reports `invalidFormat {format: hostName}`. Create
   `app/Rules/SyncJobExcludePattern.php`, which reports `invalidRegex` when `@preg_match('/' . $v .
   '/', '') === false`. This makes T032 pass.
-- [ ] T041 [P] [US2] Create `app/Services/SyncJobs/CustomParametersValidator.php` exactly as in R7:
+- [X] T041 [P] [US2] Create `app/Services/SyncJobs/CustomParametersValidator.php` exactly as in R7:
   - the restriction is checked first, then "unchanged", then the trim, `explode('-')`, skipping of
     `''` and `'0'`, the option name before `=` or right-trimmed, the space check and the
     lower-cased allow-list check;
@@ -532,11 +532,11 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
   - it returns every violation.
 
   This makes T031 pass.
-- [ ] T042 [US2] Create `app/Services/SyncJobs/SyncJobTargetResolver.php` (R8). It uses `Mailbox`,
+- [X] T042 [US2] Create `app/Services/SyncJobs/SyncJobTargetResolver.php` (R8). It uses `Mailbox`,
   and 004's `Alias` and `AliasDomain`, read only. It returns the canonical username, throws
   `ProblemException` 404 for unknown or out-of-scope targets, and returns a `notEligible {kind}`
   violation for resources, aliases and alias-domain addresses. This makes T033 pass.
-- [ ] T043 [US2] Create `app/Services/SyncJobs/SyncJobDuplicateGuard.php` (R9):
+- [X] T043 [US2] Create `app/Services/SyncJobs/SyncJobDuplicateGuard.php` (R9):
   - `run(string $user2, string $user1, string $host1, ?int $exceptId, Closure $write)` takes
     `GET_LOCK('restv2_syncjob_' . substr(sha1(mb_strtolower("$user2\0$user1\0$host1")), 0, 40), 5)`;
   - a lock timeout is a `RuntimeException`, which becomes `500`;
@@ -544,7 +544,7 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
     edit) and throws `ProblemException(SyncJobExists, ['syncJobId' => …])` when one exists;
   - otherwise it runs `$write` and commits;
   - it releases the lock in `finally`.
-- [ ] T044 [US2] Create `app/Services/SyncJobs/SyncJobService.php` with `create(Principal, array
+- [X] T044 [US2] Create `app/Services/SyncJobs/SyncJobService.php` with `create(Principal, array
   $input, string $mailbox): SyncJob`:
   - it applies `SyncJobDefaults`, lower-cases `host1`, trims `custom_params` and maps
     `encryption` through `SyncJobEncryption::fromApi`;
@@ -554,7 +554,7 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
 
   Refusals need no code here: `RefusalAuditor` (T021) records them for every route that declares
   `restv2.audit`.
-- [ ] T045 [US2] Create `app/Http/Requests/Api/V2/StoreSyncJobRequest.php`, which follows the order
+- [X] T045 [US2] Create `app/Http/Requests/Api/V2/StoreSyncJobRequest.php`, which follows the order
   of R5:
   - `authorize()` runs the gate (403), then resolves the target through `SyncJobTargetResolver`
     (404);
@@ -571,7 +571,7 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
     `docs/conventions.md`);
   - `POST sync-jobs` with `restv2.auth:authenticated`, `restv2.csrf` and
     `->defaults('restv2.audit', ['event' => AuditEventType::SyncJobCreation, 'target' => 'syncJob'])`.
-- [ ] T046 [US2] Create `tests/bin/create-sync-job-once.php`. It boots the application with
+- [X] T046 [US2] Create `tests/bin/create-sync-job-once.php`. It boots the application with
   `APP_ENV=testing`, handles one `POST /api/v2/sync-jobs` request with the key and body passed as
   arguments through the HTTP kernel, and prints the status code. T031–T039 must pass.
 
@@ -1048,4 +1048,16 @@ Checked on `main` at `e21f5ee`:
   every stored result other than 1. A job is read in one query plus one for its log availability.
 - **T030**: the path parameter is `{syncJobId}` (the contract's name), constrained to
   `[1-9][0-9]{0,9}` like 004's `{aliasId}`, so `0` and non-numeric identifiers are `404`.
+- **T040, T045**: strict JSON integers use the new shared `App\Rules\StrictInteger` (Laravel's
+  `integer` accepts `"20"`), next to 003's `StrictBoolean`. A required member sent as `null` gets
+  `required`; an optional one gets `invalidType`.
+- **T041**: the allow-list is compared as legacy compares it: the option name's lower case against
+  the configured entries as they are (an entry with capitals never matches, in legacy too).
+  `showpasswords` is removed case-insensitively.
+- **T044**: two legacy quirks of the add path are kept for row parity (SC-002): a destination
+  subfolder `"0"` and custom parameters `"0"` are stored empty (`empty()`).
+- **T045**: several violations of one field (every bad custom option) cannot come from Laravel
+  rules, so 001's `ApiFormRequest` gained the additive hook `additionalViolations()`, computed after
+  the rules and reported in the same `422` after the rules' violations of the same field. The
+  resolver's `notEligible`, `required`, `invalidFormat` and `tooLong` on `mailbox` use it too.
 

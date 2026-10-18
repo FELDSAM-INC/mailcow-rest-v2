@@ -88,7 +88,7 @@ class CreateSyncJobTest extends TestCase
         $this->assertArrayNotHasKey('remotePassword', $created[0]->details['values']);
 
         $this->createSyncJob(self::syncJobBody(['mailbox' => 'nobody@example.org']))->assertNotFound();
-        $this->createSyncJob(self::syncJobBody(['mailbox' => 'alice@example.org', 'remotePort' => 0]))->assertUnprocessable();
+        $this->createSyncJob(self::syncJobBody(['mailbox' => 'alice@example.org', 'exclude' => '(']))->assertUnprocessable();
         $this->createSyncJob(self::syncJobBody(['mailbox' => 'alice@example.org']))->assertStatus(409);
         $this->mailcow()->domainAdmin('noflag', ['example.org'], ['syncjobs' => 0]);
         $this->signInAs('noflag', Role::DomainAdmin);
@@ -100,7 +100,7 @@ class CreateSyncJobTest extends TestCase
 
         $refusals = array_values(array_filter($this->auditOf('syncJobCreation'), fn (object $r): bool => $r->outcome === 'failure'));
         $this->assertSame(['notFound', 'validationFailed', 'conflict', 'permissionDenied', 'permissionDenied'], array_column($refusals, 'failure_reason'));
-        $this->assertSame([['code' => 'outOfRange', 'params' => ['min' => 1, 'max' => 65535]]], $refusals[1]->details['errors']['remotePort']);
+        $this->assertSame([['code' => 'invalidRegex', 'params' => []]], $refusals[1]->details['errors']['exclude']);
         $this->assertSame('/api/v2/problems/permission-flag-required', $refusals[3]->details['problemType']);
         $this->assertSame('/api/v2/problems/insufficient-key-scope', $refusals[4]->details['problemType']);
         $this->assertSame('nobody@example.org', $refusals[0]->target_name);

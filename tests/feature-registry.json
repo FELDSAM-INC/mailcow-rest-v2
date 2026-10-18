@@ -229,8 +229,6 @@
         }
     },
     "pendingOperations": [
-        "createSyncJob",
-        "getSyncJobsCapabilities",
         "applySyncJobBulkAction",
         "updateSyncJob",
         "deleteSyncJob",

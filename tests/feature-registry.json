@@ -157,11 +157,6 @@
     },
     "pendingOperations": [
         "applyMailboxBulkAction",
-        "renameMailbox",
-        "listMailboxTemplates",
-        "createMailboxTemplate",
-        "getMailboxTemplate",
-        "updateMailboxTemplate",
-        "deleteMailboxTemplate"
+        "renameMailbox"
     ]
 }

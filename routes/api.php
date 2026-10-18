@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\V2\MailboxController;
 use App\Http\Controllers\Api\V2\MailboxDeletionPreviewController;
 use App\Http\Controllers\Api\V2\MailboxSenderSettingsController;
 use App\Http\Controllers\Api\V2\MailboxTagController;
+use App\Http\Controllers\Api\V2\MailboxTemplateController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
 use App\Http\Controllers\Api\V2\PasskeyChallengeController;
@@ -216,6 +217,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/mailboxes', [MailboxController::class, 'index'])->name('mailboxes.index');
         Route::get('/capabilities/mailboxes', [MailboxCapabilitiesController::class, 'show'])->name('mailbox-capabilities.show');
         Route::get('/mailbox-tags', [MailboxTagController::class, 'index'])->name('mailbox-tags.index');
+        Route::get('/mailbox-templates', [MailboxTemplateController::class, 'index'])->name('mailbox-templates.index');
+        Route::get('/mailbox-templates/{mailboxTemplateId}', [MailboxTemplateController::class, 'show'])
+            ->whereNumber('mailboxTemplateId')
+            ->name('mailbox-templates.show');
         Route::get('/password-policy', [PasswordPolicyController::class, 'show'])->name('password-policy.show');
         Route::get('/mailboxes/{mailbox}/deletion-preview', [MailboxDeletionPreviewController::class, 'show'])
             ->where('mailbox', '[^/]+')
@@ -238,6 +243,17 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'mailboxDeletion', 'target' => 'mailbox'])
             ->name('mailboxes.destroy');
+        Route::post('/mailbox-templates', [MailboxTemplateController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'mailboxTemplateCreation', 'target' => 'mailboxTemplate'])
+            ->name('mailbox-templates.store');
+        Route::patch('/mailbox-templates/{mailboxTemplateId}', [MailboxTemplateController::class, 'update'])
+            ->whereNumber('mailboxTemplateId')
+            ->defaults('restv2.audit', ['event' => 'mailboxTemplateUpdate', 'target' => 'mailboxTemplate'])
+            ->name('mailbox-templates.update');
+        Route::delete('/mailbox-templates/{mailboxTemplateId}', [MailboxTemplateController::class, 'destroy'])
+            ->whereNumber('mailboxTemplateId')
+            ->defaults('restv2.audit', ['event' => 'mailboxTemplateDeletion', 'target' => 'mailboxTemplate'])
+            ->name('mailbox-templates.destroy');
     });
 
     // Feature 004: aliases, alias domains, resources and sender settings. Literal paths

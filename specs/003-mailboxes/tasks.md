@@ -665,7 +665,7 @@ mailboxes from them (spec US6).
 
 ### Tests for User Story 6 (write first, observe failing) ⚠️
 
-- [ ] T072 [P] [US6] Write `tests/Feature/MailboxTemplates/MailboxTemplateCrudTest.php`:
+- [X] T072 [P] [US6] Write `tests/Feature/MailboxTemplates/MailboxTemplateCrudTest.php`:
   - AS-1 an administrator creates "Students" → `201` with `Location` and `ETag`; the `templates`
     row has `type = 'mailbox'` and every legacy key with legacy's value types (integer flags, quota
     in bytes, `rl_value ""`, `rl_frame "s"`, the fifteen `acl_*` keys); omitted values get the
@@ -683,7 +683,7 @@ mailboxes from them (spec US6).
   - a stored legacy template missing keys (the seeded Default) is read with the defaults;
   - audit records `mailboxTemplateCreation`, `mailboxTemplateUpdate`, `mailboxTemplateDeletion`
     with `changes`.
-- [ ] T073 [P] [US6] Write `tests/Feature/MailboxTemplates/MailboxTemplateAuthorizationTest.php`:
+- [X] T073 [P] [US6] Write `tests/Feature/MailboxTemplates/MailboxTemplateAuthorizationTest.php`:
   AS-1 a domain administrator (session and read-write key) creating, changing or deleting →
   `403 forbidden`, reading → `200` with overlapping permissions omitted per its flags; mailbox user →
   `403` for all five operations; administrator read-only key reads, `403 insufficient-key-scope`
@@ -691,13 +691,13 @@ mailboxes from them (spec US6).
 
 ### Implementation for User Story 6
 
-- [ ] T074 [US6] Create `app/Services/Mailboxes/MailboxTemplateService.php` (create, update with
+- [X] T074 [US6] Create `app/Services/Mailboxes/MailboxTemplateService.php` (create, update with
   merge and protection, delete with protection, case-insensitive name uniqueness under the named
   lock `restv2_mailbox_template_<sha1(lower(name))>` (`NamedLock`, data-model.md), legacy encoding through `MailboxDefaults`' template codec, audit) and the
   Form Requests `app/Http/Requests/Api/V2/ListMailboxTemplatesRequest.php`,
   `StoreMailboxTemplateRequest.php` (`name` "trimmed, 1–255 characters", values as in
   `StoreMailboxRequest`) and `UpdateMailboxTemplateRequest.php` (merge patch, non-empty).
-- [ ] T075 [US6] Create `app/Http/Resources/Api/V2/MailboxTemplateResource.php` and
+- [X] T075 [US6] Create `app/Http/Resources/Api/V2/MailboxTemplateResource.php` and
   `app/Http/Controllers/Api/V2/MailboxTemplateController.php` (`index`, `show`, `store`,
   `update`, `destroy`); routes `/mailbox-templates` and `/mailbox-templates/{mailboxTemplateId}`
   (`whereNumber`), the writes with `restv2.csrf` and `restv2.audit` (target `mailboxTemplate`). This makes T072 and T073 pass.

@@ -2,7 +2,9 @@ type: object
 minProperties: 1
 description: |
   JSON Merge Patch of a domain template. Only the sent values change; every other value is kept.
-  The rules of `DomainTemplateCreateRequest` apply to the resulting template. Renaming the Default
+  The rules of `DomainTemplateCreateRequest` apply to the resulting template, except that
+  `maxMailboxQuota` ≤ `domainQuota` (`mustNotExceed`) is checked only when the patch changes one of
+  the two, so stored quotas that break it never block an edit of other values. Renaming the Default
   template is refused with `409 domain-template-protected` (sending its current name is accepted).
   The read-only members (`id`, `isDefault`, `createdAt`, `modifiedAt`, `etag`) are accepted when
   equal to the current value and refused with the rule code `immutable` otherwise.

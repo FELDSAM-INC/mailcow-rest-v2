@@ -17,7 +17,8 @@ use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 /**
  * Domain edits, legacy mailbox('edit', 'domain') (FR-030–FR-034, research D15). In one transaction
  * on the locked row: the version check (`412`), the attribute permissions (`403`), the read-only
- * members (`immutable`), the business rules on the merged values (`422`, every violation), the
+ * members (`immutable`), the business rules on the merged values (`422`, every violation; the
+ * usage floors and the quota order only when the request changes one of their members), the
  * relay normalisation, the full `UPDATE` legacy issues (without the relayhost, which feature 009
  * owns), the tag set replacement and the audit record with each change's old and new value. A
  * patch that changes nothing writes nothing but is audited with empty changes. After the commit the
@@ -81,14 +82,14 @@ class DomainUpdater
 
             $current = self::values($row, $tags);
             $requested = $this->requested($patch, $current, $name);
-            $this->guard->authorize($principal, array_keys(array_filter($requested['changed'])));
+            $changedAttributes = array_keys(array_filter($requested['changed']));
+            $this->guard->authorize($principal, $changedAttributes);
 
             $violations = new FieldViolations;
             $this->immutables($patch, $row, $principal, $violations);
 
-            $changedLimits = array_values(array_intersect(self::LIMITS, array_keys(array_filter($requested['changed']))));
-            $usage = $changedLimits === [] ? null : $this->usage->forDomain($name);
-            $values = $this->rules->check($requested['values'], $violations, $tags, $usage, $changedLimits);
+            $usage = array_intersect(self::LIMITS, $changedAttributes) === [] ? null : $this->usage->forDomain($name);
+            $values = $this->rules->check($requested['values'], $violations, $tags, $usage, $changedAttributes);
             $violations->throwIfAny();
 
             $changes = self::changes($current, $values);

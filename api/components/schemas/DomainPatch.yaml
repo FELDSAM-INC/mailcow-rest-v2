@@ -22,8 +22,10 @@ description: |
   **Rules**: as for creation, plus: a changed limit may not be below current usage (`belowInUse`,
   with the value in use as `inUse`): `maxMailboxes` ≥ `usage.mailboxes`, `maxAliases` ≥
   `usage.aliases`, `maxMailboxQuota` ≥ `usage.largestMailboxQuota`, `domainQuota` ≥
-  `usage.quotaAllocated`. A limit that is not changed is not checked. An empty `description`, or
-  `null`, stores the domain name.
+  `usage.quotaAllocated`. A limit that is not changed is not checked. `maxMailboxQuota` ≤
+  `domainQuota` (`mustNotExceed`) is checked on the resulting values only when the patch changes
+  one of the two, so stored quotas that break it never block an edit of other attributes. An
+  empty `description`, or `null`, stores the domain name.
 
   mailcow's default mailbox quota of a domain is not part of this API (owner decision 2026-10-18).
   An edit that changes `maxMailboxQuota` lowers a larger stored default to the new maximum, so that

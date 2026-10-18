@@ -152,7 +152,9 @@ class DomainTemplateService
                 }
             }
 
-            $values = $this->checked(array_merge($current, array_intersect_key($patch, array_flip(self::VALUE_FIELDS))), $current['tags'], $violations);
+            $sent = array_intersect_key($patch, array_flip(self::VALUE_FIELDS));
+            $changedFields = array_keys(array_filter($sent, fn (mixed $value, string $field): bool => $value !== $current[$field], ARRAY_FILTER_USE_BOTH));
+            $values = $this->checked(array_merge($current, $sent), $current['tags'], $violations, $changedFields);
             $changes = [];
 
             if ($name !== (string) $row->template) {
@@ -207,14 +209,18 @@ class DomainTemplateService
     }
 
     /**
+     * The values after the domain rules; an edit passes the fields it changes, so that the quota
+     * order is checked only when one of its members changes (DomainRules).
+     *
      * @param  array<string, mixed>  $values
      * @param  list<string>  $currentTags
+     * @param  list<string>|null  $changed  null at creation
      * @return array<string, mixed>
      */
-    private function checked(array $values, array $currentTags, ?FieldViolations $violations = null): array
+    private function checked(array $values, array $currentTags, ?FieldViolations $violations = null, ?array $changed = null): array
     {
         $violations ??= new FieldViolations;
-        $checked = $this->rules->check($values, $violations, $currentTags);
+        $checked = $this->rules->check($values, $violations, $currentTags, null, $changed);
         $violations->throwIfAny();
 
         return array_intersect_key($checked, array_flip(self::VALUE_FIELDS));

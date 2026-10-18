@@ -17,7 +17,8 @@ use RuntimeException;
  *  - `alice@example.org`: mailbox with the TOTP secret JBSWY3DPEHPK3PXP;
  *  - `bob@example.org`: mailbox that mailcow forces to change its password;
  *  - the Default domain template as mailcow seeds it (feature 002 quickstart Part B);
- *  - feature 003: example.org with room for 10 mailboxes and 5 GiB of domain quota, the Default
+ *  - feature 003: example.org with room for 10 mailboxes and 5 GiB of domain quota (also its
+ *    maximum mailbox quota, which legacy requires not to exceed the domain quota), the Default
  *    mailbox template as mailcow seeds it and the template "Small" (1 GiB, POP3 off, sync jobs on);
  *  - feature 008: alice@example.org may use sync jobs (`user_acl.syncjobs = 1`) and has job #1
  *    (never run) and job #2 (last run failed with EXIT_AUTHENTICATION_FAILURE_USER1, with a log);
@@ -39,7 +40,7 @@ class DevelopmentSeeder extends Seeder
 
         $rows = new MailcowRows;
 
-        $rows->domain('example.org', attributes: ['mailboxes' => 10, 'quota' => 5120]);
+        $rows->domain('example.org', attributes: ['mailboxes' => 10, 'quota' => 5120, 'maxquota' => 5120]);
         $rows->domain('example.net');
         $rows->admin('admin', self::PASSWORD);
         $rows->domainAdmin('reseller', ['example.org', 'example.net'], ['protocol_access' => 0], password: self::PASSWORD);

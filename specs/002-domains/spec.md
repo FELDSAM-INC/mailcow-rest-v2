@@ -683,7 +683,10 @@ and list the audit log filtered by target.
     mailbox quota, or the maximum mailbox quota when the template has none (or no template
     applies); an edit that changes the maximum mailbox quota MUST lower a larger default to it,
     and any other edit MUST leave it unchanged. These values MUST NOT be audited;
-  - maximum mailbox quota: at least 1 MiB and not more than the domain quota;
+  - maximum mailbox quota: at least 1 MiB and not more than the domain quota. An edit of a domain or
+    a template MUST check this order only when it changes the maximum mailbox quota or the domain
+    quota, and then against the merged values, so that stored values that break the order never
+    block an edit of other attributes;
   - tags: as in FR-043;
   - initial rate limit: a whole number from 1 to 2,147,483,647 together with a time frame of
     second, minute, hour or day; or none;
@@ -1015,6 +1018,7 @@ in three ways:
 | Relay options | "Unknown only" implies "all", which implies backup MX | Same, also for templates (FR-021) |
 | Zero and omitted values on edit | Alias limit, maximum mailbox quota and domain quota treat 0 as "keep". Template edits reset omitted values to 0 or defaults | Sent values applied, omitted values kept, for domains and templates (FR-030, FR-048). **Deviation** |
 | Usage checks on edit | Every edit checks all four limits. The alias count leaves out aliases in alias domains | Only changed limits are checked, against the displayed counts (FR-033). **Deviation** |
+| Quota order on edit (2026-10-19) | The administrator's edit checks maximum mailbox quota ≤ domain quota on the merged values every time, so stored values that break the order block any edit. A domain administrator's edit never checks it, and template edits validate nothing | Checked only when the edit changes one of the two quotas, then on the merged values, for domains and templates (FR-020). Parity for domain administrators; **Deviation** for administrators and templates |
 | Description | Empty at creation → domain name. Empty on edit keeps the old value | Empty → domain name in both cases (FR-020). **Deviation** |
 | Tags | Appended on create and edit. Tags after the 26th of a request dropped with a warning, no total limit, a duplicate fails with a database error. `delete/domain/tag` removes tags | Set replacement, case-insensitive duplicates merged, total ≤ limit (default 25), refusal above it (FR-043, FR-044). **Deviation** |
 | Tag filter (`get/domain/all?tags=`) | Substring match, any tag | Whole-tag match, any tag. Substring matching through the search (FR-012, FR-013). **Deviation** |

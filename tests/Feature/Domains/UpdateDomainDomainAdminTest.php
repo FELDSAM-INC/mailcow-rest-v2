@@ -63,6 +63,20 @@ class UpdateDomainDomainAdminTest extends TestCase
         $this->assertSame(0, (int) $this->domainRow('example.org')?->gal);
     }
 
+    public function test_stored_quotas_out_of_order_do_not_block_the_edit(): void
+    {
+        // Legacy's domain administrator branch never checks the quotas (the dev seed's example.org
+        // had a 5 GiB domain quota and the 10 GiB default maximum mailbox quota).
+        $this->mailcow()->domain('example.org', attributes: ['maxquota' => 10240, 'quota' => 5120]);
+        $this->asDomainAdmin(['example.org'], daAcl: ['domain_desc' => 1]);
+
+        $this->patchDomain(['globalAddressList' => false])->assertOk()->assertJsonPath('data.globalAddressList', false);
+        $this->patchDomain(['description' => 'Changed', 'tags' => ['x']])->assertOk();
+
+        $row = $this->domainRow('example.org');
+        $this->assertSame([0, 'Changed', 10240, 5120], [(int) $row?->gal, $row?->description, (int) $row?->maxquota, (int) $row?->quota]);
+    }
+
     public function test_scope_rules(): void
     {
         $this->mailcow()->domain('example.org', 0);

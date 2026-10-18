@@ -36,7 +36,9 @@ class DevelopmentSeederTest extends TestCase
         $this->assertSame(['Default', 'Small'], DB::table('templates')->where('type', 'mailbox')->orderBy('template')->pluck('template')->all());
         $small = json_decode((string) DB::table('templates')->where('type', 'mailbox')->where('template', 'Small')->value('attributes'), true);
         $this->assertSame([1073741824, 0, 1], [$small['quota'], $small['pop3_access'], $small['acl_syncjobs']]);
-        $this->assertSame([10, 5120], [(int) DB::table('domain')->where('domain', 'example.org')->value('mailboxes'), (int) DB::table('domain')->where('domain', 'example.org')->value('quota')]);
+        // The maximum mailbox quota does not exceed the domain quota, as legacy's rules require.
+        $exampleOrg = DB::table('domain')->where('domain', 'example.org')->first();
+        $this->assertSame([10, 5120, 5120], [(int) $exampleOrg?->mailboxes, (int) $exampleOrg?->quota, (int) $exampleOrg?->maxquota]);
         $this->assertSame(0, (int) DB::table('da_acl')->where('username', 'reseller')->value('protocol_access'));
 
         // Feature 008 T066: the sync jobs and permission flags of quickstart Part B.

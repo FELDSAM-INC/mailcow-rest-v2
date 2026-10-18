@@ -116,6 +116,33 @@ class UpdateDomainAdminTest extends TestCase
             ->assertJsonPath('errors.maxMailboxQuota.0.params', ['field' => 'domainQuota', 'value' => 1536 * self::MIB]);
     }
 
+    public function test_the_quota_order_is_checked_only_when_a_quota_changes(): void
+    {
+        // Legacy never checks the order on a domain administrator's edit, so a stored row can break
+        // it (here: the dev seed's 5 GiB domain quota with the 10 GiB default maximum).
+        $this->mailcow()->domain('example.org', attributes: ['maxquota' => 10240, 'quota' => 5120]);
+        $this->asAdmin();
+
+        $this->patchDomain(['description' => 'Unrelated'])->assertOk()->assertJsonPath('data.description', 'Unrelated');
+
+        $whole = $this->getJson('/api/v2/domains/example.org')->json('data');
+        $whole['globalAddressList'] = false;
+        $this->patchDomain($whole)->assertOk()->assertJsonPath('data.globalAddressList', false);
+
+        $this->patchDomain(['maxMailboxQuota' => 8192 * self::MIB])->assertStatus(422)
+            ->assertJsonPath('errors.maxMailboxQuota.0.code', 'mustNotExceed')
+            ->assertJsonPath('errors.maxMailboxQuota.0.params', ['field' => 'domainQuota', 'value' => 5120 * self::MIB]);
+        $this->patchDomain(['domainQuota' => 6144 * self::MIB, 'description' => 'Other'])->assertStatus(422)
+            ->assertJsonPath('errors.maxMailboxQuota.0.code', 'mustNotExceed')
+            ->assertJsonPath('errors.maxMailboxQuota.0.params', ['field' => 'domainQuota', 'value' => 6144 * self::MIB]);
+
+        $row = $this->domainRow('example.org');
+        $this->assertSame([10240, 5120, 'Unrelated'], [(int) $row?->maxquota, (int) $row?->quota, $row?->description]);
+
+        $this->patchDomain(['domainQuota' => 10240 * self::MIB])->assertOk();
+        $this->assertSame(10240, (int) $this->domainRow('example.org')?->quota);
+    }
+
     public function test_a_zero_quota_is_invalid(): void
     {
         $this->withoutRequestValidation();

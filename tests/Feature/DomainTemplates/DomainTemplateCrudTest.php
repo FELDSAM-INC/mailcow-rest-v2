@@ -163,6 +163,30 @@ class DomainTemplateCrudTest extends TestCase
         $this->assertSame(['immutable', 'immutable', 'immutable'], [$errors['id'][0]['code'], $errors['isDefault'][0]['code'], $errors['createdAt'][0]['code']]);
     }
 
+    public function test_the_quota_order_is_checked_only_when_a_quota_changes(): void
+    {
+        // Legacy never checks the quotas of a template, so a stored one can break the order.
+        $id = $this->mailcow()->domainTemplate('Legacy', array_merge(MailcowRows::DEFAULT_DOMAIN_TEMPLATE, [
+            'max_quota_for_mbox' => 10240 * self::MIB,
+            'max_quota_for_domain' => 5120 * self::MIB,
+        ]));
+        $this->asAdmin();
+
+        $this->patchTemplate($id, ['name' => 'Renamed', 'maxMailboxes' => 20])->assertOk()->assertJsonPath('data.maxMailboxes', 20);
+
+        $whole = $this->getJson('/api/v2/domain-templates/'.$id)->json('data');
+        $whole['globalAddressList'] = false;
+        $this->patchTemplate($id, $whole)->assertOk()->assertJsonPath('data.globalAddressList', false);
+
+        $this->patchTemplate($id, ['maxMailboxQuota' => 8192 * self::MIB])->assertStatus(422)
+            ->assertJsonPath('errors.maxMailboxQuota.0.code', 'mustNotExceed');
+        $this->patchTemplate($id, ['domainQuota' => 6144 * self::MIB])->assertStatus(422)
+            ->assertJsonPath('errors.maxMailboxQuota.0.params', ['field' => 'domainQuota', 'value' => 6144 * self::MIB]);
+        $this->assertSame([10240 * self::MIB, 5120 * self::MIB], [$this->stored($id)['max_quota_for_mbox'], $this->stored($id)['max_quota_for_domain']]);
+
+        $this->patchTemplate($id, ['maxMailboxQuota' => 5120 * self::MIB])->assertOk();
+    }
+
     public function test_domains_keep_their_values_when_the_template_changes(): void
     {
         $id = $this->mailcow()->domainTemplate('Small', array_merge(MailcowRows::DEFAULT_DOMAIN_TEMPLATE, ['max_num_mboxes_for_domain' => 5, 'key_size' => 1024]));

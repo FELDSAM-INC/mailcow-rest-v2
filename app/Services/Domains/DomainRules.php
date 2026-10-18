@@ -17,6 +17,10 @@ use App\Support\Http\FieldViolations;
  *  - limits 0 to 2,147,483,647, quotas 1 MiB to 2^53 bytes (`outOfRange`), whole MiB
  *    (`notMultipleOf`), maximum mailbox quota ≤ domain quota (`mustNotExceed`);
  *  - changed limits not below usage (`belowInUse`, with the value in use);
+ *  - on an edit, the quota order (QUOTA_ORDER) only when the request changes one of its members,
+ *    then on the merged values, so that stored values that break it never block an unrelated edit
+ *    (legacy never checks it on a domain administrator's edit or a template, but on every edit by
+ *    an administrator: a deviation, like `belowInUse`);
  *  - tags (DomainTagSet); the DKIM selector syntax;
  *  - relay normalisation: "unknown only" implies "all recipients", which implies backup MX.
  *
@@ -28,6 +32,9 @@ class DomainRules
     public const MAX_INT = 2147483647;
 
     public const MAX_QUOTA = 9007199254740992;
+
+    /** The members of the relation "maximum mailbox quota ≤ domain quota". */
+    private const QUOTA_ORDER = ['maxMailboxQuota', 'domainQuota'];
 
     public function __construct(private readonly MailcowConfig $config) {}
 
@@ -61,10 +68,11 @@ class DomainRules
      *
      * @param  array<string, mixed>  $values
      * @param  list<string>  $currentTags
-     * @param  list<string>  $changed  attributes the request changes (for `belowInUse`)
+     * @param  list<string>|null  $changed  attributes an edit changes (for `belowInUse` and the
+     *                                      quota order); null at creation, where every value is new
      * @return array<string, mixed>
      */
-    public function check(array $values, FieldViolations $violations, array $currentTags = [], ?DomainUsage $usage = null, array $changed = []): array
+    public function check(array $values, FieldViolations $violations, array $currentTags = [], ?DomainUsage $usage = null, ?array $changed = null): array
     {
         foreach (['maxMailboxes', 'maxAliases'] as $field) {
             $value = $values[$field];
@@ -87,7 +95,9 @@ class DomainRules
             }
         }
 
-        if ($quotasValid && $values['maxMailboxQuota'] > $values['domainQuota']) {
+        $orderTouched = $changed === null || array_intersect(self::QUOTA_ORDER, $changed) !== [];
+
+        if ($quotasValid && $orderTouched && $values['maxMailboxQuota'] > $values['domainQuota']) {
             $violations->add('maxMailboxQuota', 'mustNotExceed', ['field' => 'domainQuota', 'value' => $values['domainQuota']]);
         }
 
@@ -100,7 +110,7 @@ class DomainRules
             ];
 
             foreach ($floors as $field => $inUse) {
-                if (in_array($field, $changed, true) && is_int($values[$field]) && $values[$field] < $inUse && ! $violations->has($field)) {
+                if (($changed === null || in_array($field, $changed, true)) && is_int($values[$field]) && $values[$field] < $inUse && ! $violations->has($field)) {
                     $violations->add($field, 'belowInUse', ['inUse' => $inUse]);
                 }
             }

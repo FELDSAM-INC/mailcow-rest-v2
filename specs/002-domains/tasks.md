@@ -498,7 +498,8 @@ compare rows and side effects with legacy.
     mailbox quota and `maxAliases` below the aliases in use (alias-domain aliases included) →
     `belowInUse`; a domain already below a limit accepts an edit that does not change that limit;
   - `maxAliases: 0` is applied when no alias exists; a zero `maxMailboxQuota` is refused (Invalid
-    test); `mustNotExceed` is checked on the merged values;
+    test); `mustNotExceed` is checked on the merged values, only when the patch changes one of the
+    two quotas (2026-10-19, see the implementation notes);
   - relay normalisation on edit; clearing `backupMx` while `relayAllRecipients` stays set has no
     effect and the response shows the effective values;
   - `description: ""` and `description: null` store the domain name;
@@ -1029,3 +1030,17 @@ Deviations and decisions made while implementing, with the reason:
   FR-020, FR-045, FR-046, US2 scenario 4, a clarification and a parity row were updated; tests in
   `LegacyDefaultQuotaTest` and `DomainTemplateLegacyDefaultQuotaTest`. Feature 003's mailbox
   creation no longer falls back to the domain default (see its tasks).
+
+- **Quota order on edit (2026-10-19)**: the UI smoke tests found that `reseller`'s
+  `PATCH /domains/example.org` with only `globalAddressList` failed with `422 mustNotExceed`,
+  because `DomainRules` checked maximum mailbox quota ≤ domain quota on the merged values of every
+  edit and the dev seed stored a 5 GiB domain quota with the 10 GiB default maximum. Legacy's
+  `mailbox('edit', 'domain')` checks the order only in the administrator's branch (on the merged
+  values, so there stored values block any edit) and never for a domain administrator or a template.
+  `DomainRules::check()` now takes the attributes an edit changes (null at creation) and checks the
+  order only when one of the two quotas changes, then against the merged values, like the usage
+  floors of FR-033; an unchanged quota sent back with a whole representation does not count.
+  `DomainUpdater` and `DomainTemplateService::update()` pass their changed attributes; creation is
+  unchanged. The dev seed's example.org now has a 5 GiB maximum mailbox quota. FR-020 and a parity
+  row were updated; tests in `UpdateDomainAdminTest`, `UpdateDomainDomainAdminTest`,
+  `DomainTemplateCrudTest` and `DevelopmentSeederTest`.

@@ -10,12 +10,30 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.testing
 
 # Laravel
 /vendor/
 /storage/*.key
 /public/hot
+/public/storage
 .phpunit.result.cache
+/build/
+/.phpunit.cache/
+/storage/framework/testing/
+*.log
+.env.backup
+.env.production
+.phpactor.json
+/auth.json
+_ide_helper.php
+
+# Editors and OS
+/.idea
+/.vscode
+/.zed
+.DS_Store
+Thumbs.db
 
 # Untracked legacy reference (mailcow-dockerized checkout, read-only)
 /source_code

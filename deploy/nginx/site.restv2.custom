@@ -1,0 +1,33 @@
+# mailcow REST API v2 and mailcowui-ng routing for nginx-mailcow (research R23).
+#
+# Copy this file to mailcow's data/conf/nginx/site.restv2.custom. mailcow's sites-default.conf.j2
+# includes /etc/nginx/conf.d/site.*.custom inside every server block, so no upstream file is
+# patched. The `^~` prefix matches win over mailcow's regex locations; /api/v1 is untouched.
+#
+# Upstreams are resolved at request time through Docker's DNS (resolver plus a variable), so
+# nginx starts even when a container is absent: /api/v2/ or /ng/ then answers 502.
+#
+# The dev stack (compose.yaml) uses this file unchanged: its `app` service has the network alias
+# `restv2-mailcow` and the same /app path.
+
+location ^~ /api/v2/ {
+    resolver 127.0.0.11 valid=30s;
+    set $restv2_upstream restv2-mailcow:9000;
+    include /etc/nginx/fastcgi_params;
+    fastcgi_param SCRIPT_FILENAME /app/public/index.php;
+    fastcgi_param SCRIPT_NAME /index.php;
+    # httpoxy mitigation: never pass a client "Proxy" header on as HTTP_PROXY.
+    fastcgi_param HTTP_PROXY "";
+    client_max_body_size 1m;
+    fastcgi_read_timeout 60s;
+    fastcgi_pass $restv2_upstream;
+}
+
+location ^~ /ng/ {
+    resolver 127.0.0.11 valid=30s;
+    set $ng_upstream http://ng-mailcow:8080;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_pass $ng_upstream;
+}

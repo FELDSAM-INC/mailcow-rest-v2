@@ -36,7 +36,7 @@ Phase 9 is polish and operations.
 **Purpose**: Dev stack, Laravel skeleton, toolchain, schema fixture and CI. Nothing here contains
 business logic.
 
-- [ ] T001 Create `docker/php/Dockerfile` with three stages.
+- [X] T001 Create `docker/php/Dockerfile` with three stages.
   - `base`: `FROM php:8.4-fpm-alpine`. Install `pdo_mysql`, `intl` and `opcache` with
     `docker-php-ext-install`, and `redis` (phpredis 6.x) with `pecl install` plus
     `docker-php-ext-enable`. Set `WORKDIR /app` and `USER www-data` (uid 82).
@@ -48,7 +48,12 @@ business logic.
   `display_errors=0`, `log_errors=1`, `error_log=/proc/self/fd/2`) and `docker/php/php-fpm.conf`
   (pool `www`: `listen = 0.0.0.0:9000`, `clear_env = no`, `catch_workers_output = yes`,
   `decorate_workers_output = no`, `pm = dynamic`, `access.log = /dev/null`). See R1.
-- [ ] T002 Create `compose.yaml` (the dev stack, R1) with four services:
+
+  *Implementation note*: the build context is the repository root (`docker build -f
+  docker/php/Dockerfile .`), so that the `production` stage can copy the application. OPcache is
+  compiled into the official PHP 8.4 images, so `docker-php-ext-install opcache` runs only where it
+  is missing. The `dev` stage also adds `bash` (for the scripts) and a world-writable `/home/dev`.
+- [X] T002 Create `compose.yaml` (the dev stack, R1) with four services:
   - `app`: build `docker/php` target `dev`, volume `.:/app`, env file `.env`, network alias
     `restv2-mailcow` (so the production nginx snippet works unchanged in dev);
   - `web`: `nginx:1.28-alpine`, port `8080:80`, mounting `docker/nginx/dev.conf` and
@@ -70,7 +75,17 @@ business logic.
 
   The same file serves production and dev. In dev, `restv2-mailcow` resolves to the `app` alias,
   and `/ng/` answers `502` until a UI container exists.
-- [ ] T003 Scaffold Laravel 13 at the repository root. Run
+
+  *Implementation note (deviation)*: the compose project is named `restv2`. `web` publishes
+  `127.0.0.1:${RESTV2_WEB_PORT:-18080}:80` instead of `8080:80` (the dev host runs unrelated stacks),
+  and MariaDB and Redis publish no host ports. `app` runs as the host user
+  (`${RESTV2_UID:-1000}:${RESTV2_GID:-1000}`) so that the bind mount stays writable, and gets the
+  connection settings shared by both environments (`DBHOST`, `DBUSER`, `DBPASS`, `DBROOT`,
+  `REDISHOST`, `REDISPASS`) through `environment:` instead of `env_file: .env`: real environment
+  variables beat Laravel's env files, so an `env_file` would force `.env`'s `DBNAME=mailcow` onto
+  the test run. `mariadb` mounts mailcow's `my.cnf` of `2026-09a` (`docker/mariadb/mailcow.cnf`)
+  and runs with `TZ=Europe/Prague`, the zone of `.env.testing`.
+- [X] T003 Scaffold Laravel 13 at the repository root. Run
   `composer create-project laravel/laravel:^13.0 /tmp/skeleton` in the `app` container, then copy
   the skeleton into `/app` **without overwriting** `api/`, `docs/`, `specs/`, `.specify/`,
   `.claude/`, `CLAUDE.md`, `LICENSE` or `.gitignore` (merge its entries in). Then:
@@ -79,7 +94,13 @@ business logic.
   - empty `routes/web.php`;
   - set `"license": "GPL-3.0-only"` in `composer.json`;
   - remove `laravel/sail` and `laravel/pail`.
-- [ ] T004 Add dependencies (R28). Run `composer require lbuchs/webauthn:^2.2
+
+  *Implementation note*: the Laravel 13 skeleton ships no Sail; it ships `laravel/pao` (agent test
+  output), which R28 does not justify, so it was removed too. The skeleton's `users`, `cache` and
+  `jobs` migrations, `App\Models\User`, its factory, `config/auth.php`, `config/mail.php`,
+  `config/services.php`, the example tests and the `/up` health route were removed: the migrations
+  would create unprefixed tables (constitution III), and nothing else uses them.
+- [X] T004 Add dependencies (R28). Run `composer require lbuchs/webauthn:^2.2
   robthree/twofactorauth:^3.0` and `composer require --dev larastan/larastan:^3.0
   opis/json-schema:^2.6`. Add these `composer.json` scripts:
   - `contract:lint` → `npx --yes @redocly/cli@2.64.1 lint api/openapi.yaml`;
@@ -89,15 +110,19 @@ business logic.
     `phpunit`, then `php tests/bin/check-contract-coverage.php`;
   - `analyse` → `phpstan analyse`;
   - `format` → `pint`.
-- [ ] T005 [P] Append `/build/`, `/.phpunit.cache/` and `/storage/framework/testing/` to
+
+  *Implementation note*: the coverage check reads its scope from `tests/contract-coverage.json`
+  (the operations of each implemented feature and the ones still pending), because the shared
+  contract already holds operations of later features (T018).
+- [X] T005 [P] Append `/build/`, `/.phpunit.cache/` and `/storage/framework/testing/` to
   `.gitignore`. Keep the existing entries, including `/source_code`.
-- [ ] T006 [P] Create `redocly.yaml` (`extends: [recommended]`) and `.redocly.lint-ignore.yaml`,
+- [X] T006 [P] Create `redocly.yaml` (`extends: [recommended]`) and `.redocly.lint-ignore.yaml`,
   which lists exactly the four `operation-4xx-response` findings in
   `api/modules/system/{health-live,health-ready,openapi-document,docs}.yaml`. With them,
   `composer contract:lint` reports zero problems.
-- [ ] T007 [P] Create `phpstan.neon` (include `vendor/larastan/larastan/extension.neon`, `level: 6`,
+- [X] T007 [P] Create `phpstan.neon` (include `vendor/larastan/larastan/extension.neon`, `level: 6`,
   paths `app`, `tests`, `config`, `routes`) and `pint.json` (`"preset": "laravel"`).
-- [ ] T008 [P] Create `config/restv2.php`, `.env.example` and `.env.testing`.
+- [X] T008 [P] Create `config/restv2.php`, `.env.example` and `.env.testing`.
   - `config/restv2.php` holds every `RESTV2_*` setting of R14 with its default, plus
     `supported_schema_versions => ['18082026_1200']`, `mailcow_hostname => env('MAILCOW_HOSTNAME')`,
     `skip_sogo => env('SKIP_SOGO', 'n') === 'y'`, `timezone => env('TZ', 'UTC')`, and
@@ -110,7 +135,13 @@ business logic.
   - `.env.testing` holds `APP_ENV=testing`, `DBNAME=restv2_test`, `REDIS_DB=15`,
     `MAILCOW_HOSTNAME=mail.example.org`, `TZ=Europe/Prague` (so that the time-zone conversion is
     exercised) and `RESTV2_MAILCOW_INC_DIR=tests/fixtures/mailcow-inc`.
-- [ ] T009 Configure the framework (R5, R6, R24):
+
+  *Implementation note*: Laravel loads only `.env.testing` in the test environment, so the file is
+  complete: it also holds a fixed test-only `APP_KEY`, the dev connection settings and
+  `LOG_STREAM=storage/logs/testing.log` (keeps JSON logs out of the PHPUnit output).
+  `.gitignore` un-ignores it. `config/restv2.php` also holds `vars_defaults`, the upstream
+  defaults that `MailcowConfig` falls back to.
+- [X] T009 Configure the framework (R5, R6, R24):
   - `config/database.php`: the `mysql` connection reads `DBHOST`, `DBNAME`, `DBUSER` and `DBPASS`,
     and has **no** `timezone` key. Set `'migrations' => ['table' => 'restv2_migrations']`. The Redis
     client is `phpredis`. Connection `restv2`: host `REDIS_SLAVEOF_IP` else `REDISHOST`, port
@@ -127,10 +158,13 @@ business logic.
   - `config/logging.php`: channel `stderr_json` (Monolog `StreamHandler` on `php://stderr` with
     `JsonFormatter`), the default.
   - `config/app.php`: `timezone => 'UTC'`.
-- [ ] T010 Configure `phpunit.xml`: test suites `Unit` (`tests/Unit`) and `Feature`
+
+  *Implementation note*: the `mysql` connection uses Laravel's `mariadb` driver. `config/queue.php`
+  is reduced to `sync` (nothing is queued, and mailcow's database has no job tables).
+- [X] T010 Configure `phpunit.xml`: test suites `Unit` (`tests/Unit`) and `Feature`
   (`tests/Feature`), `<env name="APP_ENV" value="testing" force="true"/>`, and
   `cacheDirectory=".phpunit.cache"`. Leave a placeholder `<extensions>` element for T018.
-- [ ] T011 Create `scripts/schema/init-db-harness.php` and `scripts/schema/generate-fixture.sh`
+- [X] T011 Create `scripts/schema/init-db-harness.php` and `scripts/schema/generate-fixture.sh`
   exactly as in R2.
   - Input is the tag; `MAILCOW_REPO` defaults to `./source_code`. The script refuses non-tag refs.
   - It reads `init_db.inc.php`, `vars.inc.php` and `docker-compose.yml` with `git show <tag>:…`,
@@ -140,22 +174,33 @@ business logic.
     `DEFINER=` and `AUTO_INCREMENT=`.
   - It writes a header with the tag, the `db_version` and the source SHA-256 to
     `tests/fixtures/schema/<tag>.sql`, then removes its containers.
-- [ ] T012 Run `scripts/schema/generate-fixture.sh 2026-09a` and commit
+- [X] T012 Run `scripts/schema/generate-fixture.sh 2026-09a` and commit
   `tests/fixtures/schema/2026-09a.sql`. Verify that the header says `db_version 18082026_1200`,
   that there are 54 `CREATE TABLE` and 6 `CREATE … VIEW` statements, and that no `DEFINER=` remains.
-- [ ] T013 [P] Create `scripts/legacy/extract-verify-hash.sh <tag>`. It extracts
+
+  *Implementation note*: `mariadb-dump` writes each view twice (a placeholder `CREATE VIEW … AS
+  SELECT NULL` and the final `CREATE ALGORITHM=UNDEFINED … VIEW`), so the file has 6 final view
+  definitions. The dump also uses `--skip-tz-utc`, and the `versions` row's `created` value is
+  written as `NOW()`, so that regenerating gives a byte-identical file.
+- [X] T013 [P] Create `scripts/legacy/extract-verify-hash.sh <tag>`. It extracts
   `verify_salted_hash()` and `verify_hash()` from `git show <tag>:data/web/inc/functions.inc.php`,
   renames them `legacy_verify_salted_hash` and `legacy_verify_hash`, and writes them with a header
   (tag, source SHA-256, GPL-3.0 notice) to `tests/fixtures/legacy/verify_hash.php`. Run it for
   `2026-09a` and commit the result (R12).
-- [ ] T014 Create `tests/bin/prepare-database.sh <database>` and `scripts/dev/reset-dev-database.sh`.
+- [X] T014 Create `tests/bin/prepare-database.sh <database>` and `scripts/dev/reset-dev-database.sh`.
   - `prepare-database.sh` connects as root to `$DBHOST` and runs `DROP DATABASE IF EXISTS`,
     `CREATE DATABASE … CHARACTER SET utf8mb4` and `GRANT ALL ON <db>.* TO $DBUSER`. It loads
     `tests/fixtures/schema/${MAILCOW_SCHEMA:-2026-09a}.sql`, then runs
     `php artisan migrate --force --env=testing` (or `local` for the dev database).
   - `reset-dev-database.sh` calls it for `mailcow` and then
     `php artisan db:seed --class=DevelopmentSeeder`.
-- [ ] T015 Create `.github/workflows/ci.yml` with the jobs `contract`, `quality`, `tests` and
+
+  *Implementation note*: the root password is `$DBROOT` (mailcow.conf's name, default `root`), the
+  client runs with `--skip-ssl` (the MariaDB 11 client of Alpine requires TLS by default), the
+  environment is the optional second argument (`testing` or `local`), and the script refuses
+  mailcow's own host names (`mysql-mailcow`, `mysql`). The seeding step is skipped with a notice
+  until `DevelopmentSeeder` exists (T111).
+- [X] T015 Create `.github/workflows/ci.yml` with the jobs `contract`, `quality`, `tests` and
   `image` exactly as in R25. `tests` uses the services `mariadb:10.11` and `redis:7.4.11-alpine`,
   and a matrix over `tests/fixtures/schema/*.sql`. `contract` runs
   `tufin/oasdiff breaking --fail-on ERR` against the latest `v*` tag's bundle, and skips with a
@@ -1203,7 +1248,7 @@ record for secrets.
   `php artisan migrate --force --isolated`, then `exec php-fpm -F`.
 - [ ] T109 Create `deploy/docker-compose.override.yml` with the service `restv2-mailcow` exactly as
   in R23:
-  - image `${RESTV2_IMAGE:-mailcow-rest-v2:0.1.0}`, `restart: always`, `read_only: true`;
+  - image `${RESTV2_IMAGE:-ghcr.io/feldsam-inc/mailcow-rest-v2:0.1.0}`, `restart: always`, `read_only: true`;
   - tmpfs `/app/storage` and `/app/bootstrap/cache` (`uid=82,gid=82`) and `/tmp`;
   - every environment variable of R14, with `APP_KEY=${RESTV2_APP_KEY}`;
   - volume `./data/web/inc:/mailcow/web/inc:ro,z`;
@@ -1217,7 +1262,7 @@ record for secrets.
   image. Render `sites-default.conf.j2` and `nginx.conf.j2` of upstream `2026-09a` the way the
   `ghcr.io/mailcow/nginx:1.30.4-1` entrypoint does, mount the snippet at
   `/etc/nginx/conf.d/site.restv2.custom`, and run `nginx -t`. Confirm that
-  `http://localhost:8080/api/v2/health/live` answers `200` on the dev stack. Record the procedure
+  `http://127.0.0.1:18080/api/v2/health/live` answers `200` on the dev stack. Record the procedure
   in `README.md` (T112).
 - [ ] T111 [P] Create `database/seeders/DevelopmentSeeder.php`, which seeds the Part B accounts of
   quickstart.md through `database/factories/MailcowRows.php`. It refuses to run unless

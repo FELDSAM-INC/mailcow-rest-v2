@@ -1,0 +1,94 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "feldsam-inc/mailcow-rest-v2",
+    "type": "project",
+    "description": "Contract-first REST API v2 for mailcow-dockerized",
+    "keywords": [
+        "mailcow",
+        "rest-api",
+        "openapi",
+        "laravel"
+    ],
+    "license": [
+        "GPL-3.0-only"
+    ],
+    "require": {
+        "php": "^8.3",
+        "laravel/framework": "^13.17",
+        "laravel/tinker": "^3.0",
+        "lbuchs/webauthn": "^2.2",
+        "robthree/twofactorauth": "^3.0"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.27",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "opis/json-schema": "^2.6",
+        "phpunit/phpunit": "^12.5.12"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "contract:lint": [
+            "npx --yes @redocly/cli@2.64.1 lint api/openapi.yaml"
+        ],
+        "contract:bundle": [
+            "npx --yes @redocly/cli@2.64.1 bundle api/openapi.yaml --output build/contract/openapi.yaml",
+            "npx --yes @redocly/cli@2.64.1 bundle api/openapi.yaml --dereferenced --ext json --output build/contract/openapi.json"
+        ],
+        "test": [
+            "Composer\\Config::disableProcessTimeout",
+            "@contract:bundle",
+            "tests/bin/prepare-database.sh restv2_test @no_additional_args",
+            "@php vendor/bin/phpunit",
+            "@php tests/bin/check-contract-coverage.php @no_additional_args"
+        ],
+        "analyse": [
+            "phpstan analyse --memory-limit=1G"
+        ],
+        "format": [
+            "pint"
+        ],
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "pre-package-uninstall": [
+            "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "scripts-descriptions": {
+        "contract:lint": "Lint the OpenAPI contract with Redocly.",
+        "contract:bundle": "Bundle the contract to build/contract/openapi.yaml and dereferenced openapi.json.",
+        "test": "Bundle the contract, prepare the MariaDB test database, run PHPUnit and check contract coverage.",
+        "analyse": "Run Larastan (PHPStan).",
+        "format": "Format the code with Pint."
+    }
+}

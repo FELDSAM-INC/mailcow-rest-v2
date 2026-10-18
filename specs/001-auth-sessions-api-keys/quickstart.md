@@ -20,7 +20,7 @@ mailcow host. It references the contract and the data model instead of repeating
 # 1. Build and start MariaDB 10.11, Redis 7.4.11, php-fpm 8.4 (app) and nginx (web).
 docker compose up -d --build
 
-# 2. Install dependencies and create the testing environment file.
+# 2. Install dependencies and create the dev environment file (.env.testing is committed).
 docker compose run --rm app composer install
 docker compose run --rm app cp .env.example .env
 docker compose run --rm app php artisan key:generate
@@ -59,7 +59,7 @@ The file holds 54 tables and 6 views and contains no `DEFINER=` clause.
 
 ## Part B: Manual end-to-end checks against the dev stack
 
-The dev stack serves the API at `http://localhost:8080/api/v2`. Run
+The dev stack serves the API at `http://127.0.0.1:18080/api/v2` (`RESTV2_WEB_PORT`). Run
 `docker compose run --rm app scripts/dev/reset-dev-database.sh` first. It loads the schema fixture
 into the dev database `mailcow`, runs the `restv2_` migrations and calls
 `php artisan db:seed --class=DevelopmentSeeder`, which creates:
@@ -74,7 +74,7 @@ stack, `SESSION_COOKIE=restv2_session` is set, because browsers drop `__Host-` c
 HTTP. Production keeps `__Host-restv2_session`.
 
 ```bash
-B=http://localhost:8080/api/v2; J='-H Content-Type:application/json'; C='-c jar -b jar'
+B=http://127.0.0.1:18080/api/v2; J='-H Content-Type:application/json'; C='-c jar -b jar'
 
 # US5: public configuration without authentication, then a conditional revalidation.
 curl -s $B/public-config | jq '.data | {productName, defaultLanguage, logos}'
@@ -136,14 +136,14 @@ curl -s $C "$B/audit-events?outcome=failure&eventType=signIn&limit=5" | jq '.dat
 a password, a code, a key secret or a session ID. You can check this with
 `docker compose logs app | grep -c Passw0rd`, which must print `0`.
 
-Passkey flows (US2) need a browser. Open `http://localhost:8080/api/v2/docs`, or use the
+Passkey flows (US2) need a browser. Open `http://127.0.0.1:18080/api/v2/docs`, or use the
 mailcowui-ng dev server against this stack. The automated suite covers them with the virtual
 authenticator (`tests/Feature/Passkeys/*`, `tests/Feature/Auth/PasskeySignIn*`).
 
 ## Part C: Validation on a mailcow host
 
 1. **Install**:
-   1. Build or pull the image.
+   1. Build or pull the image `ghcr.io/feldsam-inc/mailcow-rest-v2`.
    2. Append `deploy/docker-compose.override.yml` to the mailcow directory's
       `docker-compose.override.yml`.
    3. Add these lines to `mailcow.conf`:

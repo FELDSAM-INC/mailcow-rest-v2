@@ -1,0 +1,3 @@
+# Redocly CLI configuration (contract lint, research R13 and R25).
+extends:
+  - recommended

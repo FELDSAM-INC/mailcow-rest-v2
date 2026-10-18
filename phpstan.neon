@@ -1,0 +1,17 @@
+# Static analysis gate (constitution quality gate 6, research R25).
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - app
+        - tests
+        - config
+        - routes
+        - database
+        - bootstrap/app.php
+    tmpDir: storage/framework/cache/phpstan
+    excludePaths:
+        # Legacy code copied verbatim from mailcow (tests/fixtures/legacy) and mailcow's vars files.
+        - tests/fixtures/*

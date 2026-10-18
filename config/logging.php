@@ -1,0 +1,57 @@
+<?php
+
+use Monolog\Formatter\JsonFormatter;
+use Monolog\Handler\NullHandler;
+use Monolog\Handler\StreamHandler;
+
+/*
+|--------------------------------------------------------------------------
+| Logging (research R24)
+|--------------------------------------------------------------------------
+|
+| One JSON line per event on stderr (`docker logs`). The request context (request ID, route,
+| method, principal, client address) and the redaction of secrets are added by processors that
+| App\Providers\AppServiceProvider registers on the `stderr_json` channel. LOG_STREAM redirects
+| the stream (the test environment writes to storage/logs/testing.log).
+|
+*/
+
+$stream = (string) (env('LOG_STREAM') ?: 'php://stderr');
+
+if (! str_contains($stream, '://') && ! str_starts_with($stream, '/')) {
+    $stream = base_path($stream);
+}
+
+return [
+
+    'default' => 'stderr_json',
+
+    'deprecations' => [
+        'channel' => 'null',
+        'trace' => false,
+    ],
+
+    'channels' => [
+
+        'stderr_json' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'info'),
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => $stream,
+            ],
+            'formatter' => JsonFormatter::class,
+            'formatter_with' => [
+                'batchMode' => JsonFormatter::BATCH_MODE_NEWLINES,
+                'appendNewline' => true,
+            ],
+        ],
+
+        'null' => [
+            'driver' => 'monolog',
+            'handler' => NullHandler::class,
+        ],
+
+    ],
+
+];

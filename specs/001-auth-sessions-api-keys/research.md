@@ -24,7 +24,7 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     with the extensions `pdo_mysql`, `redis` (phpredis 6, PECL), `intl`, `opcache` and `pcov`.
     It adds Composer 2, `nodejs`/`npm` (for the Redocly CLI), `mariadb-client`, `redis` (for
     `redis-cli`) and `git`. The repository is mounted at `/app`.
-  - `web`: `nginx:1.28-alpine`, which serves `http://localhost:8080`. Its configuration
+  - `web`: `nginx:1.28-alpine`, which serves `http://127.0.0.1:18080` (`RESTV2_WEB_PORT`). Its configuration
     (`docker/nginx/dev.conf`) includes the same location block as the production snippet
     `deploy/nginx/site.restv2.custom`, so the snippet is exercised in development.
   - `mariadb`: `mariadb:10.11`, the image of `mysql-mailcow` in `2026-09a` `docker-compose.yml`.
@@ -783,6 +783,9 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
 ### R23. Container and routing
 
 - **Decision**:
+  - **Images**: the API image is `ghcr.io/feldsam-inc/mailcow-rest-v2`, built from the GitHub
+    repository `FELDSAM-INC/mailcow-rest-v2` and pushed for `v*` tags. The UI's static image is
+    `ghcr.io/feldsam-inc/mailcowui-ng`, built by the mailcowui-ng repository.
   - **Image**: `docker/php/Dockerfile`, target `production`. It is based on `php:8.4-fpm-alpine`,
     with the same extensions as `dev` (without `pcov`). It runs `composer install --no-dev
     --classmap-authoritative`. A Node build stage creates the bundled contract
@@ -814,7 +817,8 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
       `fastcgi_param SCRIPT_FILENAME /app/public/index.php;`, `fastcgi_param HTTP_PROXY "";`,
       `client_max_body_size 1m;` and `fastcgi_pass $restv2_upstream;`;
     - `location ^~ /ng/`, which proxies with the same variable technique to `http://ng-mailcow:8080`.
-      That is the static image of mailcowui-ng, which the UI repository adds to the same override.
+      That is the static image of mailcowui-ng (`ghcr.io/feldsam-inc/mailcowui-ng`), which the UI
+      repository adds to the same override.
       Until it is deployed, `/ng/` answers `502`.
 
     The `^~` prefix match beats the legacy regex locations, and `/api/v1` is untouched. The
@@ -879,9 +883,10 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
      `schema` covers every file in `tests/fixtures/schema/` (today `2026-09a`). It runs
      `composer test`: bundle, prepare the database, then PHPUnit with contract validation and the
      coverage check.
-  4. `image`: builds the `production` target, runs the container's `restv2:health --live`, and runs
-     `nginx -t` in `nginx:1.28-alpine` on `docker/nginx/dev.conf`, which includes
-     `deploy/nginx/site.restv2.custom`.
+  4. `image`: builds the `production` target as `ghcr.io/feldsam-inc/mailcow-rest-v2`, runs the
+     container's `restv2:health --live`, runs `nginx -t` in `nginx:1.28-alpine` on
+     `docker/nginx/dev.conf`, which includes `deploy/nginx/site.restv2.custom`, and pushes the
+     image to GHCR for `v*` tags.
 - **Rationale**: This covers the constitution's quality gates: lint, breaking changes,
   contract-validated tests on each supported schema, Pint and static analysis.
 - **Alternatives considered**: Spectral was rejected because Redocly is already the bundler. PHPStan

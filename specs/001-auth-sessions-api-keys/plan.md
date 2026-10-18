@@ -63,7 +63,9 @@ channel is observed with `redis-cli SUBSCRIBE`. A contract coverage check runs a
 
 **Target Platform**: A Linux container (`php:8.4-fpm-alpine`, non-root, read-only root
 filesystem) added to mailcow-dockerized through `docker-compose.override.yml`. It is reached by
-nginx-mailcow over FastCGI at `/api/v2/`.
+nginx-mailcow over FastCGI at `/api/v2/`. The image is `ghcr.io/feldsam-inc/mailcow-rest-v2`
+(GitHub repository `FELDSAM-INC/mailcow-rest-v2`); the UI's static image, proxied at `/ng/`, is
+`ghcr.io/feldsam-inc/mailcowui-ng`.
 
 **Project Type**: web service (REST API), with no UI apart from the API documentation page.
 
@@ -272,10 +274,11 @@ scripts/
 
 docker/php/{Dockerfile,entrypoint.sh,php-fpm.conf,php.ini}
 docker/nginx/dev.conf
-compose.yaml                           # dev stack: app, web, mariadb, redis
+docker/mariadb/mailcow.cnf             # mailcow's my.cnf of 2026-09a, for the dev and test database
+compose.yaml                           # dev stack (project restv2): app, web, mariadb, redis
 deploy/
-├── docker-compose.override.yml        # restv2-mailcow service for mailcow-dockerized
-└── nginx/site.restv2.custom           # /api/v2/ (FastCGI) and /ng/ (mailcowui-ng image)
+├── docker-compose.override.yml        # restv2-mailcow service (ghcr.io/feldsam-inc/mailcow-rest-v2)
+└── nginx/site.restv2.custom           # /api/v2/ (FastCGI) and /ng/ (ghcr.io/feldsam-inc/mailcowui-ng)
 .github/workflows/ci.yml
 redocly.yaml, .redocly.lint-ignore.yaml
 ```

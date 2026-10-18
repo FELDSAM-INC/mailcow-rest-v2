@@ -26,7 +26,7 @@ Legacy references are paths in mailcow-dockerized `2026-09a`
 - **Decision**: Two modules, 16 operations:
   - `api/modules/domains/`: `GET|POST /domains`, `POST /domains/bulk-actions`,
     `GET|PATCH|DELETE /domains/{domain}`, `GET /domains/{domain}/deletion-preview`,
-    `GET|PUT /domains/{domain}/footer`, `GET /domain-capabilities`, `GET /domain-tags`;
+    `GET|PUT /domains/{domain}/footer`, `GET /capabilities/domains`, `GET /domain-tags`;
   - `api/modules/domain-templates/`: `GET|POST /domain-templates`,
     `GET|PATCH|DELETE /domain-templates/{templateId}`.
 
@@ -34,8 +34,9 @@ Legacy references are paths in mailcow-dockerized `2026-09a`
 - **Rationale**:
   - Single-label names such as `tags` or `capabilities` are valid domain names (legacy accepts
     them, spec edge case). `GET /domains/tags` would shadow the domain `tags`, so the read-only
-    collections that are not domains live at the top level (`/domain-capabilities`,
-    `/domain-tags`). `POST /domains/bulk-actions` cannot collide, because `/domains/{domain}` has no
+    collections that are not domains live at the top level: the capabilities read at
+    `/capabilities/domains` (operation `getDomainsCapabilities`, the API-wide
+    `/capabilities/{area}` pattern of `docs/conventions.md`) and the tag list at `/domain-tags`. `POST /domains/bulk-actions` cannot collide, because `/domains/{domain}` has no
     `POST`; it matches the bulk path of feature 008 (`/sync-jobs/bulk-actions`).
   - The deletion preview and the footer are sub-resources of the domain they belong to
     (constitution II: no verbs, ownership nesting). The preview is a `GET` because it is safe.

@@ -320,7 +320,7 @@ queries.
   equals the legacy query result (`mboxes_in_domain`, `aliases_in_domain`, `quota_used_in_domain`,
   `bytes_total`, `msgs_total`, `max_new_mailbox_quota` where non-negative, `def_new_mailbox_quota`).
 - [ ] T040 [P] [US1] Write `tests/Feature/Domains/DomainCapabilitiesTest.php` for
-  `getDomainCapabilities` (FR-028, FR-064, SC-012, AS-11 of US2):
+  `getDomainsCapabilities` (FR-028, FR-064, SC-012, AS-11 of US2):
   - administrator: `groupwareEnabled true`, `taggingLimit 25`, `maxTagLength 255`,
     `maxDescriptionLength 255`, `footerTextMaxBytes 1048576`, `bulkLimit 100`, `defaultPageSize 25`,
     `maxPageSize 1000`, `quotaUnit 1048576`, `dkim {defaultSelector: dkim, defaultKeySize: 2048,
@@ -351,7 +351,7 @@ queries.
 - [ ] T045 [P] [US1] Create `app/Services/Domains/DomainCapabilitiesService.php`,
   `app/Http/Resources/Api/V2/DomainCapabilitiesResource.php` and
   `app/Http/Controllers/Api/V2/DomainCapabilitiesController.php` (`show`); register
-  `GET /domain-capabilities`.
+  `GET /capabilities/domains`.
 - [ ] T046 [P] [US1] Create `app/Services/Domains/DomainTagSummaryQuery.php` (D23),
   `app/Http/Requests/Api/V2/ListDomainTagsRequest.php`,
   `app/Http/Resources/Api/V2/DomainTagSummaryResource.php` and

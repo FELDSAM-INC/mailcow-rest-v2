@@ -236,5 +236,7 @@ from Redis directly, and Postfix and Dovecot read the domain tables directly.
 - `App\Services\Domains\DomainDeletionPlan`: blockers, alias domains, alias count and sample,
   footer flag, domain administrators to delete, DKIM flag, version tag.
 - `App\Clients\DockerApi\DockerCallResult`: `success | failed(message) | unknown`.
+- `DomainCapabilities` (`GET /capabilities/domains`): computed on every request from
+  `config('restv2.*')` and `MailcowConfig` (research D23); no storage.
 - `App\Services\Dkim\DkimDnsOutcome` enum: `published`, `noZone`, `failed`, `notConfigured`,
   `skipped` (feature 010 adds `removed`, `noRecordToRemove`).

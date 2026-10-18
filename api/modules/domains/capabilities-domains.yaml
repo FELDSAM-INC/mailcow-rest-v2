@@ -1,9 +1,10 @@
 get:
-  operationId: getDomainCapabilities
+  operationId: getDomainsCapabilities
   tags: [Domains]
   summary: Get the domain capabilities
   description: |
-    Returns the server settings and limits that the domain forms need before they submit: whether
+    Returns the server settings and limits that the domain forms need before they submit (the
+    `domains` area of the API-wide capabilities reads, `/capabilities/{area}`): whether
     the groupware is enabled, the tagging limit and the other limits, and, for administrators
     only, the DKIM defaults and whether the DKIM DNS publication is enabled. Reflects the current
     configuration on every request and contains no secret. Administrators and domain

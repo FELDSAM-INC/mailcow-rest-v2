@@ -127,7 +127,7 @@ lists that the shared alias domain cleanup removes.
 | GET `/domains/{domain}/deletion-preview` | previewDomainDeletion | admin (read-only keys too) | US4, FR-065 |
 | GET `/domains/{domain}/footer` | getDomainFooter | admin, domain admin | US7, FR-051 |
 | PUT `/domains/{domain}/footer` | replaceDomainFooter | admin, domain admin (writes) | US7, FR-052–FR-055 |
-| GET `/domain-capabilities` | getDomainCapabilities | admin, domain admin | US2, FR-064 |
+| GET `/capabilities/domains` | getDomainsCapabilities | admin, domain admin | US2, FR-064 |
 | GET `/domain-tags` | listDomainTags | admin, domain admin | US1, FR-066 |
 | GET `/domain-templates` | listDomainTemplates | admin | US5, FR-045, FR-049 |
 | POST `/domain-templates` | createDomainTemplate | admin (writes) | US5, FR-045–FR-047 |
@@ -161,7 +161,7 @@ specs/002-domains/
 ```text
 api/
 ├── modules/domains/{_index,domains,domain,domain-deletion-preview,domain-footer,
-│                    domain-bulk-actions,domain-capabilities,domain-tags}.yaml
+│                    domain-bulk-actions,capabilities-domains,domain-tags}.yaml
 ├── modules/domain-templates/{_index,domain-templates,domain-template}.yaml
 ├── modules/audit/audit-events.yaml                    # + targetType, targetId
 └── components/{schemas,parameters,responses}/Domain*.yaml

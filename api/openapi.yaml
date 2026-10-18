@@ -324,8 +324,8 @@ paths:
     $ref: './modules/system/_index.yaml#/~1problems~1{problemType}'
   /sync-jobs:
     $ref: './modules/sync-jobs/_index.yaml#/~1sync-jobs'
-  /sync-jobs/capabilities:
-    $ref: './modules/sync-jobs/_index.yaml#/~1sync-jobs~1capabilities'
+  /capabilities/sync-jobs:
+    $ref: './modules/sync-jobs/_index.yaml#/~1capabilities~1sync-jobs'
   /sync-jobs/bulk-actions:
     $ref: './modules/sync-jobs/_index.yaml#/~1sync-jobs~1bulk-actions'
   /sync-jobs/{syncJobId}:
@@ -344,8 +344,8 @@ paths:
     $ref: './modules/domains/_index.yaml#/~1domains~1{domain}~1deletion-preview'
   /domains/{domain}/footer:
     $ref: './modules/domains/_index.yaml#/~1domains~1{domain}~1footer'
-  /domain-capabilities:
-    $ref: './modules/domains/_index.yaml#/~1domain-capabilities'
+  /capabilities/domains:
+    $ref: './modules/domains/_index.yaml#/~1capabilities~1domains'
   /domain-tags:
     $ref: './modules/domains/_index.yaml#/~1domain-tags'
   /domain-templates:
@@ -448,8 +448,8 @@ paths:
     $ref: './modules/admins/_index.yaml#/~1admins~1{username}~1second-factor-suspension'
   /admin-bulk-actions:
     $ref: './modules/admins/_index.yaml#/~1admin-bulk-actions'
-  /account-capabilities:
-    $ref: './modules/admins/_index.yaml#/~1account-capabilities'
+  /capabilities/accounts:
+    $ref: './modules/admins/_index.yaml#/~1capabilities~1accounts'
   /domain-admins:
     $ref: './modules/domain-admins/_index.yaml#/~1domain-admins'
   /domain-admins/{username}:
@@ -554,8 +554,8 @@ paths:
     $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1permanent-bans'
   /relayhosts:
     $ref: './modules/relayhosts/_index.yaml#/~1relayhosts'
-  /relayhosts/choices:
-    $ref: './modules/relayhosts/_index.yaml#/~1relayhosts~1choices'
+  /relayhost-choices:
+    $ref: './modules/relayhosts/_index.yaml#/~1relayhost-choices'
   /relayhosts/bulk-actions:
     $ref: './modules/relayhosts/_index.yaml#/~1relayhosts~1bulk-actions'
   /relayhosts/{relayhostId}:
@@ -578,8 +578,8 @@ paths:
     $ref: './modules/transports/_index.yaml#/~1transports~1{transportId}~1connection-test'
   /bcc-maps:
     $ref: './modules/bcc-maps/_index.yaml#/~1bcc-maps'
-  /bcc-maps/destination-choices:
-    $ref: './modules/bcc-maps/_index.yaml#/~1bcc-maps~1destination-choices'
+  /bcc-destination-choices:
+    $ref: './modules/bcc-maps/_index.yaml#/~1bcc-destination-choices'
   /bcc-maps/bulk-actions:
     $ref: './modules/bcc-maps/_index.yaml#/~1bcc-maps~1bulk-actions'
   /bcc-maps/{bccMapId}:
@@ -602,8 +602,8 @@ paths:
     $ref: './modules/forwarding-hosts/_index.yaml#/~1forwarding-hosts~1bulk-actions'
   /forwarding-hosts/{forwardingHostAddress}:
     $ref: './modules/forwarding-hosts/_index.yaml#/~1forwarding-hosts~1{forwardingHostAddress}'
-  /routing-capabilities:
-    $ref: './modules/routing-capabilities/_index.yaml#/~1routing-capabilities'
+  /capabilities/routing:
+    $ref: './modules/routing-capabilities/_index.yaml#/~1capabilities~1routing'
   /quarantine:
     $ref: './modules/quarantine/_index.yaml#/~1quarantine'
   /quarantine/bulk-actions:

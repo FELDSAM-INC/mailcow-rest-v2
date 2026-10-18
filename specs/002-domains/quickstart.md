@@ -44,7 +44,7 @@ B=http://localhost:8080/api/v2; J='-H Content-Type:application/json'; C='-c jar 
 M='-H Content-Type:application/merge-patch+json'
 
 # US2: capabilities, then create a domain from the Default template.
-curl -s $C $B/domain-capabilities | jq '.data | {groupwareEnabled, taggingLimit, dkim}'
+curl -s $C $B/capabilities/domains | jq '.data | {groupwareEnabled, taggingLimit, dkim}'
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/domains -D - \
   -d '{"name":"München.de","tags":["customer-a"],"restartGroupware":true}' | tee created.txt
 #   -> 201, Location: /api/v2/domains/xn--mnchen-3ya.de, creationReport.dkimKey "created"
@@ -124,6 +124,6 @@ private key or the ISPConfig password.
    /var/vmail/_garbage` shows the moved mail directory.
 6. **FeldHost DNS (fork only)**: create a domain whose zone exists in ISPConfig and check the
    `<selector>._domainkey` TXT record; create one without a zone and see `noZone` in the report.
-7. **Groupware disabled**: with `SKIP_SOGO=y`, `GET /domain-capabilities` reports
+7. **Groupware disabled**: with `SKIP_SOGO=y`, `GET /capabilities/domains` reports
    `groupwareEnabled: false`, and a creation with `restartGroupware: true` reports
    `groupwareDisabled` for both groupware steps.

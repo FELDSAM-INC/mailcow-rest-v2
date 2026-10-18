@@ -10,7 +10,7 @@
   $ref: './domain-deletion-preview.yaml'
 /domains/{domain}/footer:
   $ref: './domain-footer.yaml'
-/domain-capabilities:
-  $ref: './domain-capabilities.yaml'
+/capabilities/domains:
+  $ref: './capabilities-domains.yaml'
 /domain-tags:
   $ref: './domain-tags.yaml'

@@ -628,7 +628,8 @@ and list the audit log filtered by target.
     the allowed DKIM key sizes, and whether the DKIM DNS publication is enabled (FR-027).
 
   The values MUST reflect the server's current configuration and MUST NOT include any secret or
-  connection detail. The read MUST change nothing, and read-only keys MAY use it.
+  connection detail. The read is the domains area of the API-wide capabilities reads
+  (`docs/conventions.md`). The read MUST change nothing, and read-only keys MAY use it.
 
 #### Creating a domain
 

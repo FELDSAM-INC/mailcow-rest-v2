@@ -289,11 +289,17 @@ Migration `database/migrations/2026_10_18_000002_create_restv2_audit_events_tabl
   query parser keeps only the last of repeated keys without brackets, so `ListAuditEventsRequest`
   reads every `eventType` value from the raw `QUERY_STRING`.
 - `outcome` → `outcome = ?`.
+- `authMethod` (repeatable, FR-059, gap G18) → `auth_method IN (...)`, read from the raw
+  `QUERY_STRING` like `eventType`.
+- `requestId` (FR-060, gap G19) → `request_id = ?`.
+- `targetType`, `targetId` → equality (`docs/conventions.md` history filters).
 - `actor` → `actor_username = ? OR actor_api_key_id = ?`.
-- `clientAddress`: a single address → equality on the canonical form. A prefix → candidate rows
-  are pre-filtered in SQL by the textual prefix of the network address, then matched with
-  `IpUtils::checkIp` in PHP before pagination. That is acceptable at audit volumes, and an index
-  on `client_address` keeps it bounded.
+- `clientAddress`: a single address → `INET6_ATON(client_address) = INET6_ATON(?)`. A prefix is
+  matched in SQL: IPv4 with `INET_ATON(client_address) & mask = network`, IPv6 by the leading hex
+  digits of `HEX(INET6_ATON(client_address))` and the masked next digit. Paging stays in SQL. The
+  logger stores the canonical text form of the address.
+- Values of the shared enumerations (`eventType`, `authMethod`, `targetType`) that the server does
+  not record match nothing (FR-047).
 
 - `q` → `actor_username LIKE ? OR target_name LIKE ? OR user_agent LIKE ?`.
 

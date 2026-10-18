@@ -1338,7 +1338,7 @@ record for secrets.
 
 ### Tests for User Story 6 (write first, observe failing) ⚠️
 
-- [ ] T096 [P] [US6] Write `tests/Feature/Audit/AuditEventListTest.php` for `listAuditEvents`
+- [X] T096 [P] [US6] Write `tests/Feature/Audit/AuditEventListTest.php` for `listAuditEvents`
   (FR-047):
   - Newest first by default; `order=asc` works.
   - The filters `from`, `to`, repeated `eventType` (`?eventType=signIn&eventType=signOut` returns
@@ -1355,19 +1355,39 @@ record for secrets.
   - AS-2: a key creation and revocation listed with actor, key name and time, without the secret.
   - AS-3: a mailbox user, a domain admin and a domain-admin key → `403 forbidden`; an admin key →
     `200`.
-- [ ] T097 [P] [US6] Write `tests/Feature/Security/SecretLeakScanTest.php` (SC-009, FR-050). It
+
+  *Implementation note (deviation from the task text)*: `eventType=foo` is not refused.
+  `AuditEventType`, `AuthMethod` and the target types are shared enumerations that every feature
+  extends, so a value this server does not record (for example one of a feature it does not
+  implement yet) matches no records instead of answering `422`; clients built against a later
+  contract keep working (FR-047 now says so). Values are limited to 64 characters (`tooLong`) and
+  20 per repeated parameter (`tooMany`). Added for G18 and G19 (FR-059, FR-060): the repeatable
+  `authMethod` filter and the `requestId` filter (`invalidFormat`, `format: requestId`, which
+  `ValidationRuleCode` documents). The contract's generic `targetType` and `targetId` filters are
+  implemented as exact matches (the domain-name forms are feature 002's), and
+  `impersonatedAccount` (feature 007) matches nothing, because no record is written during an
+  impersonation before 007. `occurredAt` carries microseconds.
+- [X] T097 [P] [US6] Write `tests/Feature/Security/SecretLeakScanTest.php` (SC-009, FR-050). It
   runs every audited flow once with known secrets (password `S3cret-Pass!`, a TOTP code, an OTP,
   WebAuthn assertion bytes as base64url, a key secret), captures the `stderr_json` log through a
   test handler, and asserts that none of these strings appear in any `restv2_audit_events` row, any
   log line or any response body other than the single `createApiKey` response.
-- [ ] T098 [P] [US6] Write `tests/Feature/Audit/AuditPurgeCommandTest.php` (FR-048): with
+
+  *Implementation note*: the log capture is a Monolog `TestHandler` pushed onto the `stderr_json`
+  logger. One-time codes are searched as whole tokens, so that six digits inside a request ID or
+  a timestamp cannot give a false positive. The scan also checks that every 001 event type was
+  written.
+- [X] T098 [P] [US6] Write `tests/Feature/Audit/AuditPurgeCommandTest.php` (FR-048): with
   `RESTV2_AUDIT_RETENTION_DAYS=30`, `php artisan restv2:audit-purge` deletes only the records older
   than 30 days, in batches of 1000, and prints the count. No HTTP route modifies or deletes records:
   assert that `PUT`, `PATCH` and `DELETE` on `/api/v2/audit-events` answer `405`.
 
+  *Implementation note*: the loop stops after a partial batch, so 2,501 old records take three
+  `DELETE … LIMIT 1000` statements.
+
 ### Implementation for User Story 6
 
-- [ ] T099 [US6] Create `app/Policies/AuditEventPolicy.php` (admin principal, session or key),
+- [X] T099 [US6] Create `app/Policies/AuditEventPolicy.php` (admin principal, session or key),
   `app/Http/Requests/Api/V2/ListAuditEventsRequest.php` (`from`/`to` RFC 3339, `eventType`
   repeatable and read from the raw `QUERY_STRING` because PHP keeps only the last repeated key,
   each in the enum, at most 20 values, `outcome` enum, `actor` max 255, `clientAddress` `IpNetwork` or
@@ -1375,7 +1395,13 @@ record for secrets.
   `app/Http/Controllers/Api/V2/AuditEventController.php` (`index`, with the prefix filter of
   data-model.md). Register `GET /audit-events` (`restv2.auth:authenticated`) in `routes/api.php`.
   This makes T096 pass.
-- [ ] T100 [US6] Create `app/Console/Commands/AuditPurgeCommand.php` (`restv2:audit-purge`,
+
+  *Implementation note*: the prefix filter runs in MariaDB instead of PHP, so that paging stays in
+  SQL: IPv4 prefixes compare `INET_ATON(client_address) & mask`, IPv6 prefixes the leading hex
+  digits of `HEX(INET6_ATON(client_address))` (plus the masked next digit), and a single address
+  compares `INET6_ATON()` of both sides. `AuditLogger` now stores the canonical text form of the
+  client address.
+- [X] T100 [US6] Create `app/Console/Commands/AuditPurgeCommand.php` (`restv2:audit-purge`,
   batched deletes). This makes T098 pass. T097 passes once US1, US2 and US4 are implemented.
 
 **Checkpoint**: All six user stories work independently.

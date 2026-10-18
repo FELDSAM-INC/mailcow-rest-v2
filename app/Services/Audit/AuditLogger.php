@@ -49,7 +49,7 @@ class AuditLogger
             'target_type' => $target['type'] ?? null,
             'target_id' => $target['id'] ?? null,
             'target_name' => $target['name'] ?? null,
-            'client_address' => (string) $request->ip(),
+            'client_address' => self::canonicalAddress((string) $request->ip()),
             'user_agent' => $userAgent === null ? null : mb_substr($userAgent, 0, 512),
             'auth_method' => $authMethod,
             'failure_reason' => $failureReason,
@@ -58,6 +58,17 @@ class AuditLogger
         ])->save();
 
         return $event;
+    }
+
+    /**
+     * The address in its canonical text form (lower-case, compressed IPv6), so that equal
+     * addresses compare equal in the audit filters.
+     */
+    private static function canonicalAddress(string $ip): string
+    {
+        $packed = @inet_pton($ip);
+
+        return $packed === false ? $ip : (string) inet_ntop($packed);
     }
 
     /**

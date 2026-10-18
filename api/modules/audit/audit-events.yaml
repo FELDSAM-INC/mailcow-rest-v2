@@ -33,7 +33,9 @@ get:
     - name: eventType
       in: query
       required: false
-      description: Only these event types. Repeat the parameter for several.
+      description: |
+        Only these event types. Repeat the parameter for several. A type this server does not
+        record (for example one of a feature it does not implement yet) matches no records.
       style: form
       explode: true
       schema:
@@ -46,6 +48,30 @@ get:
       required: false
       schema:
         $ref: '../../components/schemas/AuditOutcome.yaml'
+    - name: authMethod
+      in: query
+      required: false
+      description: |
+        Only records of these authentication methods. Repeat the parameter for several. Records
+        without a method (`authMethod: null`) never match. A method this server does not record
+        matches no records.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          $ref: '../../components/schemas/AuthMethod.yaml'
+    - name: requestId
+      in: query
+      required: false
+      description: |
+        Only records written while handling the request with this identifier (the `requestId` of
+        its problem details and log lines, its W3C trace ID), so that the records of one request,
+        for example one bulk action, can be linked.
+      schema:
+        type: string
+        pattern: '^[0-9a-f]{32}$'
     - name: actor
       in: query
       required: false

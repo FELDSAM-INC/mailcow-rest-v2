@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V2\ApiKeyController;
 use App\Http\Controllers\Api\V2\ApiKeyOwnerCandidateController;
 use App\Http\Controllers\Api\V2\ApiKeyRevocationController;
+use App\Http\Controllers\Api\V2\AuditEventController;
 use App\Http\Controllers\Api\V2\CsrfTokenController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
@@ -123,4 +124,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('variant', 'light|dark')
             ->name('public-config-logo.show');
     });
+
+    // The audit log (FR-047): administrators, with a session or a key. Read only.
+    Route::get('/audit-events', [AuditEventController::class, 'index'])
+        ->middleware(['restv2.auth:authenticated', 'restv2.pending'])
+        ->name('audit-events.index');
 });

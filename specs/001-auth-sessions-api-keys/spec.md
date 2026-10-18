@@ -94,6 +94,11 @@
   Reaching the same limit (10 within 15 minutes) refuses further attempts for that pair as "too
   many requests", like FR-007 (FR-007, FR-024). (orchestrator decision during implementation:
   security fix, recorded as a deviation in the parity table.)
+- Q: Can the audit log be filtered by how the actor authenticated? → A: Yes, with a repeatable
+  authentication-method filter (FR-059). (orchestrator decision: gap G18, found by the UI 012
+  plan, whose history view filters single sign-on and directory sign-ins.)
+- Q: Can the audit records written by one request be linked? → A: Yes, with a request-identifier
+  filter (FR-060). (orchestrator decision: gap G19, found by the UI 012 plan.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -691,10 +696,19 @@ with each filter and confirm exactly the expected entries appear and contain no 
   It MUST NOT contain passwords, one-time codes, passkey or WebAuthn assertions, key secrets or
   session identifiers.
 - **FR-047**: Administrators MUST be able to list audit records with pagination, newest first by
-  default, filtered by time range, event type, outcome, actor and client address. Domain
-  administrators and mailbox users MUST be refused.
+  default, filtered by time range, event type, outcome, actor, client address, authentication
+  method (FR-059), request identifier (FR-060) and target (`docs/conventions.md`). Domain
+  administrators and mailbox users MUST be refused. A filter value of a shared enumeration (event
+  type, authentication method, target type) that the server does not record, for example one
+  added by a feature it does not implement yet, MUST match no records instead of being refused,
+  so that clients built against a later contract keep working.
 - **FR-048**: No operation MAY modify or delete audit records. Records MUST be kept for a
   configurable retention period, 365 days by default, and then removed.
+- **FR-059**: The audit list MUST accept a repeatable authentication-method filter, whose values
+  are those of the contract's authentication methods. A record matches when its method is one of
+  the given values; records without a method never match.
+- **FR-060**: The audit list MUST accept a request-identifier filter, so that every record written
+  while handling one request, for example one bulk action, can be listed together.
 
 #### Cross-cutting
 

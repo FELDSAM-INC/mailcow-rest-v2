@@ -24,8 +24,8 @@ then marks the entry done here. Gaps that are a contract-wide rule are also reco
 | G15 | UI 006 | 006 | Allow/block list audit records use the entry ID as their target, with the owner only in `details`, so History can't be filtered to one domain's or mailbox's list. | Target the owner (`domain`, `aliasDomain` or `mailbox`, with its ID), and record the entry ID and value in `details`. | open |
 | G16 | UI 013 | 013 | A mass-mail recipient's `failureReason` is free text, so clients can't translate it. | Add a stable `failureCode` enum next to the text. | open |
 | G17 | UI 013 | 013 | The regex-map list returns every map's content, and the mass-mail job list every job's bodies, which is heavy on phones. | Lists return summaries; the content comes from the single-item reads. | open |
-| G18 | UI 012 | 001 | `GET /audit-events` has no sign-in method filter. | Add a generic `authMethod` filter (repeatable, values of `AuthMethod`). | open |
-| G19 | UI 012 | 001 | `GET /audit-events` has no `requestId` filter, so related records can't be linked. | Add a `requestId` filter. | open |
+| G18 | UI 012 | 001 | `GET /audit-events` has no sign-in method filter. | Add a generic `authMethod` filter (repeatable, values of `AuthMethod`). | done (001 Phase 8, FR-059) |
+| G19 | UI 012 | 001 | `GET /audit-events` has no `requestId` filter, so related records can't be linked. | Add a `requestId` filter. | done (001 Phase 8, FR-060) |
 | G20 | UI 012 | 012 | `PUT /identity-provider` has no create-only precondition, so simultaneous first setups overwrite each other. | Honour `If-None-Match: *` (412 when a configuration exists). | open |
 | G21 | UI 012 | 012 | There is no identity provider in the API dev stack for SSO smoke tests. | Add an optional Keycloak service with a realm import to the dev compose stack. | open |
 | G22 | UI 005 | 005 | `applyMailboxMailSettingsBulkAction` compares `version` with the mail-settings tag, but mailbox list entries expose only the mailbox `etag`, so bulk TLS can't send per-item versions. | Add `mailSettingsVersion` to the `Mailbox` list representation (003 schema, owned by 005). | open |

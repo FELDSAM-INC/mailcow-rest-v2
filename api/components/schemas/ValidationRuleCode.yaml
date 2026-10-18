@@ -12,7 +12,8 @@ description: |
   - `notInList`: value not among the allowed values. Params: `allowed`.
   - `invalidFormat`: value does not match a format. Params: `format`, one of `dateTime`
     (RFC 3339), `ipNetwork` (IPv4 or IPv6 address or prefix), `ipAddress`, `totpCode` (six
-    digits), `yubicoOtp` (44 letters or digits), `base64url`, `webauthnCredential`.
+    digits), `yubicoOtp` (44 letters or digits), `base64url`, `webauthnCredential`, `requestId`
+    (32 lower-case hexadecimal digits).
   - `mustBeInFuture`: a time that must lie in the future does not.
   - `notFound`: the referenced object does not exist.
   - `notEligible`: the referenced object exists but cannot be used here. Params: `allowedRoles`.

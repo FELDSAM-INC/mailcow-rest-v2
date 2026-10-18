@@ -53,7 +53,15 @@ class MonitoringAuthorizationTest extends TestCase
      */
     public static function operations(): array
     {
-        return [];
+        return [
+            // US1 (T030).
+            'getHostOverview' => ['GET', '/api/v2/host', null, null, null],
+            'getMailStorageUsage' => ['GET', '/api/v2/host/mail-storage', null, null, null],
+            'getMonitoringCapabilities' => ['GET', '/api/v2/capabilities/monitoring', null, null, null],
+            'listContainers' => ['GET', '/api/v2/containers', null, null, null],
+            'getContainer' => ['GET', '/api/v2/containers/postfix-mailcow', null, null, null],
+            'getContainerResourceUsage' => ['GET', '/api/v2/containers/postfix-mailcow/resource-usage', null, null, null],
+        ];
     }
 
     private const CALLERS = [

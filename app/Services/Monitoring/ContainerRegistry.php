@@ -19,6 +19,9 @@ use Carbon\CarbonImmutable;
  */
 class ContainerRegistry
 {
+    /** Compose service names (contract `ContainerName`), the route constraint of `{containerName}`. */
+    public const NAME_PATTERN = '[a-z0-9][a-z0-9_.-]{0,62}';
+
     private const SKIP = '/^([yY][eE][sS]|[yY])+$/';
 
     public function __construct(

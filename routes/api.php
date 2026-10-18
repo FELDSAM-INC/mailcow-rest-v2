@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\V2\ApiKeyController;
 use App\Http\Controllers\Api\V2\ApiKeyOwnerCandidateController;
 use App\Http\Controllers\Api\V2\ApiKeyRevocationController;
 use App\Http\Controllers\Api\V2\AuditEventController;
+use App\Http\Controllers\Api\V2\ContainerController;
+use App\Http\Controllers\Api\V2\ContainerResourceUsageController;
 use App\Http\Controllers\Api\V2\CsrfTokenController;
 use App\Http\Controllers\Api\V2\DomainBulkActionController;
 use App\Http\Controllers\Api\V2\DomainCapabilitiesController;
@@ -20,6 +22,7 @@ use App\Http\Controllers\Api\V2\DomainFooterController;
 use App\Http\Controllers\Api\V2\DomainTagController;
 use App\Http\Controllers\Api\V2\DomainTemplateBulkActionController;
 use App\Http\Controllers\Api\V2\DomainTemplateController;
+use App\Http\Controllers\Api\V2\HostOverviewController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\LivenessController;
 use App\Http\Controllers\Api\V2\MailboxBulkActionController;
@@ -31,6 +34,8 @@ use App\Http\Controllers\Api\V2\MailboxSenderSettingsController;
 use App\Http\Controllers\Api\V2\MailboxTagController;
 use App\Http\Controllers\Api\V2\MailboxTemplateBulkActionController;
 use App\Http\Controllers\Api\V2\MailboxTemplateController;
+use App\Http\Controllers\Api\V2\MailStorageUsageController;
+use App\Http\Controllers\Api\V2\MonitoringCapabilitiesController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
 use App\Http\Controllers\Api\V2\PasskeyChallengeController;
@@ -49,6 +54,8 @@ use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
 use App\Http\Controllers\Api\V2\SessionController;
+use App\Http\Middleware\AuthorizeMonitoring;
+use App\Services\Monitoring\ContainerRegistry;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -62,6 +69,9 @@ use Illuminate\Support\Facades\Route;
 | requires every route to be a contract operation of an implemented feature.
 |
 */
+
+// Feature 011: compose service names of containers (contract `ContainerName`).
+$containerName = '[a-z0-9][a-z0-9_.-]{0,62}';
 
 Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     Route::get('/csrf-token', [CsrfTokenController::class, 'show'])
@@ -349,6 +359,22 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('aliasDomain', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'aliasDomainDeletion', 'target' => 'aliasDomain'])
             ->name('alias-domains.destroy');
+    });
+
+    // Feature 011: monitoring and operations, administrators only (research R26). The monitoring
+    // gate runs last, before any validation or lookup. Reads first; state-changing routes declare
+    // `restv2.audit`, and so does the message content view (the one audited read).
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending', AuthorizeMonitoring::class])->group(function (): void {
+        Route::get('/host', [HostOverviewController::class, 'show'])->name('host.show');
+        Route::get('/host/mail-storage', [MailStorageUsageController::class, 'show'])->name('host-mail-storage.show');
+        Route::get('/capabilities/monitoring', [MonitoringCapabilitiesController::class, 'show'])->name('monitoring-capabilities.show');
+        Route::get('/containers', [ContainerController::class, 'index'])->name('containers.index');
+        Route::get('/containers/{containerName}', [ContainerController::class, 'show'])
+            ->where('containerName', ContainerRegistry::NAME_PATTERN)
+            ->name('containers.show');
+        Route::get('/containers/{containerName}/resource-usage', [ContainerResourceUsageController::class, 'show'])
+            ->where('containerName', ContainerRegistry::NAME_PATTERN)
+            ->name('container-resource-usage.show');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

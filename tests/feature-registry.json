@@ -213,15 +213,9 @@
         }
     },
     "pendingOperations": [
-        "getHostOverview",
-        "getMailStorageUsage",
         "getPublicAddresses",
         "getInstallationVersion",
         "getUpdateStatus",
-        "getMonitoringCapabilities",
-        "listContainers",
-        "getContainer",
-        "getContainerResourceUsage",
         "startContainer",
         "stopContainer",
         "restartContainer",

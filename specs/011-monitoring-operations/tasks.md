@@ -269,7 +269,7 @@ container and usage; compare with fixtures; count dockerapi calls with ten concu
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T023 [P] [US1] Write `tests/Feature/Monitoring/HostOverviewTest.php` (AS-1, FR-005, FR-006,
+- [X] T023 [P] [US1] Write `tests/Feature/Monitoring/HostOverviewTest.php` (AS-1, FR-005, FR-006,
   R6): `GET /host` returns `hostName` (`MAILCOW_HOSTNAME`), `timeZone`, `architecture`, `version`
   (from T019), `currentTime` (UTC), `uptimeSeconds` (integer), `cpu`, `memory`, `swap` mapped from the
   psutil list, and `collectedAt` parsed from `system_time` in `Europe/Prague` (the fake stamps
@@ -277,29 +277,29 @@ container and usage; compare with fixtures; count dockerapi calls with ten concu
   10 s makes no dockerapi call; after 10 s (`travel`) one call; a dockerapi answer whose
   `system_time` is already 8 s old is served for only 2 more seconds; dockerapi unavailable →
   `503 temporary-failure` with `Retry-After`.
-- [ ] T024 [P] [US1] Write `tests/Feature/Monitoring/MonitoringSharedCollectionTest.php` (SC-004):
+- [X] T024 [P] [US1] Write `tests/Feature/Monitoring/MonitoringSharedCollectionTest.php` (SC-004):
   ten requests from ten different administrator sessions within 5 s cause exactly one
   `hostStats()` call and one `containers()` call; after `travel(6)` seconds the next container read
   calls `containers()` again but the host figures are still served from the snapshot; after 11 s
   `hostStats()` is called again; container actions invalidate the container snapshot (asserted in
   US2).
-- [ ] T025 [P] [US1] Write `tests/Unit/Monitoring/DfOutputParserTest.php` and
+- [X] T025 [P] [US1] Write `tests/Unit/Monitoring/DfOutputParserTest.php` and
   `tests/Feature/Monitoring/MailStorageUsageTest.php` (AS-2, FR-007, R8): `107G` → 107,000,000,000
   bytes with `approximate: true`; a 100 GB disk with 25 GB used reports 25%; the wrapped line has
   `device: null`; `0,0,0,0,0,0`, `null` and garbage → `measured: false` with `null` figures (never
   zeros); the exec call is `exec('dovecot-mailcow', ['cmd' => 'system', 'task' => 'df', 'dir' => '/var/vmail'])`; cached
   60 s; dockerapi unavailable → `503`.
-- [ ] T026 [P] [US1] Write `tests/Feature/Containers/ListContainersTest.php` (AS-3, AS-6, FR-008,
+- [X] T026 [P] [US1] Write `tests/Feature/Containers/ListContainersTest.php` (AS-3, AS-6, FR-008,
   FR-009): stopped SOGo listed with `running: false`, `state: exited` and its last start; with
   `SKIP_CLAMD=y` the scanner is absent; the foreign project's container is absent; each item has
   `protected`, `role`, `availableActions` and `collectedAt`; sort by `name` (default), `state`,
   `startedAt` with ties by name; `running=false` filter; `q=postfix` matches name and `q=ghcr.io`
   matches image; paging and `meta`; `limit=0` and `sort=image` → `422`; no response contains
   `planted-secret`.
-- [ ] T027 [P] [US1] Write `tests/Feature/Containers/GetContainerTest.php` (FR-010, FR-003):
+- [X] T027 [P] [US1] Write `tests/Feature/Containers/GetContainerTest.php` (FR-010, FR-003):
   `GET /containers/postfix-mailcow`; a foreign container's service name, `clamd-mailcow` with
   `SKIP_CLAMD=y` and an unknown name → `404`; an invalid name pattern → `404` (route constraint).
-- [ ] T028 [P] [US1] Write `tests/Unit/Monitoring/DockerStatsCalculatorTest.php` and
+- [X] T028 [P] [US1] Write `tests/Unit/Monitoring/DockerStatsCalculatorTest.php` and
   `tests/Feature/Containers/ContainerResourceUsageTest.php` (AS-4, AS-5, FR-011, R7): one sample →
   counters and `null` rates and `previousSampledAt: null`; three samples → rates in bytes per second
   between the newest two (≥ 1 s apart); cgroup v1 `Read`/`Write` and v2 `read`/`write` ops; missing
@@ -307,32 +307,32 @@ container and usage; compare with fixtures; count dockerapi calls with ten concu
   container not running → `409 container-not-running` with `container` and **no** `containerStats()`
   call; a `containerStats()` timeout with the container still running → `503`, with the container
   stopped meanwhile → `409`; cached 5 s per service.
-- [ ] T029 [P] [US1] Write `tests/Feature/Monitoring/MonitoringCapabilitiesTest.php` (FR-069,
+- [X] T029 [P] [US1] Write `tests/Feature/Monitoring/MonitoringCapabilitiesTest.php` (FR-069,
   R32): `ipCheckEnabled` follows Redis `IP_CHECK`; `pollIntervalSeconds: 5`; `maxAgeSeconds`
   `{5, 10, 15, 60}`; `logRetention` gives `entries` 10,000 for the in-memory logs with
   `LOG_LINES=9999`, `entries` 101 for autodiscover, `unbounded` for `legacyUiActivity`,
   `cleanedDaily` for `logins`; `clientAddress` equals the request's `REMOTE_ADDR`; `limits` values;
   no dockerapi call is made; a read-only administrator key may read it.
-- [ ] T030 [US1] Add the US1 operations (`GET /host`, `/host/mail-storage`,
+- [X] T030 [US1] Add the US1 operations (`GET /host`, `/host/mail-storage`,
   `/capabilities/monitoring`, `/containers`, `/containers/postfix-mailcow`,
   `/containers/postfix-mailcow/resource-usage`) to the provider of
   `tests/Feature/Security/MonitoringAuthorizationTest.php` (AS-7, FR-001, FR-002).
 
 ### Implementation for User Story 1
 
-- [ ] T031 [P] [US1] Create `app/Services/Monitoring/HostOverviewService.php` (R6) and
+- [X] T031 [P] [US1] Create `app/Services/Monitoring/HostOverviewService.php` (R6) and
   `app/Http/Resources/Api/V2/HostOverviewResource.php`.
-- [ ] T032 [P] [US1] Create `app/Services/Monitoring/DfOutputParser.php` and
+- [X] T032 [P] [US1] Create `app/Services/Monitoring/DfOutputParser.php` and
   `MailStorageService.php` (R8), and `app/Http/Resources/Api/V2/MailStorageUsageResource.php`.
-- [ ] T033 [P] [US1] Create `app/Services/Monitoring/DockerStatsCalculator.php` and
+- [X] T033 [P] [US1] Create `app/Services/Monitoring/DockerStatsCalculator.php` and
   `ContainerResourceUsageService.php` (R7), and `ContainerResourceUsageResource.php`.
-- [ ] T034 [P] [US1] Create `app/Services/Monitoring/MonitoringCapabilitiesService.php` (R32) and
+- [X] T034 [P] [US1] Create `app/Services/Monitoring/MonitoringCapabilitiesService.php` (R32) and
   `MonitoringCapabilitiesResource.php`.
-- [ ] T035 [US1] Create `app/Http/Requests/Api/V2/ListContainersRequest.php` (`limit` 1–1,000
+- [X] T035 [US1] Create `app/Http/Requests/Api/V2/ListContainersRequest.php` (`limit` 1–1,000
   default 25, `offset` ≥ 0, `sort` in `name|state|startedAt`, `order`, `q` ≤ 255, `running`
   boolean; rule codes of 001) and `app/Http/Resources/Api/V2/ContainerResource.php` (fields of the
   contract, from `ContainerRegistry`).
-- [ ] T036 [US1] Create the controllers `HostOverviewController`, `MailStorageUsageController`,
+- [X] T036 [US1] Create the controllers `HostOverviewController`, `MailStorageUsageController`,
   `MonitoringCapabilitiesController` (`show`), `ContainerController` (`index`, `show`) and
   `ContainerResourceUsageController` (`show`) in `app/Http/Controllers/Api/V2/`, and register
   `GET /host`, `/host/mail-storage`, `/capabilities/monitoring`, `/containers`,
@@ -965,3 +965,11 @@ Deviations and decisions made while implementing, with the reason:
   `App\Http\Middleware\AuthorizeMonitoring` (registered by class name), not Laravel's `can:`,
   because the session guard's user is not the request's `Principal`. It runs after
   `restv2.pending`, before validation.
+- **T031–T036** (US1): services return the contract representations as arrays (presenters such as
+  `ContainerPresenter`), so no `JsonResource` classes were added. The resource usage cache is fresh
+  for 5 seconds after it was fetched (`max_age.usage_cache`); the newest sample's own time is
+  `sampledAt`, which stays within the 15 s of FR-011 while clients poll every 5 seconds. A stopped
+  Dovecot container reports the mail storage as unavailable without an exec call, because exec
+  looks up running containers only and a missing container must not be confused with an
+  unreachable container service. `cpuPercent` is `null` when either delta is not positive, as
+  research R7 says (the `docker stats` CLI shows 0).

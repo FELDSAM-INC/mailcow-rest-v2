@@ -3,10 +3,11 @@
 namespace Tests\Unit\Http\Middleware;
 
 use App\Auth\Role;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
-use Tests\Support\Http\MarkAsApiKeyRequest;
+use Tests\Support\ApiKeys\ApiKeys;
 use Tests\TestCase;
 
 /**
@@ -14,6 +15,8 @@ use Tests\TestCase;
  */
 class RequireAuthTest extends TestCase
 {
+    use ApiKeys;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -21,9 +24,21 @@ class RequireAuthTest extends TestCase
         foreach (['public', 'browser', 'session', 'authenticated'] as $mode) {
             Route::middleware(['api.v2', "restv2.auth:{$mode}", 'restv2.pending:allow'])
                 ->get("/api/v2/__testing/auth/{$mode}", fn () => response()->noContent());
-            Route::middleware(['api.v2', MarkAsApiKeyRequest::class, "restv2.auth:{$mode}", 'restv2.pending:allow'])
-                ->get("/api/v2/__testing/key-auth/{$mode}", fn () => response()->noContent());
         }
+    }
+
+    /**
+     * A request authenticated by an administrator's API key.
+     *
+     * @return TestResponse<Response>
+     */
+    private function withKey(string $mode): TestResponse
+    {
+        if (! DB::table('admin')->where('username', 'keyowner')->exists()) {
+            $this->mailcow()->admin('keyowner', 'x');
+        }
+
+        return $this->getJson("/api/v2/__testing/auth/{$mode}", $this->keyHeader($this->apiKey('keyowner')));
     }
 
     /**
@@ -63,20 +78,20 @@ class RequireAuthTest extends TestCase
 
     public function test_session_and_browser_refuse_api_keys(): void
     {
-        $this->assertProblem($this->getJson('/api/v2/__testing/key-auth/session'), 403, 'session-required');
-        $this->assertProblem($this->getJson('/api/v2/__testing/key-auth/browser'), 403, 'session-required');
+        $this->assertProblem($this->withKey('session'), 403, 'session-required');
+        $this->assertProblem($this->withKey('browser'), 403, 'session-required');
     }
 
     public function test_browser_passes_without_a_session_and_public_passes_with_a_key(): void
     {
         $this->getJson('/api/v2/__testing/auth/browser')->assertNoContent();
         $this->getJson('/api/v2/__testing/auth/public')->assertNoContent();
-        $this->getJson('/api/v2/__testing/key-auth/public')->assertNoContent();
+        $this->withKey('public')->assertNoContent();
     }
 
     public function test_authenticated_accepts_a_key_or_a_signed_in_session(): void
     {
-        $this->getJson('/api/v2/__testing/key-auth/authenticated')->assertNoContent();
+        $this->withKey('authenticated')->assertNoContent();
 
         $this->mailcow()->admin('admin', 'x');
         $this->signInAs('admin', Role::Admin);

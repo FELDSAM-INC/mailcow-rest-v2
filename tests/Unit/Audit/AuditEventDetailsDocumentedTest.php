@@ -13,10 +13,12 @@ use PHPUnit\Framework\TestCase;
 class AuditEventDetailsDocumentedTest extends TestCase
 {
     /**
-     * Event types whose operations are not implemented yet. The phase that implements them adds
-     * their section and removes them here (001: T089, the API key events).
+     * Event types whose operations are not implemented yet. The phase or feature that implements
+     * them adds their section and removes them here.
+     *
+     * @var list<string>
      */
-    private const NOT_YET_DOCUMENTED = ['apiKeyCreation', 'apiKeyRevocation'];
+    private static array $notYetDocumented = [];
 
     /**
      * The documented keys per event type: `## <eventType>` sections, keys from the first column of
@@ -54,8 +56,8 @@ class AuditEventDetailsDocumentedTest extends TestCase
         $documented = $this->documented();
 
         foreach (AuditEventType::cases() as $type) {
-            if (in_array($type->value, self::NOT_YET_DOCUMENTED, true)) {
-                $this->assertArrayNotHasKey($type->value, $documented, "Remove {$type->value} from NOT_YET_DOCUMENTED.");
+            if (in_array($type->value, self::$notYetDocumented, true)) {
+                $this->assertArrayNotHasKey($type->value, $documented, "Remove {$type->value} from \$notYetDocumented.");
 
                 continue;
             }

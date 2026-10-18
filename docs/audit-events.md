@@ -61,3 +61,25 @@ carries the new name. No keys.
 
 Feature 001. Written when `DELETE /me/passkeys/{passkeyId}` removes a passkey. The target carries
 the name it had. No keys.
+
+## apiKeyCreation
+
+Feature 001. Written when a signed-in administrator creates an API key (`POST /api-keys`). The
+target is the key (`id` is its ULID, `name` its name). The secret never appears in the record.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `ownerUsername` | string | The account the key acts as: an administrator or a domain administrator. | always |
+| `accessLevel` | string | `readOnly` or `readWrite`. | always |
+| `expiresAt` | string (RFC 3339, UTC) or null | When the key expires, or `null` for a key that never expires. | always |
+| `allowedNetworks` | array of strings | The normalised networks (`address/prefix`) the key may be used from; empty means any address. | always |
+
+## apiKeyRevocation
+
+Feature 001. Written for the first revocation of an API key
+(`POST /api-keys/{apiKeyId}/revocation`). Revoking an already revoked key writes nothing. The
+target is the key.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `ownerUsername` | string | The account the key acted as. | always |

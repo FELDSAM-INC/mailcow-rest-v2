@@ -1085,7 +1085,7 @@ and after expiry and revocation, and check every outcome and fail2ban message.
 
 ### Tests for User Story 4 (write first, observe failing) ⚠️
 
-- [ ] T082 [P] [US4] Write `tests/Feature/ApiKeys/ApiKeyAuthenticationTest.php` (FR-033, FR-039, SC-005,
+- [X] T082 [P] [US4] Write `tests/Feature/ApiKeys/ApiKeyAuthenticationTest.php` (FR-033, FR-039, SC-005,
   FR-038–FR-041, R19). Use `ChannelSpy`, and test with `REMOTE_ADDR` set through `withServerVariables`.
   - AS-2: a key owned by a domain admin → `GET /me` gives the owner's role, scope and flags, plus
     `authentication {method: apiKey, apiKey {id, name, prefix, accessLevel}}`.
@@ -1107,7 +1107,11 @@ and after expiry and revocation, and check every outcome and fail2ban message.
   - A key whose owner has `force_pw_update` is not restricted, and `GET /me` shows
     `pendingActions: []` (R8).
   - Legacy's `api` table is unchanged after all of the above (FR-041).
-- [ ] T083 [P] [US4] Write `tests/Feature/ApiKeys/ApiKeyManagementTest.php` (FR-032–FR-037, SC-010) for `createApiKey`,
+
+  *Implementation note*: keys are inserted directly by the test trait
+  `Tests\Support\ApiKeys\ApiKeys` (no creation audit). Extra cases: a revoked key wins over an
+  expired one, the owner's role is read on every request, and an empty header is no key.
+- [X] T083 [P] [US4] Write `tests/Feature/ApiKeys/ApiKeyManagementTest.php` (FR-032–FR-037, SC-010) for `createApiKey`,
   `listApiKeys`, `getApiKey` and `revokeApiKey`:
   - AS-1: an admin session creates a key → `201`, `Location`, `ETag`, `secret` matching
     `^mcv2_[A-Za-z0-9]{40}$`, and `prefix` = its first 12 characters. The row stores only
@@ -1140,13 +1144,21 @@ and after expiry and revocation, and check every outcome and fail2ban message.
     (R8).
   - Audits `apiKeyCreation` and `apiKeyRevocation` contain no secret: assert by searching the
     serialised record for the secret.
-- [ ] T084 [P] [US4] Write `tests/Feature/ApiKeys/SessionOnlyOperationsWithKeyTest.php` (FR-031, FR-037). A
+
+  *Implementation note*: the contract-invalid bodies (missing or too long name, unknown access
+  level, `expiresAt: "tomorrow"`, 101 networks) are sent by `test_invalid_request_bodies_…`
+  without request validation. The owner is stored with mailcow's spelling of the username
+  (`RESELLER` → `reseller`).
+- [X] T084 [P] [US4] Write `tests/Feature/ApiKeys/SessionOnlyOperationsWithKeyTest.php` (FR-031, FR-037). A
   read-write admin key on every session-only operation must answer `403 session-required`:
   `getCsrfToken`, `getSession`, `createSession`, `deleteSession`, `cancelPendingSignIn`, both
   challenges, `verifySecondFactor`, `createSessionWithPasskey`, preferences, and all passkey
   operations. A read-only key on the unsafe ones → `403 insufficient-key-scope`, because the scope
   check comes first (R8).
-- [ ] T085 [P] [US4] Write `tests/Feature/ApiKeys/ApiKeyOwnerCandidatesTest.php` for
+
+  *Implementation note*: a data provider over the 17 operations; a key request never gets a
+  session cookie.
+- [X] T085 [P] [US4] Write `tests/Feature/ApiKeys/ApiKeyOwnerCandidatesTest.php` for
   `listApiKeyOwnerCandidates` (FR-057, AS-10):
   - An admin session lists the active admins and domain admins, sorted by username, with `role`.
     Inactive admin rows and mailbox users are absent, also when a mailbox has the same username as
@@ -1161,27 +1173,38 @@ and after expiry and revocation, and check every outcome and fail2ban message.
 
 ### Implementation for User Story 4
 
-- [ ] T086 [P] [US4] Create
+- [X] T086 [P] [US4] Create
   `database/migrations/2026_10_18_000001_create_restv2_api_keys_table.php` (columns, unique
   `secret_hash` and indexes of data-model.md) and `app/Models/ApiKey.php` (`HasUlids`,
   `$table = 'restv2_api_keys'`, casts `allowed_networks` array, datetimes UTC; `status()`;
   scopes `active()`, `expired()`, `revoked()`).
-- [ ] T087 [US4] Create `app/Services/ApiKeys/ApiKeyAuthenticator.php` (R19). It runs the format
+- [X] T087 [US4] Create `app/Services/ApiKeys/ApiKeyAuthenticator.php` (R19). It runs the format
   check, the hash lookup, then revoked → expired → owner → network in that order, calls
   `Fail2BanReporter::invalidApiKey` on each failure, and does the throttled last-use update. It
   returns a `Principal` with `AuthMethod::ApiKey`.
-- [ ] T088 [US4] Create `app/Http/Middleware/AuthenticateApiKey.php` and `EnforceKeyScope.php`.
+- [X] T088 [US4] Create `app/Http/Middleware/AuthenticateApiKey.php` and `EnforceKeyScope.php`.
   `AuthenticateApiKey` skips the `system.*` routes (health, contract, docs, problem pages) and
   marks the request. Update
   `StartSessionUnlessApiKey.php` to skip marked requests, `VerifyCsrfToken.php` to skip them, and
   `RequireAuth.php` to accept a key principal (`authenticated`) or answer `session-required`
   (`session`). Insert the two middleware right after `AssignRequestId` in the `api.v2` group in
   `bootstrap/app.php` (R8 order). This makes T082 and T084 pass.
-- [ ] T089 [US4] Create `app/Services/ApiKeys/ApiKeyService.php`. `create` generates the secret
+
+  *Implementation note*: `StartSessionUnlessApiKey`, `VerifyCsrfToken` and `RequireAuth` already
+  honoured the request mark since Phase 2. Laravel sorts route middleware by its priority list,
+  which hoisted `StartSession` (and so `StartSessionUnlessApiKey`) above the unlisted key
+  middleware; `AssignRequestId`, `AuthenticateApiKey` and `EnforceKeyScope` are therefore
+  prepended to the priority list before `StartSession`. The test stand-in `MarkAsApiKeyRequest` is
+  removed, and the middleware unit tests use real keys.
+- [X] T089 [US4] Create `app/Services/ApiKeys/ApiKeyService.php`. `create` generates the secret
   with `random_bytes` base62, stores the hash and prefix, normalises the networks and audits, in
   one transaction, and returns the secret once. `revoke` is idempotent, compares `If-Match`, and
   audits only the first revocation. `list` applies the filters, sort and pagination.
-- [ ] T090 [US4] Create `app/Policies/ApiKeyPolicy.php` (`viewAny`/`view`: principal role admin,
+
+  *Implementation note*: the secret is drawn with `random_int` (the CSPRNG) over the base62
+  alphabet. `ListQuery::paginate()` takes a tie-breaker column (`id`), so that equal sort values
+  keep a stable order across pages.
+- [X] T090 [US4] Create `app/Policies/ApiKeyPolicy.php` (`viewAny`/`view`: principal role admin,
   session or key; `create`/`revoke`: admin with a session, else `session-required` for keys and
   `forbidden` for other roles), and the Form Requests
   `app/Http/Requests/Api/V2/StoreApiKeyRequest.php` (rules quoted from data-model.md "ApiKey ›
@@ -1198,6 +1221,11 @@ and after expiry and revocation, and check every outcome and fail2ban message.
   `GET /api-keys/owner-candidates` with `restv2.auth:authenticated` **before**
   `/api-keys/{apiKeyId}`, which is constrained to the ULID pattern. This makes T083 and T085
   pass.
+
+  *Implementation note*: the policy runs through Laravel's Gate (`Gate::forUser($principal)`,
+  policy auto-discovered for `App\Models\ApiKey`). The list and create Form Requests authorise in
+  `authorize()`, so that the policy (`403`) comes before validation (`422`), as R8 orders. The
+  model has an `owner` relation to mailcow's `admin` row for `owner.role` and `owner.active`.
 
 **Checkpoint**: Keys work. US3 identity now also works with keys.
 

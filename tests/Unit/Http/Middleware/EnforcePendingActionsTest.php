@@ -4,7 +4,7 @@ namespace Tests\Unit\Http\Middleware;
 
 use App\Auth\Role;
 use Illuminate\Support\Facades\Route;
-use Tests\Support\Http\MarkAsApiKeyRequest;
+use Tests\Support\ApiKeys\ApiKeys;
 use Tests\TestCase;
 
 /**
@@ -12,6 +12,8 @@ use Tests\TestCase;
  */
 class EnforcePendingActionsTest extends TestCase
 {
+    use ApiKeys;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -22,7 +24,7 @@ class EnforcePendingActionsTest extends TestCase
             ->get('/api/v2/__testing/pending/allow', fn () => response()->noContent());
         Route::middleware(['api.v2', 'restv2.auth:session', 'restv2.pending:secondFactorSetup'])
             ->get('/api/v2/__testing/pending/second-factor-setup', fn () => response()->noContent());
-        Route::middleware(['api.v2', MarkAsApiKeyRequest::class.':admin,admin', 'restv2.auth:authenticated', 'restv2.pending'])
+        Route::middleware(['api.v2', 'restv2.auth:authenticated', 'restv2.pending'])
             ->get('/api/v2/__testing/pending/key', fn () => response()->noContent());
     }
 
@@ -80,6 +82,6 @@ class EnforcePendingActionsTest extends TestCase
     {
         $this->mailcow()->admin('admin', 'x', attributes: ['force_pw_update' => '1', 'force_tfa' => '1']);
 
-        $this->getJson('/api/v2/__testing/pending/key')->assertNoContent();
+        $this->getJson('/api/v2/__testing/pending/key', $this->keyHeader($this->apiKey('admin')))->assertNoContent();
     }
 }

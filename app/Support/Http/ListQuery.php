@@ -116,16 +116,23 @@ final class ListQuery
     }
 
     /**
-     * Counts, sorts and pages the query and returns the list envelope.
+     * Counts, sorts and pages the query and returns the list envelope. A tie-breaker column keeps
+     * the order of equal sort values stable across pages.
      *
      * @param  Builder|EloquentBuilder<covariant Model>  $query
      * @param  callable(mixed): mixed|null  $map
      * @return array{data: list<mixed>, meta: array{total: int, limit: int, offset: int}}
      */
-    public function paginate(Builder|EloquentBuilder $query, ?callable $map = null): array
+    public function paginate(Builder|EloquentBuilder $query, ?callable $map = null, ?string $tieBreaker = null): array
     {
         $total = (clone $query)->count();
-        $rows = $query->orderBy($this->sortColumn(), $this->order)->offset($this->offset)->limit($this->limit)->get();
+        $query->orderBy($this->sortColumn(), $this->order);
+
+        if ($tieBreaker !== null && $tieBreaker !== $this->sortColumn()) {
+            $query->orderBy($tieBreaker, $this->order);
+        }
+
+        $rows = $query->offset($this->offset)->limit($this->limit)->get();
 
         return [
             'data' => array_values($map === null ? $rows->all() : $rows->map($map)->all()),

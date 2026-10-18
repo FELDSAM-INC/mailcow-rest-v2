@@ -4,6 +4,8 @@ use App\Exceptions\ProblemException;
 use App\Exceptions\ProblemRenderer;
 use App\Exceptions\ValidationProblemException;
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\AuthenticateApiKey;
+use App\Http\Middleware\EnforceKeyScope;
 use App\Http\Middleware\EnforcePendingActions;
 use App\Http\Middleware\EnsureSessionIntegrity;
 use App\Http\Middleware\RequireAuth;
@@ -16,6 +18,7 @@ use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
 use Illuminate\Foundation\Http\Middleware\TrimStrings;
 use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -34,13 +37,22 @@ return Application::configure(basePath: dirname(__DIR__))
         // included; usernames are normalised where legacy does it.
         $middleware->remove([HandleCors::class, TrimStrings::class, ConvertEmptyStringsToNull::class]);
 
-        // Request pipeline of every /api/v2 route, in this order (R8). T088 inserts
-        // AuthenticateApiKey and EnforceKeyScope after AssignRequestId.
+        // Request pipeline of every /api/v2 route, in this order (R8): the key decides before the
+        // session, and a read-only key is refused for unsafe methods before any other check.
         $middleware->group('api.v2', [
             AssignRequestId::class,
+            AuthenticateApiKey::class,
+            EnforceKeyScope::class,
             StartSessionUnlessApiKey::class,
             EnsureSessionIntegrity::class,
         ]);
+
+        // Laravel sorts route middleware by its priority list, which hoists StartSession (and so
+        // StartSessionUnlessApiKey) above unlisted middleware. The steps before it are listed in
+        // front of it, so that the key is resolved before any session starts.
+        foreach ([AssignRequestId::class, AuthenticateApiKey::class, EnforceKeyScope::class] as $step) {
+            $middleware->prependToPriorityList(StartSession::class, $step);
+        }
 
         // Per route, in this order: restv2.auth:<mode>, restv2.csrf, restv2.pending:<mode>.
         $middleware->alias([

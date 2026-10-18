@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\V2\ApiKeyController;
+use App\Http\Controllers\Api\V2\ApiKeyOwnerCandidateController;
+use App\Http\Controllers\Api\V2\ApiKeyRevocationController;
 use App\Http\Controllers\Api\V2\CsrfTokenController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
@@ -89,4 +92,24 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('passkeyId', '[0-9a-f]{64}')
             ->name('passkeys.destroy');
     });
+
+    // API keys (FR-032–FR-037, FR-057): administrators read them with a session or a key; only a
+    // signed-in administrator creates and revokes them. owner-candidates comes before {apiKeyId}.
+    Route::get('/api-keys', [ApiKeyController::class, 'index'])
+        ->middleware(['restv2.auth:authenticated', 'restv2.pending'])
+        ->name('api-keys.index');
+    Route::post('/api-keys', [ApiKeyController::class, 'store'])
+        ->middleware(['restv2.auth:session', 'restv2.csrf', 'restv2.pending'])
+        ->name('api-keys.store');
+    Route::get('/api-keys/owner-candidates', [ApiKeyOwnerCandidateController::class, 'index'])
+        ->middleware(['restv2.auth:authenticated', 'restv2.pending'])
+        ->name('api-key-owner-candidates.index');
+    Route::get('/api-keys/{apiKeyId}', [ApiKeyController::class, 'show'])
+        ->middleware(['restv2.auth:authenticated', 'restv2.pending'])
+        ->where('apiKeyId', '[0-9A-HJKMNP-TV-Z]{26}')
+        ->name('api-keys.show');
+    Route::post('/api-keys/{apiKeyId}/revocation', [ApiKeyRevocationController::class, 'store'])
+        ->middleware(['restv2.auth:session', 'restv2.csrf', 'restv2.pending'])
+        ->where('apiKeyId', '[0-9A-HJKMNP-TV-Z]{26}')
+        ->name('api-key-revocation.store');
 });

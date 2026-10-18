@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Response;
-use Tests\Support\Http\MarkAsApiKeyRequest;
+use Tests\Support\ApiKeys\ApiKeys;
 use Tests\TestCase;
 
 /**
@@ -16,6 +16,8 @@ use Tests\TestCase;
  */
 class VerifyCsrfTokenTest extends TestCase
 {
+    use ApiKeys;
+
     private const PATH = '/api/v2/__testing/csrf';
 
     protected function setUp(): void
@@ -25,8 +27,10 @@ class VerifyCsrfTokenTest extends TestCase
         Route::middleware(['api.v2', 'restv2.auth:browser', 'restv2.csrf', 'restv2.pending:allow'])
             ->match(['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'], self::PATH, fn () => response()->noContent());
 
-        Route::middleware(['api.v2', MarkAsApiKeyRequest::class, 'restv2.csrf'])
+        // Without restv2.auth, which would refuse a key on a browser route.
+        Route::middleware(['api.v2', 'restv2.csrf'])
             ->post('/api/v2/__testing/csrf-key', fn () => response()->noContent());
+
     }
 
     /**
@@ -95,7 +99,9 @@ class VerifyCsrfTokenTest extends TestCase
 
     public function test_api_key_requests_need_no_token(): void
     {
-        $this->postJson('/api/v2/__testing/csrf-key')->assertNoContent();
+        $this->mailcow()->admin('admin', 'x');
+
+        $this->postJson('/api/v2/__testing/csrf-key', ['a' => 1], $this->keyHeader($this->apiKey('admin', 'readWrite')))->assertNoContent();
     }
 
     public function test_the_token_is_read_only_from_the_x_csrf_token_header(): void

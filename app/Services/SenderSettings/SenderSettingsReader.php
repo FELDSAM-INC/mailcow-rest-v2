@@ -50,6 +50,8 @@ class SenderSettingsReader
     /**
      * The version tag over the mailbox's stored `sender_acl` rows (explicit permissions and external
      * sender addresses), independent of row order and IDs (research R18).
+     *
+     * @phpstan-impure
      */
     public function etagFor(string $mailbox): string
     {

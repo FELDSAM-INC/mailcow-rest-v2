@@ -60,7 +60,7 @@ class ListAliasDomainsRequest extends ApiFormRequest
     public function filters(): array
     {
         return [
-            'targetDomain' => array_values(array_map(fn (string $d): string => DomainName::normalize($d) ?? mb_strtolower(trim($d)), $this->repeatedQuery('targetDomain'))),
+            'targetDomain' => array_map(fn (string $d): string => DomainName::normalize($d) ?? mb_strtolower(trim($d)), $this->repeatedQuery('targetDomain')),
             'active' => match ($this->query('active')) {
                 'true' => true,
                 'false' => false,

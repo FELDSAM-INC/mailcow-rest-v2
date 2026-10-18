@@ -78,7 +78,8 @@ class AliasAddressTest extends TestCase
     {
         $address = AliasAddress::parse('a@b@Example.org');
 
-        $this->assertSame('example.org', $address?->domain);
-        $this->assertFalse($address?->isValid());
+        $this->assertNotNull($address);
+        $this->assertSame('example.org', $address->domain);
+        $this->assertFalse($address->isValid());
     }
 }

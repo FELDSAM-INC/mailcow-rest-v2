@@ -89,8 +89,9 @@ class AliasLimitLockTest extends TestCase
                 $refused = $e;
             }
 
-            $this->assertSame(ProblemType::DomainAliasLimitReached, $refused?->type);
-            $this->assertSame(['domain' => self::DOMAIN, 'count' => 1, 'limit' => 1, 'requested' => 1], $refused?->extensions);
+            $this->assertNotNull($refused);
+            $this->assertSame(ProblemType::DomainAliasLimitReached, $refused->type);
+            $this->assertSame(['domain' => self::DOMAIN, 'count' => 1, 'limit' => 1, 'requested' => 1], $refused->extensions);
         } finally {
             DB::setDefaultConnection($default);
 

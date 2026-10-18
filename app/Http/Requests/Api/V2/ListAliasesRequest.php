@@ -84,7 +84,7 @@ class ListAliasesRequest extends ApiFormRequest
      */
     public function filters(): array
     {
-        $address = fn (string $v): string => AliasAddress::parse($v)?->address ?? trim($v);
+        $address = fn (string $v): string => AliasAddress::parse($v)->address ?? trim($v);
         $domain = fn (string $v): string => DomainName::normalize($v) ?? mb_strtolower(trim($v));
         $bool = fn (string $name): ?bool => match ($this->query($name)) {
             'true' => true,
@@ -93,12 +93,12 @@ class ListAliasesRequest extends ApiFormRequest
         };
 
         return [
-            'address' => array_values(array_map($address, $this->repeatedQuery('address'))),
-            'domain' => array_values(array_map($domain, $this->repeatedQuery('domain'))),
-            'primaryDomain' => array_values(array_map($domain, $this->repeatedQuery('primaryDomain'))),
+            'address' => array_map($address, $this->repeatedQuery('address')),
+            'domain' => array_map($domain, $this->repeatedQuery('domain')),
+            'primaryDomain' => array_map($domain, $this->repeatedQuery('primaryDomain')),
             'kind' => $this->repeatedQuery('kind'),
             'destinationType' => $this->repeatedQuery('destinationType'),
-            'destination' => array_values(array_map($address, $this->repeatedQuery('destination'))),
+            'destination' => array_map($address, $this->repeatedQuery('destination')),
             'active' => $bool('active'),
             'senderAllowed' => $bool('senderAllowed'),
             'groupwareVisible' => $bool('groupwareVisible'),

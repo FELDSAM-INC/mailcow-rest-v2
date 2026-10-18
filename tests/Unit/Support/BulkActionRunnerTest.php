@@ -41,7 +41,7 @@ class BulkActionRunnerTest extends TestCase
             AuditEventType::AliasUpdate,
             [['id' => '1'], ['id' => '01'], ['id' => '2', 'version' => 'abc'], ['id' => '3'], ['id' => '4'], ['id' => '5'], ['id' => 'x']],
             fn (string $id): ?string => ctype_digit($id) ? (string) (int) $id : null,
-            function (string $key, ?string $ifMatch) use (&$applied): ?string {
+            function (string $key, ?string $ifMatch) use (&$applied): string {
                 $applied[] = [$key, $ifMatch];
 
                 return match ($key) {

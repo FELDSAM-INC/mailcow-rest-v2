@@ -75,3 +75,39 @@ Contract changes made while implementing feature 002:
   rebuild the groupware directory.
 
 Release checks of feature 002 (quickstart Part C: SC-001, SC-002, SC-003, SC-008): not run yet.
+
+Contract: the 23 operations of feature 004 (aliases, alias domains, resources and sender settings):
+
+- Aliases: `listAliases`, `createAlias`, `applyAliasBulkAction` (activate, deactivate, show or hide
+  in the groupware, delete, copy over alias domains), `getAlias`, `updateAlias`, `deleteAlias`,
+  `copyAliasOverAliasDomains`, `getAliasesCapabilities`.
+- Alias domains: `listAliasDomains`, `createAliasDomain`, `applyAliasDomainBulkAction`,
+  `getAliasDomain`, `updateAliasDomain`, `deleteAliasDomain`.
+- Resources: `listResources`, `createResource`, `applyResourceBulkAction`, `getResource`,
+  `updateResource`, `deleteResource`.
+- Sender settings: `getMailboxSenderSettings`, `updateMailboxSenderSettings`,
+  `listSenderPermissionCandidates`.
+- Problem types: `domain-alias-limit-reached` (registered with 003), `alias-domain-already-exists`
+  and `not-primary-domain-alias`; the shared `address-in-use`, `attribute-not-permitted`,
+  `permission-flag-required` and `temporary-failure` are reused.
+- Values appended to shared enumerations: `AuditEventType` (`aliasCreation`, `aliasUpdate`,
+  `aliasDeletion`, `aliasDomainCreation`, `aliasDomainUpdate`, `aliasDomainDeletion`,
+  `resourceCreation`, `resourceUpdate`, `resourceDeletion`, `mailboxSenderSettingsUpdate`),
+  `AuditTarget` (`alias`, `aliasDomain`, `resource`, `mailboxSenderSettings`), `KnownProblemType`
+  (the two new types) and `ValidationRuleCode` (the formats `aliasAddress`, `emailOrDomain`,
+  `senderPermission`, `resourceDescription` and the `notEligible` kinds `resource`,
+  `externalDestination`, `relayDomain`, `aliasDomain`, `localDomain`).
+- Server setting `RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS` (legacy `ALIAS_DISABLE_EXTERNAL_DOMAINS`,
+  default `false`).
+
+Contract changes made while implementing feature 004:
+
+- `MailboxSenderPermission.kind` (nullable for stale entries) and
+  `MailboxSenderPermissionCandidate.kind` (`MailboxSenderPermissionKind`: `domain`, `aliasDomain`,
+  `alias`, `mailbox`, `anyAddress`) (G12).
+- Readable forms `Alias.destinationsUnicode`, `AliasCopyOutcome.addressUnicode` and
+  `MailboxSenderSettings.externalSenderAddressesUnicode` (G13); `AliasPatch` and
+  `MailboxSenderSettingsPatch` accept them as ignored members.
+- `MailboxSenderSettingsPatch` names the refusal parameter `kind: localDomain` (G14).
+
+Release checks of feature 004 (quickstart Part C): not run yet.

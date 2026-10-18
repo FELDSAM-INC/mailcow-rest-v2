@@ -42,7 +42,7 @@ class AliasLimit
         }
 
         $limit = (int) $limit;
-        $count = $this->usage->forDomain($primary)?->aliases ?? 0;
+        $count = $this->usage->forDomain($primary)->aliases ?? 0;
 
         if ($count + $adding > $limit) {
             throw new ProblemException(

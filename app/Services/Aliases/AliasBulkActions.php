@@ -43,7 +43,9 @@ class AliasBulkActions
     public function apply(Request $request, Principal $principal, string $action, array $targets): array
     {
         $bulkRequestId = RequestContext::requestId($request);
+        /** @var array<int, string> $sentAs alias ID => the identifier as first sent */
         $sentAs = [];
+        /** @var array<string, list<array<string, mixed>>> $copies */
         $copies = [];
 
         $result = $this->flush->deferred(function () use ($request, $principal, $action, $targets, $bulkRequestId, &$sentAs, &$copies): array {

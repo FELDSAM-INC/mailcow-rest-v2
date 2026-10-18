@@ -62,7 +62,7 @@ class GetMailboxSenderSettingsTest extends TestCase
             ['address' => 'sales@example.org', 'addressUnicode' => 'sales@example.org', 'source' => 'alias', 'aliasId' => $this->sales, 'senderAllowed' => true, 'catchAll' => false],
         ], $data['implicitAddresses']);
 
-        $permissions = collect($data['explicitPermissions'])->keyBy('value');
+        $permissions = collect((array) $data['explicitPermissions'])->keyBy('value');
         $this->assertSame(['@example.com', '@gone.example', '@other.example', 'bob@example.org', 'old@example.org'], $permissions->keys()->all());
         $this->assertSame(['value' => '@example.com', 'valueUnicode' => '@example.com', 'type' => 'domain', 'kind' => 'domain', 'changeable' => true, 'stale' => false], $permissions['@example.com']);
         $this->assertTrue($permissions['@gone.example']['stale']);

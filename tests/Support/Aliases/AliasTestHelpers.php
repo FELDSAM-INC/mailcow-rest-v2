@@ -91,6 +91,7 @@ trait AliasTestHelpers
     }
 
     /**
+     * @param  TestResponse<Response>  $response
      * @return list<string>
      */
     protected function addressesOf(TestResponse $response): array

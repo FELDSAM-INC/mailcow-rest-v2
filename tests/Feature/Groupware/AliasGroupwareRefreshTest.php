@@ -58,7 +58,7 @@ class AliasGroupwareRefreshTest extends TestCase
     }
 
     /**
-     * @return array<string, array{Closure(self): void}>
+     * @return array<string, array{Closure(self): mixed}>
      */
     public static function changes(): array
     {
@@ -85,7 +85,7 @@ class AliasGroupwareRefreshTest extends TestCase
     }
 
     /**
-     * @param  Closure(self): void  $change
+     * @param  Closure(self): mixed  $change
      */
     #[DataProvider('changes')]
     public function test_the_incremental_update_equals_a_full_rebuild(Closure $change): void

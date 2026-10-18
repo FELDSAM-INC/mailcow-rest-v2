@@ -24,7 +24,7 @@ class AliasDomainPresenter
      */
     public function present(array $rows): array
     {
-        $limits = $this->rateLimits->getMany(array_values(array_map(fn (object $r): string => (string) $r->alias_domain, $rows)));
+        $limits = $this->rateLimits->getMany(array_map(fn (object $r): string => (string) $r->alias_domain, $rows));
 
         return array_map(fn (object $row): array => $this->one($row, $limits[(string) $row->alias_domain] ?? null), $rows);
     }

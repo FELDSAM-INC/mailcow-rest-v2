@@ -257,6 +257,6 @@ class SenderSettingsUpdater
     {
         usort($values, fn (string $a, string $b): int => strcasecmp($a, $b) ?: strcmp($a, $b));
 
-        return array_values($values);
+        return $values;
     }
 }

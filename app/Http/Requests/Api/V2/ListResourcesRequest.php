@@ -69,7 +69,7 @@ class ListResourcesRequest extends ApiFormRequest
     public function filters(): array
     {
         return [
-            'domain' => array_values(array_map(fn (string $d): string => DomainName::normalize($d) ?? mb_strtolower(trim($d)), $this->repeatedQuery('domain'))),
+            'domain' => array_map(fn (string $d): string => DomainName::normalize($d) ?? mb_strtolower(trim($d)), $this->repeatedQuery('domain')),
             'kind' => $this->repeatedQuery('kind'),
             'active' => match ($this->query('active')) {
                 'true' => true,

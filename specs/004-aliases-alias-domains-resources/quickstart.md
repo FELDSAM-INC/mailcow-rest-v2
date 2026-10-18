@@ -43,17 +43,33 @@ docker compose run --rm app vendor/bin/phpstan analyse
 
 ## Part B: Manual checks against the dev stack
 
-Seed the development database (001's `DevelopmentSeeder` plus two domains, `example.org` with the
-alias domain candidate `example.net`, mailboxes `anna@example.org` and `bob@example.org`, and a
-domain administrator `da1` for `example.org`), then sign in as an administrator:
+Reset the development database (001's `DevelopmentSeeder`: domains `example.org` and
+`example.net`, `admin`, the domain administrator `reseller`, mailboxes `alice@` and `bob@`; every
+password is `Passw0rd!dev`), then add what this guide uses: the domain `example.com`, the mailboxes
+`anna@example.org` and `carl@example.com` as legacy writes them (with their own-alias rows), and the
+domain administrator `da1` for `example.org`. `example.info` is the alias domain candidate (the
+seeder's `example.net` is a domain).
 
 ```bash
-B=http://localhost:8080/api/v2
+docker compose run --rm app scripts/dev/reset-dev-database.sh
+docker compose run --rm app php artisan tinker --execute '
+$rows = new Database\Factories\MailcowRows;
+$rows->domain("example.com");
+$rows->legacyMailbox("anna@example.org", password: "Passw0rd!dev");
+$rows->legacyMailbox("carl@example.com", password: "Passw0rd!dev");
+$rows->domainAdmin("da1", ["example.org"], password: "Passw0rd!dev");'
+```
+
+Sign in as an administrator over the dev stack's HTTPS listener (the session cookie is `Secure`):
+
+```bash
+B=https://127.0.0.1:18443/api/v2
 J=/tmp/restv2.jar
-T=$(curl -s -c $J -b $J $B/csrf-token | jq -r .data.token)
-curl -s -c $J -b $J -H "X-CSRF-Token: $T" -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"moohoo"}' $B/session | jq .data.state      # "active"
-H=(-c $J -b $J -H "X-CSRF-Token: $T" -H 'Content-Type: application/json')
+T=$(curl -sk -c $J -b $J $B/csrf-token | jq -r .data.token)
+curl -sk -c $J -b $J -H "X-CSRF-Token: $T" -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"Passw0rd!dev"}' $B/session | jq .data.state      # "active"
+T=$(curl -sk -c $J -b $J $B/csrf-token | jq -r .data.token)                          # renewed at sign-in
+H=(-k -c $J -b $J -H "X-CSRF-Token: $T" -H 'Content-Type: application/json')
 ```
 
 1. **Capabilities**: `curl -s "${H[@]}" $B/capabilities/aliases | jq .data` shows
@@ -79,38 +95,45 @@ H=(-c $J -b $J -H "X-CSRF-Token: $T" -H 'Content-Type: application/json')
    `curl -si "${H[@]}" -X PATCH -H 'Content-Type: application/merge-patch+json' -H "If-Match: <old etag>" -d '{"active":false}' $B/aliases/<id>`
    answers `412` and nothing changes; with the new tag it answers `200`.
 7. **Alias domain** (US4):
-   `curl -si "${H[@]}" -d '{"name":"example.net","targetDomain":"example.org","rateLimit":{"value":500,"frame":"hour"}}' $B/alias-domains`
+   `curl -si "${H[@]}" -d '{"name":"example.info","targetDomain":"example.org","rateLimit":{"value":500,"frame":"hour"}}' $B/alias-domains`
    answers `201`; `data.creationReport` is `{rateLimit: applied, dkimKey: created,
    dkimDnsPublication: notConfigured, groupwareDirectoryUpdate: done}`. In Redis:
-   `HGET DOMAIN_MAP example.net` = `1`, `HGET RL_VALUE example.net` = `500 / 1h`,
-   `HGET DKIM_SELECTORS example.net` = `dkim`. Stop Redis and create another alias domain: `503`
+   `HGET DOMAIN_MAP example.info` = `1`, `HGET RL_VALUE example.info` = `500 / 1h`,
+   `HGET DKIM_SELECTORS example.info` = `dkim`. Stop Redis and create another alias domain: `503`
    with type `/api/v2/problems/temporary-failure` and no `alias_domain` row.
 8. **Copy over alias domains** (US6): `POST $B/aliases/<sales id>/alias-domain-copies` answers
-   `200` with one entry `{aliasDomain: example.net, outcome: created}`.
-9. **Delete the alias domain**: `DELETE $B/alias-domains/example.net` answers `204`; the copied
-   alias, `DOMAIN_MAP` and `RL_VALUE` entries are gone, `DKIM_SELECTORS` still has `example.net`.
+   `200` with one entry `{aliasDomain: example.info, outcome: created}`.
+9. **Delete the alias domain**: `DELETE $B/alias-domains/example.info` answers `204`; the copied
+   alias, `DOMAIN_MAP` and `RL_VALUE` entries are gone, `DKIM_SELECTORS` still has `example.info`.
 10. **Sender settings** (US5): `GET $B/mailboxes/anna@example.org/sender-settings` lists her own
     address and `sales@example.org` (`source: alias`, `senderAllowed: true`);
     `PATCH … -d '{"explicitPermissions":["@example.org","*"]}'` stores only `*`
     (`senderCheckDisabled: true`). `SELECT send_as FROM sender_acl WHERE logged_in_as='anna@example.org'`
     shows one row `*`.
 11. **Domain administrator** (US1, US4, US5): sign in as `da1`; listing aliases shows only
-    `example.org` and its alias domains; `GET $B/aliases/<id of another domain's alias>` answers
+    `example.org` and its alias domains; `GET $B/aliases/<id of an alias of example.com>` answers
     `404`; creating an alias domain without `alias_domains` gives `403 permission-flag-required`
-    with `requiredFlags: [aliasDomains]`; an external destination without
-    `alias_external_goto` gives `403 attribute-not-permitted` with `attributes: [destinations.0]`;
+    with `requiredFlags: [aliasDomains]`; after `UPDATE da_acl SET alias_external_goto = 0 WHERE
+    username = 'da1'` (the column defaults to `1`), an external destination gives
+    `403 attribute-not-permitted` with `attributes: [destinations.0]`;
     `GET $B/sender-permission-candidates?mailbox=anna@example.org` lists only entries of
-    `example.org` and no `*`.
+    `example.org` (`@example.org` and the addresses of aliases and mailboxes with an alias row)
+    and no `*`.
 12. **Resources** (US7): `POST $B/resources -d '{"description":"Meeting Room 1","domain":"example.org","kind":"location"}'`
     answers `201` with `address: MeetingRoom1@example.org`, `bookingRule: unlimited`; the same with
     `"Meeting-Room 1"` gives `409 address-in-use` with `holder: resource`.
 13. **Bulk** (US6): `POST $B/aliases/bulk-actions -d '{"action":"deactivate","targets":[{"id":"<id1>"},{"id":"<id2>","version":"stale"}]}'`
     answers `200` with `done` and `outdated`; 101 targets give `422` (`tooMany`, `max: 100`);
+    with an alias domain of `example.org` again,
     `{"action":"copyOverAliasDomains","targets":[{"id":"<sales id>"}]}` answers `done` with the
     per-alias-domain outcomes in `meta.copies`.
-14. **Audit** (US8): `GET "$B/audit-events?targetType=alias&targetId=<id>"` lists the creation,
-    the change with `details.changes`, the refused `412` attempt (`failureReason: versionOutdated`)
-    and the bulk deactivation with `details.bulkRequestId`.
+14. **Audit** (US8): `GET "$B/audit-events?targetType=alias&targetId=<id>&order=asc"` lists the
+    creation, the refused `412` attempt (`failureReason: versionOutdated`), the changes with
+    `details.changes` and the bulk deactivation with `details.bulkRequestId`.
+
+Part B was walked through on 2026-10-18 against the dev database of the worktree's own compose
+project, with administrator and `da1` API keys over `php artisan serve` instead of the session over
+the HTTPS listener; every step answered as described.
 
 ## Part C: Validation on a mailcow host
 

@@ -55,7 +55,7 @@ final class AliasAuditTargets
             return ['target' => null];
         }
 
-        $address = AliasAddress::parse($raw)?->address ?? trim($raw);
+        $address = AliasAddress::parse($raw)->address ?? trim($raw);
 
         return ['target' => ['type' => 'alias', 'id' => null, 'name' => mb_substr($address, 0, 255)]];
     }
@@ -126,7 +126,7 @@ final class AliasAuditTargets
      */
     public static function resourceTarget(string $raw): array
     {
-        $address = AliasAddress::parse($raw)?->address ?? trim($raw);
+        $address = AliasAddress::parse($raw)->address ?? trim($raw);
         $row = DB::table('mailbox')->where('username', $address)->where('kind', 'regexp', 'location|thing|group')->first(['username', 'name']);
 
         return $row === null
@@ -146,7 +146,7 @@ final class AliasAuditTargets
             return ['target' => null];
         }
 
-        $address = mb_substr(MailboxAddress::normalize($raw)?->address ?? trim($raw), 0, 255);
+        $address = mb_substr(MailboxAddress::normalize($raw)->address ?? trim($raw), 0, 255);
 
         return ['target' => ['type' => 'mailboxSenderSettings', 'id' => $address, 'name' => $address]];
     }

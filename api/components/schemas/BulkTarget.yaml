@@ -12,5 +12,8 @@ properties:
     description: Identifier of the object, as used in the object's own path.
   version:
     type: string
-    description: Version tag (the value of the object's `ETag`, without quotes) as last read.
+    description: |
+      The object's version tag as last read: the exact value of its `ETag` header or `etag` member,
+      which carries the quotes of a strong ETag (`"Zm9v…"`). The value is also accepted without the
+      quotes. When it no longer matches, the item's outcome is `outdated` with a `412` problem.
 additionalProperties: false

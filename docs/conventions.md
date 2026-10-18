@@ -36,7 +36,9 @@ this document next to the constitution.
     result: `done`, `notFound`, `refused`, `outdated` or `failed`;
   - one failure does not stop the others.
 - Each item **may carry its own version tag**. If the tag is outdated, that item gets `outdated`
-  and the others proceed. Items without a tag are not version-checked.
+  and the others proceed. Items without a tag are not version-checked. `etag` members hold the
+  exact `ETag` header value, quotes included; `BulkTarget.version` accepts that value with or
+  without the quotes (G33).
 - Creation is always one object per request. An object named twice is processed once.
 
 ## Version tags (ETag)

@@ -689,7 +689,7 @@ domain; compare per-domain results, rows and audit records.
 
 ### Tests for User Story 6 (write first, observe failing) ⚠️
 
-- [ ] T081 [P] [US6] Write `tests/Feature/Domains/DomainBulkActionTest.php` for
+- [X] T081 [P] [US6] Write `tests/Feature/Domains/DomainBulkActionTest.php` for
   `applyDomainBulkAction` (FR-062, FR-063, SC-010):
   - AS-1: deactivate 50 active domains → 50 `done` results with `version`, all inactive, 50 audit
     records with the same `bulkRequestId`, one groupware rebuild (`FakeMemcachedFlusher` count 1);
@@ -708,9 +708,9 @@ domain; compare per-domain results, rows and audit records.
 
 ### Implementation for User Story 6
 
-- [ ] T082 [US6] Create `app/Services/Domains/DomainBulkActions.php` (D20), reusing `DomainUpdater`
+- [X] T082 [US6] Create `app/Services/Domains/DomainBulkActions.php` (D20), reusing `DomainUpdater`
   and `DomainDeleter` with the rebuild deferred to one call at the end.
-- [ ] T083 [US6] Create `app/Http/Requests/Api/V2/DomainBulkActionRequest.php` (`action` in
+- [X] T083 [US6] Create `app/Http/Requests/Api/V2/DomainBulkActionRequest.php` (`action` in
   activate, deactivate, delete; `targets` array, 1 to 100 items (`tooMany {max: 100}`), each
   `{id: string 1–255, version?: string}`) and
   `app/Http/Controllers/Api/V2/DomainBulkActionController.php` (`store`); register

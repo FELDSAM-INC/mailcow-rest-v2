@@ -94,7 +94,6 @@
         }
     },
     "pendingOperations": [
-        "applyDomainBulkAction",
         "getDomainFooter",
         "replaceDomainFooter"
     ]

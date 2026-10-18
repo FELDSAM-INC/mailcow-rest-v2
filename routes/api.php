@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V2\ApiKeyOwnerCandidateController;
 use App\Http\Controllers\Api\V2\ApiKeyRevocationController;
 use App\Http\Controllers\Api\V2\AuditEventController;
 use App\Http\Controllers\Api\V2\CsrfTokenController;
+use App\Http\Controllers\Api\V2\DomainBulkActionController;
 use App\Http\Controllers\Api\V2\DomainCapabilitiesController;
 use App\Http\Controllers\Api\V2\DomainController;
 use App\Http\Controllers\Api\V2\DomainDeletionPreviewController;
@@ -157,6 +158,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
 
     // State-changing domain routes: refusals of authenticated callers are audited (`restv2.audit`).
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        // POST-only: object paths never accept POST, so a domain named "bulk-actions" stays addressable.
+        Route::post('/domains/bulk-actions', [DomainBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'domain'])
+            ->name('domain-bulk-actions.store');
         Route::post('/domains', [DomainController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'domainCreation', 'target' => 'domain'])
             ->name('domains.store');

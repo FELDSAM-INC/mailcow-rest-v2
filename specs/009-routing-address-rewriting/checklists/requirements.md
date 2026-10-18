@@ -62,6 +62,17 @@
   password-only creations for an existing next hop (FR-038). Feature 002 changed its mass-action
   decision to bulk actions while this spec was written; this spec was aligned (FR-005, FR-085,
   FR-090, FR-091, edge cases, parity table) with the pattern of features 002 to 004.
+- Iteration 4 (orchestrator follow-up, 2026-10-18): three orchestrator decisions were recorded
+  under "Clarifications" and integrated, closing gaps found by the web app's feature 009 and aligning
+  with `docs/conventions.md`:
+  - a routing capabilities read with the default test addresses and the limits (FR-093, FR-005,
+    SC-012, coverage and parity rows);
+  - an orphan flag and filter for BCC maps whose domain no longer exists (FR-046, FR-056);
+  - optional per-item version tags in bulk actions with the `outdated` result, version tags on
+    every list entry, and the bulk request identifier in audit records (FR-007, FR-085, FR-091).
+
+  The text saying bulk actions never check version tags was replaced. All checklist items still
+  pass.
 - The routing-related files of the FeldHost fork were diffed against upstream `2026-09a`. The logic,
   templates, JavaScript, schema and mail server and filter consumers are identical; only display texts
   differ (parity section).

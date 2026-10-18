@@ -73,7 +73,8 @@
   form handled? → A: The mass actions (activate, deactivate, switch the BCC type, switch the
   forwarding host spam filter, delete) are bulk actions as features 002 to 004 define them: up to 100
   entries per request, refused as a whole when the action is not permitted, otherwise one result and
-  one audit record per entry, without version checks. Creation takes exactly one entry per request,
+  one audit record per entry; each item may carry a version tag (see the orchestrator clarification
+  below). Creation takes exactly one entry per request,
   so a transport has one destination; the web app may split the form input and send one request per
   destination (FR-034, FR-090, FR-091). (agent decision: legacy `edit` and `delete` take arrays and
   continue past failures, and features 002 to 004 set the bulk pattern. Single-entry creation keeps
@@ -122,6 +123,24 @@
   FR-078). (agent decision: the legacy overwrite is kept. Legacy can stop half-way when the shared
   store fails. The keep-spam check of the mail filter matches only prefixes written with their network
   address, and legacy accepts strings such as `cafe` as IPv6 addresses.)
+- Q: How does a client learn the server settings and limits it needs before it submits, such as the
+  default test addresses the web app shows as placeholders? → A: A read-only "routing capabilities"
+  operation, following feature 002 (FR-064 there). Administrators read the default test sender and
+  recipient, the bulk limit, the page sizes, the field limits, the allowed TLS policies and the
+  forwarding host lookup limit. Domain administrators read only what they use: the bulk limit, the
+  page sizes and the BCC field limits (FR-093). (orchestrator decision: the web app's feature 009
+  lists the unreadable default test addresses as an API gap; `docs/conventions.md` sends clients to
+  the owning feature's capabilities read.)
+- Q: How can a client tell an orphaned BCC map from a normal one? → A: Every BCC map carries a flag
+  that says whether the domain or alias domain of its local destination still exists. Only
+  administrators can see orphaned maps, so domain administrators always see the flag as false
+  (FR-046, FR-056). (orchestrator decision: the web app wants to label orphans, which administrators
+  can already list and delete.)
+- Q: Do bulk actions check version tags? → A: Each bulk item may carry its own version tag. An item
+  whose tag is outdated gets the result `outdated` and changes nothing, and the other items proceed.
+  Items without a tag are not checked. Every list entry carries its version tag, and lists keep the
+  page size of 25 by default and 1,000 at most (FR-007, FR-091). (orchestrator decision:
+  `docs/conventions.md`, bulk actions and version tags.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -168,7 +187,9 @@ input (allowing for the stated deviations), and scan every response for password
    relayhost choices, **Then** they receive identifiers, hosts and active states, without usernames.
 9. **Given** three relayhosts and an identifier that does not exist, **When** an administrator
    deactivates all four in one request, **Then** the three are inactive, the fourth is reported "not
-   found", and the audit log has one record per relayhost.
+   found", and the audit log has one record per relayhost. **When** one of the named relayhosts
+   carries a version tag that is outdated, **Then** that one is reported `outdated` and unchanged, and
+   the others are deactivated.
 
 ---
 
@@ -290,6 +311,10 @@ compare the outcome with the legacy test. Scan results and audit records for cre
    **Then** the request is refused with the "insufficient key scope" error.
 6. **Given** a relayhost that does not exist, **When** a test is requested for it, **Then** the
    response is "not found".
+7. **Given** an operator who changed the default test recipient, **When** an administrator reads the
+   routing capabilities, **Then** they receive the configured default sender and recipient, which
+   the web app shows as placeholders. **Given** a domain administrator, **Then** the capabilities
+   contain only the bulk limit, the page sizes and the BCC field limits.
 
 ---
 
@@ -338,6 +363,9 @@ confirm through test mail that copies arrive as they do for maps created in the 
 10. **Given** three sender-type maps, one of whose local destinations already has a recipient-type
     map, **When** a client switches all three to recipient in one request, **Then** two are switched,
     the third is reported as refused with the "entry already exists" error, and it is unchanged.
+11. **Given** a domain-wide BCC map left behind by a legacy deletion of its domain, **When** an
+    administrator lists BCC maps, **Then** that map is flagged as orphaned and can be filtered and
+    deleted. **When** a domain administrator lists BCC maps, **Then** it is not listed.
 
 ---
 
@@ -511,8 +539,8 @@ audit log filtered by target.
 - **Test whose next hop has several mail exchangers with the same preference**: the first one returned
   is used, as in legacy, and the result names it.
 - **BCC map whose domain no longer exists**, because legacy deletion of a domain or alias domain left
-  its domain-wide maps behind: listed for administrators only, and can be edited and deleted. Legacy
-  hides such maps from everyone.
+  its domain-wide maps behind: listed for administrators only, flagged as orphaned, and can be edited
+  and deleted. Legacy hides such maps from everyone.
 - **BCC map for an address that stops existing** after creation: kept and still listed, as in legacy.
 - **BCC destination equal to the local destination**: allowed, as in legacy.
 - **BCC copies and spam**: copies are only sent for mail the spam filter does not reject, soft-reject
@@ -531,8 +559,8 @@ audit log filtered by target.
 - **Forwarding host with an empty source**, created outside the API: listed and editable.
 - **DNS temporarily unavailable** while a forwarding host name is resolved: refused with a temporary
   failure, distinguishable from a name that does not resolve.
-- **Version tag sent with a bulk action**: not supported; bulk actions do not check versions, as in
-  features 002 to 004.
+- **Version tags in a bulk action**: an item with an outdated tag is reported `outdated` and is not
+  changed; items without a tag are not checked; the other items proceed.
 - **Bulk action naming the same entry twice**: it is processed once and reported once.
 - **Bulk action by a domain administrator naming BCC maps outside their scope**: those entries are
   reported "not found", and the others are processed.
@@ -587,6 +615,7 @@ audit log filtered by target.
   | TLS policy maps (all operations) | Yes | Forbidden | Forbidden |
   | Forwarding hosts (all operations) | Yes | Forbidden | Forbidden |
   | Bulk actions (FR-090) | As the single operation | BCC maps only, per entry, with the `bcc_maps` flag | Forbidden |
+  | Read routing capabilities (FR-093) | All values | Bulk limit, page sizes and BCC field limits | Forbidden |
   | Read the audit log | Yes | Forbidden | Forbidden |
 
 - **FR-006**: A refusal for a missing permission flag MUST name the flag.
@@ -597,7 +626,8 @@ audit log filtered by target.
   default page size 25, maximum 1,000, and the total number of matching entries. Sorting MUST be
   available ascending and descending, ties MUST be broken by the entry's identifier, and searches
   MUST match case-insensitively as substrings. Each list entry MUST carry the full representation of
-  the entry, and producing a page MUST NOT require one lookup per entry.
+  the entry, including its version tag (FR-008), and producing a page MUST NOT require one lookup per
+  entry.
 - **FR-008**: Every relayhost, relayhost assignment, transport, BCC map, recipient map, TLS policy map
   and forwarding host MUST carry a version tag. The tag MUST change whenever the entry's stored values
   change, whether through this API, the legacy UI or `/api/v1`, including credential changes, and for
@@ -793,8 +823,8 @@ audit log filtered by target.
 
 - **FR-046**: Administrators and domain administrators MUST be able to list the BCC maps in their
   scope. A BCC map MUST be represented with its identifier, its type (sender or recipient), its local
-  destination, its BCC destination, its domain, its active state and its creation and modification
-  times.
+  destination, its BCC destination, its domain, whether that domain still exists as a domain or alias
+  domain, its active state and its creation and modification times.
 - **FR-047**: The BCC map list MUST support a search on the local and the BCC destination, filters on
   the type, the active state and the domain (several values match any), and sorting by identifier,
   type, local destination, BCC destination, domain, active state, creation time and modification time.
@@ -826,8 +856,9 @@ audit log filtered by target.
   MUST be read-only (FR-009).
 - **FR-055**: Administrators, and domain administrators with the `bcc_maps` flag, MUST be able to
   delete a BCC map in their scope. A successful deletion MUST respond with no body.
-- **FR-056**: Administrators MUST also reach BCC maps whose domain no longer exists. Domain
-  administrators MUST NOT reach them.
+- **FR-056**: Administrators MUST also reach BCC maps whose domain no longer exists, which FR-046
+  reports as orphaned, and the BCC map list MUST offer a filter on that state. Domain administrators
+  MUST NOT reach them.
 - **FR-057**: Administrators and domain administrators MUST be able to list the BCC destination
   choices of their scope: the domains, alias domains, mailboxes, aliases and mailbox addresses in
   alias domains that FR-050 accepts. Each choice MUST show its kind, its value as it would be stored,
@@ -949,7 +980,8 @@ audit log filtered by target.
   bulk action) into feature 001's audit log, with the fields of FR-046 there and:
   - the target type (relayhost, domain relayhost assignment, mailbox relayhost assignment, transport,
     BCC map, recipient map, TLS policy map or forwarding host) and the target identifier;
-  - the outcome, including refusals and their reason;
+  - the outcome, including refusals and their reason, and for a bulk action the bulk request
+    identifier;
   - for successful changes, each changed attribute with its old and new value. Passwords MUST be
     recorded only as "set", "changed" or "removed";
   - for a relayhost deletion, the domains and mailboxes whose assignment was cleared;
@@ -983,11 +1015,26 @@ audit log filtered by target.
 - **FR-091**: A bulk action MUST be refused as a whole when the caller's role, key scope or flags do
   not allow the action. Otherwise each named entry MUST be processed on its own, with the same
   checks, side effects and audit record as a single request for it, and the response MUST report one
-  result per distinct entry: done, not found, refused (with the error type), or failed (with the
-  error type). A failure on one entry MUST NOT stop or undo the others, as in legacy. Bulk actions
-  MUST NOT check version tags.
+  result per distinct entry: done, not found, refused (with the error type), outdated, or failed
+  (with the error type). A failure on one entry MUST NOT stop or undo the others, as in legacy. Each
+  named entry MAY carry the version tag the client read. An entry whose tag no longer matches MUST be
+  reported as outdated and MUST NOT be changed; an entry without a tag MUST NOT be version-checked.
 - **FR-092**: No operation of this feature MUST restart or reload a mailcow service, as in legacy: the
   mail server and the mail filter read the stored routing data on each message.
+
+#### Routing capabilities
+
+- **FR-093**: Administrators and domain administrators MUST be able to read the routing capabilities,
+  the server settings and limits a client needs before it submits:
+  - for both roles: the bulk limit (FR-090), the default and maximum page sizes (FR-007), and the BCC
+    map field limits (maximum length of the local and the BCC destination, FR-050, FR-052);
+  - for administrators only: the default test sender and recipient (FR-041), the test timeouts
+    (FR-042), the maximum lengths of hosts, next hops, usernames, passwords, destinations and TLS
+    policy parameters (FR-013, FR-019, FR-035, FR-061, FR-068, FR-070), the allowed TLS policies
+    (FR-069), and the forwarding host DNS lookup limit (FR-076).
+
+  The values MUST reflect the server's current configuration and MUST NOT include any secret. The
+  read MUST change nothing, and read-only keys MAY use it.
 
 ### Legacy Coverage
 
@@ -1028,6 +1075,7 @@ Actions are `/api/v1` names; *form* marks legacy UI forms and *ajax* the legacy 
 | `get/tls-policy-map/all`, `get/tls-policy-map/{id}`, TLS policy map table | `tls_policy_maps('get' / 'details')`, `draw_tls_policy_table()` | FR-065, FR-066 |
 | `edit/tls-policy-map`, *form* edit TLS policy map page, mass activate and deactivate | `tls_policy_maps('edit')`, `edit/tls_policy_map.twig` | FR-068 to FR-071, FR-090, FR-091 |
 | `delete/tls-policy-map`, single and mass | `tls_policy_maps('delete')` | FR-072, FR-090, FR-091 |
+| Server settings for the forms (test placeholders `relay@example.org` and `null@hosted.mailcow.de`, policy list of the TLS form) | `modals/admin.twig`, `edit.php` | FR-093 |
 
 Not covered, because it is dead code: the `#testRelayhostModal` handler in `admin.js` calls
 `inc/ajax/relay_check.php`, which no longer exists and has no button; the relayhost test uses
@@ -1083,7 +1131,7 @@ name. There is no fork-only routing capability to make configurable.
 | Transport default state | Server stores inactive when omitted; the form pre-selects inactive | Inactive (FR-034) |
 | Transport effect | Postfix `transport_maps` (`mysql_transport_maps.cf`, after `custom_transport.pcre`, `local_transport` and `mysql_relay_ne.cf`); MX-based via `check_recipient_mx_access` (`mysql_mbr_access_maps.cf`, `REGEXP`) | Same storage, same effect (FR-035, FR-040, FR-092) |
 | Connection test | PHP connects directly from the web container (no dockerapi), MX lookup without brackets, port 25 default, STARTTLS without certificate checks, 15 s timeout, sends a real message; HTML transcript at debug level 3 including the base64 login exchange; invalid addresses silently replaced by defaults; admin only | Same connection behaviour from the API's container; structured result with redacted transcript; invalid addresses refused; audited (FR-041 to FR-045). **Deviation** |
-| BCC map access | Read for every domain administrator in scope; writes need `bcc_maps`; maps whose domain no longer exists are invisible even to administrators (`hasDomainAccess`) | Same for domain administrators; administrators also reach orphaned maps (FR-005, FR-056). **Deviation** |
+| BCC map access | Read for every domain administrator in scope; writes need `bcc_maps`; maps whose domain no longer exists are invisible even to administrators (`hasDomainAccess`) | Same for domain administrators; administrators also reach orphaned maps, which are flagged (FR-005, FR-046, FR-056). **Deviation** |
 | BCC local destination | Domain or alias domain in scope (stored `@domain`), or a mailbox, a direct or shared alias in scope; alias-domain addresses offered by the choices but refused; an unknown address gives `access_denied` | Same, plus mailbox alias-domain addresses; one error for unknown and out-of-scope (FR-050). **Deviation** |
 | BCC destination | `FILTER_VALIDATE_EMAIL`, not normalised | Same, domain part normalised (FR-052) |
 | BCC uniqueness | One map per `local_dest` and `type`, also checked when the type changes | Same, also under concurrency (FR-053, FR-084) |
@@ -1098,8 +1146,9 @@ name. There is no fork-only routing capability to make configurable.
 | Forwarding host input | Strings matching `[0-9a-fA-F:/]+` or `[0-9./]+` stored as typed (so `cafe` is an IPv6 address); other input resolved through SPF, MX, then A/AAAA, without a lookup limit; source stored untrimmed | Valid literals only, canonical form, SPF lookup limit of 10, trimmed source (FR-076, FR-077). **Deviation** |
 | Forwarding host creation | Existing addresses overwritten; a Redis error stops half-way; spam filter disabled when omitted, the form pre-selects enabled | Overwrite kept and reported; all or nothing; enabled by default (FR-078, FR-082). **Deviation** |
 | Forwarding host effect | Rspamd multimap `WHITELISTED_FWD_HOST` and `force_actions`, greylisting `whitelisted_ip` through `forwardinghosts.php`, Postfix `postscreen_access_list` through `whitelist_forwardinghosts.sh` (`tcp:127.0.0.1:10027`), Rspamd `KEEP_SPAM` prefilter matching exact addresses and network-base prefixes | Same (FR-081) |
+| Server settings for the forms | Hard-coded in the templates (test placeholders, TLS policy list); never readable | Readable routing capabilities (FR-093), an addition |
 | Out-of-scope objects | Empty result or `access_denied` with status 200 | "Not found" (FR-003) |
-| Mass actions | One request with a list of items; processing continues past failures, with one message per item | Bulk actions of up to 100 entries with one result and one audit record per entry (FR-090, FR-091). **Deviation** for the limit and the per-entry results |
+| Mass actions | One request with a list of items; processing continues past failures, with one message per item | Bulk actions of up to 100 entries with one result and one audit record per entry, and optional per-entry version tags (FR-090, FR-091). **Deviation** for the limit, the per-entry results and the version checks |
 | Concurrent edits | Last write wins | Version tags (FR-008). **Deviation** |
 | Change log | Entries in the `logs` table, with the request data including passwords | This API's audit log without passwords (FR-085). **Deviation** |
 | Service reloads and other side effects | None: Postfix reads the tables through `proxy:mysql` on each lookup, Rspamd reads Redis and the internal endpoints per message or map refresh; no dockerapi or memcached calls | Same (FR-092) |
@@ -1131,6 +1180,8 @@ name. There is no fork-only routing capability to make configurable.
   creation and modification times.
 - **Forwarding host** (existing mailcow data in the shared store): an IP address or prefix, its source
   and its spam filter setting.
+- **Routing capabilities** (computed from the server configuration): the default test addresses,
+  timeouts, limits and allowed values a client needs before it submits.
 - **Audit record** (owned by this API, defined in feature 001): extended with the target types of this
   feature, attribute changes without passwords, affected entries and test outcomes.
 
@@ -1162,6 +1213,8 @@ name. There is no fork-only routing capability to make configurable.
   the new web app in under 3 minutes.
 - **SC-011**: 100% of refused creations and edits name every invalid field with a stable rule code, so
   that the web app can show each error next to its field.
+- **SC-012**: Each routing capability equals the server's configuration in 100% of test runs, and a
+  changed setting is reflected on the next request.
 
 ## Assumptions
 
@@ -1181,7 +1234,8 @@ name. There is no fork-only routing capability to make configurable.
   mailcow's mail server configuration. Changing it needs an upstream change and is out of scope.
 - The legacy UI never sends version tags, so it can still overwrite changes made through this API.
 - These defaults can be changed by the operator: the test sender (`relay@example.org`) and recipient
-  (`null@hosted.mailcow.de`), and the list page size (25, maximum 1,000).
+  (`null@hosted.mailcow.de`), and the list page size (25, maximum 1,000). Clients read them through
+  the routing capabilities (FR-093).
 - **Out of scope**:
   - the global relayhost and custom transport files of the mail server configuration, which the
     legacy UI does not manage;

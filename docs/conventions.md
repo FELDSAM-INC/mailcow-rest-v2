@@ -175,3 +175,16 @@ this document next to the constitution.
   `BulkActionRunner`, `MailboxPasswordHasher` and `PasswordPolicyChecker`. 008 owns
   `RefusalAuditor`, unless an earlier feature creates it first. 009 owns `app/Clients/Dns` and
   `app/Clients/Smtp`.
+
+## Audit record details
+
+- `AuditEvent.details` is an object whose keys are stable camelCase names, documented per event
+  type in `docs/audit-events.md`. Each feature adds a section for its event types when it is
+  implemented: for each key, its type, its meaning, and whether it can be absent.
+- Clients translate keys they know and show unknown keys verbatim.
+- Details never contain secrets.
+
+## Gaps found after planning
+
+- UI plans record API gaps in `docs/api-gaps.md`. The implementer of the affected API feature fixes
+  them and marks them done.

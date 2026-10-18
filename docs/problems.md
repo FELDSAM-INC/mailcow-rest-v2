@@ -104,15 +104,18 @@ extension members.
 - **Type**: `/api/v2/problems/pending-action-required`
 - **Status**: 403
 - **Meaning**: The session is restricted. mailcow forces the account to change its password or to
-  set up a second factor. Until then, the session can read `GET /me`, sign out and, when only
-  `secondFactorSetup` is pending, register a passkey. Operations that need no signed-in account
+  set up a second factor. Until then, the session can read `GET /me` and the self-service
+  capabilities and sign out; while `passwordChange` is pending it can read the password rules and
+  change the password (`PUT /api/v2/me/password`); while `secondFactorSetup` is pending it can list
+  and enrol second factors (`/api/v2/me/second-factors`) and, when that is the only pending action,
+  register a passkey. Operations that need no signed-in account
   (the anti-forgery token, the session state, signing in again, the public configuration, the
   documentation and the health checks) stay available. API keys are never restricted.
 - **Extension members**: `pendingActions`, a non-empty list of `passwordChange` and
   `secondFactorSetup`.
-- **Client action**: Guide the user through the pending actions. Register a passkey for
-  `secondFactorSetup`. For `passwordChange`, link to the legacy UI until password change is
-  available in this API. Pending actions are re-evaluated on every request.
+- **Client action**: Guide the user through the pending actions: change the password without the
+  current one for `passwordChange` (feature 005), enrol a second factor or register a passkey for
+  `secondFactorSetup`. Pending actions are re-evaluated on every request.
 
 ## too-many-requests
 

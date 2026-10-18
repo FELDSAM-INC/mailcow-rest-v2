@@ -3,6 +3,7 @@
 namespace App\Services\Config;
 
 use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
@@ -32,6 +33,13 @@ class MailcowConfig
     private const CACHE_TTL = 86400;
 
     private const TIMEOUT = 5.0;
+
+    /**
+     * The HTTPS port in the exported autodiscover settings (feature 005 research R18): the export
+     * runs with `HTTP_HOST = <MAILCOW_HOSTNAME>:<this>`, so legacy's `$https_port` is this
+     * placeholder, which autodiscoverConfig() replaces with the request's port.
+     */
+    public const HTTPS_PORT_PLACEHOLDER = '__RESTV2_HTTPS_PORT__';
 
     /** Variables that are a boolean or one of the strings required/preferred/discouraged. */
     private const FLAG_OR_STRING = ['FIDO2_UV_FLAG_REGISTER', 'FIDO2_UV_FLAG_LOGIN', 'WEBAUTHN_UV_FLAG_LOGIN', 'WEBAUTHN_UV_FLAG_REGISTER'];
@@ -344,6 +352,162 @@ class MailcowConfig
         }
 
         return $entries;
+    }
+
+    /**
+     * Minutes a password reset token is valid (legacy `$PW_RESET_TOKEN_LIFETIME`, feature 005 FR-021).
+     *
+     * @phpstan-impure
+     */
+    public function pwResetTokenLifetime(): int
+    {
+        return $this->positiveInt('PW_RESET_TOKEN_LIFETIME');
+    }
+
+    /**
+     * Outstanding reset tokens allowed per mailbox (legacy `$PW_RESET_TOKEN_LIMIT`, feature 005 FR-021).
+     *
+     * @phpstan-impure
+     */
+    public function pwResetTokenLimit(): int
+    {
+        return $this->positiveInt('PW_RESET_TOKEN_LIMIT');
+    }
+
+    /**
+     * User verification of WebAuthn second-factor registrations (legacy `$WEBAUTHN_UV_FLAG_REGISTER`).
+     *
+     * @phpstan-impure
+     */
+    public function webauthnUvFlagRegister(): bool|string
+    {
+        return $this->flagOrString('WEBAUTHN_UV_FLAG_REGISTER');
+    }
+
+    /**
+     * The name of legacy's session cookie (legacy `$SESSION_NAME`), used by the webmail hand-off.
+     *
+     * @phpstan-impure
+     */
+    public function sessionName(): string
+    {
+        $value = $this->value('SESSION_NAME');
+
+        return is_string($value) && preg_match('/^[A-Za-z0-9_-]{1,64}$/', $value) === 1 ? $value : (string) config('restv2.vars_defaults.SESSION_NAME');
+    }
+
+    /**
+     * The SameSite policy of legacy's session cookie (legacy `$SESSION_SAMESITE_POLICY`).
+     *
+     * @phpstan-impure
+     */
+    public function sessionSameSitePolicy(): string
+    {
+        $value = $this->value('SESSION_SAMESITE_POLICY');
+
+        return is_string($value) && in_array(strtolower($value), ['lax', 'strict', 'none'], true) ? ucfirst(strtolower($value)) : (string) config('restv2.vars_defaults.SESSION_SAMESITE_POLICY');
+    }
+
+    /**
+     * Legacy's `$autodiscover_config` (feature 005 research R18), after its merge with the
+     * operator's vars.local.inc.php, or built from MAILCOW_HOSTNAME and the mail ports of
+     * mailcow.conf when the files are not mounted. The HTTPS port (CalDAV, CardDAV, ActiveSync)
+     * follows the request's port as legacy's auto-detection does; ports are parsed as vars.inc.php
+     * parses them (an `ip:port` value keeps the port), and an unset port is null.
+     *
+     * @return array<string, mixed>
+     *
+     * @phpstan-impure
+     */
+    public function autodiscoverSettings(Request $request): array
+    {
+        $value = $this->value('autodiscover_config');
+
+        if (! is_array($value) || $value === [] || array_is_list($value)) {
+            $value = $this->defaultAutodiscoverConfig();
+        }
+
+        return self::resolvePorts($value, self::requestPort($request));
+    }
+
+    /**
+     * The port of the request's Host header, 443 without one (legacy `$https_port`).
+     */
+    public static function requestPort(Request $request): int
+    {
+        $host = (string) $request->headers->get('host', '');
+
+        if (preg_match('/:(\d+)$/', $host, $match) === 1 && ! str_ends_with($host, ']')) {
+            return (int) $match[1];
+        }
+
+        return 443;
+    }
+
+    /**
+     * A mail port of mailcow.conf as vars.inc.php reads it:
+     * `(int) filter_var(substr($v, strrpos($v, ':')), FILTER_SANITIZE_NUMBER_INT)`.
+     */
+    public static function legacyPort(string $value): int
+    {
+        $position = strrpos($value, ':');
+
+        return (int) filter_var(substr($value, $position === false ? 0 : $position), FILTER_SANITIZE_NUMBER_INT);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function defaultAutodiscoverConfig(): array
+    {
+        $host = $this->hostname();
+        $port = fn (string $name): int => self::legacyPort((string) config("restv2.ports.{$name}", ''));
+        $https = self::HTTPS_PORT_PLACEHOLDER;
+
+        return [
+            'displayName' => 'A mailcow mail server',
+            'displayShortName' => 'mail server',
+            'autodiscoverType' => 'activesync',
+            'useEASforOutlook' => 'no',
+            'imap' => ['server' => $host, 'port' => $port('IMAPS_PORT'), 'tlsport' => $port('IMAP_PORT')],
+            'pop3' => ['server' => $host, 'port' => $port('POPS_PORT'), 'tlsport' => $port('POP_PORT')],
+            'smtp' => ['server' => $host, 'port' => $port('SMTPS_PORT'), 'tlsport' => $port('SUBMISSION_PORT')],
+            'activesync' => ['url' => 'https://'.$host.':'.$https.'/Microsoft-Server-ActiveSync'],
+            'caldav' => ['server' => $host, 'port' => $https],
+            'carddav' => ['server' => $host, 'port' => $https],
+        ];
+    }
+
+    /**
+     * @param  array<mixed>  $values
+     * @return array<mixed>
+     */
+    private static function resolvePorts(array $values, int $port): array
+    {
+        foreach ($values as $key => $value) {
+            if (is_array($value)) {
+                $values[$key] = self::resolvePorts($value, $port);
+            } elseif ($value === self::HTTPS_PORT_PLACEHOLDER) {
+                $values[$key] = $port;
+            } elseif (is_string($value) && str_contains($value, self::HTTPS_PORT_PLACEHOLDER)) {
+                $values[$key] = str_replace(
+                    [':'.self::HTTPS_PORT_PLACEHOLDER, self::HTTPS_PORT_PLACEHOLDER],
+                    [$port === 443 ? '' : ':'.$port, (string) $port],
+                    $value,
+                );
+            } elseif (in_array($key, ['port', 'tlsport'], true) && (is_int($value) || is_numeric($value))) {
+                $values[$key] = (int) $value === 0 ? null : (int) $value;
+            }
+        }
+
+        return $values;
+    }
+
+    private function positiveInt(string $name): int
+    {
+        $value = $this->value($name);
+
+        return is_numeric($value) && (int) $value > 0 ? (int) $value : (int) config("restv2.vars_defaults.{$name}");
     }
 
     /**

@@ -14,6 +14,7 @@ use App\Services\IdentityProvider\SsoLinkStore;
 use App\Support\Http\Base64Url;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Session\Session;
+use Illuminate\Support\Str;
 
 /**
  * The browser session's API data (R6, data-model "Session (Redis)"):
@@ -21,7 +22,9 @@ use Illuminate\Contracts\Session\Session;
  *  - `restv2.principal`: the signed-in account (`restricted` or `active`);
  *  - `restv2.pending`: a sign-in whose password was verified and which awaits a second factor;
  *  - `restv2.passkeyChallenge` and `restv2.passkeyRegistration`: single-use WebAuthn challenges;
- *  - `restv2.lastActivity`: Unix seconds of the last request (idle timeout, FR-009).
+ *  - `restv2.lastActivity`: Unix seconds of the last request (idle timeout, FR-009);
+ *  - `restv2.handle`: the stable handle of a signed-in session (feature 005 research R2), which
+ *    survives identifier renewals and keys the account's entry in SessionRegistry.
  *
  * The principal and the pending sign-in carry the SHA-256 of the User-Agent they were created
  * with (FR-012). Every step that changes who is signed in renews the session identifier (FR-008).
@@ -42,7 +45,12 @@ class SessionManager
 
     public const LAST_ACTIVITY = 'restv2.lastActivity';
 
-    public function __construct(private readonly PendingActionEvaluator $evaluator) {}
+    public const HANDLE = 'restv2.handle';
+
+    public function __construct(
+        private readonly PendingActionEvaluator $evaluator,
+        private readonly SessionRegistry $registry,
+    ) {}
 
     public function state(Session $session): SessionState
     {
@@ -136,8 +144,9 @@ class SessionManager
     {
         $expiresAt = CarbonImmutable::now('UTC')->addSeconds($this->challengeTtl());
 
+        $this->unregister($session);
         $session->migrate(true);
-        $session->forget(self::PRINCIPAL);
+        $session->forget([self::PRINCIPAL, self::HANDLE]);
         $session->put(self::PENDING, [
             'username' => $username,
             'role' => $role->value,
@@ -155,11 +164,14 @@ class SessionManager
     }
 
     /**
-     * Signs the principal in: renews the session identifier, ends any pending sign-in and keeps
-     * the anti-forgery token (R7).
+     * Signs the principal in: renews the session identifier, ends any pending sign-in, keeps the
+     * anti-forgery token (R7) and registers the session under a new handle (feature 005 R2). The
+     * second factor that completed the sign-in is kept for `usedForCurrentSignIn` (feature 005
+     * FR-027).
      */
-    public function promote(Session $session, Principal $principal, ?string $userAgent): void
+    public function promote(Session $session, Principal $principal, ?string $userAgent, ?int $secondFactorId = null): void
     {
+        $this->unregister($session);
         $session->migrate(true);
         $session->forget([self::PENDING, self::PASSKEY_CHALLENGE, self::PASSKEY_REGISTRATION]);
         $session->put(self::PRINCIPAL, array_filter([
@@ -173,8 +185,64 @@ class SessionManager
             'identityProvider' => $principal->identityProvider?->value,
             'passwordSource' => $principal->passwordSource?->value,
             'ssoLinkId' => $principal->ssoLinkId,
+            'secondFactorId' => $secondFactorId,
         ], fn (mixed $value): bool => $value !== null));
+        $session->put(self::HANDLE, (string) Str::ulid());
         $this->touch($session);
+        $this->register($session);
+    }
+
+    /**
+     * Renews the identifier of a signed-in session, keeping its data and its handle (feature 005
+     * R4: the session that changed its password stays signed in with a new identifier).
+     */
+    public function renew(Session $session): void
+    {
+        $session->migrate(true);
+        $this->register($session);
+    }
+
+    /**
+     * The stable handle of the signed-in session, or null.
+     */
+    public function handle(Session $session): ?string
+    {
+        $handle = $session->get(self::HANDLE);
+
+        return is_string($handle) && $handle !== '' ? $handle : null;
+    }
+
+    /**
+     * The `tfa.id` of the second factor that completed the session's sign-in, or null.
+     */
+    public function secondFactorId(Session $session): ?int
+    {
+        $id = $session->get(self::PRINCIPAL.'.secondFactorId');
+
+        return is_numeric($id) ? (int) $id : null;
+    }
+
+    /**
+     * Records the signed-in session in the account's registry entry, under its handle (one is
+     * given to a session signed in before feature 005), and refreshes the entry's lifetime. Called
+     * on every request of a signed-in session.
+     */
+    public function register(Session $session): void
+    {
+        $principal = $this->principal($session);
+
+        if ($principal === null) {
+            return;
+        }
+
+        $handle = $this->handle($session);
+
+        if ($handle === null) {
+            $handle = (string) Str::ulid();
+            $session->put(self::HANDLE, $handle);
+        }
+
+        $this->registry->register($principal->accountKind, $principal->username, $handle, $session->getId());
     }
 
     /**
@@ -188,7 +256,8 @@ class SessionManager
     /**
      * Ends the session: its data is destroyed, the identifier and the anti-forgery token renewed
      * (FR-010). The provider tokens of a single sign-on session are discarded with it (feature
-     * 012 FR-027); the user stays signed in at the provider.
+     * 012 FR-027); the user stays signed in at the provider. Its registry entry and what is tied to
+     * it (feature 005: the webmail hand-off) end with it.
      */
     public function end(Session $session): void
     {
@@ -198,7 +267,27 @@ class SessionManager
             app(SsoLinkStore::class)->delete($linkId);
         }
 
+        $handle = $this->handle($session);
+        $this->unregister($session);
+
+        if ($handle !== null) {
+            $this->registry->ended($handle);
+        }
+
         $session->invalidate();
+    }
+
+    /**
+     * Removes the signed-in session's registry entry, if any.
+     */
+    private function unregister(Session $session): void
+    {
+        $principal = $this->principal($session);
+        $handle = $this->handle($session);
+
+        if ($principal !== null && $handle !== null) {
+            $this->registry->forget($principal->accountKind, $principal->username, $handle);
+        }
     }
 
     /**

@@ -85,7 +85,10 @@ info:
 
     When mailcow forces an account to change its password or to set up a second factor, the
     session is restricted (`state: restricted`, non-empty `pendingActions`). It can read
-    `GET /me`, sign out and, when only `secondFactorSetup` is pending, register a passkey.
+    `GET /me` and `GET /capabilities/self-service` and sign out. While `passwordChange` is
+    pending it can read `GET /me/password-policy` and change the password (`PUT /me/password`);
+    while `secondFactorSetup` is pending it can list and enrol second factors
+    (`/me/second-factors`) and, when that is the only pending action, register a passkey.
     Operations that need no signed-in account stay available: `GET /csrf-token`, `GET /session`,
     sign-in and its steps, the public configuration, the documentation and the health checks.
     Every other operation answers `403` with type `/api/v2/problems/pending-action-required`.

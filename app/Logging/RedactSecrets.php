@@ -9,11 +9,13 @@ use Monolog\Processor\ProcessorInterface;
  * Removes secrets from the log context (FR-050, R24): every key, at any depth, whose name matches
  * password, secret, token, code, OTP, credential, assertion, authorization, cookie or X-API-Key, and
  * (feature 012) state, verifier or bind: single sign-on states, PKCE verifiers, LDAP bind passwords;
- * (feature 010) privateKey and private_key: imported or exported DKIM private keys.
+ * (feature 010) privateKey and private_key: imported or exported DKIM private keys; and feature
+ * 005's Pushover user key (`userKey`); `currentPassword`, `newPassword`, `generatedPassword`,
+ * `secretKey` and `qrCode` already match (FR-076).
  */
 class RedactSecrets implements ProcessorInterface
 {
-    private const PATTERN = '/pass|secret|token|code|otp|credential|assertion|authorization|cookie|x-api-key|state|verifier|bind|private_?key/i';
+    private const PATTERN = '/pass|secret|token|code|otp|credential|assertion|authorization|cookie|x-api-key|state|verifier|bind|private_?key|userkey/i';
 
     public function __invoke(LogRecord $record): LogRecord
     {

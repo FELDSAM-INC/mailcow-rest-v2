@@ -15,7 +15,9 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Route middleware `restv2.auth:<mode>` (R8):
  *
- *  - `public`: anyone, API keys included;
+ *  - `public`: anyone, API keys included, without a session;
+ *  - `optional`: anyone, API keys included, with the browser session when there is one (feature
+ *    005: the self-service capabilities describe a signed-in account and are readable signed out);
  *  - `browser`: anonymous or signed-in browser sessions; a key gets `403 session-required`;
  *  - `session`: a signed-in session only; none gives `401 unauthenticated`, a pending sign-in
  *    `401 second-factor-required`, a key `403 session-required`;
@@ -37,7 +39,7 @@ class RequireAuth
         $isKey = RequestContext::isApiKeyRequest($request);
 
         match ($mode) {
-            'public' => null,
+            'public', 'optional' => null,
             'browser' => $isKey ? throw new ProblemException(ProblemType::SessionRequired) : null,
             'session' => $isKey ? throw new ProblemException(ProblemType::SessionRequired) : $this->requireSignedIn($request),
             'authenticated' => $isKey ? null : $this->requireSignedIn($request),

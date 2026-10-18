@@ -2,8 +2,10 @@ type: string
 description: |
   Action an account must complete before the session is fully usable.
 
-  - `passwordChange`: mailcow forces a password change (`force_pw_update`). Until password change
-    arrives in this API, the user changes the password in the legacy UI.
+  - `passwordChange`: mailcow forces a password change (`force_pw_update`). Changing the password
+    with `PUT /me/password`, which needs no current password in this case, resolves it.
   - `secondFactorSetup`: mailcow forces second-factor setup (`force_tfa`) and the account has no
-    second factor and no active passkey. Registering a passkey (`POST /me/passkeys`) resolves it.
+    second factor and no active passkey. Enrolling a second factor (`POST /me/second-factors`,
+    without the current password in this case) or registering a passkey (`POST /me/passkeys`)
+    resolves it.
 enum: [passwordChange, secondFactorSetup]

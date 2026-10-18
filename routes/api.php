@@ -101,6 +101,7 @@ use App\Http\Controllers\Api\V2\RspamdHistoryController;
 use App\Http\Controllers\Api\V2\RspamdStatisticsController;
 use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
+use App\Http\Controllers\Api\V2\SelfServiceCapabilitiesController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
 use App\Http\Controllers\Api\V2\SessionController;
 use App\Http\Controllers\Api\V2\SingleSignOnCompletionController;
@@ -754,6 +755,11 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->defaults('restv2.audit', ['event' => 'relayhostAssignmentUpdate', 'target' => 'mailboxRelayhostAssignment'])
             ->name('mailbox-relayhost-assignment.update');
     });
+    // Feature 005: account self-service. The capabilities are readable signed out (the reset
+    // availability is needed before sign-in), with the session's account, and in restricted sessions.
+    Route::get('/capabilities/self-service', [SelfServiceCapabilitiesController::class, 'show'])
+        ->middleware(['restv2.auth:optional', 'restv2.pending:allow'])
+        ->name('self-service-capabilities.show');
 
     // Feature 010: DKIM keys, MTA-STS policies and DNS diagnostics. Names are percent-encoded
     // domain names, so `[^/]+`. The sub-resources of a key and the POST-only bulk path come before

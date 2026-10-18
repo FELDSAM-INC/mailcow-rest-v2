@@ -100,50 +100,50 @@ is complete.**
 
 ### Tests for the foundation (write first, observe failing) ⚠️
 
-- [ ] T009 [P] Write `tests/Unit/LegacySession/PhpSessionEncoderTest.php`: the encoding of strings,
+- [X] T009 [P] Write `tests/Unit/LegacySession/PhpSessionEncoderTest.php`: the encoding of strings,
   integers, nested arrays and the hand-off payload equals PHP's own `session_encode()` output for the
   same `$_SESSION` (run in a subprocess with `session.serialize_handler=php`), keys containing `|`
   are refused, and the decoded payload has exactly the six keys of DM "Legacy hand-off session".
-- [ ] T010 [P] Write `tests/Feature/SelfService/SessionRegistryTest.php` (R2): a sign-in through
+- [X] T010 [P] Write `tests/Feature/SelfService/SessionRegistryTest.php` (R2): a sign-in through
   `SessionManager` registers `handle → id` in `restv2:account-sessions:<kind>:<username>`; the
   handle survives `migrate(true)` and the field is rewritten; sign-out forgets it; `isAlive` is false
   for a destroyed session; `endAll(kind, username, exceptHandle)` destroys the other sessions (their
   next request is `401 unauthenticated`), prunes dead fields without counting them and returns the
   count; every session request refreshes the hash TTL to `SESSION_LIFETIME`.
-- [ ] T011 [P] Write `tests/Feature/SelfService/PipelineExtensionsTest.php` (R5), with routes under
+- [X] T011 [P] Write `tests/Feature/SelfService/PipelineExtensionsTest.php` (R5), with routes under
   `/api/v2/__testing/`: `restv2.pending:includes,passwordChange` passes a session restricted by
   `passwordChange` alone or by both actions and refuses one restricted only by `secondFactorSetup`
   (`403 pending-action-required`); the same for `includes,secondFactorSetup`; a route with
   `->defaults('restv2.readOnly', true)` accepts `POST` from a read-only key while another `POST`
   answers `insufficient-key-scope`.
-- [ ] T012 [P] Write `tests/Feature/SelfService/MailboxAccessTest.php`: `MailboxAccess::resolve()`
+- [X] T012 [P] Write `tests/Feature/SelfService/MailboxAccessTest.php`: `MailboxAccess::resolve()`
   normalises the address (case, Unicode domain), answers `404` for unknown addresses, resources,
   mailboxes outside a domain administrator's active assignments and other mailboxes of a mailbox
   user; `PermissionGate::requireChange()` refuses with `403 permission-flag-required` (`requiredFlags`
   with the one flag) when the effective flag is off and a value changes, accepts values equal to the
   current one, maps a domain administrator to all user flags except `appPasswds`, `pushover` (own
   `da_acl`) and `filters` (own `da_acl`), and an administrator to every flag (FR-006).
-- [ ] T013 [P] Write `tests/Feature/SelfService/RefusalAuditTest.php` (conventions "Refusal
+- [X] T013 [P] Write `tests/Feature/SelfService/RefusalAuditTest.php` (conventions "Refusal
   auditing"): a refusal of an authenticated caller on a self-service route marked with
   `restv2.audit` writes one audit record with the event type, the target type, `target.id` = the
   mailbox address and the 008 reason (`permissionDenied` + `details.problemType` for a missing flag,
   a read-only key and a restricted session; `notFound`; `versionOutdated`; `validationFailed`); a
   CSRF failure and a `401` write none; a refusal a service already audited is not recorded twice.
   If `App\Services\Audit\RefusalAuditor` does not exist yet, also cover its generic behaviour here.
-- [ ] T014 [P] Write `tests/Unit/Support/NamedLockTest.php` (only if `App\Support\Database\NamedLock`
+- [X] T014 [P] Write `tests/Unit/Support/NamedLockTest.php` (only if `App\Support\Database\NamedLock`
   does not exist): `GET_LOCK` before the transaction, release in `finally` after an exception, a
   second connection waits, a timeout raises `503 temporary-failure`.
-- [ ] T015 [P] Write `tests/Unit/Passwords/NewPasswordValidatorTest.php` (FR-009, R4): every prefix
+- [X] T015 [P] Write `tests/Unit/Passwords/NewPasswordValidatorTest.php` (FR-009, R4): every prefix
   of the `hash_password()` list in any letter case gives `preHashedPassword` with `scheme`; policy
   failures give 003's `tooShort` (`min`) and `missingCharacterClass` (`characterClass`), all at once;
   a prefix value is not also policy-checked; a valid password passes.
-- [ ] T016 [P] Write `tests/Feature/SelfService/MailcowConfigSelfServiceTest.php` (R18, R23): with
+- [X] T016 [P] Write `tests/Feature/SelfService/MailcowConfigSelfServiceTest.php` (R18, R23): with
   `tests/fixtures/mailcow-inc` variants, the export returns `PW_RESET_TOKEN_LIFETIME`,
   `PW_RESET_TOKEN_LIMIT`, `WEBAUTHN_UV_FLAG_REGISTER`, `SESSION_NAME`, `SESSION_SAMESITE_POLICY` and
   `autodiscover_config` merged with `vars.local.inc.php`; `RESTV2_<NAME>` overrides win; the HTTPS
   port placeholder is replaced by the request's port (443 without one); ports parse `ip:port`
   values like `vars.inc.php`; a missing port is `null`.
-- [ ] T017 [P] Write `tests/Feature/SelfService/SelfServiceCapabilitiesTest.php` for
+- [X] T017 [P] Write `tests/Feature/SelfService/SelfServiceCapabilitiesTest.php` for
   `getSelfServiceCapabilities` (FR-080): signed out → only `passwordReset` (`available` false when
   `PW_RESET_FROM` or `PW_RESET_SUBJ` is empty, `tokenLifetimeMinutes` from the config); a read-only
   key of a domain administrator → every member except `account`; a session → `account` with
@@ -154,7 +154,7 @@ is complete.**
 
 ### Implementation for the foundation
 
-- [ ] T018 [P] Extend `database/factories/MailcowRows.php` and `tests/Support/Mailcow/MailcowFactory.php`
+- [X] T018 [P] Extend `database/factories/MailcowRows.php` and `tests/Support/Mailcow/MailcowFactory.php`
   (extends 001–004) with rows exactly as legacy writes them (DM): `appPasswd(mailbox, name (stored
   encoded), password, scheme, protocols[], active)`, `spamAlias(address, goto, description,
   validity, permanent)`, `sieveFilter(username, desc, kind, script, active)`, `pushover(username,
@@ -163,9 +163,9 @@ is complete.**
   `logsCheckLogin(username, type)` (as legacy `logger()` writes `call`), `sogoProfileRows(mailbox)`
   (one row in each `sogo_*` table of DM plus a foreign `sogo_acl` grant), `senderAcl(...)`,
   `quota2(username, bytes, messages)`.
-- [ ] T019 [P] Create `app/Support/LegacySession/PhpSessionEncoder.php` (`encode(array): string`,
+- [X] T019 [P] Create `app/Support/LegacySession/PhpSessionEncoder.php` (`encode(array): string`,
   PHP `php` serialiser format, R3). This makes T009 pass.
-- [ ] T020 Create `app/Services/Auth/SessionRegistry.php` and extend
+- [X] T020 Create `app/Services/Auth/SessionRegistry.php` and extend
   `app/Services/Auth/SessionManager.php` (extends 001): `restv2.handle` (ULID) at principal
   creation, `register` after promotion and passkey sign-in, `rename` after every `migrate(true)`,
   `forget` in `end()`; record `restv2.principal.secondFactorId` in
@@ -173,17 +173,17 @@ is complete.**
   `app/Http/Middleware/EnsureSessionIntegrity.php` (extends 001). `SessionManager::end()` and
   `SessionRegistry::endAll()` call a `SessionEndListener` list, to which T076 adds the hand-off
   cleanup. This makes T010 pass.
-- [ ] T021 Extend `app/Http/Middleware/EnforcePendingActions.php` with the mode `includes,<action>` and
+- [X] T021 Extend `app/Http/Middleware/EnforcePendingActions.php` with the mode `includes,<action>` and
   `app/Http/Middleware/EnforceKeyScope.php` with the route default `restv2.readOnly` (both extend
   001, R5). This makes T011 pass.
-- [ ] T022 [P] If absent, create `app/Support/Database/NamedLock.php` (`run(string $name, int
+- [X] T022 [P] If absent, create `app/Support/Database/NamedLock.php` (`run(string $name, int
   $timeout, Closure $fn)`; names `restv2_<area>_<40 hex of sha1>`; timeout → `ProblemException`
   `temporary-failure` with `dependency: database`). This makes T014 pass.
-- [ ] T023 Create `app/Services/SelfService/MailboxAccess.php` (wraps 003's `MailboxScope` and
+- [X] T023 Create `app/Services/SelfService/MailboxAccess.php` (wraps 003's `MailboxScope` and
   `MailboxAddress`; returns the `Mailbox` model or throws `404`) and
   `app/Services/SelfService/PermissionGate.php` (FR-006 mapping above, equal-value rule,
   `permission-flag-required` with `requiredFlags`). This makes T012 pass.
-- [ ] T024 If `App\Services\Audit\RefusalAuditor` does not exist, create it as 008's research
+- [X] T024 If `App\Services\Audit\RefusalAuditor` does not exist, create it as 008's research
   describes (hook in 001's problem rendering, route default `restv2.audit`, resolver registry, no
   record for `csrf-token-mismatch` or `401`, skipped when the request already wrote a record).
   Create `app/Services/SelfService/SelfServiceAuditTargets.php`, which registers resolvers for the
@@ -192,11 +192,11 @@ is complete.**
   `webmailHandOff` (target id = the route's mailbox address or the principal's username, R22), and
   add the `details` whitelists of R22 to `app/Services/Audit/AuditLogger.php` (extends 001). This
   makes T013 pass.
-- [ ] T025 [P] Create `app/Support/Passwords/PreHashedPasswordRule.php` and
+- [X] T025 [P] Create `app/Support/Passwords/PreHashedPasswordRule.php` and
   `app/Support/Passwords/NewPasswordValidator.php` (prefix rule first, then 003's
   `PasswordPolicyChecker` with `EffectivePasswordPolicy`, violations on the given field). This makes
   T015 pass.
-- [ ] T026 [P] Add the cases `CurrentPasswordIncorrect`, `PasswordManagedExternally`,
+- [X] T026 [P] Add the cases `CurrentPasswordIncorrect`, `PasswordManagedExternally`,
   `PasswordResetUnavailable`, `InvalidResetToken`, `SecondFactorEnrolmentExpired`,
   `SecondFactorEnrolmentFailed`, `LastSecondFactor`, `SecondFactorRequiredByPolicy`,
   `PushNotificationsNotConfigured` and `GroupwareDisabled` to `app/Support/Http/ProblemType.php`
@@ -206,18 +206,18 @@ is complete.**
   extensions `requiredFlags`, `attemptsRemaining`, `dependency` (+ `Retry-After: 30`) and
   `methods`. Add `currentPassword`, `newPassword`, `secretKey`, `userKey`, `generatedPassword` and
   `qrCode` to the key pattern of `app/Logging/RedactSecrets.php` (extends 001, FR-076).
-- [ ] T027 Extend `resources/bin/export-mailcow-vars.php` (run with `HTTP_HOST =
+- [X] T027 Extend `resources/bin/export-mailcow-vars.php` (run with `HTTP_HOST =
   <MAILCOW_HOSTNAME>:__RESTV2_HTTPS_PORT__`) and `app/Services/Config/MailcowConfig.php` (both extend
   001) with `pwResetTokenLifetime()`, `pwResetTokenLimit()`, `webauthnUvFlagRegister()`,
   `sessionName()`, `sessionSameSitePolicy()` and `autodiscoverConfig(Request)` (placeholder → request
   port), with `RESTV2_<NAME>` precedence and upstream defaults (R23). This makes T016 pass.
-- [ ] T028 Create `app/Services/SelfService/SelfServiceCapabilitiesService.php`,
+- [X] T028 Create `app/Services/SelfService/SelfServiceCapabilitiesService.php`,
   `app/Services/Account/AccountCapabilities.php` (the `account` block),
   `app/Http/Resources/Api/V2/SelfServiceCapabilitiesResource.php` and
   `app/Http/Controllers/Api/V2/SelfServiceCapabilitiesController.php` (`show`). Register `GET
   /capabilities/self-service` (`restv2.auth:public`, `restv2.pending:allow`) in `routes/api.php`
   with the other literal `/capabilities/*` routes. This makes T017 pass.
-- [ ] T029 [P] Update the descriptions that announce password change and second-factor enrolment as
+- [X] T029 [P] Update the descriptions that announce password change and second-factor enrolment as
   future work, now that this feature provides them (description-only, non-breaking contract
   change): `api/components/schemas/PendingAction.yaml` (`passwordChange` → `PUT /me/password`;
   `secondFactorSetup` → also `POST /me/second-factors`), the "Restricted sessions" paragraph of
@@ -1062,3 +1062,57 @@ Story order by priority: US1 → US2 → US3 → US4 (P1, MVP) → US5 → US6 �
 - **Increment 2**: US5–US8 (webmail hand-off, overview, temporary aliases, settings, recent logins).
 - **Increment 3**: US9–US12 and Polish.
 - Each story ends at a checkpoint where its independent test passes and the suite is green.
+
+## Implementation notes (2026-10-18)
+
+Deviations and decisions made while implementing, with the reason. Names in tasks and research
+that differ from what exists map as listed.
+
+- **Reused pieces (research R1) and their real names**: `App\Support\Database\NamedLock` (003),
+  `App\Services\Audit\RefusalAuditor` (002, route default `restv2.audit`),
+  `App\Exceptions\PermissionFlagRequiredException` and `ProblemType::PermissionFlagRequired` (002);
+  `App\Services\Mailboxes\{MailboxScope, MailboxAddress, AddressLock, AddressAvailability,
+  TaggedMailHandlingStore, MailboxReader}` and `App\Services\Passwords\{PasswordPolicyReader,
+  EffectivePasswordPolicy, PasswordPolicyChecker, MailboxPasswordHasher}` (003);
+  `App\Services\Aliases\AliasAddressAvailability` and
+  `App\Services\SenderSettings\SenderSettingsReader::deliversTo()` (004);
+  `App\Support\Bulk\BulkActionRunner`, `App\Clients\SharedStore\SharedStore`,
+  `App\Clients\DockerApi\DockerApiClient` (+ `FakeDockerApiClient`),
+  `App\Services\Groupware\{SogoDirectory, GroupwareRefresh, GroupwareCacheFlush}`,
+  `App\Clients\Memcached\MemcachedFlusher` (002); 001's `SessionManager`, `SecondFactorService`,
+  `SignInThrottle`, `LegacyPasswordVerifier`, `YubicoOtpVerifier`, `WebAuthnServerFactory`,
+  `OptionsJson`, `RecentLoginRecorder`, `ProductName`, `MailcowConfig`, `AuditLogger`, `ETag`
+  (what research calls `ETag` over a canonical string is `ETag::of()`, an HMAC keyed with the app
+  key) and `ListQuery`. 003's `AddressAvailability` is reached through 004's
+  `AliasAddressAvailability`, which adds legacy's alias-domain clause.
+- **T014, T022**: `NamedLock` exists (003, with its tests), so neither was written again.
+- **T018**: `MailcowRows` already had `appPassword()`, `spamalias()`/`temporaryAlias()`,
+  `sieveFilter()`, `pushover()`, `saslLog()`, `sogoData()`, `senderAcl()`, `quota2()`; the rows this
+  feature needs beyond them are `appPasswd()` (encoded name, protocols, state),
+  `temporaryAliasRow()` (PHP method names are case-insensitive, so `spamAlias()` would clash with
+  `spamalias()`), `sieveFilterRow()`, `pushoverSettings()`, `resetToken()`, `saslLogEntry()` and
+  `logsCheckLogin()`.
+- **T020**: the registry's lifetime is refreshed by `SessionManager::register()`, which
+  `EnsureSessionIntegrity` calls on every request of a signed-in session; it also gives a handle
+  to a session signed in before this feature. The `SessionEndListener`s are resolved from the
+  container tag `restv2.session-listeners`; they are told when a session ends and when it served a
+  request (the hand-off set's lifetime follows the session).
+- **T024**: the detail whitelists live in `AuditEventType::detailKeys()` (001's design, as 004
+  noted), not in `AuditLogger`. `PermissionFlagRequiredException` now carries `requiredFlags` as an
+  audit detail, which feature 005's event types keep (`docs/audit-events.md`).
+- **T028**: the capabilities need the session of a signed-in caller but must also answer signed-out
+  callers and API keys. `restv2.auth:public` never starts a session, so `RequireAuth` gained the
+  mode `optional` (anyone, with the browser session when there is one). No resource class: the
+  controller returns the service's array, as 003's `PasswordPolicyController` does. Without
+  mailcow's shared store the reset is reported unavailable instead of answering `503`, which the
+  operation does not document.
+- **T027**: the export runs with `HTTP_HOST = <MAILCOW_HOSTNAME>:__RESTV2_HTTPS_PORT__`; without the
+  mounted files the autodiscover settings are built from `MAILCOW_HOSTNAME` and the mail ports in
+  `config('restv2.ports')`, parsed as vars.inc.php parses them. Symfony's Process passes `$_ENV`
+  before `getenv()`, so tests that change a port set all three.
+- **Contract (T029, G25)**: besides the texts the task lists, `me-password.yaml` named a rule code
+  `passwordPolicy` that does not exist; it now names 003's `tooShort` and `missingCharacterClass`,
+  as research R4 decided.
+- **Legacy Sieve parser**: copied unmodified under `resources/legacy/sieve/` and excluded from Pint.
+  It triggers a compile warning (`continue` targeting `switch`) and dynamic-property deprecations
+  under PHP 8.4, so `SieveValidator` loads and runs it under a scoped error handler.

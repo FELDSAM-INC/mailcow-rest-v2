@@ -116,6 +116,31 @@ enum AuditEventType: string
     case Oauth2ClientTokenRevocation = 'oauth2ClientTokenRevocation';
     case Oauth2ClientDeletion = 'oauth2ClientDeletion';
 
+    // Feature 005: account self-service.
+    case OwnPasswordChange = 'ownPasswordChange';
+    case OwnSecondFactorEnrolment = 'ownSecondFactorEnrolment';
+    case OwnSecondFactorRemoval = 'ownSecondFactorRemoval';
+    case OwnRecoveryEmailChange = 'ownRecoveryEmailChange';
+    case PasswordResetRequest = 'passwordResetRequest';
+    case PasswordResetCompletion = 'passwordResetCompletion';
+    case AppPasswordCreation = 'appPasswordCreation';
+    case AppPasswordUpdate = 'appPasswordUpdate';
+    case AppPasswordDeletion = 'appPasswordDeletion';
+    case TemporaryAliasCreation = 'temporaryAliasCreation';
+    case TemporaryAliasUpdate = 'temporaryAliasUpdate';
+    case TemporaryAliasDeletion = 'temporaryAliasDeletion';
+    case SieveFilterCreation = 'sieveFilterCreation';
+    case SieveFilterUpdate = 'sieveFilterUpdate';
+    case SieveFilterDeletion = 'sieveFilterDeletion';
+    case PushNotificationSettingsUpdate = 'pushNotificationSettingsUpdate';
+    case PushNotificationSettingsDeletion = 'pushNotificationSettingsDeletion';
+    case PushNotificationVerification = 'pushNotificationVerification';
+    case MailSettingsUpdate = 'mailSettingsUpdate';
+    case RecentLoginsClear = 'recentLoginsClear';
+    case ActiveSyncCacheReset = 'activeSyncCacheReset';
+    case GroupwareProfileReset = 'groupwareProfileReset';
+    case WebmailHandOff = 'webmailHandOff';
+
     /**
      * Keys of refusal records written by App\Services\Audit\RefusalAuditor (docs/conventions.md
      * "Refusal auditing"): the problem type, the status and, for `422`, the field errors (rule codes
@@ -131,6 +156,12 @@ enum AuditEventType: string
 
     /** Feature 012: keys of a mailbox created or updated by a sign-in through the identity provider. */
     private const PROVISIONING = ['trigger', 'template', 'signInRequestId'];
+
+    /**
+     * Refusal keys of feature 005's events: those of REFUSAL plus the flags a refused change needed
+     * (`permission-flag-required`).
+     */
+    private const SELF_SERVICE_REFUSAL = ['problemType', 'status', 'errors', 'requiredFlags'];
 
     /** Keys of bulk actions: the request ID on every item's record, and the whole-request refusal. */
     private const BULK = ['bulkRequestId', 'targetIds', 'bulkAction'];
@@ -225,6 +256,28 @@ enum AuditEventType: string
             self::TlsPolicyMapDeletion => ['destination', ...self::BULK, ...self::ROUTING_REFUSAL],
             self::ForwardingHostCreation => ['entries', 'spamFilter', ...self::ROUTING_REFUSAL],
             self::ForwardingHostDeletion => ['source', ...self::BULK, ...self::ROUTING_REFUSAL],
+            self::OwnPasswordChange => ['password', 'forcedChangeResolved', 'sessionsEnded', ...self::SELF_SERVICE_REFUSAL],
+            self::OwnSecondFactorEnrolment => ['secondFactorId', 'secondFactorType', 'replacedIds', 'restrictionLifted', 'attemptsRemaining', ...self::SELF_SERVICE_REFUSAL],
+            self::OwnSecondFactorRemoval => ['secondFactorId', 'secondFactorType', 'removedIds', ...self::SELF_SERVICE_REFUSAL],
+            self::OwnRecoveryEmailChange => ['changes', ...self::SELF_SERVICE_REFUSAL],
+            self::PasswordResetRequest => [],
+            self::PasswordResetCompletion => ['password', 'forcedChangeResolved', 'secondFactorType', 'sessionsEnded'],
+            self::AppPasswordCreation => ['appPasswordId', 'values', 'passwordGenerated', 'source', ...self::SELF_SERVICE_REFUSAL],
+            self::AppPasswordUpdate => ['appPasswordId', 'changes', ...self::SELF_SERVICE_REFUSAL],
+            self::AppPasswordDeletion => ['appPasswordId', 'removed', ...self::SELF_SERVICE_REFUSAL],
+            self::TemporaryAliasCreation => ['temporaryAlias', 'values', ...self::SELF_SERVICE_REFUSAL],
+            self::TemporaryAliasUpdate => ['temporaryAlias', 'changes', ...self::SELF_SERVICE_REFUSAL],
+            self::TemporaryAliasDeletion => ['temporaryAlias', 'removed', ...self::SELF_SERVICE_REFUSAL],
+            self::SieveFilterCreation => ['sieveFilterId', 'values', 'deactivatedIds', ...self::SELF_SERVICE_REFUSAL],
+            self::SieveFilterUpdate => ['sieveFilterId', 'changes', 'deactivatedIds', ...self::SELF_SERVICE_REFUSAL],
+            self::SieveFilterDeletion => ['sieveFilterId', 'removed', ...self::SELF_SERVICE_REFUSAL],
+            self::PushNotificationSettingsUpdate => ['changes', 'created', ...self::SELF_SERVICE_REFUSAL],
+            self::PushNotificationSettingsDeletion => ['removed', ...self::SELF_SERVICE_REFUSAL],
+            self::PushNotificationVerification => ['accepted', ...self::SELF_SERVICE_REFUSAL],
+            self::MailSettingsUpdate => ['changes', ...self::BULK, ...self::SELF_SERVICE_REFUSAL],
+            self::RecentLoginsClear => ['removedRecentLogins', 'removedSignInRecords', ...self::SELF_SERVICE_REFUSAL],
+            self::ActiveSyncCacheReset, self::GroupwareProfileReset => ['removed', ...self::SELF_SERVICE_REFUSAL],
+            self::WebmailHandOff => [...self::SELF_SERVICE_REFUSAL],
         };
     }
 }

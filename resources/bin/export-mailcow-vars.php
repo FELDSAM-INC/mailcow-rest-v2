@@ -6,7 +6,9 @@
  *   php -n -d display_errors=stderr resources/bin/export-mailcow-vars.php <dir> <hostname> <NAME>...
  *
  * Reproduces legacy's include sequence (prerequisites.inc.php): HTTP_HOST is set to the mailcow
- * host name, which vars.inc.php reads, then <dir>/vars.inc.php and, when they exist,
+ * host name with the port placeholder `__RESTV2_HTTPS_PORT__` (vars.inc.php derives
+ * `$https_port` of the autodiscover settings from it; the API replaces it with the request's port,
+ * feature 005 research R18), then <dir>/vars.inc.php and, when they exist,
  * <dir>/vars.local.inc.php and <dir>/app_info.inc.php are included in the global scope. Prints
  * the requested variables that are defined. Runs in its own process because vars.inc.php changes
  * error_reporting and defines globals. A parse error exits non-zero.
@@ -19,7 +21,7 @@ if ($argc < 3) {
 
 $__restv2_dir = rtrim($argv[1], '/');
 $__restv2_names = array_slice($argv, 3);
-$_SERVER['HTTP_HOST'] = $argv[2];
+$_SERVER['HTTP_HOST'] = $argv[2].':__RESTV2_HTTPS_PORT__';
 
 if (! is_file($__restv2_dir.'/vars.inc.php')) {
     fwrite(STDERR, "{$__restv2_dir}/vars.inc.php not found\n");

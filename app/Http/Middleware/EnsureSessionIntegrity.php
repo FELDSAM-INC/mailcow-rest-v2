@@ -19,7 +19,8 @@ use Symfony\Component\HttpFoundation\Response;
  *  - belongs to an account that is deleted, deactivated or changed role (FR-029).
  *
  * The request then continues as anonymous with a new session and token. Every request renews the
- * idle timer. The signed-in principal is put into the request context.
+ * idle timer and, for a signed-in session, its entry in the account's session registry (feature 005
+ * research R2). The signed-in principal is put into the request context.
  */
 class EnsureSessionIntegrity
 {
@@ -52,6 +53,7 @@ class EnsureSessionIntegrity
         $this->sessions->touch($session);
 
         if ($principal !== null) {
+            $this->sessions->register($session);
             RequestContext::setPrincipal($request, $principal);
         }
 

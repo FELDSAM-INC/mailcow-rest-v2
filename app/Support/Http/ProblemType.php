@@ -84,6 +84,17 @@ enum ProblemType: string
     case SignInStateInvalid = 'sign-in-state-invalid';
     case IdentityProviderUnavailable = 'identity-provider-unavailable';
     case IdentityProviderSessionEnded = 'identity-provider-session-ended';
+    // Feature 005 (account self-service).
+    case CurrentPasswordIncorrect = 'current-password-incorrect';
+    case PasswordManagedExternally = 'password-managed-externally';
+    case PasswordResetUnavailable = 'password-reset-unavailable';
+    case InvalidResetToken = 'invalid-reset-token';
+    case SecondFactorEnrolmentExpired = 'second-factor-enrolment-expired';
+    case SecondFactorEnrolmentFailed = 'second-factor-enrolment-failed';
+    case LastSecondFactor = 'last-second-factor';
+    case SecondFactorRequiredByPolicy = 'second-factor-required-by-policy';
+    case PushNotificationsNotConfigured = 'push-notifications-not-configured';
+    case GroupwareDisabled = 'groupware-disabled';
 
     public function uri(): string
     {
@@ -103,7 +114,8 @@ enum ProblemType: string
             self::Forbidden, self::CsrfTokenMismatch, self::SessionRequired, self::PendingActionRequired,
             self::SecondFactorUnavailable, self::ApiKeySourceNotAllowed, self::InsufficientKeyScope => 403,
             self::TooManyRequests => 429,
-            self::PasskeyRegistrationFailed => 400,
+            self::PasskeyRegistrationFailed, self::InvalidResetToken, self::SecondFactorEnrolmentExpired,
+            self::SecondFactorEnrolmentFailed => 400,
             self::TemporaryVerificationFailure, self::ServiceUnavailable, self::TemporaryFailure => 503,
             self::DomainExists, self::DomainNotEmpty, self::DomainTemplateNameExists, self::DomainTemplateProtected,
             self::DkimKeyExists, self::MtaStsPolicyExists, self::AddressInUse, self::MailboxLimitReached,
@@ -114,10 +126,12 @@ enum ProblemType: string
             self::BanRulesNotRestored => 504,
             self::SyncJobExists => 409,
             self::RoutingEntryExists, self::NextHopCredentialsDiffer, self::NextHopInterferes => 409,
+            self::LastSecondFactor, self::PushNotificationsNotConfigured => 409,
             self::MailboxRenameIncomplete => 500,
             self::OutcomeUnknown => 504,
             self::AttributeNotPermitted, self::PermissionFlagRequired, self::DkimPrivateKeyExportDisabled,
-            self::DkimDnsPublicationDisabled => 403,
+            self::DkimDnsPublicationDisabled, self::CurrentPasswordIncorrect, self::PasswordManagedExternally,
+            self::PasswordResetUnavailable, self::SecondFactorRequiredByPolicy, self::GroupwareDisabled => 403,
         };
     }
 
@@ -185,6 +199,16 @@ enum ProblemType: string
             self::RoutingEntryExists => 'Entry already exists',
             self::NextHopCredentialsDiffer => 'Next hop has different credentials',
             self::NextHopInterferes => 'Next hop interferes',
+            self::CurrentPasswordIncorrect => 'Current password incorrect',
+            self::PasswordManagedExternally => 'Password managed externally',
+            self::PasswordResetUnavailable => 'Password reset unavailable',
+            self::InvalidResetToken => 'Invalid reset token',
+            self::SecondFactorEnrolmentExpired => 'Second-factor enrolment expired',
+            self::SecondFactorEnrolmentFailed => 'Second-factor enrolment failed',
+            self::LastSecondFactor => 'Last second factor',
+            self::SecondFactorRequiredByPolicy => 'Second factor required by policy',
+            self::PushNotificationsNotConfigured => 'Push notifications not configured',
+            self::GroupwareDisabled => 'Groupware disabled',
         };
     }
 
@@ -252,6 +276,16 @@ enum ProblemType: string
             self::RoutingEntryExists => 'An entry with this unique value already exists.',
             self::NextHopCredentialsDiffer => 'Transports with this next hop use a different username; they share one set of credentials.',
             self::NextHopInterferes => 'The next hop interferes with the next hop of other transports.',
+            self::CurrentPasswordIncorrect => 'The current password is incorrect.',
+            self::PasswordManagedExternally => 'The password of this account is managed by an external identity provider.',
+            self::PasswordResetUnavailable => 'Password reset is not available on this server.',
+            self::InvalidResetToken => 'The reset token is unknown, expired or already used.',
+            self::SecondFactorEnrolmentExpired => 'The enrolment is missing, used up or expired. Start it again.',
+            self::SecondFactorEnrolmentFailed => 'The second factor could not be verified. Nothing was stored.',
+            self::LastSecondFactor => 'The only active second factor cannot be removed on its own.',
+            self::SecondFactorRequiredByPolicy => 'An administrator requires this account to keep a second factor.',
+            self::PushNotificationsNotConfigured => 'The mailbox has no stored push notification credentials.',
+            self::GroupwareDisabled => 'The groupware (webmail) is disabled on this server.',
         };
     }
 

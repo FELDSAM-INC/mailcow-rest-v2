@@ -56,6 +56,9 @@ class SecondFactorService
         return 1
         LUA;
 
+    /** The `tfa.id` of the last factor verified by this instance (feature 005 FR-027). */
+    private ?int $verifiedMethodId = null;
+
     public function __construct(
         private readonly SessionManager $sessions,
         private readonly SignInThrottle $throttle,
@@ -225,7 +228,7 @@ class SecondFactorService
 
         DB::transaction(fn () => $this->audit->success($principal, $audit));
 
-        $this->sessions->promote($session, $principal, $request->userAgent());
+        $this->sessions->promote($session, $principal, $request->userAgent(), $this->verifiedMethodId);
         $this->throttle->clear($key);
 
         return $principal;
@@ -256,7 +259,7 @@ class SecondFactorService
             return SecondFactorOutcome::Failed;
         }
 
-        return $valid && $this->markTotpUsed($row->id, $timeslice) ? SecondFactorOutcome::Verified : SecondFactorOutcome::Failed;
+        return $valid && $this->markTotpUsed($row->id, $timeslice) ? $this->verified($row) : SecondFactorOutcome::Failed;
     }
 
     /**
@@ -314,7 +317,7 @@ class SecondFactorService
             return SecondFactorOutcome::Failed;
         }
 
-        return SecondFactorOutcome::Verified;
+        return $this->verified($row);
     }
 
     /**
@@ -340,10 +343,17 @@ class SecondFactorService
         [$clientId, $key] = array_pad(explode(':', (string) $row->secret), 2, '');
 
         return match ($this->yubico->verify($clientId, $key, $otp)) {
-            YubicoVerificationResult::Valid => SecondFactorOutcome::Verified,
+            YubicoVerificationResult::Valid => $this->verified($row),
             YubicoVerificationResult::Invalid => SecondFactorOutcome::Failed,
             YubicoVerificationResult::TemporaryFailure => SecondFactorOutcome::ServiceUnavailable,
         };
+    }
+
+    private function verified(TfaEntry $row): SecondFactorOutcome
+    {
+        $this->verifiedMethodId = $row->id;
+
+        return SecondFactorOutcome::Verified;
     }
 
     private function ttl(): int

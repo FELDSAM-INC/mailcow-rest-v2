@@ -69,6 +69,7 @@ use App\Services\Oauth2\Oauth2ClientAuditTargetResolver;
 use App\Services\Oauth2\Oauth2ClientService;
 use App\Services\Routing\RoutingAuditTargets;
 use App\Services\SyncJobs\SyncJobAuditTargets;
+use App\Services\SelfService\SelfServiceAuditTargets;
 use App\Support\Clock\Clock;
 use App\Support\Clock\Sleeper;
 use App\Support\Clock\SystemClock;
@@ -152,6 +153,7 @@ class AppServiceProvider extends ServiceProvider
         IdentityProviderAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
         Oauth2ClientAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
         RoutingAuditTargets::register($this->app->make(RefusalAuditor::class));
+        SelfServiceAuditTargets::register($this->app->make(RefusalAuditor::class));
 
         // Feature 011: administrators only (research R26).
         Gate::define('operate-monitoring', [MonitoringPolicy::class, 'operate']);

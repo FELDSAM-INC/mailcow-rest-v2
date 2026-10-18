@@ -10,8 +10,8 @@ use App\Support\Http\ProblemType;
  * `PermissionFlagRequiredProblem` (G34, docs/conventions.md "Permission refusals"): the flags as
  * the property names of `PermissionFlags`, and how they combine (`all`: every listed flag is
  * needed and only the missing ones are listed; `any`: one of them suffices). The flags also go to
- * the refusal's audit record (`requiredFlags`), where the event type documents the key (feature
- * 009).
+ * the refusal's audit record (`requiredFlags`), where the event type documents the key (features
+ * 005 and 009).
  */
 class PermissionFlagRequiredException extends ProblemException
 {

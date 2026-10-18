@@ -868,6 +868,106 @@ class MailcowRows
         DB::table('sasl_log')->insert(['username' => $username, 'service' => $service, 'datetime' => $datetime, 'real_rip' => $realRip]);
     }
 
+    /**
+     * An app password exactly as legacy app_passwd('add') stores it (feature 005): the name
+     * HTML-encoded, the protocols as `*_access` flags. Returns its ID.
+     *
+     * @param  list<string>  $protocols  any of imap, pop3, smtp, sieve, activeSync, dav
+     */
+    public function appPasswd(string $mailbox, string $name, string $password = 'AppPassw0rd!', string $scheme = 'BLF-CRYPT', array $protocols = ['imap', 'pop3', 'smtp', 'sieve', 'activeSync', 'dav'], int $active = 1): int
+    {
+        return (int) DB::table('app_passwd')->insertGetId([
+            'name' => htmlspecialchars(trim($name)),
+            'mailbox' => $mailbox,
+            'domain' => substr((string) strrchr($mailbox, '@'), 1),
+            'password' => self::hash($scheme, $password),
+            'imap_access' => (int) in_array('imap', $protocols, true),
+            'smtp_access' => (int) in_array('smtp', $protocols, true),
+            'eas_access' => (int) in_array('activeSync', $protocols, true),
+            'dav_access' => (int) in_array('dav', $protocols, true),
+            'pop3_access' => (int) in_array('pop3', $protocols, true),
+            'sieve_access' => (int) in_array('sieve', $protocols, true),
+            'active' => $active,
+        ]);
+    }
+
+    /** A temporary alias as legacy mailbox('add', 'time_limited_alias') stores it (feature 005). */
+    public function temporaryAliasRow(string $address, string $goto, string $description = '', ?int $validity = null, int $permanent = 0): void
+    {
+        DB::table('spamalias')->insert(['address' => $address, 'goto' => $goto, 'description' => $description, 'validity' => $validity ?? time() + 8760 * 3600, 'permanent' => $permanent]);
+    }
+
+    /** A Sieve filter as legacy mailbox('add', 'filter') stores it (feature 005). Returns its ID. */
+    public function sieveFilterRow(string $username, string $description, string $kind = 'prefilter', string $script = 'keep;', bool $active = true): int
+    {
+        return (int) DB::table('sieve_filters')->insertGetId([
+            'username' => $username,
+            'script_desc' => $description,
+            'script_name' => $active ? 'active' : 'inactive',
+            'script_data' => $script,
+            'filter_type' => $kind,
+        ]);
+    }
+
+    /**
+     * Push notification settings as legacy pushover('edit') stores them (feature 005).
+     *
+     * @param  array<string, string>  $attributes
+     */
+    public function pushoverSettings(
+        string $username,
+        string $key,
+        string $token,
+        array $attributes = ['evaluate_x_prio' => '0', 'only_x_prio' => '0', 'sound' => 'pushover'],
+        string $title = '',
+        string $text = '',
+        string $senders = '',
+        string $sendersRegex = '',
+        int $active = 1,
+    ): void {
+        DB::table('pushover')->insert([
+            'username' => $username,
+            'key' => $key,
+            'token' => $token,
+            'attributes' => json_encode($attributes),
+            'title' => $title,
+            'text' => $text,
+            'senders' => $senders,
+            'senders_regex' => $sendersRegex,
+            'active' => $active,
+        ]);
+    }
+
+    /**
+     * A password reset token as legacy reset_password('issue') stores it (feature 005); `created`
+     * is mailcow local time, NOW() when omitted.
+     */
+    public function resetToken(string $username, string $token, ?string $created = null): void
+    {
+        DB::table('reset_password')->insert(array_filter(['username' => $username, 'token' => $token, 'created' => $created], fn (mixed $v): bool => $v !== null));
+    }
+
+    /** A recent-login record with an app password (`sasl_log`, feature 005). */
+    public function saslLogEntry(string $username, string $service, string $realRip, string $datetime, int $appPassword = 0): void
+    {
+        DB::table('sasl_log')->insert(['username' => $username, 'service' => $service, 'real_rip' => $realRip, 'datetime' => $datetime, 'app_password' => $appPassword]);
+    }
+
+    /** A legacy UI sign-in record as legacy logger() writes it for check_login (`logs`, feature 005). */
+    public function logsCheckLogin(string $username, string $type = 'success', string $remote = '192.0.2.20'): int
+    {
+        return (int) DB::table('logs')->insertGetId([
+            'task' => substr(bin2hex(random_bytes(16)), 0, 32),
+            'type' => $type,
+            'msg' => json_encode($type === 'success' ? 'logged_in_as' : 'login_failed'),
+            'call' => json_encode(['check_login', $username, '*']),
+            'user' => $username,
+            'role' => 'user',
+            'remote' => $remote,
+            'time' => time(),
+        ]);
+    }
+
     /** The configured external identity provider (`identity_provider.authsource`). */
     public function identityProvider(string $authsource): void
     {

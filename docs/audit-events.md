@@ -1479,3 +1479,369 @@ deleted entry (`id` and `name` its stored address).
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
 | `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
+
+<!-- Feature 005: account self-service. -->
+
+## Refusal records of feature 005
+
+The state-changing operations of feature 005 declare refusal auditing like those of feature 002
+onwards ("Refusal records" above), with the same keys plus `requiredFlags` (array of strings: the
+permission flags a refused change needed, named as in `PermissionFlags`, on
+`permission-flag-required` refusals). The target of a mailbox object (app password, temporary
+alias, Sieve filter, push notification settings, mail settings, recent logins, groupware data) is
+recorded with `id` = the mailbox address, so that `targetId=<mailbox>` lists every record of the
+mailbox, and `name` = the object's label when the path names one; the object's own identifier is in
+`details`. Own-account targets (account password, second factor, recovery address, webmail hand-off)
+are the signed-in account (`id` = its username). Feature 005 maps its own problem types to the
+failure reasons `currentPasswordIncorrect`, `externalIdentitySource`, `featureDisabled`,
+`challengeExpired`, `registrationFailed`, `lastSecondFactor`, `secondFactorRequiredByPolicy`,
+`notConfigured` and `verificationUnavailable`. Secrets (passwords, codes, Yubico credentials, reset
+tokens, app passwords, Pushover credentials) never appear in any record.
+
+## ownPasswordChange
+
+Feature 005. Written for every change of the signed-in account's own password
+(`PUT /me/password`) and every refusal, including a wrong current password (`failureReason:
+currentPasswordIncorrect`, which also counts towards the sign-in throttling). The target is
+`{type: accountPassword, id: <username>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `password` | string | Always `changed`; the password itself is never recorded. | on success |
+| `forcedChangeResolved` | boolean | Whether the change resolved a forced password change (`force_pw_update`). | on success |
+| `sessionsEnded` | integer | The account's other sessions of this API that the change ended. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## ownSecondFactorEnrolment
+
+Feature 005. Written for every enrolment of an own second factor (`POST /me/second-factors`) and
+every refusal: a wrong current password, an expired or used-up enrolment (`challengeExpired`), a
+rejected code, response or OTP (`registrationFailed`), an unreachable Yubico service
+(`verificationUnavailable`). Starting a TOTP enrolment and requesting WebAuthn options are not
+recorded. The target is `{type: secondFactor, id: <username>, name: <entry name>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `secondFactorId` | integer | The `tfa.id` of the new entry. | on success |
+| `secondFactorType` | string | `totp`, `webauthn` or `yubiOtp`. | always |
+| `replacedIds` | array of integers | Yubico OTP: the entries of the same key that the enrolment replaced. | on success of a Yubico OTP enrolment |
+| `restrictionLifted` | boolean | Whether the enrolment resolved a forced second-factor setup. | on success |
+| `attemptsRemaining` | integer | TOTP: the wrong codes left before the enrolment is cancelled. | on a rejected TOTP code |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## ownSecondFactorRemoval
+
+Feature 005. Written for every removal of one own second factor
+(`DELETE /me/second-factors/{secondFactorId}`) or of all of them (`POST /me/second-factors/removal`)
+and every refusal (`lastSecondFactor`, `secondFactorRequiredByPolicy`, `currentPasswordIncorrect`).
+The target is `{type: secondFactor, id: <username>, name: <entry name>}` (no name when all are
+removed).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `secondFactorId` | integer | The removed entry. | when one entry was removed or refused |
+| `secondFactorType` | string | Its type: `totp`, `webauthn`, `yubiOtp`, `u2f` or `hotp`. | when one entry was removed |
+| `removedIds` | array of integers | The entries removed by "remove all". | on success of "remove all" |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## ownRecoveryEmailChange
+
+Feature 005. Written for every replacement of the signed-in mailbox user's recovery address
+(`PUT /me/recovery-email`) and every refusal. A replacement with the stored value is recorded with
+empty `changes`. The target is `{type: recoveryEmail, id: <mailbox>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `recoveryEmail` as `{old, new}` (empty string when unset), when it changed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## passwordResetRequest
+
+Feature 005. Written by the service for every well-formed reset request (`POST /password-resets`),
+after the acknowledgement was sent. There is no actor. The target is
+`{type: passwordReset, id: <attempted address>}`. A sent message is a success; otherwise
+`failureReason` is `unknownAccount`, `accountNotEligible` (inactive, resource or external-source
+mailbox), `noRecoveryEmail`, `tokenLimitReached` or `messageNotSent`. The token is never recorded.
+No keys.
+
+## passwordResetCompletion
+
+Feature 005. Written by the service for every completion attempt with a valid token
+(`POST /password-resets/completion`) that reached the second-factor check or the change: success, or
+failure with `secondFactorFailed`, `secondFactorUnavailable` or `verificationUnavailable`. There is
+no actor. The target is `{type: passwordReset, id: <mailbox>}`. The token and the password are never
+recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `password` | string | Always `changed`. | on success |
+| `forcedChangeResolved` | boolean | Whether a forced password change was pending and is now cleared. | on success |
+| `secondFactorType` | string | The second factor used or attempted: `totp`, `webauthn` or `yubiOtp`. | when the account has second factors |
+| `sessionsEnded` | integer | The account's sessions of this API that the reset ended. | on success |
+
+## appPasswordCreation
+
+Feature 005. Written for every creation of an app password (`POST /mailboxes/{mailbox}/app-passwords`,
+and `POST /me/mailbox/apple-profile` with an embedded app password) and every refusal. The target is
+`{type: appPassword, id: <mailbox>, name: <app password name>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `appPasswordId` | integer | The new app password's ID. | on success |
+| `values` | object | The stored `name` (plain text), `protocols` (array) and `active`. | on success |
+| `passwordGenerated` | boolean | Whether the system generated the password; the password itself is never recorded. | on success |
+| `source` | string | `appleProfile` when created for an Apple connection profile. | when created for an Apple profile |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## appPasswordUpdate
+
+Feature 005. Written for every change of an app password
+(`PATCH /mailboxes/{mailbox}/app-passwords/{appPasswordId}`) and every refusal. A change whose values
+equal the stored ones is recorded with empty `changes`. The target is
+`{type: appPassword, id: <mailbox>, name: <app password name>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `appPasswordId` | integer | The app password's ID. | on success, and on refusals that name an existing one |
+| `changes` | object | `name`, `protocols` and `active` as `{old, new}`, each when it changed; `password` as `"changed"` (or `"generated"`) when a new password was set. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## appPasswordDeletion
+
+Feature 005. Written for every deletion of an app password and every refusal. The target is
+`{type: appPassword, id: <mailbox>, name: <app password name>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `appPasswordId` | integer | The app password's ID. | on success, and on refusals that name an existing one |
+| `removed` | object | The removed app password's `name`, `protocols` and `active`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## temporaryAliasCreation
+
+Feature 005. Written for every creation of a temporary alias
+(`POST /mailboxes/{mailbox}/temporary-aliases`) and every refusal. The target is
+`{type: temporaryAlias, id: <mailbox>, name: <temporary alias address>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `temporaryAlias` | string | The generated address. | on success |
+| `values` | object | The stored `description`, `permanent` and `expiresAt` (RFC 3339, UTC, or `null` when permanent). | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## temporaryAliasUpdate
+
+Feature 005. Written for every change of a temporary alias's lifetime
+(`PATCH /mailboxes/{mailbox}/temporary-aliases/{temporaryAlias}`) and every refusal. The target is
+`{type: temporaryAlias, id: <mailbox>, name: <temporary alias address>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `temporaryAlias` | string | The temporary alias's address. | on success |
+| `changes` | object | `permanent` and `expiresAt` as `{old, new}`, each when it changed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## temporaryAliasDeletion
+
+Feature 005. Written for every deletion of a temporary alias and every refusal. The target is
+`{type: temporaryAlias, id: <mailbox>, name: <temporary alias address>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `temporaryAlias` | string | The removed address. | on success |
+| `removed` | object | Its `description`, `permanent` and `expiresAt`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## sieveFilterCreation
+
+Feature 005. Written for every creation of a Sieve filter (`POST /mailboxes/{mailbox}/sieve-filters`)
+and every refusal. The target is `{type: sieveFilter, id: <mailbox>, name: <description>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `sieveFilterId` | integer | The new filter's ID. | on success |
+| `values` | object | `description`, `kind`, `active`, and `script` as `{size}` (bytes); the script text is never recorded. | on success |
+| `deactivatedIds` | array of integers | Filters of the same kind that the activation deactivated. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## sieveFilterUpdate
+
+Feature 005. Written for every change of a Sieve filter
+(`PATCH /mailboxes/{mailbox}/sieve-filters/{sieveFilterId}`) and every refusal. A change whose values
+equal the stored ones is recorded with empty `changes`. The target is
+`{type: sieveFilter, id: <mailbox>, name: <description>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `sieveFilterId` | integer | The filter's ID. | on success, and on refusals that name an existing one |
+| `changes` | object | `description`, `kind` and `active` as `{old, new}`, each when it changed; `script` as `{changed: true, oldSize, newSize}` when it changed. | on success |
+| `deactivatedIds` | array of integers | Filters of the same kind that the change deactivated. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## sieveFilterDeletion
+
+Feature 005. Written for every deletion of a Sieve filter and every refusal. The target is
+`{type: sieveFilter, id: <mailbox>, name: <description>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `sieveFilterId` | integer | The filter's ID. | on success, and on refusals that name an existing one |
+| `removed` | object | Its `description`, `kind`, `active` and `script` as `{size}`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## pushNotificationSettingsUpdate
+
+Feature 005. Written for every replacement of a mailbox's push notification settings
+(`PUT /mailboxes/{mailbox}/push-notifications`) and every refusal. A replacement with the stored
+values is recorded with empty `changes`. The target is
+`{type: pushNotificationSettings, id: <mailbox>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `active`, `senders`, `senderPattern`, `sound`, `evaluatePriority` and `onlyHighPriority` as `{old, new}`, each when it changed; `title` and `text` as `{changed: true, oldSize, newSize}`; `token` and `userKey` as `"set"` (first save) or `"changed"`. | on success |
+| `created` | boolean | Whether the mailbox had no settings before. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## pushNotificationSettingsDeletion
+
+Feature 005. Written for every removal of a mailbox's push notification settings
+(`DELETE /mailboxes/{mailbox}/push-notifications`) and every refusal. The target is
+`{type: pushNotificationSettings, id: <mailbox>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `removed` | boolean | Whether settings existed and were removed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## pushNotificationVerification
+
+Feature 005. Written for every verification of the stored Pushover credentials
+(`POST /mailboxes/{mailbox}/push-notifications/verification`) and every refusal
+(`notConfigured`, `temporaryFailure` when Pushover is unreachable). The target is
+`{type: pushNotificationSettings, id: <mailbox>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `accepted` | boolean | Pushover's verdict on the credentials. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## mailSettingsUpdate
+
+Feature 005. Written for every change of a mailbox's mail settings
+(`PATCH /mailboxes/{mailbox}/mail-settings`), for every item of a bulk TLS change
+(`POST /mailboxes/mail-settings/bulk-actions`) and every refusal. A change with the stored values is
+recorded with empty `changes`. The target is `{type: mailSettings, id: <mailbox>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `taggedMailHandling`, `tlsEnforceIn` and `tlsEnforceOut` as `{old, new}`, each when it changed. | on success |
+| `bulkRequestId` | string | The bulk request the item belongs to. | on records of bulk items |
+| `targetIds` | array of strings | See "Refusal records". | on a refused bulk request |
+| `bulkAction` | string | See "Refusal records". | on a refused bulk request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## recentLoginsClear
+
+Feature 005. Written for every clearing of a mailbox's recent logins
+(`DELETE /mailboxes/{mailbox}/recent-logins`) and every refusal. The target is
+`{type: recentLogins, id: <mailbox>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `removedRecentLogins` | integer | The removed recent-login records (`sasl_log`). | on success |
+| `removedSignInRecords` | integer | The removed legacy UI sign-in records of the mailbox (`logs`); 0 when the caller is a domain administrator, who never removes them. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## activeSyncCacheReset
+
+Feature 005. Written for every reset of a mailbox's ActiveSync cache
+(`DELETE /mailboxes/{mailbox}/activesync-cache`) and every refusal. The target is
+`{type: groupwareData, id: <mailbox>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `removed` | object | The removed rows per groupware table (`sogo_cache_folder`). | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## groupwareProfileReset
+
+Feature 005. Written for every reset of a mailbox's groupware profile
+(`DELETE /mailboxes/{mailbox}/groupware-profile`) and every refusal. The target is
+`{type: groupwareData, id: <mailbox>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `removed` | object | The removed rows per groupware table (`sogo_user_profile`, `sogo_cache_folder`, `sogo_acl`, `sogo_store`, `sogo_quick_contact`, `sogo_quick_appointment`, `sogo_folder_info`). | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+## webmailHandOff
+
+Feature 005. Written for every webmail hand-off (`POST /me/webmail-handoff`) and every refusal. The
+target is `{type: webmailHandOff, id: <mailbox>}`. The legacy session identifier is never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |

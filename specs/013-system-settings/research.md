@@ -26,10 +26,12 @@ Features are implemented in number order, so 013 builds on code that exists when
 |---|---|---|---|
 | Pipeline, route modes, CSRF, key scope | 001 (R8) | `RequireAuth`, `VerifyCsrfToken`, `EnforceKeyScope`, `EnforcePendingActions` | Every route |
 | Read-only POST marker | 005 (R5) | `->defaults('restv2.readOnly', true)`, honoured by `EnforceKeyScope` | Mass mail recipient preview (R19) |
+| Capabilities path convention | conventions | `/capabilities/{area}`, `get<Area>Capabilities` | `GET /capabilities/settings` (R23) |
 | Configuration reader | 001 (R14) | `App\Services\Config\MailcowConfig`, `resources/bin/export-mailcow-vars.php` | `$LOGO_LIMITS`, `$RSPAMD_MAPS`, `$MAILCOW_APPS` (R2) |
 | Public configuration and app links | 001 (R15) | `App\Services\Branding\PublicConfigService`, `ProductName` | Brand colours added (R5), defaults of the UI texts |
 | Problems, ETags, lists, form requests | 001 | `ProblemType`, `ProblemException`, `ETag`, `ListQuery`, `ApiFormRequest` | Everywhere |
 | Audit logger and target filters | 001 (R22), 002 (FR-058) | `App\Services\Audit\AuditLogger`, `targetType`/`targetId` filters of `listAuditEvents` | FR-086 to FR-088 (R24) |
+| Refusal auditing | 008 (R16; or the first feature that built it) | `App\Services\Audit\RefusalAuditor`, route default `restv2.audit`, per-target resolvers | Refused attempts (R24) |
 | Container service client | 002 (D14) | `App\Clients\DockerApi\DockerApiClient` (`restart`, `exec`, `DockerCallResult`), `tests/Support/Fakes/FakeDockerApiClient` | Dovecot restart (R14), Rspamd password (R16) |
 | Domain name and scope lookup | 002 | `App\Support\Domains\DomainName`, the domain-in-scope lookup | Quota copy recipients (R10) |
 | Password policy read and tag | 003 (FR-063) | `App\Services\PasswordPolicy\PasswordPolicyService`, `GET /password-policy` | Policy change (R8) |
@@ -143,8 +145,9 @@ change.
     dimensions from `getimagesizefromstring()`; SVG dimensions from the root `width` and `height`
     attributes when they are numbers without a unit or in `px` (rounded), or in `pt`, `pc`, `mm`,
     `cm`, `in` (converted at 96 dpi); `%`, `em`, `ex` or a missing attribute give `null`. A
-    stored logo that would be refused today (legacy uploaded it) is read the same way; an unknown
-    media type in the data URI reads as `mediaType: null` with `isSet: true`.
+    stored logo that would be refused today (legacy uploaded it) is read the same way. Legacy's
+    declared types `image/x-png` and `image/pjpeg` read as `image/png` and `image/jpeg` (as 001
+    serves them); any other media type in the data URI reads as `mediaType: null`, `isSet: true`.
   - **Delete**: `DEL` of the variant's key only (legacy deletes both in one form). Deleting an unset
     logo answers 204 without audit (conventions: idempotent no-ops are not audited, 001-R22).
   - **Audit**: old and new `mediaType`, `sizeBytes`, `width`, `height`; never the image.
@@ -629,7 +632,7 @@ change.
 
 ### R23. Settings capabilities
 
-- **Decision**: `GET /settings/capabilities` (admin, read-only keys allowed) assembles, per request,
+- **Decision**: `GET /capabilities/settings` (admin, read-only keys allowed) assembles, per request,
   the values of `SettingsCapabilities`: `MAILCOW_HOSTNAME`, `DEMO_MODE`, `RESTV2_LICENSE_VERIFICATION`,
   `RESTV2_RSPAMD_UI_URL`, `MailcowConfig::logoLimits()`, the contrast constants of R5, the field
   limits (constants of `App\Services\Settings\SettingsLimits`, the single source used by the Form
@@ -642,27 +645,50 @@ change.
 
 ## 7. Cross-cutting
 
-### R24. Audit
+### R24. Audit and refusal auditing
 
 - **Decision**:
-  - One record per request that reaches a 013 controller with an authenticated principal and
-    changes state or tries to (FR-086): successes, and refusals for `forbidden` (reason
-    `permissionDenied`), `notFound`, `versionOutdated`, `validationFailed` (with
-    `details.errors` = field names and codes, never values), `demoMode`, `featureDisabled`,
-    `fileUnavailable`, `conflict`, `temporaryFailure`, `serviceFailure`, `outcomeUnknown`.
-    Refusals produced earlier by 001's pipeline (`unauthenticated`, `csrf-token-mismatch`,
-    `insufficient-key-scope`, `session-required`, `pending-action-required`) are not audited by this
-    feature, as in 001. Previews, reads and validate-only requests are never audited (FR-086,
-    FR-093); idempotent no-ops (deleting an unset logo, cancelling a cancelled job, a PATCH that
-    changes nothing) are not audited (001-R22).
+  - **Successes**: one record per state change, written by the service in the same transaction as
+    the change (001-R22; R1, R14 for the ordering). Idempotent no-ops (deleting an unset logo,
+    cancelling a cancelled job, a PATCH that changes nothing) write none (001-R22). Reads, previews
+    and validate-only requests write none (FR-086, FR-093).
+  - **Refusals** follow `docs/conventions.md` ("Refusal auditing"): every state-changing route of
+    this feature declares `->defaults('restv2.audit', ['event' => <AuditEventType>, 'target' =>
+    <AuditTarget type>])`, and 008's `App\Services\Audit\RefusalAuditor` (called from 001's problem
+    rendering; or the equivalent the first implemented feature created) writes one failure record
+    for every `4xx` problem of such a route when the request has an authenticated principal and the
+    type is not `csrf-token-mismatch`. This covers refusals by 001's pipeline (read-only keys,
+    `session-required`, restricted sessions) and by this feature (`forbidden`, `404` for
+    out-of-scope domains, `412`, `422`, `409`, `demo-mode`, `feature-disabled`). `401`s and CSRF
+    failures are never recorded. 013 adds to the auditor:
+    - type-specific reasons before the status mapping: `demo-mode` → `demoMode`,
+      `feature-disabled` → `featureDisabled`, `regex-map-unavailable` and
+      `global-sieve-filter-unavailable` → `fileUnavailable`, `mass-mail-already-running` and
+      `mass-mail-recipient-count-changed` → `conflict`;
+    - the request attribute `restv2.auditSkip`, set by the Form Requests of the four validate-only
+      operations when `validateOnly=true`, so that a refused validate-only request writes no record
+      (FR-093);
+    - `App\Services\Settings\SettingsAuditTargetResolver`, registered for the 17 target types of
+      this feature: the identifier comes from the route parameter (`variant`, `ruleId` with the
+      rule's description as name when it exists, `mapId` with the configured name, `filterId`,
+      `domain` as sent, normalised and truncated to 255, `jobId` with the subject), and is `null` for
+      the singleton settings.
+  - **Dependency failures** (`5xx`: `temporary-failure`, `container-action-failed`,
+    `outcome-unknown`) are not `4xx`, so the service records them itself, in its own transaction,
+    with the reasons `temporaryFailure`, `serviceFailure` and `outcomeUnknown`.
+  - Validation refusals record `details.errors` as field names with rule codes, never values (the
+    auditor's whitelist).
   - Event types, targets and `details` keys are listed in data-model.md. Large texts (templates,
     maps, rules, scripts, help text, footer) are recorded as `{changed: true, oldBytes, newBytes}`;
     logos as type, dimensions and size; the Rspamd password as `passwordChanged: true`; side effects
     as `dovecotRestart` (`done`/`failed`/`deferred`) and `rspamdConfirmed`.
   - The mass mail completion record has no actor (all actor fields `null`) and carries the creating
     request's `requestId` and client address, so that it is found next to the creation record.
-- **Rationale**: FR-086 to FR-088, SC-012; 002's `targetType`/`targetId` filters make the records
-  searchable (US8).
+  - **History** (US8, FR-088): clients filter `GET /audit-events` with the generic `targetType` and
+    `targetId` parameters (conventions); this feature adds `AuditTarget` values only, no filter
+    parameter.
+- **Rationale**: FR-086 to FR-088, SC-012 and the conventions' refusal rule, with one mechanism for
+  every feature.
 
 ### R25. Authorisation and key handling
 
@@ -674,7 +700,8 @@ change.
   `QuotaNotificationRecipientsPolicy`, `PresetPolicy`, `MassMailJobPolicy`) require the
   administrator role, except: quota copy recipients (administrators, and domain administrators for
   domains in scope, else 404), sieve presets (administrators and domain administrators). Every
-  pending-action mode is `enforce`.
+  pending-action mode is `enforce`. Every state-changing route declares `restv2.audit` (R24); the
+  preview and the reads do not.
 - **Rationale**: FR-001 to FR-006, conventions (keys act as their owner; mass mail and the Rspamd
   password need a session).
 

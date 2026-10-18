@@ -1,8 +1,0 @@
-description: The saved global Sieve filter and the outcome of the Dovecot restart.
-allOf:
-  - $ref: './GlobalSieveFilter.yaml'
-  - type: object
-    required: [dovecotRestart]
-    properties:
-      dovecotRestart:
-        $ref: './DovecotRestartOutcome.yaml'

@@ -45,7 +45,7 @@ put:
       declaration (`unsafeSvgContent`, params `construct` and `line`).
 
     Validation errors are reported on the key `body`. The limits are readable beforehand from
-    `GET /settings/capabilities`. Refused in demo mode. Audited with the old and new type,
+    `GET /capabilities/settings`. Refused in demo mode. Audited with the old and new type,
     dimensions and size. Signed-out clients receive the new logo through the public configuration
     on their next request.
   security:

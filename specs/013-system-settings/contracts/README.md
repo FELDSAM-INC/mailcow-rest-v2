@@ -5,7 +5,7 @@ The contract of this feature is not duplicated here. The OpenAPI 3.1 document in
 
 Modules of this feature (one kebab-case file per path, one `_index.yaml` per module):
 
-- `api/modules/settings-server/`: `GET /settings/capabilities`, `GET|PATCH /settings/legacy-api-cors`.
+- `api/modules/settings-server/`: `GET /capabilities/settings`, `GET|PATCH /settings/legacy-api-cors`.
 - `api/modules/settings-branding/`: `/settings/logos/{variant}`, `/settings/ui-texts`,
   `/settings/login-page`, `/settings/app-links`, `/settings/brand-colors`, `/settings/ip-check`.
 - `api/modules/settings-password/`: `/settings/password-reset-notification`.
@@ -34,7 +34,7 @@ Components created by this feature (`api/components/`):
   `QuotaNotificationRecipients`, `QuotaNotificationRecipientsPatch`, `RspamdSettingsRule`,
   `RspamdSettingsRuleCreateRequest`, `RspamdSettingsRulePatch`, `RspamdRegexMap`,
   `RspamdRegexMapReplaceRequest`, `RspamdEffectiveSettingsMap`, `RspamdUiPasswordRequest`,
-  `GlobalSieveFilter`, `GlobalSieveFilterReplaceRequest`, `GlobalSieveFilterUpdateResult`,
+  `GlobalSieveFilter`, `GlobalSieveFilterReplaceRequest`,
   `DovecotRestartOutcome`, `LegacyApiCorsSettings`, `LegacyApiCorsSettingsPatch`, `Preset`,
   `MassMailSelection`, `MassMailPreviewRequest`, `MassMailPreviewRecipient`, `MassMailJob`,
   `MassMailJobStatus`, `MassMailJobCreateRequest`, `MassMailRecipient`, `MassMailRecipientOutcome`,

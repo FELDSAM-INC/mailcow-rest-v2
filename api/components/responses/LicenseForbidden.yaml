@@ -2,7 +2,7 @@ description: |
   The caller may not perform this request. Possible types: those of the shared `403` response, and
   `/api/v2/problems/feature-disabled`: the operator disabled license verification on this server
   (server setting `RESTV2_LICENSE_VERIFICATION=false`, for example on the FeldHost deployment).
-  `GET /settings/capabilities` tells clients beforehand.
+  `GET /capabilities/settings` tells clients beforehand.
 content:
   application/problem+json:
     schema:

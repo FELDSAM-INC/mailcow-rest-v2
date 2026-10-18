@@ -25,7 +25,7 @@ put:
     Checks the script with legacy's Sieve parser, writes it to the shared file that Dovecot and the
     legacy UI read, and restarts Dovecot through mailcow's container service so that it compiles
     the script, unless `deferRestart` is `true`. **A restart briefly interrupts IMAP, POP3 and
-    delivery.** `data.dovecotRestart` reports the restart as `done`, `failed` or `deferred`; a failed
+    delivery.** `meta.dovecotRestart` reports the restart as `done`, `failed` or `deferred`; a failed
     restart does not undo the write, and the script then takes effect at Dovecot's next start.
 
     An invalid script, and a file that does not exist on this server
@@ -48,8 +48,8 @@ put:
   responses:
     '200':
       description: |
-        The saved filter with the restart outcome (`GlobalSieveFilterUpdateResult`, with the `ETag`
-        header), or with `validateOnly=true` the validation result.
+        The saved filter (`GlobalSieveFilter`, with the `ETag` header) and the restart outcome in
+        `meta.dovecotRestart`, or with `validateOnly=true` the validation result without `meta`.
       headers:
         ETag:
           description: Version tag of the saved script. Absent with `validateOnly=true`.
@@ -64,8 +64,14 @@ put:
             properties:
               data:
                 oneOf:
-                  - $ref: '../../components/schemas/GlobalSieveFilterUpdateResult.yaml'
+                  - $ref: '../../components/schemas/GlobalSieveFilter.yaml'
                   - $ref: '../../components/schemas/SettingsValidationResult.yaml'
+              meta:
+                type: object
+                required: [dovecotRestart]
+                properties:
+                  dovecotRestart:
+                    $ref: '../../components/schemas/DovecotRestartOutcome.yaml'
     '400':
       $ref: '../../components/responses/BadRequest.yaml'
     '401':

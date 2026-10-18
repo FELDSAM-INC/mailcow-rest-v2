@@ -82,8 +82,8 @@ None. This feature publishes nothing to Redis channels.
 
 | Key | Value | TTL | Owner |
 |---|---|---|---|
-| `restv2:brand-colors` (hash) | `light`, `dark`: `#rrggbb` (lower case); a cleared colour is a missing field | none | `App\Services\Settings\BrandColorService`; read by 001's `PublicConfigService` |
-| `restv2:license:last-verification` | JSON `{result, verifiedAt, customerId, serviceId, supportLevel, cacheHash}` | none | `LicenseService` |
+| `restv2:brand-colors` (hash; written as `brand-colors` through the connection's `restv2:` prefix) | `light`, `dark`: `#rrggbb` (lower case); a cleared colour is a missing field | none | `App\Services\Settings\BrandColorService`; read by 001's `PublicConfigService` |
+| `restv2:license:last-verification` (written as `license:last-verification`) | JSON `{result, verifiedAt, customerId, serviceId, supportLevel, cacheHash}` | none | `LicenseService` |
 | `restv2:mass-mail-runner` (cache lock) | Laravel atomic lock | 330 s | `restv2:mass-mail-run` |
 
 `BrandColors` tag input: the two raw fields (`null` when missing). The effective colours are
@@ -144,7 +144,7 @@ Migration `database/migrations/2026_10_18_013001_create_restv2_mass_mail_jobs_ta
 | `status` | VARCHAR(16) | NOT NULL, INDEX (`status`, `created_at`) | `status` (`running`, `completed`, `cancelled`) |
 | `running_slot` | TINYINT UNSIGNED | NULL, UNIQUE | — (`1` while running, `NULL` otherwise: at most one running job) |
 | `sender` | VARCHAR(255) | NOT NULL | `sender` |
-| `subject` | VARCHAR(255) | NOT NULL, INDEX prefix for `q` not needed (LIKE scan, small table) | `subject` |
+| `subject` | VARCHAR(255) | NOT NULL (searched with `LIKE`; the table holds a few rows a year) | `subject` |
 | `text_body` | MEDIUMTEXT | NOT NULL | `textBody` |
 | `html_body` | MEDIUMTEXT | NULL | `htmlBody` |
 | `selection` | JSON | NOT NULL | `selection` (`{domains, include, exclude}` as normalised) |
@@ -258,8 +258,11 @@ Tests fake the first four behind their interfaces (constitution VII) and the lic
 
 ## 7. Audit events (feature 001's `restv2_audit_events`)
 
-`details` keys are whitelisted per event type in `AuditLogger` (001-R22). Every refusal record
-carries `details.problemType` and, for validation, `details.errors` (field → codes, no values).
+`details` keys are whitelisted per event type in `AuditLogger` (001-R22). Success records are
+written by the services. Refusal records (`4xx`) are written by 008's `RefusalAuditor` for the
+routes that declare `restv2.audit` (research R24), with the target from
+`SettingsAuditTargetResolver`; they carry `details.problemType` and, for validation,
+`details.errors` (field → codes, no values). `5xx` failures are recorded by the services.
 
 | `eventType` | `target.type` | `target.id` / `name` | `details` (success) |
 |---|---|---|---|
@@ -267,7 +270,7 @@ carries `details.problemType` and, for validation, `details.errors` (field → c
 | `logoDeletion` | `logo` | variant | `old` |
 | `uiTextsUpdate` | `uiTexts` | `null` | `changes`: plain fields `{old, new}`; `loginHelpHtml`, `footerHtml`, `announcement.text` as `{changed, oldBytes, newBytes}`; `footerMigrated` |
 | `loginPageUpdate` | `loginPage` | `null` | `changes` `{field: {old, new}}` |
-| `appLinksUpdate` | `appLinks` | `null` | `oldCount`, `newCount`, `names` (new list of names) |
+| `appLinksUpdate` | `appLinks` | `null` | `changes.links` `{old, new}` (the full lists of entries, at most 50 each) |
 | `brandColorsUpdate` | `brandColors` | `null` | `changes` `{light, dark: {old, new}}` |
 | `ipCheckUpdate` | `ipCheck` | `null` | `changes` |
 | `passwordPolicyUpdate` | `passwordPolicy` | `null` | `changes` |

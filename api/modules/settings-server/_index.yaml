@@ -1,6 +1,6 @@
 # Paths of the settings-server module (feature 013): the settings capabilities and the CORS
 # settings of the legacy API.
-/settings/capabilities:
-  $ref: './settings-capabilities.yaml'
+/capabilities/settings:
+  $ref: './capabilities-settings.yaml'
 /settings/legacy-api-cors:
   $ref: './settings-legacy-api-cors.yaml'

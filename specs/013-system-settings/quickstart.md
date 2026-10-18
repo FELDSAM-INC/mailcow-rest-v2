@@ -47,7 +47,7 @@ T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session -d '{"username":"admin","password":"Passw0rd!dev"}' >/dev/null
 
 # Capabilities (FR-094)
-curl -s $C $B/settings/capabilities | jq '.data | {hostname, demoMode, licenseVerificationEnabled, logos, massMail}'
+curl -s $C $B/capabilities/settings | jq '.data | {hostname, demoMode, licenseVerificationEnabled, logos, massMail}'
 
 # US1: logo upload by content, SVG refusal, public configuration
 curl -s $C -H "X-CSRF-Token: $T" -H 'Content-Type: image/jpeg' --data-binary @tests/fixtures/logos/valid/logo-300x80.png \
@@ -113,7 +113,7 @@ lists the map change with its sizes.
    active; within the settings map refresh the effective map (`GET /settings/rspamd-settings-map`)
    shows `additional_settings_<id>` and Rspamd applies it.
 6. **Global Sieve filter (SC-007)**: save a valid pre-filter that adds a header; the response reports
-   `dovecotRestart.outcome = done`; the next delivered message carries the header. Save an invalid
+   `meta.dovecotRestart.outcome = done`; the next delivered message carries the header. Save an invalid
    script: `422`, and `docker compose ps dovecot-mailcow` shows no restart.
 7. **Rspamd password**: set a 12-character passphrase with a session; sign in to `/rspamd/` with it.
    `docker compose logs restv2-mailcow | grep -c '<passphrase>'` prints `0`.

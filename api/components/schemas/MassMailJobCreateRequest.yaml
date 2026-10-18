@@ -12,7 +12,7 @@ properties:
     maxLength: 255
     description: |
       Valid e-mail address without control characters. Legacy suggests `noreply@<server host name>`
-      (see `GET /settings/capabilities`).
+      (see `GET /capabilities/settings`).
     examples: [noreply@mail.example.org]
   subject:
     type: string

@@ -491,8 +491,8 @@ filtered by target type and identifier.
   brand colour, and the web app uses its own palette there.
 - **Built-in app links from the operator's configuration**: shown read-only next to the custom
   links and never changed by this API.
-- **Groupware disabled**: app links that point to the webmail are left out of the login page links
-  and of the signed-in app links, as in legacy.
+- **Groupware disabled**: built-in app links that point to the webmail are left out of the login
+  page links and of the signed-in app links, as in legacy (custom links are shown as saved).
 - **Password policy changed while passwords exist**: existing passwords keep working; only the next
   password set is checked.
 - **Reset notification without the `{{link}}` placeholder**: accepted, as in legacy; the contract
@@ -675,8 +675,9 @@ filtered by target type and identifier.
 - **FR-028**: The custom app links saved through this feature MUST appear in the app links of
   feature 001's public configuration (FR-056 there), after the built-in links and in their saved
   order, with the signed-in address and its `%u` placeholder, which clients replace with the
-  signed-in username. Links that point to the webmail are left out there when the groupware is
-  disabled on the server. This feature offers no separate read of the effective app links.
+  signed-in username. Built-in links that point to the webmail are left out there when the
+  groupware is disabled on the server, as legacy does. This feature offers no separate read of the
+  effective app links.
 
 #### Branding colours
 
@@ -798,8 +799,8 @@ filtered by target type and identifier.
   search on the name.
 - **FR-057**: Administrators MUST be able to replace a map's content. The content MUST be at most
   1 MiB. Every line MUST be empty, a comment starting with `#`, or a regular expression written as
-  `/pattern/` followed by at most one of the flags `i`, `m` or `s`, whose pattern compiles. A
-  failing line MUST be refused with a validation error that states its line number. The content
+  `/pattern/` followed by at most one of the flags `i`, `m` or `s`, whose pattern contains no
+  further `/` (legacy's check refuses it) and compiles. A failing line MUST be refused with a validation error that states its line number. The content
   MUST be stored trimmed and ending with a line break, as in legacy.
 - **FR-058**: The content MUST be written to the map file that Rspamd reads, only when that file
   exists. A missing file MUST be refused as "map unavailable". The whole content MUST be written in
@@ -940,7 +941,10 @@ filtered by target type and identifier.
   - for a mass mail job, the sender, the subject, a summary of the selection and the number of
     recipients.
 
-  Previews and validate-only requests (FR-093) change nothing and MUST NOT be audited.
+  Previews and validate-only requests (FR-093) change nothing and MUST NOT be audited. As
+  `docs/conventions.md` sets for every feature, refusals of authenticated callers are recorded
+  (including read-only keys, restricted sessions and out-of-scope objects), while requests without
+  authentication (401) and anti-forgery failures are not.
 - **FR-087**: The completion of a mass mail job MUST write one further audit record with the number
   of recipients per outcome. A cancellation MUST also record the counts at the moment it was
   confirmed.

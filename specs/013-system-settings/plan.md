@@ -101,10 +101,10 @@ hundred settings rules; mass mail jobs of up to tens of thousands of recipients,
 | III. Upstream schema | No migration touches an upstream table; the two new tables carry `restv2_` (001's `MigrationPrefixTest` covers them). `settingsmap` is written with its existing columns only. | PASS |
 | IV. Parity | Legacy code read for every operation (research, spec parity table). Writes go through services in `app/Services/` and reproduce legacy's side effects: Redis formats byte-identical (`htmlspecialchars`, `json_encode` without flags), map files trimmed + newline + touch, Sieve files + Dovecot restart, Rspamd password through dockerapi, license cache in legacy's format, LMTP delivery with `X-Mailer: MooMassMail`. Deviations are only the spec's, plus the `QW_BCC` list format added to the spec's parity table. | PASS |
 | V. Coexistence | Own container; extra mounts are the same host paths php-fpm-mailcow mounts; nginx changes stay in the API's own `site.restv2.custom`; ofelia runs jobs inside the API container; no other container or file is patched. | PASS |
-| VI. Security | Object-level authorisation per role and key type (policies; domain administrators reach only their domains' copy recipients, 404 otherwise); mass mail and the Rspamd password need a session; read-only keys refused on writes; SVGs with active content refused; the Rspamd password never stored, logged or audited; audit record for every state change and every refused attempt that reaches the feature. | PASS |
+| VI. Security | Object-level authorisation per role and key type (policies; domain administrators reach only their domains' copy recipients, 404 otherwise); mass mail and the Rspamd password need a session; read-only keys refused on writes; SVGs with active content refused; the Rspamd password never stored, logged or audited; audit record for every state change; refused attempts by authenticated callers (read-only keys, restricted sessions, roles, out-of-scope domains, validation, versions, demo mode) through 008's `RefusalAuditor` on routes declaring `restv2.audit`, never for CSRF failures or `401`s. | PASS |
 | VII. Test-first | `tasks.md` orders tests before implementation in every phase; MariaDB with the real schema, real Redis, fakes asserting dockerapi, LMTP and settings map calls; side effects asserted on Redis keys, files and fakes. | PASS |
 | VIII. Simplicity | Two small packages and one bundled extension (R27); no queue broker, no image library beyond GD, no SVG or UCL library; abstractions only where a fake or a second adapter is needed (`LmtpClient`, `SettingsMapClient`) or reused from 002 (`DockerApiClient`). | PASS |
-| Cross-feature conventions | Out-of-scope domains answer 404; lists default to 25 (max 1,000) with `q`; tags over stored settings, on list entries too, shared with 003 for the policy; keys act as their owner, mass mail and the Rspamd password need a session; secrets write-only; invalid input refused with rule codes; no time-based caching; legacy PHP configuration through 001's reader; FeldHost license behaviour is a server setting defaulting to upstream; no bulk actions (FR-092). | PASS |
+| Cross-feature conventions | Capabilities at `/capabilities/settings` (`getSettingsCapabilities`); history through the generic `targetType`/`targetId` audit filters with new `AuditTarget` values only; `AuditFailureReason` appended; refusal auditing through `RefusalAuditor`; out-of-scope domains answer 404; lists default to 25 (max 1,000) with `q`; tags over stored settings, on list entries too, shared with 003 for the policy; keys act as their owner, mass mail and the Rspamd password need a session; secrets write-only; invalid input refused with rule codes; no time-based caching; legacy PHP configuration through 001's reader; FeldHost license behaviour is a server setting defaulting to upstream; no bulk actions (FR-092). | PASS |
 | Runtime constraints | Stateless php-fpm; the runner is an artisan command run by ofelia (no long-lived worker); configuration from environment variables with `mailcow.conf` names (`DEMO_MODE`, `MAILCOW_HOSTNAME`, `COMPOSE_PROJECT_NAME`). | PASS |
 
 **Post-design re-check (after Phase 1)**: PASS. The decisions that touched gates:
@@ -130,7 +130,7 @@ hundred settings rules; mass mail jobs of up to tens of thousands of recipients,
 
 | Method and path | operationId | Auth | Story / FR |
 |---|---|---|---|
-| GET `/settings/capabilities` | getSettingsCapabilities | admin session or admin key (ro too) | US1, US6, US7, FR-094 |
+| GET `/capabilities/settings` | getSettingsCapabilities | admin session or admin key (ro too) | US1, US6, US7, FR-094 |
 | GET `/settings/logos/{variant}` | getLogoSetting | admin session or key | US1, FR-018 |
 | PUT `/settings/logos/{variant}` | replaceLogo | admin session + CSRF or rw key | US1, FR-012–FR-016 |
 | DELETE `/settings/logos/{variant}` | deleteLogo | admin session + CSRF or rw key | US1, FR-017 |
@@ -194,8 +194,7 @@ specs/013-system-settings/
 ├── quickstart.md        # Phase 1: validation guide
 ├── contracts/README.md  # Phase 1: pointer to api/ modules
 ├── checklists/requirements.md
-├── tasks.md             # Phase 2 (/speckit-tasks)
-└── analysis.md          # /speckit-analyze summary
+└── tasks.md             # Phase 2 (/speckit-tasks); the analysis summary is in the agent report
 ```
 
 ### Source Code (repository root)
@@ -237,6 +236,7 @@ app/
 ├── Rules/{SingleLineText,MailcowEmail,AppLinkUrl,HexColor,LegacyOrigin,ByteLength}.php
 ├── Services/
 │   ├── Settings/{RedisSettingsStore,SettingsLimits,BrandingService,BrandColorService,
+│   │             SettingsAuditTargetResolver,
 │   │             PasswordResetNotificationService,QuotaNotificationService,
 │   │             QuotaNotificationRecipientsService,LegacyApiCorsService,LicenseService,
 │   │             SettingsCapabilitiesService}.php

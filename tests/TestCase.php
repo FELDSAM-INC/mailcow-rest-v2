@@ -6,7 +6,12 @@ use App\Auth\AccountKind;
 use App\Auth\AuthMethod;
 use App\Auth\Principal;
 use App\Auth\Role;
+use App\Clients\DockerApi\DockerApiClient;
+use App\Clients\Ispconfig\IspconfigDnsClient;
+use App\Clients\Memcached\MemcachedFlusher;
 use App\Services\Auth\SessionManager;
+use App\Services\Dkim\DkimDnsPublisher;
+use App\Support\Clock\Clock;
 use App\Support\Clock\Sleeper;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -19,6 +24,10 @@ use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Clock\FakeSleeper;
 use Tests\Support\Contract\OpenApiContract;
+use Tests\Support\Dns\FakeClock;
+use Tests\Support\Fakes\FakeDockerApiClient;
+use Tests\Support\Fakes\FakeIspconfigDnsClient;
+use Tests\Support\Fakes\FakeMemcachedFlusher;
 use Tests\Support\Mailcow\MailcowFactory;
 
 /**
@@ -31,6 +40,9 @@ use Tests\Support\Mailcow\MailcowFactory;
  *    turned off; request validation only in tests named *Invalid* or *Malformed*.
  *  - Keeps the cookies a response sets, like a browser, for the following requests.
  *  - Records sign-in throttling delays instead of waiting (`sleeper()`).
+ *  - Fakes the outbound services of feature 002 and 010 with asserting fakes (`dockerApi()`,
+ *    `memcached()`, `ispconfig()`) and binds a clock that moves only when the test advances it
+ *    (`clock()`).
  */
 abstract class TestCase extends BaseTestCase
 {
@@ -43,6 +55,14 @@ abstract class TestCase extends BaseTestCase
 
     private FakeSleeper $sleeper;
 
+    private FakeDockerApiClient $dockerApi;
+
+    private FakeMemcachedFlusher $memcached;
+
+    private FakeIspconfigDnsClient $ispconfig;
+
+    private FakeClock $clock;
+
     /** @var array<string, string> */
     private array $cookieJar = [];
 
@@ -52,6 +72,31 @@ abstract class TestCase extends BaseTestCase
 
         $this->flushTestRedis();
         $this->app->instance(Sleeper::class, $this->sleeper = new FakeSleeper);
+        $this->app->instance(Clock::class, $this->clock = new FakeClock);
+        $this->app->instance(DockerApiClient::class, $this->dockerApi = new FakeDockerApiClient);
+        $this->app->instance(MemcachedFlusher::class, $this->memcached = new FakeMemcachedFlusher);
+        $this->app->instance(IspconfigDnsClient::class, $this->ispconfig = new FakeIspconfigDnsClient($this->clock));
+        DkimDnsPublisher::resetWarnings();
+    }
+
+    protected function dockerApi(): FakeDockerApiClient
+    {
+        return $this->dockerApi;
+    }
+
+    protected function memcached(): FakeMemcachedFlusher
+    {
+        return $this->memcached;
+    }
+
+    protected function ispconfig(): FakeIspconfigDnsClient
+    {
+        return $this->ispconfig;
+    }
+
+    protected function clock(): FakeClock
+    {
+        return $this->clock;
     }
 
     /**

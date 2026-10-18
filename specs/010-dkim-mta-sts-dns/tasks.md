@@ -93,7 +93,7 @@ the shared `AuditFailureReason` value of research R22; `401` and CSRF refusals w
   precedence (`RESTV2_SHOW_DKIM_PRIV_KEYS`, `RESTV2_AUTODISCOVER_CONFIG` as JSON). Create
   `app/Services/Mailcow/AutodiscoverConfig.php` (SMTP host, IMAP/IMAPS/POP3/POP3S/submission/SMTPS/
   Sieve ports, upstream defaults). T005 passes.
-- [ ] T007 [P] Create `scripts/legacy/extract-dkim-keygen.sh <tag>`: it runs, in the tag's
+- [X] T007 [P] Create `scripts/legacy/extract-dkim-keygen.sh <tag>`: it runs, in the tag's
   `php-fpm-mailcow` image, the key-handling lines of `dkim('add')` and `dkim('import')` from
   `git show <tag>:data/web/inc/functions.dkim.inc.php` (key pair generation, public key
   extraction, private key export and trim) and writes `tests/fixtures/legacy/dkim/generated-2048.pem`,
@@ -104,6 +104,8 @@ the shared `AuditFailureReason` value of research R22; `401` and CSRF refusals w
   encrypted PKCS #8 key, a PKCS #1 key with `Proc-Type: 4,ENCRYPTED`, an EC P-256 key, a public key,
   a certificate, two concatenated keys, and a 17 KiB text; each with its expected public key text
   and bit length.
+  *Partly delivered with feature 002 (Phase 2 needs it): RSA 1024 to 8192 bits (PKCS #8) with their
+  public key texts, and an EC P-256 public key. The import cases are still to be added.*
 
 **Checkpoint**: dependencies installed, settings readable, fixtures committed.
 
@@ -117,7 +119,7 @@ feature 004's alias domain creation and every DKIM story of this feature.**
 
 ### Tests for Phase 2 (write first, observe failing)
 
-- [ ] T009 [P] Write `tests/Unit/Dkim/DkimKeyStoreTest.php` against the real Redis (database 15),
+- [X] T009 [P] Write `tests/Unit/Dkim/DkimKeyStoreTest.php` against the real Redis (database 15),
   connection `mailcow`:
   - `create` writes exactly `HSET DKIM_PUB_KEYS <name> <pub>`, `HSET DKIM_SELECTORS <name> <sel>`
     and `HSET DKIM_PRIV_KEYS <sel>.<name> <pem>`, and returns `exists` (writing nothing) when
@@ -136,17 +138,17 @@ feature 004's alias domain creation and every DKIM story of this feature.**
   - a script loaded with `EVALSHA` falls back to `EVAL` after `SCRIPT FLUSH` (`NOSCRIPT`);
   - a connection to a closed port raises 002's shared-store unavailable exception and writes
     nothing (002 D26 technique).
-- [ ] T010 [P] Write `tests/Unit/Dkim/DkimKeyGeneratorTest.php`: each allowed size gives an RSA key
+- [X] T010 [P] Write `tests/Unit/Dkim/DkimKeyGeneratorTest.php`: each allowed size gives an RSA key
   of exactly that many bits; the private key starts with `-----BEGIN PRIVATE KEY-----` and has no
   surrounding whitespace; the public key text has no armour or line breaks and equals legacy's
   derivation for the private key of `tests/fixtures/legacy/dkim/generated-2048.pem`
   (`generated-2048.pub`).
-- [ ] T011 [P] Write `tests/Unit/Dkim/DkimPublicKeyTest.php`: `bits()` is exact for every key of
+- [X] T011 [P] Write `tests/Unit/Dkim/DkimPublicKeyTest.php`: `bits()` is exact for every key of
   `DkimFixtures` (1,024 to 8,192) and `null` for text that is not a public key or not RSA;
   `recordValue()` is `v=DKIM1;k=rsa;t=s;s=email;p=<pub>`; `recordParts()` are consecutive pieces of
   at most 255 characters that join to the value; `sha256Fingerprint()` is the hex SHA-256 of the
   DER bytes.
-- [ ] T012 [P] Write `tests/Unit/Dkim/JsonIspconfigDnsClientTest.php` with `Http::fake()`:
+- [X] T012 [P] Write `tests/Unit/Dkim/JsonIspconfigDnsClientTest.php` with `Http::fake()`:
   - exact requests: `POST <url>?login` with `{"username","password"}`, then
     `dns_zone_get {session_id, primary_id: {origin: "example.org."}}`,
     `dns_rr_get_all_by_zone {session_id, zone_id}`, `dns_txt_add {session_id, client_id, params}`,
@@ -159,7 +161,7 @@ feature 004's alias domain creation and every DKIM story of this feature.**
     than 0.5 s remains;
   - TLS verification is off only with `RESTV2_ISPCONFIG_VERIFY_TLS=n`;
   - no exception message, `detail` or log line contains the password (it is replaced by `***`).
-- [ ] T013 [P] Write `tests/Unit/Dkim/DkimDnsPublisherTest.php` with `FakeIspconfigDnsClient`
+- [X] T013 [P] Write `tests/Unit/Dkim/DkimDnsPublisherTest.php` with `FakeIspconfigDnsClient`
   (R12): disabled or URL/user/password missing → `notConfigured` and no call; no zone with origin
   `<name>.` → `noZone` (also when only a parent zone exists); a TXT record named
   `<sel>._domainkey` or `<sel>._domainkey.<name>.` is updated with `server_id`, `zone`, `name =
@@ -169,7 +171,7 @@ feature 004's alias domain creation and every DKIM story of this feature.**
   → `failed` with `staleRecordRemovalFailed`; removal → `removed` or `noRecordToRemove`; every
   client error → `failed` with its reason code; the whole publication respects
   `RESTV2_ISPCONFIG_TIMEOUT`.
-- [ ] T014 Write `tests/Feature/Dkim/DkimCreationStepTest.php` (calls the service directly, as 002
+- [X] T014 Write `tests/Feature/Dkim/DkimCreationStepTest.php` (calls the service directly, as 002
   and 004 do; seeds the hashes with raw `HSET` on the `mailcow` connection): `generateForNewName('example.org', 'dkim', 1024, ctx)` → `created`, the three hashes
   set, one `dkimKeyGeneration` audit record with `target {type: dkimKey, id: example.org}`,
   `details.trigger = domainCreation`, the creator's request ID and the publication outcome; a name
@@ -179,52 +181,52 @@ feature 004's alias domain creation and every DKIM story of this feature.**
 
 ### Implementation for Phase 2
 
-- [ ] T015 [P] Create `app/Support/Clock/Clock.php` (interface, `now(): CarbonImmutable`,
+- [X] T015 [P] Create `app/Support/Clock/Clock.php` (interface, `now(): CarbonImmutable`,
   `sleep`-free), `app/Support/Clock/SystemClock.php`, `app/Support/Clock/Deadline.php` (`start`,
   `limitSeconds`, `remaining(): float`, `expired(): bool`) and `tests/Support/Dns/FakeClock.php`
   (manual advance); bind `Clock` in `app/Providers/AppServiceProvider.php`.
-- [ ] T016 [P] Create `resources/redis/dkim-key-store.lua` (modes `create`, `replace`, `delete`,
+- [X] T016 [P] Create `resources/redis/dkim-key-store.lua` (modes `create`, `replace`, `delete`,
   `restore`, as in data-model "Writes") and `app/Clients/SharedStore/DkimKeyStore.php` (connection
   `mailcow`, `SCRIPT LOAD` + `EVALSHA` with `NOSCRIPT` fallback, `read(name): ?StoredDkimKey`,
   internal `fingerprint()` = `sha1(name \0 selector \0 pub \0 priv)` (never returned or logged),
   `versionTag()` through 001's `App\Support\Http\ETag` with the private key as
   `hash_hmac('sha256', priv, config('app.key'))`, exceptions mapped to 002's shared-store
   unavailable exception). Reuse 002's `SharedStore` ping helper if it exists. T009 passes.
-- [ ] T017 [P] Create `app/Services/Dkim/DkimKeyGenerator.php` (`generate(int $bits):
+- [X] T017 [P] Create `app/Services/Dkim/DkimKeyGenerator.php` (`generate(int $bits):
   DkimKeyMaterial`, R5; if 002 created it with Redis writes, move the writes to `DkimKeyStore`),
   `app/Services/Dkim/DkimKeyMaterial.php` (`__debugInfo` hides the private key),
   `app/Services/Dkim/DkimPublicKey.php` and `app/Services/Dkim/StoredDkimKey.php`. T010 and T011
   pass.
-- [ ] T018 [P] Create or extend `app/Clients/Ispconfig/IspconfigDnsClient.php` (interface:
+- [X] T018 [P] Create or extend `app/Clients/Ispconfig/IspconfigDnsClient.php` (interface:
   `open(Deadline)`, `findZone(string $origin): ?IspconfigZone`, `records(int $zoneId): list<IspconfigRecord>`,
   `addTxt`, `updateTxt`, `deleteTxt`, `close()`), `JsonIspconfigDnsClient.php`, `IspconfigZone.php`,
   `IspconfigRecord.php`, `IspconfigException.php` (reason code + scrubbed detail) and
   `app/Services/Dkim/IspconfigSettings.php` (enabled only when the flag is `y` and URL, user and
   password are set; password hidden from `__debugInfo`). T012 passes.
-- [ ] T019 [P] Create or extend `tests/Support/Fakes/FakeIspconfigDnsClient.php`: in-memory zones
+- [X] T019 [P] Create or extend `tests/Support/Fakes/FakeIspconfigDnsClient.php`: in-memory zones
   (`origin`, `id`, `sys_groupid`) and records, a call log with assertion helpers
   (`assertNoCalls`, `assertRecord`, `assertCallCount`), programmable failure per function
   (`unreachable`, `timeout` advancing `FakeClock`, `remoteFault`, `authenticationFailed`); bind it
   in `tests/TestCase.php` for every test.
-- [ ] T020 Create or extend `app/Services/Dkim/DkimDnsOutcome.php` (enum: `published`, `removed`,
+- [X] T020 Create or extend `app/Services/Dkim/DkimDnsOutcome.php` (enum: `published`, `removed`,
   `noRecordToRemove`, `noZone`, `failed`, `notConfigured`, plus 002's `skipped`),
   `app/Services/Dkim/DkimDnsPublicationResult.php` (outcome, record name, reason code, detail) and
   `app/Services/Dkim/DkimDnsPublisher.php` (`publish(name, selector, pub, ?oldSelector)`,
   `remove(name, selector)`, R12). T013 passes.
-- [ ] T021 Add the cases of this feature to 001's enums: `App\Support\Http\ProblemType`
+- [X] T021 Add the cases of this feature to 001's enums: `App\Support\Http\ProblemType`
   (`DkimKeyExists` 409, `DkimPrivateKeyExportDisabled` 403, `DkimDnsPublicationDisabled` 403,
   `MtaStsPolicyExists` 409; `TemporaryFailure` 503 from 002), the audit event type enum used by
   `App\Services\Audit\AuditLogger` (`dkimKeyGeneration`, `dkimKeyImport`, `dkimKeyCopy`,
   `dkimKeyDeletion`, `dkimPrivateKeyExport`, `dkimDnsPublication`, `mtaStsPolicyCreation`,
   `mtaStsPolicyUpdate`) and the audit target type enum (`dkimKey`, `mtaStsPolicy`), matching
   `api/components/schemas/{KnownProblemType,AuditEventType,AuditTarget}.yaml`.
-- [ ] T022 Create `app/Services/Dkim/DkimAudit.php`: builds the whitelisted `details` of research
+- [X] T022 Create `app/Services/Dkim/DkimAudit.php`: builds the whitelisted `details` of research
   R22 for each event type (`selector`, `keyLength`, `overwriteRequested`, `old`/`new` with
   `selector`, `keyLength`, `publicKeySha256`, `trigger`, `sourceName`, `dnsPublication` with
   `status`, `reasonCode`, `detail`) and writes through `AuditLogger`; any other key is dropped.
   The `503` refusals of DKIM operations are written here with `failureReason: temporaryFailure`;
   every `4xx` refusal is written by the shared `RefusalAuditor` (T032).
-- [ ] T023 Create `app/Services/Dkim/DkimKeyService.php` with `generateForNewName()` (R10) and the
+- [X] T023 Create `app/Services/Dkim/DkimKeyService.php` with `generateForNewName()` (R10) and the
   shared private step `commitChange()` (store write → publication → audit; on audit failure
   `restore` with the written fingerprint, log at `error`, rethrow → `500`, R13), plus
   `app/Services/Dkim/DkimCreationStep.php`. Register the service, store, publisher and client

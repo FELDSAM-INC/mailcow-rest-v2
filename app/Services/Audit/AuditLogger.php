@@ -9,6 +9,8 @@ use App\Http\RequestContext;
 use App\Models\AuditEvent;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use LogicException;
 
 /**
  * Writes audit records (FR-045, FR-046, R22). Call it inside the database transaction of the
@@ -69,6 +71,36 @@ class AuditLogger
         $packed = @inet_pton($ip);
 
         return $packed === false ? $ip : (string) inet_ntop($packed);
+    }
+
+    /**
+     * Follow-up outcomes that a record may complete after its change was committed (feature 002
+     * research D16, plan Complexity Tracking).
+     */
+    private const FOLLOW_UP_KEYS = ['creationReport', 'maildirCleanup'];
+
+    /**
+     * Completes a follow-up outcome that the record was written with as `"pending"`: the creation
+     * report of a domain creation, the stored-mail outcome of a domain deletion. Only these keys can
+     * be completed, only once, and only from `"pending"`; everything else throws. This is the only
+     * code that updates an audit record (records stay immutable through the model).
+     *
+     * @param  array<string, mixed>|string  $outcome
+     */
+    public function completeFollowUps(string $eventId, string $key, array|string $outcome): void
+    {
+        if (! in_array($key, self::FOLLOW_UP_KEYS, true)) {
+            throw new LogicException("The audit detail {$key} cannot be completed.");
+        }
+
+        $updated = DB::table('restv2_audit_events')
+            ->where('id', $eventId)
+            ->whereRaw('JSON_VALUE(`details`, ?) = ?', ['$.'.$key, 'pending'])
+            ->update(['details' => DB::raw('JSON_SET(`details`, '.DB::getPdo()->quote('$.'.$key).', JSON_EXTRACT('.DB::getPdo()->quote(json_encode($outcome, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)).", '$'))")]);
+
+        if ($updated !== 1) {
+            throw new LogicException("The audit detail {$key} of record {$eventId} is not pending.");
+        }
     }
 
     /**

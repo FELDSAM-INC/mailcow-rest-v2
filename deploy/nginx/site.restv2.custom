@@ -18,7 +18,8 @@ location ^~ /api/v2/ {
     fastcgi_param SCRIPT_NAME /index.php;
     # httpoxy mitigation: never pass a client "Proxy" header on as HTTP_PROXY.
     fastcgi_param HTTP_PROXY "";
-    client_max_body_size 1m;
+    # Two domain footer texts of 1 MiB each, with JSON escaping (feature 002 research D21).
+    client_max_body_size 5m;
     fastcgi_read_timeout 60s;
     fastcgi_pass $restv2_upstream;
 }

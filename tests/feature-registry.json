@@ -62,7 +62,53 @@
                 "insufficient-key-scope",
                 "service-unavailable"
             ]
+        },
+        "002-domains": {
+            "operations": [
+                "listDomains",
+                "createDomain",
+                "applyDomainBulkAction",
+                "getDomain",
+                "updateDomain",
+                "deleteDomain",
+                "previewDomainDeletion",
+                "getDomainFooter",
+                "replaceDomainFooter",
+                "getDomainsCapabilities",
+                "listDomainTags",
+                "listDomainTemplates",
+                "createDomainTemplate",
+                "getDomainTemplate",
+                "updateDomainTemplate",
+                "deleteDomainTemplate"
+            ],
+            "problemTypes": [
+                "domain-exists",
+                "domain-not-empty",
+                "domain-template-name-exists",
+                "domain-template-protected",
+                "attribute-not-permitted",
+                "temporary-failure",
+                "permission-flag-required"
+            ]
         }
     },
-    "pendingOperations": []
+    "pendingOperations": [
+        "listDomains",
+        "createDomain",
+        "applyDomainBulkAction",
+        "getDomain",
+        "updateDomain",
+        "deleteDomain",
+        "previewDomainDeletion",
+        "getDomainFooter",
+        "replaceDomainFooter",
+        "getDomainsCapabilities",
+        "listDomainTags",
+        "listDomainTemplates",
+        "createDomainTemplate",
+        "getDomainTemplate",
+        "updateDomainTemplate",
+        "deleteDomainTemplate"
+    ]
 }

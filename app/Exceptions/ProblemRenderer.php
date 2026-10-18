@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use App\Clients\SharedStore\SharedStoreUnavailable;
 use App\Http\Requests\Api\V2\ApiFormRequest;
 use App\Support\Http\Problem;
 use App\Support\Http\ProblemType;
@@ -29,6 +30,7 @@ final class ProblemRenderer
         return match (true) {
             $e instanceof ProblemException => Problem::response($e->type, $request, $e->detail, $e->extensions, $e->headers),
             $e instanceof ValidationProblemException => self::validation($e->errors, $request),
+            $e instanceof SharedStoreUnavailable => Problem::response(ProblemType::TemporaryFailure, $request, null, [], ['Retry-After' => '10']),
             $e instanceof ValidationException => self::validation(ApiFormRequest::violations($e->validator), $request),
             $e instanceof TokenMismatchException => Problem::response(ProblemType::CsrfTokenMismatch, $request),
             $e instanceof AuthorizationException, $e instanceof AccessDeniedHttpException => Problem::response(ProblemType::Forbidden, $request),

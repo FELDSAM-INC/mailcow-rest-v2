@@ -29,6 +29,22 @@ enum ProblemType: string
     case InsufficientKeyScope = 'insufficient-key-scope';
     case ServiceUnavailable = 'service-unavailable';
 
+    // Feature 002 (attribute-not-permitted, temporary-failure and permission-flag-required are
+    // shared by every later feature).
+    case DomainExists = 'domain-exists';
+    case DomainNotEmpty = 'domain-not-empty';
+    case DomainTemplateNameExists = 'domain-template-name-exists';
+    case DomainTemplateProtected = 'domain-template-protected';
+    case AttributeNotPermitted = 'attribute-not-permitted';
+    case TemporaryFailure = 'temporary-failure';
+    case PermissionFlagRequired = 'permission-flag-required';
+
+    // Feature 010 (DKIM core delivered with feature 002).
+    case DkimKeyExists = 'dkim-key-exists';
+    case DkimPrivateKeyExportDisabled = 'dkim-private-key-export-disabled';
+    case DkimDnsPublicationDisabled = 'dkim-dns-publication-disabled';
+    case MtaStsPolicyExists = 'mta-sts-policy-exists';
+
     public function uri(): string
     {
         return '/api/v2/problems/'.$this->value;
@@ -44,7 +60,11 @@ enum ProblemType: string
             self::SecondFactorUnavailable, self::ApiKeySourceNotAllowed, self::InsufficientKeyScope => 403,
             self::TooManyRequests => 429,
             self::PasskeyRegistrationFailed => 400,
-            self::TemporaryVerificationFailure, self::ServiceUnavailable => 503,
+            self::TemporaryVerificationFailure, self::ServiceUnavailable, self::TemporaryFailure => 503,
+            self::DomainExists, self::DomainNotEmpty, self::DomainTemplateNameExists, self::DomainTemplateProtected,
+            self::DkimKeyExists, self::MtaStsPolicyExists => 409,
+            self::AttributeNotPermitted, self::PermissionFlagRequired, self::DkimPrivateKeyExportDisabled,
+            self::DkimDnsPublicationDisabled => 403,
         };
     }
 
@@ -74,6 +94,17 @@ enum ProblemType: string
             self::ApiKeySourceNotAllowed => 'API key source not allowed',
             self::InsufficientKeyScope => 'Insufficient key scope',
             self::ServiceUnavailable => 'Service unavailable',
+            self::DomainExists => 'Domain exists',
+            self::DomainNotEmpty => 'Domain not empty',
+            self::DomainTemplateNameExists => 'Domain template name exists',
+            self::DomainTemplateProtected => 'Domain template protected',
+            self::AttributeNotPermitted => 'Attribute not permitted',
+            self::TemporaryFailure => 'Temporary failure',
+            self::PermissionFlagRequired => 'Permission flag required',
+            self::DkimKeyExists => 'DKIM key exists',
+            self::DkimPrivateKeyExportDisabled => 'DKIM private key export disabled',
+            self::DkimDnsPublicationDisabled => 'DKIM DNS publication disabled',
+            self::MtaStsPolicyExists => 'MTA-STS policy exists',
         };
     }
 
@@ -103,6 +134,17 @@ enum ProblemType: string
             self::ApiKeySourceNotAllowed => 'The API key may not be used from this address.',
             self::InsufficientKeyScope => 'The read-only API key may not change state.',
             self::ServiceUnavailable => 'The service is not ready.',
+            self::DomainExists => 'The name already exists as a domain or alias domain.',
+            self::DomainNotEmpty => 'The domain still has mailboxes or resources.',
+            self::DomainTemplateNameExists => 'Another domain template already has this name.',
+            self::DomainTemplateProtected => 'The Default domain template cannot be renamed or deleted.',
+            self::AttributeNotPermitted => 'Your role or permission flags do not allow changing these attributes.',
+            self::TemporaryFailure => 'A service that the change needs is temporarily unavailable. Nothing was changed; retry later.',
+            self::PermissionFlagRequired => 'The operation needs a permission flag that this account does not hold.',
+            self::DkimKeyExists => 'The name already has a DKIM key.',
+            self::DkimPrivateKeyExportDisabled => 'The export of DKIM private keys is disabled on this server.',
+            self::DkimDnsPublicationDisabled => 'The DKIM DNS publication is disabled on this server.',
+            self::MtaStsPolicyExists => 'The domain already has an MTA-STS policy.',
         };
     }
 

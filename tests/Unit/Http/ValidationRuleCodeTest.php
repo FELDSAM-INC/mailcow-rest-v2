@@ -2,10 +2,15 @@
 
 namespace Tests\Unit\Http;
 
+use App\Clients\SharedStore\SharedStoreUnavailable;
+use App\Exceptions\ProblemException;
+use App\Support\Http\FieldViolations;
 use App\Support\Http\ListQuery;
+use App\Support\Http\ProblemType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Tests\Support\Http\DomainRulesProbeRequest;
 use Tests\Support\Http\NonEmptyBodyProbeRequest;
 use Tests\Support\Http\ValidationProbeRequest;
 use Tests\TestCase;
@@ -22,6 +27,25 @@ class ValidationRuleCodeTest extends TestCase
 
         Route::middleware('api.v2')->post('/api/v2/__testing/validation', fn (ValidationProbeRequest $request) => response()->noContent());
         Route::middleware('api.v2')->post('/api/v2/__testing/validation-body', fn (NonEmptyBodyProbeRequest $request) => response()->noContent());
+        Route::middleware('api.v2')->post('/api/v2/__testing/domain-rules', fn (DomainRulesProbeRequest $request) => response()->noContent());
+        Route::middleware('api.v2')->post('/api/v2/__testing/field-violations', function (): never {
+            $violations = new FieldViolations;
+            $violations->add('defaultMailboxQuota', 'mustNotExceed', ['field' => 'maxMailboxQuota', 'value' => 1048576]);
+            $violations->add('maxMailboxes', 'belowInUse', ['inUse' => 8]);
+            $violations->add('name', 'reserved');
+            $violations->add('createdAt', 'immutable');
+            $violations->add('templateId', 'notFound');
+            $violations->add('html', 'tooLong', ['max' => 1048576, 'unit' => 'bytes']);
+            $violations->throwIfAny();
+
+            throw new \LogicException('unreachable');
+        });
+        Route::middleware('api.v2')->get('/api/v2/__testing/problem/{type}', function (string $type): never {
+            throw new ProblemException(ProblemType::from($type));
+        });
+        Route::middleware('api.v2')->get('/api/v2/__testing/shared-store-down', function (): never {
+            throw new SharedStoreUnavailable('connection refused');
+        });
         Route::middleware('api.v2')->get('/api/v2/__testing/list', function (Request $request) {
             $list = ListQuery::fromRequest($request, ['domain' => 'domain', 'createdAt' => 'created'], 'domain', 'asc');
 
@@ -208,5 +232,64 @@ class ValidationRuleCodeTest extends TestCase
         $this->getJson('/api/v2/__testing/list?q='.urlencode('_'))->assertOk()->assertJsonPath('meta.total', 0);
 
         $this->assertSame('%50\\%\\_a\\\\b%', ListQuery::likePattern('50%_a\\b'));
+    }
+
+    public function test_quotas_must_be_whole_mebibytes(): void
+    {
+        // Feature 002 T020 (FR-059, research D3).
+        $errors = $this->errors(['quota' => 1572864], '/api/v2/__testing/domain-rules');
+
+        $this->assertViolation($errors, 'quota', 'notMultipleOf', ['factor' => 1048576]);
+        $this->postJson('/api/v2/__testing/domain-rules', ['quota' => 3 * 1048576])->assertNoContent();
+    }
+
+    public function test_dkim_selectors_are_letters_digits_dots_hyphens_and_underscores(): void
+    {
+        $errors = $this->errors(['selector' => 'a b'], '/api/v2/__testing/domain-rules');
+
+        $this->assertViolation($errors, 'selector', 'invalidFormat', ['format' => 'dkimSelector']);
+        $this->postJson('/api/v2/__testing/domain-rules', ['selector' => 'Feld-host_1.x'])->assertNoContent();
+        $this->postJson('/api/v2/__testing/domain-rules', ['selector' => ''])->assertNoContent();
+    }
+
+    public function test_service_violations_are_reported_together(): void
+    {
+        $errors = $this->errors([], '/api/v2/__testing/field-violations');
+
+        $this->assertViolation($errors, 'defaultMailboxQuota', 'mustNotExceed', ['field' => 'maxMailboxQuota', 'value' => 1048576]);
+        $this->assertViolation($errors, 'maxMailboxes', 'belowInUse', ['inUse' => 8]);
+        $this->assertViolation($errors, 'name', 'reserved');
+        $this->assertViolation($errors, 'createdAt', 'immutable');
+        $this->assertViolation($errors, 'templateId', 'notFound');
+        $this->assertViolation($errors, 'html', 'tooLong', ['max' => 1048576, 'unit' => 'bytes']);
+    }
+
+    public function test_the_problem_types_of_feature_002(): void
+    {
+        $expected = [
+            'domain-exists' => 409,
+            'domain-not-empty' => 409,
+            'domain-template-name-exists' => 409,
+            'domain-template-protected' => 409,
+            'attribute-not-permitted' => 403,
+            'temporary-failure' => 503,
+            'permission-flag-required' => 403,
+        ];
+
+        foreach ($expected as $name => $status) {
+            $this->assertSame($status, ProblemType::from($name)->status(), $name);
+            $this->getJson('/api/v2/__testing/problem/'.$name)
+                ->assertStatus($status)
+                ->assertHeader('Content-Type', 'application/problem+json')
+                ->assertJsonPath('type', '/api/v2/problems/'.$name);
+        }
+    }
+
+    public function test_an_unavailable_shared_store_is_a_temporary_failure_with_retry_after(): void
+    {
+        $this->getJson('/api/v2/__testing/shared-store-down')
+            ->assertStatus(503)
+            ->assertHeader('Retry-After', '10')
+            ->assertJsonPath('type', '/api/v2/problems/temporary-failure');
     }
 }

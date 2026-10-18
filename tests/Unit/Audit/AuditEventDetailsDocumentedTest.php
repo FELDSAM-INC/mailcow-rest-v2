@@ -18,7 +18,13 @@ class AuditEventDetailsDocumentedTest extends TestCase
      *
      * @var list<string>
      */
-    private static array $notYetDocumented = [];
+    private static array $notYetDocumented = [
+        'domainCreation', 'domainUpdate', 'domainDeletion', 'domainFooterUpdate',
+        'domainTemplateCreation', 'domainTemplateUpdate', 'domainTemplateDeletion',
+        // Feature 010: only the DKIM core is implemented (with feature 002); its operations follow.
+        'dkimKeyGeneration', 'dkimKeyImport', 'dkimKeyCopy', 'dkimKeyDeletion', 'dkimPrivateKeyExport',
+        'dkimDnsPublication', 'mtaStsPolicyCreation', 'mtaStsPolicyUpdate',
+    ];
 
     /**
      * The documented keys per event type: `## <eventType>` sections, keys from the first column of

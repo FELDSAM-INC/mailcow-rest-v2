@@ -43,7 +43,7 @@ the user stories in spec order (US1–US3 P1, US4–US6 P2, US7–US8 P3). Phase
 
 **Purpose**: settings, deployment files and test tooling that the feature needs. No business logic.
 
-- [ ] T001 Extend `config/restv2.php` with the settings of research D24: `dkim.default_selector`
+- [X] T001 Extend `config/restv2.php` with the settings of research D24: `dkim.default_selector`
   (`env('RESTV2_DEFAULT_DKIM_SELECTOR', 'dkim')`), `dkim.dns_publication`
   (`env('RESTV2_DKIM_DNS_PUBLICATION', 'n') === 'y'`), `ispconfig.url`, `ispconfig.username`,
   `ispconfig.password`, `ispconfig.dns_server_id` (default `1`), `ispconfig.verify_tls` (default
@@ -56,12 +56,12 @@ the user stories in spec order (US1–US3 P1, US4–US6 P2, US7–US8 P3). Phase
   `RESTV2_*` variable of research D24 to the `restv2-mailcow` environment (empty defaults,
   `RESTV2_ISPCONFIG_PASSWORD` passed through, never hard-coded). Update
   `deploy/nginx/site.restv2.custom`: `client_max_body_size 5m;` instead of `1m` (research D21).
-- [ ] T003 [P] Extend `tests/Support/Contract/OpenApiContract.php` so that query parameters with
+- [X] T003 [P] Extend `tests/Support/Contract/OpenApiContract.php` so that query parameters with
   `type: boolean` accept exactly `true` and `false` (coerced before schema validation, like
   integers); any other value is a request violation. Add the cases first to
   `tests/Unit/Support/OpenApiContractTest.php` (`?active=true` valid, `?active=1` invalid) and
   observe them failing (research D26).
-- [ ] T004 Scope the contract gates to implemented features, because `api/` already holds the
+- [X] T004 Scope the contract gates to implemented features, because `api/` already holds the
   contracts of later features. Create `tests/contract-scope.php`, returning the OpenAPI tags whose
   operations are implemented (001's seven tags plus `Domains` and `Domain templates`), and change
   `tests/bin/check-contract-coverage.php` to require coverage only for operations carrying one of
@@ -69,7 +69,7 @@ the user stories in spec order (US1–US3 P1, US4–US6 P2, US7–US8 P3). Phase
   `ProblemType` case must be a section of `docs/problems.md` and a value of `KnownProblemType` with
   the same status (subset instead of equality), and the six types of this feature must be cases.
   Skip this task if 001's implementation already scoped both gates.
-- [ ] T005 Verify the contract (FR-060): `composer contract:lint` reports zero errors (001's four
+- [X] T005 Verify the contract (FR-060): `composer contract:lint` reports zero errors (001's four
   accepted warnings only), `composer contract:bundle` succeeds, and
   `php tests/bin/check-contract-coverage.php` lists exactly the 16 operations of plan.md as not yet
   covered.
@@ -87,7 +87,7 @@ story can start before this phase is complete.**
 
 ### Test toolkit (no business logic)
 
-- [ ] T006 Extend `database/factories/MailcowRows.php` and `tests/Support/Mailcow/MailcowFactory.php`
+- [X] T006 Extend `database/factories/MailcowRows.php` and `tests/Support/Mailcow/MailcowFactory.php`
   with writers that insert upstream rows exactly as legacy does (data-model.md):
   - `domain(name, attributes = [])` with every `domain` column (quotas in MiB, `relayhost` `'0'`),
     `domainTags(domain, tags)`, `domainTemplate(name, attributes, type = 'domain')` storing the
@@ -107,19 +107,19 @@ story can start before this phase is complete.**
 
 ### Tests for the foundation (write first, observe failing) ⚠️
 
-- [ ] T007 [P] Write `tests/Unit/Support/DomainNameTest.php` (FR-006, FR-019, D4):
+- [X] T007 [P] Write `tests/Unit/Support/DomainNameTest.php` (FR-006, FR-019, D4):
   - `normalize(' MÜNCHEN.de ')` and `normalize('münchen.de')` → `xn--mnchen-3ya.de`;
     `normalize('Example.ORG')` → `example.org`; a string that UTS #46 rejects → `null`;
   - `isValid()` equals legacy `is_valid_domain_name()`: `localdomain`, `a-b.example`,
     `a--b.example` valid; `-a.example`, `a-.example`, `a_b.example`, `a..b`, a 64-character label
     and a 254-character name invalid;
   - `toUnicode('xn--mnchen-3ya.de')` → `münchen.de`; an undecodable label returns the ASCII form.
-- [ ] T008 [P] Extend `tests/Unit/Services/MailcowConfigTest.php`: `taggingLimit()` and
+- [X] T008 [P] Extend `tests/Unit/Services/MailcowConfigTest.php`: `taggingLimit()` and
   `dockerTimeout()` come from `$TAGGING_LIMIT` and `$DOCKER_TIMEOUT` of the vars fixtures (upstream
   25 and 60; a `vars.local.inc.php` override `$TAGGING_LIMIT = 30` wins), `RESTV2_TAGGING_LIMIT` and
   `RESTV2_DOCKER_TIMEOUT` win over the files, and the defaults apply when the directory is missing
   (D24, 001 R14).
-- [ ] T009 [P] Write `tests/Unit/Clients/HttpDockerApiClientTest.php` with `Http::fake()` (D14):
+- [X] T009 [P] Write `tests/Unit/Clients/HttpDockerApiClientTest.php` with `Http::fake()` (D14):
   - `restart('sogo-mailcow')` requests `GET {dockerapi.url}/containers/json`, picks the container
     whose labels are `com.docker.compose.service = sogo-mailcow` and
     `com.docker.compose.project = MailcowDockerized` (project compared case-insensitively with
@@ -129,10 +129,10 @@ story can start before this phase is complete.**
   - `{"type":"success"}` → success; `{"type":"danger","msg":"x"}` → failed with `x`; no matching
     container → failed; a connection timeout → `unknown`;
   - TLS verification is off and the timeout equals `MailcowConfig::dockerTimeout()`.
-- [ ] T010 [P] Write `tests/Unit/Clients/SocketMemcachedFlusherTest.php` (D13): a local TCP server
+- [X] T010 [P] Write `tests/Unit/Clients/SocketMemcachedFlusherTest.php` (D13): a local TCP server
   started in the test receives exactly `flush_all\r\n` and answers `OK\r\n` → `true`; an unreachable
   port → `false` within 2 s and one warning log entry; no exception escapes.
-- [ ] T011 [P] Write `tests/Unit/Clients/JsonIspconfigDnsClientTest.php` with `Http::fake()` (D10):
+- [X] T011 [P] Write `tests/Unit/Clients/JsonIspconfigDnsClientTest.php` with `Http::fake()` (D10):
   - `login` posts `{"username","password"}` to `{ispconfig.url}?login` and keeps the session ID;
   - `findZone('example.org.')` posts `{"session_id","primary_id":{"origin":"example.org."}}` to
     `?dns_zone_get`; `records(zoneId)` uses `?dns_rr_get_all_by_zone` with `zone_id`;
@@ -141,12 +141,12 @@ story can start before this phase is complete.**
   - a response with `"code":"remote_fault"` raises `IspconfigException`; the whole exchange stops
     after 15 s; `ispconfig.verify_tls` is honoured;
   - the password never appears in an exception message or a log entry.
-- [ ] T012 [P] Write `tests/Feature/Clients/SharedStoreTest.php` on the real Redis (D8, D17):
+- [X] T012 [P] Write `tests/Feature/Clients/SharedStoreTest.php` on the real Redis (D8, D17):
   `ping()`; `setFields(key, [field => value])` and `deleteFields([key => [fields]])` run in one
   `MULTI`/`EXEC` on the `mailcow` connection (no `restv2:` prefix) and return an undo action that
   restores the previous values (absent fields removed again); pointing the connection at a closed
   port makes every method throw `SharedStoreUnavailable`.
-- [ ] T013 [P] Write `tests/Feature/Groupware/SogoDirectoryTest.php` (D13, FR-023, FR-034, FR-036):
+- [X] T013 [P] Write `tests/Feature/Groupware/SogoDirectoryTest.php` (D13, FR-023, FR-034, FR-036):
   - after `rebuild()`, `_sogo_static_view` holds one row per active mailbox with `c_uid`, `domain`,
     `c_name`, `c_cn`, `mail`, `aliases` (space-separated, from `grouped_mail_aliases`), `ad_aliases`,
     `ext_acl`, `kind` and `multiple_bookings` as legacy's statement produces them, and rows of
@@ -154,10 +154,10 @@ story can start before this phase is complete.**
   - `c_password` starts with `{SSHA256}` and differs between two rebuilds;
   - the fake memcached flusher was called once; with `SKIP_SOGO=y` nothing is written, nothing is
     flushed and the result is `groupwareDisabled`; a database error gives `failed` and is logged.
-- [ ] T014 [P] Write `tests/Feature/RateLimits/RateLimitStoreTest.php` (D9): `set('example.org', 10,
+- [X] T014 [P] Write `tests/Feature/RateLimits/RateLimitStoreTest.php` (D9): `set('example.org', 10,
   'hour')` writes `RL_VALUE` field `example.org` = `10 / 1h`; `get()` parses `10 / 1h`, `5 / 1s`,
   `7 / 1d` into value and frame; a missing or malformed value → `null`; `delete()` removes the field.
-- [ ] T015 [P] Write `tests/Feature/Domains/DomainUsageCalculatorTest.php` (FR-008, D5):
+- [X] T015 [P] Write `tests/Feature/Domains/DomainUsageCalculatorTest.php` (FR-008, D5):
   - AS-2: 3 mailboxes, 1 resource, 5 aliases (2 in an alias domain) and 2 aliases equal to mailbox
     addresses → `mailboxes 3`, `aliases 5`, `aliasDomains 1`;
   - AS-8: 2 resources and mailboxes of 1, 2 and 5 GiB → `resources 2`, `largestMailboxQuota`
@@ -168,7 +168,7 @@ story can start before this phase is complete.**
     `defaultMailboxQuota`;
   - figures for 25 domains are computed with at most six queries (count queries with
     `DB::listen`).
-- [ ] T016 [P] Write `tests/Feature/Domains/DomainVersionTest.php` (FR-041, D7):
+- [X] T016 [P] Write `tests/Feature/Domains/DomainVersionTest.php` (FR-041, D7):
   - the tag is stable across reads and equal for the list entry, the single read and the preview;
   - it changes when any of `description`, `aliases`, `mailboxes`, `defquota`, `maxquota`, `quota`,
     `relayhost`, `backupmx`, `gal`, `relay_all_recipients`, `relay_unknown_only`, `active` or the
@@ -177,23 +177,23 @@ story can start before this phase is complete.**
   - a deleted and re-created domain with the same values gets a different tag (`created`);
   - footer tags: no row and a stored empty footer give the same tag; template tags change with the
     name and any attribute.
-- [ ] T017 [P] Write `tests/Unit/Services/DomainTagSetTest.php` (FR-043, D12): trimming; empty →
+- [X] T017 [P] Write `tests/Unit/Services/DomainTagSetTest.php` (FR-043, D12): trimming; empty →
   `required` at `tags.<i>`; 256 characters → `tooLong`; `["Gold", "gold", " GOLD "]` → `["Gold"]`;
   more than the limit → `tooMany` with `max`; a current set of 30 may become any set of fewer than
   30 or stay equal, but not a different set of 30; sorting ignores letter case.
-- [ ] T018 [P] Write `tests/Unit/Services/DomainTemplateAttributesTest.php` (D22): decoding legacy
+- [X] T018 [P] Write `tests/Unit/Services/DomainTemplateAttributesTest.php` (D22): decoding legacy
   attributes with string numbers, `tags` as a JSON string, missing keys (FR-046 defaults),
   `rl_value` `""`/`"10"`/`10`, `rl_frame` `h`, `key_size` `512`; encoding writes exactly the legacy
   keys with integer bytes, `rl_value` `""` for no rate limit and `rl_frame` `s`; a decode of the
   seeded Default template of `init_db.inc.php` gives the FR-022 values.
-- [ ] T019 [P] Write `tests/Feature/Audit/AuditFollowUpCompletionTest.php` (D16): a record written
+- [X] T019 [P] Write `tests/Feature/Audit/AuditFollowUpCompletionTest.php` (D16): a record written
   with `creationReport: "pending"` is completed once by `AuditLogger::completeFollowUps()`; a second
   completion, a completion of a non-pending key and a key other than `creationReport` and
   `maildirCleanup` throw; `AuditEvent::update()` still throws; the `details` whitelist accepts the
   keys of data-model.md for the seven new event types and drops others; the failure reasons
   `attributeNotPermitted`, `versionOutdated`, `validationFailed`, `conflict` and `temporaryFailure`
   are accepted.
-- [ ] T020 [P] Extend `tests/Unit/Http/ValidationRuleCodeTest.php` (FR-059, D3): `App\Rules\WholeMebibytes`
+- [X] T020 [P] Extend `tests/Unit/Http/ValidationRuleCodeTest.php` (FR-059, D3): `App\Rules\WholeMebibytes`
   → `notMultipleOf` `{factor: 1048576}`; `App\Rules\DkimSelector` → `invalidFormat`
   `{format: dkimSelector}`; violations added by services through
   `App\Support\Http\FieldViolations` (`mustNotExceed {field, value}`, `belowInUse {inUse}`,
@@ -205,54 +205,54 @@ story can start before this phase is complete.**
 
 ### Implementation of the foundation
 
-- [ ] T021 Create `app/Support/Domain/DomainName.php` (D4). This makes the DomainName test pass.
-- [ ] T022 Extend `resources/bin/export-mailcow-vars.php` to export `TAGGING_LIMIT` and
+- [X] T021 Create `app/Support/Domain/DomainName.php` (D4). This makes the DomainName test pass.
+- [X] T022 Extend `resources/bin/export-mailcow-vars.php` to export `TAGGING_LIMIT` and
   `DOCKER_TIMEOUT`, and `app/Services/Config/MailcowConfig.php` with `taggingLimit(): int` and
   `dockerTimeout(): int` and the overrides `RESTV2_TAGGING_LIMIT` and `RESTV2_DOCKER_TIMEOUT`, with
   the upstream defaults 25 and 60.
-- [ ] T023 [P] Create `app/Clients/DockerApi/DockerApiClient.php` (interface: `restart(string
+- [X] T023 [P] Create `app/Clients/DockerApi/DockerApiClient.php` (interface: `restart(string
   $service): DockerCallResult`, `exec(string $service, array $command): DockerCallResult`),
   `HttpDockerApiClient.php` and `DockerCallResult.php` (D14), and
   `tests/Support/Fakes/FakeDockerApiClient.php` (records calls, programmable results,
   `assertRestarted()`, `assertExecuted()`, `assertNothingCalled()`). Bind the adapter in
   `app/Providers/AppServiceProvider.php` and the fake in `tests/TestCase.php::setUp()`.
-- [ ] T024 [P] Create `app/Clients/Memcached/MemcachedFlusher.php` (interface `flush(): bool`) and
+- [X] T024 [P] Create `app/Clients/Memcached/MemcachedFlusher.php` (interface `flush(): bool`) and
   `SocketMemcachedFlusher.php` (D13), and `tests/Support/Fakes/FakeMemcachedFlusher.php`
   (`flushCount()`). Bind both like the dockerapi client.
-- [ ] T025 [P] Create `app/Clients/Ispconfig/IspconfigDnsClient.php` (interface: `findZone(string
+- [X] T025 [P] Create `app/Clients/Ispconfig/IspconfigDnsClient.php` (interface: `findZone(string
   $origin): ?array`, `records(int $zoneId): array`, `addTxt(int $clientId, array $params): void`,
   `updateTxt(int $clientId, int $recordId, array $params): void`), `JsonIspconfigDnsClient.php` and
   `IspconfigException.php` (D10), and `tests/Support/Fakes/FakeIspconfigDnsClient.php` (zones and
   records in memory, programmable failures and delays, recorded calls). Bind both.
-- [ ] T026 Create `app/Clients/SharedStore/SharedStore.php` and `SharedStoreUnavailable.php` on the
+- [X] T026 Create `app/Clients/SharedStore/SharedStore.php` and `SharedStoreUnavailable.php` on the
   `mailcow` Redis connection (D8, D17). Map `SharedStoreUnavailable` in `bootstrap/app.php` to
   `503 temporary-failure` with `Retry-After: 10`.
-- [ ] T027 [P] Create `app/Casts/Mebibytes.php` (MiB column ↔ bytes) and the models of
+- [X] T027 [P] Create `app/Casts/Mebibytes.php` (MiB column ↔ bytes) and the models of
   data-model.md: extend `app/Models/Mailcow/Domain.php` with every column and cast (`boolean` for
   the TINYINT flags, `MailcowDateTime` for `created` and `modified`, `Mebibytes` for `defquota`,
   `maxquota`, `quota`), and create `DomainTag.php`, `DomainTemplate.php` (global scope
   `type = 'domain'`), `DomainFooter.php`, `AliasDomain.php`, `Alias.php` and `Relayhost.php` in
   `app/Models/Mailcow/`, each read-only (`$guarded = ['*']`).
-- [ ] T028 Create `app/Services/Groupware/SogoDirectory.php` (D13). This makes the SogoDirectory test
+- [X] T028 Create `app/Services/Groupware/SogoDirectory.php` (D13). This makes the SogoDirectory test
   pass.
-- [ ] T029 [P] Create `app/Services/RateLimits/RateLimitStore.php` (D9), on `SharedStore`.
-- [ ] T030 Create `app/Services/Domains/DomainUsage.php` and `DomainUsageCalculator.php` (D5).
-- [ ] T031 [P] Create `app/Services/Domains/DomainVersion.php` (D7: `forDomain(row, tags)`,
+- [X] T029 [P] Create `app/Services/RateLimits/RateLimitStore.php` (D9), on `SharedStore`.
+- [X] T030 Create `app/Services/Domains/DomainUsage.php` and `DomainUsageCalculator.php` (D5).
+- [X] T031 [P] Create `app/Services/Domains/DomainVersion.php` (D7: `forDomain(row, tags)`,
   `forFooter(row|null)`, `forTemplate(row)`, all through `App\Support\Http\ETag`).
-- [ ] T032 [P] Create `app/Services/Domains/DomainTagSet.php` (D12).
-- [ ] T033 [P] Create `app/Services/DomainTemplates/DomainTemplateAttributes.php` (D22: tolerant
+- [X] T032 [P] Create `app/Services/Domains/DomainTagSet.php` (D12).
+- [X] T033 [P] Create `app/Services/DomainTemplates/DomainTemplateAttributes.php` (D22: tolerant
   decode, exact legacy encode, FR-046 defaults with `config('restv2.dkim.default_selector')`).
-- [ ] T034 Extend `app/Services/Audit/AuditLogger.php` with `completeFollowUps(string $eventId,
+- [X] T034 Extend `app/Services/Audit/AuditLogger.php` with `completeFollowUps(string $eventId,
   string $key, array|string $outcome)` (D16; the only code that updates `restv2_audit_events`),
   the PHP enum cases of `AuditEventType` (`domainCreation`, `domainUpdate`, `domainDeletion`,
   `domainFooterUpdate`, `domainTemplateCreation`, `domainTemplateUpdate`,
   `domainTemplateDeletion`), the target types `domain`, `domainFooter`, `domainTemplate`, the five
   failure reasons and the `details` whitelist of data-model.md. `record()` returns the event ID.
-- [ ] T035 Create `app/Rules/WholeMebibytes.php`, `app/Rules/DkimSelector.php` (`^[A-Za-z0-9._-]*$`,
+- [X] T035 Create `app/Rules/WholeMebibytes.php`, `app/Rules/DkimSelector.php` (`^[A-Za-z0-9._-]*$`,
   max 255) and `app/Support/Http/FieldViolations.php` (collects `field → [code, params, message]`
   and throws the `validation-failed` problem), register their codes in
   `app/Http/Requests/Api/V2/ApiFormRequest.php`, and add the six `ProblemType` cases.
-- [ ] T036 Create `app/Services/Domains/DomainScope.php`: `resolve(Principal, string $rawName):
+- [X] T036 Create `app/Services/Domains/DomainScope.php`: `resolve(Principal, string $rawName):
   ?string` normalises the name and returns it only when it is a `domain` row in the principal's
   scope (admin: any; domain admin: active assignment; alias domains and invalid names: `null`).
   Create `app/Policies/DomainPolicy.php` (`viewAny`, `view`, `update`, `updateFooter`: admin or

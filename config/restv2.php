@@ -56,6 +56,52 @@ return [
     'skip_sogo' => env('SKIP_SOGO', 'n') === 'y',
     'timezone' => env('TZ', 'UTC'),
 
+    // dockerapi container lookup (feature 002 research D14): the compose project of mailcow.
+    'compose_project_name' => env('COMPOSE_PROJECT_NAME'),
+
+    /*
+    |----------------------------------------------------------------------
+    | Outbound services of features 002 and 010 (002 research D24, 010 research R24)
+    |----------------------------------------------------------------------
+    */
+
+    // mailcow's container service (legacy docker()), reached without TLS verification like legacy.
+    'dockerapi' => [
+        'url' => rtrim((string) env('RESTV2_DOCKERAPI_URL', 'https://dockerapi:443'), '/'),
+    ],
+
+    // The groupware cache flushed after every groupware directory rebuild (legacy flush_memcached()).
+    'memcached' => [
+        'host' => (string) env('RESTV2_MEMCACHED_HOST', 'memcached'),
+        'port' => (int) env('RESTV2_MEMCACHED_PORT', 11211),
+    ],
+
+    'dkim' => [
+        // Selector of new DKIM keys when neither the request nor the template gives one (002 FR-028).
+        // Upstream: dkim. FeldHost: feldhost.
+        'default_selector' => (string) env('RESTV2_DEFAULT_DKIM_SELECTOR', 'dkim'),
+        'default_key_size' => 2048,
+        'allowed_key_sizes' => [1024, 2048, 3072, 4096],
+        // FeldHost ISPConfig DNS publication of DKIM records (002 FR-027, 010 FR-028). Off by default;
+        // enabled only together with the ISPConfig URL, user and password.
+        'dns_publication' => env('RESTV2_DKIM_DNS_PUBLICATION', 'n') === 'y',
+    ],
+
+    // ISPConfig JSON remote API (…/remote/json.php) for the DKIM DNS publication. The password is a
+    // secret: never logged, returned or cached.
+    'ispconfig' => [
+        'url' => (string) env('RESTV2_ISPCONFIG_URL', ''),
+        'username' => (string) env('RESTV2_ISPCONFIG_USERNAME', ''),
+        'password' => (string) env('RESTV2_ISPCONFIG_PASSWORD', ''),
+        'dns_server_id' => (int) env('RESTV2_ISPCONFIG_DNS_SERVER_ID', 1),
+        'verify_tls' => env('RESTV2_ISPCONFIG_VERIFY_TLS', 'y') !== 'n',
+        'timeout' => (int) env('RESTV2_ISPCONFIG_TIMEOUT', 15),
+    ],
+
+    // Development only (APP_ENV=local): binds the dockerapi, memcached and ISPConfig fakes, because
+    // the dev stack runs none of these services. Ignored in every other environment.
+    'fake_outbound' => env('RESTV2_FAKE_OUTBOUND', 'n') === 'y',
+
     /*
     |----------------------------------------------------------------------
     | Legacy PHP configuration
@@ -78,6 +124,8 @@ return [
         'WEBAUTHN_USER_PRESENT_FLAG' => env('RESTV2_WEBAUTHN_USER_PRESENT_FLAG'),
         'OTP_LABEL' => env('RESTV2_OTP_LABEL'),
         'MAILCOW_APPS' => env('RESTV2_MAILCOW_APPS'),
+        'TAGGING_LIMIT' => env('RESTV2_TAGGING_LIMIT'),
+        'DOCKER_TIMEOUT' => env('RESTV2_DOCKER_TIMEOUT'),
     ],
 
     // Upstream defaults of mailcow-dockerized 2026-09a (data/web/inc/vars.inc.php).
@@ -132,6 +180,8 @@ return [
                 'hide' => true,
             ],
         ],
+        'TAGGING_LIMIT' => 25,
+        'DOCKER_TIMEOUT' => 60,
     ],
 
 ];

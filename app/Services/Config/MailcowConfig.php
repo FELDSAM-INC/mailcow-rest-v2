@@ -162,6 +162,30 @@ class MailcowConfig
     }
 
     /**
+     * Maximum number of tags per domain or mailbox (legacy `$TAGGING_LIMIT`, feature 002 FR-043).
+     *
+     * @phpstan-impure
+     */
+    public function taggingLimit(): int
+    {
+        $value = $this->value('TAGGING_LIMIT');
+
+        return is_numeric($value) && (int) $value > 0 ? (int) $value : (int) config('restv2.vars_defaults.TAGGING_LIMIT');
+    }
+
+    /**
+     * Seconds that a call of mailcow's container service may take (legacy `$DOCKER_TIMEOUT`).
+     *
+     * @phpstan-impure
+     */
+    public function dockerTimeout(): int
+    {
+        $value = $this->value('DOCKER_TIMEOUT');
+
+        return is_numeric($value) && (int) $value > 0 ? (int) $value : (int) config('restv2.vars_defaults.DOCKER_TIMEOUT');
+    }
+
+    /**
      * The effective value of a legacy variable listed in config/restv2.php.
      *
      * @phpstan-impure

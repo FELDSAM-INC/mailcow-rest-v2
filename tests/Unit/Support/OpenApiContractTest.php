@@ -29,6 +29,7 @@ class OpenApiContractTest extends TestCase
                         'operationId' => 'listApiKeyOwnerCandidates',
                         'parameters' => [
                             ['name' => 'limit', 'in' => 'query', 'schema' => ['type' => 'integer', 'minimum' => 1]],
+                            ['name' => 'active', 'in' => 'query', 'schema' => ['type' => 'boolean']],
                             ['name' => 'eventType', 'in' => 'query', 'explode' => true, 'style' => 'form', 'schema' => [
                                 'type' => 'array', 'items' => ['type' => 'string', 'enum' => ['signIn', 'signOut']],
                             ]],
@@ -174,6 +175,15 @@ class OpenApiContractTest extends TestCase
         $this->assertNotSame([], $this->contract->validateRequest(Request::create('/api/v2/api-keys/owner-candidates?unknown=1', 'GET')));
         $this->assertSame([], $this->contract->validateRequest(Request::create('/api/v2/api-keys/owner-candidates?limit=5&eventType=signIn&eventType=signOut', 'GET')));
         $this->assertNotSame([], $this->contract->validateRequest(Request::create('/api/v2/api-keys/owner-candidates?eventType=signIn&eventType=bogus', 'GET')));
+    }
+
+    public function test_boolean_query_parameters_accept_exactly_true_and_false(): void
+    {
+        // Feature 002 research D26: `?active=true|false` filters lists; any other spelling is invalid.
+        $this->assertSame([], $this->contract->validateRequest(Request::create('/api/v2/api-keys/owner-candidates?active=true', 'GET')));
+        $this->assertSame([], $this->contract->validateRequest(Request::create('/api/v2/api-keys/owner-candidates?active=false', 'GET')));
+        $this->assertNotSame([], $this->contract->validateRequest(Request::create('/api/v2/api-keys/owner-candidates?active=1', 'GET')));
+        $this->assertNotSame([], $this->contract->validateRequest(Request::create('/api/v2/api-keys/owner-candidates?active=yes', 'GET')));
     }
 
     public function test_an_unknown_operation_is_valid_only_as_a_404_or_405_problem(): void

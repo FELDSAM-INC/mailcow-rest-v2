@@ -177,4 +177,45 @@ class MailcowConfigTest extends TestCase
         // 7200 s from the fixture, in minutes.
         $this->assertSame(120, config('session.lifetime'));
     }
+
+    public function test_the_tagging_limit_and_docker_timeout_come_from_the_vars_files(): void
+    {
+        // Feature 002 T008 (research D24): upstream values of the mounted vars.inc.php.
+        $config = $this->config();
+
+        $this->assertSame(25, $config->taggingLimit());
+        $this->assertSame(60, $config->dockerTimeout());
+    }
+
+    public function test_a_local_tagging_limit_wins_over_vars_inc(): void
+    {
+        $dir = $this->copyFixtures();
+        file_put_contents($dir.'/vars.local.inc.php', "\n\$TAGGING_LIMIT = 30;\n\$DOCKER_TIMEOUT = 45;\n", FILE_APPEND);
+
+        $config = $this->config();
+
+        $this->assertSame(30, $config->taggingLimit());
+        $this->assertSame(45, $config->dockerTimeout());
+    }
+
+    public function test_server_settings_win_over_the_files(): void
+    {
+        config(['restv2.vars_overrides.TAGGING_LIMIT' => '40', 'restv2.vars_overrides.DOCKER_TIMEOUT' => '15']);
+
+        $config = $this->config();
+
+        $this->assertSame(40, $config->taggingLimit());
+        $this->assertSame(15, $config->dockerTimeout());
+    }
+
+    public function test_the_upstream_defaults_apply_without_the_directory(): void
+    {
+        config(['restv2.mailcow_inc_dir' => '/nonexistent/mailcow/web/inc']);
+        Log::spy();
+
+        $config = $this->config();
+
+        $this->assertSame(25, $config->taggingLimit());
+        $this->assertSame(60, $config->dockerTimeout());
+    }
 }

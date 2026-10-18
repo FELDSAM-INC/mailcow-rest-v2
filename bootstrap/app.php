@@ -1,5 +1,6 @@
 <?php
 
+use App\Clients\SharedStore\SharedStoreUnavailable;
 use App\Exceptions\ProblemException;
 use App\Exceptions\ProblemRenderer;
 use App\Exceptions\ValidationProblemException;
@@ -62,7 +63,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontReport([ProblemException::class, ValidationProblemException::class]);
+        $exceptions->dontReport([ProblemException::class, ValidationProblemException::class, SharedStoreUnavailable::class]);
 
         // Every error is an RFC 9457 problem (FR-049).
         $exceptions->render(fn (Throwable $e, Request $request) => ProblemRenderer::render($e, $request));

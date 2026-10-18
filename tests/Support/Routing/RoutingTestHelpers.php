@@ -4,6 +4,7 @@ namespace Tests\Support\Routing;
 
 use App\Auth\Role;
 use App\Clients\Dns\DnsResolver;
+use App\Clients\Smtp\SmtpProbe;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use stdClass;
@@ -11,6 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Aliases\AliasTestHelpers;
 use Tests\Support\ApiKeys\ApiKeys;
 use Tests\Support\Dns\FakeDnsResolver;
+use Tests\Support\Smtp\FakeSmtpProbe;
 
 /**
  * Callers, rows, requests and lookups shared by the tests of feature 009. Used in Tests\TestCase
@@ -21,19 +23,26 @@ trait RoutingTestHelpers
     use AliasTestHelpers;
     use ApiKeys;
 
-    private ?FakeDnsResolver $fakeDns = null;
-
     /**
-     * The DNS fake bound for the rest of the test.
+     * The DNS fake that Tests\TestCase binds for every test.
      */
     protected function dns(): FakeDnsResolver
     {
-        if ($this->fakeDns === null) {
-            $this->fakeDns = new FakeDnsResolver;
-            $this->app->instance(DnsResolver::class, $this->fakeDns);
-        }
+        $dns = $this->app->make(DnsResolver::class);
+        $this->assertInstanceOf(FakeDnsResolver::class, $dns);
 
-        return $this->fakeDns;
+        return $dns;
+    }
+
+    /**
+     * The SMTP probe fake that Tests\TestCase binds for every test.
+     */
+    protected function smtp(): FakeSmtpProbe
+    {
+        $smtp = $this->app->make(SmtpProbe::class);
+        $this->assertInstanceOf(FakeSmtpProbe::class, $smtp);
+
+        return $smtp;
     }
 
     /**

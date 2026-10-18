@@ -85,6 +85,8 @@ use App\Http\Controllers\Api\V2\ResourceController;
 use App\Http\Controllers\Api\V2\RspamdHistoryController;
 use App\Http\Controllers\Api\V2\RspamdStatisticsController;
 use App\Http\Controllers\Api\V2\RoutingBulkActionController;
+use App\Http\Controllers\Api\V2\RoutingCapabilitiesController;
+use App\Http\Controllers\Api\V2\RoutingConnectionTestController;
 use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
@@ -597,6 +599,7 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     // the capabilities) come before the parameterised ones; entry IDs are digits only.
     Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
         Route::get('/relayhosts', [RelayhostController::class, 'index'])->name('relayhosts.index');
+        Route::get('/capabilities/routing', [RoutingCapabilitiesController::class, 'show'])->name('routing-capabilities.show');
         Route::get('/relayhost-choices', [RelayhostChoiceController::class, 'index'])->name('relayhost-choices.index');
         Route::get('/relayhosts/{relayhostId}', [RelayhostController::class, 'show'])
             ->where('relayhostId', '[1-9][0-9]{0,9}')
@@ -633,6 +636,14 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('relayhostId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'relayhostDeletion', 'target' => 'relayhost'])
             ->name('relayhosts.destroy');
+        Route::post('/relayhosts/{relayhostId}/connection-test', [RoutingConnectionTestController::class, 'relayhost'])
+            ->where('relayhostId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'relayhostTest', 'target' => 'relayhost'])
+            ->name('relayhost-connection-test.store');
+        Route::post('/transports/{transportId}/connection-test', [RoutingConnectionTestController::class, 'transport'])
+            ->where('transportId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'transportTest', 'target' => 'transport'])
+            ->name('transport-connection-test.store');
         Route::post('/transports/bulk-actions', [RoutingBulkActionController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'transport'])
             ->name('transport-bulk-actions.store');

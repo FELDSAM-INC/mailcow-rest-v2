@@ -523,7 +523,7 @@ and audit records for credentials.
 
 ### Tests for User Story 4 (write first, observe failing) ⚠️
 
-- [ ] T057 [P] [US4] Create `tests/Support/Smtp/FakeSmtpProbe.php` (a queue of scripted
+- [X] T057 [P] [US4] Create `tests/Support/Smtp/FakeSmtpProbe.php` (a queue of scripted
   `SmtpProbeResult`s, the recorded `SmtpProbeRequest`s, `assertProbed()` and `assertNotProbed()`,
   implementing the interface of T062), `tests/Support/Smtp/ScriptedSmtpServer.php` and
   `tests/Support/Smtp/scripted-smtp-server.php`. The CLI script listens on `127.0.0.1:<port>`, plays
@@ -532,7 +532,7 @@ and audit records for credentials.
   it through Symfony `Process`, waits for the port, generates a self-signed certificate with
   `openssl_pkey_new()`/`openssl_csr_sign()` in the test's temporary directory, and returns the
   received lines.
-- [ ] T058 [P] [US4] Write `tests/Unit/Clients/StreamSmtpProbeTest.php` (FR-042, FR-043, R13, SC-007)
+- [X] T058 [P] [US4] Write `tests/Unit/Clients/StreamSmtpProbeTest.php` (FR-042, FR-043, R13, SC-007)
   against the scripted server:
   - acceptance with `AUTH PLAIN` when PLAIN and LOGIN are offered, with `AUTH LOGIN` when only LOGIN
     is offered; `accepted: true`, `step: message`, `login: succeeded`, `lastReply.code 250`;
@@ -552,7 +552,7 @@ and audit records for credentials.
     `connectionClosed`; a failing handshake → `tls`, `tlsFailed`; the overall deadline stops a slow
     server that answers each step just within the step timeout;
   - `EHLO` carries `MAILCOW_HOSTNAME`; message lines starting with `.` are dot-stuffed.
-- [ ] T059 [P] [US4] Write `tests/Feature/Routing/ConnectionTests/RelayhostConnectionTestTest.php`
+- [X] T059 [P] [US4] Write `tests/Feature/Routing/ConnectionTests/RelayhostConnectionTestTest.php`
   for `testRelayhostConnection` with `FakeSmtpProbe` and `FakeDnsResolver` (FR-041 to FR-045):
   - AS-1: a scripted accepted result is returned `200` with every member of the contract;
   - a host without brackets: MX records looked up, the most preferred used (equal preferences: the
@@ -571,11 +571,11 @@ and audit records for credentials.
     other table are unchanged afterwards (FR-044); one `relayhostTest` audit record holds `sender`,
     `recipient`, `accepted`, `step` and `failureReason`, and no transcript; domain administrators →
     `403 forbidden`.
-- [ ] T060 [P] [US4] Write `tests/Feature/Routing/ConnectionTests/TransportConnectionTestTest.php`
+- [X] T060 [P] [US4] Write `tests/Feature/Routing/ConnectionTests/TransportConnectionTestTest.php`
   for `testTransportConnection`: AS-2, next hop `partner.net` uses its most preferred MX and says so;
   `[mx.partner.net]:2525` connects without a lookup on port 2525; the shared credentials of the next
   hop are used; `transportTest` audit record; `404`, read-only key and domain administrator refusals.
-- [ ] T061 [P] [US4] Write `tests/Feature/Routing/Capabilities/RoutingCapabilitiesTest.php` for
+- [X] T061 [P] [US4] Write `tests/Feature/Routing/Capabilities/RoutingCapabilitiesTest.php` for
   `getRoutingCapabilities` (FR-093, SC-012): AS-7, an administrator gets `bulkLimit 100`, page sizes 25 and
   1,000, the BCC limits, the configured default sender and recipient, the timeouts, every
   `maxLengths` member (255), the eight policies and the lookup limit 10; a changed setting shows on
@@ -584,24 +584,24 @@ and audit records for credentials.
 
 ### Implementation for User Story 4
 
-- [ ] T062 [US4] Create `app/Clients/Smtp/SmtpProbe.php` (interface), `SmtpProbeRequest.php`,
+- [X] T062 [US4] Create `app/Clients/Smtp/SmtpProbe.php` (interface), `SmtpProbeRequest.php`,
   `SmtpProbeResult.php`, `SmtpTranscript.php` (redaction when a line is recorded, caps, sanitising)
   and `StreamSmtpProbe.php` (the dialogue of R13 with per-step and overall deadlines,
   `set_time_limit(90)`), and bind the interface in `app/Providers/AppServiceProvider.php`. This
   makes T058 pass.
-- [ ] T063 [US4] Create `app/Services/Routing/ConnectionTestService.php`: load the relayhost or
+- [X] T063 [US4] Create `app/Services/Routing/ConnectionTestService.php`: load the relayhost or
   transport (with its password, read explicitly), parse the next hop (legacy fallback), MX lookup and
   name resolution through `DnsResolver`, call `SmtpProbe`, map the result, and write the audit record
   in its own transaction after the dialogue.
-- [ ] T064 [P] [US4] Create `app/Http/Requests/Api/V2/RoutingConnectionTestRequest.php` (`sender`
+- [X] T064 [P] [US4] Create `app/Http/Requests/Api/V2/RoutingConnectionTestRequest.php` (`sender`
   and `recipient` optional, `RoutingEmail`) and
   `app/Http/Resources/Api/V2/RoutingConnectionTestResultResource.php`.
-- [ ] T065 [US4] Create `app/Http/Controllers/Api/V2/RelayhostConnectionTestController.php` and
+- [X] T065 [US4] Create `app/Http/Controllers/Api/V2/RelayhostConnectionTestController.php` and
   `TransportConnectionTestController.php`, and register `POST /relayhosts/{relayhostId}/connection-test`
   and `POST /transports/{transportId}/connection-test` in `routes/api.php` with `restv2.audit`
   defaults (`relayhostTest`, `transportTest`). This makes T059 and
   T060 pass.
-- [ ] T066 [US4] Create `app/Services/Routing/RoutingCapabilitiesService.php`,
+- [X] T066 [US4] Create `app/Services/Routing/RoutingCapabilitiesService.php`,
   `app/Http/Resources/Api/V2/RoutingCapabilitiesResource.php` and
   `app/Http/Controllers/Api/V2/RoutingCapabilitiesController.php`, and register
   `GET /capabilities/routing` (operation `getRoutingCapabilities`, `restv2.auth:authenticated`;
@@ -1108,4 +1108,18 @@ what exists map as listed.
   always empties the password of an empty resulting username, as legacy's transport('edit')
   does. The interference check runs only when the next hop changes, so that legacy rows that
   already interfere stay editable otherwise.
+- **T057**: `Tests\TestCase` binds `FakeDnsResolver` and `FakeSmtpProbe` for every test (like the
+  dockerapi and memcached fakes), so that no test can resolve a real name or open an SMTP
+  connection by accident; `RoutingTestHelpers::dns()` and `smtp()` return them. The scripted
+  server prints its port on its first line and writes what it received to a JSON file.
+- **T062**: the probe's result keeps the last reply of the dialogue; the best-effort `QUIT` and its
+  reply appear in the transcript only. The probe connects to the addresses the service resolved
+  (through `DnsResolver`), in order, with the host name as TLS peer name.
+- **T063**: a next hop the grammar refuses (legacy) is tested the legacy way; unlike legacy, a port
+  of an unbracketed `host:port` is used (FR-042; legacy dropped it and used 25). `host` in the
+  result is `null` when the dialogue never connected.
+- **T064–T066**: one `RoutingConnectionTestController` (`relayhost`, `transport`); the result and
+  the capabilities are built by their services, so no resource classes.
+- **G36**: `RoutingCapabilities.administration.maxLengths` gained `forwardingHost`, `testSender`
+  and `testRecipient` (255 each).
 

@@ -71,6 +71,9 @@ properties:
               - recipientMapDestination
               - tlsPolicyDestination
               - tlsPolicyParameters
+              - forwardingHost
+              - testSender
+              - testRecipient
             properties:
               host: {type: integer, minimum: 1}
               nextHop: {type: integer, minimum: 1}
@@ -80,6 +83,18 @@ properties:
               recipientMapDestination: {type: integer, minimum: 1}
               tlsPolicyDestination: {type: integer, minimum: 1}
               tlsPolicyParameters: {type: integer, minimum: 1}
+              forwardingHost:
+                type: integer
+                minimum: 1
+                description: The host of a forwarding host creation (an address, a prefix or a name).
+              testSender:
+                type: integer
+                minimum: 1
+                description: The sender address of a connection test.
+              testRecipient:
+                type: integer
+                minimum: 1
+                description: The recipient address of a connection test.
           tlsPolicies:
             type: array
             description: The policies a TLS policy map accepts.

@@ -30,6 +30,8 @@ use App\Clients\Releases\GitHubReleaseSource;
 use App\Clients\Releases\ReleaseSource;
 use App\Clients\Rspamd\RspamdController;
 use App\Clients\Rspamd\UnixSocketRspamdController;
+use App\Clients\Smtp\SmtpProbe;
+use App\Clients\Smtp\StreamSmtpProbe;
 use App\Clients\Yubico\HttpYubicoOtpVerifier;
 use App\Clients\Yubico\YubicoOtpVerifier;
 use App\Models\Mailcow\Alias;
@@ -98,6 +100,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->when(UpdateCheckService::class)->needs(Repository::class)->give(fn ($app) => $app->make(CacheFactory::class)->store('restv2'));
         // Feature 009: DNS and the SMTP connection test, faked in feature tests.
         $this->app->bind(DnsResolver::class, NativeDnsResolver::class);
+        $this->app->bind(SmtpProbe::class, StreamSmtpProbe::class);
 
         // Feature 012: the identity provider's protocols, faked in tests (Http::fake(), FakeLdapDirectory).
         $this->app->bind(OidcClient::class, LeagueOidcClient::class);

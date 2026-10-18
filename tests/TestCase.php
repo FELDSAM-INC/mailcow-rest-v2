@@ -6,12 +6,14 @@ use App\Auth\AccountKind;
 use App\Auth\AuthMethod;
 use App\Auth\Principal;
 use App\Auth\Role;
+use App\Clients\Dns\DnsResolver;
 use App\Clients\DockerApi\DockerApiClient;
 use App\Clients\Ispconfig\IspconfigDnsClient;
 use App\Clients\Memcached\MemcachedFlusher;
 use App\Clients\PublicAddress\PublicAddressLookup;
 use App\Clients\Releases\ReleaseSource;
 use App\Clients\Rspamd\RspamdController;
+use App\Clients\Smtp\SmtpProbe;
 use App\Services\Auth\SessionManager;
 use App\Services\Dkim\DkimDnsPublisher;
 use App\Support\Clock\Clock;
@@ -28,6 +30,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Clock\FakeSleeper;
 use Tests\Support\Contract\OpenApiContract;
 use Tests\Support\Dns\FakeClock;
+use Tests\Support\Dns\FakeDnsResolver;
 use Tests\Support\Fakes\FakeDockerApiClient;
 use Tests\Support\Fakes\FakeIspconfigDnsClient;
 use Tests\Support\Fakes\FakeMemcachedFlusher;
@@ -35,6 +38,7 @@ use Tests\Support\Fakes\FakePublicAddressLookup;
 use Tests\Support\Fakes\FakeReleaseSource;
 use Tests\Support\Mailcow\MailcowFactory;
 use Tests\Support\Rspamd\FakeRspamdController;
+use Tests\Support\Smtp\FakeSmtpProbe;
 
 /**
  * Base class of every Laravel test (research R3, R13).
@@ -49,7 +53,9 @@ use Tests\Support\Rspamd\FakeRspamdController;
  *  - Fakes the outbound services of feature 002 and 010 with asserting fakes (`dockerApi()`,
  *    `memcached()`, `ispconfig()`) and binds a clock that moves only when the test advances it
  *    (`clock()`). Feature 011 adds the Rspamd controller (`rspamd()`), the update check's release
- *    source (`releases()`) and the IP check service (`publicAddresses()`).
+ *    source (`releases()`) and the IP check service (`publicAddresses()`). DNS and the SMTP
+ *    connection test of feature 009 are faked as well, so that no test resolves a real name or
+ *    opens an SMTP connection (Tests\Support\Routing\RoutingTestHelpers).
  */
 abstract class TestCase extends BaseTestCase
 {
@@ -92,6 +98,8 @@ abstract class TestCase extends BaseTestCase
         $this->app->instance(RspamdController::class, $this->rspamd = new FakeRspamdController);
         $this->app->instance(ReleaseSource::class, $this->releases = new FakeReleaseSource);
         $this->app->instance(PublicAddressLookup::class, $this->publicAddresses = new FakePublicAddressLookup);
+        $this->app->instance(DnsResolver::class, new FakeDnsResolver);
+        $this->app->instance(SmtpProbe::class, new FakeSmtpProbe);
         DkimDnsPublisher::resetWarnings();
     }
 

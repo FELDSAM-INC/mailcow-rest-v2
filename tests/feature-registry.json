@@ -315,8 +315,6 @@
         }
     },
     "pendingOperations": [
-        "testRelayhostConnection",
-        "testTransportConnection",
         "listBccMaps",
         "createBccMap",
         "listBccDestinationChoices",
@@ -341,7 +339,6 @@
         "applyForwardingHostBulkAction",
         "getForwardingHost",
         "updateForwardingHost",
-        "deleteForwardingHost",
-        "getRoutingCapabilities"
+        "deleteForwardingHost"
     ]
 }

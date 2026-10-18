@@ -137,6 +137,7 @@ enum AuditEventType: string
 
     /** Feature 011: the list entries a ban service change added and removed. */
     private const BAN_LISTS = ['allowlistAdded', 'allowlistRemoved', 'denylistAdded', 'denylistRemoved'];
+
     /** Refusal keys of feature 009, which also records the missing permission flags. */
     private const ROUTING_REFUSAL = ['problemType', 'status', 'errors', 'requiredFlags'];
 

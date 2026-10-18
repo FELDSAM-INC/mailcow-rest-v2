@@ -1,0 +1,28 @@
+type: object
+description: |
+  Result of a bulk action. Each target is authorised, validated, processed and audited on its own;
+  one failure does not stop the others. Every audit record of the request carries
+  `bulkRequestId`.
+required: [bulkRequestId, results, summary]
+properties:
+  bulkRequestId:
+    type: string
+    pattern: '^[0-9a-f]{32}$'
+    description: Identifier of the bulk request (its request ID).
+  results:
+    type: array
+    items:
+      $ref: './BulkItemResult.yaml'
+  summary:
+    type: object
+    description: Number of targets per outcome.
+    required: [total, done, notFound, refused, outdated, failed]
+    properties:
+      total: {type: integer, minimum: 0}
+      done: {type: integer, minimum: 0}
+      notFound: {type: integer, minimum: 0}
+      refused: {type: integer, minimum: 0}
+      outdated: {type: integer, minimum: 0}
+      failed: {type: integer, minimum: 0}
+    additionalProperties: false
+additionalProperties: false

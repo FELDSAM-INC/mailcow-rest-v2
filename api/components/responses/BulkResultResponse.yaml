@@ -1,0 +1,12 @@
+description: |
+  The bulk action was processed. The status is `200` even when some or all items did not succeed:
+  check each item's `outcome`. The whole request is refused (`403`) only when the caller's role,
+  permission flag or key scope never allows the action.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/BulkResult.yaml'

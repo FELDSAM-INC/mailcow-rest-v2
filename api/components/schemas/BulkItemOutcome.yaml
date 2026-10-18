@@ -1,0 +1,8 @@
+type: string
+description: |
+  Result of one item of a bulk action (see `docs/conventions.md`). `done`: the action was applied.
+  `notFound`: the object does not exist or is outside the caller's scope. `refused`: the action is
+  not allowed for this object, or the object's state does not permit it (the item's `problem` says
+  why). `outdated`: the item carried a version tag that no longer matches. `failed`: an unexpected
+  or downstream failure, including an unknown outcome after a timeout.
+enum: [done, notFound, refused, outdated, failed]

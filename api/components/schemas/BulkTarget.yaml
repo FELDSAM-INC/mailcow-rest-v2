@@ -1,0 +1,16 @@
+type: object
+description: |
+  One target of a bulk action. Features reference this schema or extend it with `allOf`. `version`
+  is the object's version tag as last read. When present and outdated, the item's outcome is
+  `outdated` and the other items proceed. When absent, the item is not version-checked. An object
+  named twice is processed once.
+required: [id]
+properties:
+  id:
+    type: string
+    minLength: 1
+    description: Identifier of the object, as used in the object's own path.
+  version:
+    type: string
+    description: Version tag (the value of the object's `ETag`, without quotes) as last read.
+additionalProperties: false

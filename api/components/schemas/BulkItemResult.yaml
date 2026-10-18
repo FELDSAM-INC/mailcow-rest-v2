@@ -1,0 +1,16 @@
+type: object
+description: Outcome of one target of a bulk action. Results are returned in request order.
+required: [id, outcome]
+properties:
+  id:
+    type: string
+    description: Identifier of the target, as sent.
+  outcome:
+    $ref: './BulkItemOutcome.yaml'
+  version:
+    type: string
+    description: The object's new version tag after a `done` outcome, if the object still exists.
+  problem:
+    $ref: './Problem.yaml'
+    description: Present for `refused`, `outdated` and `failed`. Explains the item's outcome.
+additionalProperties: false

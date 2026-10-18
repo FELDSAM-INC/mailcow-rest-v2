@@ -100,3 +100,17 @@ this document next to the constitution.
   clients need few round trips. `offset` starts at 0. Lists accept `sort`, `order`, documented
   filters and a substring search (`q`). Clients such as the web app offer smaller page sizes (25,
   50, 100).
+
+## Shared contract components
+
+- **Bulk actions:**
+  - request items use `api/components/schemas/BulkTarget.yaml`, or extend it with `allOf`;
+  - the response is `api/components/responses/BulkResultResponse.yaml`, built from `BulkResult`,
+    `BulkItemResult` and `BulkItemOutcome`.
+- **Search:** lists use `api/components/parameters/Search.yaml` (`q`), next to `Limit`, `Offset`
+  and `Order`. Each feature defines its own `sort` parameter with its sortable fields.
+- **Shared enumerations:** each feature appends its values to `KnownProblemType`,
+  `AuditEventType`, `ValidationRuleCode` and, where needed, `AuditTarget`. Values are never
+  removed or renamed.
+- **New components:** each one carries its resource's name (for example `DomainTag`,
+  `MailboxTag`, `DomainCapabilities`), so that features never collide.

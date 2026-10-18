@@ -1,0 +1,9 @@
+name: q
+in: query
+required: false
+description: |
+  Case-insensitive substring search over the list's documented search fields. Leading and trailing
+  whitespace is ignored; an empty value means no search.
+schema:
+  type: string
+  maxLength: 255

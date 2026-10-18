@@ -2,7 +2,9 @@
 # the `app` container, for example `docker compose run --rm app composer test`.
 #
 # MariaDB and Redis publish no host ports. The API is served by `web` on
-# http://127.0.0.1:${RESTV2_WEB_PORT:-18080}/api/v2/.
+# https://127.0.0.1:${RESTV2_WEB_TLS_PORT:-18443}/api/v2/ (self-signed certificate, `curl -k`) and
+# on http://127.0.0.1:${RESTV2_WEB_PORT:-18080}/api/v2/ (health checks; the Secure session cookie
+# needs HTTPS).
 name: restv2
 
 services:
@@ -41,11 +43,31 @@ services:
     image: nginx:1.28-alpine
     ports:
       - "127.0.0.1:${RESTV2_WEB_PORT:-18080}:80"
+      - "127.0.0.1:${RESTV2_WEB_TLS_PORT:-18443}:443"
     volumes:
       - ./docker/nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx/dev-tls.conf:/etc/nginx/conf.d/dev-tls.conf:ro
       - ./deploy/nginx/site.restv2.custom:/etc/nginx/conf.d/site.restv2.custom:ro
+      - dev-certs:/etc/nginx/certs:ro
     depends_on:
-      - app
+      app:
+        condition: service_started
+      certs:
+        condition: service_completed_successfully
+
+  # One-shot: the self-signed certificate of the HTTPS listener, generated with PHP's openssl
+  # extension into the volume dev-certs when it does not exist yet. Never committed.
+  certs:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: dev
+    user: "0:0"
+    command: ["php", "/generate-dev-certificate.php", "/certs"]
+    volumes:
+      - ./scripts/dev/generate-dev-certificate.php:/generate-dev-certificate.php:ro
+      - dev-certs:/certs
+    restart: "no"
 
   mariadb:
     image: mariadb:10.11
@@ -77,3 +99,4 @@ services:
 volumes:
   dev-home:
   mariadb-data:
+  dev-certs:

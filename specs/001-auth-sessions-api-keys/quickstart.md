@@ -17,7 +17,9 @@ mailcow host. It references the contract and the data model instead of repeating
 ## Part A: Dev stack and automated suite
 
 ```bash
-# 1. Build and start MariaDB 10.11, Redis 7.4.11, php-fpm 8.4 (app) and nginx (web).
+# 1. Build and start MariaDB 10.11, Redis 7.4.11, php-fpm 8.4 (app) and nginx (web). The one-shot
+#    service `certs` generates the self-signed certificate of the HTTPS listener into the Docker
+#    volume `dev-certs` (never committed).
 docker compose up -d --build
 
 # 2. Install dependencies and create the dev environment file (.env.testing is committed).
@@ -37,15 +39,24 @@ docker compose run --rm app composer test
 # 5. Quality gates.
 docker compose run --rm app vendor/bin/pint --test
 docker compose run --rm app vendor/bin/phpstan analyse
+
+# 6. Optional: the Swagger UI assets of /api/v2/docs (the production image installs them itself).
+docker compose run --rm app composer docs:assets
+
+# 7. The production image, as the CI job `image` checks it.
+docker build -f docker/php/Dockerfile --target production -t mailcow-rest-v2:local .
+docker run --rm mailcow-rest-v2:local php /app/artisan restv2:health --live
 ```
 
 **Expected**:
 
 - `contract:lint` reports no errors. The four `operation-4xx-response` findings on the system
   endpoints are listed in `.redocly.lint-ignore.yaml`.
-- `composer test` ends green.
+- `composer test` ends green and prints `contract coverage: 31 of 31 registered operations covered,
+  0 pending`.
 - `build/contract/coverage.json` lists all 31 operations as covered.
 - Pint and PHPStan report nothing.
+- The production image builds, and its liveness check prints `live`.
 
 ### Regenerating the schema fixture (only for a new upstream release)
 
@@ -59,9 +70,13 @@ The file holds 54 tables and 6 views and contains no `DEFINER=` clause.
 
 ## Part B: Manual end-to-end checks against the dev stack
 
-The dev stack serves the API at `http://127.0.0.1:18080/api/v2` (`RESTV2_WEB_PORT`). Run
-`docker compose run --rm app scripts/dev/reset-dev-database.sh` first. It loads the schema fixture
-into the dev database `mailcow`, runs the `restv2_` migrations and calls
+The dev stack serves the API over HTTPS at `https://127.0.0.1:18443/api/v2`
+(`RESTV2_WEB_TLS_PORT`), with a self-signed certificate, so every command uses `curl -k`. The
+session cookie is always `Secure` (`__Host-restv2_session` by default), and curl keeps it only over
+HTTPS. Plain HTTP at `http://127.0.0.1:18080/api/v2` (`RESTV2_WEB_PORT`) stays for health checks.
+
+Run `docker compose run --rm app scripts/dev/reset-dev-database.sh` first. It loads the schema
+fixture into the dev database `mailcow`, runs all `restv2_` migrations and calls
 `php artisan db:seed --class=DevelopmentSeeder`, which creates:
 
 - `admin` (`BLF-CRYPT`, no second factor);
@@ -69,18 +84,16 @@ into the dev database `mailcow`, runs the `restv2_` migrations and calls
 - `alice@example.org` (mailbox with TOTP secret `JBSWY3DPEHPK3PXP`);
 - `bob@example.org` (mailbox with `force_pw_update`).
 
-Every password is `Passw0rd!dev`. The seeder refuses to run outside `APP_ENV=local`. In the dev
-stack, `SESSION_COOKIE=restv2_session` is set, because browsers drop `__Host-` cookies on plain
-HTTP. Production keeps `__Host-restv2_session`.
+Every password is `Passw0rd!dev`. The seeder refuses to run outside `APP_ENV=local`.
 
 ```bash
-B=http://127.0.0.1:18080/api/v2; J='-H Content-Type:application/json'; C='-c jar -b jar'
+B=https://127.0.0.1:18443/api/v2; J='-H Content-Type:application/json'; C='-k -c jar -b jar'
 
 # US5: public configuration without authentication, then a conditional revalidation.
-curl -s $B/public-config | jq '.data | {productName, defaultLanguage, logos}'
-ETAG=$(curl -sI $B/public-config | awk -F': ' 'tolower($1)=="etag"{print $2}' | tr -d '\r')
-curl -s -o /dev/null -w '%{http_code}\n' -H "If-None-Match: $ETAG" $B/public-config  # 304
-curl -s $B/public-config | jq '.data | {appsLabel, appLinks}'   # Webmail (builtIn), hidden on login
+curl -sk $B/public-config | jq '.data | {productName, defaultLanguage, logos}'
+ETAG=$(curl -skI $B/public-config | awk -F': ' 'tolower($1)=="etag"{print $2}' | tr -d '\r')
+curl -sk -o /dev/null -w '%{http_code}\n' -H "If-None-Match: $ETAG" $B/public-config  # 304
+curl -sk $B/public-config | jq '.data | {appsLabel, appLinks}'   # Webmail (builtIn), hidden on login
 
 # CSRF bootstrap (US1). Without the token, sign-in is refused.
 T=$(curl -s $C $B/csrf-token | jq -r .data.token)
@@ -97,11 +110,13 @@ curl -s $C $B/me | jq .type                                     # ".../unauthent
 # US1: second factor (TOTP), with the code computed in the app container.
 T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session \
-  -d '{"username":"alice@example.org","password":"Passw0rd!dev"}' | jq '.data.pendingSignIn.methods'
-CODE=$(docker compose run --rm app php artisan tinker --execute \
-  'echo (new RobThree\Auth\TwoFactorAuth(new App\Support\Totp\NoQrCodeProvider()))->getCode("JBSWY3DPEHPK3PXP");')
+  -d '{"username":"alice@example.org","password":"Passw0rd!dev"}' | jq -c '.data.pendingSignIn.methods'
+#   -> [{"id":1,"type":"totp","name":"Phone","tier":"primary"}]
+MID=$(curl -s $C $B/session | jq -r '.data.pendingSignIn.methods[0].id')
+CODE=$(docker compose run --rm -T app php artisan tinker --execute \
+  'echo (new RobThree\Auth\TwoFactorAuth(new App\Support\Totp\NoQrCodeProvider()))->getCode("JBSWY3DPEHPK3PXP");' | tail -1)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session/pending-sign-in/second-factor \
-  -d "{\"type\":\"totp\",\"methodId\":<id from methods>,\"code\":\"$CODE\"}" | jq '.data.state'
+  -d "{\"type\":\"totp\",\"methodId\":$MID,\"code\":\"$CODE\"}" | jq '.data.state'
 #   -> "active". Sending the same code again in a new sign-in -> ".../second-factor-failed"
 
 # US3: restricted session for a forced password change.
@@ -110,23 +125,24 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session \
 curl -s $C $B/me/preferences | jq '{type, pendingActions}'   # pending-action-required
 
 # US1 AS-7: throttling. The 11th wrong attempt within 15 minutes answers 429 with Retry-After.
+# (Failures are delayed 0.5 s more each time, so the loop takes about 25 seconds.)
 for i in $(seq 1 11); do
   curl -s $C $J -H "X-CSRF-Token: $T" -o /dev/null -w '%{http_code} ' -X POST $B/session \
     -d '{"username":"nobody","password":"wrong"}'; done; echo
 
-# Fail2ban: watch the channel while signing in wrongly.
-docker compose exec redis redis-cli -a "$REDISPASS" SUBSCRIBE F2B_CHANNEL
-#   -> "mailcow UI: Invalid password for nobody by 172.x.y.z"
+# Fail2ban: watch the channel while signing in wrongly (REDISPASS defaults to devredispass).
+docker compose exec redis redis-cli -a "${REDISPASS:-devredispass}" SUBSCRIBE F2B_CHANNEL
+#   -> "mailcow UI: Invalid password for nobody by 172.x.y.1" (the Docker gateway address)
 
 # US4: API keys. As admin, create a key, use it, revoke it.
 #   (Sign in as admin first, as above.)
 KEY=$(curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/api-keys \
   -d '{"name":"billing","ownerUsername":"reseller","accessLevel":"readOnly"}' | jq -r .data.secret)
 curl -s $C "$B/api-keys/owner-candidates?q=res" | jq '.data'     # [{"username":"reseller","role":"domainAdmin"}]
-curl -s -H "X-API-Key: $KEY" $B/me | jq '.data | {role, scope, authentication}'
-curl -s -H "X-API-Key: $KEY" $J -X POST $B/api-keys -d '{}' | jq .type          # insufficient-key-scope (read-only key)
-curl -s -H "X-API-Key: $KEY" $B/session | jq .type                               # session-required
-curl -s -H "X-API-Key: mcv2_0000000000000000000000000000000000000000" $B/me | jq .type  # api-key-invalid
+curl -sk -H "X-API-Key: $KEY" $B/me | jq '.data | {role, scope, authentication}'
+curl -sk -H "X-API-Key: $KEY" $J -X POST $B/api-keys -d '{}' | jq .type          # insufficient-key-scope (read-only key)
+curl -sk -H "X-API-Key: $KEY" $B/session | jq .type                               # session-required
+curl -sk -H "X-API-Key: mcv2_0000000000000000000000000000000000000000" $B/me | jq .type  # api-key-invalid
 
 # US6: audit log, filtered.
 curl -s $C "$B/audit-events?outcome=failure&eventType=signIn&limit=5" | jq '.data[] | {eventType, failureReason, actor, clientAddress}'
@@ -136,8 +152,8 @@ curl -s $C "$B/audit-events?outcome=failure&eventType=signIn&limit=5" | jq '.dat
 a password, a code, a key secret or a session ID. You can check this with
 `docker compose logs app | grep -c Passw0rd`, which must print `0`.
 
-Passkey flows (US2) need a browser. Open `http://127.0.0.1:18080/api/v2/docs`, or use the
-mailcowui-ng dev server against this stack. The automated suite covers them with the virtual
+Passkey flows (US2) need a browser. Open `https://127.0.0.1:18443/api/v2/docs` (after
+`composer docs:assets`), or use the mailcowui-ng dev server against this stack. The automated suite covers them with the virtual
 authenticator (`tests/Feature/Passkeys/*`, `tests/Feature/Auth/PasskeySignIn*`).
 
 ## Part C: Validation on a mailcow host

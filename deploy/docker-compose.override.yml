@@ -1,0 +1,85 @@
+# mailcow REST API v2 for mailcow-dockerized (research R14, R22, R23).
+#
+# Merge this service into the docker-compose.override.yml of your mailcow directory, add
+# RESTV2_APP_KEY (and, for the FeldHost fork, the RESTV2_* values of README.md) to mailcow.conf,
+# copy deploy/nginx/site.restv2.custom to data/conf/nginx/, then run
+#   docker compose up -d restv2-mailcow && docker compose restart nginx-mailcow
+#
+# No other mailcow service is changed (constitution V). Variables keep their mailcow.conf names;
+# settings new to this API use the RESTV2_ prefix. Empty RESTV2_<legacy variable> settings leave the
+# value to mailcow's mounted data/web/inc/vars{,.local}.inc.php.
+services:
+  restv2-mailcow:
+    image: ${RESTV2_IMAGE:-ghcr.io/feldsam-inc/mailcow-rest-v2:0.1.0}
+    restart: always
+    read_only: true
+    tmpfs:
+      - /app/storage:uid=82,gid=82,mode=0755
+      - /app/bootstrap/cache:uid=82,gid=82,mode=0755
+      - /tmp
+    depends_on:
+      - mysql-mailcow
+      - redis-mailcow
+    dns:
+      - ${IPV4_NETWORK:-172.22.1}.254
+    environment:
+      # Application
+      - APP_ENV=production
+      - APP_KEY=${RESTV2_APP_KEY}
+      # mailcow.conf
+      - MAILCOW_HOSTNAME=${MAILCOW_HOSTNAME}
+      - ADDITIONAL_SERVER_NAMES=${ADDITIONAL_SERVER_NAMES:-}
+      - TZ=${TZ}
+      - DBHOST=${DBHOST:-mysql-mailcow}
+      - DBNAME=${DBNAME}
+      - DBUSER=${DBUSER}
+      - DBPASS=${DBPASS}
+      - REDISHOST=${REDISHOST:-redis-mailcow}
+      - REDISPASS=${REDISPASS}
+      - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
+      - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
+      - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
+      - IPV6_NETWORK=${IPV6_NETWORK:-fd4d:6169:6c63:6f77::/64}
+      - WEBAUTHN_ONLY_TRUSTED_VENDORS=${WEBAUTHN_ONLY_TRUSTED_VENDORS:-n}
+      - SKIP_SOGO=${SKIP_SOGO:-n}
+      # Settings of this API
+      - RESTV2_SASL_LOG_SERVICE=${RESTV2_SASL_LOG_SERVICE:-MAILCOWUI}
+      - RESTV2_DEFAULT_UI_NAME=${RESTV2_DEFAULT_UI_NAME:-}
+      - RESTV2_DEFAULT_LOGO_URL=${RESTV2_DEFAULT_LOGO_URL:-/img/cow_mailcow.svg}
+      - RESTV2_DEFAULT_LOGO_DARK_URL=${RESTV2_DEFAULT_LOGO_DARK_URL:-/img/cow_mailcow.svg}
+      - RESTV2_SIGNIN_MAX_FAILURES=${RESTV2_SIGNIN_MAX_FAILURES:-10}
+      - RESTV2_SIGNIN_FAILURE_WINDOW=${RESTV2_SIGNIN_FAILURE_WINDOW:-900}
+      - RESTV2_CHALLENGE_TTL=${RESTV2_CHALLENGE_TTL:-300}
+      - RESTV2_AUDIT_RETENTION_DAYS=${RESTV2_AUDIT_RETENTION_DAYS:-365}
+      - RESTV2_YUBICO_VERIFY_URL=${RESTV2_YUBICO_VERIFY_URL:-https://api.yubico.com/wsapi/2.0/verify}
+      - RESTV2_MAILCOW_INC_DIR=${RESTV2_MAILCOW_INC_DIR:-/mailcow/web/inc}
+      # Legacy PHP configuration; empty means "read mailcow's vars files".
+      - RESTV2_SESSION_LIFETIME=${RESTV2_SESSION_LIFETIME:-}
+      - RESTV2_DEFAULT_LANG=${RESTV2_DEFAULT_LANG:-}
+      - RESTV2_AVAILABLE_LANGUAGES=${RESTV2_AVAILABLE_LANGUAGES:-}
+      - RESTV2_FIDO2_UV_FLAG_REGISTER=${RESTV2_FIDO2_UV_FLAG_REGISTER:-}
+      - RESTV2_FIDO2_UV_FLAG_LOGIN=${RESTV2_FIDO2_UV_FLAG_LOGIN:-}
+      - RESTV2_FIDO2_USER_PRESENT_FLAG=${RESTV2_FIDO2_USER_PRESENT_FLAG:-}
+      - RESTV2_FIDO2_FORMATS=${RESTV2_FIDO2_FORMATS:-}
+      - RESTV2_WEBAUTHN_UV_FLAG_LOGIN=${RESTV2_WEBAUTHN_UV_FLAG_LOGIN:-}
+      - RESTV2_WEBAUTHN_USER_PRESENT_FLAG=${RESTV2_WEBAUTHN_USER_PRESENT_FLAG:-}
+      - RESTV2_OTP_LABEL=${RESTV2_OTP_LABEL:-}
+      - RESTV2_MAILCOW_APPS=${RESTV2_MAILCOW_APPS:-}
+    volumes:
+      # Read-only: legacy's vars.inc.php and vars.local.inc.php (R14).
+      - ./data/web/inc:/mailcow/web/inc:ro,z
+    labels:
+      # mailcow's ofelia runs the audit retention purge daily (R22).
+      ofelia.enabled: "true"
+      ofelia.job-exec.restv2_audit_purge.schedule: "@daily"
+      ofelia.job-exec.restv2_audit_purge.command: "php /app/artisan restv2:audit-purge"
+    healthcheck:
+      test: ["CMD", "php", "/app/artisan", "restv2:health", "--ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      mailcow-network:
+        aliases:
+          - restv2

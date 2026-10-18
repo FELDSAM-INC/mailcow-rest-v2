@@ -4,7 +4,9 @@
 #
 #   base        php-fpm 8.4 with the runtime extensions, non-root (uid 82)
 #   dev         base plus the toolchain (Composer, Node, database and Redis clients, pcov)
-#   production  the deployable image (completed in T108)
+#   assets      the bundled contract and the Swagger UI assets (Node)
+#   vendor      the application with its production dependencies (built in the dev stage)
+#   production  the deployable image: read-only root filesystem, php-fpm on port 9000
 #
 # Build context: the repository root (`docker build -f docker/php/Dockerfile .`).
 
@@ -59,6 +61,70 @@ ENV HOME=/home/dev \
 USER 82
 
 # ---------------------------------------------------------------------------------------------
-# Placeholder: the contract bundle, `composer install --no-dev`, route and event caches and the
-# entrypoint are added in T108.
+# The bundled contract served at /api/v2/openapi.yaml and the Swagger UI assets of /api/v2/docs.
+FROM node:22-alpine AS assets
+
+ARG REDOCLY_CLI=@redocly/cli@2.64.1
+ARG SWAGGER_UI_DIST=5.33.0
+
+WORKDIR /build
+COPY api/ api/
+COPY redocly.yaml .redocly.lint-ignore.yaml ./
+
+RUN set -eux; \
+    npx --yes "${REDOCLY_CLI}" bundle api/openapi.yaml --output resources/contract/openapi.yaml; \
+    mkdir -p swagger resources/docs; \
+    cd swagger; \
+    npm pack --silent "swagger-ui-dist@${SWAGGER_UI_DIST}" > /dev/null; \
+    tar -xzf "swagger-ui-dist-${SWAGGER_UI_DIST}.tgz"; \
+    cp package/swagger-ui.css package/swagger-ui-bundle.js package/LICENSE /build/resources/docs/
+
+# ---------------------------------------------------------------------------------------------
+# The application with its production dependencies, installed with the dev stage's toolchain.
+FROM dev AS vendor
+
+USER root
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --no-progress --prefer-dist
+
+COPY . .
+RUN set -eux; \
+    composer dump-autoload --no-dev --classmap-authoritative --no-interaction; \
+    rm -rf tests docker scripts phpunit.xml phpstan.neon pint.json \
+        .env.example .editorconfig .gitattributes .gitignore .dockerignore redocly.yaml .redocly.lint-ignore.yaml \
+        compose.yaml CLAUDE.md storage/logs/* bootstrap/cache/*.php
+
+# ---------------------------------------------------------------------------------------------
+# The deployable image (R23). It runs as www-data (uid 82) with a read-only root filesystem:
+# /app/storage, /app/bootstrap/cache and /tmp are tmpfs mounts (deploy/docker-compose.override.yml).
+# The route and event caches are built here, outside the tmpfs; the configuration cache is built
+# by the entrypoint from the container's environment.
 FROM base AS production
+
+USER root
+
+ENV APP_ENV=production \
+    APP_ROUTES_CACHE=/app/bootstrap/image/routes-v7.php \
+    APP_EVENTS_CACHE=/app/bootstrap/image/events.php \
+    LOG_LEVEL=info
+
+COPY --from=vendor --chown=82:82 /app /app
+COPY --from=assets --chown=82:82 /build/resources/contract /app/resources/contract
+COPY --from=assets --chown=82:82 /build/resources/docs /app/resources/docs
+COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+RUN set -eux; \
+    chmod 0755 /usr/local/bin/entrypoint.sh; \
+    mkdir -p /app/bootstrap/image /app/storage/framework/cache /app/storage/logs; \
+    php /app/artisan route:cache; \
+    php /app/artisan event:cache; \
+    rm -f /app/bootstrap/cache/*.php; \
+    chown -R 82:82 /app/bootstrap /app/storage
+
+USER www-data
+WORKDIR /app
+EXPOSE 9000
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

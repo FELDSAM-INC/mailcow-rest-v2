@@ -1490,7 +1490,7 @@ record for secrets.
   `verifySecondFactor`, and `createSessionWithPasskey`, excluding the faked `Sleeper`. Assert that
   the 95th percentile is under 1 s with a `BLF-CRYPT` cost of 10. The test is in the group
   `performance`, which CI runs.
-- [ ] T108 Complete the `production` stage of `docker/php/Dockerfile` (R23):
+- [X] T108 Complete the `production` stage of `docker/php/Dockerfile` (R23):
   1. a `node:22-alpine` build stage runs `npx @redocly/cli@2.64.1 bundle` into
      `resources/contract/openapi.yaml` and copies the Swagger UI assets;
   2. `composer install --no-dev --classmap-authoritative --no-interaction`;
@@ -1499,7 +1499,17 @@ record for secrets.
 
   Create `docker/php/entrypoint.sh`: `set -eu`, `php artisan config:cache`,
   `php artisan migrate --force --isolated`, then `exec php-fpm -F`.
-- [ ] T109 Create `deploy/docker-compose.override.yml` with the service `restv2-mailcow` exactly as
+
+  *Implementation note*: Composer runs in a `vendor` stage built from `dev` (the base image has no
+  unzip or zip extension); Swagger UI (`swagger-ui-dist@5.33.0`) comes from the Node stage too. The
+  route and event caches are written to `/app/bootstrap/image/` (`APP_ROUTES_CACHE`,
+  `APP_EVENTS_CACHE`), because `/app/bootstrap/cache` is a tmpfs at runtime. With arguments the
+  entrypoint runs them instead (`docker run … php /app/artisan restv2:health --live`, as the CI
+  image job does). Verified locally: the image builds (226 MB), the liveness command prints `live`,
+  and with `--read-only` and the tmpfs mounts on the dev network the entrypoint caches the
+  configuration, migrates, starts php-fpm, and answers health, public configuration, docs, contract
+  and problem pages through nginx's FastCGI.
+- [X] T109 Create `deploy/docker-compose.override.yml` with the service `restv2-mailcow` exactly as
   in R23:
   - image `${RESTV2_IMAGE:-ghcr.io/feldsam-inc/mailcow-rest-v2:0.1.0}`, `restart: always`, `read_only: true`;
   - tmpfs `/app/storage` and `/app/bootstrap/cache` (`uid=82,gid=82`) and `/tmp`;
@@ -1511,16 +1521,31 @@ record for secrets.
     `ofelia.job-exec.restv2_audit_purge.command: "php /app/artisan restv2:audit-purge"`;
   - healthcheck `["CMD", "php", "/app/artisan", "restv2:health", "--ready"]`;
   - network `mailcow-network` with alias `restv2`.
-- [ ] T110 Verify `deploy/nginx/site.restv2.custom` (created in T002) inside mailcow's own nginx
+
+  *Implementation note*: also `dns: ${IPV4_NETWORK}.254` (mailcow's unbound, for the Yubico
+  service), like php-fpm-mailcow, and the empty-by-default `RESTV2_<legacy variable>` overrides.
+  `docker compose config` with upstream `2026-09a`'s `docker-compose.yml` merges it cleanly.
+- [X] T110 Verify `deploy/nginx/site.restv2.custom` (created in T002) inside mailcow's own nginx
   image. Render `sites-default.conf.j2` and `nginx.conf.j2` of upstream `2026-09a` the way the
   `ghcr.io/mailcow/nginx:1.30.4-1` entrypoint does, mount the snippet at
   `/etc/nginx/conf.d/site.restv2.custom`, and run `nginx -t`. Confirm that
   `http://127.0.0.1:18080/api/v2/health/live` answers `200` on the dev stack. Record the procedure
   in `README.md` (T112).
-- [ ] T111 [P] Create `database/seeders/DevelopmentSeeder.php`, which seeds the Part B accounts of
+
+  *Implementation note*: `scripts/dev/verify-nginx-snippet.sh [tag]` does it: the tag's templates,
+  the image's `bootstrap.py`, the snippet at `/etc/nginx/conf.d/site.restv2.custom`, a throwaway
+  certificate (`scripts/dev/generate-dev-certificate.php`), and the upstream hosts nginx resolves
+  at load time mapped to 127.0.0.1. `nginx -t` passes in `ghcr.io/mailcow/nginx:1.30.4-1` (its only
+  warning is upstream's own `listen … http2`), and `/api/v2/health/live` answers `200` on both dev
+  listeners.
+- [X] T111 [P] Create `database/seeders/DevelopmentSeeder.php`, which seeds the Part B accounts of
   quickstart.md through `database/factories/MailcowRows.php`. It refuses to run unless
   `APP_ENV=local`.
-- [ ] T112 [P] Write `README.md`:
+
+  *Implementation note*: `tests/Feature/Database/DevelopmentSeederTest.php` covers the refusal and
+  the accounts. `scripts/dev/reset-dev-database.sh` was run: the dev database has every `restv2_`
+  migration, `restv2_preferences` and `restv2_api_keys` included.
+- [X] T112 [P] Write `README.md`:
   - a supported-releases table: mailcow `2026-09a`, `db_version 18082026_1200`, fixture
     `tests/fixtures/schema/2026-09a.sql`;
   - architecture;
@@ -1531,19 +1556,39 @@ record for secrets.
 
   Write `CHANGELOG.md` with "0.1.0 — contract: the 31 operations of feature 001", for
   mailcowui-ng to pin.
-- [ ] T113 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
+
+  *Implementation note*: the changelog also lists the contract changes made during implementation
+  (G18, G19, `format: requestId`, the attestation text, the `Cache-Control` pattern, the
+  second-factor throttling texts).
+- [X] T113 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
   `composer contract:lint` in the dev container. Fix every finding until all are green and
   `build/contract/coverage.json` lists 31 of 31 operations (`pendingOperations` of
   `tests/feature-registry.json` is empty).
-- [ ] T114 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
+
+  *Implementation note*: green: 841 tests, coverage 31 of 31, Pint, PHPStan level 6 and the
+  contract lint clean. The production image build and the CI image job's two checks were run
+  locally too.
+- [X] T114 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
   output. Correct quickstart.md where commands drifted from the implementation, keeping it a
   validation guide.
+
+  *Implementation note (orchestrator decision)*: Part B failed before, because the `__Host-`
+  session cookie is always `Secure` and curl never sends it over plain HTTP. The dev stack now has
+  an HTTPS listener on `127.0.0.1:18443` (`RESTV2_WEB_TLS_PORT`) with a self-signed certificate
+  that the one-shot compose service `certs` generates at stack start into the volume `dev-certs`
+  (never committed); plain HTTP on 18080 stays for health checks. Part B uses it with `curl -k`
+  and the default cookie name (`.env.example` no longer renames it). Every Part B command was run
+  and printed its expected value; the methodId of the TOTP step is now read from
+  `GET /session`, and the tinker output is trimmed.
 - [ ] T115 Run quickstart.md Part C on a test host with mailcow `2026-09a` (and the FeldHost fork
   if available) before the first release. Check SC-003 (legacy UI, `/api/v1` and SOGo unchanged,
   only `restv2_` tables added), SC-004 (an unmodified fail2ban bans after the same number of failed
   sign-ins through `/api/v2` as through the legacy UI), SC-002 (passkey sign-in under 10 s and a
   first passkey registered and used within 1 minute, by stopwatch) and SC-006 (key created and
   first read within 2 minutes). Record the results in `CHANGELOG.md` under the release.
+
+  *Not done*: it needs a mailcow `2026-09a` host, which this environment does not have. It stays
+  open for the release; `CHANGELOG.md` says the release checks have not run.
 
 ---
 

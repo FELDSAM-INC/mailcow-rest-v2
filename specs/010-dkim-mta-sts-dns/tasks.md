@@ -870,17 +870,17 @@ target.
 
 ### Tests for User Story 8
 
-- [ ] T096 [P] [US8] Write `tests/Feature/Dkim/DkimAuditTrailTest.php`: AS1 import with overwrite →
+- [X] T096 [P] [US8] Write `tests/Feature/Dkim/DkimAuditTrailTest.php`: AS1 import with overwrite →
   the record has actor, time, client address, old and new selector and key length, fingerprints,
   `overwriteRequested: true` and the publication outcome, and no private key;
   `GET /audit-events?targetType=dkimKey&targetId=<name>` (002's filters) lists, for one name, the
   generation triggered by domain creation, a generation, an import, a copy onto it, an export
   attempt, a republish and a deletion, newest first; `targetId` given in Unicode or upper case
   finds the same records; refused attempts carry `details.problemType`.
-- [ ] T097 [P] [US8] Write `tests/Feature/MtaSts/MtaStsAuditTrailTest.php`: AS2 a domain
+- [X] T097 [P] [US8] Write `tests/Feature/MtaSts/MtaStsAuditTrailTest.php`: AS2 a domain
   administrator changes the mode → the record shows old and new `mode` and old and new policy
   identifier; `targetType=mtaStsPolicy&targetId=<domain>` lists creation and changes.
-- [ ] T098 [P] [US8] Write `tests/Feature/Audit/DkimMtaStsAuditCountTest.php` (SC-010): every
+- [X] T098 [P] [US8] Write `tests/Feature/Audit/DkimMtaStsAuditCountTest.php` (SC-010): every
   state-changing request and every export of the feature by an authenticated caller, successful or
   refused (read-only key and restricted session refusals included), writes exactly one audit record
   (count before and after each request); `401` and CSRF refusals, lists, reads, capabilities and
@@ -888,7 +888,7 @@ target.
 
 ### Implementation for User Story 8
 
-- [ ] T099 [US8] Extend 002's `app/Http/Requests/Api/V2/ListAuditEventsRequest.php` so that
+- [X] T099 [US8] Extend 002's `app/Http/Requests/Api/V2/ListAuditEventsRequest.php` so that
   `targetId` is normalised (trim, lower-case, UTS #46) for the target types `dkimKey` and
   `mtaStsPolicy` as it is for `domain`, while an exact legacy spelling is also matched for
   `dkimKey`. T096–T098 pass.

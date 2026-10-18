@@ -226,23 +226,134 @@ Feature 002. Written for every deletion of a domain template
 
 ## dkimKeyGeneration
 
-Feature 010, written since feature 002. Written when a DKIM key is generated, also as a follow-up
-step of a domain creation (and, with feature 004, of an alias domain creation): the key's history is
-complete even though the creation has its own record. The target is the key (`type: dkimKey`, `id`
-the name, `name` its readable form). No private key material and no ISPConfig password ever appear.
+Feature 010, written since feature 002. Written when a DKIM key is generated (`generateDkimKey`),
+also as a follow-up step of a domain creation and of an alias domain creation (feature 004): the
+key's history is complete even though the creation has its own record. The target is the key
+(`type: dkimKey`, `id` the name, `name` its readable form). No private key material and no ISPConfig
+password ever appear.
 
 | Key | Type | Meaning | Present |
 |---|---|---|---|
 | `selector` | string | The selector of the new key. | on success |
 | `keyLength` | integer or null | Bits of the new key. | on success |
 | `overwriteRequested` | boolean | Whether the request asked to replace an existing key (always `false` for creations). | on success |
-| `old` | object | The replaced key: `selector`, `keyLength`, `publicKeySha256` (hex SHA-256 of the DER public key). | when a key was replaced (feature 010) |
+| `old` | object | The replaced key: `selector`, `keyLength`, `publicKeySha256` (hex SHA-256 of the DER public key); `null` members for parts that were not stored. | when a key was replaced |
 | `new` | object | The new key: `selector`, `keyLength`, `publicKeySha256`. | on success |
-| `trigger` | string | What generated the key: `api` (feature 010), `domainCreation` or `aliasDomainCreation`. | on success |
+| `trigger` | string | What generated the key: `api`, `domainCreation` or `aliasDomainCreation`. | on success |
 | `dnsPublication` | object | The FeldHost ISPConfig publication: `status` (`DkimDnsPublicationStatus`), `reasonCode` (`DkimDnsPublicationReasonCode` or `null`) and `detail` (technical text without secrets, or `null`). | on success |
-| `problemType` | string | See "Refusal records". | on failure (feature 010) |
-| `status` | integer | See "Refusal records". | on failure (feature 010) |
-| `errors` | object | See "Refusal records". | on `422` failures (feature 010) |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## dkimKeyImport
+
+Feature 010. Written when a private key is imported (`importDkimKey`), and for every refused
+attempt of an authenticated caller. The target is the key. The key text is never recorded, also not
+in the `errors` of a refused import (rule codes and parameters only).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `selector` | string | The selector of the imported key. | on success |
+| `keyLength` | integer or null | Bits of the imported key. | on success |
+| `overwriteRequested` | boolean | Whether the request asked to replace an existing key. | on success |
+| `old` | object | The replaced key: `selector`, `keyLength`, `publicKeySha256`. | when a key was replaced |
+| `new` | object | The imported key: `selector`, `keyLength`, `publicKeySha256`. | on success |
+| `dnsPublication` | object | The publication outcome, as for `dkimKeyGeneration`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## dkimKeyCopy
+
+Feature 010. Written when a key is copied (`copyDkimKey`). The target is the key that was written
+(the copy's target); the source is in `sourceName`. A refusal is recorded on the requested target.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `selector` | string | The selector copied from the source. | on success |
+| `keyLength` | integer or null | Bits of the copied key. | on success |
+| `overwriteRequested` | boolean | Whether the request asked to replace the target's key. | on success |
+| `old` | object | The target's replaced key: `selector`, `keyLength`, `publicKeySha256`. | when a key was replaced |
+| `new` | object | The copied key: `selector`, `keyLength`, `publicKeySha256`. | on success |
+| `sourceName` | string | The source's name (its exact stored spelling for an unused legacy key). | on success |
+| `dnsPublication` | object | The publication outcome for the target, as for `dkimKeyGeneration`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## dkimKeyDeletion
+
+Feature 010. Written when a key is deleted (`deleteDkimKey`, or one item of
+`applyDkimKeyBulkAction`). The deletion answers without a body, so this record is where clients read
+the outcome of the record removal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `old` | object | The deleted key: `selector`, `keyLength`, `publicKeySha256`. | on success |
+| `dnsPublication` | object | The record removal: `status` (`removed`, `noRecordToRemove`, `noZone`, `failed` or `notConfigured`), `reasonCode`, `detail`. | on success |
+| `bulkRequestId` | string | The request ID of the bulk deletion the item belongs to. | items of a bulk deletion |
+| `targetIds` | array of strings | See "Refusal records" (bulk request refused as a whole). | bulk refusals |
+| `bulkAction` | string | See "Refusal records" (always `delete`). | bulk refusals |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## dkimPrivateKeyExport
+
+Feature 010. Written for every private key export (`exportDkimPrivateKey`) and every refused attempt
+(a read, but a view of sensitive content). The key itself is never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `selector` | string | The selector of the exported key. | on success |
+| `publicKeySha256` | string or null | Hex SHA-256 of the DER public key of the exported key. | on success |
+| `problemType` | string | See "Refusal records" (for example `dkim-private-key-export-disabled`). | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## dkimDnsPublication
+
+Feature 010. Written when an administrator publishes a key's record to ISPConfig again
+(`publishDkimDnsRecord`). The key itself is unchanged.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `selector` | string | The selector whose record was published. | on success |
+| `dnsPublication` | object | The publication outcome, as for `dkimKeyGeneration`. | on success |
+| `problemType` | string | See "Refusal records" (for example `dkim-dns-publication-disabled`). | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mtaStsPolicyCreation
+
+Feature 010. Written when an MTA-STS policy is created (`createMtaStsPolicy`), in the transaction of
+its row. The target is the policy (`type: mtaStsPolicy`, `id` the domain).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `version` | string | `STSv1`. | on success |
+| `mode` | string | `enforce`, `testing` or `none`. | on success |
+| `mxHosts` | array of strings | The stored MX hosts, in order. | on success |
+| `maxAge` | integer | The maximum age in seconds. | on success |
+| `active` | boolean | Whether the policy is published. | on success |
+| `policyId` | string | The 14-digit policy identifier. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mtaStsPolicyUpdate
+
+Feature 010. Written when an MTA-STS policy is changed (`updateMtaStsPolicy`), in the transaction of
+its row. A patch that changes nothing writes no record.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed member (`version`, `mode`, `mxHosts`, `maxAge`, `active`) with `{old, new}`. | on success |
+| `oldPolicyId` | string | The policy identifier before the change. | on success |
+| `newPolicyId` | string | The policy identifier after the change (equal to `oldPolicyId` when only `active` changed). | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
 
 <!-- Feature 003: mailboxes and mailbox templates. -->
 

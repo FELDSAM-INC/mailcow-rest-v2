@@ -68,10 +68,11 @@ class AuditEventController extends Controller
 
     /**
      * Records of a target identifier (feature 002 FR-058, research D16). Domain names (targets
-     * `domain` and `domainFooter`) are matched in their normalised ASCII form, whatever form and
-     * letter case were given; without `targetType`, a value that normalises to a domain name
-     * matches it as given or normalised, so that other identifiers (for example ULIDs) still match
-     * exactly.
+     * `domain`, `domainFooter` and feature 010's `mtaStsPolicy`) are matched in their normalised
+     * ASCII form, whatever form and letter case were given; DKIM keys (`dkimKey`, feature 010 FR-055)
+     * also by the exact spelling, under which legacy may have stored an unused key; without
+     * `targetType`, a value that normalises to a domain name matches it as given or normalised, so
+     * that other identifiers (for example ULIDs) still match exactly.
      *
      * @param  Builder<AuditEvent>  $query
      */
@@ -79,9 +80,9 @@ class AuditEventController extends Controller
     {
         $normalised = DomainName::normalize($targetId);
 
-        if (in_array($targetType, ['domain', 'domainFooter'], true)) {
+        if (in_array($targetType, ['domain', 'domainFooter', 'mtaStsPolicy'], true)) {
             $query->where('target_id', $normalised ?? $targetId);
-        } elseif ($targetType === null && $normalised !== null && $normalised !== $targetId) {
+        } elseif (($targetType === 'dkimKey' || $targetType === null) && $normalised !== null && $normalised !== $targetId) {
             $query->whereIn('target_id', [$targetId, $normalised]);
         } else {
             $query->where('target_id', $targetId);

@@ -6,6 +6,8 @@ description: |
     sessions only.
   - `/api/v2/problems/second-factor-unavailable`: the password is correct, but the account's only
     active second factors are deprecated U2F or HOTP entries. An administrator must reset them.
+  - `/api/v2/problems/insufficient-key-scope` and `/api/v2/problems/api-key-source-not-allowed`:
+    the request carries a read-only API key, or a key used from a disallowed address.
 content:
   application/problem+json:
     schema:

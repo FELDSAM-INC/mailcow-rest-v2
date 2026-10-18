@@ -203,7 +203,7 @@ app/
 │   ├── Middleware/                    # AssignRequestId, AuthenticateApiKey, StartSessionUnlessApiKey,
 │   │                                  # EnsureSessionIntegrity, VerifyCsrfToken, RequireAuth,
 │   │                                  # EnforceKeyScope, EnforcePendingActions
-│   ├── Requests/Api/V2/               # Form Requests (validation with rule codes)
+│   ├── Requests/Api/V2/               # ApiFormRequest base + Form Requests (validation with rule codes)
 │   └── Resources/Api/V2/              # JsonResources → contract shapes
 ├── Logging/{RequestContextProcessor,RedactSecrets}.php
 ├── Models/
@@ -212,17 +212,20 @@ app/
 │   └── {ApiKey,AuditEvent,Preference}.php
 ├── Policies/{ApiKeyPolicy,AuditEventPolicy}.php
 ├── Providers/AppServiceProvider.php
+├── Rules/                             # IpNetwork, EnabledLanguage, FutureDateTime, EligibleKeyOwner (rule-code aware)
 ├── Services/
 │   ├── Audit/AuditLogger.php
 │   ├── Auth/{AccountResolver,PasswordSignInService,SecondFactorService,PasskeySignInService,
 │   │         SignInThrottle,PendingActionEvaluator,RecentLoginRecorder,SessionManager}.php
 │   ├── ApiKeys/{ApiKeyService,ApiKeyAuthenticator}.php
-│   ├── Branding/PublicConfigService.php
+│   ├── Branding/{PublicConfigService,ProductName}.php
+│   ├── Health/ReadinessChecker.php
 │   ├── Config/MailcowConfig.php
 │   ├── Identity/{IdentityService,Scope}.php
 │   ├── Passkeys/PasskeyService.php
 │   └── Preferences/PreferencesService.php
 └── Support/
+    ├── Clock/{Sleeper,UsleepSleeper}.php   # injectable delay for sign-in throttling (faked in tests)
     ├── Hashing/LegacyPasswordVerifier.php
     ├── Http/{ProblemType,Problem,ETag,Base64Url}.php
     ├── Totp/NoQrCodeProvider.php
@@ -230,6 +233,7 @@ app/
 
 bootstrap/app.php                      # middleware group api.v2, exception rendering
 config/restv2.php                      # RESTV2_* settings, supported schema versions
+database/factories/MailcowRows.php     # inserts upstream rows exactly like legacy (tests, dev seeder)
 database/migrations/                   # only restv2_ tables
 database/seeders/DevelopmentSeeder.php # local only
 resources/bin/export-mailcow-vars.php
@@ -240,7 +244,7 @@ tests/
 ├── TestCase.php                       # contract validation, Redis flush, helpers
 ├── Support/
 │   ├── Contract/{OpenApiContract,ContractCoverageExtension}.php
-│   ├── Mailcow/MailcowFactory.php     # inserts upstream rows exactly like legacy
+│   ├── Mailcow/MailcowFactory.php     # test wrapper around database/factories/MailcowRows.php
 │   ├── Redis/ChannelSpy.php
 │   └── WebAuthn/{VirtualAuthenticator,CborEncoder}.php
 ├── Feature/{Auth,Passkeys,Identity,ApiKeys,PublicConfig,Audit,System,Schema,Security}/

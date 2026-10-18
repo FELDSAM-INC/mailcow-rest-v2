@@ -229,26 +229,30 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
   2. `AuthenticateApiKey`: if `X-API-Key` is non-empty, it resolves the key (R19). An invalid,
      expired or revoked key, or a disallowed address, answers `401` or `403` with its own type and
      is published to fail2ban. The health routes skip this step.
-  3. `StartSessionUnlessApiKey`.
-  4. `EnsureSessionIntegrity` (sessions only): idle timeout, UA pinning, and account still
+  3. `EnforceKeyScope`: a read-only key on any method other than `GET` and `HEAD` answers
+     `403 insufficient-key-scope`, before any other authorisation. The access level is a property
+     of the key, and no unsafe operation of feature 001 is open to keys, so this is the only place
+     where FR-039's "insufficient key scope" can be observed and tested.
+  4. `StartSessionUnlessApiKey`.
+  5. `EnsureSessionIntegrity` (sessions only): idle timeout, UA pinning, and account still
      existing and active. Any failure invalidates the session.
-  5. `VerifyCsrfToken` (sessions, unsafe methods).
   6. Route middleware `restv2.auth:<mode>`, where mode is `public`, `session` (session only),
      `authenticated` (session or key) or `signed-in-session` (no pending sign-in):
      - `401 unauthenticated`, or `401 second-factor-required` during a pending sign-in;
      - `403 session-required` for key requests to session-only operations.
-  7. `EnforceKeyScope`: a read-only key on an unsafe method answers `403 insufficient-key-scope`.
-  8. `EnforcePendingActions`: a restricted session answers `403 pending-action-required`, except on
-     routes marked `restv2.allow-restricted` (`GET /me`, `GET /session`, `DELETE /session`, the
-     public routes) and `restv2.allow-restricted:secondFactorSetup` (passkey registration options
-     and registration).
+  7. `VerifyCsrfToken` (sessions, unsafe methods): `403 csrf-token-mismatch`. It runs after step
+     6, so that a request without a live session on a protected route gets `401`, not a CSRF
+     error. On public unsafe routes (sign-in, passkey challenge and assertion, pending-sign-in
+     operations) it applies to the anonymous session.
+  8. `EnforcePendingActions` (route middleware `restv2.pending:<mode>`): a restricted session
+     answers `403 pending-action-required`, except on routes with mode `allow` (`GET /me`,
+     `GET /session`, `DELETE /session`, the public routes) and with mode `secondFactorSetup`
+     (passkey registration options and registration, allowed only when that is the sole pending
+     action).
   9. Policies or gates in controllers: `403 forbidden`, and `404` for objects outside the caller's
      scope.
   10. Form Request validation: `422 validation-failed`.
 
-  Authentication runs before the CSRF check for protected routes in the sense that a request
-  without any session gets `401` (step 4 or 6) rather than a CSRF error. A request with a live
-  session but a bad token gets `403 csrf-token-mismatch`.
 - **Rationale**: Each step maps to exactly one documented problem type. The key is checked first
   because the key decides when both a key and a cookie are present (spec edge case). Checking the
   key on every route is legacy parity: `sessions.inc.php` checks `X-API-Key` on every request and

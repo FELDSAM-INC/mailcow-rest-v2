@@ -7,7 +7,7 @@ use App\Models\Mailcow\Oauth2Client;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Body of `bulkOauth2ClientAction` (`Oauth2ClientBulkActionRequest`): `delete` or `revokeTokens`
+ * Body of `bulkOauth2ClientAction` (`Oauth2ClientBulkActionRequest`): `delete`, `revokeTokens` or `renewSecret`
  * and 1 to 100 targets with numeric identifiers (FR-060). Administrators only; any other caller is
  * refused as a whole.
  */
@@ -26,7 +26,7 @@ class Oauth2ClientBulkActionRequest extends ApiFormRequest
     public function rules(): array
     {
         return [
-            'action' => ['bail', 'required', 'string', 'in:delete,revokeTokens'],
+            'action' => ['bail', 'required', 'string', 'in:delete,revokeTokens,renewSecret'],
             'targets' => ['bail', 'required', 'array', 'list', 'min:1', 'max:'.self::LIMIT],
             'targets.*' => ['bail', 'array'],
             'targets.*.id' => ['bail', 'required', 'string', 'regex:/^[1-9][0-9]{0,9}$/'],

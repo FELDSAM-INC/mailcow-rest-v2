@@ -38,7 +38,7 @@ final class Oauth2ClientAuditTargetResolver
             }
 
             return [
-                'event' => $action === 'revokeTokens' ? AuditEventType::Oauth2ClientTokenRevocation : AuditEventType::Oauth2ClientDeletion,
+                'event' => Oauth2ClientBulkActions::event($action),
                 'target' => null,
                 'details' => ['targetIds' => $ids, 'bulkAction' => is_string($action) ? mb_substr($action, 0, 32) : null],
             ];

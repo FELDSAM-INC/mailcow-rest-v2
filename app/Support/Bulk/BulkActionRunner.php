@@ -32,7 +32,7 @@ class BulkActionRunner
     /**
      * @param  list<array{id: string, version?: string|null}>  $targets
      * @param  callable(string): ?string  $resolve  the object's key, or null when it does not exist for the caller
-     * @param  callable(string, ?string): ?string  $apply  applies the action to a key with an If-Match value; returns the new version, or null when the object is gone
+     * @param  callable(string, ?string): (string|array<string, mixed>|null)  $apply  applies the action to a key with an If-Match value; returns the new version, or null when the object is gone, or the members to add to the item's result (feature 012: `version` and a shown-once `clientSecret`)
      * @param  callable(string, ?string): ?array{type: string, id?: string|null, name?: string|null}  $auditTarget  the audit target of an item (raw ID, key)
      * @return array{bulkRequestId: string, results: list<array<string, mixed>>, summary: array<string, int>}
      */
@@ -66,11 +66,13 @@ class BulkActionRunner
                     throw new NotFoundHttpException('The object does not exist.');
                 }
 
-                $version = $apply($key, self::ifMatch($target['version'] ?? null));
+                $applied = $apply($key, self::ifMatch($target['version'] ?? null));
                 $result['outcome'] = BulkOutcome::Done->value;
 
-                if ($version !== null) {
-                    $result['version'] = $version;
+                if (is_array($applied)) {
+                    $result += $applied;
+                } elseif ($applied !== null) {
+                    $result['version'] = $applied;
                 }
             } catch (Throwable $e) {
                 $response = ProblemRenderer::render($e, $request);

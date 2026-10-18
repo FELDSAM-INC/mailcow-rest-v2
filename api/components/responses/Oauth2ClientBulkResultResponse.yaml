@@ -1,0 +1,13 @@
+description: |
+  The bulk action was processed. The status is `200` even when some or all clients did not
+  succeed: check each result's `outcome`. The whole request is refused (`403`) only when the
+  caller's role or key scope never allow the action. The new secrets of a `renewSecret` action
+  appear only in this response.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/Oauth2ClientBulkResult.yaml'

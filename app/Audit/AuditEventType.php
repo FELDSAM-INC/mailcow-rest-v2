@@ -182,7 +182,7 @@ enum AuditEventType: string
             self::IdentityProviderConnectionTest => ['type', 'testedAddress', 'outcome', 'failureCategory', 'providerStatus', ...self::REFUSAL],
             self::Oauth2ClientCreation => ['redirectUris', ...self::REFUSAL],
             self::Oauth2ClientUpdate => ['changes', ...self::REFUSAL],
-            self::Oauth2ClientSecretRegeneration => [...self::REFUSAL],
+            self::Oauth2ClientSecretRegeneration => [...self::BULK, ...self::REFUSAL],
             self::Oauth2ClientTokenRevocation, self::Oauth2ClientDeletion => ['removed', ...self::BULK, ...self::REFUSAL],
         };
     }

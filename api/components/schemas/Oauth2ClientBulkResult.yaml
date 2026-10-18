@@ -1,0 +1,28 @@
+type: object
+description: |
+  Result of an OAuth2 client bulk action: the shape of `BulkResult`, whose `done` `renewSecret`
+  results also carry the new secret. Every audit record of the request carries `bulkRequestId`.
+required: [bulkRequestId, results, summary]
+properties:
+  bulkRequestId:
+    type: string
+    pattern: '^[0-9a-f]{32}$'
+    description: Identifier of the bulk request (its request ID).
+  results:
+    type: array
+    description: One result per distinct client, in request order.
+    items:
+      $ref: './Oauth2ClientBulkItemResult.yaml'
+  summary:
+    type: object
+    description: Number of targets per outcome.
+    required: [total, done, notFound, refused, outdated, failed]
+    properties:
+      total: {type: integer, minimum: 0}
+      done: {type: integer, minimum: 0}
+      notFound: {type: integer, minimum: 0}
+      refused: {type: integer, minimum: 0}
+      outdated: {type: integer, minimum: 0}
+      failed: {type: integer, minimum: 0}
+    additionalProperties: false
+additionalProperties: false

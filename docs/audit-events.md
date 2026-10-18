@@ -974,11 +974,14 @@ Feature 012. Written for every change of a client's redirect URIs
 ## oauth2ClientSecretRegeneration
 
 Feature 012. Written for every secret regeneration
-(`POST /oauth2-clients/{oauth2ClientId}/secret-regeneration`) and every refusal. Neither the old nor
-the new secret appears.
+(`POST /oauth2-clients/{oauth2ClientId}/secret-regeneration` and `renewSecret` bulk items, API gap
+G42) and every refusal. Neither the old nor the new secret appears.
 
 | Key | Type | Meaning | Present |
 |---|---|---|---|
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |

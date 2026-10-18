@@ -715,6 +715,13 @@ results (SC-007).
   `app/Http/Resources/Api/V2/Oauth2ClientCapabilitiesResource.php` for
   `GET /capabilities/oauth2-clients`. This makes T073–T080 pass.
 
+- [X] T095 [US4] API gap G42 (FR-066, added during implementation): the bulk action `renewSecret` on
+  `POST /oauth2-clients/bulk-actions` regenerates each named client's secret through
+  `Oauth2ClientService::regenerateSecret()` and returns it once in the item result
+  (`Oauth2ClientBulkResult`, `Oauth2ClientBulkItemResult`); the shared `BulkActionRunner` accepts
+  extra result members from an item's action. Test first in
+  `tests/Feature/Oauth2/Oauth2BulkActionTest.php`; mark G42 done in `docs/api-gaps.md`.
+
 **Checkpoint**: OAuth2 management works; quickstart Part B's OAuth2 commands give the expected
 results.
 

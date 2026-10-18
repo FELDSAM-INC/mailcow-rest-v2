@@ -102,7 +102,7 @@ class Oauth2BulkActionTest extends TestCase
         $targets = array_map(fn (int $i): array => ['id' => (string) $i], range(1, 101));
         $this->bulk('delete', $targets)->assertUnprocessable()->assertJsonPath('errors.targets.0.code', 'tooMany');
         $this->bulk('delete', [['id' => 'abc']])->assertUnprocessable();
-        $this->bulk('renewSecret', [['id' => '1']])->assertUnprocessable()->assertJsonPath('errors.action.0.code', 'notInList');
+        $this->bulk('rotate', [['id' => '1']])->assertUnprocessable()->assertJsonPath('errors.action.0.code', 'notInList');
     }
 
     public function test_keys_and_roles_refused_as_a_whole(): void
@@ -123,5 +123,33 @@ class Oauth2BulkActionTest extends TestCase
         $this->assertNull($refusals[0]->target_type);
         $this->assertSame([(string) $client['id']], $refusals[0]->details['targetIds']);
         $this->assertSame('delete', $refusals[0]->details['bulkAction']);
+    }
+
+    /**
+     * G42: legacy renews the secrets of the selected clients; each new secret is returned once.
+     */
+    public function test_renew_secret_returns_each_new_secret_once(): void
+    {
+        $first = $this->clientWithTokens('https://a.example.org/cb');
+        $second = $this->clientWithTokens('https://b.example.org/cb');
+        $old = DB::table('oauth_clients')->pluck('client_secret', 'id')->all();
+        $this->asAdmin();
+
+        $response = $this->bulk('renewSecret', [['id' => (string) $first['id']], ['id' => (string) $second['id'], 'version' => '"stale"'], ['id' => '999999']])->assertOk();
+
+        $results = (array) $response->json('data.results');
+        $this->assertSame(['done', 'outdated', 'notFound'], array_column($results, 'outcome'));
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{24}$/', (string) $results[0]['clientSecret']);
+        $this->assertSame($results[0]['clientSecret'], DB::table('oauth_clients')->where('id', $first['id'])->value('client_secret'));
+        $this->assertNotSame($old[$first['id']], $results[0]['clientSecret']);
+        $this->assertArrayNotHasKey('clientSecret', $results[1]);
+        $this->assertSame($old[$second['id']], DB::table('oauth_clients')->where('id', $second['id'])->value('client_secret'));
+        $this->assertSame(['accessTokens' => 2, 'refreshTokens' => 2, 'authorizationCodes' => 1], $this->tokenRows($first['clientId']), 'tokens are kept');
+        $this->assertSame($results[0]['version'], $this->getJson('/api/v2/oauth2-clients/'.$first['id'])->json('data.etag'));
+
+        $audit = $this->clientAudit('oauth2ClientSecretRegeneration');
+        $this->assertCount(3, $audit);
+        $this->assertSame([(string) $response->json('data.bulkRequestId')], array_values(array_unique(array_map(fn ($r) => $r->details['bulkRequestId'] ?? null, $audit))));
+        $this->assertStringNotContainsString((string) $results[0]['clientSecret'], (string) json_encode($this->allAudit()));
     }
 }

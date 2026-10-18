@@ -1,0 +1,23 @@
+type: object
+description: |
+  Outcome of one client of an OAuth2 client bulk action. It has the members of `BulkItemResult`
+  plus `clientSecret`, the new secret of a `done` `renewSecret` item: shown only in this response,
+  never again.
+required: [id, outcome]
+properties:
+  id:
+    type: string
+    description: Identifier of the target, as sent.
+  outcome:
+    $ref: './BulkItemOutcome.yaml'
+  version:
+    type: string
+    description: The client's new version tag after a `done` outcome, if the client still exists.
+  clientSecret:
+    type: string
+    pattern: '^[0-9a-f]{24}$'
+    description: The new secret (24 lowercase hexadecimal characters) of a `done` `renewSecret` item.
+  problem:
+    $ref: './Problem.yaml'
+    description: Present for `refused`, `outdated` and `failed`. Explains the item's outcome.
+additionalProperties: false

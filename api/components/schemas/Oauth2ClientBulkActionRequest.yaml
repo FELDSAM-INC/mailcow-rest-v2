@@ -2,13 +2,14 @@ type: object
 description: |
   A bulk action on up to 100 OAuth2 clients (rule code `tooMany` beyond). Each client is processed
   as a single request for it would be: `delete` as `DELETE /oauth2-clients/{oauth2ClientId}`,
-  `revokeTokens` as `POST /oauth2-clients/{oauth2ClientId}/token-revocation`. Secret regeneration
-  has no bulk form.
+  `revokeTokens` as `POST /oauth2-clients/{oauth2ClientId}/token-revocation`, `renewSecret` as
+  `POST /oauth2-clients/{oauth2ClientId}/secret-regeneration`, whose new secret is returned once in
+  the item's result (API gap G42, legacy's "renew secret" of the selected clients).
 required: [action, targets]
 properties:
   action:
     type: string
-    enum: [delete, revokeTokens]
+    enum: [delete, revokeTokens, renewSecret]
   targets:
     type: array
     minItems: 1

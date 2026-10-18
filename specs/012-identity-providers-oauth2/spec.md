@@ -934,10 +934,10 @@ each filter.
   implemented, and its behaviour MUST match the contract.
 - **FR-059**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response
   of this API.
-- **FR-060**: Administrators MUST be able to delete, or revoke the tokens of, up to 100 OAuth2
-  clients in one request, as the legacy mass actions of the "OAuth2 Apps" table do. A request with
-  more than 100 clients MUST be refused with a validation error that states the limit. Secret
-  regeneration, creation and redirect URI changes MUST NOT be offered as bulk actions, and this
+- **FR-060**: Administrators MUST be able to delete, revoke the tokens of, or renew the secrets of
+  (FR-066) up to 100 OAuth2 clients in one request, as the legacy mass actions of the "OAuth2 Apps"
+  table do. A request with more than 100 clients MUST be refused with a validation error that
+  states the limit. Creation and redirect URI changes MUST NOT be offered as bulk actions, and this
   feature MUST NOT offer any other batch operation.
 - **FR-061**: A bulk action MUST be refused as a whole only when the caller's role or key scope does
   not allow it (FR-002, FR-003). Otherwise each named client MUST be processed on its own, with the
@@ -981,6 +981,12 @@ each filter.
   be refused when that tag is the stored configuration's. Nothing changes on a refusal, and the
   refusal is audited.
 
+- **FR-066** (API gap G42, found by mirroring the legacy forms): The bulk action `renewSecret` MUST
+  regenerate the secret of each named client as FR-046 does, with the same checks, version tag and
+  audit record per client, and MUST return each new secret once, in that client's item result; no
+  other response or record may contain it. This mirrors legacy's "Generate new client secret" for
+  the selected clients and replaces the earlier exclusion of a bulk secret regeneration.
+
 ### Legacy Coverage
 
 Every legacy capability allocated to feature 012 in `docs/roadmap.md` maps to requirements as
@@ -1013,7 +1019,7 @@ follows. Actions are `/api/v1` names; *form* marks legacy UI handlers and screen
 | `edit/oauth2-client` with `renew_secret`, *form* "Generate new client secret" | `oauth2('edit', 'client')` | FR-046 |
 | `edit/oauth2-client` with `revoke_tokens`, *form* "Revoke all client tokens", single and mass | `oauth2('edit', 'client')` | FR-047, FR-060, FR-061 |
 | `delete/oauth2-client`, single and mass | `oauth2('delete', 'client')` | FR-048, FR-060, FR-061 |
-| Mass "Generate new client secret" | `oauth2('edit', 'client')` with `renew_secret` | FR-046 per client; no bulk form (FR-060) |
+| Mass "Generate new client secret" | `oauth2('edit', 'client')` with `renew_secret` | FR-046, FR-060, FR-066 (bulk `renewSecret`) |
 | Scheduled-job log entries of the synchronisation jobs (`CRON_LOG`) | `crons/keycloak-sync.php`, `crons/ldap-sync.php` | FR-062 (read-only status) |
 
 Not covered here, by design:

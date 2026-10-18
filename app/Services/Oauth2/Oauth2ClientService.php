@@ -167,14 +167,14 @@ class Oauth2ClientService
     /**
      * @return array{row: stdClass, secret: string}
      */
-    public function regenerateSecret(int $id, ?string $ifMatch, Principal $actor): array
+    public function regenerateSecret(int $id, ?string $ifMatch, Principal $actor, ?string $bulkRequestId = null): array
     {
-        return DB::transaction(function () use ($id, $ifMatch, $actor): array {
+        return DB::transaction(function () use ($id, $ifMatch, $actor, $bulkRequestId): array {
             $row = $this->lock($id, $ifMatch);
             $secret = bin2hex(random_bytes(12));
 
             DB::table('oauth_clients')->where('id', $id)->update(['client_secret' => $secret]);
-            $this->audit->record(AuditEventType::Oauth2ClientSecretRegeneration, true, $actor, self::target($id, (string) $row->client_id), null, null, []);
+            $this->audit->record(AuditEventType::Oauth2ClientSecretRegeneration, true, $actor, self::target($id, (string) $row->client_id), null, null, self::withBulk([], $bulkRequestId));
 
             return ['row' => $this->find($id) ?? throw new NotFoundHttpException('The OAuth2 client does not exist.'), 'secret' => $secret];
         });

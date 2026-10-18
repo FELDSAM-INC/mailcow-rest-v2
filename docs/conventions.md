@@ -145,3 +145,15 @@ this document next to the constitution.
   `GET /me` before retrying a write that failed with `csrf-token-mismatch`.
 - **Sign-out and ending an impersonation** always succeed, even when an impersonation has become
   invalid. They end and audit it.
+- **Bulk request bodies** use the member name `targets`: `{"action": ..., "targets": [BulkTarget, ...]}`.
+
+## Permission refusals
+
+- `403 /api/v2/problems/forbidden`: the caller's role or key type may never use the operation.
+- `403 /api/v2/problems/permission-flag-required`: the operation needs a permission flag (`da_acl`
+  or `user_acl`) that the caller lacks. The problem names the flag in a `flag` member.
+- `403 /api/v2/problems/attribute-not-permitted`: the request sets a field that the caller's flags
+  don't allow. The problem names each field and its flag.
+- Objects outside the caller's scope stay `404`, as described above.
+- Single-resource responses may carry `meta` next to `data` when an operation reports side
+  information, for example affected objects.

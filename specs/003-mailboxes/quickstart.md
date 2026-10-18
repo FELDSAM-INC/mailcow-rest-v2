@@ -27,24 +27,29 @@ docker compose run --rm app vendor/bin/phpstan analyse
 ```
 
 **Expected**: everything green. `build/contract/coverage.json` lists the 16 operations of this
-feature as covered. The concurrency group reports exactly 10 mailboxes created out of 20 parallel
-attempts against a domain with room for 10, and the domain quota is never exceeded. The
-performance group reports p95 under 1 s for pages of 100 and under 5 s for pages of 1,000.
+feature as covered. The concurrency group makes 1,000 creation attempts from 20 parallel processes
+against a domain with room for 10: exactly 10 mailboxes are created, the others are refused
+(`mailbox-limit-reached`, or `422` for the domain quota left, which is checked first), and the
+domain quota is never exceeded. The performance group (10,000 mailboxes in 500 domains) reports
+p95 under 1 s for pages of 100 and under 5 s for pages of 1,000.
 
 ## Part B: Manual checks against the dev stack
 
 Run `docker compose run --rm app scripts/dev/reset-dev-database.sh`. In addition to 001's and 002's
 seed, the development seeder creates the Default mailbox template exactly as `init_db.inc.php`
 seeds it, a template "Small" (1 GiB, POP3 off, sync jobs on), and the domain `example.org` with a
-limit of 10 mailboxes and 5 GiB of domain quota. dockerapi and memcached are absent in the dev
-stack: `.env.example` binds their fakes (002's `RESTV2_FAKE_OUTBOUND=y`, development only), so
+limit of 10 mailboxes and 5 GiB of domain quota; `reseller` lacks the `protocol_access` flag.
+`bob@example.org` already exists (001's seed). dockerapi and memcached are absent in the dev
+stack: `.env.example` binds their stand-ins (002's `RESTV2_FAKE_OUTBOUND=y`, development only), so
 maildir moves, ACL commands and the SOGo rename report success without effect, and each command is
-written to the application log (`docker compose logs app | grep dockerapi`).
+written to the application log (`docker compose logs app | grep dockerapi`). The session cookie
+needs the dev stack's HTTPS listener (self-signed, `curl -k`).
 
 ```bash
-B=http://localhost:8080/api/v2; J='-H Content-Type:application/json'; C='-c jar -b jar'
+B=https://127.0.0.1:18443/api/v2; J='-H Content-Type:application/json'; C='-k -c jar -b jar'
 T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session -d '{"username":"admin","password":"Passw0rd!dev"}' >/dev/null
+T=$(curl -s $C $B/csrf-token | jq -r .data.token)                    # the sign-in renews the token
 
 # Capabilities and password policy (US2 AS-11, AS-12)
 curl -s $C $B/capabilities/mailboxes | jq '.data | {identityProviderType, authSources, bulkLimit, taggingLimit}'
@@ -53,22 +58,23 @@ curl -s $C -D - $B/password-policy | grep -i etag; curl -s $C $B/password-policy
 # Create with normalisation, from a template, and refused cases (US2)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailboxes \
   -d '{"localPart":" Anna.Smith ","domain":"Example.org","password":"Passw0rd!dev"}' \
-  | jq '.data | {address, quota, displayName, creationReport}'        # anna.smith@example.org, domain default quota
+  | jq '.data | {address, quota, displayName, creationReport}'        # anna.smith@example.org, 3 GiB (domain default)
+SMALL=$(curl -s $C "$B/mailbox-templates?q=Small" | jq '.data[0].id')
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailboxes \
-  -d '{"localPart":"bob","domain":"example.org","password":"Passw0rd!dev","templateId":<Small id>}' \
-  | jq '.data | {quota, protocolAccess, userPermissions: .userPermissions.syncjobs}'
+  -d "{\"localPart\":\"carol\",\"domain\":\"example.org\",\"password\":\"Passw0rd!dev\",\"templateId\":$SMALL}" \
+  | jq '.data | {quota, pop3: .protocolAccess.pop3, syncjobs: .userPermissions.syncjobs}'   # 1 GiB, false, true
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailboxes \
-  -d '{"localPart":"carl","domain":"example.org","password":"short"}' | jq '.errors.password'
+  -d '{"localPart":"carl","domain":"example.org","password":"short"}' | jq '.errors.password'   # tooShort, min 6
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailboxes \
-  -d '{"localPart":"anna.smith","domain":"example.org","password":"Passw0rd!dev"}' | jq '{type, holder}'
+  -d '{"localPart":"anna.smith","domain":"example.org","password":"Passw0rd!dev"}' | jq '{type, holder}'   # address-in-use, mailbox
 
 # List, search, sort, filter (US1)
-curl -s $C "$B/mailboxes?q=ANNA&sort=percentUsed&order=desc" | jq '{total: .meta.total, first: .data[0].address}'
+curl -s $C "$B/mailboxes?q=ANNA&sort=percentUsed&order=desc" | jq '{total: .meta.total, first: .data[0].address}'   # 1, anna.smith@example.org
 curl -s $C "$B/mailboxes?tag=Sales&status=active&domain=example.org" | jq '.meta'
-curl -s $C "$B/mailbox-tags?q=sal" | jq '.data'
 
 # Change with a version tag (US3); a stale tag gives 412
 ETAG=$(curl -s $C -D - -o /dev/null $B/mailboxes/anna.smith@example.org | awk -F': ' 'tolower($1)=="etag"{print $2}' | tr -d '\r')
+curl -s $C "$B/mailbox-tags?q=sal" | jq '.data'                       # [] until the change below; then Sales, 1
 curl -s $C -H 'Content-Type: application/merge-patch+json' -H "X-CSRF-Token: $T" -H "If-Match: $ETAG" \
   -X PATCH $B/mailboxes/anna.smith@example.org \
   -d '{"status":"loginDisabled","tags":["Sales"],"customAttributes":{"department":"Sales"}}' | jq '.data | {status, tags, customAttributes}'
@@ -76,10 +82,10 @@ curl -s $C -H 'Content-Type: application/merge-patch+json' -H "X-CSRF-Token: $T"
   -X PATCH $B/mailboxes/anna.smith@example.org -d '{"displayName":"Anna"}' -o /dev/null -w '%{http_code}\n'   # 412
 
 # Preview, rename, delete (US4, US8)
-curl -s $C $B/mailboxes/bob@example.org/deletion-preview | jq '.data | {canProceed, counts, garbageRetentionMinutes}'
+curl -s $C $B/mailboxes/carol@example.org/deletion-preview | jq '.data | {canProceed, counts, garbageRetentionMinutes}'   # true, zeros, 7200
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailboxes/anna.smith@example.org/rename \
   -d '{"newLocalPart":"anna","keepOldAddressAsAlias":true}' | jq '.data | {address, previousAddress, oldAddressKeptAsAlias}'
-curl -s $C -H "X-CSRF-Token: $T" -X DELETE -o /dev/null -w '%{http_code}\n' $B/mailboxes/bob@example.org   # 204
+curl -s $C -H "X-CSRF-Token: $T" -X DELETE -o /dev/null -w '%{http_code}\n' $B/mailboxes/carol@example.org   # 204
 docker compose logs app | grep dockerapi # maildir cleanup, get_acl, maildir move, sogo rename_user
 
 # Bulk action (US7)
@@ -89,11 +95,12 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailboxes/bulk-actions \
 
 # Templates (US6)
 curl -s $C $B/mailbox-templates | jq '.data[] | {id, name, isDefault}'
+DEF=$(curl -s $C "$B/mailbox-templates?q=Default" | jq '.data[0].id')
 curl -s $C -H 'Content-Type: application/merge-patch+json' -H "X-CSRF-Token: $T" -X PATCH \
-  $B/mailbox-templates/<Default id> -d '{"name":"Other"}' | jq .type        # mailbox-template-protected
+  $B/mailbox-templates/$DEF -d '{"name":"Other"}' | jq .type        # mailbox-template-protected
 
 # Domain administrator: scope and flags
-#   Sign in as "reseller" (002 seed, no protocol_access flag).
+#   Sign in as "reseller" (no protocol_access flag), as above, and take a new token.
 curl -s $C "$B/mailboxes/someone@other.example" -o /dev/null -w '%{http_code}\n'   # 404
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailboxes \
   -d '{"localPart":"dave","domain":"example.org","password":"Passw0rd!dev","protocolAccess":{"pop3":false}}' \
@@ -101,9 +108,10 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailboxes \
 ```
 
 **Expected**: each command prints the value in its comment. Check the audit log:
-`curl -s $C "$B/audit-events?targetType=mailbox&targetId=anna@example.org" | jq '.data[].eventType'`
-lists the creation, the change and the rename. `docker compose logs app | grep -c Passw0rd` prints
-`0`.
+`curl -s $C "$B/audit-events?targetType=mailbox&targetId=anna.smith@example.org" | jq '.data[].eventType'`
+lists the rename, the change and the creation (records carry the address the mailbox had at the
+time; the refused second creation is listed too), and `targetId=anna@example.org` the bulk change
+after the rename. `docker compose logs app | grep -c Passw0rd` prints `0`.
 
 ## Part C: Parity on a mailcow host
 

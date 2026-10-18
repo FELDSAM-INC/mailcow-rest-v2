@@ -854,10 +854,10 @@ inject a failure into each step (spec US8).
   right event type, target and outcome.
 - [X] T090 [P] Extend `database/seeders/DevelopmentSeeder.php` with the Default mailbox template
   (as `init_db.inc.php` seeds it), the template "Small" and the mailbox limits of quickstart Part B.
-- [ ] T091 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
+- [X] T091 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
   `composer contract:lint`; confirm `build/contract/coverage.json` lists all 16 operations of this
   feature (constitution quality gates 1, 2 and 6).
-- [ ] T092 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
+- [X] T092 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
   output; record Part C as the release checklist for a mailcow host.
 
 ---
@@ -1034,3 +1034,14 @@ what exists map as listed.
   mailboxes and 5 GiB, as quickstart Part B expects.
 - **G11** (shared with 011): the shared `OutcomeUnknownProblem` declares `step`; 011's response
   still has to reference it.
+- **T091**: the concurrency and performance groups are not excluded by `phpunit.xml`, so
+  `composer test` runs them with the rest of the suite. The production image was not rebuilt:
+  the plan does not change it (the nginx `fastcgi_read_timeout` and the compose override are
+  deployment files).
+- **T092**: Part B ran against the `restv2-003` dev stack with no published ports, so curl ran
+  inside the compose network against the HTTPS listener (`--connect-to mail.example.org:443:web:443`;
+  curl drops cookies for the single-label host `web`). The run corrected the guide: the base URL is
+  002's HTTPS one with `-k`, the sign-in renews the CSRF token, `bob@example.org` is seeded already
+  (the template example creates `carol`), template ids are looked up by name, and the audit records
+  of the renamed mailbox are found under its address at the time (`anna.smith@example.org`). Part C
+  stays the release checklist for a mailcow host and was not run.

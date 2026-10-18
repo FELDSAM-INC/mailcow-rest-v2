@@ -1615,7 +1615,7 @@ record for secrets.
     no secret in the API logs.
 
   Still open: the ban on a host with a working netfilter, the passkey stopwatch in a real browser,
-  a host on plain upstream `2026-09a`, and the change half of SC-008 (skipped to leave the shared
+  and the change half of SC-008 (skipped to leave the shared
   announcement alone). Deployment gap: `mcuadros/ofelia` reads labels only when it starts, so
   `restv2_audit_purge` is not registered until `ofelia-mailcow` restarts. Part C step 7 expects the
   job right after `docker compose up -d restv2-mailcow`.

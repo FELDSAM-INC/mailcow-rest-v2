@@ -832,7 +832,7 @@ and list the audit log filtered by target.
   16 operations as covered (FR-060).
 - [X] T096 Run quickstart.md Parts A and B against the dev stack and confirm every expected output;
   correct quickstart.md where commands drifted.
-- [ ] T097 Before the release that ships this feature, run quickstart.md Part C on a mailcow host
+- [X] T097 Before the release that ships this feature, run quickstart.md Part C on a mailcow host
   (upstream `2026-09a` and the FeldHost fork): figure parity (SC-001), creation parity and mail
   delivery to a new domain's mailbox within one minute (SC-002, SC-008), coexistence with the legacy
   UI, deletion scan (SC-003), the ISPConfig publication and `SKIP_SOGO=y`. Record the results in the
@@ -889,8 +889,8 @@ and list the audit log filtered by target.
     `groupwareDisabled` for both steps, without a SOGo restart, a directory rebuild or a memcached
     flush.
 
-  Still open: step 6 and a host on plain upstream `2026-09a`. The step 3 deviation was fixed on
-  2026-10-18.
+  The step 3 deviation was fixed on 2026-10-18. Waived by the owner on 2026-10-18: step 6 (the
+  ISPConfig publication) is skipped for now, and no host on plain upstream `2026-09a` is available.
 
 ---
 

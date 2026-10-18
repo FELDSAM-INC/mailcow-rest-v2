@@ -775,7 +775,7 @@ and list the audit log filtered by target.
 
 ### Tests for User Story 8 (write first, observe failing) ⚠️
 
-- [ ] T087 [P] [US8] Write `tests/Feature/Audit/DomainAuditTrailTest.php` (FR-057, FR-058):
+- [X] T087 [P] [US8] Write `tests/Feature/Audit/DomainAuditTrailTest.php` (FR-057, FR-058):
   - AS-1: a domain quota raise → the record shows the actor, the time, the client address and
     `changes.domainQuota {old, new}` in bytes;
   - `targetType=domain&targetId=EXAMPLE.org` and `targetId=münchen.de` (normalised) find the
@@ -789,7 +789,7 @@ and list the audit log filtered by target.
 
 ### Implementation for User Story 8
 
-- [ ] T088 [US8] Create `database/migrations/2026_10_19_000001_add_target_index_to_restv2_audit_events.php`
+- [X] T088 [US8] Create `database/migrations/2026_10_19_000001_add_target_index_to_restv2_audit_events.php`
   (index `(target_type, target_id, occurred_at)`), and extend 001's
   `app/Http/Requests/Api/V2/ListAuditEventsRequest.php` (`targetType` in the `AuditTarget` types,
   `targetId` max 255) and `app/Http/Controllers/Api/V2/AuditEventController.php` (filters of

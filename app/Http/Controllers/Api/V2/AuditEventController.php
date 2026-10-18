@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V2\ListAuditEventsRequest;
 use App\Http\Resources\Api\V2\AuditEventResource;
 use App\Models\AuditEvent;
+use App\Support\Domain\DomainName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 
@@ -34,10 +35,14 @@ class AuditEventController extends Controller
             }
         }
 
-        foreach (['outcome' => 'outcome', 'targetType' => 'target_type', 'targetId' => 'target_id', 'requestId' => 'request_id'] as $filter => $column) {
+        foreach (['outcome' => 'outcome', 'targetType' => 'target_type', 'requestId' => 'request_id'] as $filter => $column) {
             if ($filters[$filter] !== null) {
                 $query->where($column, $filters[$filter]);
             }
+        }
+
+        if ($filters['targetId'] !== null) {
+            self::whereTargetId($query, $filters['targetId'], $filters['targetType']);
         }
 
         if ($filters['actor'] !== null) {
@@ -59,6 +64,28 @@ class AuditEventController extends Controller
         $page = $list->paginate($query, fn (mixed $event): array => (new AuditEventResource($event))->toArray($request), 'id');
 
         return response()->json($page, 200, [], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Records of a target identifier (feature 002 FR-058, research D16). Domain names (targets
+     * `domain` and `domainFooter`) are matched in their normalised ASCII form, whatever form and
+     * letter case were given; without `targetType`, a value that normalises to a domain name
+     * matches it as given or normalised, so that other identifiers (for example ULIDs) still match
+     * exactly.
+     *
+     * @param  Builder<AuditEvent>  $query
+     */
+    private static function whereTargetId(Builder $query, string $targetId, ?string $targetType): void
+    {
+        $normalised = DomainName::normalize($targetId);
+
+        if (in_array($targetType, ['domain', 'domainFooter'], true)) {
+            $query->where('target_id', $normalised ?? $targetId);
+        } elseif ($targetType === null && $normalised !== null && $normalised !== $targetId) {
+            $query->whereIn('target_id', [$targetId, $normalised]);
+        } else {
+            $query->where('target_id', $targetId);
+        }
     }
 
     /**

@@ -86,11 +86,14 @@
   No. All template operations are for administrators only. (agent decision: domain administrators
   cannot create domains, the legacy UI shows the templates tab only to administrators, and least
   privilege applies.)
-- Q: The legacy list activates, deactivates and deletes several selected domains at once. Does the
-  API offer batch operations? → A: No. The web app sends one request per domain and reports each
-  result, and each request is authorised and audited on its own. (agent decision: constitution II
-  defines resources without batch semantics, and per-item requests give each domain its own outcome,
-  version check and audit record. A batch operation can be added later without breaking clients.)
+- Q: The legacy domain list activates, deactivates and deletes several selected domains at once.
+  Should these mass actions be one bulk request, and what happens when some domains fail? → A: One
+  request applies one action (activate, deactivate or delete) to up to 100 domains. Each domain is
+  checked, processed and audited on its own, failures do not stop the others, and the response
+  reports one result per domain (FR-062, FR-063). Templates and footers have no bulk actions.
+  (orchestrator decision: features 003 and 004 define bulk actions for the legacy mass actions in
+  the same way. Legacy `edit/domain` and `delete/domain` take arrays and continue past failures,
+  and the web app needs the mass actions.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -202,9 +205,8 @@ that mail for the new domain is accepted once a mailbox exists.
 ### User Story 3 - Edit a domain (Priority: P1)
 
 An administrator changes a domain's limits, quotas, relay options, Global Address List flag,
-description, tags or active state, or activates and deactivates several domains selected in the
-list. The API refuses limits below what is already in use and tells the administrator the value in
-use. If someone changed the same domain in the meantime, in the new app, in the legacy UI or
+description, tags or active state. The API refuses limits below what is already in use and tells
+the administrator the value in use. If someone changed the same domain in the meantime, in the new app, in the legacy UI or
 through `/api/v1`, the API refuses the stale change instead of overwriting it.
 
 A domain administrator edits the Global Address List flag and the tags of a domain they manage, and
@@ -313,7 +315,35 @@ unaffected.
 
 ---
 
-### User Story 6 - Manage the domain-wide footer (Priority: P3)
+### User Story 6 - Apply an action to many domains at once (Priority: P2)
+
+An administrator selects domains in the list and activates, deactivates or deletes them, as the
+legacy mass actions do. They get one result per domain.
+
+**Why this priority**: Operators use the legacy mass actions to suspend or remove a customer's
+domains. One request per domain would be slow and error-prone for the web app.
+
+**Independent Test**: Apply each action to a selection that includes a domain that does not exist
+and a domain whose operation fails, and compare the per-domain results, stored data and audit
+records with the same mass action in the legacy UI.
+
+**Acceptance Scenarios**:
+
+1. **Given** 50 active domains, **When** an administrator deactivates them in one request, **Then**
+   all 50 are inactive, the response has 50 successful results, and the audit log has 50 records.
+2. **Given** a selection of three empty domains and one domain with a mailbox, **When** an
+   administrator deletes the selection, **Then** the three empty domains are deleted, the fourth is
+   reported as refused with the "domain not empty" error, and it remains unchanged.
+3. **Given** a selection that names a domain that does not exist, **When** it is activated, **Then**
+   that domain is reported "not found" and the others are activated.
+4. **Given** a domain administrator, or a read-only key owned by an administrator, **When** they
+   submit any bulk action, **Then** the whole request is refused.
+5. **Given** a selection of 101 domains, **When** it is submitted, **Then** the request is refused
+   with a validation error that states the limit of 100.
+
+---
+
+### User Story 7 - Manage the domain-wide footer (Priority: P3)
 
 An administrator or a domain administrator sets the footer that mailcow adds to outgoing mail from
 a domain: an HTML version, a plain-text version, whether replies are skipped, and the addresses and
@@ -344,7 +374,7 @@ it does for a footer saved in the legacy UI.
 
 ---
 
-### User Story 7 - Trace domain changes (Priority: P3)
+### User Story 8 - Trace domain changes (Priority: P3)
 
 An administrator investigating a customer complaint lists the audit log filtered by a domain and
 sees every change to it, its footer and its tags: who made it, when, from where, what changed, and
@@ -411,6 +441,9 @@ and list the audit log filtered by target.
   conflict.
 - **Concurrent edits from the legacy UI**: the legacy UI never sends a version, so a legacy save
   can still overwrite a change made through this API, as before.
+- **Version tag sent with a bulk action**: not supported; bulk actions do not check versions.
+- **Bulk action naming the same domain twice**, or naming it in ASCII and Unicode form: it is
+  processed once and reported once.
 - **Duplicate tags in one request**, or tags that differ only in letter case: stored once.
 - **Domain that already has more tags than the limit**, from legacy: it can still be read and
   edited, but its tag set can only shrink until it is within the limit.
@@ -451,6 +484,7 @@ and list the audit log filtered by target.
   | Create a domain | Yes | Forbidden | Forbidden |
   | Edit a domain | All editable attributes (FR-031) | Own domains: Global Address List flag and tags; description only with the `domain_desc` permission flag (FR-032) | Forbidden |
   | Delete a domain | Yes | Forbidden | Forbidden |
+  | Bulk actions: activate, deactivate, delete (FR-062) | Yes, per domain as the single operation | Forbidden | Forbidden |
   | Domain templates (all operations) | Yes | Forbidden | Forbidden |
   | Read and replace a domain's footer | All domains | Own domains, no permission flag needed | Forbidden |
   | Read the audit log | Yes | Forbidden | Forbidden |
@@ -720,8 +754,10 @@ and list the audit log filtered by target.
 #### Audit
 
 - **FR-057**: Every request of this feature that changes state, or tries to, MUST write exactly one
-  audit record into feature 001's audit log, with the fields of FR-046 there and:
+  audit record per affected domain, template or footer into feature 001's audit log, with the fields
+  of FR-046 there and:
   - the target type (domain, domain template or domain footer) and the target identifier;
+  - for bulk actions, the identifier of the bulk request;
   - the outcome, including refusals and their reason;
   - for successful changes, each changed attribute with its old and new value. Footer texts MUST be
     recorded only as changed, with their old and new sizes;
@@ -737,13 +773,27 @@ and list the audit log filtered by target.
   MUST document at least these error types: domain already exists, domain not empty, template name
   already exists, protected template, outdated version, attribute not permitted for the role, and
   temporary failure. Validation errors MUST use stable rule codes with their parameters, including
-  the value in use for the rules of FR-033 and the limit for the tag rule of FR-043.
+  the value in use for the rules of FR-033, the limit for the tag rule of FR-043 and the bulk limit
+  of FR-062.
 - **FR-060**: Every operation MUST be described in the published API contract before it is
   implemented, and its behaviour MUST match the contract.
 - **FR-061**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response of
   this API.
-- **FR-062**: This feature MUST NOT offer batch operations. Each domain, template and footer is
-  created, changed and deleted with its own request.
+
+#### Bulk actions
+
+- **FR-062**: Administrators MUST be able to apply one of these actions to up to 100 domains in one
+  request, as the legacy mass actions do: activate, deactivate, delete. A request with more than 100
+  domains MUST be refused with a validation error that states the limit. Creation MUST NOT be
+  offered as a bulk action. Templates and footers have no bulk actions: each is created, changed and
+  deleted with its own request.
+- **FR-063**: A bulk action MUST be refused as a whole when the caller's role or key scope does not
+  allow the action (FR-004, FR-005). Otherwise each named domain MUST be processed on its own, with
+  the same checks, side effects and audit record as a single request for it, and the response MUST
+  report one result per distinct domain: done, not found, refused (with the error type), or failed
+  (with the error type). A failure on one domain MUST NOT stop or undo the others, as in legacy.
+  Bulk actions MUST NOT check version tags. The groupware directory update and cache flush MAY be
+  made once for the whole request, as legacy does.
 
 ### Legacy Coverage
 
@@ -756,13 +806,14 @@ follows. Actions are `/api/v1` names; *form* marks legacy UI form handlers.
 | `get/domain/all`, including `?tags=` | `mailbox('get', 'domains')` with `domain_details` per domain | FR-007, FR-008, FR-011 to FR-015 |
 | `get/domain/{domain}` | `mailbox('get', 'domain_details')` | FR-006 to FR-010, FR-016 |
 | `search/domain` (server-side list of the Domains screen) | `json_api.php` search case, `draw_domain_table()` | FR-011 to FR-015 |
-| `edit/domain`, *form* Edit domain (administrator and domain administrator), mass activate and deactivate | `mailbox('edit', 'domain')`, `edit/domain.twig`, `tab-domains.twig` | FR-030 to FR-034, FR-041 to FR-044, FR-062 |
-| `delete/domain`, single and mass | `mailbox('delete', 'domain')` | FR-035 to FR-040, FR-056, FR-062 |
+| `edit/domain`, *form* Edit domain (administrator and domain administrator) | `mailbox('edit', 'domain')`, `edit/domain.twig` | FR-030 to FR-034, FR-041 to FR-044 |
+| `delete/domain`, single | `mailbox('delete', 'domain')` | FR-035 to FR-040, FR-056 |
+| Domain list mass actions: activate, deactivate, delete (`edit/domain` and `delete/domain` with arrays) | `tab-domains.twig` quick actions | FR-062, FR-063 |
 | `add/domain/template`, *form* add-template modal | `mailbox('add', 'domain_templates')` | FR-045 to FR-047 |
 | `get/domain/template/all`, `get/domain/template/{id}` | `mailbox('get', 'domain_templates')` | FR-045, FR-049 |
 | `edit/domain/template`, *form* Edit template | `mailbox('edit', 'domain_templates')`, `edit/domain-templates.twig` | FR-047, FR-048 |
-| `delete/domain/template` | `mailbox('delete', 'domain_templates')` | FR-048, FR-050 |
-| `edit/domain/footer`, *form* footer tab, footer read on the Edit domain page | `mailbox('edit' / 'get', 'domain_wide_footer')` | FR-051 to FR-055, FR-037 |
+| `delete/domain/template`, single and the template list's mass delete | `mailbox('delete', 'domain_templates')`, `tab-templates-domains.twig` | FR-048, FR-050, FR-062 (one request per template) |
+| `edit/domain/footer`, *form* footer tab, footer read on the Edit domain page | `mailbox('edit' / 'get', 'domain_wide_footer')` | FR-051 to FR-055, FR-037, FR-062 (one request per footer) |
 | `delete/domain/tag` | `mailbox('delete', 'tags_domain')` | FR-043, FR-044 |
 | Domain quotas and limits | `domain` columns, figures of `domain_details` | FR-007 to FR-009, FR-020, FR-033 |
 | Relay/backup MX flags | `backupmx`, `relay_all_recipients`, `relay_unknown_only` | FR-007, FR-020, FR-021 |
@@ -834,7 +885,8 @@ in three ways:
 | Templates | Name required; uniqueness checked only at creation; renaming Default silently ignored; deleting Default silently ignored but reported as done; bulk delete stops after the first; values not validated; 0 replaced by defaults | Uniqueness also on rename; Default rename and delete refused; values validated like domains; explicit values kept (FR-046 to FR-048). **Deviation** |
 | Footer | Stored per name in `domain_wide_footer` (replaced as a whole). Exclusions must exist anywhere on the server; invalid entries are skipped and the rest saved; no size limit; alias domain names accepted but never applied by the mail pipeline | Same storage; exclusions must belong to the domain; invalid entries refuse the whole request; 1 MiB per text; alias domain names "not found" (FR-051 to FR-055). **Deviation** |
 | Concurrent edits | Last write wins | Version tags (FR-041, FR-042). **Deviation** |
-| Mass actions and multi-domain footers | One request with a list of items | One request per object (FR-062). **Deviation** |
+| Domain mass actions | `edit/domain` and `delete/domain` take a list of domains; processing continues past failures | Bulk action with one result per domain (FR-062, FR-063) |
+| Template mass delete and multi-domain footers | `delete/domain/template` with a list stops after the first template; `edit/domain/footer` applies one footer to a list of domains | One request per template and per footer (FR-062). **Deviation** |
 | UI log entries | Written to the `logs` table | Written to this API's audit log (FR-057), as in feature 001. **Deviation** |
 | DKIM key size | Any number the key generator accepts | 1024, 2048, 3072 or 4096, as the forms offer (FR-020). **Deviation** |
 | Default DKIM selector | `dkim` upstream, `feldhost` in the fork | Server setting, default `dkim` (FR-028) |
@@ -857,6 +909,7 @@ in three ways:
 - **Domain administrator assignment** (existing mailcow data, managed in feature 007): links a domain
   administrator to a domain, with an active state.
 - **Creation report**: the outcome of each follow-up step of one domain creation.
+- **Bulk action** (transient): one action on up to 100 domains, with one result per domain.
 - **Audit record** (owned by this API, defined in feature 001): extended with the target type, the
   target identifier, the attribute changes and the follow-up step outcomes.
 
@@ -879,11 +932,14 @@ in three ways:
   1 second on a server with 5,000 domains and 100,000 mailboxes.
 - **SC-006**: 100% of changes sent with an outdated version tag are refused, and no change sent with
   a current version tag overwrites a change it did not see.
-- **SC-007**: Every request in FR-057 produces exactly one audit record.
+- **SC-007**: Every request in FR-057 produces exactly one audit record per affected domain,
+  template or footer.
 - **SC-008**: An administrator can create a domain from a template in the new web app in under
   1 minute, and the domain accepts mail for a new mailbox within 1 minute of its creation.
 - **SC-009**: 100% of refused creations and edits name every invalid field with a stable rule code,
   so that the web app can show each error next to its field.
+- **SC-010**: A bulk action on 100 domains completes within 10 seconds (deletions within 60
+  seconds) and reports exactly one result per domain.
 
 ## Assumptions
 
@@ -901,14 +957,15 @@ in three ways:
 - The legacy UI never sends version tags, so it can still overwrite changes made through this API.
   Only clients of this API are protected against lost updates.
 - These defaults can be changed by the operator: the tagging limit (25), the default DKIM selector
-  (`dkim`), the DKIM DNS publication (off), and the list page size (25, maximum 1,000).
+  (`dkim`), the DKIM DNS publication (off), the list page size (25, maximum 1,000) and the bulk
+  limit (100).
 - **Out of scope**:
   - mailboxes, aliases, alias domains and resources;
   - relayhost assignment, rate limit changes, DKIM management, MTA-STS, spam policies and quota
     warning BCC;
   - domain administrator management;
   - DNS diagnostics;
-  - batch operations;
+  - bulk creation, and bulk actions on templates and footers;
   - restarting the groupware outside domain creation.
 - **Dependencies**:
   - the upstream mailcow database schema of the supported release;

@@ -49,7 +49,7 @@
   - version tags cover stored settings only and are optional to send (FR-041, FR-042);
   - deletion also cleans up alias domains and the footer (FR-037);
   - templates are administrator-only (FR-005, FR-045);
-  - there are no batch operations (FR-062).
+  - there are no batch operations (FR-062), later replaced in iteration 4.
 
   The legacy coverage table, the parity table with fork differences, and the creation report were
   added. The spec was renumbered to FR-001 to FR-062 and SC-001 to SC-009, and every cross-reference
@@ -58,6 +58,20 @@
   - the description rule against "omitted values are kept" (FR-020);
   - "sent values are never ignored" against relay normalisation (FR-030);
   - the missing rule for read-only attributes sent by administrators (FR-031).
+- Iteration 4 (orchestrator alignment with features 003 and 004): legacy offers mass actions on
+  domains in `tab-domains.twig` (activate, deactivate, delete, administrators only). Clarification
+  10 is now an orchestrator decision. The spec adds:
+  - User Story 6, bulk actions (P2). The footer and audit stories are renumbered to 7 and 8;
+  - FR-062 and FR-063, following the 003 pattern: up to 100 domains, refused as a whole only for
+    role or key scope, otherwise processed and audited per domain with one result each, no version
+    checks;
+  - a bulk row in the FR-005 matrix and two edge cases;
+  - per-object audit records (FR-057, SC-007), SC-010, the "Bulk action" entity, and the bulk limit
+    among the operator defaults.
+
+  The template list's mass delete stops after the first template in legacy, so templates and
+  footers stay one request each. This is stated in the coverage and parity tables. All checklist
+  items still pass, and every FR reference resolves.
 - The domain-related legacy files of the FeldHost fork were diffed against upstream `2026-09a`. The
   domain logic is identical. The differences are the default DKIM selector and the ISPConfig DKIM DNS
   push, both now explicit (FR-027, FR-028 and the parity table).

@@ -54,8 +54,10 @@ properties:
   details:
     type: object
     description: |
-      Non-secret event details, for example `requestedRole`, `secondFactorType`,
-      `changedFields` or `accessLevel`.
+      Non-secret event details with stable camelCase keys, for example `requestedRole`,
+      `secondFactorType`, `changedFields` or `accessLevel`. The keys of each event type, their
+      types and whether they can be absent are documented in `docs/audit-events.md`. Show
+      unknown keys verbatim.
     additionalProperties: true
   impersonatedAccount:
     description: |

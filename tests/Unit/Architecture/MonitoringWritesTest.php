@@ -3,7 +3,6 @@
 namespace Tests\Unit\Architecture;
 
 use App\Models\Mailcow\LegacyUiLogEntry;
-use App\Models\Mailcow\MailcowModel;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -64,6 +63,6 @@ class MonitoringWritesTest extends TestCase
 
         $this->assertStringContainsString('static::saving(', $code);
         $this->assertStringContainsString('static::deleting(', $code);
-        $this->assertTrue(is_subclass_of(LegacyUiLogEntry::class, MailcowModel::class));
+        $this->assertSame('logs', (new LegacyUiLogEntry)->getTable());
     }
 }

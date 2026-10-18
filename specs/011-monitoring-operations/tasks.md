@@ -851,7 +851,7 @@ refused ones, and each content view, then filter the audit log.
   `RESTV2_UPDATE_CHECK=n`; raising `DOCKER_TIMEOUT` needs `fastcgi_read_timeout` ≥ `DOCKER_TIMEOUT + 30`
   and `request_terminate_timeout` ≥ `DOCKER_TIMEOUT + 40`) and add the feature's contract changes to `CHANGELOG.md` under the next
   release (42 operations, shared enum values, problem types).
-- [ ] T112 Run quickstart Part A and Part B (`specs/011-monitoring-operations/quickstart.md`),
+- [X] T112 Run quickstart Part A and Part B (`specs/011-monitoring-operations/quickstart.md`),
   `composer test` with contract coverage of all 42 operations, `vendor/bin/pint --test` and
   `vendor/bin/phpstan analyse`; fix every finding.
 
@@ -1031,3 +1031,11 @@ Deviations and decisions made while implementing, with the reason:
   feature's controllers, and a feature test proves the legacy activity log model refuses writes.
   The README documents the settings and the timeouts; `docs/conventions.md` lists the shared
   pieces 011 created.
+- **T112** (gates): Part A ran in compose project `restv2-011` (the lint is valid with the six
+  ignored warnings; the suite covers all 42 operations; pint and PHPStan are clean). Part B ran
+  against `web` with no host ports published, over the container's bridge address instead of
+  `127.0.0.1:18443`; every command printed its expected value and no response contained a planted
+  container secret. Drift fixed in `quickstart.md`: the Redis server has no `REDISPASS` variable,
+  so the commands fall back to the dev default, and the log commands state their output. Two
+  monitoring tests that compare whole-second dockerapi ages with an unfrozen clock failed under
+  load; they now freeze the clock. Part C (a real mailcow host) stays for the owner.

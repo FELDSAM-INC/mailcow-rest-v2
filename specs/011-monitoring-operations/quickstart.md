@@ -31,7 +31,8 @@ docker compose run --rm app vendor/bin/phpstan analyse
 
 **Expected**:
 
-- The lint shows only 001's four known `operation-4xx-response` warnings.
+- The lint reports a valid description; the known warnings are listed in
+  `.redocly.lint-ignore.yaml`.
 - `composer test` is green and `build/contract/coverage.json` lists all 42 operations of this
   feature as covered.
 - `tests/Feature/Security/MonitoringAuthorizationTest.php` shows every operation refused for
@@ -44,12 +45,15 @@ docker compose run --rm app vendor/bin/phpstan analyse
 ## Part B: Manual checks against the dev stack
 
 The dev stack has no dockerapi, Postfix or Rspamd. Set `RESTV2_FAKE_OUTBOUND=y` in `.env`
-(local environment only; `AppServiceProvider` refuses it elsewhere) to bind the fakes with the
-recorded payloads of `tests/fixtures/monitoring/`, then sign in as the dev seeder's `admin`
-(001 quickstart Part B).
+(local environment only; `AppServiceProvider` ignores it elsewhere): the development stand-ins
+(`App\Clients\Development\Null*`) answer with the recorded payloads of `tests/fixtures/monitoring/`
+(container actions change nothing there). Run `docker compose run --rm app
+scripts/dev/reset-dev-database.sh` and sign in as the dev seeder's `admin` over the HTTPS listener
+(001 quickstart Part B; the session cookie is `Secure`). The Redis server has no `REDISPASS`
+variable of its own, so the commands fall back to the dev stack's default password.
 
 ```bash
-B=http://localhost:8080/api/v2; C='-c jar -b jar'; J='-H Content-Type:application/json'
+B=https://127.0.0.1:18443/api/v2; C='-k -c jar -b jar'; J='-H Content-Type:application/json'
 T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session -d '{"username":"admin","password":"Passw0rd!dev"}' >/dev/null
 
@@ -64,11 +68,14 @@ curl -s $C -H "X-CSRF-Token: $T" -X POST $B/containers/mysql-mailcow/stop | jq '
 #   -> "/api/v2/problems/container-protected", "mysql-mailcow"
 
 # US3: logs, newest first, then the next page without duplicates
-docker compose exec redis redis-cli -a "$REDISPASS" -n 0 LPUSH POSTFIX_MAILLOG \
+docker compose exec redis redis-cli -a "${REDISPASS:-devredispass}" -n 0 LPUSH POSTFIX_MAILLOG \
   '{"time":"1760800000","priority":"err","program":"postfix/smtp","message":"to=<alice@example.org> bounced"}'
-curl -s $C "$B/logs/postfix?q=ALICE@example.org&severity=error" | jq '.meta.total, .data[0].id'
+curl -s $C "$B/logs/postfix?q=ALICE@example.org&severity=error" | jq '.meta.total, .data[0].id'   # -> 1, "1760800000.<hash>.0"
 OLDEST=$(curl -s $C "$B/logs/postfix?limit=100" | jq -r '.data[-1].id')
-curl -s $C "$B/logs/postfix?limit=100&before=$OLDEST" | jq '.data | length'
+curl -s $C "$B/logs/postfix?limit=100&before=$OLDEST" | jq '.data | length'   # entries older than OLDEST only (0 with one line)
+
+# US4: the recorded queue
+curl -s $C "$B/mail-queue/messages?queue=deferred&recipient=partner.example" | jq '.meta.queueCounts, [.data[].id]'
 
 # US5: ban settings with version tag
 ETAG=$(curl -sI $C $B/fail2ban/settings | awk -F': ' 'tolower($1)=="etag"{print $2}' | tr -d '\r')
@@ -77,7 +84,11 @@ curl -s $C -H "X-CSRF-Token: $T" -H "If-Match: $ETAG" -H 'Content-Type: applicat
 curl -s $C -H "X-CSRF-Token: $T" -H 'Content-Type: application/merge-patch+json' \
   -X PATCH $B/fail2ban/settings -d '{"denylist":["0.0.0.0/0"]}' | jq '.errors'
 #   -> {"denylist.0": [{"code": "reserved", ...}]}
-docker compose exec redis redis-cli -a "$REDISPASS" -n 0 GET F2B_OPTIONS   # legacy JSON shape
+docker compose exec redis redis-cli -a "${REDISPASS:-devredispass}" -n 0 GET F2B_OPTIONS   # legacy JSON shape
+
+# US6 and US7: Rspamd and the installed version from the stand-ins
+curl -s $C "$B/rspamd/history?q=spammer@example.net" | jq '.data[0] | {action, score}'
+curl -s $C $B/installation/update-status | jq '.data.status'   # disabled without app_info.inc.php
 
 # US8: the audit trail of the above
 curl -s $C "$B/audit-events?targetType=container&limit=5" | jq '.data[] | {eventType, outcome, failureReason, target}'
@@ -90,8 +101,9 @@ environment variable, a masked secret or message content in an audit record.
 
 1. **Install**: update the API container (001 quickstart Part C) and merge the new lines of
    `deploy/docker-compose.override.yml` (environment `COMPOSE_PROJECT_NAME`, `SKIP_CLAMD`,
-   `SKIP_OLEFY`, `LOG_LINES`; volume `rspamd-vol-1:/var/lib/rspamd:ro`). Copy the updated
-   `deploy/nginx/site.restv2.custom` (`fastcgi_read_timeout 90s`) and restart `nginx-mailcow`.
+   `SKIP_OLEFY`, `LOG_LINES` and the `RESTV2_*` settings of the README; volume
+   `rspamd-vol-1:/var/lib/rspamd:ro`). Copy the updated `deploy/nginx/site.restv2.custom` and
+   reload `nginx-mailcow`.
    FeldHost only: add `RESTV2_UPDATE_CHECK=n` to `mailcow.conf`.
 2. **Parity with the dashboard (SC-001)**: compare `GET /host`, `/host/mail-storage` and
    `/containers` with the legacy "System & Containers" tab and with `docker compose ps` and
@@ -128,7 +140,7 @@ environment variable, a masked secret or message content in an audit record.
 - The ban service rewrites `F2B_OPTIONS` every 10 seconds without a transaction. A settings change
   saved in exactly that instant can be overwritten, as with the legacy UI; reading the settings
   after saving shows it ([R18](./research.md#r18-settings-storage-version-tag-and-atomic-writes)).
-- `DOCKER_TIMEOUT` set in `vars.local.inc.php` is honoured. nginx's `fastcgi_read_timeout` (90 s)
-  and php-fpm's `request_terminate_timeout` (100 s) fit the default of 60 s; when raising it, keep
-  them at least `DOCKER_TIMEOUT + 30` and `DOCKER_TIMEOUT + 40`
-  ([R28](./research.md#r28-deployment-and-runtime-limits)).
+- `DOCKER_TIMEOUT` set in `vars.local.inc.php` is honoured. nginx's `fastcgi_read_timeout` (900 s,
+  set by feature 003) covers the default of 60 s; when raising it, keep `fastcgi_read_timeout` at
+  least `DOCKER_TIMEOUT + 30` and any php-fpm `request_terminate_timeout` at least
+  `DOCKER_TIMEOUT + 40` (the image sets none) ([R28](./research.md#r28-deployment-and-runtime-limits)).

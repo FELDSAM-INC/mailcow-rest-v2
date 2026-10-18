@@ -15,7 +15,7 @@ description: |
 
   **Unchanged values are always accepted**, so that a client may send back a whole form. The
   read-only members (`name`, `unicodeName`, `relayhost`, `rateLimit`, `createdAt`, `modifiedAt`,
-  `usage`, `domainAdmins` and `etag`) are accepted when equal to the current value and refused with
+  `usage`, `footer`, `domainAdmins` and `etag`) are accepted when equal to the current value and refused with
   the rule code `immutable` otherwise. Usage figures change with every delivered message, so clients
   should not send `usage`.
 
@@ -90,6 +90,9 @@ properties:
   usage:
     type: object
     description: Read-only. Do not send.
+  footer:
+    type: object
+    description: Read-only. Change the footer with `replaceDomainFooter`.
   domainAdmins:
     type: array
     description: Read-only.

@@ -42,7 +42,7 @@ class DomainUpdater
         'globalAddressList' => 'gal',
     ];
 
-    public const READ_ONLY = ['name', 'unicodeName', 'relayhost', 'rateLimit', 'createdAt', 'modifiedAt', 'usage', 'domainAdmins', 'etag'];
+    public const READ_ONLY = ['name', 'unicodeName', 'relayhost', 'rateLimit', 'createdAt', 'modifiedAt', 'usage', 'footer', 'domainAdmins', 'etag'];
 
     private const LIMITS = ['maxMailboxes', 'maxAliases', 'maxMailboxQuota', 'domainQuota'];
 

@@ -22,6 +22,15 @@ class DomainPresenter
 {
     private const MIB = 1048576;
 
+    private const NO_FOOTER = [
+        'set' => false,
+        'htmlBytes' => 0,
+        'plainBytes' => 0,
+        'skipReplies' => false,
+        'excludedAddressCount' => 0,
+        'excludedAliasDomainCount' => 0,
+    ];
+
     public function __construct(
         private readonly DomainUsageCalculator $usage,
         private readonly RateLimitStore $rateLimits,
@@ -43,6 +52,7 @@ class DomainPresenter
         $usage = $this->usage->forDomains($names);
         $rateLimits = $this->rateLimits($names);
         $relayhosts = $this->relayhosts($rows);
+        $footers = $this->footers($names);
         $admins = $principal->role === Role::Admin ? $this->domainAdmins($names) : null;
 
         $result = [];
@@ -72,6 +82,7 @@ class DomainPresenter
                 'createdAt' => self::time($row->created),
                 'modifiedAt' => self::time($row->modified),
                 'usage' => ($usage[$name] ?? null)?->toArray(),
+                'footer' => $footers[$name] ?? self::NO_FOOTER,
             ];
 
             if ($admins !== null) {
@@ -126,6 +137,38 @@ class DomainPresenter
         }
 
         return $tags;
+    }
+
+    /**
+     * The footer summaries of a page (FR-067, G28): sizes in bytes and exclusion counts.
+     *
+     * @param  list<string>  $names
+     * @return array<string, array<string, int|bool>>
+     */
+    private function footers(array $names): array
+    {
+        $rows = DB::table('domain_wide_footer')->whereIn('domain', $names)->get([
+            'domain',
+            DB::raw('COALESCE(LENGTH(`html`), 0) AS `html_bytes`'),
+            DB::raw('COALESCE(LENGTH(`plain`), 0) AS `plain_bytes`'),
+            'skip_replies',
+            DB::raw('COALESCE(JSON_LENGTH(`mbox_exclude`), 0) AS `addresses`'),
+            DB::raw('COALESCE(JSON_LENGTH(`alias_domain_exclude`), 0) AS `alias_domains`'),
+        ]);
+        $footers = [];
+
+        foreach ($rows as $row) {
+            $footers[(string) $row->domain] = [
+                'set' => (int) $row->html_bytes > 0 || (int) $row->plain_bytes > 0,
+                'htmlBytes' => (int) $row->html_bytes,
+                'plainBytes' => (int) $row->plain_bytes,
+                'skipReplies' => (bool) $row->skip_replies,
+                'excludedAddressCount' => (int) $row->addresses,
+                'excludedAliasDomainCount' => (int) $row->alias_domains,
+            ];
+        }
+
+        return $footers;
     }
 
     /**

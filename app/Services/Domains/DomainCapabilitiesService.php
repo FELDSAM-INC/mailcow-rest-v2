@@ -7,11 +7,12 @@ use App\Auth\Role;
 use App\Rules\WholeMebibytes;
 use App\Services\Config\MailcowConfig;
 use App\Services\Dkim\IspconfigSettings;
+use App\Services\DomainTemplates\DomainTemplateAttributes;
 use App\Support\Http\ListQuery;
 
 /**
- * The domain capabilities (FR-064, research D23), computed from the current configuration on
- * every request. The DKIM values are for administrators only. No secret or connection detail is
+ * The domain capabilities (FR-064, FR-068, research D23), computed from the current configuration
+ * on every request. The DKIM values and the template defaults are for administrators only. No secret or connection detail is
  * ever included.
  */
 class DomainCapabilitiesService
@@ -22,7 +23,10 @@ class DomainCapabilitiesService
 
     public const BULK_LIMIT = 100;
 
-    public function __construct(private readonly MailcowConfig $config) {}
+    public function __construct(
+        private readonly MailcowConfig $config,
+        private readonly DomainTemplateAttributes $templates,
+    ) {}
 
     /**
      * @return array<string, mixed>
@@ -48,6 +52,8 @@ class DomainCapabilitiesService
                 'allowedKeySizes' => array_values(array_map('intval', (array) config('restv2.dkim.allowed_key_sizes'))),
                 'dnsPublicationEnabled' => IspconfigSettings::fromConfig()->enabled(),
             ];
+            // FR-068 (G29): the values a new template gets for what it omits.
+            $capabilities['templateDefaults'] = $this->templates->defaults();
         }
 
         return $capabilities;

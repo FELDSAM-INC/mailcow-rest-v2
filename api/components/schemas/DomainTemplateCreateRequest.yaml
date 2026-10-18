@@ -3,7 +3,9 @@ description: |
   A new domain template. Only `name` is required. Omitted values get the legacy defaults: 10
   mailboxes, 400 aliases, 3,072 MiB default and 10,240 MiB maximum mailbox quota, 10,240 MiB domain
   quota, no rate limit, active, Global Address List on, no relay options, no tags, the server's
-  default DKIM selector and 2,048-bit keys. Sent values, including zero, are kept when valid.
+  default DKIM selector and 2,048-bit keys (the `default` keywords below;
+  `DomainCapabilities.templateDefaults` gives all of them, the selector included). Sent values,
+  including zero, are kept when valid.
 
   The values follow the domain rules, so that a template always produces a valid domain: quotas
   are whole multiples of 1 MiB, `defaultMailboxQuota` ≤ `maxMailboxQuota` ≤ `domainQuota`, tags as
@@ -21,36 +23,46 @@ properties:
     type: integer
     minimum: 0
     maximum: 2147483647
+    default: 10
   maxAliases:
     type: integer
     minimum: 0
     maximum: 2147483647
+    default: 400
   defaultMailboxQuota:
     type: integer
     minimum: 1048576
     maximum: 9007199254740992
+    default: 3221225472
   maxMailboxQuota:
     type: integer
     minimum: 1048576
     maximum: 9007199254740992
+    default: 10737418240
   domainQuota:
     type: integer
     minimum: 1048576
     maximum: 9007199254740992
+    default: 10737418240
   rateLimit:
     oneOf:
       - $ref: './DomainRateLimit.yaml'
       - type: 'null'
   active:
     type: boolean
+    default: true
   globalAddressList:
     type: boolean
+    default: true
   backupMx:
     type: boolean
+    default: false
   relayAllRecipients:
     type: boolean
+    default: false
   relayUnknownOnly:
     type: boolean
+    default: false
   dkimSelector:
     type: string
     maxLength: 255
@@ -58,3 +70,4 @@ properties:
   dkimKeySize:
     type: integer
     enum: [1024, 2048, 3072, 4096]
+    default: 2048

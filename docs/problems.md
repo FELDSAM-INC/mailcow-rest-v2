@@ -611,7 +611,9 @@ extension members.
     whole-message download) or `any` (any one listed flag suffices, for example
     `["domainRelayhost", "mailboxRelayhost"]` for the relayhost choices).
 
-  With `all`, the list names only the flags the caller lacks.
+  With `all`, the list names only the flags the caller lacks. Both members are declared once in the
+  contract's `PermissionFlagRequiredProblem` schema, which every feature's variant extends (G34);
+  the server always sends `requiredFlagsMatch`.
 - **Client action**: Hide or disable the action for this account, and tell the user which permission
   an administrator must grant.
 

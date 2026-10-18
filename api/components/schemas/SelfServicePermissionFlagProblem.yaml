@@ -4,7 +4,7 @@ description: |
   push notifications and Sieve filters, the domain administrator's own `da_acl` flag. Nothing
   changed. Values sent with their current value never need the flag, and reading never needs it.
 allOf:
-  - $ref: './Problem.yaml'
+  - $ref: './PermissionFlagRequiredProblem.yaml'
   - type: object
     required: [requiredFlags]
     properties:

@@ -2,7 +2,7 @@ description: |
   Problem of type `/api/v2/problems/permission-flag-required` (status `403`): the caller is a domain
   administrator whose permission flags do not include one that the operation needs. Nothing changed.
 allOf:
-  - $ref: './Problem.yaml'
+  - $ref: './PermissionFlagRequiredProblem.yaml'
   - type: object
     required: [requiredFlags]
     properties:

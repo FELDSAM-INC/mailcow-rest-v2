@@ -128,6 +128,18 @@
   domains that carry it, with search and paging (FR-066). (orchestrator decision: the UI 002 spec
   found the gap. Footer exclusion candidates are not a gap; the web app uses the mailbox and alias
   lists of features 003 and 004.)
+- Q: Can the domain page show whether a footer is set without reading the whole footer, which can
+  hold two texts of 1 MiB each? → A: Yes. Every domain representation carries a footer summary:
+  whether a footer adds text, the sizes of its texts, whether replies are skipped and the numbers of
+  excluded addresses and alias domains (FR-067). (orchestrator decision: `docs/api-gaps.md` G28,
+  found by UI 002. The summary is not covered by the domain's version tag; the footer keeps its
+  own.)
+- Q: How does a client learn the values that a new domain template gets for what it omits, which are
+  only described in prose? → A: The domain capabilities return them to administrators as
+  `templateDefaults`, the server's default DKIM selector included, and the template creation schema
+  carries them as `default` keywords where they are fixed (FR-068). (orchestrator decision:
+  `docs/api-gaps.md` G29, found by UI 002. The default selector is a server setting, so it can only
+  come from the capabilities.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -630,6 +642,14 @@ and list the audit log filtered by target.
   The values MUST reflect the server's current configuration and MUST NOT include any secret or
   connection detail. The read is the domains area of the API-wide capabilities reads
   (`docs/conventions.md`). The read MUST change nothing, and read-only keys MAY use it.
+
+- **FR-067**: Every domain representation MUST carry a summary of the domain's footer: whether a
+  footer with a non-empty HTML or plain text is stored, the size of each text in bytes, whether
+  replies are skipped, and the numbers of excluded addresses and excluded alias domains. The summary
+  is read-only and not covered by the domain's version tag (G28).
+- **FR-068**: The domain capabilities MUST return, to administrators only, the values that a new
+  domain template gets for every value it omits (FR-046), which are also the built-in values of a
+  creation without a Default template (FR-022), including the server's default DKIM selector (G29).
 
 #### Creating a domain
 

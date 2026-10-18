@@ -5,7 +5,7 @@ description: |
   is looked up, so the answer reveals nothing about objects outside the caller's scope. Nothing
   changed.
 allOf:
-  - $ref: './Problem.yaml'
+  - $ref: './PermissionFlagRequiredProblem.yaml'
   - type: object
     required: [requiredFlags]
     properties:

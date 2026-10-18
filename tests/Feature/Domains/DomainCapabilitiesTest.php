@@ -35,7 +35,38 @@ class DomainCapabilitiesTest extends TestCase
                 'allowedKeySizes' => [1024, 2048, 3072, 4096],
                 'dnsPublicationEnabled' => false,
             ],
+            'templateDefaults' => [
+                'tags' => [],
+                'maxMailboxes' => 10,
+                'maxAliases' => 400,
+                'defaultMailboxQuota' => 3221225472,
+                'maxMailboxQuota' => 10737418240,
+                'domainQuota' => 10737418240,
+                'rateLimit' => null,
+                'active' => true,
+                'globalAddressList' => true,
+                'backupMx' => false,
+                'relayAllRecipients' => false,
+                'relayUnknownOnly' => false,
+                'dkimSelector' => 'dkim',
+                'dkimKeySize' => 2048,
+            ],
         ], $this->getJson('/api/v2/capabilities/domains')->assertOk()->json('data'));
+    }
+
+    public function test_the_template_defaults_are_what_a_new_template_gets(): void
+    {
+        // FR-068 (G29).
+        config(['restv2.dkim.default_selector' => 'feldhost']);
+        $this->asAdmin();
+
+        $defaults = $this->getJson('/api/v2/capabilities/domains')->assertOk()->json('data.templateDefaults');
+        $template = $this->postJson('/api/v2/domain-templates', ['name' => 'Fresh'], $this->csrf())->assertCreated()->json('data');
+
+        $this->assertSame('feldhost', $defaults['dkimSelector']);
+        foreach ($defaults as $member => $value) {
+            $this->assertSame($value, $template[$member], $member);
+        }
     }
 
     public function test_the_values_follow_the_configuration(): void
@@ -73,6 +104,7 @@ class DomainCapabilitiesTest extends TestCase
 
         $data = $this->getJson('/api/v2/capabilities/domains')->assertOk()->json('data');
         $this->assertArrayNotHasKey('dkim', $data);
+        $this->assertArrayNotHasKey('templateDefaults', $data);
         $this->assertSame(25, $data['taggingLimit']);
 
         $this->forgetCookies();

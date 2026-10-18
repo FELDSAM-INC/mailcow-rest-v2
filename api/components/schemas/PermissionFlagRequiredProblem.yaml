@@ -1,0 +1,26 @@
+description: |
+  Problem of type `/api/v2/problems/permission-flag-required` (status `403`, G34): the caller's role
+  may use the operation, but only with a permission flag (`da_acl` or `user_acl`) that it lacks.
+  Nothing changed. Every feature's variant of this problem extends this schema and may narrow the
+  flag names.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [requiredFlags]
+    properties:
+      requiredFlags:
+        type: array
+        minItems: 1
+        description: |
+          Flag names as in `PermissionFlags` (camelCase, for example `quarantineAttachments`), never
+          legacy column names, so that clients can compare them with `GET /me`. With
+          `requiredFlagsMatch: all`, only the flags the caller lacks are listed.
+        items:
+          type: string
+      requiredFlagsMatch:
+        type: string
+        enum: [all, any]
+        default: all
+        description: |
+          How the listed flags combine: `all` (every listed flag is needed; the default when the
+          member is absent) or `any` (any one of them suffices).

@@ -1,0 +1,29 @@
+type: object
+description: |
+  A summary of the domain's footer (G28), so that the domain page needs no footer read: whether a
+  footer adds text, the sizes of its texts and the numbers of exclusions. Read the footer itself
+  with `getDomainFooter`. Not covered by the domain's version tag (the footer has its own).
+required: [set, htmlBytes, plainBytes, skipReplies, excludedAddressCount, excludedAliasDomainCount]
+properties:
+  set:
+    type: boolean
+    description: Whether a footer with a non-empty HTML or plain text is stored.
+  htmlBytes:
+    type: integer
+    minimum: 0
+    description: Size of the HTML text in bytes (UTF-8); 0 without a footer.
+  plainBytes:
+    type: integer
+    minimum: 0
+    description: Size of the plain text in bytes (UTF-8); 0 without a footer.
+  skipReplies:
+    type: boolean
+    description: Whether replies get no footer.
+  excludedAddressCount:
+    type: integer
+    minimum: 0
+    description: Number of excluded sender addresses.
+  excludedAliasDomainCount:
+    type: integer
+    minimum: 0
+    description: Number of excluded alias domains.

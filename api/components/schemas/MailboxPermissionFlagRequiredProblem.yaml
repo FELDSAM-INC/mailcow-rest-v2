@@ -4,7 +4,7 @@ description: |
   mailboxes this is a bulk `allowProtocol` or `disallowProtocol` by a domain administrator without
   the `protocolAccess` flag; the whole request is refused and nothing changed.
 allOf:
-  - $ref: './Problem.yaml'
+  - $ref: './PermissionFlagRequiredProblem.yaml'
   - type: object
     required: [requiredFlags]
     properties:

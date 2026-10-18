@@ -803,3 +803,5 @@ components:
   schemas:
     KnownProblemType:
       $ref: './components/schemas/KnownProblemType.yaml'
+    PermissionFlagRequiredProblem:
+      $ref: './components/schemas/PermissionFlagRequiredProblem.yaml'

@@ -24,6 +24,7 @@ required:
   - createdAt
   - modifiedAt
   - usage
+  - footer
   - etag
 properties:
   name:
@@ -107,6 +108,8 @@ properties:
       - type: 'null'
   usage:
     $ref: './DomainUsage.yaml'
+  footer:
+    $ref: './DomainFooterSummary.yaml'
   domainAdmins:
     type: array
     description: |

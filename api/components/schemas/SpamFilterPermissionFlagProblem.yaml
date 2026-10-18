@@ -5,7 +5,7 @@ description: |
   missing, `requiredFlags` names `quarantine` first, and `quarantineAttachments` once
   `quarantine` is held.
 allOf:
-  - $ref: './Problem.yaml'
+  - $ref: './PermissionFlagRequiredProblem.yaml'
   - type: object
     required: [requiredFlags]
     properties:

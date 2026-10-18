@@ -49,3 +49,9 @@ properties:
     examples: [1048576]
   dkim:
     $ref: './DomainDkimCapabilities.yaml'
+  templateDefaults:
+    description: |
+      The values of a new domain template that omits them, and the built-in values of a domain
+      created without a Default template (G29). Returned to administrators only.
+    allOf:
+      - $ref: './DomainTemplateDefaults.yaml'

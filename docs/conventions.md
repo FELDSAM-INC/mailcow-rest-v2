@@ -156,7 +156,8 @@ this document next to the constitution.
   or `user_acl`) that the caller lacks. The problem lists the flags in a `requiredFlags` array and
   says how they combine in `requiredFlagsMatch`: `all` by default (every listed flag is needed, and
   only the missing ones are listed) or `any` (any one flag suffices), as `docs/problems.md`
-  documents. Flag values are always
+  documents; both members are declared in the shared `PermissionFlagRequiredProblem` schema, which
+  every feature's variant extends with `allOf` (G34). Flag values are always
   the property names of 001's `PermissionFlags` schema (camelCase, for example
   `quarantineAttachments`, `loginAs`, `appPasswds`, `syncjobs`), never legacy column names, so
   that clients can compare them with `GET /me`.

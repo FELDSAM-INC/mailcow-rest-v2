@@ -4,7 +4,7 @@ description: |
   permission flag (`da_acl.login_as`). The flag is checked before the target is looked up, so the
   answer never reveals whether a target outside the caller's scope exists. Nothing changed.
 allOf:
-  - $ref: './Problem.yaml'
+  - $ref: './PermissionFlagRequiredProblem.yaml'
   - type: object
     required: [requiredFlags]
     properties:

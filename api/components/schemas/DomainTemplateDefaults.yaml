@@ -1,0 +1,63 @@
+type: object
+description: |
+  The values a new domain template gets for every value it omits, which are also the built-in
+  values of a domain created while no Default template exists (G29). `dkimSelector` is the server's
+  default selector (`dkim` upstream, `feldhost` on the FeldHost deployment).
+required:
+  - tags
+  - maxMailboxes
+  - maxAliases
+  - defaultMailboxQuota
+  - maxMailboxQuota
+  - domainQuota
+  - rateLimit
+  - active
+  - globalAddressList
+  - backupMx
+  - relayAllRecipients
+  - relayUnknownOnly
+  - dkimSelector
+  - dkimKeySize
+properties:
+  tags:
+    type: array
+    maxItems: 0
+    items:
+      type: string
+  maxMailboxes:
+    type: integer
+    examples: [10]
+  maxAliases:
+    type: integer
+    examples: [400]
+  defaultMailboxQuota:
+    type: integer
+    description: Bytes.
+    examples: [3221225472]
+  maxMailboxQuota:
+    type: integer
+    description: Bytes.
+    examples: [10737418240]
+  domainQuota:
+    type: integer
+    description: Bytes.
+    examples: [10737418240]
+  rateLimit:
+    description: Always `null` (no rate limit).
+    type: 'null'
+  active:
+    type: boolean
+  globalAddressList:
+    type: boolean
+  backupMx:
+    type: boolean
+  relayAllRecipients:
+    type: boolean
+  relayUnknownOnly:
+    type: boolean
+  dkimSelector:
+    type: string
+    examples: [dkim]
+  dkimKeySize:
+    type: integer
+    examples: [2048]

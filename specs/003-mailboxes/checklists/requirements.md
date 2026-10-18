@@ -47,8 +47,10 @@
 - Iteration 3 (read-through): an edge case named Redis and now says "shared store". Legacy rename
   moves the `da_acl` row of a same-named domain-administrator account, which strips that account of
   its flags. FR-045 now leaves it alone, recorded as a deviation. Checklist re-validated: 16/16 →
-  16/16 items passing, no state changes. Cross-references to feature 002 (FR-006, FR-008, FR-009,
-  FR-036, FR-037 there) point to its draft of 2026-10-18 and need a re-check once 002 is committed.
+  16/16 items passing, no state changes.
+- Iteration 4: the cross-references to feature 002 were checked against its committed spec. Its tag
+  requirements had been renumbered, so FR-036 now cites FR-043 and FR-044 there. FR-006, FR-008 and
+  FR-009 there, and its page-size and "not found" rules (FR-011, FR-003), match.
 - The FeldHost fork was diffed against upstream `2026-09a` for every file in the parity reference.
   Mailbox logic is identical. The only differences are display labels (authentication source
   "mailcow", `pw_reset` permission label), which do not change the contract.

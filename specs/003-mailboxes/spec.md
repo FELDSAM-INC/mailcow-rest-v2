@@ -740,7 +740,7 @@ into each external step and check that the mailbox is left as it was.
     changeable, as in legacy.
   - A change MUST change only the flags it sends.
   - Users MUST NOT change their own permissions.
-- **FR-036**: A mailbox's tags MUST be a set of texts, as in feature 002 (FR-036 and FR-037 there):
+- **FR-036**: A mailbox's tags MUST be a set of texts, as in feature 002 (FR-043 and FR-044 there):
   each tag trimmed, not empty and at most 255 characters long; tags differing only in letter case
   are the same tag; at most the server's tagging limit, 25 by default (legacy `TAGGING_LIMIT`).
   Setting the tags MUST replace the whole set. Removing tags, which legacy does with

@@ -602,7 +602,7 @@ records.
 
 ### Tests for User Story 6 (write first, observe failing) ⚠️
 
-- [ ] T065 [P] [US6] Write `tests/Feature/Aliases/AliasCopyTest.php` (`copyAliasOverAliasDomains`):
+- [X] T065 [P] [US6] Write `tests/Feature/Aliases/AliasCopyTest.php` (`copyAliasOverAliasDomains`):
   AS4 `sales@example.org` with alias domains `example.net` (holding `sales@example.net`) and
   `example.com` → `200`, `copies` in name order: `example.com` `created` with an `aliasId` whose row
   has the same `goto`, `active`, `sender_allowed`, `sogo_visible`, `internal` and empty comments;
@@ -612,7 +612,7 @@ records.
   `alias_external_goto` copying an alias with external destinations → `skipped`
   `destinationNotPermitted`, and likewise with the server setting on; `If-Match` mismatch → `412`;
   one `aliasCreation` audit record per copy with `copiedFromAliasId`.
-- [ ] T066 [P] [US6] Write `tests/Feature/Aliases/AliasBulkActionTest.php` (`applyAliasBulkAction`):
+- [X] T066 [P] [US6] Write `tests/Feature/Aliases/AliasBulkActionTest.php` (`applyAliasBulkAction`):
   AS1 30 active aliases deactivated → 30 `done`, 30 audit records with the same `bulkRequestId`; AS2
   a domain administrator hiding 3 own and 2 foreign aliases → 3 `done`, 2 `notFound`; AS3 101
   targets → `422 tooMany {max: 100}`; AS6 three targets with versions, one changed meanwhile → that
@@ -621,7 +621,7 @@ records.
   with `SKIP_SOGO=y` stores the flag; `copyOverAliasDomains` → `done` per alias with
   `meta.copies[<id>]`, an alias in an alias domain `refused` with `not-primary-domain-alias`; a
   mailbox user and a read-only key → whole request `403`, audited once with `details.targetIds`.
-- [ ] T067 [P] [US6] Write `tests/Feature/AliasDomains/AliasDomainBulkActionTest.php`
+- [X] T067 [P] [US6] Write `tests/Feature/AliasDomains/AliasDomainBulkActionTest.php`
   (`applyAliasDomainBulkAction`): activate, deactivate and delete (full cleanup per target); one
   groupware rebuild per request; a shared-store failure on one target → `failed` with
   `temporary-failure`, that target unchanged, the others done; versions per target; foreign →
@@ -632,7 +632,7 @@ records.
 
 ### Implementation for User Story 6
 
-- [ ] T069 [US6] Create `app/Services/Aliases/AliasCopier.php` and `AliasCopyOutcome.php` (R17),
+- [X] T069 [US6] Create `app/Services/Aliases/AliasCopier.php` and `AliasCopyOutcome.php` (R17),
   reusing `AliasCreator` per alias domain and mapping its refusals to `skipped` reasons;
   `app/Http/Resources/Api/V2/AliasCopyReportResource.php`; `app/Http/Controllers/Api/V2/AliasCopyController.php`.
 - [ ] T070 [P] [US6] Create `app/Http/Requests/Api/V2/AliasBulkActionRequest.php`,
@@ -890,3 +890,8 @@ what exists map as listed.
   `AliasCopyOutcome.addressUnicode` and `MailboxSenderSettings.externalSenderAddressesUnicode`, and
   `kind: localDomain` in `MailboxSenderSettingsPatch`. `destinationsUnicode` and
   `externalSenderAddressesUnicode` may be sent back in a patch and are ignored.
+- **T069, T070**: the bulk loops live in services (`AliasBulkActions`, `AliasDomainBulkActions`,
+  `ResourceBulkActions`), as 002's `DomainBulkActions`; the controllers stay thin. A copy skips an
+  address in use before it tries a creation, as legacy computes the missing addresses first; a
+  copy refused for another reason is audited as a refused `aliasCreation` with `copiedFromAliasId`.
+  `AliasCopyReportResource` is not needed: the report is returned as built.

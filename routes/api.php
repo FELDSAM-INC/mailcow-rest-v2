@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\V2\AliasBulkActionController;
 use App\Http\Controllers\Api\V2\AliasController;
+use App\Http\Controllers\Api\V2\AliasCopyController;
+use App\Http\Controllers\Api\V2\AliasDomainBulkActionController;
 use App\Http\Controllers\Api\V2\AliasDomainController;
 use App\Http\Controllers\Api\V2\AliasesCapabilitiesController;
 use App\Http\Controllers\Api\V2\ApiDocsController;
@@ -247,6 +250,17 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
 
     // State-changing routes of feature 004: refusals of authenticated callers are audited.
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        // POST-only bulk paths: object paths never accept POST.
+        Route::post('/aliases/bulk-actions', [AliasBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'alias'])
+            ->name('alias-bulk-actions.store');
+        Route::post('/alias-domains/bulk-actions', [AliasDomainBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'aliasDomain'])
+            ->name('alias-domain-bulk-actions.store');
+        Route::post('/aliases/{aliasId}/alias-domain-copies', [AliasCopyController::class, 'store'])
+            ->where('aliasId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'aliasCreation', 'target' => 'alias'])
+            ->name('alias-domain-copies.store');
         Route::post('/aliases', [AliasController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'aliasCreation', 'target' => 'alias'])
             ->name('aliases.store');

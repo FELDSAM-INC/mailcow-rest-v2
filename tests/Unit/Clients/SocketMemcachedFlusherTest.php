@@ -29,14 +29,16 @@ class SocketMemcachedFlusherTest extends TestCase
         $process = new Process([(new PhpExecutableFinder)->find(false) ?: 'php', '-r', $script]);
         $process->start();
 
+        // The port may arrive in pieces: match on everything printed so far.
         $port = null;
-        $process->waitUntil(function (string $type, string $output) use (&$port): bool {
-            if (preg_match('/^(\d+)\n/', $output, $m) === 1) {
+        $process->waitUntil(function () use ($process, &$port): bool {
+            if (preg_match('/^(\d+)\n/', $process->getOutput(), $m) === 1) {
                 $port = (int) $m[1];
             }
 
             return $port !== null;
         });
+        $this->assertNotNull($port, 'the stand-in server printed no port: '.$process->getErrorOutput());
 
         config(['restv2.memcached.host' => '127.0.0.1', 'restv2.memcached.port' => $port]);
 

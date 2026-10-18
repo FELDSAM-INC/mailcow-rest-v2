@@ -67,7 +67,7 @@ curl -s -H "X-API-Key: $KEY" $J -X POST $B/admins -d '{"username":"x","password"
 #   -> "/api/v2/problems/session-required";  GET $B/admins with the key -> 200
 
 # US1: bulk deactivation with a stale tag for one item.
-curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/domain-admin-bulk-actions \
+curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/domain-admins/bulk-actions \
   -d '{"action":"deactivate","targets":[{"id":"reseller1"},{"id":"reseller","version":"stale"}]}' | jq '.data.results'
 #   -> reseller1: done (deactivated); reseller: outdated (still active)
 

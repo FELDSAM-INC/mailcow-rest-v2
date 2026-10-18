@@ -278,7 +278,8 @@ No new column. Rename: `UPDATE … SET username = :new WHERE account_kind = 'adm
         ├──── DELETE /session/impersonation (ID + CSRF renewed, endedBy explicit)
         ├──── target deleted, renamed, replaced, out of scope, or login_as off:
         │     detected on the next request → 403 impersonation-ended, request not carried out,
-        │     ID + CSRF renewed (endedBy automatic)
+        │     ID + CSRF renewed (endedBy automatic); a sign-out or an end that detects it ends and
+        │     audits it the same way and completes normally (204)
         │
  session ended ◄── DELETE /session (endedBy signOut), new sign-in on the same session
                    (endedBy sessionReplaced), impersonator deactivated or deleted (001)

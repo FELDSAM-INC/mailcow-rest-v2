@@ -2,11 +2,11 @@
 # account capabilities shared with domain administrators.
 /admins:
   $ref: './admins.yaml'
+/admins/bulk-actions:
+  $ref: './admins-bulk-actions.yaml'
 /admins/{username}:
   $ref: './admin.yaml'
 /admins/{username}/second-factor-suspension:
   $ref: './admin-second-factor-suspension.yaml'
-/admin-bulk-actions:
-  $ref: './admin-bulk-actions.yaml'
 /capabilities/accounts:
   $ref: './account-capabilities.yaml'

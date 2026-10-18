@@ -1,9 +1,7 @@
 description: |
   The impersonation that started, the caller's new identity, and the session's new anti-forgery
   token. The session identifier and the anti-forgery token were renewed: use `csrfToken.token` for
-  every further state-changing request. Requests prepared in other tabs with the previous token are
-  refused with `csrf-token-mismatch`; clients must then re-read `GET /me` and must not resend a
-  write prepared under the previous identity.
+  every further state-changing request.
 allOf:
   - $ref: './Impersonation.yaml'
   - type: object

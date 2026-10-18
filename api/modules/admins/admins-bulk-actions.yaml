@@ -20,7 +20,8 @@ post:
     - `failed`: an unexpected failure.
 
     Targets without `version` are not version-checked. Every audit record carries the
-    `bulkRequestId`.
+    `bulkRequestId`. The path accepts only `POST`, and account paths never accept `POST`, so an
+    administrator named `bulk-actions` stays readable at `GET /admins/bulk-actions`.
   security:
     - sessionCookie: []
       csrfToken: []

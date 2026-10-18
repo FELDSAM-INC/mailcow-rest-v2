@@ -22,10 +22,10 @@ fork is identical for this feature (spec, "Legacy Parity").
 ### R1. Resource layout and paths
 
 - **Decision**: Four contract modules, 21 operations (list in [plan.md](./plan.md#contract-operations)):
-  - `admins`: `/admins`, `/admins/{username}`, `/admins/{username}/second-factor-suspension`,
-    `/admin-bulk-actions` and `/capabilities/accounts`;
-  - `domain-admins`: `/domain-admins`, `/domain-admins/{username}`,
-    `/domain-admins/{username}/second-factor-suspension` and `/domain-admin-bulk-actions`;
+  - `admins`: `/admins`, `/admins/bulk-actions`, `/admins/{username}`,
+    `/admins/{username}/second-factor-suspension` and `/capabilities/accounts`;
+  - `domain-admins`: `/domain-admins`, `/domain-admins/bulk-actions`, `/domain-admins/{username}`
+    and `/domain-admins/{username}/second-factor-suspension`;
   - `sso-tokens`: `/domain-admins/{username}/sso-token` (issue) and `/session/sso-token` (sign in);
   - `impersonation`: `/session/impersonation` (`GET`, `POST`, `DELETE`) and
     `/mailboxes/{mailbox}/webmail-sign-in`.
@@ -34,12 +34,14 @@ fork is identical for this feature (spec, "Legacy Parity").
   the domain administrator representation and are changed with the account's `PATCH`, which is a
   JSON Merge Patch, so a nested `permissions` object changes exactly the flags it names (FR-038).
 - **Rationale**:
-  - A username may be any string of `a-z`, `0-9`, `.`, `_` and `-` (FR-014), so `bulk-actions` is a
-    valid username. Under `/admins/` it would collide with `/admins/{username}`, and OpenAPI
-    matches concrete paths first. A top-level hyphenated noun cannot collide and needs no reserved
-    name beyond legacy's `api`. The capabilities read follows `docs/conventions.md`
-    ("Capabilities reads use the top-level path `/capabilities/{area}`"): `/capabilities/accounts`,
-    operation `getAccountCapabilities`.
+  - Bulk actions follow `docs/conventions.md` ("Bulk paths and identity changes"):
+    `POST /admins/bulk-actions` and `POST /domain-admins/bulk-actions`. The paths accept only
+    `POST`, and account paths never accept `POST`, so an account named `bulk-actions` (a valid
+    username, FR-014) stays readable at `GET /admins/bulk-actions`; no name beyond legacy's `api`
+    is reserved. 001's contract matcher must therefore fall back to the templated path when the
+    concrete path does not define the method (T005). The capabilities read follows the same
+    document ("Capabilities reads use the top-level path `/capabilities/{area}`"):
+    `/capabilities/accounts`, operation `getAccountCapabilities`.
   - Second-factor suspension, token issue and webmail sign-in are non-CRUD actions, so they are
     sub-resources answering `200` (root document conventions; 001 uses the same pattern for
     `/api-keys/{id}/revocation` and `/session/passkey-challenge`). A token cannot be read back, so
@@ -51,8 +53,9 @@ fork is identical for this feature (spec, "Legacy Parity").
   - One `PATCH` for every account value keeps the version tag single (FR-064) and avoids two ways
     of changing the same flag.
 - **Alternatives considered**:
-  - `/admins/bulk-actions` was rejected because of the username collision. Reserving the name
-    would deviate from FR-014 and could hide a legacy account.
+  - Top-level `/admin-bulk-actions` and `/domain-admin-bulk-actions` (the first design) were
+    replaced by the uniform convention (orchestrator decision). Reserving `bulk-actions` as a
+    username was rejected: it would deviate from FR-014 and could hide a legacy account.
   - A separate `/domain-admins/{username}/permissions` resource (legacy `edit/da-acl`) was
     rejected: it duplicates the account `PATCH`, and its version tag would have to equal the
     account's anyway (FR-064).
@@ -403,7 +406,7 @@ fork is identical for this feature (spec, "Legacy Parity").
 
 ### R15. Bulk actions (FR-073, FR-075, FR-076)
 
-- **Decision**: `POST /admin-bulk-actions` and `POST /domain-admin-bulk-actions` take
+- **Decision**: `POST /admins/bulk-actions` and `POST /domain-admins/bulk-actions` take
   `{action, targets}`, where `action` is `activate`, `deactivate`, `suspendSecondFactors` or
   `delete`, and `targets` is 1–100 `BulkTarget` items (`id` = username, optional `version`).
   `App\Services\Accounts\AccountBulkActionRunner`:
@@ -442,9 +445,10 @@ fork is identical for this feature (spec, "Legacy Parity").
   - **Start** (`POST /session/impersonation`): checks in this order, the first failure answering:
     API key → `403 session-required` (001 `RequireAuth` mode `session`); pending sign-in →
     `401 second-factor-required`; restricted → `403 pending-action-required`; already
-    impersonating → `409 already-impersonating`; caller role or flag (mailbox user, domain
-    administrator without `login_as`, domain administrator targeting a domain administrator) →
-    `403 forbidden`; body validation → `422`; target lookup → `404` when it does not exist, is a
+    impersonating → `409 already-impersonating`; caller role (mailbox user, domain administrator
+    targeting a domain administrator) → `403 forbidden`; domain administrator without `login_as` →
+    `403 permission-flag-required` with `requiredFlags: [loginAs]` (`docs/conventions.md`, "Permission
+    refusals"), before any target lookup; body validation → `422`; target lookup → `404` when it does not exist, is a
     resource, is an administrator, or is a mailbox outside the domain administrator's active
     assignments. Then `restv2.impersonation` is written, the identifier and the CSRF token are
     renewed through `SessionManager` (`migrate(true)` and `regenerateToken()`; 005 keeps its session
@@ -490,10 +494,11 @@ fork is identical for this feature (spec, "Legacy Parity").
 
   Ending removes the key, renews the identifier and the CSRF token, and audits `impersonationEnd`
   with `endedBy: automatic` and the reason. The request is then answered `403 impersonation-ended`
-  and **not** carried out, whatever it is, including `DELETE /session/impersonation` and
-  `DELETE /session`, as the clarification requires ("the request that detects it is refused"); a
-  repeated end then succeeds as a no-op and a repeated sign-out signs out. A deactivated target does
-  not end the impersonation (FR-052).
+  and **not** carried out. The two exceptions are `DELETE /session/impersonation` and
+  `DELETE /session` (FR-052 as amended by the orchestrator, `docs/conventions.md`): they end and
+  audit the impersonation the same way and then complete with their normal `204`; the sign-out also
+  ends the session and audits `signOut`. A deactivated target does not end the impersonation
+  (FR-052).
 - **Rationale**: Legacy never re-checks; the spec requires that a write meant for the target never
   runs as the impersonator. Renewing the CSRF token on an automatic end protects other tabs the
   same way an explicit end does. `403` is used because the refusal can hit any operation, and every
@@ -501,8 +506,9 @@ fork is identical for this feature (spec, "Legacy Parity").
   lists the new type.
 - **Alternatives considered**: `409` was rejected because it would have to be added to every
   operation of every feature. Ending silently and carrying the request out as the impersonator
-  was rejected (FR-052). Exempting the end and the sign-out from the refusal was rejected: it would
-  contradict FR-052 and its clarification, although their intent is fulfilled either way.
+  was rejected (FR-052). Refusing the end and the sign-out too (the first reading of FR-052) was
+  replaced by the amended FR-052: neither runs anything meant for the target, and refusing a
+  sign-out would leave a user who wants to leave signed in.
 
 ### R18. Effective permission flags during an impersonation (FR-046)
 
@@ -588,14 +594,16 @@ fork is identical for this feature (spec, "Legacy Parity").
     with legacy's regex `^([yY][eE][sS]|[yY])+$`; default off. `config('restv2.allow_admin_email_login')`.
   - **Order of checks** for `POST /mailboxes/{mailbox}/webmail-sign-in`: API key →
     `403 session-required`; impersonating → `403 not-allowed-while-impersonating` (R19); restricted
-    → `403 pending-action-required`; mailbox user, or domain administrator without `login_as` →
-    `403 forbidden`; setting off → `403 webmail-on-behalf-disabled`; mailbox missing, a resource, or
-    outside the domain administrator's active assignments → `404`; mailbox not active
-    (`active` 0 or 2), domain inactive, or `SKIP_SOGO=y` → `422` with `notEligible` on `mailbox`
-    and `{reason: mailboxInactive | loginDisabled | domainInactive | webmailDisabled}`.
+    → `403 pending-action-required`; mailbox user → `403 forbidden`; domain administrator without
+    `login_as` → `403 permission-flag-required` with `requiredFlags: [loginAs]`; setting off →
+    `403 webmail-on-behalf-disabled`; `SKIP_SOGO=y` → feature 005's `403 groupware-disabled`
+    (FR-054 as amended by the orchestrator); mailbox missing, a resource, or outside the domain
+    administrator's active assignments → `404`; mailbox not active (`active` 0 or 2) or domain
+    inactive → `422` with `notEligible` on `mailbox` and
+    `{reason: mailboxInactive | loginDisabled | domainInactive}`.
   - **Effect**: feature 005's `WebmailHandOffService::handOff($caller, $mailbox, $request)`
-    (005 R3, FR-067, FR-068), called only after the checks above (so its own `groupware-disabled`
-    check is never reached), grants a webmail-only legacy sign-in for the target mailbox to the
+    (005 R3, FR-067, FR-068), called only after the checks above (its own `groupware-disabled`
+    check gives the same answer), grants a webmail-only legacy sign-in for the target mailbox to the
     requesting browser, ends any previous hand-off of the same API session, and records the legacy
     recent-login entry `REPLACE INTO sasl_log (service, app_password, username, real_rip) VALUES
     ('SSO', 0, :mailbox, :ip)`. The caller's session in this API is not changed (FR-055). The
@@ -667,6 +675,10 @@ fork is identical for this feature (spec, "Legacy Parity").
   | `webmail-on-behalf-disabled` | 403 | `ALLOW_ADMIN_EMAIL_LOGIN` is off |
   | `account-inactive` | 409 | a token is requested for an inactive domain administrator |
 
+  Shared types reused: `forbidden` (role or key type), `permission-flag-required` (a domain
+  administrator without `loginAs`, extension `requiredFlags: [loginAs]`; schema
+  `ImpersonationPermissionFlagProblem`) and 005's `groupware-disabled`.
+
   "Outdated version" is `412` with `about:blank`, as 001 documents it in the conventions of
   `docs/problems.md`; a bulk item carries the same problem with outcome `outdated`. Validation
   codes: `unknownField` is appended to `ValidationRuleCode`; `reserved`, `immutable` and
@@ -690,7 +702,11 @@ fork is identical for this feature (spec, "Legacy Parity").
     read-only key on a write is already refused by 001's `EnforceKeyScope`
     (`403 insufficient-key-scope`);
   - impersonation and webmail on behalf need a session (`session-required` for keys) and are
-    authorised by `ImpersonationPolicy` (R16, R21);
+    authorised by `ImpersonationPolicy` (R16, R21): a role that may never use them gets
+    `403 forbidden`, a domain administrator without `login_as` gets
+    `403 permission-flag-required` (`requiredFlags: [loginAs]`), following `docs/conventions.md`
+    ("Permission refusals"). No account operation is open to domain administrators, so
+    `attribute-not-permitted` is never used by this feature;
   - the token sign-in is a `browser` route (001 R8): anonymous or signed-in sessions, keys refused
     with `session-required`.
 - **Rationale**: The FR-005 matrix and `docs/conventions.md` ("writing admin accounts" needs an

@@ -18,7 +18,9 @@ post:
     - `failed`: an unexpected failure.
 
     Activating an active account is `done` without a change. Targets without `version` are not
-    version-checked. Every audit record carries the `bulkRequestId`.
+    version-checked. Every audit record carries the `bulkRequestId`. The path accepts only `POST`,
+    and account paths never accept `POST`, so a domain administrator named `bulk-actions` stays
+    readable at `GET /domain-admins/bulk-actions`.
   security:
     - sessionCookie: []
       csrfToken: []

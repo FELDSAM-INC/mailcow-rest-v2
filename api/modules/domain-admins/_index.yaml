@@ -2,9 +2,9 @@
 # domains and permission flags, and their bulk actions.
 /domain-admins:
   $ref: './domain-admins.yaml'
+/domain-admins/bulk-actions:
+  $ref: './domain-admins-bulk-actions.yaml'
 /domain-admins/{username}:
   $ref: './domain-admin.yaml'
 /domain-admins/{username}/second-factor-suspension:
   $ref: './domain-admin-second-factor-suspension.yaml'
-/domain-admin-bulk-actions:
-  $ref: './domain-admin-bulk-actions.yaml'

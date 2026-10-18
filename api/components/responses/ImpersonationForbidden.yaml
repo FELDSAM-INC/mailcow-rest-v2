@@ -1,0 +1,24 @@
+description: |
+  The caller may not start this impersonation. Possible types, in addition to those of
+  `Forbidden`:
+  - `/api/v2/problems/forbidden`: the caller's role can never impersonate (a mailbox user), or a
+    domain administrator names a domain administrator as the target.
+  - `/api/v2/problems/permission-flag-required`: a domain administrator without the `loginAs` flag
+    (extension member `requiredFlags: [loginAs]`).
+  - `/api/v2/problems/session-required`: the request carries an API key.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/ImpersonationPermissionFlagProblem.yaml'
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      loginAsMissing:
+        value:
+          type: /api/v2/problems/permission-flag-required
+          title: Permission flag required
+          status: 403
+          detail: This operation needs the loginAs permission flag.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          requiredFlags: [loginAs]

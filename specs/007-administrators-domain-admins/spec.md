@@ -132,6 +132,24 @@
   007 spec found the gap. The defaults are the column defaults of the server's mailcow schema, which
   can differ between the supported mailcow releases, so a read is chosen over defaults fixed in the
   contract.)
+- Q: What answers a request for webmail on behalf of a user when the server runs without webmail
+  (groupware disabled)? → A: Feature 005's "groupware disabled" error, the same answer as for a
+  user's own webmail hand-off. Ineligible mailboxes (inactive, login disabled, inactive domain) stay
+  a validation error (FR-054). (orchestrator decision: the 007 analysis found that 005 and 007 gave
+  different answers for the same server state; one error type lets clients hide every webmail
+  function in one place.)
+- Q: Are signing out and ending an impersonation refused when they are the request that detects an
+  invalid impersonation? → A: No. They always succeed: they end the impersonation, audit its
+  automatic end with the reason, and complete with their normal response. Every other request that
+  detects it is still refused with "impersonation ended" and not carried out (FR-052). (orchestrator
+  decision: refusing them would leave a user who wants to leave signed in; neither runs anything
+  meant for the target, so the reason for the refusal does not apply. This amends the earlier
+  decision on how an impersonation ends.)
+- Q: How is a domain administrator without `login_as` refused when it tries to impersonate or open
+  webmail on behalf? → A: With "permission flag required" naming the flag (`loginAs`), checked
+  before the target is looked up; "forbidden" stays for roles and key types that may never use the
+  operation (FR-003). Bulk request bodies use the member `targets`. (orchestrator decision:
+  `docs/conventions.md`, "Permission refusals" and "Bulk paths and identity changes".)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -227,7 +245,8 @@ UI and through the API (for example with login-as) that the change applies at th
    them for a new account, so that the creation form can pre-select them.
 3. **Given** a domain administrator with "login as mailbox user" on, **When** an administrator turns
    only that flag off, **Then** that flag is off, every other flag is unchanged, and the domain
-   administrator's next login-as attempt is refused as forbidden.
+   administrator's next login-as attempt is refused with "permission flag required" naming the
+   flag.
 4. **Given** a request that names a flag that does not exist, **When** it is submitted, **Then** it
    is refused with a validation error naming the flag, and nothing changes.
 5. **Given** a domain administrator, **When** they try to change their own flags, **Then** the
@@ -273,7 +292,7 @@ return, and inspect the audit log. Repeat with an API key and with a restricted 
    it tries `dave@b.example` in a domain it does not manage, **Then** the response is "not found",
    exactly as for an address that does not exist.
 5. **Given** `reseller1` with "login as mailbox user" off, **When** it tries to impersonate any
-   mailbox user, **Then** the request is refused as forbidden.
+   mailbox user, **Then** the request is refused with "permission flag required" naming the flag.
 6. **Given** `alice` impersonating `reseller1`, **When** she tries to start a second impersonation,
    **Then** the request is refused, and she must end the current one first.
 7. **Given** a client authenticated with any API key, **When** it tries to start an impersonation,
@@ -473,7 +492,8 @@ tokens.
 - **Domain administrator impersonating another domain administrator**: refused as forbidden.
 - **Impersonation that becomes invalid**: the target is deleted or renamed, leaves the
   impersonator's scope, or the impersonating domain administrator loses "login as mailbox user". The
-  next request is refused with "impersonation ended" and the session acts as the impersonator again.
+  next request is refused with "impersonation ended" and the session acts as the impersonator again,
+  unless that request is a sign-out or the end of the impersonation, which complete normally.
   Deactivating the target does not end it.
 - **Impersonator deactivated or deleted during an impersonation**: the whole session ends (feature
   001).
@@ -500,9 +520,9 @@ tokens.
   one sign-in succeeds.
 - **Token sign-in on a client that already holds a session**, including an impersonating one: the
   existing session is replaced, as in legacy.
-- **Webmail on behalf for a mailbox that cannot use webmail** (inactive, login disabled, in an
-  inactive domain, or webmail disabled on the server): refused with a validation error. (Legacy
-  redirects to a webmail login that then fails.)
+- **Webmail on behalf for a mailbox that cannot use webmail** (inactive, login disabled, or in an
+  inactive domain): refused with a validation error. On a server without webmail, refused with
+  feature 005's "groupware disabled" error. (Legacy redirects to a webmail login that then fails.)
 - **Legacy UI edits of the same account**: the legacy UI never sends a version, so it can still
   overwrite a change made through this API. Legacy edit forms send both forced flags, so a legacy
   save also rewrites them.
@@ -527,7 +547,9 @@ tokens.
   to the next request.
 - **FR-003**: An account that does not exist, an account addressed with the wrong role, and an
   impersonation or webmail target outside the caller's scope MUST all get the same "not found"
-  response. An operation that the caller's role or flags never permit MUST be refused as forbidden.
+  response. An operation that the caller's role or key type never permits MUST be refused as
+  forbidden; an operation that needs a permission flag the caller lacks (`login_as`) MUST be refused
+  with feature 009's "permission flag required" error naming the flag, before any target lookup.
 - **FR-004**: A request authenticated by an API key MUST act with its owner's role, scope and flags
   (feature 001, FR-033). A read-only key MUST be refused on every state-changing operation with the
   "insufficient key scope" error of feature 001. A restricted session (feature 001, FR-014) MUST be
@@ -799,8 +821,10 @@ tokens.
   target leaves the impersonator's scope, or when an impersonating domain administrator's `login_as`
   flag is turned off. The first request that detects it MUST be refused with a documented
   "impersonation ended" error, MUST NOT be carried out, and the session MUST then act as the
-  impersonator again. When the impersonator itself can no longer sign in (deactivated or deleted),
-  the whole session MUST end, as feature 001 specifies.
+  impersonator again. A sign-out (FR-051) or an explicit end (FR-050) that detects it MUST instead
+  end the impersonation, audit its automatic end with the reason, and complete with its normal
+  response. When the impersonator itself can no longer sign in (deactivated or deleted), the whole
+  session MUST end, as feature 001 specifies.
 - **FR-053**: Impersonations in this API MUST NOT affect legacy UI sessions, and legacy impersonations
   MUST NOT affect sessions of this API (constitution V).
 
@@ -809,8 +833,9 @@ tokens.
 - **FR-054**: When the server setting that allows administrators' webmail login
   (`ALLOW_ADMIN_EMAIL_LOGIN`, default off) is on, an administrator, or a domain administrator whose
   `login_as` flag is on, MUST be able to obtain a single-use webmail sign-in for a mailbox in their
-  scope. The mailbox MUST be active and in an active domain, and webmail MUST be enabled on the
-  server. Otherwise the request MUST be refused with a validation error. A session that is
+  scope. The mailbox MUST be active and in an active domain; otherwise the request MUST be refused
+  with a validation error. When webmail is disabled on the server, the request MUST be refused with
+  feature 005's "groupware disabled" error. A session that is
   impersonating another account MUST NOT obtain one, whatever the target: the request MUST be
   refused with the documented "not allowed while impersonating" error (FR-049), consistent with the
   no-nesting rule of FR-043.
@@ -888,7 +913,8 @@ tokens.
 - **FR-070**: Errors MUST follow feature 001's conventions (FR-049 and FR-055 there). This feature
   MUST document at least these error types: account already exists, last active administrator,
   cannot delete own account, already impersonating, impersonation ended, not allowed while
-  impersonating, webmail login on behalf disabled, account inactive, and outdated version.
+  impersonating, webmail login on behalf disabled, account inactive, and outdated version. It reuses
+  the shared "forbidden", "permission flag required" and feature 005's "groupware disabled".
   Validation errors MUST use stable rule codes with their parameters, for example the allowed
   characters and the length limits of FR-014, each unmet password rule, and the bulk limit of
   FR-075.

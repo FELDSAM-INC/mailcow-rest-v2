@@ -124,9 +124,13 @@ table, so the spec is unchanged:
 4. A token signs in only an account created no later than the token (R20, FR-036).
 5. Refused attempts after authentication (`403`, `404`, `409`, `412`, `422`) are audited with the
    failure reasons other features already added (R22).
-6. Bulk paths are `/admin-bulk-actions` and `/domain-admin-bulk-actions`, because `bulk-actions` is
-   a valid username (R1); features whose identifiers cannot collide use `/<collection>/bulk-actions`.
-   The capabilities read is `/capabilities/accounts`, as `docs/conventions.md` requires.
+6. Bulk paths are `POST /admins/bulk-actions` and `POST /domain-admins/bulk-actions` (POST-only, so
+   an account named `bulk-actions` stays readable), and the capabilities read is
+   `/capabilities/accounts`, as `docs/conventions.md` requires (R1).
+7. Orchestrator decisions applied to the spec: webmail on a server without the groupware answers
+   005's `groupware-disabled` (FR-054); sign-out and ending an impersonation always succeed and end
+   and audit an invalid impersonation (FR-052); a domain administrator without `login_as` gets
+   `permission-flag-required` (FR-003).
 
 ## Contract Operations
 
@@ -138,7 +142,7 @@ table, so the spec is unchanged:
 | PATCH `/admins/{username}` | updateAdmin | admin session + CSRF | US4, FR-021, FR-022, FR-024–FR-026, FR-028, FR-064, FR-065 |
 | DELETE `/admins/{username}` | deleteAdmin | admin session + CSRF | US4, FR-028–FR-030, FR-033–FR-036 |
 | POST `/admins/{username}/second-factor-suspension` | suspendAdminSecondFactors | admin session + CSRF | US4, FR-027 |
-| POST `/admin-bulk-actions` | applyAdminBulkAction | admin session + CSRF | US4, FR-075, FR-076 |
+| POST `/admins/bulk-actions` | applyAdminBulkAction | admin session + CSRF | US4, FR-075, FR-076 |
 | GET `/capabilities/accounts` | getAccountCapabilities | admin session or admin key (read-only too) | US2, FR-077 |
 | GET `/domain-admins` | listDomainAdmins | admin session or admin key (read-only too) | US1, FR-007–FR-012 |
 | POST `/domain-admins` | createDomainAdmin | admin session + CSRF, or admin read-write key | US1, US2, FR-014–FR-020, FR-037 |
@@ -146,7 +150,7 @@ table, so the spec is unchanged:
 | PATCH `/domain-admins/{username}` | updateDomainAdmin | admin session + CSRF, or admin read-write key | US1, US2, FR-021, FR-023–FR-026, FR-038–FR-041, FR-064, FR-065 |
 | DELETE `/domain-admins/{username}` | deleteDomainAdmin | admin session + CSRF, or admin read-write key | US1, FR-031–FR-036 |
 | POST `/domain-admins/{username}/second-factor-suspension` | suspendDomainAdminSecondFactors | admin session + CSRF, or admin read-write key | US1, FR-027 |
-| POST `/domain-admin-bulk-actions` | applyDomainAdminBulkAction | admin session + CSRF, or admin read-write key | US1, FR-075, FR-076 |
+| POST `/domain-admins/bulk-actions` | applyDomainAdminBulkAction | admin session + CSRF, or admin read-write key | US1, FR-075, FR-076 |
 | POST `/domain-admins/{username}/sso-token` | issueDomainAdminSsoToken | admin session + CSRF, or admin read-write key | US5, FR-057–FR-059 |
 | POST `/session/sso-token` | createSessionWithSsoToken | any browser session + CSRF | US5, FR-060–FR-063 |
 | GET `/session/impersonation` | getImpersonation | session | US3, FR-048 |
@@ -197,8 +201,8 @@ Only the files that feature 007 adds or changes are listed; the layout is 001's.
 ```text
 api/
 ├── openapi.yaml                                   # tags and path references added
-├── modules/admins/{_index,admins,admin,admin-second-factor-suspension,admin-bulk-actions,account-capabilities}.yaml  # account-capabilities.yaml serves /capabilities/accounts
-├── modules/domain-admins/{_index,domain-admins,domain-admin,domain-admin-second-factor-suspension,domain-admin-bulk-actions}.yaml
+├── modules/admins/{_index,admins,admins-bulk-actions,admin,admin-second-factor-suspension,account-capabilities}.yaml  # account-capabilities.yaml serves /capabilities/accounts
+├── modules/domain-admins/{_index,domain-admins,domain-admins-bulk-actions,domain-admin,domain-admin-second-factor-suspension}.yaml
 ├── modules/sso-tokens/{_index,domain-admin-sso-token,session-sso-token}.yaml
 ├── modules/impersonation/{_index,session-impersonation,mailbox-webmail-sign-in}.yaml
 ├── modules/audit/audit-events.yaml                # + impersonatedAccount filter
@@ -208,15 +212,15 @@ api/
     │              DomainAdminPermissions, DomainAdminPermissionsPatch, DomainAdminPermissionName,
     │              AccountSecondFactorStatus, AccountBulkActionRequest, AccountCapabilities,
     │              DomainAdminSsoToken, SsoTokenSignInRequest, Impersonation,
-    │              ImpersonationStartRequest, ImpersonationStarted, MailboxWebmailSignIn,
-    │              AuditImpersonatedAccount; additive: Identity, Session, AuthMethod, AuditEvent,
+    │              ImpersonationStartRequest, ImpersonationStarted, ImpersonationPermissionFlagProblem,
+    │              MailboxWebmailSignIn, AuditImpersonatedAccount; additive: Identity, Session, AuthMethod, AuditEvent,
     │              ApiKey, AuditEventType, AuditTarget, KnownProblemType, ValidationRuleCode
     ├── parameters/ AdminUsername, DomainAdminUsername, AdminSort, DomainAdminSort
     └── responses/  Admin{List,Created,}Response, DomainAdmin{List,Created,}Response,
                     AccountCapabilitiesResponse, DomainAdminSsoTokenResponse,
                     Impersonation{,Started}Response, MailboxWebmailSignInResponse, AdminConflict,
                     DomainAdminConflict, DomainAdminSsoTokenConflict, ImpersonationConflict,
-                    MailboxWebmailSignInForbidden; additive: Forbidden
+                    ImpersonationForbidden, MailboxWebmailSignInForbidden; additive: Forbidden
 
 app/
 ├── Auth/{Principal,AuthMethod}.php                 # changed (001): impersonator, accountCreatedAt, ssoToken

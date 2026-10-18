@@ -1,0 +1,17 @@
+description: |
+  Problem of type `/api/v2/problems/permission-flag-required` (status `403`) for impersonation and
+  webmail on behalf (feature 007): the caller is a domain administrator without the `loginAs`
+  permission flag (`da_acl.login_as`). The flag is checked before the target is looked up, so the
+  answer never reveals whether a target outside the caller's scope exists. Nothing changed.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [requiredFlags]
+    properties:
+      requiredFlags:
+        type: array
+        minItems: 1
+        description: The missing flags, named as in `PermissionFlags`; any one of them would allow the operation.
+        items:
+          type: string
+          enum: [loginAs]

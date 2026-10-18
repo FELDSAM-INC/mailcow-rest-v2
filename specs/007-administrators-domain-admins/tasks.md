@@ -67,7 +67,10 @@ one user story each in spec priority order (US1–US3 P1, US4–US5 P2, US6–US
   `da_sso`, `restv2_preferences`, and no unrevoked `restv2_api_keys`),
   `assertAudit(eventType, outcome, targetType, targetName, detailsSubset, impersonated = null)` and
   `assertNoSecretIn(string ...$secrets)` over `restv2_audit_events` and the captured log.
-- [ ] T005 Run `composer contract:lint` and `composer contract:bundle` (FR-071); confirm that
+- [ ] T005 Make sure 001's `tests/Support/Contract/OpenApiContract.php` matches a concrete path
+  only when it defines the request's method and otherwise falls back to the templated path, so that
+  `GET /admins/bulk-actions` validates as `getAdmin` (`docs/conventions.md`, "Bulk paths"); extend
+  its unit test with that case. Run `composer contract:lint` and `composer contract:bundle` (FR-071); confirm that
   `build/contract/openapi.json` contains the 21 operationIds of plan.md "Contract Operations" and
   the additive changes to `Identity`, `Session`, `AuthMethod`, `AuditEvent`, `ApiKey` and
   `listAuditEvents`.
@@ -295,7 +298,8 @@ the accounts in through feature 001.
   (`412` problem) unchanged; one audit record per processed account, each with `bulkRequestId` =
   `data.bulkRequestId`; 101 targets → `422 tooMany` `{max: 100}` on `targets`; a username twice
   (also in another letter case) → processed and reported once; an administrator's username →
-  `notFound`; `delete` applies every effect of T031; `suspendSecondFactors` as T032; `activate` on
+  `notFound`; a domain administrator named `bulk-actions` is still read by
+  `GET /domain-admins/bulk-actions`; `delete` applies every effect of T031; `suspendSecondFactors` as T032; `activate` on
   an active account → `done`; results in request order and `summary` counts; an `action` other than
   the four (for example `rename` or `setPassword`) → `422 notInList` (FR-073); every outdated item
   is left unchanged while the others proceed (SC-010).
@@ -375,7 +379,8 @@ the accounts in through feature 001.
 - [ ] T045 [US1] Create `app/Http/Controllers/Api/V2/DomainAdminController.php` (`index`, `show`,
   `store`, `update`, `destroy`), `DomainAdminSecondFactorSuspensionController.php` (`store`) and
   `DomainAdminBulkActionController.php` (`store`), authorised through `DomainAdminPolicy`. Register
-  in `routes/api.php`: `GET|POST /domain-admins`, `POST /domain-admin-bulk-actions`,
+  in `routes/api.php`: `GET|POST /domain-admins`, `POST /domain-admins/bulk-actions` (before the
+  `{username}` routes, which never accept `POST`),
   `GET|PATCH|DELETE /domain-admins/{username}` and
   `POST /domain-admins/{username}/second-factor-suspension` with `restv2.auth:authenticated`,
   `restv2.csrf` on writes and the `{username}` constraint `[A-Za-z0-9._-]+`. Responses carry
@@ -489,10 +494,11 @@ and without the flag, with keys and restricted sessions.
   preference is unchanged, `GET /me` then shows the impersonator, the CSRF token was renewed, and
   audit `impersonationEnd` has `endedBy: automatic` and the reason; a deactivated target does not
   end it; a deactivated impersonator ends the whole session (`401`); `DELETE
-  /session/impersonation` and `DELETE /session` that detect an invalid impersonation are also
-  answered `403 impersonation-ended` (the impersonation ends, the session stays signed in as the
-  impersonator), and the repeated request then answers `204`; a flag change of an impersonating
-  domain administrator applies to its next request (FR-002, FR-040).
+  /session/impersonation` that detects an invalid impersonation answers `204`, ends it and audits
+  `impersonationEnd` (`endedBy: automatic` with the reason), and `DELETE /session` that detects it
+  answers `204`, audits the automatic end and `signOut`, and ends the session (FR-052 as amended);
+  a flag change of an impersonating domain administrator applies to its next request (FR-002,
+  FR-040).
 - [ ] T055 [P] [US3] Write `tests/Feature/Impersonation/ImpersonationRefusalsTest.php` (AS US3-9,
   FR-049, R19): during an impersonation of a mailbox user, 001's
   `POST /me/passkeys/registration-options`, `POST /me/passkeys`, `PATCH` and
@@ -505,7 +511,8 @@ and without the flag, with keys and restricted sessions.
   US3-7, FR-042, FR-043, R24): any API key on `startImpersonation` — administrator read-write →
   `403 session-required`, read-only → `403 insufficient-key-scope`, domain administrator key →
   `403 session-required`; a mailbox user → `403 forbidden`; a domain administrator without
-  `loginAs` → `403 forbidden`, also right after an administrator turned the flag off through
+  `loginAs` → `403 permission-flag-required` with `requiredFlags: [loginAs]` and the same answer for a target
+  inside and outside its scope, also right after an administrator turned the flag off through
   `PATCH /domain-admins/{username}` (AS US2-3); a domain administrator targeting a domain
   administrator → `403 forbidden`; a restricted session → `403 pending-action-required`; a pending
   sign-in → `401 second-factor-required`; no session → `401`; zero impersonations can be started
@@ -542,7 +549,8 @@ and without the flag, with keys and restricted sessions.
   `PreferencesController.php` to use `actingAccount()` (FR-047).
 - [ ] T061 [US3] Create `app/Http/Middleware/EnforceImpersonation.php` (R17: validation on every
   session request, automatic end with renewal and audit, then `403 impersonation-ended` for every
-  detecting request, the end and the sign-out included) and append it to the `api.v2` group right
+  detecting request except `DELETE /session/impersonation` and `DELETE /session`, which continue to
+  their controllers and complete normally) and append it to the `api.v2` group right
   after `EnsureSessionIntegrity` in `bootstrap/app.php`. Create
   `app/Http/Middleware/RefuseDuringImpersonation.php` with the alias `restv2.not-impersonating`,
   running after `restv2.auth` and before `restv2.pending`.
@@ -647,7 +655,8 @@ loses its last active administrator, and nobody deletes their own account.
   and `AdminBulkActionController.php`, authorised through `AdminPolicy`. Register
   `GET /admins` and `GET /admins/{username}` with `restv2.auth:authenticated`, and `POST /admins`,
   `PATCH|DELETE /admins/{username}`, `POST /admins/{username}/second-factor-suspension` and
-  `POST /admin-bulk-actions` with `restv2.auth:session` and `restv2.csrf`, in `routes/api.php`.
+  `POST /admins/bulk-actions` (before the `{username}` routes, which never accept `POST`) with
+  `restv2.auth:session` and `restv2.csrf`, in `routes/api.php`.
   Create `tests/bin/admin-race.php` for T072. This makes T065–T074 pass.
 
 **Checkpoint**: Administrator accounts can be managed without the legacy UI.
@@ -737,10 +746,10 @@ writes them, consumed here and by a simulated legacy consumer.
   no-store`, `url`, a `sasl_log` row (`service = 'SSO'`, the mailbox, the client address), the
   caller's `GET /me` unchanged, audit `webmailSignInOnBehalf`; setting off → `403
   webmail-on-behalf-disabled`; `reseller1` with `loginAs` → own domain `200`, other domain `404`;
-  without `loginAs` → `403 forbidden`; mailbox user → `403 forbidden`; any key → `403
+  without `loginAs` → `403 permission-flag-required` (`requiredFlags: [loginAs]`); mailbox user → `403
+  forbidden`; `SKIP_SOGO=y` → feature 005's `403 groupware-disabled`; any key → `403
   session-required` (read-only: `insufficient-key-scope`); resource → `404`; mailbox with `active =
-  0`, `active = 2`, in an inactive domain, or `SKIP_SOGO=y` → `422 notEligible` on `mailbox` with the
-  `reason`; while impersonating a mailbox user or a domain administrator → `403
+  0`, `active = 2` or in an inactive domain → `422 notEligible` on `mailbox` with the `reason`; while impersonating a mailbox user or a domain administrator → `403
   not-allowed-while-impersonating`, no `sasl_log` row, no cookie; a restricted session → `403
   pending-action-required`; `GET /me` reports
   `webmailOnBehalfEnabled` for administrators and domain administrators following the setting.
@@ -816,7 +825,8 @@ behalf in the audit log, without secrets.
   provider over all 21 operations × {administrator session, administrator read-write key,
   administrator read-only key, domain administrator session, domain administrator key, mailbox user
   session, restricted session, impersonating session, no credentials}, asserting the status and
-  problem type of the FR-005 matrix and research R24, and that objects outside a domain
+  problem type of the FR-005 matrix and research R24 (`forbidden` for roles and key types,
+  `permission-flag-required` with `requiredFlags: [loginAs]` for a missing flag), and that objects outside a domain
   administrator's scope get the same answer as missing ones (SC-002; constitution quality gate 5).
 - [ ] T094 [P] Write `tests/Feature/Accounts/AccountReuseTest.php` (SC-004): after deleting and after
   renaming an administrator and a domain administrator through the API, a new account with the old

@@ -30,7 +30,9 @@ post:
     - Domain administrators with the `loginAs` flag impersonate the mailbox users of domains
       assigned to them through an active assignment.
     - Nobody impersonates an administrator, and a domain administrator never impersonates another
-      domain administrator (`403`).
+      domain administrator (`403 forbidden`). A domain administrator without `loginAs` gets
+      `403 permission-flag-required` with `requiredFlags: [loginAs]`, checked before the target is looked
+      up.
     - Inactive targets and mailboxes in inactive domains are allowed, as in legacy. Resources,
       unknown accounts and mailboxes outside a domain administrator's domains answer `404`.
 
@@ -66,7 +68,7 @@ post:
     '401':
       $ref: '../../components/responses/Unauthorized.yaml'
     '403':
-      $ref: '../../components/responses/Forbidden.yaml'
+      $ref: '../../components/responses/ImpersonationForbidden.yaml'
     '404':
       $ref: '../../components/responses/NotFound.yaml'
     '409':
@@ -81,14 +83,16 @@ delete:
   summary: End the impersonation
   description: |
     Returns the session to the impersonator, with the impersonator's original sign-in method. The
-    session identifier and the anti-forgery token are renewed: fetch the new token with
-    `GET /csrf-token` and re-read `GET /me`. Audited. Without an active impersonation the request
-    succeeds and changes nothing. Available in restricted sessions.
+    session identifier and the anti-forgery token are renewed. Audited. Without an active
+    impersonation the request succeeds and changes nothing. Available in restricted sessions.
 
     Signing out (`DELETE /session`) during an impersonation ends the whole session, not only the
     impersonation. An impersonation also ends automatically when the target is deleted or renamed,
     leaves the impersonator's scope, or an impersonating domain administrator loses `loginAs`: the
-    next request is then refused with `impersonation-ended` and not carried out.
+    next request is then refused with `impersonation-ended` and not carried out. Ending the
+    impersonation and signing out are the exceptions: they always succeed, also when they are the
+    request that detects the invalid impersonation, which is then ended and audited with its
+    reason.
   security:
     - sessionCookie: []
       csrfToken: []

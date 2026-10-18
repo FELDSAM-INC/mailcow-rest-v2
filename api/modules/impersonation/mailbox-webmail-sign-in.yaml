@@ -12,11 +12,13 @@ post:
 
     Requires the server setting `ALLOW_ADMIN_EMAIL_LOGIN` (default off; otherwise
     `webmail-on-behalf-disabled`). Administrators may open any mailbox; domain administrators with
-    the `loginAs` flag the mailboxes of their domains. Mailbox users are refused. Only a full
+    the `loginAs` flag the mailboxes of their domains (without it: `permission-flag-required` with
+    `requiredFlags: [loginAs]`). Mailbox users are refused with `forbidden`. Only a full
     browser session may do this: API keys are refused with `session-required`, and a session that
     is impersonating another account with `not-allowed-while-impersonating`, whatever the target.
-    A mailbox that cannot use webmail (inactive, login disabled, in an inactive domain, or webmail
-    disabled on the server) is refused with `notEligible` on `mailbox`. Audited, also when refused.
+    On a server without the groupware (`SKIP_SOGO=y`) the request is refused with feature 005's
+    `groupware-disabled`. A mailbox that cannot use webmail (inactive, login disabled, or in an
+    inactive domain) is refused with `notEligible` on `mailbox`. Audited, also when refused.
   security:
     - sessionCookie: []
       csrfToken: []

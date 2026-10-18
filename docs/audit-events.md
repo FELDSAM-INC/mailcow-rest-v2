@@ -343,3 +343,173 @@ template.
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
+
+<!-- Feature 004: aliases, alias domains, resources and sender settings. -->
+
+## aliasCreation
+
+Feature 004. Written for every creation of an alias (`POST /aliases`), for every copy that a copy
+over alias domains creates (`POST /aliases/{aliasId}/alias-domain-copies` and the bulk action
+`copyOverAliasDomains`, one record per created copy), in the transaction that stores it, and for
+every refusal. The target is the alias (`type: alias`, `id` its identifier, `name` its ASCII
+address); a refused creation has no identifier, a refused copy names the copied alias.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The stored attributes in contract names: `address`, `destinationType`, `destinations` (as stored, empty for a special action), `active`, `senderAllowed`, `groupwareVisible`, `internal`, `publicComment` and `privateComment`. | on success |
+| `groupwareUpdate` | string | The update of the destination mailboxes' groupware entries: `done`, `failed` (the alias was kept) or `groupwareDisabled`. | on success |
+| `copiedFromAliasId` | integer | The identifier of the alias this copy was made from. | for copies |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for copies made by a bulk action |
+| `targetIds` | array of strings | See "Refusal records". | when a whole `copyOverAliasDomains` bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## aliasUpdate
+
+Feature 004. Written for every change of an alias (`PATCH /aliases/{aliasId}`), for every alias of
+the bulk actions `activate`, `deactivate`, `showInGroupware` and `hideInGroupware`, and for every
+refusal of them. A change whose values equal the stored ones is recorded too, with empty `changes`.
+The target is the alias with its address after the change.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed attribute as `{old, new}`, keyed by its contract name: `address`, `destinationType`, `destinations` (lists), `active`, `senderAllowed`, `groupwareVisible`, `internal`, `publicComment`, `privateComment`. Empty when nothing changed. | on success |
+| `groupwareUpdate` | string | The update of the former and new destination mailboxes' groupware entries: `done`, `failed` (the change was kept) or `groupwareDisabled`. Absent when nothing changed. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## aliasDeletion
+
+Feature 004. Written for every deletion of an alias (`DELETE /aliases/{aliasId}` and bulk
+deletions), in the transaction that deletes it, and for every refusal. The target is the deleted
+alias.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `removed` | object | What was removed with the alias: `senderPermissions`, the number of explicit sender permissions to send as its address (for a catch-all alias, the domain-wide permissions for its domain). | on success |
+| `groupwareUpdate` | string | The update of the destination mailboxes' groupware entries: `done`, `failed` (the deletion was kept) or `groupwareDisabled`. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## aliasDomainCreation
+
+Feature 004. Written for every creation of an alias domain (`POST /alias-domains`), in the
+transaction that stores it with its domain map entry, and for every refusal. The target is the alias
+domain (`type: aliasDomain`, `id` its ASCII name, `name` its readable name). The record is written
+with `creationReport: "pending"` and completed once after the follow-up steps have run. A DKIM key
+generated by the creation has its own `dkimKeyGeneration` record (`trigger: aliasDomainCreation`).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The stored values and requested follow-ups in contract names: `targetDomain`, `active`, `rateLimit` (`{value, frame}` or `null`), `dkimSelector` (empty: no key) and `dkimKeySize`, and `removedExternalSenderAddresses`, the number of external sender addresses removed because the name became local. | on success |
+| `creationReport` | object | The creation report of the response (`AliasDomainCreationReport`): `rateLimit`, `dkimKey`, `dkimDnsPublication`, `groupwareDirectoryUpdate` and, when a step failed, `messages`. `"pending"` only until the follow-up steps complete. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## aliasDomainUpdate
+
+Feature 004. Written for every change of an alias domain (`PATCH /alias-domains/{aliasDomain}`), for
+every activation or deactivation of a bulk action, and for every refusal of them. A change whose
+values equal the stored ones is recorded too, with empty `changes`. The target is the alias domain.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed attribute as `{old, new}`: `targetDomain` (ASCII), `active`. Empty when nothing changed. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## aliasDomainDeletion
+
+Feature 004. Written for every deletion of an alias domain (`DELETE /alias-domains/{aliasDomain}`
+and bulk deletions), in the transaction that deletes it, and for every refusal. The target is the
+deleted alias domain. Its DKIM key is kept and is not recorded here.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `removed` | object | What was removed with the alias domain: `aliases` (a list of `{id, address}` of the aliases that lived in it), and the counts `senderPermissions` (explicit permissions to send as those aliases or as the whole alias domain), `temporaryAliases`, `bccMaps` (its domain-level BCC maps) and `spamFilterSettings` (its spam allow and block list entries), and `footerExclusion` (boolean: whether its name was removed from the target domain's footer exclusions). | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## resourceCreation
+
+Feature 004. Written for every creation of a resource (`POST /resources`), in the transaction that
+stores it, and for every refusal. The target is the resource (`type: resource`, `id` its address,
+`name` its description); a refused creation carries the address the description would derive,
+when it derives one.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The stored attributes in contract names: `address`, `description`, `domain`, `kind`, `bookingRule`, `bookingLimit` and `active`. | on success |
+| `groupwareUpdate` | string | The update of the resource's groupware entry: `done`, `failed` (the resource was kept) or `groupwareDisabled`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## resourceUpdate
+
+Feature 004. Written for every change of a resource (`PATCH /resources/{resourceAddress}`), for every
+activation or deactivation of a bulk action, and for every refusal of them. A change whose values
+equal the stored ones is recorded too, with empty `changes`. The target is the resource with its
+description after the change.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed attribute as `{old, new}`: `description`, `kind`, `bookingRule`, `bookingLimit`, `active`. Empty when nothing changed. | on success |
+| `groupwareUpdate` | string | The update of the resource's groupware entry: `done`, `failed` (the change was kept) or `groupwareDisabled`. Absent when nothing changed. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## resourceDeletion
+
+Feature 004. Written for every deletion of a resource (`DELETE /resources/{resourceAddress}` and bulk
+deletions), in the transaction that deletes it, and for every refusal. The target is the deleted
+resource.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `removed` | object | Counts of the groupware data removed with the resource: `groupwareProfiles`, `groupwareFolders` (calendars and address books), `groupwareItems` (stored events and contacts), `groupwareSharingPermissions` and `groupwareCacheEntries`. | on success |
+| `groupwareUpdate` | string | The removal of the resource's groupware entry: `done`, `failed` (the deletion was kept) or `groupwareDisabled`. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailboxSenderSettingsUpdate
+
+Feature 004. Written for every change of a mailbox's sender settings
+(`PATCH /mailboxes/{mailbox}/sender-settings`) and every refusal. A request whose lists equal the
+stored ones is recorded too, with empty `changes`. The target is the sender settings
+(`type: mailboxSenderSettings`, `id` and `name` the mailbox address).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `explicitPermissions` and `externalSenderAddresses` as `{old, new}` (the stored lists, sorted), each when it changed. Empty when nothing changed. | on success |
+| `groupwareUpdate` | string | The update of the mailbox's groupware entry after its external sender addresses changed: `done`, `failed` (the change was kept) or `groupwareDisabled`. | when the external sender addresses changed |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |

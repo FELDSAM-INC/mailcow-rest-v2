@@ -122,6 +122,37 @@
                 "mailbox-template-protected",
                 "domain-alias-limit-reached"
             ]
+        },
+        "004-aliases-alias-domains-resources": {
+            "operations": [
+                "listAliases",
+                "createAlias",
+                "applyAliasBulkAction",
+                "getAlias",
+                "updateAlias",
+                "deleteAlias",
+                "copyAliasOverAliasDomains",
+                "getAliasesCapabilities",
+                "listAliasDomains",
+                "createAliasDomain",
+                "applyAliasDomainBulkAction",
+                "getAliasDomain",
+                "updateAliasDomain",
+                "deleteAliasDomain",
+                "listResources",
+                "createResource",
+                "applyResourceBulkAction",
+                "getResource",
+                "updateResource",
+                "deleteResource",
+                "getMailboxSenderSettings",
+                "updateMailboxSenderSettings",
+                "listSenderPermissionCandidates"
+            ],
+            "problemTypes": [
+                "alias-domain-already-exists",
+                "not-primary-domain-alias"
+            ]
         }
     },
     "pendingOperations": [
@@ -133,6 +164,29 @@
         "createMailboxTemplate",
         "getMailboxTemplate",
         "updateMailboxTemplate",
-        "deleteMailboxTemplate"
+        "deleteMailboxTemplate",
+        "listAliases",
+        "createAlias",
+        "applyAliasBulkAction",
+        "getAlias",
+        "updateAlias",
+        "deleteAlias",
+        "copyAliasOverAliasDomains",
+        "getAliasesCapabilities",
+        "listAliasDomains",
+        "createAliasDomain",
+        "applyAliasDomainBulkAction",
+        "getAliasDomain",
+        "updateAliasDomain",
+        "deleteAliasDomain",
+        "listResources",
+        "createResource",
+        "applyResourceBulkAction",
+        "getResource",
+        "updateResource",
+        "deleteResource",
+        "getMailboxSenderSettings",
+        "updateMailboxSenderSettings",
+        "listSenderPermissionCandidates"
     ]
 }

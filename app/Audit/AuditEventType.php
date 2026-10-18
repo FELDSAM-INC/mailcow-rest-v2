@@ -44,6 +44,18 @@ enum AuditEventType: string
     case MailboxTemplateUpdate = 'mailboxTemplateUpdate';
     case MailboxTemplateDeletion = 'mailboxTemplateDeletion';
 
+    // Feature 004: aliases, alias domains, resources and sender settings.
+    case AliasCreation = 'aliasCreation';
+    case AliasUpdate = 'aliasUpdate';
+    case AliasDeletion = 'aliasDeletion';
+    case AliasDomainCreation = 'aliasDomainCreation';
+    case AliasDomainUpdate = 'aliasDomainUpdate';
+    case AliasDomainDeletion = 'aliasDomainDeletion';
+    case ResourceCreation = 'resourceCreation';
+    case ResourceUpdate = 'resourceUpdate';
+    case ResourceDeletion = 'resourceDeletion';
+    case MailboxSenderSettingsUpdate = 'mailboxSenderSettingsUpdate';
+
     /**
      * Keys of refusal records written by App\Services\Audit\RefusalAuditor (docs/conventions.md
      * "Refusal auditing"): the problem type, the status and, for `422`, the field errors (rule codes
@@ -88,6 +100,14 @@ enum AuditEventType: string
             self::MailboxRename => ['previousAddress', 'newAddress', 'keepOldAddressAsAlias', 'steps', ...self::REFUSAL],
             self::MailboxTemplateCreation, self::MailboxTemplateDeletion => ['values', ...self::REFUSAL],
             self::MailboxTemplateUpdate => ['changes', ...self::REFUSAL],
+            self::AliasCreation => ['values', 'groupwareUpdate', 'copiedFromAliasId', ...self::BULK, ...self::REFUSAL],
+            self::AliasUpdate, self::ResourceUpdate => ['changes', 'groupwareUpdate', ...self::BULK, ...self::REFUSAL],
+            self::AliasDeletion, self::ResourceDeletion => ['removed', 'groupwareUpdate', ...self::BULK, ...self::REFUSAL],
+            self::AliasDomainCreation => ['values', 'creationReport', ...self::REFUSAL],
+            self::AliasDomainUpdate => ['changes', ...self::BULK, ...self::REFUSAL],
+            self::AliasDomainDeletion => ['removed', ...self::BULK, ...self::REFUSAL],
+            self::ResourceCreation => ['values', 'groupwareUpdate', ...self::REFUSAL],
+            self::MailboxSenderSettingsUpdate => ['changes', 'groupwareUpdate', ...self::REFUSAL],
         };
     }
 }

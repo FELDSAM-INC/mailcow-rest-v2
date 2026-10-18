@@ -215,6 +215,17 @@ class MailcowConfig
     }
 
     /**
+     * Whether external alias destinations are refused for every role, administrators included
+     * (legacy `$ALIAS_DISABLE_EXTERNAL_DOMAINS`, feature 004 FR-007). Off by default.
+     *
+     * @phpstan-impure
+     */
+    public function aliasDisableExternalDomains(): bool
+    {
+        return $this->value('ALIAS_DISABLE_EXTERNAL_DOMAINS') === true;
+    }
+
+    /**
      * The effective value of a legacy variable listed in config/restv2.php.
      *
      * @phpstan-impure

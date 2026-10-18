@@ -230,17 +230,56 @@ class MailcowRows
     }
 
     /**
-     * An alias (`mailbox('add', 'alias')`); the domain defaults to the address's domain part. Returns
-     * its ID.
+     * An alias with legacy's column list (`mailbox('add', 'alias')`); the domain defaults to the
+     * address's domain part. Comments default to NULL, as rows written before the comment fields
+     * existed. Returns its ID.
      */
-    public function alias(string $address, string $goto, ?string $domain = null, int $active = 1): int
-    {
+    public function alias(
+        string $address,
+        string $goto,
+        ?string $domain = null,
+        int $active = 1,
+        int $senderAllowed = 1,
+        int $sogoVisible = 1,
+        int $internal = 0,
+        ?string $publicComment = null,
+        ?string $privateComment = null,
+    ): int {
         return (int) DB::table('alias')->insertGetId([
             'address' => $address,
             'goto' => $goto,
             'domain' => $domain ?? substr((string) strrchr($address, '@'), 1),
             'active' => $active,
-            'sogo_visible' => 1,
+            'sogo_visible' => $sogoVisible,
+            'internal' => $internal,
+            'sender_allowed' => $senderAllowed,
+            'public_comment' => $publicComment,
+            'private_comment' => $privateComment,
+        ]);
+    }
+
+    /**
+     * A groupware resource exactly as `mailbox('add', 'resource')` stores it: a `mailbox` row with
+     * the password `RESOURCE`, quota 0, the kind and the booking rule, and no `user_acl` row.
+     */
+    public function resource(string $address, string $description, string $kind = 'location', int $multipleBookings = -1, int $active = 1): void
+    {
+        [$localPart, $domain] = explode('@', $address, 2) + [1 => ''];
+
+        if ($domain === '') {
+            throw new InvalidArgumentException("{$address} is not an e-mail address");
+        }
+
+        DB::table('mailbox')->insert([
+            'username' => $address,
+            'password' => 'RESOURCE',
+            'name' => $description,
+            'quota' => 0,
+            'local_part' => $localPart,
+            'domain' => $domain,
+            'active' => $active,
+            'multiple_bookings' => $multipleBookings,
+            'kind' => $kind,
         ]);
     }
 

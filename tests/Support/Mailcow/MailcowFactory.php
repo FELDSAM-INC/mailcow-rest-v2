@@ -4,6 +4,8 @@ namespace Tests\Support\Mailcow;
 
 use Database\Factories\MailcowRows;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
+use RuntimeException;
 use Tests\Support\WebAuthn\VirtualCredential;
 
 /**
@@ -34,6 +36,21 @@ class MailcowFactory extends MailcowRows
     {
         $this->ensureDomain(explode('@', $username, 2)[1], $domainActive);
         $this->mailbox($username, self::PASSWORD, 'BLF-CRYPT', $active, attributes: $attributes, userAcl: $userAcl);
+    }
+
+    /**
+     * A field of one of mailcow's own Redis hashes (connection `mailcow`), for example
+     * `DOMAIN_MAP`, `RL_VALUE` or the DKIM hashes.
+     */
+    public function redisHash(string $key, string $field, string $value): void
+    {
+        $client = Redis::connection('mailcow')->client();
+
+        if (! $client instanceof \Redis) {
+            throw new RuntimeException('The mailcow Redis connection does not use phpredis.');
+        }
+
+        $client->hSet($key, $field, $value);
     }
 
     public function tfaWebAuthnCredential(string $username, VirtualCredential $credential, string $keyId = 'Security key', int $active = 1): int

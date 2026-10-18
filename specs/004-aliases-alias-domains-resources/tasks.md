@@ -45,16 +45,16 @@ effects), and every operation is tested for each role and key type that can reac
 
 **Purpose**: Confirm the baseline. No business logic.
 
-- [ ] T001 Run `composer contract:lint` and `composer test` on the current `main` and confirm that
+- [X] T001 Run `composer contract:lint` and `composer test` on the current `main` and confirm that
   the suites of features 001–003 are green and that `api/openapi.yaml` lints without error for
   `api/modules/{aliases,alias-domains,resources,sender-settings}` (`composer.json` scripts of 001).
   Add the tags `Aliases`, `Alias domains`, `Resources` and `Sender settings` to
   `tests/contract-scope.php` (002's coverage scope), so the coverage gate includes the 23
   operations of this feature.
-- [ ] T002 Add `RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS` to `config/restv2.php` (nullable boolean;
+- [X] T002 Add `RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS` to `config/restv2.php` (nullable boolean;
   `null` means "read the legacy files", R21), to `.env.example`, to
   `deploy/docker-compose.override.yml` (commented, empty) and to the README settings table.
-- [ ] T003 Verify that `api/modules/audit/audit-events.yaml` has the generic `targetType` and
+- [X] T003 Verify that `api/modules/audit/audit-events.yaml` has the generic `targetType` and
   `targetId` filters and that `api/components/schemas/AuditTarget.yaml` lists `alias`,
   `aliasDomain`, `resource` and `mailboxSenderSettings` (FR-064). No feature-specific audit filter is
   added (`docs/conventions.md`).
@@ -69,7 +69,7 @@ complete.**
 
 ### Tests for the foundation (write first, observe failing) ⚠️
 
-- [ ] T004 [P] Extend `database/factories/MailcowRows.php` and `tests/Support/Mailcow/MailcowFactory.php`
+- [X] T004 [P] Extend `database/factories/MailcowRows.php` and `tests/Support/Mailcow/MailcowFactory.php`
   with the rows this feature needs that features 001–003 do not provide yet (keep their signatures
   where they exist): `alias(address, goto, domain = derived, active = 1, senderAllowed = 1,
   sogoVisible = 1, internal = 0, publicComment = null, privateComment = null)` returning the `id`;
@@ -80,12 +80,12 @@ complete.**
   `sogoFolder(cUid, path2)` with matching `sogo_*` rows for resource deletion tests; and
   `redisHash(key, field, value)` on the `mailcow` connection. A mailbox created with the existing
   helper has its own-alias row (`address = goto = username`), as legacy writes it.
-- [ ] T005 [P] Write `tests/Unit/Services/MailcowConfigAliasSettingTest.php` (R21):
+- [X] T005 [P] Write `tests/Unit/Services/MailcowConfigAliasSettingTest.php` (R21):
   `aliasDisableExternalDomains()` is `false` by default; `true` when
   `tests/fixtures/mailcow-inc/vars.local.inc.php` sets `$ALIAS_DISABLE_EXTERNAL_DOMAINS = true`;
   `RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS=false` beats the file; a change of the file is picked up by
   the next call (001 R14's fingerprint cache).
-- [ ] T006 [P] Write `tests/Feature/Dependencies/Feature004DependenciesTest.php`, pinning the reused
+- [X] T006 [P] Write `tests/Feature/Dependencies/Feature004DependenciesTest.php`, pinning the reused
   classes with the behaviour this feature relies on (R24):
   - `App\Support\Domain\DomainName::normalize(' Bücher.Example ')` = `xn--bcher-kva.example`;
     `isValid()` like legacy `is_valid_domain_name` (single labels allowed, labels ≤ 63, ≤ 253);
@@ -105,7 +105,7 @@ complete.**
   - `AuditLogger::completeFollowUps()` completes a `"pending"` key once;
   - a route declaring `->defaults('restv2.audit', …)` gets its `4xx` refusals of authenticated
     callers recorded by the shared `RefusalAuditor`, except `401` and `csrf-token-mismatch`.
-- [ ] T007 [P] Write `tests/Unit/Services/AliasAddressTest.php` and `AliasDestinationTest.php`
+- [X] T007 [P] Write `tests/Unit/Services/AliasAddressTest.php` and `AliasDestinationTest.php`
   (R3, R4, FR-008, FR-009, FR-012, FR-025, FR-026): `AliasAddress` trims, keeps the local part's
   case, converts the domain with `DomainName`, accepts `@domain` as catch-all (also single-label),
   refuses quoted, non-ASCII and literal local parts and `a..b`; `AliasDestination::fromGoto()` maps
@@ -113,25 +113,25 @@ complete.**
   `addresses` with entries exactly as stored; `toGoto()` round-trips; letter-case duplicates are
   merged keeping the first spelling and order; `addedComparedTo()` returns only destinations not in
   the stored list, case-insensitively; the joined limit is 65,535 characters.
-- [ ] T008 [P] Write `tests/Unit/Services/AliasVersionTagTest.php` (R18, FR-060): the tags of alias,
+- [X] T008 [P] Write `tests/Unit/Services/AliasVersionTagTest.php` (R18, FR-060): the tags of alias,
   alias domain, resource and sender settings change when any listed stored column changes and
   stay equal otherwise; an alias domain's tag does not change with its alias count, the target's
   `backupmx` or `RL_VALUE`; the sender settings tag does not depend on row order or `id` and does
   not change when an alias delivering to the mailbox changes; no input is a secret.
-- [ ] T009 [P] Write `tests/Unit/Services/ResourceAddressDeriverTest.php` (R13, FR-048): "Meeting
+- [X] T009 [P] Write `tests/Unit/Services/ResourceAddressDeriverTest.php` (R13, FR-048): "Meeting
   Room 1" → `MeetingRoom1`; "Meeting-Room 1" → `MeetingRoom1`; "Raum Süd" → `RaumSd`; "!!!" →
   refused (`invalidFormat`, `format: resourceDescription`); 65 letters → refused; 64 → accepted; the
   result equals legacy's `preg_replace('/[^\da-z]/i', '', preg_quote($d, '/'))` for 50 generated
   descriptions.
-- [ ] T010 [P] Write `tests/Unit/Services/SenderEntryTest.php` (R14): `example.org`,
+- [X] T010 [P] Write `tests/Unit/Services/SenderEntryTest.php` (R14): `example.org`,
   `@Example.ORG` and `@bücher.example` normalise to `@example.org` / `@xn--bcher-kva.example`;
   addresses keep the local part's case; `*` is `anyAddress`; external entries accept an address or a
   domain and refuse anything else (`format: emailOrDomain`); explicit entries refuse anything that
   is not an address, a domain or `*` (`format: senderPermission`).
-- [ ] T011 [P] Write `tests/Unit/Support/UnicodeSearchTest.php` (R19): for a non-ASCII `q`, it
+- [X] T011 [P] Write `tests/Unit/Support/UnicodeSearchTest.php` (R19): for a non-ASCII `q`, it
   returns the ids of scoped rows whose `idn_to_utf8` form contains `q` case-insensitively (a partial
   label such as `ücher` included); for an ASCII `q` it adds nothing.
-- [ ] T012 [P] Write `tests/Unit/Support/BulkActionRunnerTest.php` (R16), unless an earlier feature
+- [X] T012 [P] Write `tests/Unit/Support/BulkActionRunnerTest.php` (R16), unless an earlier feature
   already tests `App\Support\Bulk\BulkActionRunner`: `targets` are deduplicated after normalisation
   keeping the first; each target runs in its own transaction; a `404` maps to `notFound`, other
   `4xx` to `refused` with the problem, `412` or a version mismatch to `outdated`, `5xx` and
@@ -141,11 +141,11 @@ complete.**
 
 ### Implementation of the foundation
 
-- [ ] T013 Add `ALIAS_DISABLE_EXTERNAL_DOMAINS` to `resources/bin/export-mailcow-vars.php` and the
+- [X] T013 Add `ALIAS_DISABLE_EXTERNAL_DOMAINS` to `resources/bin/export-mailcow-vars.php` and the
   getter `aliasDisableExternalDomains(): bool` to `app/Services/Config/MailcowConfig.php`, with
   001 R14's precedence and the setting of T002; add `$ALIAS_DISABLE_EXTERNAL_DOMAINS = false` to
   `tests/fixtures/mailcow-inc/vars.inc.php`. Makes T005 pass.
-- [ ] T014 Make T006 pass without changing the reused classes. Where an earlier feature delivered a
+- [X] T014 Make T006 pass without changing the reused classes. Where an earlier feature delivered a
   capability under another name, note it in research R24 and use it. If no implemented feature has
   created the shared refusal mechanism yet, create `app/Services/Audit/RefusalAuditor.php` and its
   hook in `bootstrap/app.php` exactly as feature 008's research specifies (route default
@@ -154,23 +154,23 @@ complete.**
   target resolvers `app/Services/Audit/RefusalTargets/{AliasTargetResolver,AliasDomainTargetResolver,ResourceTargetResolver,MailboxSenderSettingsTargetResolver}.php`
   (look the object up regardless of scope; record the identifier as sent when it does not exist;
   R20).
-- [ ] T015 [P] Create `app/Services/Aliases/AliasAddress.php` and `AliasDestination.php`. Makes T007
+- [X] T015 [P] Create `app/Services/Aliases/AliasAddress.php` and `AliasDestination.php`. Makes T007
   pass.
-- [ ] T016 [P] Create `app/Services/Aliases/AliasVersion.php`, `app/Services/AliasDomains/AliasDomainVersion.php`,
+- [X] T016 [P] Create `app/Services/Aliases/AliasVersion.php`, `app/Services/AliasDomains/AliasDomainVersion.php`,
   `app/Services/Resources/ResourceVersion.php` and `SenderSettingsReader::etagFor()` (in
   `app/Services/SenderSettings/SenderSettingsReader.php`), each with 001's `ETag` over the canonical
   JSON arrays of R18. Makes T008 pass.
-- [ ] T017 [P] Create `app/Services/Resources/ResourceAddressDeriver.php`. Makes T009 pass.
-- [ ] T018 [P] Create `app/Services/SenderSettings/SenderEntry.php`. Makes T010 pass.
-- [ ] T019 [P] Create `app/Support/Mailcow/UnicodeSearch.php`. Makes T011 pass.
-- [ ] T020 [P] Create or reuse `app/Support/Bulk/BulkActionRunner.php` (with deferred end-of-request
+- [X] T017 [P] Create `app/Services/Resources/ResourceAddressDeriver.php`. Makes T009 pass.
+- [X] T018 [P] Create `app/Services/SenderSettings/SenderEntry.php`. Makes T010 pass.
+- [X] T019 [P] Create `app/Support/Mailcow/UnicodeSearch.php`. Makes T011 pass.
+- [X] T020 [P] Create or reuse `app/Support/Bulk/BulkActionRunner.php` (with deferred end-of-request
   actions). Makes T012 pass.
-- [ ] T021 [P] Add to 002's `app/Models/Mailcow/Alias.php` the local scope `notOwnAlias`
+- [X] T021 [P] Add to 002's `app/Models/Mailcow/Alias.php` the local scope `notOwnAlias`
   (`NOT EXISTS (SELECT 1 FROM mailbox m WHERE m.username = alias.address)`) and the accessors
   `primaryDomain`, `inAliasDomain` and `orphaned` (DM), without changing its existing behaviour;
   create `app/Models/Mailcow/Resource.php` (table `mailbox`, string key `username`, global scope
   `kind REGEXP 'location|thing|group'`, booking rule accessors, `MailcowDateTime` casts).
-- [ ] T022 Add the enum cases of this feature: `domainAliasLimitReached`, `aliasDomainAlreadyExists`,
+- [X] T022 Add the enum cases of this feature: `domainAliasLimitReached`, `aliasDomainAlreadyExists`,
   `notPrimaryDomainAlias` (409, with the titles of `docs/problems.md`) to
   `app/Support/Http/ProblemType.php` (plus `permissionFlagRequired` if no earlier feature added it);
   the ten event types of R20 to `app/Audit/AuditEventType.php`; and the per-event `details`
@@ -822,3 +822,34 @@ T033 AliasLimitLockTest         T034 AliasWriteAuthorizationTest T035 AliasesCap
 - Every upstream write goes through the services of this feature or the reused services of 002 and
   003 (constitution IV); controllers never write.
 - Commit after each green checkpoint, with explicit file names and a short imperative message.
+
+## Implementation notes (2026-10-18)
+
+Deviations and decisions made while implementing, with the reason. Names in tasks that differ from
+what exists map as listed.
+
+- **T001**: the coverage scope is 001's `tests/feature-registry.json` (feature
+  `004-aliases-alias-domains-resources` with its 23 operation IDs and the problem types
+  `alias-domain-already-exists` and `not-primary-domain-alias`; `domain-alias-limit-reached` is
+  registered by 003), so no `tests/contract-scope.php` was needed. Main's suite was green (1,493
+  tests) and every 003 piece of plan.md "Dependencies on earlier features" exists on main.
+- **T002, T013**: `resources/bin/export-mailcow-vars.php` exports every variable listed in
+  `config/restv2.php`, so adding `ALIAS_DISABLE_EXTERNAL_DOMAINS` to `vars_overrides` and
+  `vars_defaults` was enough; the fixture `vars.inc.php` (upstream, unmodified) already sets it to
+  `false`.
+- **T004**: existing helpers are reused: `spamalias()`/`temporaryAlias()` for `spamAlias()`,
+  `sogoData()` for `sogoFolder()`; `alias()` gained the optional flags and comments after its
+  existing parameters; `resource()` is new (legacy's column list); `redisHash()` lives on the test
+  `MailcowFactory`.
+- **T006, T053**: `DkimKeyGenerator` only creates key pairs since feature 010's core; DKIM keys of new
+  names are written through `DkimKeyService::generateForNewName()` (as 002's domain creation does),
+  which also publishes and writes the `dkimKeyGeneration` record (`trigger: aliasDomainCreation`).
+- **T012, T020**: 002's `App\Support\Bulk\BulkActionRunner` is reused unchanged (its first unit test
+  is T012). Deferred end-of-request work is done by the callers, as 002 does: alias domain actions
+  rebuild the groupware once (`deferRebuild`), and the memcached flushes of alias and resource items
+  are collected by the new request-scoped `App\Services\Groupware\GroupwareCacheFlush::deferred()`.
+- **T014**: the four refusal target resolvers are one class, `App\Services\Aliases\AliasAuditTargets`,
+  registered like 002's `DomainAuditTargets` and 003's `MailboxAuditTargets`.
+- **T022**: the per-event detail whitelists live in `AuditEventType::detailKeys()` (001's design), not
+  in `AuditLogger`. Creation records carry the stored attributes in `values`, as the creation records
+  of 002 and 003 do, instead of `changes`. `permission-flag-required` existed (002).

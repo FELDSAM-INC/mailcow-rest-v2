@@ -56,6 +56,10 @@ enum ProblemType: string
     case MailboxTemplateProtected = 'mailbox-template-protected';
     case DomainAliasLimitReached = 'domain-alias-limit-reached';
 
+    // Feature 004.
+    case AliasDomainAlreadyExists = 'alias-domain-already-exists';
+    case NotPrimaryDomainAlias = 'not-primary-domain-alias';
+
     public function uri(): string
     {
         return '/api/v2/problems/'.$this->value;
@@ -75,7 +79,7 @@ enum ProblemType: string
             self::DomainExists, self::DomainNotEmpty, self::DomainTemplateNameExists, self::DomainTemplateProtected,
             self::DkimKeyExists, self::MtaStsPolicyExists, self::AddressInUse, self::MailboxLimitReached,
             self::MailboxNotRenamable, self::MailboxTemplateNameExists, self::MailboxTemplateProtected,
-            self::DomainAliasLimitReached => 409,
+            self::DomainAliasLimitReached, self::AliasDomainAlreadyExists, self::NotPrimaryDomainAlias => 409,
             self::MailboxRenameIncomplete => 500,
             self::OutcomeUnknown => 504,
             self::AttributeNotPermitted, self::PermissionFlagRequired, self::DkimPrivateKeyExportDisabled,
@@ -128,6 +132,8 @@ enum ProblemType: string
             self::MailboxTemplateNameExists => 'Mailbox template name exists',
             self::MailboxTemplateProtected => 'Mailbox template protected',
             self::DomainAliasLimitReached => 'Domain alias limit reached',
+            self::AliasDomainAlreadyExists => 'Alias domain already exists',
+            self::NotPrimaryDomainAlias => 'Not a primary-domain alias',
         };
     }
 
@@ -176,6 +182,8 @@ enum ProblemType: string
             self::MailboxTemplateNameExists => 'Another mailbox template already has this name.',
             self::MailboxTemplateProtected => 'The Default mailbox template cannot be renamed or deleted.',
             self::DomainAliasLimitReached => 'The domain has no room for more aliases.',
+            self::AliasDomainAlreadyExists => 'The name already exists as a domain or alias domain.',
+            self::NotPrimaryDomainAlias => 'Only aliases of a primary domain can be copied over its alias domains.',
         };
     }
 

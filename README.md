@@ -110,7 +110,29 @@ the upstream default otherwise; a non-empty `RESTV2_<NAME>` always wins (arrays 
 `RESTV2_SESSION_LIFETIME`, `RESTV2_DEFAULT_LANG`, `RESTV2_AVAILABLE_LANGUAGES`,
 `RESTV2_FIDO2_UV_FLAG_REGISTER`, `RESTV2_FIDO2_UV_FLAG_LOGIN`, `RESTV2_FIDO2_USER_PRESENT_FLAG`,
 `RESTV2_FIDO2_FORMATS`, `RESTV2_WEBAUTHN_UV_FLAG_LOGIN`, `RESTV2_WEBAUTHN_USER_PRESENT_FLAG`,
-`RESTV2_OTP_LABEL` and `RESTV2_MAILCOW_APPS`.
+`RESTV2_OTP_LABEL`, `RESTV2_MAILCOW_APPS`, `RESTV2_TAGGING_LIMIT` (25) and `RESTV2_DOCKER_TIMEOUT`
+(60 seconds).
+
+Domains (feature 002) and the DKIM keys of new domains (feature 010's DKIM core) also use
+`COMPOSE_PROJECT_NAME` from `mailcow.conf` (to find mailcow's containers) and these settings:
+
+| Variable | Default | Meaning | FeldHost |
+|---|---|---|---|
+| `RESTV2_DOCKERAPI_URL` | `https://dockerapi:443` | mailcow's container service, for the groupware restart and the move of a deleted domain's mail (TLS is not verified, as in legacy) | |
+| `RESTV2_MEMCACHED_HOST`, `RESTV2_MEMCACHED_PORT` | `memcached`, `11211` | The groupware cache flushed after each groupware directory update | |
+| `RESTV2_DEFAULT_DKIM_SELECTOR` | `dkim` | DKIM selector of new domains without one from the request or template | `feldhost` |
+| `RESTV2_DKIM_DNS_PUBLICATION` | `n` | Publish the DKIM record of new keys to an ISPConfig DNS server | `y` |
+| `RESTV2_ISPCONFIG_URL` | (empty) | ISPConfig JSON remote API, for example `https://ispconfig.example:8080/remote/json.php` (the fork's `soap_location` with `index.php` replaced by `json.php`) | set |
+| `RESTV2_ISPCONFIG_USERNAME`, `RESTV2_ISPCONFIG_PASSWORD` | (empty) | ISPConfig remote user; the password is never logged or returned | set |
+| `RESTV2_ISPCONFIG_DNS_SERVER_ID` | `1` | ISPConfig DNS server of new records | |
+| `RESTV2_ISPCONFIG_VERIFY_TLS` | `y` | TLS verification of the ISPConfig endpoint | |
+| `RESTV2_ISPCONFIG_TIMEOUT` | `15` | Seconds one publication may take | |
+
+The publication counts as enabled only with `RESTV2_DKIM_DNS_PUBLICATION=y` and the URL, user and
+password set. The API container must reach `dockerapi:443` and `memcached:11211` on
+`mailcow-network` (it joins it through the override) and, for the publication, the ISPConfig
+server. `RESTV2_FAKE_OUTBOUND=y` replaces dockerapi, memcached and ISPConfig with stand-ins in the
+dev stack only (`APP_ENV=local`); it is ignored everywhere else.
 
 ## Development
 

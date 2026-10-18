@@ -52,7 +52,7 @@ the user stories in spec order (US1–US3 P1, US4–US6 P2, US7–US8 P3). Phase
   `fake_outbound` (`RESTV2_FAKE_OUTBOUND === 'y'`, honoured only when `APP_ENV=local`). Add to `.env.example`:
   `COMPOSE_PROJECT_NAME=mailcowdockerized`, `RESTV2_FAKE_OUTBOUND=y`; to `.env.testing`:
   `COMPOSE_PROJECT_NAME=mailcowdockerized`, `SKIP_SOGO=n`, `RESTV2_DEFAULT_DKIM_SELECTOR=dkim`.
-- [ ] T002 [P] Update `deploy/docker-compose.override.yml`: add `COMPOSE_PROJECT_NAME` and every
+- [X] T002 [P] Update `deploy/docker-compose.override.yml`: add `COMPOSE_PROJECT_NAME` and every
   `RESTV2_*` variable of research D24 to the `restv2-mailcow` environment (empty defaults,
   `RESTV2_ISPCONFIG_PASSWORD` passed through, never hard-coded). Update
   `deploy/nginx/site.restv2.custom`: `client_max_body_size 5m;` instead of `1m` (research D21).
@@ -801,7 +801,7 @@ and list the audit log filtered by target.
 
 ## Phase 11: Polish and cross-cutting concerns
 
-- [ ] T089 [P] Write `tests/Feature/Security/DomainAuthorizationMatrixTest.php` (constitution VI,
+- [X] T089 [P] Write `tests/Feature/Security/DomainAuthorizationMatrixTest.php` (constitution VI,
   quality gate 5, FR-001, FR-003–FR-005, SC-004): a data provider over the 16 operations ×
   anonymous, pending sign-in, restricted session, administrator session, domain-administrator session with and without
   `domain_desc`, mailbox session, administrator read-write and read-only keys, domain-administrator
@@ -809,24 +809,24 @@ and list the audit log filtered by target.
   plan.md and the contract. Object level: a foreign domain → `404` on every domain-scoped
   operation for domain administrators and their keys; an alias domain name → `404`; an unknown
   template ID → `404` for administrators and `403` for everyone else.
-- [ ] T090 [P] Write `tests/Feature/Performance/DomainListLatencyTest.php` (group `performance`,
+- [X] T090 [P] Write `tests/Feature/Performance/DomainListLatencyTest.php` (group `performance`,
   SC-005, SC-010): seed 5,000 domains, 100,000 mailboxes, 50,000 aliases and `quota2` rows with
   multi-row inserts; the 95th percentile of 20 `listDomains` pages of 25 (default sort and
   `sort=storageUsed`) is under 1 s; a bulk deactivation of 100 domains finishes within 10 s and a
   bulk deletion of 100 empty domains within 60 s with the fakes.
-- [ ] T091 [P] Write `tests/Feature/Security/DomainSecretsTest.php` (constitution VI): with the DNS
+- [X] T091 [P] Write `tests/Feature/Security/DomainSecretsTest.php` (constitution VI): with the DNS
   publication on, a creation's responses, captured log lines and audit records contain neither the
   DKIM private key nor the ISPConfig password.
-- [ ] T092 [P] Write `tests/Unit/Architecture/UpstreamWritesTest.php` (constitution IV): no file under
+- [X] T092 [P] Write `tests/Unit/Architecture/UpstreamWritesTest.php` (constitution IV): no file under
   `app/Http/` writes an upstream table (`DB::table(...)->insert|update|delete`, model `save`,
   `create`, `delete`), and only `AuditLogger::completeFollowUps` updates `restv2_audit_events`.
-- [ ] T093 [P] Extend `database/seeders/DevelopmentSeeder.php` with the domains, template and mailbox of
+- [X] T093 [P] Extend `database/seeders/DevelopmentSeeder.php` with the domains, template and mailbox of
   quickstart Part B, and bind the three fakes in `AppServiceProvider` when `fake_outbound` is on
   (local only, refused in other environments).
-- [ ] T094 [P] Update `README.md` (the settings of research D24 with the FeldHost values, and the
+- [X] T094 [P] Update `README.md` (the settings of research D24 with the FeldHost values, and the
   dockerapi, memcached and ISPConfig reachability needs) and `CHANGELOG.md` ("contract: the 16
   operations of feature 002 and the audit target filters").
-- [ ] T095 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
+- [X] T095 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
   `composer contract:lint`; fix every finding until all are green and the coverage check lists the
   16 operations as covered (FR-060).
 - [ ] T096 Run quickstart.md Parts A and B against the dev stack and confirm every expected output;

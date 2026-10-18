@@ -10,21 +10,26 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * The domain list (FR-011–FR-015, research D6): one page of names in the caller's scope, searched,
- * filtered and sorted, ties by name ascending. Sorting by a usage figure joins the grouped figure
- * only when asked for; the figures of the page itself come from DomainUsageCalculator.
+ * filtered and sorted, ties by name ascending. Sorting by a usage figure computes it per filtered
+ * domain with an indexed subquery; the figures of the page itself come from DomainUsageCalculator.
  */
 class DomainQuery
 {
-    /** Contract sort value => SQL expression. */
+    /**
+     * Contract sort value => SQL expression. The usage figures are correlated subqueries on the
+     * indexed columns (`mailbox.domain`, `alias.domain`, `alias_domain.target_domain`, the primary
+     * keys), evaluated for the filtered domains only (SC-005).
+     */
     public const SORTS = [
         'name' => '`d`.`domain`',
         'description' => '`d`.`description`',
         'active' => '`d`.`active`',
         'backupMx' => '`d`.`backupmx`',
-        'mailboxes' => 'COALESCE(`u_mbox`.`mailboxes`, 0)',
-        'aliases' => 'COALESCE(`u_alias`.`aliases`, 0)',
-        'quotaAllocated' => 'COALESCE(`u_mbox`.`allocated`, 0)',
-        'storageUsed' => 'COALESCE(`u_storage`.`bytes`, 0)',
+        'mailboxes' => "(SELECT COUNT(*) FROM `mailbox` `sm` WHERE `sm`.`domain` = `d`.`domain` AND `sm`.`kind` = '')",
+        'aliases' => '((SELECT COUNT(*) FROM `alias` `sa` WHERE `sa`.`domain` = `d`.`domain` AND NOT EXISTS (SELECT 1 FROM `mailbox` `sx` WHERE `sx`.`username` = `sa`.`address`))'
+            .' + (SELECT COUNT(*) FROM `alias_domain` `sd` JOIN `alias` `sb` ON `sb`.`domain` = `sd`.`alias_domain` WHERE `sd`.`target_domain` = `d`.`domain` AND NOT EXISTS (SELECT 1 FROM `mailbox` `sy` WHERE `sy`.`username` = `sb`.`address`)))',
+        'quotaAllocated' => "(SELECT COALESCE(SUM(`sq`.`quota`), 0) FROM `mailbox` `sq` WHERE `sq`.`domain` = `d`.`domain` AND `sq`.`kind` = '')",
+        'storageUsed' => '(SELECT COALESCE(SUM(`q2`.`bytes`), 0) FROM `mailbox` `sm2` JOIN `quota2` `q2` ON `q2`.`username` = `sm2`.`username` WHERE `sm2`.`domain` = `d`.`domain`)',
         'maxMailboxes' => '`d`.`mailboxes`',
         'maxAliases' => '`d`.`aliases`',
         'defaultMailboxQuota' => '`d`.`defquota`',
@@ -46,7 +51,6 @@ class DomainQuery
         $total = (clone $base)->count();
 
         $query = (clone $base)->select('d.*');
-        $this->joinSortFigure($query, $list->sort);
         $query->orderByRaw(self::SORTS[$list->sort].' '.($list->order === 'desc' ? 'DESC' : 'ASC'))
             ->orderBy('d.domain')
             ->offset($list->offset)
@@ -111,34 +115,5 @@ class DomainQuery
             ->filter(fn (string $name): bool => mb_stripos(DomainName::toUnicode($name), $search) !== false)
             ->values()
             ->all();
-    }
-
-    private function joinSortFigure(Builder $query, string $sort): void
-    {
-        match ($sort) {
-            'mailboxes', 'quotaAllocated' => $query->leftJoinSub(
-                DB::table('mailbox')->groupBy('domain')->select([
-                    'domain',
-                    DB::raw("SUM(`kind` = '') AS `mailboxes`"),
-                    DB::raw("COALESCE(SUM(CASE WHEN `kind` = '' THEN `quota` END), 0) AS `allocated`"),
-                ]),
-                'u_mbox', 'u_mbox.domain', '=', 'd.domain',
-            ),
-            'aliases' => $query->leftJoinSub(
-                DB::table('alias as a')
-                    ->leftJoin('alias_domain as ad', 'ad.alias_domain', '=', 'a.domain')
-                    ->whereNotIn('a.address', fn (Builder $sub) => $sub->select('username')->from('mailbox'))
-                    ->groupBy('target')
-                    ->select([DB::raw('COALESCE(`ad`.`target_domain`, `a`.`domain`) AS `target`'), DB::raw('COUNT(*) AS `aliases`')]),
-                'u_alias', 'u_alias.target', '=', 'd.domain',
-            ),
-            'storageUsed' => $query->leftJoinSub(
-                DB::table('quota2 as q')->join('mailbox as m', 'm.username', '=', 'q.username')
-                    ->groupBy('m.domain')
-                    ->select(['m.domain', DB::raw('SUM(`q`.`bytes`) AS `bytes`')]),
-                'u_storage', 'u_storage.domain', '=', 'd.domain',
-            ),
-            default => null,
-        };
     }
 }

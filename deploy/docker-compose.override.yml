@@ -58,6 +58,7 @@ services:
       - IPV6_NETWORK=${IPV6_NETWORK:-fd4d:6169:6c63:6f77::/64}
       - WEBAUTHN_ONLY_TRUSTED_VENDORS=${WEBAUTHN_ONLY_TRUSTED_VENDORS:-n}
       - SKIP_SOGO=${SKIP_SOGO:-n}
+      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
       # Settings of this API
       - RESTV2_SASL_LOG_SERVICE=${RESTV2_SASL_LOG_SERVICE:-MAILCOWUI}
       - RESTV2_DEFAULT_UI_NAME=${RESTV2_DEFAULT_UI_NAME:-}
@@ -69,6 +70,20 @@ services:
       - RESTV2_AUDIT_RETENTION_DAYS=${RESTV2_AUDIT_RETENTION_DAYS:-365}
       - RESTV2_YUBICO_VERIFY_URL=${RESTV2_YUBICO_VERIFY_URL:-https://api.yubico.com/wsapi/2.0/verify}
       - RESTV2_MAILCOW_INC_DIR=${RESTV2_MAILCOW_INC_DIR:-/mailcow/web/inc}
+      # Feature 002 (domains) and the DKIM core of feature 010: mailcow's container service and
+      # groupware cache on mailcow-network, and the FeldHost ISPConfig DKIM publication (off by
+      # default; the password is passed through from mailcow.conf, never written here).
+      - RESTV2_DOCKERAPI_URL=${RESTV2_DOCKERAPI_URL:-https://dockerapi:443}
+      - RESTV2_MEMCACHED_HOST=${RESTV2_MEMCACHED_HOST:-memcached}
+      - RESTV2_MEMCACHED_PORT=${RESTV2_MEMCACHED_PORT:-11211}
+      - RESTV2_DEFAULT_DKIM_SELECTOR=${RESTV2_DEFAULT_DKIM_SELECTOR:-dkim}
+      - RESTV2_DKIM_DNS_PUBLICATION=${RESTV2_DKIM_DNS_PUBLICATION:-n}
+      - RESTV2_ISPCONFIG_URL=${RESTV2_ISPCONFIG_URL:-}
+      - RESTV2_ISPCONFIG_USERNAME=${RESTV2_ISPCONFIG_USERNAME:-}
+      - RESTV2_ISPCONFIG_PASSWORD=${RESTV2_ISPCONFIG_PASSWORD:-}
+      - RESTV2_ISPCONFIG_DNS_SERVER_ID=${RESTV2_ISPCONFIG_DNS_SERVER_ID:-1}
+      - RESTV2_ISPCONFIG_VERIFY_TLS=${RESTV2_ISPCONFIG_VERIFY_TLS:-y}
+      - RESTV2_ISPCONFIG_TIMEOUT=${RESTV2_ISPCONFIG_TIMEOUT:-15}
       # Legacy PHP configuration; empty means "read mailcow's vars files".
       - RESTV2_SESSION_LIFETIME=${RESTV2_SESSION_LIFETIME:-}
       - RESTV2_DEFAULT_LANG=${RESTV2_DEFAULT_LANG:-}
@@ -81,6 +96,8 @@ services:
       - RESTV2_WEBAUTHN_USER_PRESENT_FLAG=${RESTV2_WEBAUTHN_USER_PRESENT_FLAG:-}
       - RESTV2_OTP_LABEL=${RESTV2_OTP_LABEL:-}
       - RESTV2_MAILCOW_APPS=${RESTV2_MAILCOW_APPS:-}
+      - RESTV2_TAGGING_LIMIT=${RESTV2_TAGGING_LIMIT:-}
+      - RESTV2_DOCKER_TIMEOUT=${RESTV2_DOCKER_TIMEOUT:-}
     volumes:
       # Read-only: legacy's vars.inc.php and vars.local.inc.php (R14).
       - ./data/web/inc:/mailcow/web/inc:ro,z

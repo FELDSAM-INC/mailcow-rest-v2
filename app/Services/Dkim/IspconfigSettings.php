@@ -48,6 +48,12 @@ final class IspconfigSettings
         return $this->password;
     }
 
+    /** A text with the remote password replaced by `***`. */
+    public function scrub(?string $text): ?string
+    {
+        return $text === null || $this->password === '' ? $text : str_replace($this->password, '***', $text);
+    }
+
     /**
      * @return array<string, mixed>
      */

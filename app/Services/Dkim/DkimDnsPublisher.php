@@ -68,7 +68,7 @@ class DkimDnsPublisher
 
             return $staleFailure === null
                 ? new DkimDnsPublicationResult(DkimDnsOutcome::Published, $recordName)
-                : new DkimDnsPublicationResult(DkimDnsOutcome::Failed, $recordName, 'staleRecordRemovalFailed', $staleFailure->detail);
+                : new DkimDnsPublicationResult(DkimDnsOutcome::Failed, $recordName, 'staleRecordRemovalFailed', IspconfigSettings::fromConfig()->scrub($staleFailure->detail));
         });
     }
 
@@ -117,7 +117,7 @@ class DkimDnsPublisher
         } catch (IspconfigException $e) {
             Log::warning("The DKIM record {$recordName} of {$name} was not published to ISPConfig ({$e->reason}).");
 
-            return new DkimDnsPublicationResult(DkimDnsOutcome::Failed, $recordName, $e->reason, $e->detail);
+            return new DkimDnsPublicationResult(DkimDnsOutcome::Failed, $recordName, $e->reason, $settings->scrub($e->detail));
         } finally {
             $client->close();
         }

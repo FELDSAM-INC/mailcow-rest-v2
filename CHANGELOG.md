@@ -47,3 +47,26 @@ FeldHost fork (upstream `2026-09a` baseline) with the image of 3a35973:
   sign-in completed 262 ms after the password sign-in. The browser stopwatch check is still open.
 - SC-006 passes: the key was created and first used for a read within 196 ms.
 - Still open: a plain upstream `2026-09a` host, the ban, and the browser passkey stopwatch.
+
+Contract: the 16 operations of feature 002 (domains) and the audit target filters:
+
+- Domains: `listDomains`, `createDomain`, `applyDomainBulkAction`, `getDomain`, `updateDomain`,
+  `deleteDomain`, `previewDomainDeletion`, `getDomainFooter`, `replaceDomainFooter`,
+  `getDomainsCapabilities`, `listDomainTags`.
+- Domain templates: `listDomainTemplates`, `createDomainTemplate`, `getDomainTemplate`,
+  `updateDomainTemplate`, `deleteDomainTemplate`.
+- `listAuditEvents`: `targetType=domain|domainFooter` and `targetId` match domain names in any
+  form and letter case; without `targetType`, a domain name matches the domain's and its footer's
+  records.
+
+Contract changes made while implementing feature 002:
+
+- `Domain.footer` (`DomainFooterSummary`): whether a footer is set, its sizes and exclusion counts
+  (G28); `DomainPatch` accepts it as a read-only member.
+- `DomainCapabilities.templateDefaults` (`DomainTemplateDefaults`, administrators only) and
+  `default` keywords in `DomainTemplateCreateRequest` (G29).
+- `BulkTarget.version` accepts the version tag with or without its quotes (G33).
+- `PermissionFlagRequiredProblem` declares `requiredFlags` and `requiredFlagsMatch` once; every
+  feature's `*PermissionFlag*Problem` extends it (G34).
+
+Release checks of feature 002 (quickstart Part C: SC-001, SC-002, SC-003, SC-008): not run yet.

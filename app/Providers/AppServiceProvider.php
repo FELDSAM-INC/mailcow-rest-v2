@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Clients\Development\NullDockerApiClient;
+use App\Clients\Development\NullIspconfigDnsClient;
+use App\Clients\Development\NullMemcachedFlusher;
 use App\Clients\DockerApi\DockerApiClient;
 use App\Clients\DockerApi\HttpDockerApiClient;
 use App\Clients\Fail2Ban\Fail2BanReporter;
@@ -45,6 +48,17 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(DockerApiClient::class, HttpDockerApiClient::class);
         $this->app->bind(MemcachedFlusher::class, SocketMemcachedFlusher::class);
         $this->app->bind(IspconfigDnsClient::class, JsonIspconfigDnsClient::class);
+
+        if (config('restv2.fake_outbound')) {
+            if ($this->app->environment('local')) {
+                $this->app->bind(DockerApiClient::class, NullDockerApiClient::class);
+                $this->app->bind(MemcachedFlusher::class, NullMemcachedFlusher::class);
+                $this->app->bind(IspconfigDnsClient::class, NullIspconfigDnsClient::class);
+            } else {
+                // Refused outside development: the real services are always used.
+                error_log('RESTV2_FAKE_OUTBOUND is ignored outside APP_ENV=local.');
+            }
+        }
     }
 
     public function boot(): void

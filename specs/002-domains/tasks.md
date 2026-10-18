@@ -636,7 +636,7 @@ domains created afterwards use the right values and earlier domains are unaffect
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T076 [P] [US5] Write `tests/Feature/DomainTemplates/DomainTemplateCrudTest.php` (FR-045–FR-050):
+- [X] T076 [P] [US5] Write `tests/Feature/DomainTemplates/DomainTemplateCrudTest.php` (FR-045–FR-050):
   - list: only `type = 'domain'` rows, `sort` by `name`, `id`, `createdAt`, `modifiedAt`, `q` on
     the name, paging, `etag` per entry equal to `getDomainTemplate`'s `ETag`; a mailbox template ID
     → `404`;
@@ -653,22 +653,22 @@ domains created afterwards use the right values and earlier domains are unaffect
   - AS-4: a domain created from "Small" keeps its values after the template is edited and deleted;
   - AS-6: a domain administrator → `403 forbidden` on all five operations; a read-only
     administrator key reads but cannot write.
-- [ ] T077 [P] [US5] Write `tests/Feature/DomainTemplates/DomainTemplateLegacyRowsTest.php` (D22):
+- [X] T077 [P] [US5] Write `tests/Feature/DomainTemplates/DomainTemplateLegacyRowsTest.php` (D22):
   templates stored by legacy (string numbers, `tags` as a JSON string, missing keys, `rl_value`
   `""` and `"10"`, `key_size` 512) are listed and read with the defaults; editing one writes the
   normalised legacy format; a template written by the API decodes with legacy's
   `json_decode($row['attributes'], true)` into the values legacy's add form reads
   (`def_quota_for_mbox / 1024 ** 2` integer MiB).
-- [ ] T078 [P] [US5] Write `tests/Feature/DomainTemplates/DomainTemplateAuditTest.php` (FR-057):
+- [X] T078 [P] [US5] Write `tests/Feature/DomainTemplates/DomainTemplateAuditTest.php` (FR-057):
   creation, update and deletion records with target `{type: domainTemplate, id, name}`, `values` or
   `changes`; `409` and `412` refusals audited with `conflict` and `versionOutdated`.
 
 ### Implementation for User Story 5
 
-- [ ] T079 [US5] Create `app/Services/DomainTemplates/DomainTemplateService.php` (D22: list, find,
+- [X] T079 [US5] Create `app/Services/DomainTemplates/DomainTemplateService.php` (D22: list, find,
   create, update, delete, uniqueness under `FOR UPDATE`, Default protection, rules through
   `DomainRules`, audit).
-- [ ] T080 [US5] Create `app/Http/Requests/Api/V2/ListDomainTemplatesRequest.php`,
+- [X] T080 [US5] Create `app/Http/Requests/Api/V2/ListDomainTemplatesRequest.php`,
   `StoreDomainTemplateRequest.php` (`name` "required, string, 1–255"; the value rules of
   `StoreDomainRequest` without `templateId`, `description` and `restartGroupware`) and
   `UpdateDomainTemplateRequest.php` (merge patch), `app/Http/Resources/Api/V2/DomainTemplateResource.php`

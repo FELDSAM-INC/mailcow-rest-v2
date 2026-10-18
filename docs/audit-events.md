@@ -158,6 +158,43 @@ domain is recorded here, not in a record of its own.
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
 
+## domainTemplateCreation
+
+Feature 002. Written for every creation of a domain template (`POST /domain-templates`) and every
+refusal. The target is the template (`type: domainTemplate`, `id` its ID, `name` its name; a refused
+creation has no ID).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The template's values in contract names: `tags`, `maxMailboxes`, `maxAliases`, `defaultMailboxQuota`, `maxMailboxQuota`, `domainQuota` (bytes), `rateLimit` (`{value, frame}` or `null`), `active`, `globalAddressList`, `backupMx`, `relayAllRecipients`, `relayUnknownOnly`, `dkimSelector` and `dkimKeySize`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## domainTemplateUpdate
+
+Feature 002. Written for every edit of a domain template (`PATCH /domain-templates/{templateId}`),
+also when nothing changes, and every refusal. The target carries the name after the edit.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed member (`name` and the values of `domainTemplateCreation`) as `{old, new}`. Empty when nothing changed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## domainTemplateDeletion
+
+Feature 002. Written for every deletion of a domain template
+(`DELETE /domain-templates/{templateId}`) and every refusal. The target is the deleted template.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The values the template had, as in `domainTemplateCreation`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
 <!-- Feature 010: DKIM keys. The DKIM core is delivered with feature 002. -->
 
 ## dkimKeyGeneration

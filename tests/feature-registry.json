@@ -96,11 +96,6 @@
     "pendingOperations": [
         "applyDomainBulkAction",
         "getDomainFooter",
-        "replaceDomainFooter",
-        "listDomainTemplates",
-        "createDomainTemplate",
-        "getDomainTemplate",
-        "updateDomainTemplate",
-        "deleteDomainTemplate"
+        "replaceDomainFooter"
     ]
 }

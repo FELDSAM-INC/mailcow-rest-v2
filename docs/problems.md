@@ -256,7 +256,7 @@ extension members.
 - **Related sync-job errors** (no type of their own): a job or target mailbox that does not exist
   or lies outside the caller's scope is `404` (`about:blank`). An outdated `If-Match` is `412`
   (`about:blank`); in a bulk action the target is reported `outdated`. A caller without the
-  sync-jobs permission gets `permission-flag-required` with `flag: syncjobs`, and a read-only key
+  sync-jobs permission gets `permission-flag-required` with `requiredFlags: [syncjobs]`, and a read-only key
   `insufficient-key-scope`. Invalid input
   is `validation-failed` with the rule codes `invalidFormat` (`format: hostName`), `invalidRegex`,
   `optionNotAllowed` (param `option`), `optionContainsSpace` (param `token`),

@@ -116,7 +116,7 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X POST "$B/sync-jobs/bulk-actions" \
 #   1 done, 2 done, 3 notFound; total 3
 
 # US1 AS-6/7: callers without the permission get 403 permission-flag-required.
-signin bob@example.org; curl -s $C "$B/sync-jobs" | jq '{type, flag}'   # ".../permission-flag-required", "syncjobs"
+signin bob@example.org; curl -s $C "$B/sync-jobs" | jq '{type, requiredFlags}'   # ".../permission-flag-required", ["syncjobs"]
 
 # US6: an administrator lists the history of a job with the generic target filters.
 signin admin

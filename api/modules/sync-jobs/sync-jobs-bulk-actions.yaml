@@ -8,7 +8,7 @@ post:
     requests.
 
     The whole request is refused only when the caller may never perform the action: `403
-    permission-flag-required` (`flag: syncjobs`) without the sync-jobs permission, `403 insufficient-key-scope` for a read-only key,
+    permission-flag-required` (`requiredFlags: [syncjobs]`) without the sync-jobs permission, `403 insufficient-key-scope` for a read-only key,
     and `422` for a malformed body or more targets than the bulk limit. Otherwise each job is checked,
     processed and audited on its own, as a single request for it would be, and gets one result in
     request order:

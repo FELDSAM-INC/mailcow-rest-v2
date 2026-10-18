@@ -8,7 +8,7 @@ get:
     effect (never containing `showpasswords`), the bulk limit, the page sizes, every field's limits,
     the allowed encryption values and the creation defaults. Changes nothing; read-only keys may use
     it. Requires the sync-jobs permission (`403 permission-flag-required`,
-    `flag: syncjobs`, otherwise).
+    `requiredFlags: [syncjobs]`, otherwise).
   security:
     - sessionCookie: []
     - apiKeyAuth: []

@@ -21,7 +21,7 @@ The contract of this feature is not duplicated here. The OpenAPI 3.1 document in
   - schemas: `SyncJob`, `SyncJobRunStatus`, `SyncJobLastResult`, `SyncJobEncryption`,
     `SyncJobCreateRequest`, `SyncJobPatch`, `SyncJobLog`, `SyncJobCapabilities`, `SyncJobDefaults`,
     `SyncJobRange`, `SyncJobBulkAction`, `SyncJobBulkTarget`, `SyncJobBulkActionRequest`,
-    `SyncJobPermissionFlagProblem` (`permission-flag-required` with `flag: syncjobs`);
+    `SyncJobPermissionFlagProblem` (`permission-flag-required` with `requiredFlags: [syncjobs]`);
   - responses: `SyncJobResponse`, `SyncJobCreatedResponse`, `SyncJobListResponse`,
     `SyncJobLogResponse`, `SyncJobCapabilitiesResponse`, `SyncJobExists`,
     `SyncJobValidationFailed`, `SyncJobForbidden`.

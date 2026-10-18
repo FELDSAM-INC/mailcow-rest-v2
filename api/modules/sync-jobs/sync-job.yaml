@@ -7,7 +7,7 @@ get:
   description: |
     Returns the job's full configuration, its version tag and its run status. The remote password
     is never included; `remotePasswordSet` says whether one is stored. Requires the sync-jobs
-    permission (`403 permission-flag-required`, `flag: syncjobs`, otherwise). A job outside the caller's scope answers `404`.
+    permission (`403 permission-flag-required`, `requiredFlags: [syncjobs]`, otherwise). A job outside the caller's scope answers `404`.
   security:
     - sessionCookie: []
     - apiKeyAuth: []

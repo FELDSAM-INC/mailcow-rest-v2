@@ -197,7 +197,7 @@ the representation, the audit wiring, the configuration reader extension and the
   `SyncJobReschedule` and `SyncJobDeletion` to the PHP `AuditEventType` enum (001), and
   `PermissionDenied` and `NotFound` to its failure-reason enum, if 001 keeps one. Reuse the
   `PermissionFlagRequired` case (`/api/v2/problems/permission-flag-required`, 403, extension
-  `flag`) that an earlier feature added; add it only if it is missing. 001's
+  `requiredFlags`) that an earlier feature added; add it only if it is missing. 001's
   `ProblemTypeConsistencyTest` must stay green.
 - [ ] T015 [P] Create the enums in `app/Services/SyncJobs/` and make T008 pass:
   - `SyncJobEncryption.php`: string-backed `Ssl = 'SSL'`, `Starttls = 'TLS'`, `Plain = 'PLAIN'`,
@@ -231,7 +231,7 @@ the representation, the audit wiring, the configuration reader extension and the
 - [ ] T018 Create `app/Policies/SyncJobPolicy.php` with `use(Principal): bool`, true when
   `IdentityService` reports `PermissionFlag::Syncjobs`. Register it in
   `app/Providers/AppServiceProvider.php` as the gate `syncJobs.use`. A failing gate throws
-  `ProblemException(ProblemType::PermissionFlagRequired, ['flag' => 'syncjobs'])`. This makes T011
+  `ProblemException(ProblemType::PermissionFlagRequired, ['requiredFlags' => ['syncjobs']])`. This makes T011
   pass.
 - [ ] T019 Create `app/Http/Resources/Api/V2/SyncJobResource.php` (R3). It renders the contract
   `SyncJob` from a model plus an optional `logAvailable` value and the tag from `SyncJobVersion`,
@@ -334,7 +334,7 @@ values for the same rows (spec US1, Independent Test).
   - reading writes no audit record.
 - [ ] T025 [P] [US1] Write `tests/Feature/SyncJobs/SyncJobReadAccessTest.php` (FR-001, FR-003,
   FR-004, AS-6, AS-7). For `listSyncJobs`, `getSyncJob` and `getSyncJobLog`:
-  - a domain admin without `da_acl.syncjobs` → `403 permission-flag-required` with `flag: syncjobs` (AS-6);
+  - a domain admin without `da_acl.syncjobs` → `403 permission-flag-required` with `requiredFlags: [syncjobs]` (AS-6);
   - a mailbox user without `user_acl.syncjobs` → `403 permission-flag-required` (AS-7), also for a job in their
     own mailbox;
   - anonymous → `401 unauthenticated`;
@@ -443,7 +443,7 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
     `remotePasswordSet` is true, and the password appears nowhere in the body or headers.
   - **Admin creation** (AS-2): an admin naming a mailbox in scope gets the job on that mailbox; a
     domain admin likewise for their domain.
-  - **Refusals**: a user without the flag → `403 permission-flag-required` (`flag: syncjobs`); an
+  - **Refusals**: a user without the flag → `403 permission-flag-required` (`requiredFlags: [syncjobs]`); an
     admin read-only key →
     `403 insufficient-key-scope` (AS-10); nothing is stored in either case.
   - **Audit**:

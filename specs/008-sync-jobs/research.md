@@ -70,7 +70,7 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
      effective flag `PermissionFlag::Syncjobs` from 001's `IdentityService` is set. That flag is
      always true for administrators (legacy `acl('to_session')`), comes from `da_acl.syncjobs` for
      domain administrators and from `user_acl.syncjobs` for mailbox users. A false gate answers
-     `403 permission-flag-required` with `flag: syncjobs` (`docs/conventions.md`, "Permission
+     `403 permission-flag-required` with `requiredFlags: [syncjobs]` (`docs/conventions.md`, "Permission
      refusals") on every operation, reads and the capabilities read included (FR-001). `forbidden`
      never occurs: every role and key type may use sync jobs when the flag allows it.
   3. **Scope**: `App\Services\SyncJobs\SyncJobScope::apply(Builder, Principal)` restricts every
@@ -690,7 +690,7 @@ No new Composer or npm dependency. The feature uses:
 - **Decision**:
   - **New problem type**: `/api/v2/problems/sync-job-exists` (`409`, extension `syncJobId`), added
     to `KnownProblemType`, `docs/problems.md` and 001's `ProblemType` enum.
-  - **Reused problem types**: `permission-flag-required` (with the extension `flag: syncjobs`,
+  - **Reused problem types**: `permission-flag-required` (with the extension `requiredFlags: [syncjobs]`,
     schema `SyncJobPermissionFlagProblem`, response `SyncJobForbidden`), `insufficient-key-scope`,
     `validation-failed`, and
     `about:blank` for `404` and `412`.

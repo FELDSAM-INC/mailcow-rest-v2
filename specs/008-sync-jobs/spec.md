@@ -434,7 +434,7 @@ time, source address and changed attributes, and that no record contains the rem
   `da_acl.syncjobs` flag is set (legacy default: set). A mailbox user holds it when their
   `user_acl.syncjobs` flag is set (legacy default: unset). A caller who does not hold the flag MUST
   be refused as forbidden on every operation of this feature, with the problem type
-  `permission-flag-required` naming the flag `syncjobs` (`docs/conventions.md`, "Permission
+  `permission-flag-required` naming the flag (`requiredFlags: [syncjobs]`, `docs/conventions.md`, "Permission
   refusals"). The type `forbidden` is reserved for roles and key types that may never use an
   operation; for sync jobs no role or key type is in that position.
 - **FR-002**: Within the capability, object access MUST follow legacy's mailbox access rule: an
@@ -731,7 +731,7 @@ fork-only sync-job capabilities to make configurable.
 |---|---|---|
 | Who may manage sync jobs | Any caller whose session `acl.syncjobs` is 1: admins always, domain admins per `da_acl.syncjobs` (default 1), users per `user_acl.syncjobs` (default 0) | Same (FR-001, FR-005) |
 | Object access | `hasMailboxObjectAccess` on the target mailbox: own mailbox, or a domain the admin/DA manages | Same (FR-002) |
-| Caller lacking the permission | `access_denied` | `403 permission-flag-required` with `flag: syncjobs` (FR-001, FR-003) |
+| Caller lacking the permission | `access_denied` | `403 permission-flag-required` with `requiredFlags: [syncjobs]` (FR-001, FR-003) |
 | Object outside scope | `access_denied` / empty result | "Not found" (FR-003) |
 | Remote password in reads | Redacted by default; returned by the internal `with_password` mode, which `/api/v1` can request | Never returned; the `with_password` mode is not offered (FR-018). **Deviation** (security) |
 | `showpasswords` custom option | Allowed (would unmask the password in the log) | Refused (FR-019). **Deviation** (hardening) |

@@ -7,9 +7,12 @@ description: |
 allOf:
   - $ref: './Problem.yaml'
   - type: object
-    required: [flag]
+    required: [requiredFlags]
     properties:
-      flag:
-        type: string
-        description: Name of the missing flag, as in `PermissionFlags`.
-        enum: [syncjobs]
+      requiredFlags:
+        type: array
+        minItems: 1
+        description: Names of the missing flags, as in `PermissionFlags`. For sync jobs always `[syncjobs]`.
+        items:
+          type: string
+          enum: [syncjobs]

@@ -1,7 +1,7 @@
 description: |
   The caller is authenticated but may not perform this request. Possible types:
   - `/api/v2/problems/permission-flag-required`: a domain administrator or mailbox user lacks the
-    `syncjobs` permission flag (extension `flag: syncjobs`). Every sync-job operation needs it;
+    `syncjobs` permission flag (extension `requiredFlags: [syncjobs]`). Every sync-job operation needs it;
     administrators always hold it.
   - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request.
   - `/api/v2/problems/pending-action-required`: the session is restricted (extension
@@ -26,4 +26,4 @@ content:
           status: 403
           detail: Sync jobs need the syncjobs permission.
           requestId: 4bf92f3577b34da6a3ce929d0e0e4736
-          flag: syncjobs
+          requiredFlags: [syncjobs]

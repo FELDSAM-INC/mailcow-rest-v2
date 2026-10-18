@@ -50,14 +50,31 @@ abstract class ApiFormRequest extends FormRequest
             $this->bodyViolations['body'][] = self::make('invalidType', ['expected' => 'object']);
         } elseif ($this->requiresNonEmptyBody && $decoded === []) {
             $this->bodyViolations['body'][] = self::make('required', [], 'The request body must contain at least one member.');
+        } else {
+            foreach ($this->memberViolations($decoded) as $field => $violation) {
+                $this->bodyViolations[$field][] = $violation;
+            }
         }
+    }
+
+    /**
+     * Violations of the body's members that rules cannot express, for example members the schema
+     * does not define (feature 003: `immutable`). Keyed by field path, one violation each.
+     *
+     * @param  array<string, mixed>  $body
+     * @return array<string, array{code: string, params: array<string, mixed>, message: string}>
+     */
+    protected function memberViolations(array $body): array
+    {
+        return [];
     }
 
     public function withValidator(Validator $validator): void
     {
         if ($this->bodyViolations !== []) {
-            $validator->after(function (Validator $validator): void {
-                $validator->errors()->add('body', $this->bodyViolations['body'][0]['message']);
+            $field = (string) array_key_first($this->bodyViolations);
+            $validator->after(function (Validator $validator) use ($field): void {
+                $validator->errors()->add($field, $this->bodyViolations[$field][0]['message']);
             });
         }
     }

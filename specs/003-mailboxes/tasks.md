@@ -357,7 +357,7 @@ domain limit; compare rows, Redis and container calls with legacy (spec US2).
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T035 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxTest.php` for `createMailbox`:
+- [X] T035 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxTest.php` for `createMailbox`:
   - AS-1: `" Anna.Smith "` in `"Example.org"` → `201`, `Location: /api/v2/mailboxes/anna.smith@example.org`,
     `ETag`, no `password` member anywhere in the body; rows exactly as legacy (data-model.md):
     `mailbox` with the string `attributes` set (`mailbox_format` `maildir:`, `relayhost` `"0"`,
@@ -376,28 +376,28 @@ domain limit; compare rows, Redis and container calls with legacy (spec US2).
   - `422` for every rule of data-model.md "Validation" (local part, address length, quota
     `notMultipleOf {factor: 1048576}` and negative, display name length, tags, enumerations,
     `templateId` unknown → `notFound`), all violations reported together.
-- [ ] T036 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxLimitsTest.php` (FR-023, R6):
+- [X] T036 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxLimitsTest.php` (FR-023, R6):
   AS-2 a full domain → `409 mailbox-limit-reached` with `domain`, `count`, `limit`, nothing written;
   resources are not counted; AS-3 maximum mailbox quota 10 GiB and 5 GiB left, 8 GiB requested →
   `422 outOfRange {limit: domainQuotaLeft, max: 5368709120}`; above `maxquota` →
   `{limit: maxMailboxQuota}`; quota 0 (administrator) is accepted and not counted; no quota and no
   template → the domain's default quota for a new mailbox; `defquota > 0` with no quota left and no
   quota sent → `422 outOfRange {limit: domainQuotaLeft, max: 0}`.
-- [ ] T037 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxConcurrencyTest.php` (SC-006,
+- [X] T037 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxConcurrencyTest.php` (SC-006,
   group `concurrency`): 1,000 creation attempts of distinct mailboxes from 20 parallel processes
   (50 each) against a domain with room for 10 and 10 GiB quota at 1 GiB each → exactly 10 rows, `Σ quota ≤ domain quota`, the others got
   `mailbox-limit-reached`; two parallel creations of the same address → one `201`, one
   `409 address-in-use`.
-- [ ] T038 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxConflictTest.php` (FR-021, AS-4):
+- [X] T038 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxConflictTest.php` (FR-021, AS-4):
   an address held by a mailbox, a resource, an alias and a temporary alias → `409 address-in-use`
   with `holder` `mailbox`, `resource`, `alias`, `temporaryAlias` and the normalised `address`.
-- [ ] T039 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxTemplatesTest.php` (FR-022, R5):
+- [X] T039 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxTemplatesTest.php` (FR-022, R5):
   AS-7 template "Small" (1 GiB, POP3 off, `acl_syncjobs` 1) applies all its values; a template
   lacking `tagged_mail_handler` and `acl_pw_reset` falls back to the Default template, then to the
   built-in defaults; Default template missing → built-in defaults; request values override
   template values; a template rate limit is written to `RL_VALUE` as `"<v> / 1<f>"`;
   `rateLimit: null` overrides it; `RESTV2_MAILBOX_DEFAULT_ATTRIBUTES` changes a built-in default.
-- [ ] T040 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxPermissionsTest.php` (FR-006,
+- [X] T040 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxPermissionsTest.php` (FR-006,
   AS-5, AS-6), as a domain administrator: without `unlimitedQuota`, `quota: 0` and a template with
   quota 0 → `403 attribute-not-permitted` with `requiredFlags.quota = unlimitedQuota` (an explicit
   quota then works); without `protocolAccess`, `protocolAccess.pop3: false` against a template
@@ -405,7 +405,7 @@ domain limit; compare rows, Redis and container calls with legacy (spec US2).
   accepted; without `sogoAccess` and `webmailRedirect`; without `ratelimit` and `rateLimit`; without
   each overlapping flag and the matching `userPermissions` member; with every flag → `201`. Nothing
   is written on refusal, and a failure audit record (`attributeNotPermitted`) is written.
-- [ ] T041 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxPasswordTest.php` (FR-024,
+- [X] T041 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxPasswordTest.php` (FR-024,
   FR-025): AS-8 policy length 10 + digits and password "short" → `422` with both violations;
   AS-11 a password meeting the policy set in Redis is accepted; AS-9 `{SSHA512}…` (generated with
   a known password) is stored as given, the audit record says `preHashed: true`, and
@@ -416,25 +416,25 @@ domain limit; compare rows, Redis and container calls with legacy (spec US2).
   `genericOidc` forces `force_tfa "0"`; explicit `forcePasswordChange: true` with `ldap` →
   `conflictsWith`; missing password for `mailcow` → `required`; shared store down with a plain
   password → `503`, nothing written.
-- [ ] T042 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxFollowUpTest.php` (FR-027,
+- [X] T042 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxFollowUpTest.php` (FR-027,
   AS-13): `taggedMailHandling: subject` → `HSET RCPT_WANTS_SUBJECT_TAG <a> 1` and no subfolder field;
   `subfolder` the reverse; `none` → `notRequested`; the groupware step upserts `_sogo_static_view`
   for an active mailbox and flushes memcached once, reports `notRequired` for an inactive one and
   `groupwareDisabled` with `SKIP_SOGO=y`; AS-13 shared store down with a pre-hashed password and a
   rate limit → `201`, the mailbox exists, `creationReport.rateLimit = failed` with a message, and the
   audit record holds the same report.
-- [ ] T043 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxAuthorizationTest.php`: mailbox
+- [X] T043 [P] [US2] Write `tests/Feature/Mailboxes/CreateMailboxAuthorizationTest.php`: mailbox
   user → `403 forbidden`; read-only key → `403 insufficient-key-scope`; read-write keys of an
   administrator and of a domain administrator (own domain) → `201`; restricted session → `403
   pending-action-required`; session without CSRF token → `403 csrf-token-mismatch`.
-- [ ] T044 [P] [US2] Write `tests/Feature/Mailboxes/MailboxCapabilitiesTest.php` for
+- [X] T044 [P] [US2] Write `tests/Feature/Mailboxes/MailboxCapabilitiesTest.php` for
   `getMailboxCapabilities` (FR-064, AS-12): LDAP configured and `SKIP_SOGO=y` →
   `identityProviderType: ldap`, `authSources: [mailcow, ldap]`, `groupwareEnabled: false`; no
   provider → `none`; `lastLoginsReported` follows the setting; `bulkLimit` is
   `min(RESTV2_BULK_LIMIT, 100)`; `taggingLimit`, custom-attribute limits, page sizes and
   `garbageRetentionMinutes` (`MAILDIR_GC_TIME`); no secret of `identity_provider` appears; mailbox
   user → `403`; read-only key → `200`.
-- [ ] T045 [P] [US2] Write `tests/Feature/PasswordPolicy/GetPasswordPolicyTest.php` for
+- [X] T045 [P] [US2] Write `tests/Feature/PasswordPolicy/GetPasswordPolicyTest.php` for
   `getPasswordPolicy` (FR-063): AS-11 values written by the legacy statements (`HSET PASSWD_POLICY
   length 10 numbers 1`) are returned as structured rules; never saved → 6 and `false`s; `ETag`
   equals `data.etag` equals the canonical tag of R4; a changed field changes it on the next read;
@@ -443,19 +443,19 @@ domain limit; compare rows, Redis and container calls with legacy (spec US2).
 
 ### Implementation for User Story 2
 
-- [ ] T046 [P] [US2] Create `app/Services/Mailboxes/AddressAvailability.php` (`holderOf(string
+- [X] T046 [P] [US2] Create `app/Services/Mailboxes/AddressAvailability.php` (`holderOf(string
   $address): ?string` with the order of R7, plus the duplicate-key mapping helper).
-- [ ] T047 [P] [US2] Create `app/Services/Mailboxes/TaggedMailHandlingStore.php` (`get(array
+- [X] T047 [P] [US2] Create `app/Services/Mailboxes/TaggedMailHandlingStore.php` (`get(array
   $addresses)`, `set(address, none|subfolder|subject)` exactly as legacy `edit delimiter_action`,
   `move(from, to)` and `forget(address)` for later phases), on 002's `SharedStore`.
-- [ ] T048 [US2] Create `app/Services/Mailboxes/MailboxValidator.php` (business rules of
+- [X] T048 [US2] Create `app/Services/Mailboxes/MailboxValidator.php` (business rules of
   data-model.md "Validation", collected through `FieldViolations`: address, domain eligibility,
   authentication source against `identity_provider`, password policy, quota rules against
   `DomainUsageCalculator`, `TagSet`, custom attributes, `conflictsWith` rules) and
   `app/Http/Requests/Api/V2/StoreMailboxRequest.php` (shape only: types, lengths, enumerations,
   `quota` "integer 0–9007199254740992, `WholeMebibytes`", `rateLimit.value` "integer
   1–2147483647", no unknown members).
-- [ ] T049 [US2] Create `app/Services/Mailboxes/MailboxCreator.php` implementing research R9:
+- [X] T049 [US2] Create `app/Services/Mailboxes/MailboxCreator.php` implementing research R9:
   resolve values (`MailboxDefaults`), guard (`MailboxPermissionGuard`), validate, `AddressLock`
   for the new address around the availability check and the transaction with the domain row lock
   and every insert of data-model.md, the audit record with
@@ -463,15 +463,15 @@ domain limit; compare rows, Redis and container calls with legacy (spec US2).
   `TaggedMailHandlingStore::set`, `SogoDirectory::refresh` and `MemcachedFlusher::flush`), and
   `AuditLogger::completeFollowUps`. Map duplicate-key errors to `address-in-use`. Create
   `app/Services/Mailboxes/MailboxCreationReport.php` (value object of the contract).
-- [ ] T050 [US2] Create `app/Http/Resources/Api/V2/MailboxCreatedResource.php` and add
+- [X] T050 [US2] Create `app/Http/Resources/Api/V2/MailboxCreatedResource.php` and add
   `MailboxController@store` (`201`, `Location`, `ETag`). Route `POST /mailboxes` under
   `restv2.auth:authenticated`, `restv2.csrf`, `restv2.pending:enforce`, with the route default
   `restv2.audit` (`mailboxCreation`, target `mailbox`). This makes T035–T043 pass.
-- [ ] T051 [P] [US2] Create `app/Services/Mailboxes/MailboxCapabilities.php`,
+- [X] T051 [P] [US2] Create `app/Services/Mailboxes/MailboxCapabilities.php`,
   `app/Http/Resources/Api/V2/MailboxCapabilitiesResource.php` and
   `app/Http/Controllers/Api/V2/MailboxCapabilitiesController.php` (`show`); route
   `GET /capabilities/mailboxes`. This makes T044 pass.
-- [ ] T052 [P] [US2] Create `app/Http/Resources/Api/V2/PasswordPolicyResource.php` and
+- [X] T052 [P] [US2] Create `app/Http/Resources/Api/V2/PasswordPolicyResource.php` and
   `app/Http/Controllers/Api/V2/PasswordPolicyController.php` (`show`, `ETag` header); route
   `GET /password-policy` under `restv2.auth:authenticated`, authorised by
   `MailboxPolicy::viewPasswordPolicy`. This makes T045 pass.
@@ -976,3 +976,23 @@ what exists map as listed.
 - **T028**: `SharedStoreUnavailable` now renders `dependency: sharedStore` on every `503`
   (additive; `docs/problems.md` updated). `AddressAvailability` (T046) was moved into Phase 2,
   because features 004 and 005 need it with `AddressLock`.
+- **T037**: under the domain row lock, an attempt that would exceed the domain quota is refused
+  with `422 outOfRange` (`domainQuotaLeft`) before the mailbox count is checked (research R8's
+  order: business rules before state conflicts), so of 1,000 concurrent attempts against a domain
+  with room for 10, 10 succeed and the others get `mailbox-limit-reached` or that `422`.
+- **T042, AS-13**: the creation response is built also while mailcow's shared store is down (the
+  follow-up steps already reported the outage); its rate limit and tagged-mail handling are then
+  shown as not set (`MailboxReader::present(..., tolerateSharedStore: true)`). Every other read
+  answers `503` without the shared store.
+- **T044 (G31, G32)**: `MailboxCapabilities` gained `preHashedPasswordSchemes` and
+  `templateDefaults` (new schema `MailboxTemplateDefaults`), both for administrators and domain
+  administrators.
+- **T048**: unknown members of a body (including those inside `protocolAccess`, `userPermissions`
+  and `rateLimit`) are `immutable`, through the new `ApiFormRequest::memberViolations()` hook;
+  booleans are checked with the new `StrictBoolean` rule (Laravel's `boolean` accepts `0` and `1`).
+  Whole MiB, the address, tags, templates and quota limits are business rules
+  (`MailboxValidator`), reported together. An invalid creation domain name is `invalidFormat`
+  (`format: domainName`).
+- **T049**: without a rate limit or with `taggedMailHandling: none`, the creation removes any
+  stale shared-store entry of the address, as legacy's ratelimit('edit') and delimiter_action do;
+  a failure of that removal is only logged (the step is `notRequested`).

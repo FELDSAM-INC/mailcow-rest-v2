@@ -51,8 +51,9 @@ properties:
       (`conflictsWith`). Checked against the password policy (`GET /password-policy`): each unmet
       rule is reported (`tooShort` with `min`, `missingCharacterClass` with `characterClass`).
       Stored in mailcow's configured hash scheme (`MAILCOW_PASS_SCHEME`). A value that starts with
-      a hash-scheme prefix legacy recognises, such as `{BLF-CRYPT}` or `{SSHA512}`, is stored as
-      given without the policy check. Never returned.
+      a hash-scheme prefix legacy recognises (exactly the list of
+      `MailboxCapabilities.preHashedPasswordSchemes`, such as `{BLF-CRYPT}` or `{SSHA512}`) is stored
+      as given without the policy check. Never returned.
   displayName:
     type: string
     maxLength: 255

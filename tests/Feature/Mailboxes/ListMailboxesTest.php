@@ -20,6 +20,7 @@ class ListMailboxesTest extends TestCase
     use MailboxTestHelpers;
 
     /**
+     * @param  array<string, string>  $headers
      * @return list<string>
      */
     private function addresses(string $query = '', array $headers = []): array

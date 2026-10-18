@@ -16,6 +16,8 @@ required:
   - defaultPageSize
   - maxPageSize
   - garbageRetentionMinutes
+  - preHashedPasswordSchemes
+  - templateDefaults
 properties:
   identityProviderType:
     type: string
@@ -62,3 +64,20 @@ properties:
     type: integer
     minimum: 0
     description: How long mailcow keeps the mail of a deleted mailbox before purging it (`MAILDIR_GC_TIME`, 7200 by default).
+  preHashedPasswordSchemes:
+    type: array
+    description: |
+      The hash-scheme prefixes legacy recognises (G31): a password that starts with `{<scheme>}`, in
+      any letter case, is stored as given without the policy check. Exactly legacy's list, in its
+      order: `ARGON2I`, `ARGON2ID`, `BLF-CRYPT`, `CLEAR`, `CLEARTEXT`, `CRYPT`, `DES-CRYPT`,
+      `LDAP-MD5`, `MD5`, `MD5-CRYPT`, `PBKDF2`, `PLAIN`, `PLAIN-MD4`, `PLAIN-MD5`, `PLAIN-TRUNC`,
+      `SHA`, `SHA1`, `SHA256`, `SHA256-CRYPT`, `SHA512`, `SHA512-CRYPT`, `SMD5`, `SSHA`, `SSHA256`,
+      `SSHA512`.
+    items:
+      type: string
+    examples:
+      - [ARGON2I, ARGON2ID, BLF-CRYPT, SSHA512]
+  templateDefaults:
+    allOf:
+      - $ref: './MailboxTemplateDefaults.yaml'
+    description: The built-in values of new mailboxes and templates (G32).

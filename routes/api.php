@@ -15,12 +15,14 @@ use App\Http\Controllers\Api\V2\DomainTagController;
 use App\Http\Controllers\Api\V2\DomainTemplateController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\LivenessController;
+use App\Http\Controllers\Api\V2\MailboxCapabilitiesController;
 use App\Http\Controllers\Api\V2\MailboxController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
 use App\Http\Controllers\Api\V2\PasskeyChallengeController;
 use App\Http\Controllers\Api\V2\PasskeyController;
 use App\Http\Controllers\Api\V2\PasskeyRegistrationOptionsController;
+use App\Http\Controllers\Api\V2\PasswordPolicyController;
 use App\Http\Controllers\Api\V2\PendingSignInController;
 use App\Http\Controllers\Api\V2\PreferencesController;
 use App\Http\Controllers\Api\V2\ProblemTypeController;
@@ -200,9 +202,18 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     // live at top-level paths.
     Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
         Route::get('/mailboxes', [MailboxController::class, 'index'])->name('mailboxes.index');
+        Route::get('/capabilities/mailboxes', [MailboxCapabilitiesController::class, 'show'])->name('mailbox-capabilities.show');
+        Route::get('/password-policy', [PasswordPolicyController::class, 'show'])->name('password-policy.show');
         Route::get('/mailboxes/{mailbox}', [MailboxController::class, 'show'])
             ->where('mailbox', '[^/]+')
             ->name('mailboxes.show');
+    });
+
+    // State-changing mailbox routes: refusals of authenticated callers are audited (`restv2.audit`).
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::post('/mailboxes', [MailboxController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'mailboxCreation', 'target' => 'mailbox'])
+            ->name('mailboxes.store');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

@@ -1,0 +1,56 @@
+type: object
+description: |
+  The built-in values a new mailbox or mailbox template gets for every value that neither the
+  request nor a template gives (API server settings with the upstream values, legacy
+  `MAILBOX_DEFAULT_ATTRIBUTES`). A new mailbox takes its quota from the domain's default quota for a
+  new mailbox instead of `quota`; a new template stores `quota` (unlimited). User permissions are
+  omitted for a domain administrator who lacks the overlapping flag, as in `Mailbox.userPermissions`.
+required:
+  - quota
+  - status
+  - forcePasswordChange
+  - forceSecondFactorSetup
+  - webmailRedirect
+  - protocolAccess
+  - userPermissions
+  - tags
+  - taggedMailHandling
+  - quarantineNotification
+  - quarantineCategory
+  - tlsEnforceInbound
+  - tlsEnforceOutbound
+  - rateLimit
+properties:
+  quota:
+    type: integer
+    format: int64
+    minimum: 0
+  status:
+    $ref: './MailboxStatus.yaml'
+  forcePasswordChange:
+    type: boolean
+  forceSecondFactorSetup:
+    type: boolean
+  webmailRedirect:
+    type: boolean
+  protocolAccess:
+    $ref: './MailboxProtocolAccess.yaml'
+  userPermissions:
+    $ref: './MailboxUserPermissions.yaml'
+  tags:
+    $ref: './MailboxTagSet.yaml'
+  taggedMailHandling:
+    $ref: './MailboxTaggedMailHandling.yaml'
+  quarantineNotification:
+    $ref: './MailboxQuarantineNotification.yaml'
+  quarantineCategory:
+    $ref: './MailboxQuarantineCategory.yaml'
+  tlsEnforceInbound:
+    type: boolean
+  tlsEnforceOutbound:
+    type: boolean
+  rateLimit:
+    oneOf:
+      - $ref: './MailboxRateLimit.yaml'
+      - type: 'null'
+additionalProperties: false

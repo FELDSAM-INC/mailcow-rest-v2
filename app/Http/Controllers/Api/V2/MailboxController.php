@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V2;
 use App\Http\Controllers\Controller;
 use App\Http\RequestContext;
 use App\Http\Requests\Api\V2\ListMailboxesRequest;
+use App\Http\Requests\Api\V2\StoreMailboxRequest;
 use App\Http\Resources\Api\V2\MailboxResource;
 use App\Models\Mailcow\Mailbox;
+use App\Services\Mailboxes\MailboxCreator;
 use App\Services\Mailboxes\MailboxReader;
 use App\Services\Mailboxes\MailboxScope;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +34,16 @@ class MailboxController extends Controller
         $page = $this->reader->page($principal, $list, $request->filters());
 
         return MailboxResource::list($page['data'], $list->meta($page['total']));
+    }
+
+    public function store(StoreMailboxRequest $request, MailboxCreator $creator): JsonResponse
+    {
+        $principal = RequestContext::requirePrincipal($request);
+        $creation = $creator->create($principal, $request->members());
+        $data = $this->reader->one($principal, $creation->address, true) ?? throw new NotFoundHttpException('The mailbox does not exist.');
+        $data['creationReport'] = $creation->report->toArray();
+
+        return MailboxResource::response($data, 201, ['Location' => MailboxResource::location($creation->address)]);
     }
 
     public function show(Request $request, string $mailbox): JsonResponse

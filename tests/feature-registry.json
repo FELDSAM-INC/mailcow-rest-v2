@@ -125,8 +125,6 @@
         }
     },
     "pendingOperations": [
-        "createMailbox",
-        "getMailboxCapabilities",
         "listMailboxTags",
         "applyMailboxBulkAction",
         "updateMailbox",
@@ -137,7 +135,6 @@
         "createMailboxTemplate",
         "getMailboxTemplate",
         "updateMailboxTemplate",
-        "deleteMailboxTemplate",
-        "getPasswordPolicy"
+        "deleteMailboxTemplate"
     ]
 }

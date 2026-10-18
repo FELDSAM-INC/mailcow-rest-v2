@@ -5,6 +5,7 @@ namespace App\Services\Mailboxes;
 use App\Auth\Principal;
 use App\Auth\Role;
 use App\Clients\SharedStore\SharedStore;
+use App\Clients\SharedStore\SharedStoreUnavailable;
 use App\Services\Config\MailcowConfig;
 use App\Services\Domains\DomainPresenter;
 use App\Services\Identity\IdentityService;
@@ -62,18 +63,21 @@ class MailboxReader
      *
      * @return array<string, mixed>|null
      */
-    public function one(Principal $principal, string $address): ?array
+    public function one(Principal $principal, string $address, bool $tolerateSharedStore = false): ?array
     {
         $row = DB::table('mailbox')->where('username', $address)->where('kind', '')->first();
 
-        return $row === null ? null : $this->present([$row], $principal)[0];
+        return $row === null ? null : $this->present([$row], $principal, $tolerateSharedStore)[0];
     }
 
     /**
      * @param  list<object>  $rows  `mailbox` rows, in the order to return
+     * @param  bool  $tolerateSharedStore  for the answer of a change already committed (a creation
+     *                                     whose follow-up steps reported the outage): the shared-store
+     *                                     values are then shown as not set instead of failing
      * @return list<array<string, mixed>>
      */
-    public function present(array $rows, Principal $principal): array
+    public function present(array $rows, Principal $principal, bool $tolerateSharedStore = false): array
     {
         if ($rows === []) {
             return [];
@@ -94,9 +98,17 @@ class MailboxReader
             ->groupBy('goto')->get(['goto', DB::raw('COUNT(*) AS `count`')])->keyBy('goto');
         $pushover = array_flip(DB::table('pushover')->whereIn('username', $addresses)->where('active', 1)->pluck('username')->map(fn (mixed $u): string => (string) $u)->all());
 
-        $rateLimits = $this->store->getFields(RateLimitStore::HASH, array_values(array_unique([...$addresses, ...$domainNames])));
-        $subject = $this->store->getFields(self::TAGGED_SUBJECT, $addresses);
-        $subfolder = $this->store->getFields(self::TAGGED_SUBFOLDER, $addresses);
+        try {
+            $rateLimits = $this->store->getFields(RateLimitStore::HASH, array_values(array_unique([...$addresses, ...$domainNames])));
+            $subject = $this->store->getFields(self::TAGGED_SUBJECT, $addresses);
+            $subfolder = $this->store->getFields(self::TAGGED_SUBFOLDER, $addresses);
+        } catch (SharedStoreUnavailable $e) {
+            if (! $tolerateSharedStore) {
+                throw $e;
+            }
+
+            [$rateLimits, $subject, $subfolder] = [[], [], []];
+        }
 
         $flags = $principal->role === Role::DomainAdmin ? $this->identity->permissions($principal) : [];
         $builtIn = $this->defaults->builtIn();

@@ -1616,7 +1616,8 @@ record for secrets.
 
   Still open: the ban on a host with a working netfilter, the passkey stopwatch in a real browser,
   and the change half of SC-008 (skipped to leave the shared
-  announcement alone). Deployment gap: `mcuadros/ofelia` reads labels only when it starts, so
+  announcement alone). A host on plain upstream `2026-09a` was waived by the owner on 2026-10-18
+  (none is available). Deployment gap: `mcuadros/ofelia` reads labels only when it starts, so
   `restv2_audit_purge` is not registered until `ofelia-mailcow` restarts. Part C step 7 expects the
   job right after `docker compose up -d restv2-mailcow`.
 

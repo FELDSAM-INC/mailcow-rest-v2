@@ -1,0 +1,39 @@
+type: object
+description: |
+  The e-mail Dovecot sends to a user whose mailbox crosses 80% and, again, 95% of its quota
+  (`QW_SENDER`, `QW_SUBJ`, `QW_HTML`). The values in effect are returned, with markers for those
+  that are Dovecot's defaults because nothing is stored. A change applies to the next notification.
+
+  The template is rendered by Dovecot with the variables `{{username}}` and `{{percent}}`. When
+  Dovecot cannot parse the stored template it falls back to the default template. Copies to the
+  per-domain recipients (`GET /domains/{domain}/quota-notification-recipients`) carry the user as
+  sender and the subject followed by the username in parentheses.
+required:
+  - sender
+  - senderIsDefault
+  - subject
+  - subjectIsDefault
+  - htmlTemplate
+  - htmlTemplateIsDefault
+  - etag
+properties:
+  sender:
+    type: string
+    examples: [quota-warning@localhost]
+  senderIsDefault:
+    type: boolean
+    description: '`true` when no sender is stored and Dovecot uses `quota-warning@localhost`.'
+  subject:
+    type: string
+    examples: [Quota warning]
+  subjectIsDefault:
+    type: boolean
+    description: '`true` when no subject is stored and Dovecot uses "Quota warning".'
+  htmlTemplate:
+    type: string
+  htmlTemplateIsDefault:
+    type: boolean
+    description: '`true` when no template is stored and mailcow''s default template applies.'
+  etag:
+    type: string
+    description: Version tag of the stored settings, equal to the `ETag` header.

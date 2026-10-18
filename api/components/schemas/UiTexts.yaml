@@ -1,0 +1,56 @@
+type: object
+description: |
+  The UI texts of the legacy customisation. `pageTitle`, `productName`, `appsHeading` and
+  `announcement.text` are plain text. `loginHelpHtml` and `footerHtml` are operator-authored HTML,
+  stored and returned as given: clients must sanitise them before rendering, as for the public
+  configuration. Empty values mean the defaults described for each field.
+required:
+  - pageTitle
+  - pageTitleDefault
+  - productName
+  - productNameDefault
+  - appsHeading
+  - loginHelpHtml
+  - footerHtml
+  - announcement
+  - etag
+properties:
+  pageTitle:
+    type: string
+    maxLength: 255
+    description: |
+      Browser title (`TITLE_NAME`, stored HTML-escaped as legacy does and returned as plain text).
+      Empty means `pageTitleDefault`.
+  pageTitleDefault:
+    type: string
+    description: The deployment default used while `pageTitle` is empty, as in the public configuration.
+    examples: [mail.example.org - mail UI]
+  productName:
+    type: string
+    maxLength: 255
+    description: Name shown on the login page (`MAIN_NAME`, stored like `pageTitle`). Empty means `productNameDefault`.
+  productNameDefault:
+    type: string
+    examples: [mail.example.org - mail UI]
+  appsHeading:
+    type: string
+    maxLength: 255
+    description: |
+      Heading of the apps list (`APPS_NAME`, stored like `pageTitle`). Empty means the web app's
+      translated default.
+  loginHelpHtml:
+    type: string
+    maxLength: 65535
+    description: Operator HTML shown below the login form (`HELP_TEXT`). Empty when not set.
+  footerHtml:
+    type: string
+    maxLength: 65535
+    description: |
+      Operator HTML footer (`UI_FOOTER`). When it is empty and the footer key of older mailcow
+      releases (`UI_IMPRESS`) holds a value, that value is returned here and moved to `UI_FOOTER` by
+      the next change of the UI texts.
+  announcement:
+    $ref: './UiTextsAnnouncement.yaml'
+  etag:
+    type: string
+    description: Version tag of the stored UI texts, equal to the `ETag` header.

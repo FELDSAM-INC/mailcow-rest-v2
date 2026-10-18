@@ -1,0 +1,71 @@
+get:
+  operationId: listRspamdSettingsRules
+  tags: [Rspamd settings]
+  summary: List Rspamd settings rules
+  description: |
+    Lists the rules of mailcow's Rspamd settings map with their content, active state and times.
+    `q` searches the description and the content. Administrators only, by session or by an
+    administrator's key, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/RspamdSettingsRuleSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: active
+      in: query
+      required: false
+      description: Only active (`true`) or inactive (`false`) rules.
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/RspamdSettingsRuleListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createRspamdSettingsRule
+  tags: [Rspamd settings]
+  summary: Create an Rspamd settings rule
+  description: |
+    Creates a rule, inactive unless `active` is `true`. The content is checked for balanced
+    structure so that one rule cannot break the settings map Rspamd loads for all rules. Rspamd
+    applies an active rule at its next refresh of mailcow's settings map, within about a minute,
+    without a restart. With `validateOnly=true` nothing is created and the answer is `200`. Audited,
+    the content only as changed, with its size.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/SettingsValidateOnly.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/RspamdSettingsRuleCreateRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/SettingsValidationResultResponse.yaml'
+    '201':
+      $ref: '../../components/responses/RspamdSettingsRuleCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

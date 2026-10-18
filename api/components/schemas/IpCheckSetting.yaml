@@ -1,0 +1,12 @@
+type: object
+description: |
+  The IP check opt-in (`IP_CHECK`). While it is on, administrators may look up the server's public
+  addresses through third-party services (feature 011); while it is off, that lookup is refused
+  without any outbound request. Off by default.
+required: [enabled, etag]
+properties:
+  enabled:
+    type: boolean
+  etag:
+    type: string
+    description: Version tag of the stored setting, equal to the `ETag` header.

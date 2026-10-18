@@ -1,0 +1,11 @@
+description: |
+  Problem of type `/api/v2/problems/mass-mail-recipient-count-changed` (status `409`): the selection
+  now yields `actualRecipients`, not the confirmed count. Nothing was sent.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [actualRecipients]
+    properties:
+      actualRecipients:
+        type: integer
+        minimum: 0

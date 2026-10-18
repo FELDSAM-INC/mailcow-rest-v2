@@ -1,0 +1,18 @@
+type: object
+description: |
+  Outcome of the Dovecot restart that follows a saved global Sieve filter. A failed restart does not
+  undo the saved script, which then takes effect at Dovecot's next start.
+required: [outcome, detail]
+properties:
+  outcome:
+    type: string
+    enum: [done, failed, deferred]
+    description: |
+      `done`: mailcow's container service restarted Dovecot. `failed`: it reported a failure or did
+      not answer within its timeout (the restart may still happen). `deferred`: the client asked to
+      apply the change at the next restart.
+  detail:
+    description: English explanation of a failure, `null` otherwise.
+    oneOf:
+      - type: string
+      - type: 'null'

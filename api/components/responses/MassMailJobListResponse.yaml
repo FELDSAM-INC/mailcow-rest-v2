@@ -1,0 +1,13 @@
+description: Mass mail jobs matching the filters.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/MassMailJob.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

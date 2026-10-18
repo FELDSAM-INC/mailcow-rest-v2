@@ -1,0 +1,6 @@
+type: string
+description: |
+  `pending`: not delivered yet (including retries of a temporary refusal). `delivered`: Dovecot
+  accepted the message into the mailbox. `failed`: Dovecot refused it, temporary refusals persisted
+  after the retries, or the delivery was interrupted. `skipped`: the job was cancelled first.
+enum: [pending, delivered, failed, skipped]

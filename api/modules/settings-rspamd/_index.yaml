@@ -1,0 +1,14 @@
+# Paths of the settings-rspamd module (feature 013): Rspamd settings rules, the global regex maps,
+# the effective settings map and the Rspamd web interface password.
+/settings/rspamd-rules:
+  $ref: './settings-rspamd-rules.yaml'
+/settings/rspamd-rules/{ruleId}:
+  $ref: './settings-rspamd-rule.yaml'
+/settings/rspamd-regex-maps:
+  $ref: './settings-rspamd-regex-maps.yaml'
+/settings/rspamd-regex-maps/{mapId}:
+  $ref: './settings-rspamd-regex-map.yaml'
+/settings/rspamd-settings-map:
+  $ref: './settings-rspamd-settings-map.yaml'
+/settings/rspamd-ui-password:
+  $ref: './settings-rspamd-ui-password.yaml'

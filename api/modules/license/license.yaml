@@ -1,0 +1,23 @@
+get:
+  operationId: getLicenseStatus
+  tags: [License]
+  summary: Get the license status
+  description: |
+    Returns the server's GUID, or that mailcow marked it invalid, and the last verification result
+    as the legacy dashboard shows it (also when the verification was made in the legacy UI). Reading
+    never contacts the license service. Refused with `feature-disabled` when the operator disabled
+    license verification. Administrators only, by session or by an administrator's key.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/LicenseStatusResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/LicenseForbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'

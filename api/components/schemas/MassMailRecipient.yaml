@@ -1,0 +1,25 @@
+type: object
+description: One recipient of a mass mail job.
+required: [address, outcome, failureReason, attempts, lastAttemptAt]
+properties:
+  address:
+    type: string
+    examples: [alice@example.org]
+  outcome:
+    $ref: './MassMailRecipientOutcome.yaml'
+  failureReason:
+    description: |
+      For `failed`: Dovecot's reply (for example an over-quota refusal), `interrupted` when this
+      API stopped during the delivery, or the connection error. `null` otherwise.
+    oneOf:
+      - type: string
+        maxLength: 1024
+      - type: 'null'
+  attempts:
+    type: integer
+    minimum: 0
+  lastAttemptAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'

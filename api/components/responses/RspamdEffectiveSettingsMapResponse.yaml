@@ -1,0 +1,9 @@
+description: The effective settings map.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/RspamdEffectiveSettingsMap.yaml'

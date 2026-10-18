@@ -1,0 +1,7 @@
+name: jobId
+in: path
+required: true
+description: Identifier of a mass mail job. An unknown identifier answers `404`.
+schema:
+  type: string
+  pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'

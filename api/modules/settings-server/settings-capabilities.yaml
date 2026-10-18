@@ -1,0 +1,23 @@
+get:
+  operationId: getSettingsCapabilities
+  tags: [Server settings]
+  summary: Get the settings capabilities
+  description: |
+    Returns the server settings and limits that the system settings forms need before they submit:
+    the logo limits and accepted types, whether license verification is enabled, whether demo mode
+    is on, the configured host name and the mass mail sender legacy suggests, the address of the
+    Rspamd web interface, the colour reference surfaces and minimum contrast, the field limits and
+    the mass mail delivery policy. The values reflect the current configuration and contain no
+    secret. Administrators only, by session or by an administrator's key, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/SettingsCapabilitiesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

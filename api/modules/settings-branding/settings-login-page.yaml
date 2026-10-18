@@ -1,0 +1,58 @@
+get:
+  operationId: getLoginPageSettings
+  tags: [Branding settings]
+  summary: Get the login page options
+  description: |
+    Returns which login links the login page hides and whether single sign-on is forced. Administrators only, by session or by an administrator's key, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/LoginPageSettingsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'
+patch:
+  operationId: updateLoginPageSettings
+  tags: [Branding settings]
+  summary: Change the login page options
+  description: |
+    Changes the sent options. Forcing single sign-on is stored even while single sign-on is not
+    available, where it has no effect, as in legacy; it never makes the API refuse another sign-in
+    method. Refused in demo mode. Audited with each changed attribute. The change is visible in the
+    public configuration on its next read, and in the legacy UI.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/LoginPageSettingsPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/LoginPageSettingsResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/BrandingForbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'

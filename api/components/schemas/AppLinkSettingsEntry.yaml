@@ -1,0 +1,33 @@
+type: object
+description: |
+  One custom app link (an entry of legacy `APP_LINKS`). Addresses are absolute `http` or `https`
+  URLs, or paths on the mailcow host that start with a single `/`. Script and other schemes are
+  refused.
+required: [name, url, signedInUrl, showOnLoginPage]
+additionalProperties: false
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: Shown name, without line breaks. Names need not be unique.
+    examples: [Helpdesk]
+  url:
+    type: string
+    minLength: 1
+    maxLength: 2048
+    description: Address on the login page and for signed-out users (legacy `link`).
+    examples: ['https://help.example.org/']
+  signedInUrl:
+    description: |
+      Address for signed-in users (legacy `user_link`), which may contain `%u` for the signed-in
+      username. `null` means `url` is used, as legacy does.
+    oneOf:
+      - type: string
+        minLength: 1
+        maxLength: 2048
+      - type: 'null'
+    examples: ['https://help.example.org/?u=%u']
+  showOnLoginPage:
+    type: boolean
+    description: '`false` hides the link on the login page only (legacy `hide`). Signed-in users always see it.'

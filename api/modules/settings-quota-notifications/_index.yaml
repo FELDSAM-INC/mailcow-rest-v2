@@ -1,0 +1,6 @@
+# Paths of the settings-quota-notifications module (feature 013): the quota notification e-mail and
+# each domain's copy recipients.
+/settings/quota-notification:
+  $ref: './settings-quota-notification.yaml'
+/domains/{domain}/quota-notification-recipients:
+  $ref: './domain-quota-notification-recipients.yaml'

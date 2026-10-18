@@ -1,0 +1,60 @@
+get:
+  operationId: getLegacyApiCorsSettings
+  tags: [Server settings]
+  summary: Get the CORS settings of the legacy API
+  description: |
+    Returns the origins and methods that the legacy `/api/v1` allows for cross-origin browser
+    requests. These settings govern only the legacy API: this API does not answer cross-origin
+    requests. Administrators only, by session or by an administrator's key, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/LegacyApiCorsSettingsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'
+patch:
+  operationId: updateLegacyApiCorsSettings
+  tags: [Server settings]
+  summary: Change the CORS settings of the legacy API
+  description: |
+    Replaces the sent lists. Origins are `*` or `scheme://host[:port]` (at most 100, stored in lower
+    case and once each); `*` together with specific origins allows every origin, as in legacy. An
+    empty origin list means the server's own origin. Methods are a non-empty set of GET, POST, PUT
+    and DELETE. The legacy API applies the change to its next request. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/LegacyApiCorsSettingsPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/LegacyApiCorsSettingsResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'

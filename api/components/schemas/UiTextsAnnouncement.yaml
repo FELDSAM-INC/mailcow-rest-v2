@@ -1,0 +1,20 @@
+type: object
+description: The announcement banner (`UI_ANNOUNCEMENT_TEXT`, `UI_ANNOUNCEMENT_TYPE`, `UI_ANNOUNCEMENT_ACTIVE`).
+required: [text, type, active]
+properties:
+  text:
+    type: string
+    maxLength: 65535
+    description: |
+      Plain text, stored as given. The legacy UI escapes it when it renders it. Empty when not set.
+  type:
+    description: |
+      Style of the banner. `null` means none; an active announcement without a type is shown in the
+      client's neutral style, as legacy allows.
+    oneOf:
+      - type: string
+        enum: [info, warning, danger]
+      - type: 'null'
+  active:
+    type: boolean
+    description: The banner is shown only while `active` is `true` and `text` is not empty.

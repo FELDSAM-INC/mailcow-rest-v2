@@ -1,0 +1,79 @@
+get:
+  operationId: listMassMailJobs
+  tags: [Mass mail]
+  summary: List mass mail jobs
+  description: |
+    Lists mass mail jobs, newest first by default, with their counts per outcome. `q` searches the
+    subject. Jobs are kept for the audit retention period. Administrators only, by session or by an
+    administrator's key, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/MassMailJobSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: status
+      in: query
+      required: false
+      schema:
+        $ref: '../../components/schemas/MassMailJobStatus.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MassMailJobListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createMassMailJob
+  tags: [Mass mail]
+  summary: Send mass mail
+  description: |
+    Creates a job that delivers one message per recipient of the selection, in the background, at
+    most 10 messages per second by default. Preview the selection first
+    (`POST /mass-mail-jobs/recipient-preview`) and confirm its recipient count in
+    `expectedRecipients`: a different count at this moment refuses the job, so that a changed
+    selection never sends unexpectedly. The recipients are fixed when the job is created; a mailbox
+    deleted or deactivated afterwards is recorded as failed.
+
+    Messages are delivered directly into each mailbox through Dovecot's local delivery (LMTP), as
+    legacy does: they do not pass Postfix or Rspamd, so they are never spam-filtered, quarantined,
+    DKIM-signed or relayed. A temporary refusal by Dovecot (for example during a Dovecot restart) is
+    retried up to 3 times within 5 minutes. No recipient receives the message twice; if this API is
+    interrupted, the job continues afterwards with the pending recipients, and a recipient whose
+    delivery was in progress is recorded as failed (`interrupted`). Only one job runs at a time.
+
+    Only a signed-in administrator may send. Requests authenticated by an API key are refused with
+    `session-required`. Audited with the sender, subject, a summary of the selection and the number
+    of recipients; the completion is audited again with the counts.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/MassMailJobCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/MassMailJobCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/MassMailConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

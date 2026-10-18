@@ -1,0 +1,17 @@
+type: object
+description: |
+  JSON Merge Patch of a domain's copy recipients. `recipients` replaces the whole list. Each entry is
+  a valid e-mail address without control characters; one invalid entry refuses the request and is
+  named (`recipients.2`). Entries that differ only in letter case are stored once, keeping the first
+  spelling. An empty list is stored as inactive, whatever `active` says, as in legacy.
+minProperties: 1
+additionalProperties: false
+properties:
+  recipients:
+    type: array
+    maxItems: 100
+    items:
+      type: string
+      maxLength: 255
+  active:
+    type: boolean

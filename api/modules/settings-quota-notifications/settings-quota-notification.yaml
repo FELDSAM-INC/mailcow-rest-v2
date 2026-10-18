@@ -1,0 +1,61 @@
+get:
+  operationId: getQuotaNotificationSettings
+  tags: [Quota notification settings]
+  summary: Get the quota notification settings
+  description: |
+    Returns the sender, subject and HTML template in effect for the quota notifications that
+    Dovecot sends at 80% and 95% of a mailbox's quota, and which of them are Dovecot's defaults.
+    Administrators only, by session or by an administrator's key, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/QuotaNotificationSettingsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'
+patch:
+  operationId: updateQuotaNotificationSettings
+  tags: [Quota notification settings]
+  summary: Change the quota notification settings
+  description: |
+    Changes the sent values; an empty value restores Dovecot's default. The sender is empty or a
+    valid e-mail address without control characters (legacy stores an invalid one empty); the
+    subject has at most 255 characters without line breaks; the template at most 1 MiB and is not
+    checked. The change applies to the next notification, without a reload. Audited; the template
+    only as changed, with its old and new sizes.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/QuotaNotificationSettingsPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/QuotaNotificationSettingsResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'

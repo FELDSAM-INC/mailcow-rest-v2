@@ -1,0 +1,7 @@
+type: object
+description: JSON Merge Patch of the IP check opt-in.
+required: [enabled]
+additionalProperties: false
+properties:
+  enabled:
+    type: boolean

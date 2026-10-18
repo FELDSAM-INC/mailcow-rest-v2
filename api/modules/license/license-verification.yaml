@@ -1,0 +1,26 @@
+post:
+  operationId: verifyLicense
+  tags: [License]
+  summary: Verify the GUID now
+  description: |
+    Sends only the GUID to mailcow's license verification service (`https://verify.mailcow.email`,
+    waiting at most 10 seconds for a connection), stores the result where the legacy dashboard reads
+    it, and returns the new status. An unreachable service or an unreadable answer gives the result
+    `unreachable`, which is stored and returned, not an error. The license service is contacted
+    only by this request. Refused with `feature-disabled` when the operator disabled license
+    verification. Audited with the result.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/LicenseStatusResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/LicenseForbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'

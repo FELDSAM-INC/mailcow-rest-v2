@@ -1,0 +1,26 @@
+get:
+  operationId: listGlobalSieveFilters
+  tags: [Global filters]
+  summary: List the global Sieve filters
+  description: |
+    Returns the global pre-filter and post-filter, pre-filter first, each with its script and
+    version tag, read from the shared files Dovecot compiles at start. A missing file reads as an
+    empty script. Administrators only, by session or by an administrator's key, read-only keys
+    included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/GlobalSieveFilterListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

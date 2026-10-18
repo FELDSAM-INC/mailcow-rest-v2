@@ -1,0 +1,84 @@
+parameters:
+  - $ref: '../../components/parameters/RspamdRegexMapId.yaml'
+get:
+  operationId: getRspamdRegexMap
+  tags: [Rspamd settings]
+  summary: Get a global regex map
+  description: Returns one map with its content and version tag. Administrators only.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/RspamdRegexMapResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+put:
+  operationId: replaceRspamdRegexMap
+  tags: [Rspamd settings]
+  summary: Replace a global regex map
+  description: |
+    Replaces the map's content after checking every line on the server with the rule the legacy
+    page applies in the browser. The content is written, trimmed and ending with a line break, to
+    the map file Rspamd reads, in one write; the file's change time is then set again (after about
+    1.5 seconds, as legacy does), so that Rspamd reloads the complete map without a restart, even if
+    it read the file during the write. A map whose file does not exist on this server is refused
+    with `regex-map-unavailable` (legacy reports success and writes nothing). The legacy UI edits
+    the same file and never sends a version tag, so it can still overwrite a change made here. With
+    `validateOnly=true` nothing is written. Audited with the old and new size.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+    - $ref: '../../components/parameters/SettingsValidateOnly.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/RspamdRegexMapReplaceRequest.yaml'
+  responses:
+    '200':
+      description: |
+        The replaced map (`RspamdRegexMap`, with the `ETag` header), or with `validateOnly=true` the
+        validation result.
+      headers:
+        ETag:
+          description: Version tag of the new content. Absent with `validateOnly=true`.
+          required: false
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                oneOf:
+                  - $ref: '../../components/schemas/RspamdRegexMap.yaml'
+                  - $ref: '../../components/schemas/SettingsValidationResult.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/RspamdRegexMapUnavailable.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -1,0 +1,7 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `name` with `order=asc`. Without `sort`, the maps keep the operator's configured order.
+schema:
+  type: string
+  enum: [name, id]

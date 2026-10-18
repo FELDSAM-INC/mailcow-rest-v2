@@ -1,0 +1,8 @@
+type: object
+description: |
+  The settings map as mailcow generates it for Rspamd (`settings.php`), read-only. Each active rule
+  appears in an `additional_settings_<id>` block, after mailcow's own generated settings.
+required: [content]
+properties:
+  content:
+    type: string

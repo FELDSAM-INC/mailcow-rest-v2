@@ -1,0 +1,20 @@
+description: |
+  The caller may not perform this request. Possible types: those of the shared `403` response
+  (`forbidden`, `csrf-token-mismatch`, `session-required`, `pending-action-required`,
+  `insufficient-key-scope`, `api-key-source-not-allowed`), and
+  `/api/v2/problems/demo-mode`: the operator enabled demo mode, which refuses changes to logos, UI
+  texts, login page options, app links, brand colours and the IP check, as legacy does.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      demoMode:
+        value:
+          type: /api/v2/problems/demo-mode
+          title: Demo mode
+          status: 403
+          detail: Customisation changes are disabled in demo mode.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736

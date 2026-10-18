@@ -1,0 +1,102 @@
+parameters:
+  - $ref: '../../components/parameters/RspamdSettingsRuleId.yaml'
+get:
+  operationId: getRspamdSettingsRule
+  tags: [Rspamd settings]
+  summary: Get an Rspamd settings rule
+  description: Returns one rule. Administrators only, by session or by an administrator's key.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/RspamdSettingsRuleResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateRspamdSettingsRule
+  tags: [Rspamd settings]
+  summary: Change an Rspamd settings rule
+  description: |
+    Changes the sent attributes with the rules of the creation; an empty description or content is
+    refused (legacy keeps the old value). The content is stored trimmed. With `validateOnly=true`
+    nothing is changed and the answer is `{"data": {"valid": true}}`. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+    - $ref: '../../components/parameters/SettingsValidateOnly.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/RspamdSettingsRulePatch.yaml'
+  responses:
+    '200':
+      description: |
+        The changed rule (`RspamdSettingsRule`, with the `ETag` header), or with `validateOnly=true`
+        the validation result.
+      headers:
+        ETag:
+          description: Version tag of the changed rule. Absent with `validateOnly=true`.
+          required: false
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                oneOf:
+                  - $ref: '../../components/schemas/RspamdSettingsRule.yaml'
+                  - $ref: '../../components/schemas/SettingsValidationResult.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteRspamdSettingsRule
+  tags: [Rspamd settings]
+  summary: Delete an Rspamd settings rule
+  description: |
+    Deletes the rule. Rspamd stops applying it at its next refresh of the settings map. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

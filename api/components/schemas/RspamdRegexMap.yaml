@@ -1,0 +1,26 @@
+type: object
+description: |
+  A global regex map that the operator's configuration makes editable (legacy `$RSPAMD_MAPS['regex']`,
+  13 by default), read from the map file Rspamd reads. Rspamd reloads a changed map without a
+  restart.
+required: [id, name, available, content, etag]
+properties:
+  id:
+    type: string
+    description: The map's file name, its stable identifier.
+    examples: [global_smtp_from_blacklist.map]
+  name:
+    type: string
+    description: English name from the operator's configuration.
+    examples: [Envelope Sender Denylist]
+  available:
+    type: boolean
+    description: |
+      `false` when the map file does not exist on this server; `content` is then empty and replacing
+      the map is refused with `regex-map-unavailable`.
+  content:
+    type: string
+    description: The map's lines.
+  etag:
+    type: string
+    description: Version tag of the stored content.

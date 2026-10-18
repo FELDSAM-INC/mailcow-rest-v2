@@ -1,0 +1,3 @@
+# Paths of the presets module (feature 013): the Rspamd and Sieve examples mailcow ships.
+/presets/{presetKind}:
+  $ref: './presets.yaml'

@@ -1,0 +1,14 @@
+# Paths of the settings-branding module (feature 013): logos, UI texts, login page options, app
+# links, brand colours and the IP check opt-in.
+/settings/logos/{variant}:
+  $ref: './settings-logo.yaml'
+/settings/ui-texts:
+  $ref: './settings-ui-texts.yaml'
+/settings/login-page:
+  $ref: './settings-login-page.yaml'
+/settings/app-links:
+  $ref: './settings-app-links.yaml'
+/settings/brand-colors:
+  $ref: './settings-brand-colors.yaml'
+/settings/ip-check:
+  $ref: './settings-ip-check.yaml'

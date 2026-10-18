@@ -1,0 +1,9 @@
+description: The settings capabilities of this server.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/SettingsCapabilities.yaml'

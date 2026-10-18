@@ -1,0 +1,30 @@
+type: object
+description: |
+  A rule of mailcow's Rspamd settings map (table `settingsmap`). Active rules reach Rspamd through
+  mailcow's generated settings map at Rspamd's next refresh (within about a minute), without a
+  restart.
+required: [id, description, content, active, createdAt, modifiedAt, etag]
+properties:
+  id:
+    type: integer
+    minimum: 1
+  description:
+    type: string
+    maxLength: 255
+  content:
+    type: string
+    description: Rule content in Rspamd's UCL syntax, stored trimmed.
+  active:
+    type: boolean
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    description: Last modification, `null` when never modified.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string
+    description: Version tag of the stored rule, equal to the `ETag` header of a single read.

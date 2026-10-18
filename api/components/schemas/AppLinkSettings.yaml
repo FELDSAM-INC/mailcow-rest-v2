@@ -1,0 +1,20 @@
+type: object
+description: |
+  The custom app links in their stored order, and the built-in links of the operator's
+  configuration (`$MAILCOW_APPS`), which are read-only here. Clients read the effective links,
+  built-in first, from the public configuration (`GET /public-config`).
+required: [links, builtInLinks, etag]
+properties:
+  links:
+    type: array
+    maxItems: 50
+    items:
+      $ref: './AppLinkSettingsEntry.yaml'
+  builtInLinks:
+    type: array
+    description: Built-in links, as the legacy screen shows them. Never changed by this API.
+    items:
+      $ref: './AppLink.yaml'
+  etag:
+    type: string
+    description: Version tag of the stored custom links, equal to the `ETag` header.

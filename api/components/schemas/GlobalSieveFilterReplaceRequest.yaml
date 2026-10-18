@@ -1,0 +1,19 @@
+type: object
+description: |
+  New script, at most 1 MiB. Line endings are normalised to line feeds. It must be valid Sieve
+  syntax as legacy's parser checks it; otherwise it is refused with the rule code `sieveSyntax`
+  (shared with feature 005's mailbox filters) on `script`, with the parameters `message` (the
+  parser's message) and `line`. An empty script is
+  accepted and means no global filter.
+required: [script]
+additionalProperties: false
+properties:
+  script:
+    type: string
+  deferRestart:
+    type: boolean
+    default: false
+    description: |
+      `true` saves the script without restarting Dovecot; it then takes effect at Dovecot's next
+      restart. By default Dovecot is restarted so that it compiles the script, which briefly
+      interrupts IMAP, POP3 and delivery.

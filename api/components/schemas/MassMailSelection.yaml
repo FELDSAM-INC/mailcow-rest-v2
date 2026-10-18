@@ -1,0 +1,30 @@
+type: object
+description: |
+  Which mailboxes receive a mass mail. The selection starts from every receiving mailbox: every
+  mailbox that is not a resource and is active or allowed to receive mail (`active` 1 or 2). It may
+  be limited to `domains`, and may then either include only the mailboxes in `include` or exclude
+  the mailboxes in `exclude`, not both (rule code `mutuallyExclusive`). Every named domain must be a
+  domain of the server (not an alias domain) and every named mailbox a receiving mailbox within the
+  chosen domains; each failing entry is named (`selection.exclude.2`, rule codes `notFound` or
+  `notEligible`). An empty object selects every receiving mailbox.
+additionalProperties: false
+properties:
+  domains:
+    type: array
+    maxItems: 1000
+    items:
+      type: string
+      maxLength: 255
+    examples: [[example.org, example.net]]
+  include:
+    type: array
+    maxItems: 1000
+    items:
+      type: string
+      maxLength: 255
+  exclude:
+    type: array
+    maxItems: 1000
+    items:
+      type: string
+      maxLength: 255

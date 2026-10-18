@@ -1,0 +1,20 @@
+type: object
+description: |
+  A new settings rule. The content must not be empty after trimming, must be at most 1 MiB, and
+  outside comments (`#` to the end of the line) and quoted strings its braces and brackets must be
+  balanced and properly nested and every quoted string closed (rule code `unbalancedStructure`).
+  Unknown options are accepted: Rspamd decides. A rule created without `active` is inactive, as in
+  legacy.
+required: [description, content]
+additionalProperties: false
+properties:
+  description:
+    type: string
+    minLength: 1
+    maxLength: 255
+  content:
+    type: string
+    minLength: 1
+  active:
+    type: boolean
+    default: false

@@ -1,0 +1,65 @@
+get:
+  operationId: getUiTexts
+  tags: [Branding settings]
+  summary: Get the UI texts
+  description: |
+    Returns the page title, product name, apps heading, login help text, footer and
+    announcement, as the legacy "Customize" screen edits them, with their version tag and the
+    deployment defaults of the title and product name. Administrators only, by session or by an administrator's key, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/UiTextsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'
+patch:
+  operationId: updateUiTexts
+  tags: [Branding settings]
+  summary: Change the UI texts
+  description: |
+    Changes the sent UI texts; the others keep their values (legacy overwrites every field).
+    The page title, product name and apps heading are plain text of at most 255 characters without
+    line breaks, stored HTML-escaped as legacy stores them, so that both UIs show the same text. The
+    help text and footer are operator HTML, stored as given; clients sanitise them before rendering.
+    The announcement text is plain text, stored as given. When the footer key of older releases
+    (`UI_IMPRESS`) still holds the footer, the change moves it to `UI_FOOTER`. Help text, footer and
+    announcement text are at most 65,535 characters. Refused in demo mode. Audited with each changed attribute. The change is visible in the
+    public configuration on its next read, and in the legacy UI. Help text and footer are audited
+    only as changed, with their old and new sizes.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/UiTextsPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/UiTextsResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/BrandingForbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'

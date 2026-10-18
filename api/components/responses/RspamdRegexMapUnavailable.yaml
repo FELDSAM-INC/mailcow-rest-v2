@@ -1,0 +1,8 @@
+description: |
+  The map file does not exist on this server, so nothing was written (type
+  `/api/v2/problems/regex-map-unavailable`). The deployment does not provide that map; legacy
+  silently skips it.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

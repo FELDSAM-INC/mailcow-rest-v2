@@ -1,0 +1,23 @@
+type: object
+description: |
+  The addresses that receive a copy of the quota notifications of one domain's mailboxes, and
+  whether copies are sent (`QW_BCC`). A domain without stored settings has an empty, inactive list.
+  Deleting a domain keeps these settings, so they reappear when the domain is created again, as in
+  legacy.
+required: [domain, recipients, active, etag]
+properties:
+  domain:
+    type: string
+    examples: [example.org]
+  recipients:
+    type: array
+    maxItems: 100
+    items:
+      type: string
+      examples: [it@example.org]
+  active:
+    type: boolean
+    description: Always `false` while `recipients` is empty.
+  etag:
+    type: string
+    description: Version tag of the domain's stored settings, equal to the `ETag` header.

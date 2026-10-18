@@ -1,0 +1,48 @@
+type: object
+description: |
+  The uploaded logo of one theme (legacy `MAIN_LOGO` or `MAIN_LOGO_DARK`), or the fact that none is
+  set. The image itself is served by `GET /public-config/logos/{variant}`. A logo uploaded through
+  the legacy UI that this API would now refuse stays readable here.
+required: [variant, isSet, mediaType, sizeBytes, width, height, url, etag]
+properties:
+  variant:
+    type: string
+    enum: [light, dark]
+  isSet:
+    type: boolean
+    description: '`false` when no logo is uploaded; clients then show the deployment''s default logo.'
+  mediaType:
+    description: Media type the logo is stored with. `null` when not set.
+    oneOf:
+      - type: string
+        enum: [image/png, image/jpeg, image/gif, image/svg+xml]
+      - type: 'null'
+  sizeBytes:
+    description: File size in bytes. `null` when not set.
+    oneOf:
+      - type: integer
+        minimum: 0
+      - type: 'null'
+  width:
+    description: |
+      Width in pixels. For an SVG, its declared width when it has one with an absolute unit or no
+      unit, otherwise `null`.
+    oneOf:
+      - type: integer
+        minimum: 0
+      - type: 'null'
+  height:
+    description: Height in pixels, with the same rules as `width`.
+    oneOf:
+      - type: integer
+        minimum: 0
+      - type: 'null'
+  url:
+    description: Address of the image (`GET /public-config/logos/{variant}` with its version), `null` when not set.
+    oneOf:
+      - type: string
+        format: uri-reference
+      - type: 'null'
+  etag:
+    type: string
+    description: Version tag of the stored logo, equal to the `ETag` header.

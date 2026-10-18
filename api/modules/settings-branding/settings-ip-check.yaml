@@ -1,0 +1,57 @@
+get:
+  operationId: getIpCheckSetting
+  tags: [Branding settings]
+  summary: Get the IP check opt-in
+  description: |
+    Returns whether administrators may look up the server's public addresses through third-party
+    services (feature 011). Administrators only, by session or by an administrator's key, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/IpCheckSettingResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'
+patch:
+  operationId: updateIpCheckSetting
+  tags: [Branding settings]
+  summary: Change the IP check opt-in
+  description: |
+    Turns the opt-in on or off, stored where legacy keeps it, so that the legacy dashboard follows
+    it too. Refused in demo mode. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/IpCheckSettingPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/IpCheckSettingResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/BrandingForbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'

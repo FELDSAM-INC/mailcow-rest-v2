@@ -1,0 +1,11 @@
+name: validateOnly
+in: query
+required: false
+description: |
+  `true` checks the request by every validation rule of the operation without storing, restarting
+  or auditing anything. A valid request then answers `200` with `{"data": {"valid": true}}`; an
+  invalid one answers `422` exactly as a real request would. Version tags (`If-Match`) are checked
+  too.
+schema:
+  type: boolean
+  default: false

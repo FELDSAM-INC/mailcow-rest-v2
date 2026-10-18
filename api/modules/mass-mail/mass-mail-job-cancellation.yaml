@@ -1,0 +1,30 @@
+parameters:
+  - $ref: '../../components/parameters/MassMailJobId.yaml'
+post:
+  operationId: cancelMassMailJob
+  tags: [Mass mail]
+  summary: Cancel a mass mail job
+  description: |
+    Cancels a running job. Once the answer is sent, no further message is started; a delivery that
+    was already under way finishes within 5 seconds. The pending recipients are recorded as skipped,
+    and the job is reported as cancelled. Any administrator may cancel any job. Cancelling a
+    cancelled job succeeds and changes nothing; cancelling a completed job is refused with `409`.
+
+    Only a signed-in administrator may cancel. Requests authenticated by an API key are refused with
+    `session-required`. Audited with the counts at the moment of the cancellation.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MassMailJobResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/Conflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

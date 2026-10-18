@@ -1,0 +1,5 @@
+type: string
+description: |
+  `running`: messages are being delivered. `completed`: every recipient has its final outcome.
+  `cancelled`: an administrator cancelled the job; recipients that were still pending were skipped.
+enum: [running, completed, cancelled]

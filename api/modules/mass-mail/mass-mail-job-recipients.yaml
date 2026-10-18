@@ -1,0 +1,37 @@
+parameters:
+  - $ref: '../../components/parameters/MassMailJobId.yaml'
+get:
+  operationId: listMassMailJobRecipients
+  tags: [Mass mail]
+  summary: List a job's recipients
+  description: |
+    Lists the job's recipients, sorted by address by default, each with its outcome and, for a
+    failure, Dovecot's reason. `q` searches the address. Administrators only, by session or by an
+    administrator's key.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/MassMailRecipientSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: outcome
+      in: query
+      required: false
+      schema:
+        $ref: '../../components/schemas/MassMailRecipientOutcome.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MassMailRecipientListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

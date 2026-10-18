@@ -1,0 +1,12 @@
+description: |
+  The job was not created and nothing was sent. Possible types:
+  - `/api/v2/problems/mass-mail-already-running`: another job is running (extension `runningJobId`).
+    Only one job runs at a time.
+  - `/api/v2/problems/mass-mail-recipient-count-changed`: the selection now yields another number
+    of recipients than `expectedRecipients` (extension `actualRecipients`). Preview again.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/MassMailRunningProblem.yaml'
+        - $ref: '../schemas/MassMailRecipientCountProblem.yaml'

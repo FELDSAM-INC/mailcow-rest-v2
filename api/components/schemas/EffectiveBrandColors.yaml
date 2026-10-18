@@ -1,0 +1,16 @@
+type: object
+description: |
+  Brand colours in effect for the light and dark themes. `null` for a theme means no brand colour:
+  the client uses its own palette there. The light colour applies to the light theme. The dark
+  theme uses the dark colour, or the light colour when no dark colour is set and the light colour
+  reaches 4.5:1 against the dark reference surface `#1d2939`, otherwise none.
+required: [light, dark]
+properties:
+  light:
+    oneOf:
+      - $ref: './EffectiveBrandColor.yaml'
+      - type: 'null'
+  dark:
+    oneOf:
+      - $ref: './EffectiveBrandColor.yaml'
+      - type: 'null'

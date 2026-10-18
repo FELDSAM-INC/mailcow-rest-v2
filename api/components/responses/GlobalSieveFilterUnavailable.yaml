@@ -1,0 +1,7 @@
+description: |
+  The shared filter file does not exist on this server, so nothing was written and Dovecot was not
+  restarted (type `/api/v2/problems/global-sieve-filter-unavailable`).
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

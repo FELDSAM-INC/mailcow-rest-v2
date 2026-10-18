@@ -1,0 +1,40 @@
+post:
+  operationId: previewMassMailRecipients
+  tags: [Mass mail]
+  summary: Preview mass mail recipients
+  description: |
+    Returns the recipients that the selection yields now, sorted by address and paged, with the
+    recipient count of the whole selection in `meta.recipientCount`. `q` filters the listed
+    addresses without changing `recipientCount`. The selection travels in the body because its
+    lists can be long; the request changes nothing and is not audited. An invalid selection is
+    refused with field errors exactly as when sending.
+
+    Administrators only, by session or by an administrator's key; read-only keys may use it,
+    because it changes nothing.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/MassMailPreviewRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MassMailPreviewResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

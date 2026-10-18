@@ -1,0 +1,12 @@
+# Paths of the mass-mail module (feature 013): recipient previews, background mass mail jobs, their
+# recipients and their cancellation.
+/mass-mail-jobs:
+  $ref: './mass-mail-jobs.yaml'
+/mass-mail-jobs/recipient-preview:
+  $ref: './mass-mail-recipient-preview.yaml'
+/mass-mail-jobs/{jobId}:
+  $ref: './mass-mail-job.yaml'
+/mass-mail-jobs/{jobId}/recipients:
+  $ref: './mass-mail-job-recipients.yaml'
+/mass-mail-jobs/{jobId}/cancellation:
+  $ref: './mass-mail-job-cancellation.yaml'

@@ -1,0 +1,119 @@
+type: object
+description: |
+  Server settings and limits that shape the system settings forms, read from the current
+  configuration on every request. Contains no secret and no connection detail.
+required:
+  - hostname
+  - demoMode
+  - licenseVerificationEnabled
+  - rspamdWebInterfaceUrl
+  - logos
+  - brandColors
+  - limits
+  - massMail
+properties:
+  hostname:
+    type: string
+    description: The server's configured host name (`MAILCOW_HOSTNAME`, lower-cased).
+    examples: [mail.example.org]
+  demoMode:
+    type: boolean
+    description: |
+      `true` when the operator enabled demo mode (`DEMO_MODE=y`). Changes to logos, UI texts, login
+      page options, app links, brand colours and the IP check are then refused with
+      `/api/v2/problems/demo-mode`. Legacy has no other server mode that refuses writes of these
+      settings.
+  licenseVerificationEnabled:
+    type: boolean
+    description: |
+      `false` when the operator disabled license verification (server setting
+      `RESTV2_LICENSE_VERIFICATION`, enabled by default as upstream). The license operations then
+      answer `/api/v2/problems/feature-disabled`.
+  rspamdWebInterfaceUrl:
+    type: string
+    format: uri-reference
+    description: Address of the Rspamd web interface, which legacy links on the same host.
+    examples: [/rspamd/]
+  logos:
+    type: object
+    required: [maxBytes, maxWidth, maxHeight, acceptedMediaTypes]
+    properties:
+      maxBytes:
+        type: integer
+        minimum: 1
+        description: Maximum logo file size in bytes (legacy `$LOGO_LIMITS['max_size']`, 15 MiB by default).
+        examples: [15728640]
+      maxWidth:
+        type: integer
+        minimum: 1
+        description: Maximum width of a raster logo in pixels (legacy `$LOGO_LIMITS['max_width']`). SVGs have no limit.
+        examples: [1920]
+      maxHeight:
+        type: integer
+        minimum: 1
+        description: Maximum height of a raster logo in pixels (legacy `$LOGO_LIMITS['max_height']`).
+        examples: [1920]
+      acceptedMediaTypes:
+        type: array
+        description: Image types accepted, detected from the file content.
+        items:
+          type: string
+          enum: [image/png, image/jpeg, image/gif, image/svg+xml]
+  brandColors:
+    type: object
+    required: [minimumContrastRatio, lightReferenceSurface, darkReferenceSurface]
+    properties:
+      minimumContrastRatio:
+        type: number
+        description: Minimum WCAG 2.2 contrast ratio a brand colour needs against its reference surface.
+        examples: [4.5]
+      lightReferenceSurface:
+        type: string
+        pattern: '^#[0-9a-f]{6}$'
+        examples: ['#ffffff']
+      darkReferenceSurface:
+        type: string
+        pattern: '^#[0-9a-f]{6}$'
+        examples: ['#1d2939']
+  limits:
+    $ref: './SettingsLimits.yaml'
+  massMail:
+    type: object
+    required:
+      - suggestedSender
+      - ratePerSecond
+      - maxRunningJobs
+      - maxRetries
+      - retryWindowSeconds
+      - maxSelectionEntries
+      - maxBodyBytes
+    properties:
+      suggestedSender:
+        type: string
+        description: The sender legacy suggests, `noreply@<host name>`.
+        examples: [noreply@mail.example.org]
+      ratePerSecond:
+        type: integer
+        minimum: 1
+        description: Maximum number of messages delivered per second (server setting, 10 by default).
+        examples: [10]
+      maxRunningJobs:
+        type: integer
+        const: 1
+        description: Only one job runs at a time on the server.
+      maxRetries:
+        type: integer
+        description: Retries of a delivery that Dovecot refused temporarily.
+        examples: [3]
+      retryWindowSeconds:
+        type: integer
+        description: Period within which those retries happen.
+        examples: [300]
+      maxSelectionEntries:
+        type: integer
+        description: Maximum number of entries of each list of a selection (domains, included or excluded mailboxes).
+        examples: [1000]
+      maxBodyBytes:
+        type: integer
+        description: Maximum size of each body in bytes.
+        examples: [1048576]

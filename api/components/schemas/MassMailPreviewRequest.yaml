@@ -1,0 +1,7 @@
+type: object
+description: The selection to preview. Paging and the address search are query parameters.
+required: [selection]
+additionalProperties: false
+properties:
+  selection:
+    $ref: './MassMailSelection.yaml'

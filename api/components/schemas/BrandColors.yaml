@@ -1,0 +1,27 @@
+type: object
+description: |
+  The brand colours stored by this API (not visible in the legacy UI), and the colours in effect.
+  A light colour reaches at least 4.5:1 against `#ffffff`, a dark colour at least 4.5:1 against the
+  dark reference surface `#1d2939` (WCAG 2.2 contrast formula). Both references are agreed with
+  mailcowui-ng, which shows brand colours only on surfaces at least as contrasting; changing them is
+  a contract change.
+required: [light, dark, effective, etag]
+properties:
+  light:
+    description: Stored light-theme colour, lower case. `null` when not set.
+    oneOf:
+      - type: string
+        pattern: '^#[0-9a-f]{6}$'
+      - type: 'null'
+    examples: ['#1d4ed8']
+  dark:
+    description: Stored dark-theme colour, lower case. `null` when not set.
+    oneOf:
+      - type: string
+        pattern: '^#[0-9a-f]{6}$'
+      - type: 'null'
+  effective:
+    $ref: './EffectiveBrandColors.yaml'
+  etag:
+    type: string
+    description: Version tag of the stored colours, equal to the `ETag` header.

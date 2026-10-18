@@ -1,0 +1,28 @@
+type: object
+description: |
+  An example that mailcow ships (`data/web/inc/presets/<kind>/*.yml`), read-only. Clients translate
+  the headline through `translationKey` in mailcow's language files and fall back to `headline`.
+required: [id, kind, translationKey, headline, content]
+properties:
+  id:
+    type: string
+    description: The preset's file name without extension.
+    examples: [preset_4, sieve_1]
+  kind:
+    type: string
+    enum: [rspamd, sieve]
+  translationKey:
+    description: |
+      Key of the headline in mailcow's language files (`admin.rsettings_preset_4`,
+      `mailbox.sieve_preset_1`), `null` when the preset has a literal headline.
+    oneOf:
+      - type: string
+      - type: 'null'
+    examples: [admin.rsettings_preset_4]
+  headline:
+    type: string
+    description: English headline.
+    examples: [Disable Rspamd for a domain]
+  content:
+    type: string
+    description: Example content (an Rspamd settings rule or a Sieve script).

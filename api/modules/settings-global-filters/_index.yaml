@@ -1,0 +1,5 @@
+# Paths of the settings-global-filters module (feature 013): the global Sieve pre- and post-filter.
+/settings/global-sieve-filters:
+  $ref: './settings-global-sieve-filters.yaml'
+/settings/global-sieve-filters/{filterId}:
+  $ref: './settings-global-sieve-filter.yaml'

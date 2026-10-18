@@ -1,0 +1,37 @@
+type: object
+description: |
+  JSON Merge Patch of the UI texts. Members that are not sent keep their values. An empty string
+  clears a text. Single-line texts must not contain line breaks or other control characters.
+minProperties: 1
+additionalProperties: false
+properties:
+  pageTitle:
+    type: string
+    maxLength: 255
+  productName:
+    type: string
+    maxLength: 255
+  appsHeading:
+    type: string
+    maxLength: 255
+  loginHelpHtml:
+    type: string
+    maxLength: 65535
+  footerHtml:
+    type: string
+    maxLength: 65535
+  announcement:
+    type: object
+    minProperties: 1
+    additionalProperties: false
+    properties:
+      text:
+        type: string
+        maxLength: 65535
+      type:
+        oneOf:
+          - type: string
+            enum: [info, warning, danger]
+          - type: 'null'
+      active:
+        type: boolean

@@ -1,0 +1,69 @@
+parameters:
+  - $ref: '../../components/parameters/DomainName.yaml'
+get:
+  operationId: getQuotaNotificationRecipients
+  tags: [Quota notification settings]
+  summary: Get a domain's quota notification copy recipients
+  description: |
+    Returns the addresses that receive a copy of the quota notifications of this domain's mailboxes
+    and whether copies are sent. A domain without stored settings returns an empty, inactive list.
+    Administrators for every domain, domain administrators for the domains they manage (no
+    permission flag needed, as in legacy), by session or by key. An alias domain's name, an unknown
+    domain and a domain outside the caller's scope answer `404`, because notifications follow the
+    mailbox's own domain.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/QuotaNotificationRecipientsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'
+patch:
+  operationId: updateQuotaNotificationRecipients
+  tags: [Quota notification settings]
+  summary: Change a domain's quota notification copy recipients
+  description: |
+    Replaces the recipient list (at most 100) and/or switches the copies on or off, with the scope
+    rules of the read. Any invalid address refuses the whole request and is named (legacy saves the
+    valid entries). Entries that differ only in letter case are stored once. An empty list is stored
+    as inactive, as in legacy. Dovecot sends the copies of the next notification accordingly. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/QuotaNotificationRecipientsPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/QuotaNotificationRecipientsResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'

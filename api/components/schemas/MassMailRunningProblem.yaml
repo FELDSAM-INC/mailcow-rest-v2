@@ -1,0 +1,11 @@
+description: |
+  Problem of type `/api/v2/problems/mass-mail-already-running` (status `409`): another job is
+  running. Nothing was sent.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [runningJobId]
+    properties:
+      runningJobId:
+        type: string
+        pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'

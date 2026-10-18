@@ -1,0 +1,46 @@
+type: object
+description: |
+  The server's GUID, which mailcow computes from its host name and mail encryption key, and the last
+  verification result against mailcow's license service, as the legacy dashboard shows it.
+required: [guid, guidValid, lastVerification]
+properties:
+  guid:
+    description: The GUID (64 hexadecimal characters), `null` when mailcow marked it invalid or has none.
+    oneOf:
+      - type: string
+        pattern: '^[0-9a-fA-F]{64}$'
+      - type: 'null'
+  guidValid:
+    type: boolean
+    description: |
+      `false` when mailcow marked the GUID invalid (`INVALID`) or has none. It can still be submitted
+      for verification, as in legacy.
+  lastVerification:
+    type: object
+    required: [result, verifiedAt, customerId, serviceId, supportLevel]
+    properties:
+      result:
+        type: string
+        enum: [valid, invalid, unreachable, neverVerified]
+      verifiedAt:
+        description: Time of the verification when it was made through this API, `null` otherwise.
+        oneOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      customerId:
+        description: Customer ID reported by the license service for a valid GUID, `null` otherwise.
+        oneOf:
+          - type: string
+          - type: 'null'
+      serviceId:
+        description: Service ID reported for a valid GUID, `null` otherwise.
+        oneOf:
+          - type: string
+          - type: 'null'
+      supportLevel:
+        description: Support level for a valid GUID, shown by the legacy dashboard as that many cows. `null` otherwise.
+        oneOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'

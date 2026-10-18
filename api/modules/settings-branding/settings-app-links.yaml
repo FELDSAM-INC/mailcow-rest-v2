@@ -1,0 +1,63 @@
+get:
+  operationId: getAppLinkSettings
+  tags: [Branding settings]
+  summary: Get the app links
+  description: |
+    Returns the custom app links in their order and, read-only, the built-in links of the
+    operator's configuration. Clients that display app links read them from the public configuration.
+    Old-style entries stored by older releases (name and address only) are returned converted, as
+    legacy converts them. Administrators only, by session or by an administrator's key, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/AppLinkSettingsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'
+patch:
+  operationId: updateAppLinkSettings
+  tags: [Branding settings]
+  summary: Replace the custom app links
+  description: |
+    Replaces the whole list of custom app links (at most 50), keeping the given order. Every
+    entry is validated: the name has 1 to 255 characters without line breaks, and each address is an
+    absolute `http` or `https` URL or a path starting with a single `/` (`invalidFormat`, `format:
+    appLinkUrl`). A request with any invalid entry changes nothing and names each entry (legacy saves
+    nothing but reports success). The built-in links are never changed. Refused in demo mode. Audited with each changed attribute. The change is visible in the
+    public configuration on its next read, and in the legacy UI.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/AppLinkSettingsPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/AppLinkSettingsResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/BrandingForbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'

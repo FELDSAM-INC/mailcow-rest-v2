@@ -1,0 +1,15 @@
+description: The brand colours.
+headers:
+  ETag:
+    description: Version tag (strong ETag) of the resource's stored settings, equal to `data.etag`. Send it in `If-Match` when changing the resource.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/BrandColors.yaml'

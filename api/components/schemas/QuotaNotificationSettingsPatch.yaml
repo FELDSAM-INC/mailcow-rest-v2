@@ -1,0 +1,19 @@
+type: object
+description: |
+  JSON Merge Patch of the quota notification settings. An empty string restores Dovecot's default
+  for that value. The template is not checked: a template Dovecot cannot parse makes it use its
+  default template.
+minProperties: 1
+additionalProperties: false
+properties:
+  sender:
+    type: string
+    maxLength: 255
+    description: Empty, or a valid e-mail address without control characters.
+  subject:
+    type: string
+    maxLength: 255
+    description: At most 255 characters, without line breaks.
+  htmlTemplate:
+    type: string
+    description: At most 1 MiB (1,048,576 bytes).

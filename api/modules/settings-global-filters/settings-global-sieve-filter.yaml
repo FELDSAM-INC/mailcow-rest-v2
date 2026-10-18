@@ -1,0 +1,82 @@
+parameters:
+  - $ref: '../../components/parameters/GlobalSieveFilterId.yaml'
+get:
+  operationId: getGlobalSieveFilter
+  tags: [Global filters]
+  summary: Get a global Sieve filter
+  description: Returns the script and its version tag. Administrators only.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/GlobalSieveFilterResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+put:
+  operationId: replaceGlobalSieveFilter
+  tags: [Global filters]
+  summary: Replace a global Sieve filter
+  description: |
+    Checks the script with legacy's Sieve parser, writes it to the shared file that Dovecot and the
+    legacy UI read, and restarts Dovecot through mailcow's container service so that it compiles
+    the script, unless `deferRestart` is `true`. **A restart briefly interrupts IMAP, POP3 and
+    delivery.** `data.dovecotRestart` reports the restart as `done`, `failed` or `deferred`; a failed
+    restart does not undo the write, and the script then takes effect at Dovecot's next start.
+
+    An invalid script, and a file that does not exist on this server
+    (`global-sieve-filter-unavailable`; legacy restarts anyway and reports success), never cause a
+    restart. With `validateOnly=true` the script is only checked: nothing is written, restarted or
+    audited. Audited with the old and new size and the restart outcome.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+    - $ref: '../../components/parameters/SettingsValidateOnly.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/GlobalSieveFilterReplaceRequest.yaml'
+  responses:
+    '200':
+      description: |
+        The saved filter with the restart outcome (`GlobalSieveFilterUpdateResult`, with the `ETag`
+        header), or with `validateOnly=true` the validation result.
+      headers:
+        ETag:
+          description: Version tag of the saved script. Absent with `validateOnly=true`.
+          required: false
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                oneOf:
+                  - $ref: '../../components/schemas/GlobalSieveFilterUpdateResult.yaml'
+                  - $ref: '../../components/schemas/SettingsValidationResult.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/GlobalSieveFilterUnavailable.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

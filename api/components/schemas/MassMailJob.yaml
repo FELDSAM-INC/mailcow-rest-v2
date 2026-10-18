@@ -1,0 +1,67 @@
+type: object
+description: |
+  A mass mail job. Each recipient receives one message addressed only to itself, delivered directly
+  into the mailbox through Dovecot's local delivery (LMTP), as legacy does: the message does not
+  pass Postfix or Rspamd, so it is never filtered, quarantined, signed or relayed. Messages carry
+  `X-Mailer: MooMassMail`. Jobs are kept for the audit retention period (365 days by default) and
+  change only through their delivery progress and cancellation.
+required:
+  - id
+  - status
+  - sender
+  - subject
+  - textBody
+  - htmlBody
+  - selection
+  - recipientCount
+  - counts
+  - createdBy
+  - createdAt
+  - startedAt
+  - finishedAt
+  - cancelledBy
+properties:
+  id:
+    type: string
+    pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
+  status:
+    $ref: './MassMailJobStatus.yaml'
+  sender:
+    type: string
+  subject:
+    type: string
+  textBody:
+    type: string
+  htmlBody:
+    oneOf:
+      - type: string
+      - type: 'null'
+  selection:
+    $ref: './MassMailSelection.yaml'
+  recipientCount:
+    type: integer
+    minimum: 1
+  counts:
+    $ref: './MassMailRecipientCounts.yaml'
+  createdBy:
+    $ref: './AccountRef.yaml'
+  createdAt:
+    type: string
+    format: date-time
+  startedAt:
+    description: When the first delivery began, `null` before.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  finishedAt:
+    description: When the job completed or its cancellation was confirmed, `null` while running.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  cancelledBy:
+    description: The administrator who cancelled the job, `null` otherwise.
+    oneOf:
+      - $ref: './AccountRef.yaml'
+      - type: 'null'

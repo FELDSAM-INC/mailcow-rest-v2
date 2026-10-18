@@ -1,0 +1,19 @@
+description: |
+  The caller may not perform this request. Possible types: those of the shared `403` response, and
+  `/api/v2/problems/feature-disabled`: the operator disabled license verification on this server
+  (server setting `RESTV2_LICENSE_VERIFICATION=false`, for example on the FeldHost deployment).
+  `GET /settings/capabilities` tells clients beforehand.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      featureDisabled:
+        value:
+          type: /api/v2/problems/feature-disabled
+          title: Feature disabled
+          status: 403
+          detail: License verification is disabled on this server.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736

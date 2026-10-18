@@ -1,0 +1,6 @@
+# Paths of the settings-password module (feature 013): the password reset notification. The
+# password policy change (`updatePasswordPolicy`) is an operation of `/password-policy` in the
+# password-policy module, next to feature 003's read, so that both share one resource and one
+# version tag.
+/settings/password-reset-notification:
+  $ref: './settings-password-reset-notification.yaml'

@@ -1,0 +1,33 @@
+parameters:
+  - $ref: '../../components/parameters/PresetKind.yaml'
+get:
+  operationId: listPresets
+  tags: [Presets]
+  summary: List presets
+  description: |
+    Lists the presets mailcow ships of one kind, read-only, each with its identifier, translation
+    key, English headline and content. `rspamd` presets are for administrators only (legacy also
+    lets domain administrators read them); `sieve` presets for administrators and domain
+    administrators. By session or by key. `q` searches the headline and the content.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/PresetSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/PresetListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

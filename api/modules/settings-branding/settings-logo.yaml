@@ -1,0 +1,122 @@
+parameters:
+  - $ref: '../../components/parameters/LogoVariant.yaml'
+get:
+  operationId: getLogoSetting
+  tags: [Branding settings]
+  summary: Get a logo setting
+  description: |
+    Returns the uploaded logo of the light or dark theme with its type, size, pixel dimensions and
+    version tag, or `isSet: false`. Administrators only, by session or by an administrator's key,
+    read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/LogoSettingResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'
+put:
+  operationId: replaceLogo
+  tags: [Branding settings]
+  summary: Upload a logo
+  description: |
+    Replaces the logo of this theme with the image sent as the request body (the raw file, not a
+    form). The type is detected from the content, never from `Content-Type`: PNG, JPEG, GIF
+    (animated too) and SVG are accepted, and the logo is stored with the detected type
+    (`unsupportedImageType` otherwise).
+
+    - The file must not exceed the operator's size limit (15 MiB by default; `tooLong`, params
+      `max` and `unit: bytes`).
+    - A raster image must decode and must not exceed the maximum width and height (1,920 × 1,920
+      pixels by default; `imageDimensionsExceeded`, params `maxWidth`, `maxHeight`, `width`,
+      `height`). SVGs have no dimension limit.
+    - An SVG must be a well-formed document whose root element is `svg`. It is refused, never
+      altered, when it contains script elements, event-handler attributes, URLs with a script or
+      HTML scheme, embedded HTML or other foreign content (`foreignObject`, XHTML elements),
+      references to external resources (only in-document references and embedded PNG, JPEG, GIF or
+      WebP data are allowed), external style sheet imports, or a document type or entity
+      declaration (`unsafeSvgContent`, params `construct` and `line`).
+
+    Validation errors are reported on the key `body`. The limits are readable beforehand from
+    `GET /settings/capabilities`. Refused in demo mode. Audited with the old and new type,
+    dimensions and size. Signed-out clients receive the new logo through the public configuration
+    on their next request.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      image/png:
+        schema:
+          type: string
+          contentMediaType: image/png
+      image/jpeg:
+        schema:
+          type: string
+          contentMediaType: image/jpeg
+      image/gif:
+        schema:
+          type: string
+          contentMediaType: image/gif
+      image/svg+xml:
+        schema:
+          type: string
+          contentMediaType: image/svg+xml
+      application/octet-stream:
+        schema:
+          type: string
+          contentMediaType: application/octet-stream
+  responses:
+    '200':
+      $ref: '../../components/responses/LogoSettingResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/BrandingForbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'
+delete:
+  operationId: deleteLogo
+  tags: [Branding settings]
+  summary: Delete a logo
+  description: |
+    Deletes the logo of this theme only. Clients then show the deployment's default logo. Deleting
+    a logo that is not set succeeds and changes nothing (not audited). Refused in demo mode.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/BrandingForbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'

@@ -1,0 +1,6 @@
+# Paths of the license module (feature 013): the GUID and its verification against mailcow's
+# license service.
+/license:
+  $ref: './license.yaml'
+/license/verification:
+  $ref: './license-verification.yaml'

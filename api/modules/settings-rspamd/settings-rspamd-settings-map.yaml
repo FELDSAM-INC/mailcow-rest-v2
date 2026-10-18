@@ -1,0 +1,23 @@
+get:
+  operationId: getEffectiveRspamdSettingsMap
+  tags: [Rspamd settings]
+  summary: Get the effective Rspamd settings map
+  description: |
+    Returns the settings map exactly as mailcow generates it for Rspamd, including mailcow's own
+    generated settings and an `additional_settings_<id>` block for each active rule, as the legacy
+    screen shows it. Read-only. When mailcow's settings map endpoint cannot be reached, the answer
+    is `503`. Administrators only, by session or by an administrator's key.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/RspamdEffectiveSettingsMapResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SettingsTemporaryFailure.yaml'

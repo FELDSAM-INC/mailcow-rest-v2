@@ -1,0 +1,12 @@
+type: object
+description: |
+  New content of a regex map, at most 1 MiB. Every line must be empty, a comment starting with `#`,
+  or a regular expression `/pattern/` followed by at most one of the flags `i`, `m` or `s`, whose
+  pattern contains no further `/` and compiles (PCRE). A failing line is refused with the rule code
+  `invalidRegexLine` on `content`, with the parameters `line` (1-based) and `reason`. The content is
+  stored trimmed and ending with a line break, as in legacy.
+required: [content]
+additionalProperties: false
+properties:
+  content:
+    type: string

@@ -1,0 +1,23 @@
+description: |
+  The recipients the selection yields now, sorted by address. `meta.recipientCount` is the number
+  of recipients of the whole selection, the number to confirm when sending; `meta.total` is the
+  number of entries matching `q` (equal to `recipientCount` without `q`).
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/MassMailPreviewRecipient.yaml'
+        meta:
+          allOf:
+            - $ref: '../schemas/ListMeta.yaml'
+            - type: object
+              required: [recipientCount]
+              properties:
+                recipientCount:
+                  type: integer
+                  minimum: 0

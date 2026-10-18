@@ -1,0 +1,15 @@
+type: object
+description: |
+  A global Sieve script that Dovecot compiles when it starts: the pre-filter runs before every
+  mailbox's own filters, the post-filter after them (by default it files spam into the Junk folder).
+  It is read from the shared file that the legacy UI edits. An empty script means no global filter.
+required: [id, script, etag]
+properties:
+  id:
+    type: string
+    enum: [prefilter, postfilter]
+  script:
+    type: string
+  etag:
+    type: string
+    description: Version tag of the stored script.

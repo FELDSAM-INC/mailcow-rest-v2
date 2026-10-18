@@ -1,0 +1,16 @@
+description: The job was created and delivery starts in the background within seconds.
+headers:
+  Location:
+    description: Absolute path of the created resource.
+    required: true
+    schema:
+      type: string
+      format: uri-reference
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/MassMailJob.yaml'

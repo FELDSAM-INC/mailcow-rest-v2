@@ -1,0 +1,16 @@
+type: object
+description: |
+  JSON Merge Patch of a settings rule, with the rules of `RspamdSettingsRuleCreateRequest`. An empty
+  description or empty content is refused (legacy keeps the old value).
+minProperties: 1
+additionalProperties: false
+properties:
+  description:
+    type: string
+    minLength: 1
+    maxLength: 255
+  content:
+    type: string
+    minLength: 1
+  active:
+    type: boolean

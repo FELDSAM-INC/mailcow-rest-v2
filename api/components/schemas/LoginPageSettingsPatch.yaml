@@ -1,0 +1,13 @@
+type: object
+description: JSON Merge Patch of the login page options. Members that are not sent keep their values.
+minProperties: 1
+additionalProperties: false
+properties:
+  hideAdminLogin:
+    type: boolean
+  hideDomainAdminLogin:
+    type: boolean
+  hideMailboxUserLogin:
+    type: boolean
+  forceSingleSignOn:
+    type: boolean

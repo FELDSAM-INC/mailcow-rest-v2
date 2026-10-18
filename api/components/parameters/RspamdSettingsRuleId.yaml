@@ -1,0 +1,7 @@
+name: ruleId
+in: path
+required: true
+description: Identifier of an Rspamd settings rule. An unknown identifier answers `404`.
+schema:
+  type: integer
+  minimum: 1

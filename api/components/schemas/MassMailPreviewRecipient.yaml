@@ -1,0 +1,10 @@
+type: object
+description: One mailbox that the selection yields.
+required: [address, domain]
+properties:
+  address:
+    type: string
+    examples: [alice@example.org]
+  domain:
+    type: string
+    examples: [example.org]

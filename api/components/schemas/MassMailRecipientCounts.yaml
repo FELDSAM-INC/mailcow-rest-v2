@@ -1,0 +1,16 @@
+type: object
+description: Number of recipients per outcome. They add up to the job's recipient count.
+required: [pending, delivered, failed, skipped]
+properties:
+  pending:
+    type: integer
+    minimum: 0
+  delivered:
+    type: integer
+    minimum: 0
+  failed:
+    type: integer
+    minimum: 0
+  skipped:
+    type: integer
+    minimum: 0

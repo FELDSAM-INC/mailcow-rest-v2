@@ -1,0 +1,10 @@
+name: mapId
+in: path
+required: true
+description: |
+  File name of an editable global regex map, as listed by `GET /settings/rspamd-regex-maps`. Any
+  other name answers `404`.
+schema:
+  type: string
+  pattern: '^[A-Za-z0-9_.-]{1,128}$'
+  examples: [global_smtp_from_blacklist.map]

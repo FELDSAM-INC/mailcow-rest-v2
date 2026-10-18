@@ -129,6 +129,30 @@
   offer, and saving a Sieve filter restarts Dovecot, so checking must be possible without side
   effects.)
 
+### Session 2026-10-18 (orchestrator input from UI feature 013)
+
+- Q: How does a client learn the server settings it needs before it submits: the logo limits,
+  whether license verification is enabled, whether demo mode is on, the server's host name, the
+  Rspamd web interface address, the colour references and the field limits? → A: Through a
+  read-only "settings capabilities" operation for administrators (FR-094), on the pattern of
+  feature 002's domain capabilities. (orchestrator decision: the UI found these values missing and
+  would otherwise learn them only from refused requests.)
+- Q: Can the mass mail recipient preview be searched? → A: Yes. The preview takes a substring
+  search on the address in addition to its paging (FR-072). (orchestrator decision: finding one
+  address in a large preview by paging is impractical.)
+- Q: Does this feature offer its own read of the effective app links for signed-in users? → A: No.
+  Feature 001's public configuration already exposes every app link read-only, with the signed-in
+  address and its `%u` placeholder that the client replaces (feature 001, FR-056). This feature only
+  edits the custom app links (FR-025 to FR-028). (orchestrator decision: displaying app links
+  belongs to UI feature 001, and a second read would duplicate it.)
+- Q: The shared Rspamd map directory is owned by Rspamd's user and only its files are writable by
+  the web containers, so a map cannot be replaced by renaming a new file into place. Must Rspamd
+  still never see a partly written map? → A: The map is rewritten in place in one write, as legacy
+  does, and its change marker is set again after the write, so that Rspamd reads the complete
+  content at its next check even if it read the file during the write (FR-058). (agent decision,
+  plan: constitution V forbids changing other containers and VI forbids a root process; legacy has
+  the same constraint and the same remedy.)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Brand the web apps (Priority: P1)
@@ -174,10 +198,10 @@ shows for the same stored data.
    brand colour for the dark theme, because `#1D4ED8` does not reach 4.5:1 against the dark
    reference surface.
 9. **Given** an app link "Helpdesk" with a user link `https://help.example.org/?u=%u` that is not
-   hidden on the login page, **When** a signed-out client reads the public configuration, **Then**
-   the login page links contain "Helpdesk" with its link; **When** the mailbox user
-   `alice@example.org` reads the app links, **Then** the user link reads
-   `https://help.example.org/?u=alice@example.org`.
+   hidden on the login page, **When** an administrator saves it and a signed-out client reads the
+   public configuration of feature 001, **Then** the app links contain "Helpdesk", shown on the
+   login page with its link, and with the signed-in address `https://help.example.org/?u=%u`, in
+   which the client replaces `%u` with the signed-in username.
 10. **Given** an app link whose link is `javascript:alert(1)`, **When** it is saved, **Then** it is
     refused with a validation error naming the entry.
 11. **Given** a domain administrator, **When** they change any branding setting, **Then** the
@@ -522,10 +546,9 @@ filtered by target type and identifier.
 
 #### Access and scope
 
-- **FR-001**: Every operation of this feature MUST be reserved to administrators, apart from three
+- **FR-001**: Every operation of this feature MUST be reserved to administrators, apart from two
   exceptions: domain administrators read and replace the quota notification copy recipients of the
-  domains in their scope (FR-046) and read the sieve presets (FR-061), and every signed-in user
-  reads the effective app links (FR-028).
+  domains in their scope (FR-046) and read the sieve presets (FR-061).
 - **FR-002**: Scope MUST be evaluated from the current mailcow data on every request, as in feature
   001 (FR-029 there). A domain assignment changed in either UI MUST apply to the next request.
 - **FR-003**: A request for the quota notification copy recipients of a domain outside the caller's
@@ -541,7 +564,7 @@ filtered by target type and identifier.
   | Operation | Administrator | Domain administrator | Mailbox user |
   |---|---|---|---|
   | Read and change logos, UI texts, login page options, app links, branding colours, IP check | Yes | Forbidden | Forbidden |
-  | Read the effective app links (FR-028) | Yes | Yes | Yes |
+  | Read the settings capabilities (FR-094) | Yes | Forbidden | Forbidden |
   | Change the password policy; read and change the reset and quota notifications | Yes | Forbidden | Forbidden |
   | Read and replace quota notification copy recipients | All domains | Own domains, no permission flag needed | Forbidden |
   | Rspamd settings rules, global regex maps, effective settings map | Yes | Forbidden | Forbidden |
@@ -649,10 +672,11 @@ filtered by target type and identifier.
   without a user link MUST use its link for signed-in users, as legacy does.
 - **FR-027**: The administrator's read MUST also return the built-in app links that the operator
   defines in the mailcow configuration, marked read-only, as the legacy screen shows them.
-- **FR-028**: Every signed-in user, by session or API key, MUST be able to read the effective app
-  links: the built-in links followed by the custom links, each with its name and its user link in
-  which `%u` is replaced by the caller's username. Links that point to the webmail MUST be left out
-  when the groupware is disabled on the server.
+- **FR-028**: The custom app links saved through this feature MUST appear in the app links of
+  feature 001's public configuration (FR-056 there), after the built-in links and in their saved
+  order, with the signed-in address and its `%u` placeholder, which clients replace with the
+  signed-in username. Links that point to the webmail are left out there when the groupware is
+  disabled on the server. This feature offers no separate read of the effective app links.
 
 #### Branding colours
 
@@ -674,13 +698,11 @@ filtered by target type and identifier.
 
 #### Public configuration additions
 
-- **FR-033**: The public configuration of feature 001 (FR-042 there) MUST additionally contain:
-  - the effective brand colour and its foreground for each theme (FR-031);
-  - the apps heading (FR-020);
-  - the login page app links: the built-in and custom links that are not hidden on the login page,
-    each with its name and link, without webmail links when the groupware is disabled.
-
-  It MUST still contain nothing account-specific.
+- **FR-033**: The public configuration of feature 001 (FR-042 there) MUST additionally contain the
+  effective brand colour and its foreground for each theme (FR-031). It already contains the apps
+  heading (FR-020) and the app links with their login page visibility (FR-028, feature 001 FR-056),
+  from which clients show the links that are not hidden on the login page. It MUST still contain
+  nothing account-specific.
 - **FR-034**: A change saved through this feature MUST appear in the public configuration on its
   next read. A change saved through the legacy UI MUST appear within one minute (feature 001,
   FR-043).
@@ -780,9 +802,9 @@ filtered by target type and identifier.
   failing line MUST be refused with a validation error that states its line number. The content
   MUST be stored trimmed and ending with a line break, as in legacy.
 - **FR-058**: The content MUST be written to the map file that Rspamd reads, only when that file
-  exists. A missing file MUST be refused as "map unavailable". The write MUST let Rspamd see either
-  the old or the new content, never a partial one, and MUST let Rspamd recognise the change, so that
-  Rspamd reloads the map without a restart, as in legacy.
+  exists. A missing file MUST be refused as "map unavailable". The whole content MUST be written in
+  one write, and the change MUST then be signalled again, so that Rspamd reloads the complete map
+  without a restart, as in legacy, even if it read the file while it was being written.
 - **FR-059**: A map identifier that is not one of the editable maps MUST be answered "not found".
 
 #### Effective settings map
@@ -841,7 +863,8 @@ filtered by target type and identifier.
 
 - **FR-072**: Administrators MUST be able to request a recipient preview for a selection. The
   preview MUST return the number of recipients and the recipient addresses with pagination, sorted
-  by address, and MUST change nothing.
+  by address, with a substring search on the address, and MUST change nothing. The number of
+  recipients MUST be the size of the whole selection, whatever the search.
 - **FR-073**: A selection MUST start from every receiving mailbox: every mailbox that is not a
   resource and is active or allowed to receive mail. It MAY be limited to a list of domains, and MAY
   then either include only a list of mailboxes or exclude a list of mailboxes, not both. Every named
@@ -944,6 +967,28 @@ filtered by target type and identifier.
   operation and report success or the validation errors exactly as a real request would, and MUST
   NOT store anything, restart anything or write an audit record.
 
+#### Settings capabilities
+
+- **FR-094**: Administrators MUST be able to read the settings capabilities, the server settings and
+  limits a client needs before it submits:
+  - the logo limits: the maximum file size, the maximum width and height of raster images, and the
+    accepted image types (FR-014, FR-015);
+  - whether license verification is enabled on this server (FR-085);
+  - whether demo mode is enabled, which refuses the customisation writes (FR-012). Legacy has no
+    other server mode that refuses writes of this feature;
+  - the server's configured host name, and the sender that legacy suggests for mass mail
+    (`noreply@<host name>`, FR-074);
+  - the address of the Rspamd web interface, which legacy links on the same host (`/rspamd/`);
+  - the colour reference surfaces and the minimum contrast ratio (FR-030);
+  - the field limits of this feature: text lengths, template, rule, map and script sizes, the
+    maximum numbers of app links, copy recipients, CORS origins and mass mail selection entries,
+    the password policy range, the Rspamd password length, the default and maximum page sizes;
+  - the mass mail delivery rate and retry policy (FR-076) and the maximum number of jobs running at
+    a time (FR-075).
+
+  The values MUST reflect the server's current configuration and MUST NOT include any secret or
+  connection detail. The read MUST change nothing, and read-only keys MAY use it.
+
 ### Legacy Coverage
 
 Every legacy capability allocated to feature 013 in `docs/roadmap.md` maps to requirements as
@@ -972,6 +1017,7 @@ follows. Actions are `/api/v1` names; *form* marks legacy UI form handlers.
 | `edit/cors`, *form* CORS settings | `cors('edit' / 'get')` | FR-068 to FR-071 |
 | *form* `mass_send` (System mails) | `sys_mail()`, `tab-sys-mails.twig`, `admin.js` (`mass_disarm`) | FR-006, FR-072 to FR-081, FR-087 |
 | *form* `license_validate_now`, GUID card on the dashboard | `license('verify' / 'guid')`, `LICENSE_STATUS_CACHE` | FR-082 to FR-085 |
+| Server values rendered into the legacy pages: the sender suggestion `noreply@<host name>`, the `/rspamd/` link, the logo `accept` list; `$LOGO_LIMITS` and `DEMO_MODE` applied but not shown | `tab-sys-mails.twig`, `tab-config-rspamd.twig`, `tab-config-customize.twig`, `vars.inc.php`, `prerequisites.inc.php` | FR-094 |
 
 Parts of the legacy screens that belong to other features: the public reading of the branding
 (001), the password policy read (003), password reset itself (005), mailbox Sieve filters and their
@@ -1035,13 +1081,13 @@ differs in four ways that touch this feature:
 | Logo reset | One form deletes both logos | Each logo deleted on its own (FR-017) |
 | UI text storage | `TITLE_NAME`, `MAIN_NAME`, `APPS_NAME` HTML-escaped; `HELP_TEXT`, `UI_FOOTER`, `UI_ANNOUNCEMENT_TEXT` raw; type `info`/`warning`/`danger` or empty; `UI_ANNOUNCEMENT_ACTIVE` 0/1; `UI_IMPRESS` migrated to `UI_FOOTER` on read | Same storage; plain text in and out for the escaped fields; length limits added; old key migrated on the next change (FR-020 to FR-023). **Deviation** for the limits |
 | Login page options | `CUSTOM_LOGIN` JSON with four 0/1 flags | Same (FR-024) |
-| App links | `APP_LINKS` JSON list of `{name: {link, user_link, hide}}`; old `{name: link}` entries converted on read; no validation; built-in `$MAILCOW_APPS` merged read-only; `%u` replaced in the signed-in navigation; webmail links hidden with `SKIP_SOGO` | Same storage, conversion, merge and substitution; entries validated, at most 50, script URLs refused (FR-025 to FR-028). **Deviation** for validation |
+| App links | `APP_LINKS` JSON list of `{name: {link, user_link, hide}}`; old `{name: link}` entries converted on read; no validation; built-in `$MAILCOW_APPS` merged read-only; `%u` replaced in the signed-in navigation; webmail links hidden with `SKIP_SOGO` | Same storage, conversion and merge; the links reach clients through feature 001's public configuration, where the client replaces `%u`; entries validated, at most 50, script URLs refused (FR-025 to FR-028). **Deviation** for validation |
 | Branding colours | None | New, stored by this API, contrast-checked, published in the public configuration (FR-029 to FR-034) |
 | IP check | `IP_CHECK` 0/1; the dashboard hides the lookup button, the lookup itself is not gated | Same storage; feature 011 offers the lookup only with the opt-in (FR-035) |
 | Password policy | `PASSWD_POLICY` hash `length`, `chars`, `special_chars`, `lowerupper`, `numbers`; seeded 6/0/0/0/0; form allows 3 to 64 | Same storage and seed; 3 to 64 enforced by the API (FR-036). **Deviation**: out-of-range values refused instead of kept |
 | Reset notification | `PW_RESET_FROM`, `PW_RESET_SUBJ`, `PW_RESET_TEXT`, `PW_RESET_HTML`; defaults from `/tpls/pw_reset_{text,html}.tpl` when both templates are empty; reset unavailable without sender or subject | Same storage, defaults and availability rule, reported in the read (FR-039 to FR-042) |
 | Quota notification | `QW_SENDER`, `QW_SUBJ`, `QW_HTML`; Dovecot's `quota_notify.py` defaults to `quota-warning@localhost`, "Quota warning" and `/templates/quota.tpl`, falls back to it when the template does not parse; unused `retention_size` and `release_format` inputs | Same storage and defaults, reported in the read; the unused inputs are not offered (FR-043 to FR-045) |
-| Quota copy recipients | `QW_BCC` hash per domain, JSON `{bcc_rcpts, active}`; split on space, comma, semicolon or line break; invalid entries skipped; case-sensitive duplicates removed; empty list forces inactive; alias domains accepted | Same storage; a list, refused on any invalid entry, case-insensitive duplicates, at most 100; alias domains "not found" (FR-046 to FR-049). **Deviation** |
+| Quota copy recipients | `QW_BCC` hash per domain, JSON `{bcc_rcpts, active}`; split on space, comma, semicolon or line break; invalid entries skipped; case-sensitive duplicates removed; empty list forces inactive; alias domains accepted; the recipients are written as a JSON object instead of a list when entries were dropped, which Dovecot's `quota_notify.py` then iterates by key | Same storage; a list, refused on any invalid entry, case-insensitive duplicates, at most 100, always written as a JSON list; alias domains "not found" (FR-046 to FR-049). **Deviation** |
 | Settings rules | `settingsmap` rows; content required at creation only; edit keeps old values for empty input and trims; no content check; `active` defaults to 0 | Same storage and default; content and description always required, trimmed and structurally checked (FR-050 to FR-053). **Deviation** |
 | Settings map delivery | Rspamd polls `settings.php` (nginx:8081), which emits active rows as `additional_settings_<id>` blocks | Unchanged: php-fpm keeps serving it (FR-055, FR-060) |
 | Regex maps | Written to `/rspamd_custom_maps/<file>` only when it exists, trimmed plus a line break, then touched after 1.5 s; missing file silently skipped and reported as success; regex check only in the browser (one flag `i`, `m` or `s`) | Same files and format; server-side line check; missing file refused; complete content visible to Rspamd (FR-056 to FR-059). **Deviation** |
@@ -1088,6 +1134,9 @@ differs in four ways that touch this feature:
 - **Mass mail recipient** (owned by this API): one address of a job with its outcome and failure
   reason.
 - **License status** (existing mailcow data): the GUID and the last verification result.
+- **Settings capabilities** (computed from the server configuration): the logo limits, the license and
+  demo mode switches, the host name, the Rspamd web interface address, the colour references, the
+  field limits and the mass mail delivery policy.
 - **Audit record** (owned by this API, defined in feature 001): extended with the target types of
   this feature, the attribute changes and the side-effect outcomes.
 

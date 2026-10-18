@@ -1,0 +1,9 @@
+name: presetKind
+in: path
+required: true
+description: |
+  `rspamd` (examples of Rspamd settings rules, administrators only) or `sieve` (example Sieve
+  scripts, administrators and domain administrators).
+schema:
+  type: string
+  enum: [rspamd, sieve]

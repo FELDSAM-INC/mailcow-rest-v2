@@ -1,0 +1,13 @@
+description: The editable global regex maps. Each entry carries its version tag.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/RspamdRegexMap.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

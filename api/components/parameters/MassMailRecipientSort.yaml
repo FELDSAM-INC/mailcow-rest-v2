@@ -1,0 +1,8 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `address` with `order=asc`.
+schema:
+  type: string
+  enum: [address, outcome]
+  default: address

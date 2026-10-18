@@ -1,0 +1,7 @@
+name: filterId
+in: path
+required: true
+description: '`prefilter` (runs before the mailboxes'' own filters) or `postfilter` (runs after them).'
+schema:
+  type: string
+  enum: [prefilter, postfilter]

@@ -1,0 +1,12 @@
+description: |
+  The login page options (`CUSTOM_LOGIN`) with their version tag. Forcing single sign-on is a
+  presentation option: it takes effect only while single sign-on is available (feature 012) and
+  never makes the API refuse another sign-in method, as in legacy.
+allOf:
+  - $ref: './LoginPageOptions.yaml'
+  - type: object
+    required: [etag]
+    properties:
+      etag:
+        type: string
+        description: Version tag of the stored options, equal to the `ETag` header.

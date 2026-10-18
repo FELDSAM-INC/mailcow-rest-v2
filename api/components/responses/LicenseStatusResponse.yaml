@@ -1,0 +1,9 @@
+description: The GUID and the last verification result.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/LicenseStatus.yaml'

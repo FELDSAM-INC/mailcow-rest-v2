@@ -1,0 +1,13 @@
+type: object
+description: |
+  A brand colour in effect for one theme, with the foreground colour (black or white) that has the
+  higher WCAG 2.2 contrast on it, at least 4.5:1.
+required: [color, foreground]
+properties:
+  color:
+    type: string
+    pattern: '^#[0-9a-f]{6}$'
+    examples: ['#1d4ed8']
+  foreground:
+    type: string
+    enum: ['#000000', '#ffffff']

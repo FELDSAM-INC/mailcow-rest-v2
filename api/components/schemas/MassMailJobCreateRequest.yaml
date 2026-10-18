@@ -1,0 +1,35 @@
+type: object
+description: |
+  A mass mail job. `expectedRecipients` is the recipient count of the preview the administrator
+  confirmed: when the selection yields another number at this moment, the job is refused with
+  `/api/v2/problems/mass-mail-recipient-count-changed` and nothing is sent. A selection without
+  recipients is refused (rule code `tooFew` on `selection`).
+required: [sender, subject, textBody, selection, expectedRecipients]
+additionalProperties: false
+properties:
+  sender:
+    type: string
+    maxLength: 255
+    description: |
+      Valid e-mail address without control characters. Legacy suggests `noreply@<server host name>`
+      (see `GET /settings/capabilities`).
+    examples: [noreply@mail.example.org]
+  subject:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: Without line breaks.
+  textBody:
+    type: string
+    minLength: 1
+    description: Plain-text body, at most 1 MiB (1,048,576 bytes).
+  htmlBody:
+    description: Optional HTML body, at most 1 MiB. When given, both bodies are sent as alternatives.
+    oneOf:
+      - type: string
+      - type: 'null'
+  selection:
+    $ref: './MassMailSelection.yaml'
+  expectedRecipients:
+    type: integer
+    minimum: 1

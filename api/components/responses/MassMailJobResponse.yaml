@@ -1,0 +1,9 @@
+description: One mass mail job.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/MassMailJob.yaml'

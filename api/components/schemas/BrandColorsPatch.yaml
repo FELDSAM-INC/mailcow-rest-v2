@@ -1,0 +1,19 @@
+type: object
+description: |
+  JSON Merge Patch of the brand colours. A colour is a six-digit hexadecimal sRGB colour
+  (`#RRGGBB`, either letter case); `null` clears it. A colour below the minimum contrast is refused
+  with the rule code `insufficientContrast` and the parameters `ratio` (measured, rounded down to
+  two decimals), `minimum` and `surface`.
+minProperties: 1
+additionalProperties: false
+properties:
+  light:
+    oneOf:
+      - type: string
+        pattern: '^#[0-9A-Fa-f]{6}$'
+      - type: 'null'
+  dark:
+    oneOf:
+      - type: string
+        pattern: '^#[0-9A-Fa-f]{6}$'
+      - type: 'null'

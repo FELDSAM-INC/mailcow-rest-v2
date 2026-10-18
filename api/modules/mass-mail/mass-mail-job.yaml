@@ -1,0 +1,23 @@
+parameters:
+  - $ref: '../../components/parameters/MassMailJobId.yaml'
+get:
+  operationId: getMassMailJob
+  tags: [Mass mail]
+  summary: Get a mass mail job
+  description: |
+    Returns the job with its sender, subject, bodies, selection, creator, times, status and the
+    number of recipients per outcome. Administrators only, by session or by an administrator's key.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MassMailJobResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

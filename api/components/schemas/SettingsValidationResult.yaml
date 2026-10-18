@@ -1,0 +1,10 @@
+type: object
+description: |
+  Result of a request sent with `validateOnly=true` that passed every validation rule. Nothing was
+  stored, restarted or audited. A request that fails validation answers `422` exactly as a real
+  request would.
+required: [valid]
+properties:
+  valid:
+    type: boolean
+    const: true

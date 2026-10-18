@@ -1,0 +1,13 @@
+type: object
+description: |
+  JSON Merge Patch of the app links. `links` replaces the whole list of custom links, in the given
+  order. Every entry is validated; one invalid entry refuses the request and names that entry
+  (`links.3.url`).
+required: [links]
+additionalProperties: false
+properties:
+  links:
+    type: array
+    maxItems: 50
+    items:
+      $ref: './AppLinkSettingsEntry.yaml'

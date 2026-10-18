@@ -1049,6 +1049,7 @@ with its host after the change.
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
 
 ## relayhostDeletion
 
@@ -1067,6 +1068,7 @@ The target is the deleted relayhost.
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | The permission flags the caller lacks (names of `PermissionFlags`), as in the `permission-flag-required` problem. | on `permission-flag-required` failures |
 
 ## relayhostTest
 

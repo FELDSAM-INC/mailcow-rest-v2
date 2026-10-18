@@ -1,0 +1,22 @@
+get:
+  operationId: getAliasesCapabilities
+  tags: [Aliases]
+  summary: Get the capabilities of aliases, alias domains, resources and sender settings
+  description: |
+    The server settings and limits a client needs before it submits: whether the groupware is
+    enabled, whether external alias destinations are disabled for every role, the bulk limit, page
+    sizes, field limits, rate limit time frames, DKIM key sizes and, for the alias domain creation
+    form, the DKIM defaults. Domain administrators get `dkimDefaults` only with the `aliasDomains`
+    permission and never `dkimDnsPublicationEnabled`. Changes nothing; read-only keys may use it.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/AliasCapabilitiesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -1,0 +1,101 @@
+parameters:
+  - $ref: '../../components/parameters/AliasId.yaml'
+get:
+  operationId: getAlias
+  tags: [Aliases]
+  summary: Get an alias
+  description: |
+    Returns one alias in the caller's scope with its version tag. An alias outside the caller's
+    scope, and the row through which a mailbox receives mail at its own address, answer `404`
+    exactly like an alias that does not exist.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/AliasResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateAlias
+  tags: [Aliases]
+  summary: Change an alias
+  description: |
+    Changes the attributes that are sent (JSON Merge Patch). Interactive clients should always send
+    `If-Match` with the version they read: the legacy UI edits the same rows and never sends a
+    version, so only the version check protects a change made there meanwhile.
+
+    After the change, explicit permissions that let a destination mailbox send as the address are
+    removed when the alias allows sending (they are kept when it does not, because they override
+    it), and the groupware identities of the former and new destination mailboxes are updated. A
+    failure of that groupware update does not undo the change and is recorded in the audit record.
+    Turning sending off takes the right away from the destination mailboxes that hold no explicit
+    permission.
+
+    The `If-Match` check comes first (`412`), then the order of checks of `createAlias`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/AliasPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/AliasResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/AliasForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/AliasConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteAlias
+  tags: [Aliases]
+  summary: Delete an alias
+  description: |
+    Deletes the alias and every explicit sender permission to send as its address. For a catch-all
+    alias that address is `@domain`, so the domain-wide explicit permissions for that domain go
+    with it, as in legacy. The groupware identities of the destination mailboxes are updated.
+    Other aliases that name the deleted address as a destination keep it, as in legacy. Orphaned
+    aliases can be deleted by administrators. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

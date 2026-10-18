@@ -1,0 +1,8 @@
+type: string
+description: |
+  `regular`: an address such as `info@example.org`. `catchAll`: an address of the form `@domain`,
+  which receives mail for every address of the domain that does not otherwise exist on the server.
+  When a catch-all alias allows sending, its destinations may send as any address of the domain
+  that has no alias of its own allowing sending (legacy behaviour). Catch-all aliases are never
+  offered as sender identities in the groupware.
+enum: [regular, catchAll]

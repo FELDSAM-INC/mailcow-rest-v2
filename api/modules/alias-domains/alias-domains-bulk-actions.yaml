@@ -1,0 +1,34 @@
+post:
+  operationId: applyAliasDomainBulkAction
+  tags: [Alias domains]
+  summary: Apply an action to several alias domains
+  description: |
+    Activates, deactivates or deletes up to 100 alias domains, as the legacy mass actions do. Each
+    alias domain is authorised, checked, changed and audited on its own, exactly as the single
+    change or deletion would, and gets one result. A shared-store failure on one target gives that
+    target `failed` (with a `temporary-failure` problem) and changes nothing for it. Every audit
+    record carries `bulkRequestId`. More than 100 targets are refused with `422` (`tooMany`,
+    `max` 100).
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/AliasDomainBulkActionRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

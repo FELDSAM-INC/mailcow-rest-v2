@@ -1,0 +1,53 @@
+type: object
+description: |
+  JSON Merge Patch of an alias domain. Only `targetDomain` and `active` can change; members that
+  are not sent keep their values. No permission flag is needed (legacy behaviour).
+
+  - A new `targetDomain` must meet the target rules of creation: an existing domain (not an alias
+    domain) in the caller's scope that is not a relay (backup MX) domain. The aliases that live in
+    the alias domain then count towards the new target's alias limit
+    (`409 domain-alias-limit-reached`).
+  - Read-only members (`name`, `nameUnicode`, `targetDomainUnicode`, `targetIsRelayDomain`,
+    `aliasCount`, `rateLimit`, `createdAt`, `modifiedAt`) may be sent with their current value, so a
+    client can send back the representation it read; a different value is refused with
+    `immutable`. `targetDomainUnicode` and `targetIsRelayDomain` are compared with the values that
+    follow from the resulting target.
+    The rate limit is changed in feature 006, and is not covered by the version tag, so a client
+    should send back only the members it changes. `etag` is ignored; send the version in
+    `If-Match`.
+minProperties: 1
+properties:
+  targetDomain:
+    type: string
+    minLength: 1
+    maxLength: 253
+  active:
+    type: boolean
+  name:
+    type: string
+  nameUnicode:
+    type: string
+  targetDomainUnicode:
+    type: string
+  targetIsRelayDomain:
+    type: boolean
+  aliasCount:
+    type: integer
+  rateLimit:
+    oneOf:
+      - $ref: './AliasDomainRateLimit.yaml'
+      - type: 'null'
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string
+additionalProperties: false
+examples:
+  - targetDomain: example.com
+  - active: false

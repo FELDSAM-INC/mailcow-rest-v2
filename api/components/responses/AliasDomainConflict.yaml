@@ -1,0 +1,14 @@
+description: |
+  The request conflicts with the current data. Nothing was changed. Possible types:
+  - `/api/v2/problems/alias-domain-already-exists`: the name exists as a domain or alias domain
+    (extension members `name`, `existingKind`).
+  - `/api/v2/problems/domain-alias-limit-reached`: the new target's aliases in use plus the aliases
+    of the alias domain would exceed the target's alias limit (extension members `domain`, `count`,
+    `limit`, `requested`).
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/AliasDomainAlreadyExistsProblem.yaml'
+        - $ref: '../schemas/AliasLimitReachedProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'

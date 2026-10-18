@@ -1,0 +1,109 @@
+parameters:
+  - $ref: '../../components/parameters/AliasDomainName.yaml'
+get:
+  operationId: getAliasDomain
+  tags: [Alias domains]
+  summary: Get an alias domain
+  description: |
+    Returns one alias domain in the caller's scope with its version tag. When mailcow's shared
+    store is unavailable, so that the rate limit cannot be read, the request answers `503`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/AliasDomainResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/AliasDomainTemporaryFailure.yaml'
+patch:
+  operationId: updateAliasDomain
+  tags: [Alias domains]
+  summary: Change an alias domain
+  description: |
+    Changes the target domain or the active state (JSON Merge Patch). No permission flag is needed,
+    as in legacy; a domain administrator can only move an alias domain between domains they manage.
+    A new target must be an existing domain (not an alias domain) in the caller's scope that is not
+    a relay (backup MX) domain, and the alias domain's aliases must fit within the new target's
+    alias limit. After the change the groupware directory is updated. Deactivating an alias domain
+    stops mail to its addresses. Interactive clients should always send `If-Match`. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/AliasDomainPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/AliasDomainResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/AliasDomainConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/AliasDomainTemporaryFailure.yaml'
+delete:
+  operationId: deleteAliasDomain
+  tags: [Alias domains]
+  summary: Delete an alias domain
+  description: |
+    Deletes the alias domain together with:
+    - its entries in mailcow's domain map and rate limits;
+    - the aliases that live in it, and the explicit sender permissions to send as their addresses;
+    - the explicit sender permissions for the alias domain as a whole;
+    - the temporary aliases of its addresses;
+    - its domain-level BCC maps (local destination `@<alias domain>` or the bare name);
+    - its spam allow and block lists;
+    - its name in the target domain's footer exclusions.
+
+    The DKIM key is kept, as for domains, so an alias domain or domain created later with the same
+    name reuses it. The groupware directory is updated. Everything is removed together or not at
+    all; when the shared store is unavailable the request answers `503` and removes nothing. This
+    is the same cleanup that domain deletion (feature 002) applies to the alias domains of a
+    deleted domain. Audited with what else was removed.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/AliasDomainTemporaryFailure.yaml'

@@ -1,0 +1,15 @@
+type: object
+description: |
+  Rate limit of an alias domain, stored in mailcow's shared store (Redis hash `RL_VALUE`, value
+  `<value> / 1<s|m|h|d>`). Read-only after creation; it is changed in feature 006.
+required: [value, frame]
+properties:
+  value:
+    type: integer
+    minimum: 1
+    maximum: 2147483647
+    description: Number of messages per time frame.
+  frame:
+    type: string
+    enum: [second, minute, hour, day]
+additionalProperties: false

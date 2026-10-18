@@ -1,0 +1,50 @@
+type: object
+description: |
+  One alias domain. The name and the target are normalised like domain names in feature 002
+  (trimmed, lower-cased, UTS #46). The name must be a valid domain name, must differ from the
+  server's host name and from the target, and must not exist as a domain or alias domain
+  (`409 alias-domain-already-exists`). The target must be an existing domain (not an alias domain)
+  in the caller's scope and must not be a relay (backup MX) domain.
+
+  Domain administrators need the `aliasDomains` permission ("Add alias domains"; otherwise
+  `403 permission-flag-required`), and the `ratelimit` permission to give `rateLimit` (otherwise
+  `403 attribute-not-permitted`). Both are checked before anything is stored.
+
+  A DKIM key is generated unless one already exists for the name or `dkimSelector` is the empty
+  string, with the given selector or the server's default selector (see `getAliasesCapabilities`),
+  and the given key size or 2,048 bits, as the legacy form pre-fills.
+required: [name, targetDomain]
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 253
+    examples: [example.net]
+  targetDomain:
+    type: string
+    minLength: 1
+    maxLength: 253
+    examples: [example.org]
+  active:
+    type: boolean
+    default: true
+  rateLimit:
+    oneOf:
+      - $ref: './AliasDomainRateLimit.yaml'
+      - type: 'null'
+    description: Initial rate limit. Omitted or `null` sets none.
+  dkimSelector:
+    type: string
+    maxLength: 255
+    description: |
+      DKIM selector: letters, digits, `-`, `_` and `.`. Omitted means the server's default
+      selector; the empty string means "no DKIM key".
+  dkimKeySize:
+    type: integer
+    enum: [1024, 2048, 3072, 4096]
+    default: 2048
+additionalProperties: false
+examples:
+  - name: example.net
+    targetDomain: example.org
+    rateLimit: {value: 500, frame: hour}

@@ -1,0 +1,60 @@
+type: object
+description: |
+  A groupware resource (a `mailbox` row with kind `location`, `thing` or `group`, password
+  `RESOURCE` and no quota). It does not count towards the domain's mailbox limit or quota. Mail
+  sent to its address is discarded by the mail server; bookings go through the groupware.
+required:
+  - address
+  - addressUnicode
+  - description
+  - kind
+  - domain
+  - domainUnicode
+  - bookingRule
+  - bookingLimit
+  - active
+  - createdAt
+  - modifiedAt
+  - etag
+properties:
+  address:
+    type: string
+    description: |
+      Address in ASCII form, derived at creation from the ASCII letters and digits of the
+      description (letter case kept) and never changed afterwards.
+    examples: [MeetingRoom1@example.org]
+  addressUnicode:
+    type: string
+  description:
+    type: string
+    description: Description, shown as the resource's name in the groupware.
+    examples: [Meeting Room 1]
+  kind:
+    $ref: './ResourceKind.yaml'
+  domain:
+    type: string
+  domainUnicode:
+    type: string
+  bookingRule:
+    $ref: './ResourceBookingRule.yaml'
+  bookingLimit:
+    oneOf:
+      - type: integer
+        minimum: 1
+        maximum: 2147483647
+      - type: 'null'
+    description: Concurrent booking limit for `limited`, else `null`.
+  active:
+    type: boolean
+    description: Whether the resource can be booked. An inactive resource disappears from the groupware.
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string
+    description: Version tag over the stored settings of the resource.

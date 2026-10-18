@@ -1,0 +1,58 @@
+get:
+  operationId: listSenderPermissionCandidates
+  tags: [Sender settings]
+  summary: List entries that could be granted to a mailbox
+  description: |
+    Helper list for the sender settings form. Lists the entries the caller could add to the
+    explicit sender permissions of the mailbox named in `mailbox`, as the legacy selection list
+    does: the domains and alias domains in the caller's scope, "any address" (`*`) for
+    administrators, and the addresses of aliases and mailboxes in the caller's scope. The mailbox
+    itself, the aliases that deliver to it, its alias-domain addresses, catch-all aliases and the
+    entries already granted are left out. `q` matches the value case-insensitively as a substring.
+    A mailbox that does not exist, is outside the caller's scope or is a resource gives `422` with
+    `notFound` on `mailbox`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - name: mailbox
+      in: query
+      required: true
+      description: |
+        Full address of the mailbox whose sender settings are edited, in any letter case and with
+        the domain in ASCII or Unicode form.
+      schema:
+        type: string
+        minLength: 3
+        maxLength: 255
+      examples:
+        mailbox:
+          value: anna@example.org
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/MailboxSenderPermissionCandidateSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: type
+      in: query
+      required: false
+      description: Only candidates of these types.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 3
+        items:
+          type: string
+          enum: [address, domain, anyAddress]
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxSenderPermissionCandidateListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

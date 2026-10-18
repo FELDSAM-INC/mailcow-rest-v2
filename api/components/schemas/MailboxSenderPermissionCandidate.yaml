@@ -1,0 +1,16 @@
+type: object
+description: |
+  An entry the caller could add to a mailbox's explicit sender permissions: a domain or alias
+  domain in the caller's scope (`@domain`), `*` for administrators, or the address of an alias or
+  mailbox in the caller's scope. The mailbox itself, the aliases that deliver to it, catch-all
+  aliases and entries already granted are left out, as in the legacy selection list.
+required: [value, valueUnicode, type]
+properties:
+  value:
+    type: string
+    examples: [shared@example.org, '@example.net', '*']
+  valueUnicode:
+    type: string
+  type:
+    type: string
+    enum: [address, domain, anyAddress]

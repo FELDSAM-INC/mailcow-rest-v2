@@ -1,0 +1,10 @@
+name: aliasId
+in: path
+required: true
+description: |
+  Identifier of the alias (mailcow's `alias.id`). It never changes, also when the address changes.
+  Find an alias by address with the `address` filter of `listAliases`.
+schema:
+  type: integer
+  minimum: 1
+  maximum: 2147483647

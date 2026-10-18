@@ -1,0 +1,27 @@
+description: |
+  Problem of type `/api/v2/problems/domain-alias-limit-reached` (status `409`). Creating or moving
+  aliases would make the primary domain's aliases in use exceed its alias limit. Aliases in use are
+  counted as feature 002 counts them: aliases in the domain and its alias domains, not counting the
+  rows through which mailboxes receive mail at their own address.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [domain, count, limit]
+    properties:
+      domain:
+        type: string
+        description: The primary domain whose limit applies, in ASCII form.
+      count:
+        type: integer
+        minimum: 0
+        description: Aliases in use in the domain now.
+      limit:
+        type: integer
+        minimum: 0
+        description: The domain's alias limit.
+      requested:
+        type: integer
+        minimum: 1
+        description: |
+          Number of aliases the request would add to the domain, for example the aliases of an
+          alias domain whose target changes. `1` for a creation or an address change.

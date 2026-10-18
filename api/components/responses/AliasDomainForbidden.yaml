@@ -1,0 +1,37 @@
+description: |
+  The caller is authenticated but may not perform this request. Nothing was changed. Possible types:
+  - `/api/v2/problems/forbidden`: the caller's role never allows the operation (mailbox users).
+  - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request.
+  - `/api/v2/problems/permission-flag-required`: a domain administrator without the `aliasDomains`
+    permission ("Add alias domains") tried to create an alias domain (extension member
+    `requiredFlags: [aliasDomains]`). Checked before anything else of the request.
+  - `/api/v2/problems/attribute-not-permitted`: a domain administrator without the `ratelimit`
+    permission gave an initial rate limit (extension members `attributes: [rateLimit]` and
+    `requiredFlags: {rateLimit: ratelimit}`).
+  - `/api/v2/problems/csrf-token-mismatch`, `/api/v2/problems/pending-action-required`,
+    `/api/v2/problems/api-key-source-not-allowed`: see the common `403` response.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      permissionFlagRequired:
+        value:
+          type: /api/v2/problems/permission-flag-required
+          title: Permission flag required
+          status: 403
+          detail: Creating alias domains needs the aliasDomains permission.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          requiredFlags: [aliasDomains]
+      attributeNotPermitted:
+        value:
+          type: /api/v2/problems/attribute-not-permitted
+          title: Attribute not permitted
+          status: 403
+          detail: An initial rate limit needs the ratelimit permission.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          attributes: [rateLimit]
+          requiredFlags:
+            rateLimit: ratelimit

@@ -1,0 +1,90 @@
+get:
+  operationId: listResources
+  tags: [Resources]
+  summary: List resources
+  description: |
+    Lists the resources in the caller's scope: all for administrators, those of their domains for
+    domain administrators. `q` matches, case-insensitively and as a substring, the description and
+    the address in ASCII and readable (Unicode) form. Each entry carries its version tag.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/ResourceSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: domain
+      in: query
+      required: false
+      description: Only resources of these domains. Repeat for several.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 100
+        items:
+          type: string
+          maxLength: 253
+    - name: kind
+      in: query
+      required: false
+      description: Only resources of these kinds.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 3
+        items:
+          $ref: '../../components/schemas/ResourceKind.yaml'
+    - name: active
+      in: query
+      required: false
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/ResourceListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createResource
+  tags: [Resources]
+  summary: Create a resource
+  description: |
+    Creates a location, thing or group that is booked through the groupware. The address is
+    derived from the description and never changes. The resource is stored as legacy stores it
+    (without a password and with no quota), so it does not count towards the domain's mailbox limit
+    or quota, and the groupware directory is updated so that it can be booked at once. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/ResourceCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/ResourceCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/ResourceConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

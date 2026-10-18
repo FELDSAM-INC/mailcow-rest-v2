@@ -1,0 +1,49 @@
+type: object
+description: |
+  What a mailbox may send as. Explicit permissions and external sender addresses are stored where
+  legacy stores them (`sender_acl`), so the mail server applies a change to the next submission.
+required:
+  - mailbox
+  - mailboxUnicode
+  - implicitAddresses
+  - explicitPermissions
+  - senderCheckDisabled
+  - externalSenderAddresses
+  - etag
+properties:
+  mailbox:
+    type: string
+    description: The mailbox's address in ASCII form.
+  mailboxUnicode:
+    type: string
+  implicitAddresses:
+    type: array
+    description: |
+      Addresses the mailbox may send as without an explicit permission: its own address, its
+      addresses in its domain's alias domains, and the aliases that deliver to it (including
+      catch-all aliases), each with whether the alias allows sending.
+    items:
+      $ref: './MailboxImplicitSenderAddress.yaml'
+  explicitPermissions:
+    type: array
+    items:
+      $ref: './MailboxSenderPermission.yaml'
+  senderCheckDisabled:
+    type: boolean
+    description: Whether the mailbox holds the "any address" permission.
+  externalSenderAddresses:
+    type: array
+    description: |
+      Addresses (`news@mailer.example`) and whole domains (`@partner.example`) outside this server
+      that the mailbox may send as. Full addresses become selectable sender identities in its
+      webmail. For an external domain, a DKIM key should be imported for it and this server must be
+      added to the domain's SPF record, or receivers may reject the mail.
+    items:
+      type: string
+    examples:
+      - [news@mailer.example, '@partner.example']
+  etag:
+    type: string
+    description: |
+      Version tag over the stored explicit permissions and external sender addresses. It does not
+      change with `implicitAddresses`.

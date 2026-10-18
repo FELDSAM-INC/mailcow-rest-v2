@@ -1,0 +1,79 @@
+type: object
+description: |
+  JSON Merge Patch of an alias. Members that are not sent keep their values. A member that is sent
+  is applied or refused, never ignored.
+
+  - `address`: the rules of creation apply, except that the alias's own current address does not
+    count as in use, so a change of letter case alone is possible. Moving the alias into another
+    primary domain checks that domain's alias limit. Explicit sender permissions to send as the old
+    address move to the new address.
+  - `destinations` or a special action in `destinationType` replaces the whole destination. Only
+    destinations that the request adds are checked against the external-destination rules;
+    destinations already on the alias are kept, so changing any other attribute never needs the
+    `aliasExternalGoto` permission.
+  - Read-only members (`id`, `addressUnicode`, `kind`, `domain`, `domainUnicode`, `inAliasDomain`,
+    `primaryDomain`, `primaryDomainUnicode`, `createdAt`, `modifiedAt`, `orphaned`) may be sent with
+    their current value, so a client can send back the representation it read. `kind` and the
+    domain members are compared with the values that follow from the resulting address. A
+    different value is refused with `immutable`. `etag` is ignored; send the version in
+    `If-Match`.
+  - A change to an orphaned alias is refused unless it moves the alias to an existing domain.
+minProperties: 1
+properties:
+  address:
+    type: string
+    minLength: 1
+    maxLength: 255
+  destinationType:
+    $ref: './AliasDestinationType.yaml'
+  destinations:
+    type: array
+    minItems: 1
+    items:
+      type: string
+      minLength: 1
+      maxLength: 255
+  active:
+    type: boolean
+  senderAllowed:
+    type: boolean
+  groupwareVisible:
+    type: boolean
+  internal:
+    type: boolean
+  publicComment:
+    type: string
+  privateComment:
+    type: string
+  id:
+    type: integer
+  addressUnicode:
+    type: string
+  kind:
+    $ref: './AliasKind.yaml'
+  domain:
+    type: string
+  domainUnicode:
+    type: string
+  inAliasDomain:
+    type: boolean
+  primaryDomain:
+    type: string
+  primaryDomainUnicode:
+    type: string
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  orphaned:
+    type: boolean
+  etag:
+    type: string
+additionalProperties: false
+examples:
+  - destinations: [bob@example.org]
+  - active: false

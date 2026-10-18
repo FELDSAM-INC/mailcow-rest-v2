@@ -1,0 +1,19 @@
+type: object
+description: |
+  Result of copying one alias over the alias domains of its primary domain, one entry per alias
+  domain in name order. An alias domain whose copy address is in use is reported as skipped. A
+  domain without alias domains gives an empty list.
+required: [aliasId, address, copies]
+properties:
+  aliasId:
+    type: integer
+    minimum: 1
+    description: Identifier of the copied alias.
+  address:
+    type: string
+    description: Address of the copied alias.
+  copies:
+    type: array
+    items:
+      $ref: './AliasCopyOutcome.yaml'
+additionalProperties: false

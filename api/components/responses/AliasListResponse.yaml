@@ -1,0 +1,13 @@
+description: Aliases matching the filters. Each entry carries the full representation and its version tag.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/Alias.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

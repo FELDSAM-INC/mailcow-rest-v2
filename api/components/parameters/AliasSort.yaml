@@ -1,0 +1,10 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. Default `id` with `order=desc`, which lists the newest aliases first, as the legacy
+  screen does. Ties are broken by `id`.
+schema:
+  type: string
+  enum: [id, address, domain, active, groupwareVisible, internal, senderAllowed, createdAt, modifiedAt]
+  default: id

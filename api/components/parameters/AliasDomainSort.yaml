@@ -1,0 +1,8 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `name` with `order=asc`. Ties are broken by `name`.
+schema:
+  type: string
+  enum: [name, targetDomain, active, createdAt, modifiedAt]
+  default: name

@@ -1,0 +1,54 @@
+type: object
+description: |
+  JSON Merge Patch of a mailbox's sender settings. Each list that is sent replaces the stored list
+  as a whole; a list that is not sent stays unchanged. Duplicates are stored once.
+
+  `explicitPermissions` entries are strings:
+  - an address of an existing alias or mailbox in the caller's scope;
+  - an existing domain or alias domain in the caller's scope, as `domain` or `@domain`;
+  - `*` for "any address", which only administrators may grant. When `*` is among the resulting
+    entries, it is stored alone.
+
+  An entry for an alias that delivers to the mailbox and allows sending is accepted but not stored,
+  because the mailbox already has that right (if sending is later turned off for the alias, the
+  mailbox loses it). An entry for such an alias that does not allow sending is stored and overrides
+  the alias's setting. For a domain administrator, stored entries outside their scope are kept even
+  when the request leaves them out, and may be sent back unchanged; the request cannot add such
+  entries (`notFound`, as for entries that do not exist; `*` gives `notEligible`).
+
+  `externalSenderAddresses` entries are valid addresses or domain names (`domain` or `@domain`)
+  whose domain is not a domain or alias domain of this server (`notEligible` with `reason`
+  `localDomain`). Domain administrators need the `extendSenderAcl` permission to change them; the
+  list sent back unchanged needs no permission.
+
+  `mailbox`, `mailboxUnicode`, `implicitAddresses`, `senderCheckDisabled` and `etag` are derived
+  and ignored when sent, so a client can send back the representation it read. A request with any
+  invalid or refused entry is refused as a whole, naming every such entry.
+minProperties: 1
+properties:
+  explicitPermissions:
+    type: array
+    items:
+      type: string
+      minLength: 1
+      maxLength: 255
+  externalSenderAddresses:
+    type: array
+    items:
+      type: string
+      minLength: 1
+      maxLength: 255
+  mailbox:
+    type: string
+  mailboxUnicode:
+    type: string
+  implicitAddresses:
+    type: array
+  senderCheckDisabled:
+    type: boolean
+  etag:
+    type: string
+additionalProperties: false
+examples:
+  - explicitPermissions: [info@example.org, '@example.com']
+  - externalSenderAddresses: [news@mailer.example, '@partner.example']

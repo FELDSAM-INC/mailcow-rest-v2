@@ -1,0 +1,7 @@
+description: |
+  The derived address is in use (type `/api/v2/problems/address-in-use`, extension members
+  `address` and `holder`). Nothing was created.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

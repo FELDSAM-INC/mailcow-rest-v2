@@ -1,0 +1,7 @@
+# Paths of the alias-domains module: alias domains and their bulk actions.
+/alias-domains:
+  $ref: './alias-domains.yaml'
+/alias-domains/bulk-actions:
+  $ref: './alias-domains-bulk-actions.yaml'
+/alias-domains/{aliasDomain}:
+  $ref: './alias-domain.yaml'

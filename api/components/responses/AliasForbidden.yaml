@@ -1,0 +1,28 @@
+description: |
+  The caller is authenticated but may not perform this request. Nothing was changed. Possible types:
+  - `/api/v2/problems/forbidden`: the caller's role never allows the operation (mailbox users).
+  - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request.
+  - `/api/v2/problems/attribute-not-permitted`: a domain administrator without the
+    `aliasExternalGoto` permission added external destinations (destinations whose domain is
+    neither an active domain nor an active alias domain of this server). `attributes` names every
+    refused destination by its path in the body (`destinations.2`), and `requiredFlags` maps each
+    to `aliasExternalGoto`. Destinations already on the alias never need the flag.
+  - `/api/v2/problems/csrf-token-mismatch`, `/api/v2/problems/pending-action-required`,
+    `/api/v2/problems/api-key-source-not-allowed`: see the common `403` response.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      externalDestination:
+        value:
+          type: /api/v2/problems/attribute-not-permitted
+          title: Attribute not permitted
+          status: 403
+          detail: External destinations need the aliasExternalGoto permission.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          attributes: [destinations.1]
+          requiredFlags:
+            destinations.1: aliasExternalGoto

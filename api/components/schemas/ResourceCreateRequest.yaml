@@ -1,0 +1,39 @@
+type: object
+description: |
+  One resource. Its address is derived from the description as legacy derives it: the ASCII letters
+  and digits of the description, in their letter case, followed by `@` and the domain. Other
+  characters are left out (`Raum Süd` → `RaumSd@…`). A description that yields no letter or digit,
+  or more than 64, is refused with `invalidFormat` (`format: resourceDescription`) on
+  `description`. A derived address
+  that is in use is refused with `409 address-in-use`. The domain must be an existing domain in the
+  caller's scope; alias domains are refused. Resources do not count towards the domain's mailbox
+  limit.
+required: [description, domain, kind]
+properties:
+  description:
+    type: string
+    minLength: 1
+    maxLength: 255
+    examples: [Meeting Room 1]
+  domain:
+    type: string
+    minLength: 1
+    maxLength: 253
+  kind:
+    $ref: './ResourceKind.yaml'
+  bookingRule:
+    $ref: './ResourceBookingRule.yaml'
+    default: unlimited
+  bookingLimit:
+    type: integer
+    minimum: 1
+    maximum: 2147483647
+    description: Required with `bookingRule` `limited`, and refused with the other rules.
+  active:
+    type: boolean
+    default: true
+additionalProperties: false
+examples:
+  - description: Meeting Room 1
+    domain: example.org
+    kind: location

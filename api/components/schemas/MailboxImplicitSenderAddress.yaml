@@ -1,0 +1,31 @@
+type: object
+description: |
+  An address the mailbox may send as without an explicit permission.
+
+  - `ownAddress`: the mailbox's own address.
+  - `aliasDomainAddress`: the mailbox's local part in one of its domain's alias domains.
+  - `alias`: an alias that delivers to the mailbox. It lets the mailbox send only when
+    `senderAllowed` is `true`, unless the mailbox holds an explicit permission for the address,
+    which overrides `false`. A catch-all alias that allows sending lets the mailbox send as any
+    address of its domain that has no alias of its own allowing sending.
+required: [address, addressUnicode, source, aliasId, senderAllowed, catchAll]
+properties:
+  address:
+    type: string
+  addressUnicode:
+    type: string
+  source:
+    type: string
+    enum: [ownAddress, aliasDomainAddress, alias]
+  aliasId:
+    oneOf:
+      - type: integer
+        minimum: 1
+      - type: 'null'
+    description: Identifier of the alias for `alias`, else `null`.
+  senderAllowed:
+    type: boolean
+    description: For `alias`, the alias's "allowed to send as" flag; `true` for the other sources.
+  catchAll:
+    type: boolean
+    description: Whether the alias is a catch-all alias (`@domain`); `false` for the other sources.

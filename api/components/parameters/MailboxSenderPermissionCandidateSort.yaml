@@ -1,0 +1,10 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. Default `type` with `order=asc`: "any address" first, then domains, then addresses,
+  each group ordered by `value`. Ties are broken by `value`.
+schema:
+  type: string
+  enum: [type, value]
+  default: type

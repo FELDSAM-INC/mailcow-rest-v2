@@ -1,0 +1,34 @@
+type: object
+description: |
+  Outcome of each follow-up step of an alias domain creation, with the values of feature 002's
+  domain creation report. The alias domain and its domain map entry are stored together before
+  these steps run, and a failing step never undoes the creation. The same report is stored in the
+  creation's audit record.
+required: [rateLimit, dkimKey, dkimDnsPublication, groupwareDirectoryUpdate]
+properties:
+  rateLimit:
+    type: string
+    enum: [applied, notRequested, failed]
+  dkimKey:
+    type: string
+    enum: [created, alreadyExisted, notRequested, failed]
+    description: |
+      `alreadyExisted`: a key for the name was already stored (for example kept from an earlier
+      domain or alias domain with this name), and it is used unchanged. `notRequested`: the request
+      sent an empty `dkimSelector`.
+  dkimDnsPublication:
+    type: string
+    enum: [published, noZone, failed, notConfigured, skipped]
+    description: |
+      Publication of the new DKIM key to the ISPConfig DNS server (FeldHost setting, off by
+      default). `noZone`: the ISPConfig server has no zone for the name. `notConfigured`: the
+      publication is disabled. `skipped`: no new key was generated.
+  groupwareDirectoryUpdate:
+    type: string
+    enum: [done, failed, groupwareDisabled]
+  messages:
+    type: object
+    description: English explanation of each failed step, keyed by step name. Never contains secrets.
+    additionalProperties:
+      type: string
+additionalProperties: false

@@ -1,0 +1,15 @@
+description: |
+  The caller is authenticated but may not perform this request. Nothing was changed. Possible types:
+  - `/api/v2/problems/forbidden`: the caller's role never allows the operation (mailbox users).
+  - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request.
+  - `/api/v2/problems/attribute-not-permitted`: a domain administrator without `extendSenderAcl`
+    changed `externalSenderAddresses` (extension members `attributes: [externalSenderAddresses]`
+    and `requiredFlags: {externalSenderAddresses: extendSenderAcl}`).
+  - `/api/v2/problems/csrf-token-mismatch`, `/api/v2/problems/pending-action-required`,
+    `/api/v2/problems/api-key-source-not-allowed`: see the common `403` response.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'

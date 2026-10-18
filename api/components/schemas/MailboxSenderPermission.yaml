@@ -1,0 +1,34 @@
+type: object
+description: |
+  An explicit sender permission of the mailbox (a `sender_acl` row with `external = 0`).
+
+  - `address`: the mailbox may send as this address (an alias or another mailbox). The mail server
+    accepts it at once, but the groupware offers another mailbox's address as a sender identity only
+    after that mailbox delegates access to this one in the groupware.
+  - `domain`: the mailbox may send as any address of the domain and of that domain's alias domains.
+    `value` has the form `@domain`.
+  - `anyAddress`: the mailbox's sender check is disabled (`value` `*`). Only administrators grant
+    it, and it is stored alone.
+required: [value, valueUnicode, type, changeable, stale]
+properties:
+  value:
+    type: string
+    description: Stored form, which a client sends back to keep the entry.
+    examples: [info@example.org, '@example.com', '*']
+  valueUnicode:
+    type: string
+    description: The value with its domain part in readable (Unicode) form.
+  type:
+    type: string
+    enum: [address, domain, anyAddress]
+  changeable:
+    type: boolean
+    description: |
+      Whether the caller may remove this entry. For a domain administrator, entries outside their
+      domains (and "any address") are not changeable: they are kept even when a replacement leaves
+      them out.
+  stale:
+    type: boolean
+    description: |
+      Whether the entry's domain or address no longer exists. An administrator removes a stale
+      entry by saving the permissions without it.

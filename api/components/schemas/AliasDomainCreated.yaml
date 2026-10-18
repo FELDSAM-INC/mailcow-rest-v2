@@ -1,0 +1,8 @@
+description: The created alias domain and the outcome of each follow-up step.
+allOf:
+  - $ref: './AliasDomain.yaml'
+  - type: object
+    required: [creationReport]
+    properties:
+      creationReport:
+        $ref: './AliasDomainCreationReport.yaml'

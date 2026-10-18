@@ -1,0 +1,37 @@
+post:
+  operationId: applyAliasBulkAction
+  tags: [Aliases]
+  summary: Apply an action to several aliases
+  description: |
+    Activates, deactivates, shows or hides in the groupware, deletes, or copies over alias domains
+    up to 100 aliases, as the legacy mass actions do. Each alias is authorised, checked, changed and
+    audited on its own, exactly as the single operation would, and gets one result: `done`,
+    `notFound` (missing or outside the caller's scope), `refused` (with `problem`), `outdated` (its
+    `version` no longer matches) or `failed`. Every audit record carries `bulkRequestId`; a copy
+    has one record per created alias. One failure does not stop or undo the others, as in legacy.
+
+    The whole request is refused only when the caller's role or key scope never allows the action
+    (`403`). More than 100 targets are refused with `422` (`tooMany`, `max` 100).
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/AliasBulkActionRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/AliasBulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

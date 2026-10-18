@@ -1,0 +1,14 @@
+description: |
+  Problem of type `/api/v2/problems/alias-domain-already-exists` (status `409`). The name of a new
+  alias domain already exists as a domain or as an alias domain. Nothing was created.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [name, existingKind]
+    properties:
+      name:
+        type: string
+        description: The normalised name in ASCII form.
+      existingKind:
+        type: string
+        enum: [domain, aliasDomain]

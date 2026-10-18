@@ -1,0 +1,9 @@
+type: string
+description: |
+  How the groupware handles overlapping bookings (mailcow's `mailbox.multiple_bookings`).
+
+  - `alwaysFree`: always shown as free (stored `0`).
+  - `unlimited`: unlimited bookings, shown as busy when booked (stored `-1`). The legacy default.
+  - `limited`: at most `bookingLimit` concurrent bookings (stored as that number); further
+    overlapping bookings are declined by the groupware.
+enum: [alwaysFree, unlimited, limited]

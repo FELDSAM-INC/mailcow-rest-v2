@@ -1,0 +1,68 @@
+type: object
+description: |
+  One alias. The web app sends one request per address of the legacy multi-address form.
+
+  - `address` is trimmed, its domain part converted to lower-case ASCII (UTS #46); the local part
+    keeps its letter case. It must be a valid address or `@domain` for a catch-all, lie in an
+    existing domain or alias domain in the caller's scope (relay and inactive domains are allowed),
+    and not be in use by a mailbox, resource, alias or temporary alias, nor reach a mailbox through
+    an alias domain (`409 address-in-use`).
+  - Give either `destinations` (with `destinationType` omitted or `addresses`) or a special action
+    in `destinationType`, never both.
+  - The primary domain's alias limit is enforced (`409 domain-alias-limit-reached`).
+  - A destination whose domain is neither an active domain nor an active alias domain of this server
+    is external. External destinations are refused with `422` (`notEligible`,
+    `kind: externalDestination`) when the server disables them for every role, and with
+    `403 attribute-not-permitted` when the caller is a domain administrator without the
+    `aliasExternalGoto` permission.
+  - The defaults are those of the legacy form: active, allowed to send as, visible in the
+    groupware, not internal, no comments.
+required: [address]
+properties:
+  address:
+    type: string
+    minLength: 1
+    maxLength: 255
+    examples: [sales@example.org, '@example.org']
+  destinationType:
+    $ref: './AliasDestinationType.yaml'
+    default: addresses
+  destinations:
+    type: array
+    minItems: 1
+    description: |
+      Destination addresses. Each is trimmed and its domain part converted to lower-case ASCII. Each
+      must be a valid address, differ from the alias's own address and not be a resource.
+      Addresses that differ only in letter case are stored once, in the order first given. Joined
+      by commas, the list may have at most 65,535 characters. A destination that does not exist is
+      accepted, as in legacy: mail to it bounces.
+    items:
+      type: string
+      minLength: 1
+      maxLength: 255
+  active:
+    type: boolean
+    default: true
+  senderAllowed:
+    type: boolean
+    default: true
+  groupwareVisible:
+    type: boolean
+    default: true
+  internal:
+    type: boolean
+    default: false
+  publicComment:
+    type: string
+    default: ''
+    description: At most 160 bytes in UTF-8 (`tooLong` with `max` 160 and `unit` `bytes`).
+  privateComment:
+    type: string
+    default: ''
+    description: At most 160 bytes in UTF-8 (`tooLong` with `max` 160 and `unit` `bytes`).
+additionalProperties: false
+examples:
+  - address: sales@example.org
+    destinations: [anna@example.org, bob@example.org]
+  - address: noreply@example.org
+    destinationType: discard

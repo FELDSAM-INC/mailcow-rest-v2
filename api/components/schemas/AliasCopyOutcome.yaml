@@ -1,0 +1,40 @@
+type: object
+description: |
+  Outcome of copying one alias to one alias domain of its primary domain. The copy is
+  `<local part>@<alias domain>` (for a catch-all, `@<alias domain>`), created with the checks,
+  follow-up steps and audit record of a creation by the caller.
+
+  - `created`: the copy exists now; `aliasId` is its identifier.
+  - `skipped`: the copy was not created; `reason` says why: `addressInUse`, `aliasLimitReached`,
+    or `destinationNotPermitted` (the alias has external destinations, which the server disables
+    or the caller's `aliasExternalGoto` permission does not allow).
+  - `failed`: an unexpected failure; `problem` explains it.
+required: [aliasDomain, aliasDomainUnicode, address, outcome, aliasId, reason]
+properties:
+  aliasDomain:
+    type: string
+    description: Alias domain in ASCII form.
+  aliasDomainUnicode:
+    type: string
+  address:
+    type: string
+    description: Address of the copy in ASCII form.
+  outcome:
+    type: string
+    enum: [created, skipped, failed]
+  aliasId:
+    oneOf:
+      - type: integer
+        minimum: 1
+      - type: 'null'
+    description: Identifier of the created copy, else `null`.
+  reason:
+    oneOf:
+      - type: string
+        enum: [addressInUse, aliasLimitReached, destinationNotPermitted]
+      - type: 'null'
+    description: Why the copy was skipped, else `null`.
+  problem:
+    $ref: './Problem.yaml'
+    description: Present for `failed`.
+additionalProperties: false

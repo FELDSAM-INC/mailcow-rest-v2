@@ -1,0 +1,101 @@
+type: object
+description: |
+  Server settings and limits that clients of aliases, alias domains, resources and sender settings
+  need before they submit. The values reflect the server's current configuration and contain no
+  secret or connection detail. Whether the caller holds `aliasDomains`, `aliasExternalGoto` or
+  `extendSenderAcl` comes from `GET /me` (`Identity.permissions`).
+required:
+  - groupwareEnabled
+  - externalDestinationsDisabled
+  - bulkLimit
+  - defaultPageSize
+  - maxPageSize
+  - commentMaxBytes
+  - destinationsMaxLength
+  - resourceDescriptionMaxLength
+  - resourceBookingLimit
+  - rateLimitFrames
+  - dkimKeySizes
+  - dkimDefaults
+  - dkimDnsPublicationEnabled
+properties:
+  groupwareEnabled:
+    type: boolean
+    description: |
+      `false` when the groupware is disabled on the server (mailcow's `SKIP_SOGO=y`). Clients can
+      then hide the groupware visibility option and the `showInGroupware` and `hideInGroupware`
+      bulk actions, as legacy does. The flag is still stored.
+  externalDestinationsDisabled:
+    type: boolean
+    description: |
+      `true` when external alias destinations are disabled for every role, administrators
+      included (the legacy setting `ALIAS_DISABLE_EXTERNAL_DOMAINS`, off by default).
+  bulkLimit:
+    type: integer
+    minimum: 1
+    maximum: 100
+    description: Maximum number of objects per bulk request.
+    examples: [100]
+  defaultPageSize:
+    type: integer
+    examples: [25]
+  maxPageSize:
+    type: integer
+    examples: [1000]
+  commentMaxBytes:
+    type: integer
+    description: Maximum length of each alias comment in UTF-8 bytes.
+    examples: [160]
+  destinationsMaxLength:
+    type: integer
+    description: Maximum length of an alias's destination list, joined by commas, in characters.
+    examples: [65535]
+  resourceDescriptionMaxLength:
+    type: integer
+    description: Maximum length of a resource description in characters.
+    examples: [255]
+  resourceBookingLimit:
+    type: object
+    description: Allowed range of `bookingLimit` for the booking rule `limited`.
+    required: [min, max]
+    properties:
+      min: {type: integer, examples: [1]}
+      max: {type: integer, examples: [2147483647]}
+    additionalProperties: false
+  rateLimitFrames:
+    type: array
+    description: Allowed time frames of an alias domain's initial rate limit.
+    items:
+      type: string
+      enum: [second, minute, hour, day]
+  dkimKeySizes:
+    type: array
+    description: Allowed DKIM key sizes in bits.
+    items:
+      type: integer
+      enum: [1024, 2048, 3072, 4096]
+  dkimDefaults:
+    oneOf:
+      - type: object
+        required: [selector, keySize]
+        properties:
+          selector:
+            type: string
+            description: The server's default DKIM selector (feature 002's setting; upstream `dkim`).
+          keySize:
+            type: integer
+            description: Default key size in bits.
+            examples: [2048]
+        additionalProperties: false
+      - type: 'null'
+    description: |
+      Values that pre-fill the alias domain creation form. `null` for a domain administrator
+      without the `aliasDomains` permission.
+  dkimDnsPublicationEnabled:
+    oneOf:
+      - type: boolean
+      - type: 'null'
+    description: |
+      Whether new DKIM keys are also published to a DNS server (fork-only, off by default).
+      Administrators only; `null` for domain administrators.
+additionalProperties: false

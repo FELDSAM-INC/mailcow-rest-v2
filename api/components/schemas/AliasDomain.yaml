@@ -1,0 +1,60 @@
+type: object
+description: |
+  An alias domain (`alias_domain` table): every mailbox of the target domain also receives mail
+  under this name with the same local part. It can hold aliases of its own.
+required:
+  - name
+  - nameUnicode
+  - targetDomain
+  - targetDomainUnicode
+  - active
+  - targetIsRelayDomain
+  - aliasCount
+  - rateLimit
+  - createdAt
+  - modifiedAt
+  - etag
+properties:
+  name:
+    type: string
+    description: Name in lower-case ASCII (punycode) form. It never changes.
+    examples: [example.net]
+  nameUnicode:
+    type: string
+    description: Name in readable (Unicode) form.
+  targetDomain:
+    type: string
+    description: The target domain in ASCII form.
+    examples: [example.org]
+  targetDomainUnicode:
+    type: string
+  active:
+    type: boolean
+    description: Whether mail to addresses of the alias domain is accepted.
+  targetIsRelayDomain:
+    type: boolean
+    description: |
+      Whether the target domain is a relay (backup MX) domain. New alias domains cannot target a
+      relay domain, but a target may become one later, as in legacy.
+  aliasCount:
+    type: integer
+    minimum: 0
+    description: Number of aliases that live in the alias domain.
+  rateLimit:
+    oneOf:
+      - $ref: './AliasDomainRateLimit.yaml'
+      - type: 'null'
+    description: The alias domain's rate limit, or `null` when none is set. Read-only.
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string
+    description: |
+      Version tag over the stored settings (name, target and active state). It does not change
+      with `aliasCount`, `targetIsRelayDomain` or `rateLimit`.

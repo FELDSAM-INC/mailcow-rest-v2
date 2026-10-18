@@ -219,7 +219,8 @@ mail to each alias.
    request is refused as not permitted, naming the destination and the flag. **When** they create
    an alias delivering to a mailbox of this server, **Then** it is created.
 8. **Given** the server setting that disables external destinations, **When** an administrator
-   creates an alias with an external destination, **Then** the request is refused in the same way.
+   creates an alias with an external destination, **Then** the request is refused with a validation
+   error that names the destination.
 9. **Given** a resource `MeetingRoom1@example.org`, **When** a client creates an alias delivering to
    it, **Then** the request is refused with a validation error naming that destination.
 10. **Given** an alias domain `example.net` of `example.org` and a mailbox `anna@example.org`,
@@ -583,9 +584,11 @@ log filtered by target.
   | Read the audit records of this feature | Yes | Forbidden | Forbidden |
 
 - **FR-006**: A request that needs a permission flag the calling domain administrator does not hold
-  MUST be refused as a whole with the "attribute not permitted for the role" error of feature 002,
-  naming the field, or the operation, and the flag. Nothing MUST change. A value sent unchanged from its current value
-  MUST NOT need the flag. The flags are:
+  MUST be refused as a whole, naming the flag, with the shared permission refusals of
+  `docs/conventions.md`: the "attribute not permitted for the role" error, naming each field and its
+  flag, when fields need the flag (including each added external destination); the "permission flag
+  required" error when the operation as a whole needs it (creating an alias domain). Nothing MUST
+  change. A value sent unchanged from its current value MUST NOT need the flag. The flags are:
   - `alias_domains` ("Add alias domains") to create an alias domain;
   - `alias_external_goto` to add an external destination to an alias (FR-027);
   - `extend_sender_acl` to change a mailbox's external sender addresses;
@@ -693,9 +696,9 @@ log filtered by target.
   mail or passes it to spam training exactly as for an alias saved in the legacy UI.
 - **FR-027**: A destination MUST count as external when its domain is neither an active domain nor an
   active alias domain of this server (legacy behaviour). An external destination that the request
-  adds to an alias MUST be refused with the "destination not permitted" error, naming each such
-  destination, when the server setting of FR-007 is on, or when the caller is a domain administrator
-  without `alias_external_goto` (FR-006). Destinations already on the alias MUST be kept and MUST NOT
+  adds to an alias MUST be refused, naming each such destination: with a validation error when the
+  server setting of FR-007 is on, and with the "attribute not permitted for the role" error when the
+  caller is a domain administrator without `alias_external_goto` (FR-006). Destinations already on the alias MUST be kept and MUST NOT
   be re-checked, also after the server setting is turned on, so that a change of any other attribute
   never needs the permission.
 - **FR-028**: A request that contains any invalid or refused entry, whether an address, a destination,
@@ -801,8 +804,9 @@ log filtered by target.
 - **FR-043**: The creation response MUST respond as "created" with the address of the new alias
   domain, and MUST contain the alias domain and a creation report with the outcome of each follow-up
   step: rate limit (applied, not requested, failed), DKIM key (created, already existed, not
-  requested, failed), DKIM DNS publication (published, no DNS zone found, failed, not configured),
-  groupware directory update (done, failed, groupware disabled).
+  requested, failed), DKIM DNS publication (published, no DNS zone found, failed, not configured,
+  or skipped because no new key was created, as in feature 002), groupware directory update (done,
+  failed, groupware disabled).
 - **FR-044**: Administrators and domain administrators MUST be able to change an alias domain's
   target and active state, with the rules of FR-029 for omitted, sent and read-only attributes. The
   name and the rate limit MUST NOT be changeable here. A new target MUST meet the target rules of
@@ -818,7 +822,9 @@ log filtered by target.
   - the temporary aliases of its addresses;
   - its domain-level BCC maps, that is, BCC maps whose local destination is the alias domain, stored
     as `@<alias domain>` or as the bare name;
-  - its spam allow and block lists.
+  - its spam allow and block lists;
+  - its name in the footer exclusions of its target domain (feature 002), so that no stale
+    exclusion remains.
 
   It MUST keep the DKIM key, as feature 002 does for domains (FR-038 there). It MUST then rebuild the
   groupware directory and flush its cache, unless the groupware is disabled. This is the cleanup
@@ -975,12 +981,12 @@ log filtered by target.
 
 - **FR-065**: Errors MUST follow feature 001's conventions (FR-049 and FR-055 there). This feature
   MUST document at least these error types: not found, address in use (with the kind of holder),
-  domain alias limit reached (with the count and the limit), destination not permitted (with the
-  destinations and the reason: server setting or missing flag), attribute not permitted for the role
-  (with the field and the flag), alias domain already exists, not a primary-domain alias, outdated
-  version, and temporary failure. Validation errors MUST use stable rule codes with their
-  parameters, including the comment limit in bytes, the destination length limit, the booking rule
-  range and the bulk limit.
+  domain alias limit reached (with the count and the limit), attribute not permitted for the role
+  (with each field and its flag, including refused external destinations), permission flag required
+  (with the flag), alias domain already exists, not a primary-domain alias, outdated version, and
+  temporary failure. Validation errors MUST use stable rule codes with their parameters, including
+  the comment limit in bytes, the destination length limit, external destinations disabled by the
+  server setting, the booking rule range and the bulk limit.
 - **FR-066**: Every operation MUST be described in the published API contract before it is
   implemented, and its behaviour MUST match the contract.
 - **FR-067**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response of
@@ -1105,14 +1111,15 @@ translations. The fork differs in three ways:
 | Address change | Only the alias row changes; permissions for the old address stay and would apply to a new alias with that address | Permissions carried over to the new address (FR-030). **Deviation** |
 | Alias deletion | `alias` row and every `sender_acl` row for the address; groupware update of the former destinations | Same (FR-033, FR-035) |
 | Expand over alias domains | Copies get the destination, active and visible on, sending allowed and internal off; an alias in an alias domain is skipped with a warning; stops at the alias limit | Copies inherit the destination and all four flags; one result per alias domain; an alias in an alias domain is refused (FR-036, FR-037). **Deviation** |
-| Groupware updates | `update_sogo_static_view()` per affected mailbox for aliases and resources, a full rebuild for alias domains, then a memcached flush; skipped with `SKIP_SOGO`; database errors reported as success | Same mechanisms; failures recorded in the audit record (FR-033, FR-034, FR-042, FR-044, FR-045, FR-050 to FR-052, FR-057) |
+| Groupware updates | `update_sogo_static_view()` per affected mailbox for aliases and resources, a full rebuild for alias domains and whenever a destination is not an active local mailbox, then a memcached flush; skipped with `SKIP_SOGO`; database errors reported as success | Same mechanisms (one full rebuild per bulk request for alias domains); failures recorded in the audit record or the creation report (FR-033, FR-034, FR-042, FR-044, FR-045, FR-050 to FR-052, FR-057). **Deviation** (plan-level note): an alias change whose destinations include an address that is not an active local mailbox refreshes the affected mailboxes' rows instead of rebuilding all rows; the resulting rows are identical |
 | Alias domain creation checks | Valid names, name differs from target, target exists and is not a backup MX domain, name not yet a domain or alias domain, `alias_domains` flag | Same, plus the host name check (FR-041). **Deviation** for the host name |
 | Alias domain creation effects | `alias_domain` row; `DOMAIN_MAP` entry (a failure leaves the row without its entry); `ratelimit('edit')` → `RL_VALUE`, which needs the `ratelimit` flag and otherwise fails after the row exists; `dkim('add')` → `DKIM_PUB_KEYS`, `DKIM_SELECTORS`, `DKIM_PRIV_KEYS` (fork: ISPConfig push); full groupware rebuild. The removal of overlapping external sender addresses uses an undefined variable and removes nothing | Row and domain map entry atomic; overlapping external sender addresses removed; a domain administrator without `ratelimit` refused before anything is stored; per-step report (FR-006, FR-042, FR-043). **Deviation** |
 | Alias domain change | Target and active state; the new target must be a domain, not an alias domain, in scope; relay targets and the alias limit are not checked; no flag needed | Target rules as at creation, including relay domains; alias limit checked; no flag needed (FR-044). **Deviation** for the relay and limit checks |
 | Alias domain deletion | `alias_domain` row, its `alias` rows, `spamalias` rows, `DOMAIN_MAP` entry. The `RL_VALUE` removal uses an undefined variable, so the rate limit stays; sender permissions and spam lists stay; the DKIM key stays; the name is not normalised | Also removes the rate limit, the sender permissions and the spam lists; keeps the DKIM key; normalises the name (FR-045). **Deviation** |
 | BCC maps on alias domain deletion | `DELETE FROM bcc_maps WHERE local_dest = '<alias domain>'`, but domain-level BCC maps are stored as `@<alias domain>`, so they survive and apply again to an alias domain created later with the same name | BCC maps with the local destination `@<alias domain>` or the bare name removed (FR-045). **Deviation** (bug fix) |
 | Resource creation | Local part from the letters and digits of the description, case kept; kind location, group or thing; booking values below -1 become -1; the domain must be a primary domain; `mailbox`, `alias` and `spamalias` checked; `mailbox` row with password `RESOURCE`, quota 0 and the kind; groupware update | Same; booking values below -1 refused (FR-048 to FR-050). **Deviation** for booking values |
-| Resource change and deletion | Description, kind, booking rule and active state; deletion removes the `mailbox` row and the resource's `sogo_*` rows | Same (FR-051, FR-052) |
+| Resource change and deletion | Description, kind, booking rule and active state; an empty description is refused but whitespace is accepted on change; deletion removes the `mailbox` row and the resource's `sogo_*` rows, and `delete/resource` deletes any `mailbox` row by name | Same; the description is trimmed and must not be empty; only resource rows can be deleted (FR-051, FR-052). **Deviation** (plan-level note) |
+| Footer exclusions on alias domain deletion | The alias domain's name stays in the target domain's footer exclusions | Removed (FR-045). **Deviation** (plan-level note) |
 | Resources and domain limits | Not counted as mailboxes, no quota, no limit on their number | Same (FR-050) |
 | Explicit sender permissions | One list per save: `default` resets, `*` is stored alone and only by administrators; domains must be domains or alias domains of the server in scope; addresses must be aliases or mailboxes in scope; entries outside a domain administrator's scope are kept; entries for aliases that allow sending are skipped, for aliases that do not are stored; invalid entries are dropped | The same model as set replacement; invalid entries refuse the request (FR-028, FR-054). **Deviation** for the refusal |
 | External sender addresses | Needs `extend_sender_acl`; addresses or domains outside the server's domains and alias domains; the set is replaced; domains stored as `@domain`; full addresses become groupware identities (`ext_acl`); invalid entries are dropped | Same; invalid entries refuse the request (FR-028, FR-055, FR-057). **Deviation** for the refusal |
@@ -1171,7 +1178,10 @@ translations. The fork differs in three ways:
   a current version tag overwrites a change it did not see.
 - **SC-007**: Every request in FR-063 produces exactly one audit record per affected object.
 - **SC-008**: After an alias domain is deleted through the API, a scan of the mailcow data finds no
-  row or shared-store entry that refers to it, apart from its retained DKIM key.
+  row or shared-store entry that refers to it as a domain or to an address in it of the kinds listed
+  in FR-045, apart from its retained DKIM key. External sender addresses that name it are kept,
+  because they become valid external addresses again, and address-level data owned by other
+  features (BCC and recipient maps of single addresses, quarantine items, logs) is out of scope.
 - **SC-009**: 100% of refused requests name every invalid field or entry with a stable rule code, so
   that the web app can show each error next to its field.
 - **SC-010**: A bulk action on 100 aliases completes within 10 seconds.
@@ -1196,9 +1206,9 @@ translations. The fork differs in three ways:
 - The legacy UI never sends version tags, so it can still overwrite changes made through this API.
 - The server setting of FR-007 mirrors the legacy setting `ALIAS_DISABLE_EXTERNAL_DOMAINS`, which
   lives in a legacy configuration file. The operator sets both the same way.
-- These defaults can be changed by the operator: the external-destination setting (off), the bulk
-  limit (100) and the list page size (25, maximum 1,000). The default DKIM selector and the DKIM DNS
-  publication are feature 002's settings.
+- The operator can change the external-destination setting (off by default). The bulk limit (100)
+  and the list page sizes (25, maximum 1,000) are fixed API-wide by the cross-feature conventions.
+  The default DKIM selector and the DKIM DNS publication are feature 002's settings.
 - **Out of scope**:
   - temporary aliases, BCC maps and recipient maps;
   - rate limit changes and DKIM key management for alias domains;

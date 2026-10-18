@@ -1,0 +1,79 @@
+parameters:
+  - $ref: '../../components/parameters/SenderSettingsMailbox.yaml'
+get:
+  operationId: getMailboxSenderSettings
+  tags: [Sender settings]
+  summary: Get what a mailbox may send as
+  description: |
+    Returns every address the mailbox may send as and why: its own address, its addresses in its
+    domain's alias domains, the aliases that deliver to it (with whether each allows sending and
+    whether it is a catch-all), its explicit permissions (each marked changeable or not for the
+    caller, and stale when its domain or address no longer exists), whether its sender check is
+    disabled, and its external sender addresses. The version tag covers the explicit permissions
+    and external sender addresses only.
+
+    Administrators for every mailbox, domain administrators for the mailboxes of their domains.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxSenderSettingsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateMailboxSenderSettings
+  tags: [Sender settings]
+  summary: Change what a mailbox may send as
+  description: |
+    Replaces the explicit permissions, the external sender addresses, or both (each list that is
+    sent replaces the stored list as a whole). The mail server applies the change to the next
+    submission. After the external sender addresses change, the mailbox's groupware identities are
+    updated, so its external full addresses become selectable sender identities.
+
+    Hints repeated from the legacy UI:
+    - For an external domain, import a DKIM key for it and add this server to the domain's SPF
+      record, or receivers may reject the mail.
+    - A permission for another mailbox's address applies to the mail server at once, but the
+      groupware offers that address as a sender identity only after the other mailbox delegates
+      access in the groupware.
+
+    "Any address" (`*`) is for administrators only. Domain administrators keep the entries outside
+    their scope and need `extendSenderAcl` to change external sender addresses. A request with any
+    invalid or refused entry is refused as a whole, naming every such entry. Interactive clients
+    should always send `If-Match`. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/MailboxSenderSettingsPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxSenderSettingsResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/MailboxSenderSettingsForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

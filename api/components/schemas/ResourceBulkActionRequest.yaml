@@ -1,0 +1,19 @@
+type: object
+description: |
+  One action on up to 100 resources, as the legacy mass actions do. Each resource is processed and
+  audited on its own, exactly as the single operation would, and gets one result. A resource named
+  twice is processed once. Each target may carry the version tag the client read; an outdated target
+  gets `outdated` and stays unchanged.
+required: [action, targets]
+properties:
+  action:
+    type: string
+    enum: [activate, deactivate, delete]
+  targets:
+    type: array
+    minItems: 1
+    maxItems: 100
+    description: The resources, identified by `id` = the address.
+    items:
+      $ref: './BulkTarget.yaml'
+additionalProperties: false

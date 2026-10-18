@@ -1,0 +1,9 @@
+description: Server settings and limits for aliases, alias domains, resources and sender settings.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/AliasCapabilities.yaml'

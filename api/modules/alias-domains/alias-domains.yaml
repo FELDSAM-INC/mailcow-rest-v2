@@ -1,0 +1,95 @@
+get:
+  operationId: listAliasDomains
+  tags: [Alias domains]
+  summary: List alias domains
+  description: |
+    Lists the alias domains in the caller's scope: all for administrators, those whose target is
+    one of their domains for domain administrators. `q` matches, case-insensitively and as a
+    substring, the name and the target in ASCII and readable (Unicode) form. Each entry carries its
+    version tag. The rate limits are read from mailcow's
+    shared store; when it is unavailable the request answers `503`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/AliasDomainSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: targetDomain
+      in: query
+      required: false
+      description: Only alias domains of these target domains. Repeat for several.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 100
+        items:
+          type: string
+          maxLength: 253
+    - name: active
+      in: query
+      required: false
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/AliasDomainListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/AliasDomainTemporaryFailure.yaml'
+post:
+  operationId: createAliasDomain
+  tags: [Alias domains]
+  summary: Create an alias domain
+  description: |
+    Creates one alias domain, so that every mailbox of the target domain also receives mail under
+    the new name. The alias domain and its entry in mailcow's domain map (Redis `DOMAIN_MAP`, which
+    the mail filter uses to recognise local domains) are stored together or not at all; when the
+    shared store is unavailable the request answers `503` and stores nothing. External sender
+    addresses of any mailbox that lie in the new alias domain are removed, because the domain is
+    now local.
+
+    Then the follow-up steps run, and a failing step never undoes the creation: the initial rate
+    limit, the DKIM key (with the fork-only DNS publication when enabled), and the groupware
+    directory update. `data.creationReport` gives each outcome. The rate limit is read-only
+    afterwards (feature 006) and DKIM keys are managed in feature 010.
+
+    Domain administrators need `aliasDomains`, and `ratelimit` for an initial rate limit; a missing
+    flag refuses the request before anything is stored. Audited with the creation report.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/AliasDomainCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/AliasDomainCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/AliasDomainForbidden.yaml'
+    '409':
+      $ref: '../../components/responses/AliasDomainConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/AliasDomainTemporaryFailure.yaml'

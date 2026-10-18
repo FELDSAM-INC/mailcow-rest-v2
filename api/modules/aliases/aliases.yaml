@@ -1,0 +1,175 @@
+get:
+  operationId: listAliases
+  tags: [Aliases]
+  summary: List aliases
+  description: |
+    Lists the aliases in the caller's scope, newest first by default. Administrators see every
+    alias, including orphaned aliases whose domain no longer exists (`orphaned: true`). Domain
+    administrators see the aliases of the domains assigned to them and of those domains' alias
+    domains. The rows through which mailboxes receive mail at their own address are never listed
+    or counted. Each entry carries the full representation and its version tag.
+
+    `q` matches, case-insensitively and as a substring, the address in ASCII and readable
+    (Unicode) form, the destinations and both comments.
+    Several values of the same filter match aliases that have any of them. A domain filter outside
+    a domain administrator's scope returns an empty list.
+
+    Data is read on every request, so changes made in the legacy UI or `/api/v1` appear at once.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/AliasSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: address
+      in: query
+      required: false
+      description: |
+        Only aliases with exactly this address (letter case ignored; the domain part may be given
+        in Unicode form). Use it to find an alias by address. Repeat for several.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 100
+        items:
+          type: string
+          maxLength: 255
+    - name: domain
+      in: query
+      required: false
+      description: Only aliases whose own domain is one of these (an alias domain matches only its own aliases).
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 100
+        items:
+          type: string
+          maxLength: 253
+    - name: primaryDomain
+      in: query
+      required: false
+      description: Only aliases of these domains together with their alias domains.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 100
+        items:
+          type: string
+          maxLength: 253
+    - name: kind
+      in: query
+      required: false
+      description: Only aliases of these kinds.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 2
+        items:
+          $ref: '../../components/schemas/AliasKind.yaml'
+    - name: destinationType
+      in: query
+      required: false
+      description: Only aliases with one of these destination types.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 4
+        items:
+          $ref: '../../components/schemas/AliasDestinationType.yaml'
+    - name: destination
+      in: query
+      required: false
+      description: |
+        Only aliases that deliver to one of these addresses, among other destinations (letter case
+        ignored). For example the aliases that deliver to a mailbox.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          maxLength: 255
+    - name: active
+      in: query
+      required: false
+      schema:
+        type: boolean
+    - name: senderAllowed
+      in: query
+      required: false
+      schema:
+        type: boolean
+    - name: groupwareVisible
+      in: query
+      required: false
+      schema:
+        type: boolean
+    - name: internal
+      in: query
+      required: false
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/AliasListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createAlias
+  tags: [Aliases]
+  summary: Create an alias
+  description: |
+    Creates one alias, regular or catch-all, delivering to destination addresses or performing one
+    special action. Mail to the address is accepted at once. When the alias allows sending, its
+    destination mailboxes may send as the address, explicit permissions that would duplicate that
+    right are removed, and the address appears as a sender identity in their webmail when the
+    alias is visible in the groupware and not a catch-all.
+
+    Checks, in this order: validation of every field and entry (`422`, naming every invalid entry,
+    including external destinations when the server disables them); the `aliasExternalGoto`
+    permission for added external destinations (`403 attribute-not-permitted`, naming every refused
+    destination); then `409 address-in-use` and `409 domain-alias-limit-reached`. Concurrent
+    requests never together exceed the alias limit or create the same address twice. A request
+    with any invalid or refused entry changes nothing. Audited, including refusals.
+
+    Administrators, domain administrators within their scope, and read-write keys of either.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/AliasCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/AliasCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/AliasForbidden.yaml'
+    '409':
+      $ref: '../../components/responses/AliasConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

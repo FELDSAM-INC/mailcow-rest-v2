@@ -1,0 +1,27 @@
+description: |
+  The bulk action was processed. The status is `200` even when some or all targets did not
+  succeed: check each result's `outcome`. The whole request is refused (`403`) only when the
+  caller's role or key scope never allows the action. For `copyOverAliasDomains`, `meta.copies`
+  gives, per alias identifier with the outcome `done`, the outcome per alias domain (individual
+  copies may still be skipped).
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/BulkResult.yaml'
+        meta:
+          type: object
+          description: Side information of the action. Present only for `copyOverAliasDomains`.
+          required: [copies]
+          properties:
+            copies:
+              type: object
+              description: Map from the alias identifier (as sent) to its copies, one per alias domain.
+              additionalProperties:
+                type: array
+                items:
+                  $ref: '../schemas/AliasCopyOutcome.yaml'
+          additionalProperties: false

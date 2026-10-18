@@ -1,0 +1,6 @@
+# Paths of the sender-settings module: what a mailbox may send as (sender ACL and external sender
+# addresses), and the top-level helper list of grantable entries. The mailbox itself is feature 003.
+/mailboxes/{mailbox}/sender-settings:
+  $ref: './mailbox-sender-settings.yaml'
+/sender-permission-candidates:
+  $ref: './sender-permission-candidates.yaml'

@@ -1,0 +1,13 @@
+name: resourceAddress
+in: path
+required: true
+description: |
+  Address of the resource, for example `MeetingRoom1@example.org`, in any letter case and with the
+  domain in ASCII or Unicode form (percent-encode non-ASCII characters; `@` may stay literal). A
+  mailbox address answers `404`.
+schema:
+  type: string
+  minLength: 3
+  maxLength: 255
+  pattern: '^[^@/\s]+@[^@/\s]+$'
+  examples: [MeetingRoom1@example.org]

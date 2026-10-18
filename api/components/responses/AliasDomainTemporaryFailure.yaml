@@ -1,0 +1,14 @@
+description: |
+  mailcow's shared store (Redis) is unavailable (type `/api/v2/problems/temporary-failure`, extension
+  member `dependency: sharedStore`). The request changed nothing; retry later.
+headers:
+  Retry-After:
+    description: Seconds after which the request may be retried.
+    required: false
+    schema:
+      type: integer
+      minimum: 1
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

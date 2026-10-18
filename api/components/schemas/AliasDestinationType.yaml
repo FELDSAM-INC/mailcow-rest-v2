@@ -1,0 +1,12 @@
+type: string
+description: |
+  What the alias does with mail.
+
+  - `addresses`: delivers to the addresses in `destinations`.
+  - `discard`: silently discards the mail (stored as the reserved destination `null@localhost`).
+  - `learnSpam`: passes the mail to spam training as spam (`spam@localhost`).
+  - `learnHam`: passes the mail to spam training as ham (`ham@localhost`).
+
+  The special actions are stored exactly as the legacy UI stores them, so the mail server treats
+  aliases saved by either UI the same way.
+enum: [addresses, discard, learnSpam, learnHam]

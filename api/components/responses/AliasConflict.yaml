@@ -1,0 +1,38 @@
+description: |
+  The request conflicts with the current data. Nothing was changed. Possible types:
+  - `/api/v2/problems/address-in-use`: the address is used by a mailbox, a resource, an alias or a
+    temporary alias, or reaches a mailbox through an alias domain. Extension members: `address`
+    (the normalised address) and `holder` (`mailbox`, `resource`, `alias` or `temporaryAlias`); for
+    an address that reaches a mailbox through an alias domain, and for a mailbox's own address,
+    `holder` is `mailbox`.
+  - `/api/v2/problems/domain-alias-limit-reached`: the primary domain's alias limit does not allow
+    another alias (extension members `domain`, `count`, `limit`, `requested`).
+  - `/api/v2/problems/not-primary-domain-alias`: only aliases of a primary domain can be copied
+    over alias domains; this alias lives in an alias domain.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/AliasLimitReachedProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      addressInUse:
+        value:
+          type: /api/v2/problems/address-in-use
+          title: Address in use
+          status: 409
+          detail: The address anna@example.net already reaches the mailbox anna@example.org.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          address: anna@example.net
+          holder: mailbox
+      aliasLimit:
+        value:
+          type: /api/v2/problems/domain-alias-limit-reached
+          title: Domain alias limit reached
+          status: 409
+          detail: The domain example.org has 10 of 10 aliases in use.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          domain: example.org
+          count: 10
+          limit: 10
+          requested: 1

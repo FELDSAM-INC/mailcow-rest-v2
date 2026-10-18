@@ -1,0 +1,7 @@
+# Paths of the resources module: groupware resources (rooms, equipment, groups) and their bulk actions.
+/resources:
+  $ref: './resources.yaml'
+/resources/bulk-actions:
+  $ref: './resources-bulk-actions.yaml'
+/resources/{resourceAddress}:
+  $ref: './resource.yaml'

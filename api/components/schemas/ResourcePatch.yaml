@@ -1,0 +1,48 @@
+type: object
+description: |
+  JSON Merge Patch of a resource. `description`, `kind`, `bookingRule`, `bookingLimit` and `active`
+  can change; members that are not sent keep their values. The address stays the same when the
+  description changes. `bookingLimit` is required when `bookingRule` becomes `limited`. Read-only
+  members (`address`, `addressUnicode`, `domain`, `domainUnicode`, `createdAt`, `modifiedAt`) may
+  be sent with their current value; a different value is refused with `immutable`. `etag` is
+  ignored; send the version in `If-Match`.
+minProperties: 1
+properties:
+  description:
+    type: string
+    minLength: 1
+    maxLength: 255
+  kind:
+    $ref: './ResourceKind.yaml'
+  bookingRule:
+    $ref: './ResourceBookingRule.yaml'
+  bookingLimit:
+    oneOf:
+      - type: integer
+        minimum: 1
+        maximum: 2147483647
+      - type: 'null'
+  active:
+    type: boolean
+  address:
+    type: string
+  addressUnicode:
+    type: string
+  domain:
+    type: string
+  domainUnicode:
+    type: string
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string
+additionalProperties: false
+examples:
+  - bookingRule: limited
+    bookingLimit: 2

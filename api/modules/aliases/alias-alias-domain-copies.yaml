@@ -1,0 +1,38 @@
+parameters:
+  - $ref: '../../components/parameters/AliasId.yaml'
+post:
+  operationId: copyAliasOverAliasDomains
+  tags: [Aliases]
+  summary: Copy an alias over its domain's alias domains
+  description: |
+    The legacy action "Expand alias over alias domains". For each alias domain of the alias's
+    domain, creates `<local part>@<alias domain>` (for a catch-all, `@<alias domain>`) with the same
+    destination or special action, active state, "allowed to send as", groupware visibility and
+    internal flag, and no comments, unless that address is in use. Each copy is created with the
+    checks and follow-up steps of a creation by the caller and has its own audit record carrying
+    the request ID. The response lists the outcome per alias domain.
+
+    An alias that lives in an alias domain is refused with `409 not-primary-domain-alias`. A domain
+    without alias domains succeeds and creates nothing. `If-Match` makes sure the copies are made
+    from the version the client read.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/AliasCopyReportResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/AliasConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

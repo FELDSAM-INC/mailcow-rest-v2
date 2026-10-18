@@ -1,0 +1,124 @@
+type: object
+description: |
+  An alias of mailcow (`alias` table). The row through which a mailbox receives mail at its own
+  address belongs to the mailbox (feature 003) and is never represented as an alias.
+required:
+  - id
+  - address
+  - addressUnicode
+  - kind
+  - domain
+  - domainUnicode
+  - inAliasDomain
+  - primaryDomain
+  - primaryDomainUnicode
+  - destinationType
+  - destinations
+  - active
+  - senderAllowed
+  - groupwareVisible
+  - internal
+  - publicComment
+  - privateComment
+  - createdAt
+  - modifiedAt
+  - orphaned
+  - etag
+properties:
+  id:
+    type: integer
+    minimum: 1
+    description: Identifier (`alias.id`). It never changes.
+    examples: [4711]
+  address:
+    type: string
+    maxLength: 255
+    description: |
+      Address in ASCII form: the local part with the letter case it was given, the domain part in
+      lower-case ASCII (punycode). A catch-all alias has the form `@domain`.
+    examples: [Sales@example.org, '@example.org']
+  addressUnicode:
+    type: string
+    description: The address with its domain part in readable (Unicode) form.
+    examples: [Sales@bücher.example]
+  kind:
+    $ref: './AliasKind.yaml'
+  domain:
+    type: string
+    description: The alias's own domain in ASCII form. It may be an alias domain.
+    examples: [example.net]
+  domainUnicode:
+    type: string
+    description: The alias's own domain in readable (Unicode) form.
+  inAliasDomain:
+    type: boolean
+    description: Whether `domain` is an alias domain.
+  primaryDomain:
+    type: string
+    description: |
+      The target domain when the alias lives in an alias domain, otherwise `domain`. The alias
+      counts towards this domain's alias limit.
+    examples: [example.org]
+  primaryDomainUnicode:
+    type: string
+  destinationType:
+    $ref: './AliasDestinationType.yaml'
+  destinations:
+    type: array
+    description: |
+      Destination addresses, exactly as stored and in stored order, when `destinationType` is
+      `addresses`. Empty for a special action. Destinations stored by another tool are shown even
+      when the current rules would refuse them.
+    items:
+      type: string
+    examples:
+      - [anna@example.org, bob@example.org]
+  active:
+    type: boolean
+    description: Whether mail to the address is accepted.
+  senderAllowed:
+    type: boolean
+    description: |
+      Whether the destination mailboxes may send as the address ("allowed to send as"). An explicit
+      sender permission of a mailbox overrides `false` for that mailbox.
+  groupwareVisible:
+    type: boolean
+    description: |
+      Whether the address is offered as a sender identity in the webmail of the destination
+      mailboxes. It takes effect only when the alias is active and not a catch-all, and only when
+      the groupware is enabled on the server (see `getAliasesCapabilities`).
+  internal:
+    type: boolean
+    description: |
+      Whether the mail filter refuses mail to the address from senders outside the alias's domain
+      and that domain's alias domains.
+  publicComment:
+    type: string
+    description: |
+      Public comment, empty when none is stored. New values may have at most 160 bytes in UTF-8;
+      longer comments stored by another tool are shown as stored.
+  privateComment:
+    type: string
+    description: |
+      Private comment, empty when none is stored. New values may have at most 160 bytes in UTF-8;
+      longer comments stored by another tool are shown as stored.
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+    description: Last modification time, or `null` when the alias was never modified.
+  orphaned:
+    type: boolean
+    description: |
+      `true` when `domain` no longer exists as a domain or an alias domain (possible after legacy
+      deletions). Orphaned aliases are visible to administrators only. They can be deleted, and a
+      change is accepted only when it moves the alias to an existing domain.
+  etag:
+    type: string
+    description: |
+      Version tag over the stored settings of the alias, equal to the `ETag` header of a single
+      read. Send it in `If-Match`, or as `version` of a bulk target.

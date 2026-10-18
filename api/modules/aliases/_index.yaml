@@ -1,0 +1,12 @@
+# Paths of the aliases module: aliases, copies over alias domains, bulk actions and the
+# capabilities of feature 004 (`/capabilities/aliases`, docs/conventions.md).
+/aliases:
+  $ref: './aliases.yaml'
+/capabilities/aliases:
+  $ref: './capabilities-aliases.yaml'
+/aliases/bulk-actions:
+  $ref: './aliases-bulk-actions.yaml'
+/aliases/{aliasId}:
+  $ref: './alias.yaml'
+/aliases/{aliasId}/alias-domain-copies:
+  $ref: './alias-alias-domain-copies.yaml'

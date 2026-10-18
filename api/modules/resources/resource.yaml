@@ -1,0 +1,85 @@
+parameters:
+  - $ref: '../../components/parameters/ResourceAddress.yaml'
+get:
+  operationId: getResource
+  tags: [Resources]
+  summary: Get a resource
+  description: Returns one resource in the caller's scope with its version tag. A mailbox address answers `404`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/ResourceResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateResource
+  tags: [Resources]
+  summary: Change a resource
+  description: |
+    Changes the description, kind, booking rule or active state (JSON Merge Patch). The address and
+    the domain never change. The groupware directory is updated; an inactive resource disappears
+    from the groupware and can no longer be booked. Interactive clients should always send
+    `If-Match`. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/ResourcePatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/ResourceResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteResource
+  tags: [Resources]
+  summary: Delete a resource
+  description: |
+    Deletes the resource and its groupware data (profile, cached folders, sharing permissions,
+    calendars and their indexes), and updates the groupware directory. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

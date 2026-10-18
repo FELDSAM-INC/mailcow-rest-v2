@@ -1,0 +1,10 @@
+name: aliasDomain
+in: path
+required: true
+description: |
+  Name of the alias domain, in ASCII (punycode) or Unicode form and in any letter case. It is
+  trimmed, lower-cased and converted to ASCII with the UTS #46 rules before the lookup.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 253

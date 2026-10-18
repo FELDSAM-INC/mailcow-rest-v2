@@ -1,0 +1,32 @@
+post:
+  operationId: applyResourceBulkAction
+  tags: [Resources]
+  summary: Apply an action to several resources
+  description: |
+    Activates, deactivates or deletes up to 100 resources, as the legacy mass actions do. Each
+    resource is processed and audited on its own, exactly as the single change or deletion would,
+    and gets one result. Every audit record carries `bulkRequestId`. More than 100 targets are refused
+    with `422` (`tooMany`, `max` 100).
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/ResourceBulkActionRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

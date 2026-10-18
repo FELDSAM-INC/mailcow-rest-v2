@@ -1,0 +1,12 @@
+description: |
+  The alias was copied over the alias domains of its primary domain. The status is `200` even when
+  some copies were skipped: check each entry of `data.copies`. Each created copy has its own audit
+  record carrying the request ID.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/AliasCopyReport.yaml'

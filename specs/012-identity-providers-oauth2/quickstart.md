@@ -39,6 +39,10 @@ docker compose run --rm app vendor/bin/phpunit tests/Feature/IdentityProvider te
 # 6. The real LDAP adapter against OpenLDAP (group idp).
 docker compose --profile idp up -d openldap
 docker compose run --rm app vendor/bin/phpunit --group idp
+
+# 7. The timing tests (group performance, left out of `composer test`), on an idle machine:
+#    SingleSignOnLatencyTest (SC-003) with the other features' latency checks.
+docker compose run --rm app composer test:performance
 ```
 
 **Expected**:
@@ -50,6 +54,8 @@ docker compose run --rm app vendor/bin/phpunit --group idp
   `unavailable` within 7 seconds.
 - No test output, log line or audit row contains `ldap-secret`, `kc-secret` or any generated client
   secret (`IdentityProviderSecretScanTest`).
+- `composer test:performance` passes; under load (other suites running) its budgets can fail, so a
+  failure is rerun on an idle machine before it counts.
 
 ## Part B: Manual end-to-end checks against the dev stack
 

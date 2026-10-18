@@ -33,7 +33,8 @@ properties:
       Storing the message's fuzzy hashes in the local fuzzy storage, as "wanted" (flag 13) after a
       release or "unwanted" (flag 11) after a learning as spam. `done`; `skipped` (the message has
       no content to generate fuzzy hashes from); `failed` (see `fuzzyError`, the item is removed
-      anyway); `notRequested`.
+      anyway); `notRequested` (release without learning, or the learning failed, so no fuzzy
+      call was made, as in legacy).
     enum: [done, skipped, failed, notRequested]
   itemRemoved:
     type: boolean

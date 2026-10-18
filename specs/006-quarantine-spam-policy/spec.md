@@ -1133,6 +1133,10 @@ neither reads nor writes:
 | Resources | Accepted wherever a mailbox address is | Not addressable for mailbox-level settings (FR-069). **Deviation**, as in feature 003 |
 | Concurrent settings edits | Last write wins | Version tags (FR-059, FR-060), also per bulk target. **Deviation** |
 | UI log entries | Written to the `logs` table | Written to this API's audit log (FR-063), as in feature 001. **Deviation** |
+| Release envelope sender that is not an address (plan) | The stored text is sent as `MAIL FROM`, for example the column default `unknown` | `sender-unknown@rspamd`, as for an empty sender (FR-019). **Deviation** |
+| Release SMTP dialogue (plan) | `HELO quarantine`, LF line endings, manual dot-stuffing | `EHLO quarantine`, CRLF line endings, the same message content. Transport detail |
+| Rate limit list (plan) | Iterates existing domains, alias domains and mailboxes | Lists the stored limits of existing objects in scope; a field stored in upper case by another tool is not found, as the spam filter does not match it either (FR-051) |
+| Refusals by the authentication pipeline (plan) | — | Unauthenticated, CSRF, read-only key and restricted-session refusals follow feature 001's audit rules; this feature audits the refusals of its own checks (FR-063) |
 
 ### Key Entities *(include if feature involves data)*
 

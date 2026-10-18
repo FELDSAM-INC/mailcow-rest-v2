@@ -563,7 +563,7 @@ deviations; try a domain with a mailbox or a resource.
 
 ### Tests for User Story 4 (write first, observe failing) ⚠️
 
-- [ ] T067 [P] [US4] Write `tests/Feature/Domains/DeleteDomainTest.php` for `deleteDomain` (FR-035,
+- [X] T067 [P] [US4] Write `tests/Feature/Domains/DeleteDomainTest.php` for `deleteDomain` (FR-035,
   FR-036, FR-039, FR-040, FR-056):
   - AS-1: 2 aliases, an alias domain with 1 alias, no mailbox → `204` without body; the domain, the
     3 aliases and the alias domain are gone; neither name is in `DOMAIN_MAP`; `FakeDockerApiClient`
@@ -575,7 +575,7 @@ deviations; try a domain with a mailbox or a resource.
     forbidden`; a read-only key → `403 insufficient-key-scope`;
   - a stale `If-Match` → `412`; shared store down → `503`, nothing removed;
   - the maildir move fails or times out → still `204`, recorded in the audit record (FR-039).
-- [ ] T068 [P] [US4] Write `tests/Feature/Domains/DeleteDomainCleanupTest.php` (FR-036–FR-038,
+- [X] T068 [P] [US4] Write `tests/Feature/Domains/DeleteDomainCleanupTest.php` (FR-036–FR-038,
   SC-003): seed every dependent row of data-model.md for domain `d` and alias domain `a`, plus the
   same rows for a control domain `e`:
   - afterwards no row of any table refers to `d`, `@d`, `a` or `@a` (scan `domain_admins`, `alias`,
@@ -587,7 +587,7 @@ deviations; try a domain with a mailbox or a resource.
     then answers `401 api-key-invalid`; one also managing `e` stays; an earlier orphaned domain
     administrator is deleted as legacy does (D18);
   - a domain created again with the name of `d` starts without a footer.
-- [ ] T069 [P] [US4] Write `tests/Feature/Domains/DomainDeletionPreviewTest.php` for
+- [X] T069 [P] [US4] Write `tests/Feature/Domains/DomainDeletionPreviewTest.php` for
   `previewDomainDeletion` (FR-065, SC-011):
   - AS-6: 1 resource, 1 alias domain, 3 aliases, a footer and a domain administrator managing only
     this domain → `allowed false`, `blockers.resources {count: 1, addresses: [...]}`,
@@ -599,24 +599,24 @@ deviations; try a domain with a mailbox or a resource.
   - SC-011: preview then delete without changes → the deletion's audit record lists exactly the
     previewed alias domains and domain administrators and the alias count drops by the previewed
     count; preview, then a mailbox is added, then delete → `409`.
-- [ ] T070 [P] [US4] Write `tests/Feature/Domains/DeleteDomainAuditTest.php` (FR-057, SC-007): one
+- [X] T070 [P] [US4] Write `tests/Feature/Domains/DeleteDomainAuditTest.php` (FR-057, SC-007): one
   `domainDeletion` record with `removedAliasDomains`, `removedDomainAdmins`, `footerRemoved` and
   `maildirCleanup` completed to `done`, `failed` (with message) or `unknown`; a `409` refusal →
   failure record `conflict`; a `412` → `versionOutdated`.
 
 ### Implementation for User Story 4
 
-- [ ] T071 [P] [US4] Create `app/Services/AliasDomains/AliasDomainCleanup.php` (D19, shared with
+- [X] T071 [P] [US4] Create `app/Services/AliasDomains/AliasDomainCleanup.php` (D19, shared with
   feature 004: `deleteRows(string $aliasDomain)`, `redisFields(string $aliasDomain)`).
-- [ ] T072 [P] [US4] Create `app/Services/DomainAdmins/OrphanedDomainAdminRemover.php` (D18:
+- [X] T072 [P] [US4] Create `app/Services/DomainAdmins/OrphanedDomainAdminRemover.php` (D18:
   `candidates(): array`, `remove(): array`; feature 007 extends it).
-- [ ] T073 [US4] Create `app/Services/Domains/DomainDeletionPlan.php` and
+- [X] T073 [US4] Create `app/Services/Domains/DomainDeletionPlan.php` and
   `app/Services/Domains/DomainDeletionPlanner.php` (D17 step 3, also used by the preview with the
   orphan candidates computed as if the domain's assignments were removed).
-- [ ] T074 [US4] Create `app/Services/Domains/DomainDeleter.php` (D17: ping, lock, `If-Match`,
+- [X] T074 [US4] Create `app/Services/Domains/DomainDeleter.php` (D17: ping, lock, `If-Match`,
   blockers, deletes, alias domain cleanup, orphan removal, Redis `MULTI` with undo, pending audit
   record, commit, maildir cleanup, audit completion, rebuild unless deferred).
-- [ ] T075 [US4] Add `destroy` to `DomainController`; create
+- [X] T075 [US4] Add `destroy` to `DomainController`; create
   `app/Http/Resources/Api/V2/DomainDeletionPreviewResource.php` and
   `app/Http/Controllers/Api/V2/DomainDeletionPreviewController.php` (`show`); register
   `DELETE /domains/{domain}` and `GET /domains/{domain}/deletion-preview`. This makes the US4

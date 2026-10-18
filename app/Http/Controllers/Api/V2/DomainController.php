@@ -10,12 +10,14 @@ use App\Http\Requests\Api\V2\UpdateDomainRequest;
 use App\Http\Resources\Api\V2\DomainResource;
 use App\Models\Mailcow\Domain;
 use App\Services\Domains\DomainCreator;
+use App\Services\Domains\DomainDeleter;
 use App\Services\Domains\DomainPresenter;
 use App\Services\Domains\DomainQuery;
 use App\Services\Domains\DomainScope;
 use App\Services\Domains\DomainUpdater;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -69,5 +71,16 @@ class DomainController extends Controller
         $row = DB::table('domain')->where('domain', $request->domain())->first() ?? throw new NotFoundHttpException('The domain does not exist.');
 
         return DomainResource::response($this->presenter->presentOne($row, $principal));
+    }
+
+    public function destroy(Request $request, string $domain, DomainDeleter $deleter): Response
+    {
+        $principal = RequestContext::requirePrincipal($request);
+        Gate::forUser($principal)->authorize('delete', Domain::class);
+
+        $name = $this->scope->resolve($principal, $domain) ?? throw new NotFoundHttpException('The domain does not exist.');
+        $deleter->delete($principal, $name, $request->header('If-Match'));
+
+        return response()->noContent();
     }
 }

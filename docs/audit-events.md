@@ -137,6 +137,27 @@ changes nothing is recorded too, with empty `changes`.
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
 
+## domainDeletion
+
+Feature 002. Written for every deletion of a domain (`DELETE /domains/{domain}` and bulk
+deletions), in the transaction that deletes it, and for every refusal. The target is the deleted
+domain. The record is written with `maildirCleanup: "pending"` and completed once after mailcow's
+container service was asked to move the stored mail to the garbage area. A footer removed with the
+domain is recorded here, not in a record of its own.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `removedAliasDomains` | array of strings | ASCII names of the alias domains deleted with the domain, sorted. | on success |
+| `removedDomainAdmins` | array of strings | Domain administrator accounts deleted because they were left without any domain, sorted. Their API keys stop working. | on success |
+| `footerRemoved` | boolean | Whether a footer was stored and deleted with the domain. | on success |
+| `maildirCleanup` | object | The stored-mail move: `outcome` (`done`, `failed` or `unknown` after a timeout) and, unless done, `message` (English). `"pending"` only until the move was requested. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
 <!-- Feature 010: DKIM keys. The DKIM core is delivered with feature 002. -->
 
 ## dkimKeyGeneration

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V2\AuditEventController;
 use App\Http\Controllers\Api\V2\CsrfTokenController;
 use App\Http\Controllers\Api\V2\DomainCapabilitiesController;
 use App\Http\Controllers\Api\V2\DomainController;
+use App\Http\Controllers\Api\V2\DomainDeletionPreviewController;
 use App\Http\Controllers\Api\V2\DomainTagController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\LivenessController;
@@ -141,6 +142,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/domains', [DomainController::class, 'index'])->name('domains.index');
         Route::get('/capabilities/domains', [DomainCapabilitiesController::class, 'show'])->name('domain-capabilities.show');
         Route::get('/domain-tags', [DomainTagController::class, 'index'])->name('domain-tags.index');
+        Route::get('/domains/{domain}/deletion-preview', [DomainDeletionPreviewController::class, 'show'])
+            ->where('domain', '[^/]+')
+            ->name('domain-deletion-preview.show');
         Route::get('/domains/{domain}', [DomainController::class, 'show'])
             ->where('domain', '[^/]+')
             ->name('domains.show');
@@ -155,6 +159,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('domain', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'domainUpdate', 'target' => 'domain'])
             ->name('domains.update');
+        Route::delete('/domains/{domain}', [DomainController::class, 'destroy'])
+            ->where('domain', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'domainDeletion', 'target' => 'domain'])
+            ->name('domains.destroy');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

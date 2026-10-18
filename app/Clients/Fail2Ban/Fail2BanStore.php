@@ -4,7 +4,9 @@ namespace App\Clients\Fail2Ban;
 
 use App\Clients\SharedStore\SharedStore;
 use App\Clients\SharedStore\SharedStoreUnavailable;
+use App\Exceptions\ProblemException;
 use App\Services\Fail2Ban\Fail2BanSettingsValues;
+use App\Support\Http\ProblemType;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Redis;
@@ -196,7 +198,8 @@ class Fail2BanStore
                     DB::rollBack();
                     $redis->discard();
 
-                    throw $e;
+                    // The audit record could not be written: nothing is changed (research R24).
+                    throw new ProblemException(ProblemType::TemporaryFailure, 'The audit log cannot be written, so nothing was changed; retry later.', ['dependency' => 'database'], ['Retry-After' => '5']);
                 }
 
                 $exec = $redis->exec();

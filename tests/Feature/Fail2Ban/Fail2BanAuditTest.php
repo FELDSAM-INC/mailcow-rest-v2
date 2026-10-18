@@ -2,7 +2,10 @@
 
 namespace Tests\Feature\Fail2Ban;
 
+use App\Audit\AuditEventType;
+use App\Services\Audit\AuditLogger;
 use Illuminate\Support\Facades\Redis;
+use Tests\Support\Audit\FlakyAuditLogger;
 use Tests\Support\Monitoring\MonitoringTestHelpers;
 use Tests\Support\Redis\MailcowLogs;
 use Tests\Support\Redis\UnavailableSharedStore;
@@ -99,5 +102,15 @@ class Fail2BanAuditTest extends TestCase
         UnavailableSharedStore::bind($this->app);
         $this->postEmpty('/api/v2/fail2ban/ban-list-rotation', $this->csrf())->assertStatus(503);
         $this->assertSame('temporaryFailure', $this->onlyAuditRecord('fail2banBanListIdRotation')->failure_reason);
+    }
+
+    public function test_a_change_whose_record_cannot_be_written_is_not_stored(): void
+    {
+        $this->app->instance(AuditLogger::class, new FlakyAuditLogger(failingTypes: [AuditEventType::Fail2banSettingsUpdate]));
+        $this->asAdmin();
+
+        $this->patchMerge('/api/v2/fail2ban/settings', ['banTime' => 3600], $this->csrf())->assertStatus(503)->assertJsonPath('type', '/api/v2/problems/temporary-failure');
+
+        $this->assertStringContainsString('"ban_time": 1800', (string) MailcowLogs::get('F2B_OPTIONS'));
     }
 }

@@ -766,9 +766,10 @@ extension members.
 - **Client action**: Hide or disable the lookup, or link to the setting.
 
 Feature 011 also uses `temporary-failure` (503, with `Retry-After`) when the container service,
-the key-value store, the database or the Rspamd controller is unavailable for a read or a change,
-or when the audit log cannot be written before an irreversible operation (container action, queue
-action, rule reset), and `outcome-unknown` (504) when the container service does not answer within
+the key-value store, the database or the Rspamd controller is unavailable for a read or a change
+(`dependency`: `containerService`, `sharedStore`, `database` or `spamFilter`), or when the audit log
+cannot be written before an irreversible operation (container action, queue action, rule reset),
+and `outcome-unknown` (504) when the container service does not answer within
 `DOCKER_TIMEOUT`; there `step` names the action (`start`, `stop`, `restart`, `deliver`, `hold`,
 `release`, `delete`, `flush`, `purge`, `rulesReset`). An outdated `If-Match` on the ban settings,
 rules, rule reset or ban list rotation answers `412` (`about:blank`). A change that was carried out

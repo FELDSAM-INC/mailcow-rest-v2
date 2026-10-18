@@ -52,7 +52,7 @@ class IrreversibleOperationAudit
         } catch (Throwable $e) {
             Log::warning('The audit log cannot be read; the irreversible operation was refused: '.$e->getMessage());
 
-            throw new ProblemException(ProblemType::TemporaryFailure, 'The audit log cannot be written, so the operation was not started. Nothing was changed.', [], ['Retry-After' => '5']);
+            throw new ProblemException(ProblemType::TemporaryFailure, 'The audit log cannot be written, so the operation was not started. Nothing was changed.', ['dependency' => 'database'], ['Retry-After' => '5']);
         }
     }
 

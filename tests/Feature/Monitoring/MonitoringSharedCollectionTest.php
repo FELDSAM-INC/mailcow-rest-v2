@@ -14,6 +14,8 @@ class MonitoringSharedCollectionTest extends TestCase
 {
     public function test_ten_administrators_cause_one_collection(): void
     {
+        $this->freezeSecond();
+
         for ($i = 1; $i <= 10; $i++) {
             $this->mailcow()->admin("admin{$i}", MailcowFactory::PASSWORD);
         }

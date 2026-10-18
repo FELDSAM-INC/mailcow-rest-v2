@@ -14,6 +14,14 @@ class HostOverviewTest extends TestCase
 {
     use MonitoringTestHelpers;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // dockerapi's system_time has whole seconds: a frozen clock keeps the ages exact.
+        $this->freezeSecond();
+    }
+
     public function test_the_overview_maps_the_host_figures(): void
     {
         $this->asAdmin();

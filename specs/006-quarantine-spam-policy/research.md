@@ -39,7 +39,7 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
   - **004**: the `AliasDomain` model and alias domain reachability.
   - **009**: the `permission-flag-required` problem type (already in the contract).
 
-  The tasks name the expected classes. Setup task T003 checks that each exists; when a name
+  The tasks name the expected classes. Setup task T001 checks that each exists; when a name
   differs, 006 uses the existing class, and it creates a component only if no earlier feature did
   (the conventions: "cleanup that more than one feature performs is implemented once and reused").
   In particular, rate limit storage has exactly one writer class: 006 extends the class that 002

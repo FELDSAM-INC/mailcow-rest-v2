@@ -119,9 +119,11 @@ this document next to the constitution.
 
 ## Capabilities, history and refusals
 
-- **Capabilities reads** use the path `/{collection}/capabilities`, for example
-  `/domains/capabilities`, `/mailboxes/capabilities` and `/sync-jobs/capabilities`. The operation
-  ID is `get<Resource>Capabilities`. Read-only keys may use them, and they never contain secrets.
+- **Capabilities reads** use the top-level path `/capabilities/{area}`, for example
+  `/capabilities/domains`, `/capabilities/mailboxes` and `/capabilities/sync-jobs`. This never
+  collides with object identifiers: single-label domain names such as "capabilities" are valid.
+  The operation ID is `get<Area>Capabilities`. Read-only keys may use them, and they never contain
+  secrets. Helper lists such as distinct tags use top-level paths too (`/domain-tags`).
 - **History:** clients filter `GET /audit-events` with the generic `targetType` and `targetId`
   parameters. A feature adds values to `AuditTarget` and never adds its own audit filter
   parameter. Impersonation filters belong to 007.

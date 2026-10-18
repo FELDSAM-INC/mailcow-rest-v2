@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V2\AliasController;
+use App\Http\Controllers\Api\V2\AliasDomainController;
 use App\Http\Controllers\Api\V2\AliasesCapabilitiesController;
 use App\Http\Controllers\Api\V2\ApiDocsController;
 use App\Http\Controllers\Api\V2\ApiKeyController;
@@ -232,6 +233,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/aliases/{aliasId}', [AliasController::class, 'show'])
             ->where('aliasId', '[1-9][0-9]{0,9}')
             ->name('aliases.show');
+        Route::get('/alias-domains', [AliasDomainController::class, 'index'])->name('alias-domains.index');
+        Route::get('/alias-domains/{aliasDomain}', [AliasDomainController::class, 'show'])
+            ->where('aliasDomain', '[^/]+')
+            ->name('alias-domains.show');
     });
 
     // State-changing routes of feature 004: refusals of authenticated callers are audited.
@@ -247,6 +252,17 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('aliasId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'aliasDeletion', 'target' => 'alias'])
             ->name('aliases.destroy');
+        Route::post('/alias-domains', [AliasDomainController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'aliasDomainCreation', 'target' => 'aliasDomain'])
+            ->name('alias-domains.store');
+        Route::patch('/alias-domains/{aliasDomain}', [AliasDomainController::class, 'update'])
+            ->where('aliasDomain', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'aliasDomainUpdate', 'target' => 'aliasDomain'])
+            ->name('alias-domains.update');
+        Route::delete('/alias-domains/{aliasDomain}', [AliasDomainController::class, 'destroy'])
+            ->where('aliasDomain', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'aliasDomainDeletion', 'target' => 'aliasDomain'])
+            ->name('alias-domains.destroy');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

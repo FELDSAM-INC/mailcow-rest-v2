@@ -436,7 +436,7 @@ legacy plus the stated deviations.
 
 ### Tests for User Story 4 (write first, observe failing) ⚠️
 
-- [ ] T047 [P] [US4] Write `tests/Feature/AliasDomains/ListAliasDomainsTest.php` and
+- [X] T047 [P] [US4] Write `tests/Feature/AliasDomains/ListAliasDomainsTest.php` and
   `GetAliasDomainTest.php` (`listAliasDomains`, `getAliasDomain`): representation with
   `nameUnicode`, `targetIsRelayDomain` (target made a relay domain after creation), `aliasCount`,
   `rateLimit` from `RL_VALUE` (`500 / 1h` → `{value: 500, frame: hour}`, absent → `null`); default
@@ -444,7 +444,7 @@ legacy plus the stated deviations.
   (including a partial Unicode label); entry `etag` equals the `ETag`; a domain administrator sees
   only alias domains of their domains and gets `404` for others; the path accepts `EXAMPLE.NET` and
   the Unicode form; with Redis broken → `503 temporary-failure` (`dependency: sharedStore`).
-- [ ] T048 [P] [US4] Write `tests/Feature/AliasDomains/CreateAliasDomainTest.php` (`createAliasDomain`):
+- [X] T048 [P] [US4] Write `tests/Feature/AliasDomains/CreateAliasDomainTest.php` (`createAliasDomain`):
   - AS1: a domain administrator with `alias_domains` creates `example.net` for `example.org` →
     `201`, `Location: /api/v2/alias-domains/example.net`; `alias_domain` row; `DOMAIN_MAP` field;
     DKIM key with selector `dkim` and 2,048 bits in the three `DKIM_*` hashes;
@@ -470,7 +470,7 @@ legacy plus the stated deviations.
     `failed` publication does not undo the creation;
   - FR-062: with Redis broken → `503 temporary-failure`, no `alias_domain` row, no sender ACL removed;
     a forced commit failure after `HSET` removes the `DOMAIN_MAP` field again and answers `500`.
-- [ ] T049 [P] [US4] Write `tests/Feature/AliasDomains/UpdateAliasDomainTest.php` (`updateAliasDomain`):
+- [X] T049 [P] [US4] Write `tests/Feature/AliasDomains/UpdateAliasDomainTest.php` (`updateAliasDomain`):
   AS6 target `example.org` → `example.com` updates the row, the groupware is rebuilt after the
   commit, and the alias domain's aliases count towards `example.com`; when `example.com`'s in-use
   count plus the alias count exceeds its limit → `409 domain-alias-limit-reached`
@@ -480,7 +480,7 @@ legacy plus the stated deviations.
   administrator; the whole representation from `getAliasDomain` sent back with one change → `200`;
   a read-only member (`name`, `aliasCount`, `rateLimit`, `createdAt`) with a different value →
   `immutable`; `etag` in the body ignored; `If-Match` mismatch → `412`; audit `aliasDomainUpdate`.
-- [ ] T050 [P] [US4] Write `tests/Feature/AliasDomains/DeleteAliasDomainTest.php` (`deleteAliasDomain`):
+- [X] T050 [P] [US4] Write `tests/Feature/AliasDomains/DeleteAliasDomainTest.php` (`deleteAliasDomain`):
   AS7 an alias domain with 2 aliases, explicit permissions for `@example.net` and for one alias
   address, an external sender address `x@example.net`, 2 temporary aliases, BCC maps for
   `@example.net`, `example.net` and `anna@example.net`, `filterconf` rows, a footer of `example.org`
@@ -490,30 +490,30 @@ legacy plus the stated deviations.
   groupware rebuilt after the commit; with Redis broken → `503`, nothing removed; a forced commit
   failure restores `DOMAIN_MAP` and `RL_VALUE`; `If-Match` mismatch → `412`; foreign → `404`
   (audited `notFound`); audit `aliasDomainDeletion` with `details.removed`.
-- [ ] T051 [P] [US4] Write `tests/Feature/AliasDomains/AliasDomainAuthorizationTest.php` for the five
+- [X] T051 [P] [US4] Write `tests/Feature/AliasDomains/AliasDomainAuthorizationTest.php` for the five
   operations as every role and key type (read-only key refused on writes, mailbox user `403`,
   domain administrator `404` outside scope), each refusal audited.
 
 ### Implementation for User Story 4
 
-- [ ] T052 [P] [US4] Create `app/Services/AliasDomains/AliasDomainQuery.php` (scope through
+- [X] T052 [P] [US4] Create `app/Services/AliasDomains/AliasDomainQuery.php` (scope through
   `DomainScope`, filters, search with `UnicodeSearch`, sort of `AliasDomainSort`, alias counts by a
   grouped subquery, rate limits through `RateLimitStore` with one `HMGET` per page) and
   `app/Http/Resources/Api/V2/AliasDomainResource.php`.
-- [ ] T053 [US4] Create `app/Services/AliasDomains/AliasDomainCreator.php` and
+- [X] T053 [US4] Create `app/Services/AliasDomains/AliasDomainCreator.php` and
   `AliasDomainCreationReport.php` (R10: 002's flow with `SharedStore`, `RateLimitStore`,
   `DkimKeyGenerator`, `DkimDnsPublisher`, `SogoDirectory::rebuild()` and
   `AuditLogger::completeFollowUps()`), `AliasDomainUpdater.php` (R12, rebuild after commit, deferred
   in bulk) and `AliasDomainDeleter.php` (R11: `AliasDomainCleanup::deleteRows()`, the footer
   exclusion, `SharedStore` `MULTI` of `redisFields()` with compensation, audit, rebuild after commit).
-- [ ] T054 [P] [US4] Create `app/Http/Requests/Api/V2/ListAliasDomainsRequest.php`,
+- [X] T054 [P] [US4] Create `app/Http/Requests/Api/V2/ListAliasDomainsRequest.php`,
   `StoreAliasDomainRequest.php`, `UpdateAliasDomainRequest.php`,
   `app/Http/Resources/Api/V2/AliasDomainCreatedResource.php`, `app/Policies/AliasDomainPolicy.php`
   (the `aliasDomains` check for creation raises `permission-flag-required` before validation) and
   `app/Http/Controllers/Api/V2/AliasDomainController.php` (`index`, `show`, `store`, `update`,
   `destroy`); `SharedStoreUnavailable` renders `503 temporary-failure` with `Retry-After: 10` and
   `dependency: sharedStore`.
-- [ ] T055 [US4] Register the alias domain routes in `routes/api.php` (`/alias-domains/bulk-actions`
+- [X] T055 [US4] Register the alias domain routes in `routes/api.php` (`/alias-domains/bulk-actions`
   before `/alias-domains/{aliasDomain}`; writes with `restv2.audit` defaults and target
   `aliasDomain`). Makes T047–T051 pass.
 
@@ -871,3 +871,10 @@ what exists map as listed.
   redundant explicit permissions runs on every successful change of an alias that allows sending.
   An address change that would make the address one of the kept destinations is refused with
   `conflictsWith` on `address`.
+- **T052–T054**: alias domains have their own `AliasDomainPresenter` (rate limits with one `HMGET`
+  per page), `AliasDomainRules` (the target rules shared by creation and change) and
+  `AliasDomainCreation`; 002's `DomainRules::name()` checks a new name (syntax and the host name).
+  `updateAliasDomain` pings the shared store before it writes, so that a change is never committed
+  when its representation (which carries the rate limit) cannot be returned. Alias domain creation
+  records `removedExternalSenderAddresses` in `values`. Ties of the alias domain and resource lists
+  are broken by the name or address ascending, as 002 does for domains.

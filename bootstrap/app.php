@@ -67,6 +67,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontReport([ProblemException::class, ValidationProblemException::class, SharedStoreUnavailable::class, DockerApiUnreachable::class]);
 
+        // Feature 010 (research R6): an imported DKIM private key never reaches the flashed input.
+        $exceptions->dontFlash(['privateKey']);
+
         // Every error is an RFC 9457 problem (FR-049). Refusals on routes that declare
         // `restv2.audit` are audited (docs/conventions.md "Refusal auditing").
         $exceptions->render(function (Throwable $e, Request $request) {

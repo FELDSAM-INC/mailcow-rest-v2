@@ -25,11 +25,14 @@ class DkimDnsPublisher
         private readonly Clock $clock,
     ) {}
 
-    public function publish(string $name, string $selector, string $publicKey, ?string $oldSelector = null): DkimDnsPublicationResult
+    /**
+     * @param  float|null  $timeout  seconds for this publication; RESTV2_ISPCONFIG_TIMEOUT unless given
+     */
+    public function publish(string $name, string $selector, string $publicKey, ?string $oldSelector = null, ?float $timeout = null): DkimDnsPublicationResult
     {
         $recordName = $selector.'._domainkey';
 
-        return $this->session($name, $recordName, function (IspconfigDnsClient $client, int $zoneId, int $clientId) use ($name, $selector, $publicKey, $oldSelector, $recordName): DkimDnsPublicationResult {
+        return $this->session($name, $recordName, $timeout, function (IspconfigDnsClient $client, int $zoneId, int $clientId) use ($name, $selector, $publicKey, $oldSelector, $recordName): DkimDnsPublicationResult {
             $records = $client->records($zoneId);
             $staleFailure = null;
 
@@ -72,11 +75,15 @@ class DkimDnsPublisher
         });
     }
 
-    public function remove(string $name, string $selector): DkimDnsPublicationResult
+    /**
+     * @param  float|null  $timeout  seconds for this removal (feature 010 research R28: the share of a
+     *                               bulk deletion's budget); RESTV2_ISPCONFIG_TIMEOUT unless given
+     */
+    public function remove(string $name, string $selector, ?float $timeout = null): DkimDnsPublicationResult
     {
         $recordName = $selector.'._domainkey';
 
-        return $this->session($name, $recordName, function (IspconfigDnsClient $client, int $zoneId) use ($name, $selector, $recordName): DkimDnsPublicationResult {
+        return $this->session($name, $recordName, $timeout, function (IspconfigDnsClient $client, int $zoneId) use ($name, $selector, $recordName): DkimDnsPublicationResult {
             $records = $this->matching($client->records($zoneId), $name, $selector);
 
             foreach ($records as $record) {
@@ -90,7 +97,7 @@ class DkimDnsPublisher
     /**
      * @param  callable(IspconfigDnsClient, int, int): DkimDnsPublicationResult  $work  zone ID, client ID
      */
-    private function session(string $name, string $recordName, callable $work): DkimDnsPublicationResult
+    private function session(string $name, string $recordName, ?float $timeout, callable $work): DkimDnsPublicationResult
     {
         $settings = IspconfigSettings::fromConfig();
 
@@ -106,7 +113,7 @@ class DkimDnsPublisher
         $client = $this->container->make(IspconfigDnsClient::class);
 
         try {
-            $client->open(new Deadline($this->clock, $settings->timeout));
+            $client->open(new Deadline($this->clock, $timeout === null ? $settings->timeout : min((float) $settings->timeout, $timeout)));
             $zone = $client->findZone($name.'.');
 
             if ($zone === null) {

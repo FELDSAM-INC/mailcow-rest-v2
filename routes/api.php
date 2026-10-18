@@ -18,7 +18,10 @@ use App\Http\Controllers\Api\V2\ContainerRestartController;
 use App\Http\Controllers\Api\V2\ContainerStartController;
 use App\Http\Controllers\Api\V2\ContainerStopController;
 use App\Http\Controllers\Api\V2\CsrfTokenController;
+use App\Http\Controllers\Api\V2\DkimKeyBulkActionController;
 use App\Http\Controllers\Api\V2\DkimKeyController;
+use App\Http\Controllers\Api\V2\DkimKeyCopyController;
+use App\Http\Controllers\Api\V2\DkimKeyImportController;
 use App\Http\Controllers\Api\V2\DnsCapabilitiesController;
 use App\Http\Controllers\Api\V2\DnsDiagnosticsController;
 use App\Http\Controllers\Api\V2\DomainBulkActionController;
@@ -769,9 +772,25 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->name('mta-sts-policies.show');
     });
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        // POST-only bulk path and the key's sub-resources before `/dkim-keys/{dkimName}`.
+        Route::post('/dkim-keys/bulk-actions', [DkimKeyBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'dkimKey'])
+            ->name('dkim-key-bulk-actions.store');
         Route::post('/dkim-keys', [DkimKeyController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'dkimKeyGeneration', 'target' => 'dkimKey'])
             ->name('dkim-keys.store');
+        Route::post('/dkim-keys/{dkimName}/import', [DkimKeyImportController::class, 'store'])
+            ->where('dkimName', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'dkimKeyImport', 'target' => 'dkimKey'])
+            ->name('dkim-key-import.store');
+        Route::post('/dkim-keys/{dkimName}/copy', [DkimKeyCopyController::class, 'store'])
+            ->where('dkimName', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'dkimKeyCopy', 'target' => 'dkimKey'])
+            ->name('dkim-key-copy.store');
+        Route::delete('/dkim-keys/{dkimName}', [DkimKeyController::class, 'destroy'])
+            ->where('dkimName', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'dkimKeyDeletion', 'target' => 'dkimKey'])
+            ->name('dkim-keys.destroy');
         Route::post('/mta-sts-policies', [MtaStsPolicyController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'mtaStsPolicyCreation', 'target' => 'mtaStsPolicy'])
             ->name('mta-sts-policies.store');

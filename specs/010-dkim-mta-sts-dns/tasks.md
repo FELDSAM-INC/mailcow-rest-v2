@@ -688,14 +688,14 @@ and without keys, delete domain and unused keys, and compare the hashes with leg
 
 ### Tests for User Story 5
 
-- [ ] T081 [P] [US5] Write `tests/Unit/Dkim/DkimPrivateKeyRuleTest.php` with `DkimFixtures`: 1,024 to
+- [X] T081 [P] [US5] Write `tests/Unit/Dkim/DkimPrivateKeyRuleTest.php` with `DkimFixtures`: 1,024 to
   8,192-bit RSA in PKCS #1 and PKCS #8 accepted; CRLF and CR line endings normalised and surrounding
   whitespace trimmed; 17 KiB → `tooLong` (`max: 16384`, `unit: bytes`); garbage, a public key, a
   certificate and two keys → `invalidPrivateKey`; encrypted PKCS #8 and `Proc-Type: 4,ENCRYPTED` →
   `encryptedPrivateKey`; EC → `unsupportedKeyType` (`allowed: [rsa]`); 512 and 9,216 bits →
   `keyLengthOutOfRange` (`min: 1024`, `max: 8192`); no `message` or parameter contains any line of
   the input.
-- [ ] T082 [P] [US5] Write `tests/Feature/Dkim/ImportDkimKeyTest.php`:
+- [X] T082 [P] [US5] Write `tests/Feature/Dkim/ImportDkimKeyTest.php`:
   - AS1: a 2,048-bit key with selector `mx2024` for a domain without a key → `201`, `Location`,
     stored public key equals legacy's derivation (`tests/fixtures/legacy/dkim`), stored private key
     is the normalised text;
@@ -710,7 +710,7 @@ and without keys, delete domain and unused keys, and compare the hashes with leg
     unavailable → `503`, nothing written;
   - one `dkimKeyImport` audit record per attempt with `overwriteRequested`, old and new selector,
     length and fingerprint, and the publication outcome.
-- [ ] T083 [P] [US5] Write `tests/Feature/Dkim/CopyDkimKeyTest.php`:
+- [X] T083 [P] [US5] Write `tests/Feature/Dkim/CopyDkimKeyTest.php`:
   - AS4: A with a key, B without → `201`, B has A's selector, public key and private key; A
     unchanged;
   - B with a key → `409 dkim-key-exists`; with `overwrite` → `200`, B's old private key field gone;
@@ -721,7 +721,7 @@ and without keys, delete domain and unused keys, and compare the hashes with leg
     `about:blank` naming the missing parts;
   - AS6: domain administrator → `403`;
   - one `dkimKeyCopy` audit record on the target with `sourceName`.
-- [ ] T084 [P] [US5] Write `tests/Feature/Dkim/DeleteDkimKeyTest.php`:
+- [X] T084 [P] [US5] Write `tests/Feature/Dkim/DeleteDkimKeyTest.php`:
   - AS5: an unused key → `204` without body, the entry disappears from the list; a domain's key →
     `204`, the entry shows `missing`, the three hash fields are gone;
   - a name without a key → `404`; `If-Match` outdated → `412`; a legacy key under `Example.ORG`
@@ -729,11 +729,11 @@ and without keys, delete domain and unused keys, and compare the hashes with leg
   - AS6: domain administrator → `403`; read-only key → `403 insufficient-key-scope`;
   - one `dkimKeyDeletion` audit record with the old selector, length and fingerprint and the
     publication outcome (`notConfigured` by default).
-- [ ] T085 [P] [US5] Write `tests/Feature/Dkim/DkimWriteAuthorizationTest.php`: the role and key
+- [X] T085 [P] [US5] Write `tests/Feature/Dkim/DkimWriteAuthorizationTest.php`: the role and key
   matrix for `generateDkimKey` (with and without `overwrite`), `importDkimKey`, `copyDkimKey`,
   `deleteDkimKey` and `applyDkimKeyBulkAction` (SC-004).
 
-- [ ] T086 [P] [US5] Write `tests/Feature/Dkim/DkimKeyBulkDeleteTest.php` (FR-059, AS7):
+- [X] T086 [P] [US5] Write `tests/Feature/Dkim/DkimKeyBulkDeleteTest.php` (FR-059, AS7):
   - AS7: three unused keys, one changed in Redis after the client read its `etag`, and a name
     without a key, sent with the tags read → results in request order: `done`, `done`, `outdated`
     (`412` problem, key kept), `notFound`; `summary` counts match; the done keys' three hash fields
@@ -754,23 +754,23 @@ and without keys, delete domain and unused keys, and compare the hashes with leg
     without any ISPConfig call (`FakeIspconfigDnsClient` call log).
 ### Implementation for User Story 5
 
-- [ ] T087 [P] [US5] Create `app/Rules/DkimPrivateKey.php` (R6, stops at the first failure) and
+- [X] T087 [P] [US5] Create `app/Rules/DkimPrivateKey.php` (R6, stops at the first failure) and
   extend `app/Logging/RedactSecrets.php` to drop context keys `privateKey` and `private_key`; add
   `privateKey` to `dontFlash` in `bootstrap/app.php`. T081 passes.
-- [ ] T088 [US5] Create `app/Http/Requests/Api/V2/ImportDkimKeyRequest.php` (`privateKey` "required,
+- [X] T088 [US5] Create `app/Http/Requests/Api/V2/ImportDkimKeyRequest.php` (`privateKey` "required,
   string, at most 16,384 bytes, one unencrypted RSA private key in PEM form (PKCS #1 or PKCS #8) of
   1,024 to 8,192 bits"; `selector` as T045; `overwrite` boolean; `failedValidation()` without input
   values) and `app/Http/Requests/Api/V2/CopyDkimKeyRequest.php` (`target`
   "required, string, 1 to 255 characters", `overwrite` boolean).
-- [ ] T089 [US5] Implement `import`, `copy` and `delete` in `app/Services/Dkim/DkimKeyService.php`
+- [X] T089 [US5] Implement `import`, `copy` and `delete` in `app/Services/Dkim/DkimKeyService.php`
   (store modes of the data model, `If-Match`, publication of the target or removal, audit through
   `commitChange`).
-- [ ] T090 [US5] Create `app/Http/Controllers/Api/V2/DkimKeyImportController.php` and
+- [X] T090 [US5] Create `app/Http/Controllers/Api/V2/DkimKeyImportController.php` and
   `DkimKeyCopyController.php` (`201` with `Location` or `200`, both with `ETag`), implement
   `destroy` in `DkimKeyController.php` (`204`), and register `POST /dkim-keys/{dkimName}/import`,
   `POST /dkim-keys/{dkimName}/copy` and `DELETE /dkim-keys/{dkimName}` in `routes/api.php`.
   T082–T085 pass.
-- [ ] T091 [US5] Create `app/Http/Requests/Api/V2/DkimKeyBulkActionRequest.php` (`action`
+- [X] T091 [US5] Create `app/Http/Requests/Api/V2/DkimKeyBulkActionRequest.php` (`action`
   "required, one of `delete`" (`notInList`); `targets` "required array of 1 to 100 `BulkTarget`
   objects" (`required`, `tooMany` with `max: 100`), each `id` "required, string, 1 to 255
   characters" and `version` "optional string"), implement `DkimKeyService::bulkDelete()` on the

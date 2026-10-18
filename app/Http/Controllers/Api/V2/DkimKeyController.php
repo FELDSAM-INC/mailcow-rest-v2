@@ -13,6 +13,7 @@ use App\Services\Dkim\DkimKeyService;
 use App\Services\Dkim\DkimNameResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -49,6 +50,13 @@ class DkimKeyController extends Controller
         );
 
         return DkimKeyChangeResource::response($change);
+    }
+
+    public function destroy(Request $request, string $dkimName, DkimKeyService $service): Response
+    {
+        $service->delete(RequestContext::requirePrincipal($request), $dkimName, $request->header('If-Match'));
+
+        return response()->noContent();
     }
 
     public function show(Request $request, string $dkimName): JsonResponse

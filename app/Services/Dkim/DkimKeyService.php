@@ -2,16 +2,24 @@
 
 namespace App\Services\Dkim;
 
+use App\Audit\AuditEventType;
 use App\Auth\Principal;
 use App\Clients\SharedStore\DkimKeyStore;
 use App\Clients\SharedStore\DkimStoreResult;
 use App\Clients\SharedStore\SharedStoreUnavailable;
 use App\Exceptions\ProblemException;
+use App\Http\RequestContext;
+use App\Rules\DkimPrivateKey;
 use App\Services\Audit\AuditContext;
+use App\Support\Bulk\BulkActionRunner;
+use App\Support\Clock\Clock;
 use App\Support\Http\ETag;
+use App\Support\Http\FieldViolations;
 use App\Support\Http\ProblemType;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Throwable;
@@ -35,7 +43,222 @@ class DkimKeyService
         private readonly DkimAudit $audit,
         private readonly DkimNameResolver $names,
         private readonly DkimEntryQuery $entries,
+        private readonly Clock $clock,
     ) {}
+
+    /**
+     * importDkimKey (FR-017 to FR-021): an unencrypted RSA private key (validated by
+     * App\Rules\DkimPrivateKey) for any valid domain name, which need not be a domain or alias
+     * domain (its key is then unused until that name is created). The public key is derived as
+     * legacy derives it and the normalised text is stored. An existing key needs `overwrite`.
+     */
+    public function import(Principal $principal, string $rawName, #[\SensitiveParameter] string $privateKey, ?string $selector, bool $overwrite, ?string $ifMatch): DkimKeyChange
+    {
+        Gate::forUser($principal)->authorize('dkim.import');
+
+        $ascii = DkimNameResolver::normalize($rawName);
+
+        if ($ascii === null) {
+            $violations = new FieldViolations;
+            $violations->add('dkimName', 'invalidFormat', ['format' => 'domainName']);
+            $violations->throwIfAny();
+        }
+
+        $name = $this->names->kindOf((string) $ascii);
+        $text = DkimPrivateKey::normalize($privateKey);
+        $public = $this->generator->publicKeyOf($text);
+
+        if ($public === null) {
+            $violations = new FieldViolations;
+            $violations->add('privateKey', 'invalidPrivateKey', [], 'Not exactly one PEM-encoded private key (PKCS #1 or PKCS #8).');
+            $violations->throwIfAny();
+        }
+
+        $material = new DkimKeyMaterial((string) $public, $text);
+        $selector ??= (string) config('restv2.dkim.default_selector');
+        $current = $this->current($name->name, $overwrite, $ifMatch);
+
+        return $this->commitChange(
+            new AuditContext($principal),
+            $name,
+            $selector,
+            $material,
+            $current,
+            $ifMatch,
+            fn (AuditContext $context, DkimDnsPublicationResult $publication, ?StoredDkimKey $old): string => $this->audit->import($context, $name->name, $selector, $material->publicKey, $publication, $overwrite, $old),
+        );
+    }
+
+    /**
+     * copyDkimKey (FR-022, FR-023): the selector, public key and private key of a source with a key
+     * (valid, or unused by its exact name) go to one target that is a domain or alias domain and
+     * differs from the source (`422 notFound`, `sameAsSource`). An incomplete source is a `409`
+     * naming the missing parts; an existing target key needs `overwrite`, and `If-Match` applies to
+     * the target's key. The source is unchanged.
+     */
+    public function copy(Principal $principal, string $rawSource, string $rawTarget, bool $overwrite, ?string $ifMatch): DkimKeyChange
+    {
+        Gate::forUser($principal)->authorize('dkim.copy');
+
+        $source = $this->names->resolve($principal, $rawSource);
+        $sourceKey = $source === null ? null : $this->store->read($source->name);
+
+        if ($source === null || $sourceKey === null) {
+            throw new NotFoundHttpException('The source has no DKIM key.');
+        }
+
+        $targetName = DkimNameResolver::normalize($rawTarget);
+        $target = $targetName === null ? null : $this->names->kindOf($targetName);
+        $violations = new FieldViolations;
+
+        if (trim($rawTarget) === $source->name || $targetName === $source->name) {
+            $violations->add('target', 'sameAsSource', [], 'The target must differ from the source.');
+        } elseif ($target === null || ! $target->isMailDomain()) {
+            $violations->add('target', 'notFound', [], 'The target is neither a domain nor an alias domain.');
+        }
+
+        $violations->throwIfAny();
+        assert($target !== null);
+
+        $missing = array_keys(array_filter(['publicKey' => $sourceKey->publicKey === null, 'selector' => $sourceKey->selector === null, 'privateKey' => ! $sourceKey->hasPrivateKey]));
+        $private = $missing === [] ? $this->store->privateKey($source->name, (string) $sourceKey->selector) : null;
+
+        if ($missing !== [] || $private === null) {
+            throw new ConflictHttpException('The source key is incomplete ('.implode(', ', $missing === [] ? ['privateKey'] : $missing).' missing), so it cannot be copied.');
+        }
+
+        $selector = (string) $sourceKey->selector;
+        $material = new DkimKeyMaterial((string) $sourceKey->publicKey, $private);
+        $current = $this->current($target->name, $overwrite, $ifMatch);
+
+        return $this->commitChange(
+            new AuditContext($principal),
+            $target,
+            $selector,
+            $material,
+            $current,
+            $ifMatch,
+            fn (AuditContext $context, DkimDnsPublicationResult $publication, ?StoredDkimKey $old): string => $this->audit->copy($context, $target->name, $selector, $material->publicKey, $publication, $overwrite, $old, $source->name),
+        );
+    }
+
+    /**
+     * deleteDkimKey (FR-024, FR-025): the public key, selector and private key of a name go together;
+     * a name without a key is `404`, an outdated `If-Match` `412`. The record is removed from the
+     * ISPConfig zone (when enabled) and the outcome goes into the audit record.
+     */
+    public function delete(Principal $principal, string $rawName, ?string $ifMatch): DkimDnsPublicationResult
+    {
+        Gate::forUser($principal)->authorize('dkim.delete');
+
+        $name = $this->names->resolve($principal, $rawName) ?? throw new NotFoundHttpException('The name has no DKIM key.');
+
+        return $this->deleteName(new AuditContext($principal), $name, $ifMatch, null);
+    }
+
+    /**
+     * applyDkimKeyBulkAction with `delete` (FR-059, research R28): every target is resolved and
+     * deduplicated first (BulkActionRunner), then deleted on its own like deleteDkimKey, with the
+     * request ID in its audit record. While the publication is enabled, the record removals share
+     * RESTV2_DKIM_BULK_PUBLICATION_BUDGET seconds: each gets at most 15 seconds of what is left, and
+     * once it is spent the remaining keys are still deleted and report `failed` with `timeout`.
+     *
+     * @param  list<array{id: string, version?: string|null}>  $targets
+     * @return array{data: array{bulkRequestId: string, results: list<array<string, mixed>>, summary: array<string, int>}, meta?: array{dnsPublication: array<string, array<string, mixed>>}}
+     */
+    public function bulkDelete(Request $request, Principal $principal, array $targets, BulkActionRunner $runner): array
+    {
+        Gate::forUser($principal)->authorize('dkim.delete');
+
+        $enabled = IspconfigSettings::fromConfig()->enabled();
+        $budget = (float) config('restv2.dkim.bulk_publication_budget', 60);
+        /** @var array<string, DkimName> $names */
+        $names = [];
+        /** @var array<string, string> $ids */
+        $ids = [];
+        $publications = [];
+        $context = null;
+
+        $result = $runner->run(
+            $request,
+            $principal,
+            AuditEventType::DkimKeyDeletion,
+            $targets,
+            function (string $id) use ($principal, &$names, &$ids): ?string {
+                $name = $this->names->resolve($principal, $id);
+
+                if ($name === null) {
+                    return null;
+                }
+
+                $names[$name->name] = $name;
+                $ids[$name->name] ??= $id;
+
+                return $name->name;
+            },
+            function (string $key, ?string $ifMatch) use ($request, $principal, $enabled, &$budget, &$names, &$ids, &$publications, &$context): ?string {
+                $context ??= (new AuditContext($principal))->withBulkRequestId(RequestContext::requestId($request));
+                $started = $this->clock->now();
+                $publication = $this->deleteName($context, $names[$key], $ifMatch, $enabled ? $budget : null);
+                $budget -= ($this->clock->now()->getTimestampMs() - $started->getTimestampMs()) / 1000;
+                $publications[$ids[$key]] = $publication->toArray();
+
+                return null;
+            },
+            fn (string $id, ?string $key): ?array => $key === null ? DkimAuditTargets::named($id) : DkimAuditTargets::target($key),
+        );
+
+        return $enabled ? ['data' => $result, 'meta' => ['dnsPublication' => $publications]] : ['data' => $result];
+    }
+
+    /**
+     * The deletion of a resolved name: the store's `delete` (compared with the key read when
+     * `If-Match` was sent), the record removal within the given budget, and the audit record (the
+     * key is put back when the record cannot be written).
+     */
+    private function deleteName(AuditContext $context, DkimName $name, ?string $ifMatch, ?float $budget): DkimDnsPublicationResult
+    {
+        $current = $this->store->read($name->name) ?? throw new NotFoundHttpException('The name has no DKIM key.');
+        $this->checkVersion($current, $ifMatch);
+        $result = $this->store->delete($name->name, $ifMatch === null || trim($ifMatch) === '' ? null : $current->fingerprint);
+
+        if ($result->status === 'absent') {
+            throw new NotFoundHttpException('The name has no DKIM key.');
+        }
+
+        if ($result->status === 'outdated') {
+            throw new PreconditionFailedHttpException('The DKIM key was changed since it was read.');
+        }
+
+        $publication = $this->removeRecord($name->name, $result->oldSelector, $budget);
+
+        try {
+            $this->audit->deletion($context, $name->name, self::old($name->name, $result), $publication);
+        } catch (Throwable $e) {
+            $this->restoreAfterFailedAudit($name->name, DkimKeyStore::fingerprint($name->name, null, null, null), $result);
+
+            throw $e;
+        }
+
+        return $publication;
+    }
+
+    private function removeRecord(string $name, ?string $selector, ?float $budget): DkimDnsPublicationResult
+    {
+        $enabled = IspconfigSettings::fromConfig()->enabled();
+
+        if (! $enabled || $selector === null) {
+            return $enabled
+                ? new DkimDnsPublicationResult(DkimDnsOutcome::NoRecordToRemove, null)
+                : new DkimDnsPublicationResult(DkimDnsOutcome::NotConfigured, null);
+        }
+
+        if ($budget !== null && $budget < 0.5) {
+            return new DkimDnsPublicationResult(DkimDnsOutcome::Failed, $selector.'._domainkey', 'timeout', 'The publication time of the bulk request was spent.');
+        }
+
+        return $this->publisher->remove($name, $selector, $budget);
+    }
 
     /**
      * generateDkimKey (FR-013 to FR-015): a new key pair for a domain or alias domain in the

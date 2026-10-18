@@ -859,6 +859,78 @@ inject a failure into each step (spec US8).
   feature (constitution quality gates 1, 2 and 6).
 - [X] T092 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
   output; record Part C as the release checklist for a mailcow host.
+- [ ] T097 Before the release that ships this feature, run quickstart.md Part C on a mailcow host
+  (the FeldHost fork; the owner waived a plain upstream host) and record the results here.
+
+  *Staging run (2026-10-18), partly done*: Part C ran on maildev.feldhost.cz, the FeldHost fork at
+  `1b7c446`, against the image `mailcow-rest-v2:1351d9e` (main with 003 and 004). During the run the
+  `restv2-mailcow` block of the host's override was synced with `deploy/docker-compose.override.yml`
+  of main `4971629`, and `site.restv2.custom` was replaced by the repository version (900 s read
+  timeout, nginx reloaded). The image stayed `1351d9e`: the session's permission system refused the
+  redeploy and any later configuration change of `restv2-mailcow`. The legacy side was the real
+  legacy UI (Playwright) or the `/api/v1` requests the UI sends, with a legacy session as
+  `restv2-test-admin`; the API side used an administrator API key. Mail and IMAP/SMTP sign-ins went
+  from a throwaway container on `mailcow-network` to local mailboxes only. The test objects had
+  `*.example` names and were deleted afterwards, through the API where it has an operation.
+  - Step 1 passes. `api1@p003.example` (API, the Default template and the values the legacy form
+    sent) and `ui1@p003.example` (legacy UI) have identical `mailbox`, `user_acl`, own `alias`,
+    `quota2`, `quota2replica`, `tags_mailbox` and `_sogo_static_view` rows apart from the address,
+    the hash, `passwd_update` and the IDs; neither has `RL_VALUE` or `RCPT_WANTS_*` entries. IMAP
+    and SMTP sign-in and the delivery of two messages worked within 8 s of the creation. Webmail
+    worked for `api1`, and for another mailbox 10 s after its creation, once SOGo knew the domain:
+    SOGo answered `403` for both `api1` and `ui1` until a domain was created with
+    `restartGroupware` (legacy behaviour; quickstart updated).
+  - Step 2 partly. A pre-hashed `{SSHA512}` value (API `api3`, legacy `ui3`) is stored exactly as
+    given and IMAP accepts the password. The run with `MAILCOW_PASS_SCHEME=SSHA512` was not done: it
+    needs a configuration change of `restv2-mailcow`, which was refused.
+  - Step 3 passes. The same change of status, quota, protocol access and password through the API
+    (`api1`) and the legacy edit form (`ui1`) gives identical rows apart from `passwd_update` and the
+    `recovery_email: ""` that the legacy form always sends. A legacy edit between the API's read and
+    write gave `412` (`about:blank`), and the new tag `200`. `attributes` holds string values and an
+    empty `attribute_hash`.
+  - Step 4 passes, apart from the outage check. `del1@p003.example` had an exclusive alias, an alias
+    shared with `api1`, sender permissions both ways, an inactive sync job, a temporary alias, an app
+    password, a sieve filter, a spam-list entry, a BCC map, Pushover settings, a custom attribute, a
+    tag, a rate limit, tagged-mail handling, SOGo data, five recent logins, an API preference and,
+    inserted directly, a TOTP factor, a passkey, a quarantine item and two OAuth tokens.
+    `deletion-preview` matched every count. `DELETE` answered `204` in 0.2 s. Afterwards no row
+    named the address except the shared alias (now `api1` only), the legacy `logs` table and the
+    API's audit records, and Redis held only log lists and legacy PHP sessions; `RL_VALUE` and
+    `RCPT_WANTS_*` were gone, and the maildir and its index were in `_garbage`. The re-created address
+    had no mail, logins, factors, preferences or dependents. The `503` check was not run: the owner
+    forbids stopping `dockerapi-mailcow`, and pointing `restv2-mailcow` at an unreachable container
+    service needs a configuration change, which was refused.
+  - Step 5 passes, apart from the outage check. `ren1` (TOTP, app password, SOGo data, the step 4
+    dependents, folders shared with and from `api1`) was renamed twice through the API
+    (`Ren1New`, then `Ren1B`, keeping the old address). The maildir moved and every dependent
+    followed, also the TOTP factor, passkey, temporary alias, spam list, quarantine item, sasl log,
+    `RL_VALUE` and `RCPT_WANTS_*`; the OAuth tokens were revoked. The multi-recipient alias was
+    rewritten element-wise, and the alias kept by the first rename followed the second. Both share
+    directions worked under the new name; password plus TOTP signed in through the API and the
+    legacy UI, webmail showed the old mail and calendar, and mail to the old address arrived. A
+    legacy rename of `ren2` for comparison showed the documented deviations: the factors, temporary
+    alias, spam list, quarantine, OAuth tokens, sasl log, `RL_VALUE` and `RCPT_WANTS_*` stayed under
+    the old address, so the renamed mailbox signed in without its second factor, and the
+    multi-recipient alias kept the old address. Two legacy dockerapi defects affect both paths:
+    `doveadm get_acl` skips own folders whose name contains `Shared`, so their permissions do not
+    follow a rename (the run used other names), and `maildir move` moves the index directory to
+    `<new address>_index`, where it is orphaned (the run removed those directories). The SOGo outage
+    check was not run, as in step 4.
+  - Step 6 does not apply: `CLUSTERMODE` is not set on this host.
+  - Templates pass. `p034-tpl-ui` (legacy add form) and `p034-tpl-api` (`POST /mailbox-templates`
+    with the same values) have identical attributes apart from `rl_value` (`"50"` from the form, `50`
+    from the API, both read as 50) and the tag order. The API reads the legacy template, the legacy
+    edit page shows the API template's values, and a template change stores legacy's formats.
+    `POST /mailbox-templates/bulk-actions` deleted both, refused the Default
+    (`mailbox-template-protected`) and reported an unknown ID as `notFound`.
+  - The mailbox bulk action gives one result per mailbox (`done`, `notFound`, `outdated` for a stale
+    version, an upper-case address normalised), but only with one target per request. **Bug**: after
+    the config sync every request with two or more targets answered `422 tooMany` (`max: 1`), and
+    `customAttributeLimit` became 1. The deploy example passes
+    `RESTV2_BULK_LIMIT=${RESTV2_BULK_LIMIT:-}` and
+    `RESTV2_MAILBOX_CUSTOM_ATTRIBUTE_LIMIT=${RESTV2_MAILBOX_CUSTOM_ATTRIBUTE_LIMIT:-}`, and
+    `config/restv2.php` (lines 122 and 125) reads the empty value as 0 and clamps it to 1; the
+    default 100 applies only when the variable is unset. maildev still has this setting.
 
 ---
 
@@ -1083,3 +1155,6 @@ what exists map as listed.
   `87` and `087`) was reported `notFound` with a second record; the runner now resolves and
   deduplicates all targets before applying any (this also fixes 002's domain and 003's mailbox bulk
   deletions).
+- **T097** (Part C on a mailcow host) ran partly on 2026-10-18 (see the task) and stays open for
+  step 2's run with `MAILCOW_PASS_SCHEME=SSHA512`, the outage checks of steps 4 and 5 and a
+  multi-target bulk action, which the empty `RESTV2_BULK_LIMIT` of the deploy example blocks.

@@ -122,7 +122,8 @@ after the rename. `docker compose logs app | grep -c Passw0rd` prints `0`.
    in the legacy UI with the same values. Compare the rows:
 
    ```bash
-   docker compose exec mysql-mailcow mariadb $DBNAME -e "
+   source <(grep -E '^(DBNAME|DBUSER|DBPASS)=' mailcow.conf)
+   docker compose exec -T mysql-mailcow mariadb -u"$DBUSER" -p"$DBPASS" "$DBNAME" -e "
      SELECT username, name, quota, active, authsource, attributes FROM mailbox WHERE username IN ('api1@d','ui1@d');
      SELECT * FROM user_acl WHERE username IN ('api1@d','ui1@d');
      SELECT * FROM alias WHERE address IN ('api1@d','ui1@d');
@@ -130,23 +131,34 @@ after the rename. `docker compose logs app | grep -c Passw0rd` prints `0`.
      SELECT c_uid, aliases FROM _sogo_static_view WHERE c_uid IN ('api1@d','ui1@d');"
    ```
 
-   Rows differ only in the address, the hash and `passwd_update`. Sign in to IMAP, SMTP and
-   webmail with `api1@<domain>` within a minute, and send it a mail.
+   Rows differ only in the address, the hash, `passwd_update` and the IDs. Sign in to IMAP, SMTP and
+   webmail with `api1@<domain>` within a minute, and send it a mail. Webmail needs SOGo to know the
+   domain: SOGo reads the domain list when it starts and answers `403` for every mailbox of a domain
+   created since, so create the test domain with `restartGroupware` (legacy: "Add domain and restart
+   SOGo").
 2. **Hash schemes**: repeat with `MAILCOW_PASS_SCHEME=SSHA512` and with a pre-hashed `{SSHA512}`
    value created by `docker compose exec dovecot-mailcow doveadm pw -s SSHA512`. IMAP sign-in works.
 3. **Change parity**: change status, quota, protocol access and the password through the API, then
    edit the same mailbox in the legacy UI between a read and a write: the API answers `412`.
-   `SELECT attributes FROM mailbox` shows string values and an empty `attribute_hash`.
+   `SELECT attributes FROM mailbox` shows string values and an empty `attribute_hash`. The same
+   change made in the legacy edit form gives the same row apart from `passwd_update` and the
+   `recovery_email: ""` that the form always sends.
 4. **Deletion parity (SC-007)**: give a mailbox aliases, sender permissions, a sync job, a
    temporary alias, an app password, a sieve filter, TOTP, a passkey, quarantine items and SOGo
    data in the legacy UI. Compare `deletion-preview` with the rows, delete it through the API, and
    check that `/var/vmail/_garbage/` holds the maildir, that no row names the address (except
-   other aliases that kept their other recipients), and that `HGET RL_VALUE <address>` and the
+   other aliases that kept their other recipients, the legacy `logs` table and the API's audit
+   records), and that `HGET RL_VALUE <address>` and the
    `RCPT_WANTS_*` fields are gone. Re-create the address: it shows no mail, logins or factors.
    Stop `dockerapi-mailcow` and delete another mailbox: `503`, nothing removed.
 5. **Rename (SC-008)**: rename a mailbox with shared folders in both directions and a TOTP factor,
    keeping the old address. Sign in with the new address and the same password and TOTP, see every
    folder and the shared folders, and send to the old address. Stop `sogo-mailcow` and rename
-   again: `503`, and the mailbox keeps its address and data.
+   again: `503`, and the mailbox keeps its address and data. A mailbox with a second factor
+   authenticates IMAP and SMTP only with an app password (legacy), so check the folders with one.
+   Give the shared folders names without `Shared`: dockerapi's `doveadm get_acl` skips own folders
+   whose name contains it, so their permissions would not follow the rename (legacy renames too).
+   dockerapi's `maildir move` also leaves the old index directory behind as
+   `/var/vmail_index/<new address>_index` (legacy defect; Dovecot rebuilds the index).
 6. **Cluster mode** (if available): with `CLUSTERMODE=replication`, watch
    `redis-cli SUBSCRIBE MC_CHANNEL` during a deletion: one `maildir cleanup` broadcast.

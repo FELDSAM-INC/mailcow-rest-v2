@@ -145,11 +145,18 @@ no CSRF token).
    `swaks --to sales@<domain> --server <host>`; both destination mailboxes receive it. Mail to
    `noreply@<domain>` with `destinationType: discard` is accepted and not delivered.
 2. **Alias domain**: after creating `<alias domain>` for `<domain>`, mail to
-   `anna@<alias domain>` reaches `anna@<domain>`; deactivating the alias domain makes Postfix
-   reject `anna@<alias domain>` with "Recipient address rejected".
-3. **Sender check**: with the alias allowing sending, `swaks --auth-user anna@<domain> --from sales@<domain> --to x@<external>`
+   `anna@<alias domain>` reaches `anna@<domain>`. After the alias domain is deactivated, Postfix
+   no longer treats it as local (`postmap -q <alias domain> mysql:/opt/postfix/conf/sql/mysql_virtual_domains_maps.cf`
+   in `postfix-mailcow` returns nothing), as after a legacy deactivation: a client outside
+   `mynetworks` gets "Relay access denied", and a client on mailcow's network is offered relaying,
+   so probe it with `RCPT TO` only. An smtpd process that resolved the address before may still
+   answer "Recipient address rejected: User unknown in virtual mailbox table" until it exits.
+3. **Sender check**: with the alias allowing sending, `swaks --auth-user anna@<domain> --from sales@<domain> --to bob@<domain>`
    is accepted; after `PATCH {"senderAllowed": false}` it is rejected ("Sender address rejected:
    not owned by user"); after granting Anna `sales@<domain>` explicitly it is accepted again.
+   Postfix checks the sender at `RCPT TO`, so a local recipient is enough and no mail leaves the
+   host. Anna must have no second factor: such a mailbox authenticates SMTP only with an app
+   password (legacy).
    An external sender address `news@mailer.example` is accepted as sender after it is set.
 4. **Groupware**: in SOGo, Anna's identity list offers `sales@<domain>` while the alias is active,
    visible and not a catch-all, and `news@mailer.example` after it is set as an external sender

@@ -756,6 +756,52 @@ FR-064).
 - [X] T089 Walk through [quickstart.md](./quickstart.md) Part B against the dev stack and correct
   `specs/004-aliases-alias-domains-resources/quickstart.md` wherever the behaviour differs from the
   guide (the behaviour follows the contract, not the guide).
+- [X] T090 Before the release that ships this feature, run quickstart.md Part C (with Part B's calls
+  repeated against the host) on a mailcow host and record the results here.
+
+  *Staging run (2026-10-18)*: every step of Part C passed on maildev.feldhost.cz with the image
+  `mailcow-rest-v2:1351d9e`, set up and cleaned up as described under 003's T097 (legacy UI through
+  Playwright or its `/api/v1` requests, an administrator API key, mail only from a throwaway
+  container on `mailcow-network` to local mailboxes, `*.example` names, everything deleted
+  afterwards). The domains were `p004.example` (API side) and `p004b.example` (legacy side).
+  - Part B's calls answered as described: `201` with `Location` and `ETag`; `409 address-in-use`
+    (`holder: alias`); `409 domain-alias-limit-reached` with `count` 7 and `limit` 7 (the count
+    includes the aliases of the alias domain, as legacy counts); `invalidFormat` and `tooLong`
+    (`max: 160, unit: bytes`); the destination filter and the search; `412` after a legacy edit and
+    `200` with the new tag; the alias domain's creation report and its `DOMAIN_MAP`, `RL_VALUE`
+    (`500 / 1h`) and `DKIM_SELECTORS` entries; the copy over alias domains; the alias domain's
+    deletion removed its copied aliases, `DOMAIN_MAP` and `RL_VALUE` and kept the DKIM key (also for
+    the legacy-made one); sender settings, with `["@p004.example", "*"]` stored as `*` alone; a
+    legacy-made domain administrator saw only its domain and alias domain, got `404` for another
+    domain's alias, `403 permission-flag-required` (`aliasDomains`), `403 attribute-not-permitted`
+    (`destinations.0`) after `alias_external_goto = 0`, and candidates without `*`; the resource
+    `MeetingRoom1@p004.example` and `409` (`holder: resource`); the alias bulk action's `done`,
+    `outdated` and `notFound` and `422 tooMany` at 101 targets; the audit trail with the refused
+    change (`failureReason: versionOutdated`). Only the Redis outage of step 7 was not run: the owner
+    forbids stopping mailcow's containers, and the automated suite covers it.
+  - Step 1 passes. Mail to `sales@p004.example` reached both mailboxes 7 s after the alias was
+    created; mail to the discard alias was accepted and delivered to `/dev/null`.
+  - Step 2 passes, with a corrected expectation. Mail to `anna@` and to the copied `sales@` of the
+    alias domain arrived. After the deactivation Postfix's domain map no longer returns the alias
+    domain, as after a legacy deactivation, so a client on mailcow's network is offered relaying
+    (probed with `RCPT TO` only). "Recipient address rejected: User unknown in virtual mailbox table"
+    came only from an smtpd process that had resolved the address before; the quickstart now says so.
+  - Step 3 passes. As Anna, `sales@` was accepted, rejected with `553 5.7.1 … Sender address
+    rejected: not owned by user` after `senderAllowed: false`, and accepted again with the explicit
+    permission; `news@mailer.example` was rejected, then accepted once set as an external sender
+    address. The recipient was a local mailbox instead of an external one (owner rule; Postfix checks
+    the sender at `RCPT TO`; quickstart updated).
+  - Step 4 passes. SOGo's preferences offered Anna `sales@`, its copy in the alias domain, her alias
+    domain address and, once set, `news@mailer.example`; `sales@` disappeared when the alias was
+    deactivated. The resource was found in the address book, was booked through CalDAV (SOGo accepted
+    for it and the event is in the resource's calendar) and was no longer found after its
+    deactivation.
+  - Step 5 passes. The API-made and the legacy-made alias, alias domain and resource have identical
+    `alias`, `alias_domain`, `mailbox`, `sender_acl` and `_sogo_static_view` rows and Redis entries
+    (`DOMAIN_MAP`, `RL_VALUE`, DKIM selector and key formats) apart from timestamps, IDs and key
+    material. Differences: comments that were not sent are stored as `''` by the API and as `NULL`
+    by the legacy form (neither is shown), and the API side's directory rows also listed the alias
+    copied over the alias domain. The API read the legacy-made sender settings unchanged.
 
 ---
 
@@ -918,4 +964,6 @@ what exists map as listed.
   administrator and `da1` API keys over `php artisan serve` (no host ports for a parallel
   worktree); the guide now seeds what it uses (`anna@`, `carl@example.com`, `da1`), uses the seeded
   password and the HTTPS listener, and names `example.info` as the alias domain candidate, because
-  the dev seeder creates `example.net` as a domain. Part C stays open.
+  the dev seeder creates `example.net` as a domain. Part C was run later (T090).
+- **T090** (Part C on a mailcow host) ran on 2026-10-18; see the task for the results and the
+  corrected quickstart steps 2 and 3.

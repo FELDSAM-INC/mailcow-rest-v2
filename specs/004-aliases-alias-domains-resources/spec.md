@@ -56,13 +56,13 @@
   stop domain administrators from creating external forwarding, not to undo an administrator's
   decision, and the legacy behaviour is a defect that breaks ordinary edits.)
 - Q: The legacy screens offer mass actions (activate, deactivate, show or hide in the groupware,
-  delete, expand over alias domains) and the add form accepts several alias addresses at once.
-  Feature 002 offers no batch operations. What does feature 004 offer? → A: Bulk actions for the
-  legacy mass actions, as feature 003 defines them: up to 100 objects, refused as a whole when the
-  action is not permitted, otherwise one result and one audit record per object. Creation takes one
-  alias, alias domain or resource per request; the web app sends one request per address of the
-  legacy multi-address form. (agent decision: the brief asks for the legacy bulk actions, feature 003
-  sets the pattern, and single-object creation keeps "created" responses with one address each.)
+  delete, expand over alias domains) and the add form accepts several alias addresses at once. What
+  does feature 004 offer? → A: Bulk actions for the legacy mass actions, as features 002 and 003
+  define them: up to 100 objects, refused as a whole when the action is not permitted, otherwise one
+  result and one audit record per object. Creation takes one alias, alias domain or resource per
+  request; the web app sends one request per address of the legacy multi-address form. (agent
+  decision: the brief asks for the legacy bulk actions, features 002 and 003 set the pattern, and
+  single-object creation keeps "created" responses with one address each.)
 - Q: How is an alias addressed, given that its address can be changed? → A: By its identifier,
   which never changes, as the legacy edit page and `/api/v1` do. A client finds an alias by address
   with the exact-address list filter. (agent decision: a changeable address cannot be a stable
@@ -108,6 +108,12 @@
   in legacy, where the flag is labelled "Add alias domains" and the edit and delete actions are shown
   without it. (agent decision: legacy behaviour; a domain administrator can only move an alias domain
   between domains they manage anyway.)
+- Q: Legacy alias domain deletion removes BCC maps whose local destination is the bare alias domain
+  name, but domain-level BCC maps are stored as `@<alias domain>`, so they survive the deletion and
+  apply again to an alias domain created later with the same name. Which BCC maps does the deletion
+  remove? → A: The alias domain's domain-level BCC maps in both forms, `@<alias domain>` and the bare
+  name. (orchestrator decision: legacy defect found by feature 009; feature 002's domain deletion is
+  aligned the same way.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -794,7 +800,9 @@ log filtered by target.
   - the alias domain and its entries in the domain map and in the rate limits;
   - the aliases that live in it, and the explicit sender permissions to send as their addresses;
   - the explicit sender permissions for the alias domain as a whole;
-  - the temporary aliases and the domain-level BCC maps of its addresses;
+  - the temporary aliases of its addresses;
+  - its domain-level BCC maps, that is, BCC maps whose local destination is the alias domain, stored
+    as `@<alias domain>` or as the bare name;
   - its spam allow and block lists.
 
   It MUST keep the DKIM key, as feature 002 does for domains (FR-038 there). It MUST then rebuild the
@@ -1061,7 +1069,8 @@ translations. The fork differs in three ways:
 | Alias domain creation checks | Valid names, name differs from target, target exists and is not a backup MX domain, name not yet a domain or alias domain, `alias_domains` flag | Same, plus the host name check (FR-041). **Deviation** for the host name |
 | Alias domain creation effects | `alias_domain` row; `DOMAIN_MAP` entry (a failure leaves the row without its entry); `ratelimit('edit')` → `RL_VALUE`, which needs the `ratelimit` flag and otherwise fails after the row exists; `dkim('add')` → `DKIM_PUB_KEYS`, `DKIM_SELECTORS`, `DKIM_PRIV_KEYS` (fork: ISPConfig push); full groupware rebuild. The removal of overlapping external sender addresses uses an undefined variable and removes nothing | Row and domain map entry atomic; overlapping external sender addresses removed; a domain administrator without `ratelimit` refused before anything is stored; per-step report (FR-006, FR-042, FR-043). **Deviation** |
 | Alias domain change | Target and active state; the new target must be a domain, not an alias domain, in scope; relay targets and the alias limit are not checked; no flag needed | Target rules as at creation, including relay domains; alias limit checked; no flag needed (FR-044). **Deviation** for the relay and limit checks |
-| Alias domain deletion | `alias_domain` row, its `alias` rows, `spamalias` rows, `bcc_maps` with the name as local destination, `DOMAIN_MAP` entry. The `RL_VALUE` removal uses an undefined variable, so the rate limit stays; sender permissions and spam lists stay; the DKIM key stays; the name is not normalised | Also removes the rate limit, the sender permissions and the spam lists; keeps the DKIM key; normalises the name (FR-045). **Deviation** |
+| Alias domain deletion | `alias_domain` row, its `alias` rows, `spamalias` rows, `DOMAIN_MAP` entry. The `RL_VALUE` removal uses an undefined variable, so the rate limit stays; sender permissions and spam lists stay; the DKIM key stays; the name is not normalised | Also removes the rate limit, the sender permissions and the spam lists; keeps the DKIM key; normalises the name (FR-045). **Deviation** |
+| BCC maps on alias domain deletion | `DELETE FROM bcc_maps WHERE local_dest = '<alias domain>'`, but domain-level BCC maps are stored as `@<alias domain>`, so they survive and apply again to an alias domain created later with the same name | BCC maps with the local destination `@<alias domain>` or the bare name removed (FR-045). **Deviation** (bug fix) |
 | Resource creation | Local part from the letters and digits of the description, case kept; kind location, group or thing; booking values below -1 become -1; the domain must be a primary domain; `mailbox`, `alias` and `spamalias` checked; `mailbox` row with password `RESOURCE`, quota 0 and the kind; groupware update | Same; booking values below -1 refused (FR-048 to FR-050). **Deviation** for booking values |
 | Resource change and deletion | Description, kind, booking rule and active state; deletion removes the `mailbox` row and the resource's `sogo_*` rows | Same (FR-051, FR-052) |
 | Resources and domain limits | Not counted as mailboxes, no quota, no limit on their number | Same (FR-050) |

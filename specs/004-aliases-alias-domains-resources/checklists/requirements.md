@@ -33,7 +33,7 @@
 
 - Iteration 1 (specify): three clarification markers were open (FR-027: whether destinations already
   on an alias are re-checked against the external-destination rules; FR-028: partial saving of
-  invalid entries; FR-058: bulk actions, which feature 002 does not offer). The legacy coverage table
+  invalid entries; FR-058: whether to offer bulk actions). The legacy coverage table
   and the parity table that constitution quality gate 3 and the roadmap require were missing, so the
   mandatory sections were incomplete. FR-028 had no requirement text, so its acceptance criteria were
   missing.
@@ -65,6 +65,12 @@
 
   The spec has FR-001 to FR-067 and SC-001 to SC-010, without gaps, and every cross-reference was
   checked.
+- Iteration 4 (orchestrator follow-up, 2026-10-18): feature 009 found that legacy alias domain
+  deletion removes BCC maps by the bare name while domain-level BCC maps are stored as
+  `@<alias domain>`. FR-045 now removes both forms; this is recorded as an orchestrator decision
+  under "Clarifications" and as a bug-fix deviation in the parity table. Feature 002 now has bulk
+  actions, so the bulk-action clarification cites features 002 and 003 as the pattern. All items
+  still pass.
 - The alias, alias domain, resource and sender permission files of the FeldHost fork were diffed
   against upstream `2026-09a`. The logic is identical. The differences are the pre-filled DKIM
   selector, the ISPConfig DKIM DNS push and branding texts. The external-destination flag and

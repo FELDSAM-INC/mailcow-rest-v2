@@ -496,9 +496,11 @@ extension members.
   impersonating domain administrator lost the `loginAs` flag. Any request of the session can
   detect it. The request was **not** carried out. The session now acts as the impersonator again,
   and its identifier and anti-forgery token were renewed. The automatic end is audited with its
-  reason. Ending the impersonation and signing out are never refused with this problem.
+  reason. This also applies when the detecting request is the end of the impersonation or a
+  sign-out: the impersonation has ended, and the request was not carried out.
 - **Client action**: Call `GET /csrf-token` and `GET /me`, tell the user that the impersonation
-  ended, and do not resend the request: it was meant for the impersonated account.
+  ended, and do not resend the request: it was meant for the impersonated account. A sign-out
+  refused this way can be sent again; it then ends the impersonator's session.
 
 ## not-allowed-while-impersonating
 
@@ -952,3 +954,131 @@ response header `Audit-Recorded: false`.
   alias domains (the legacy action "Expand alias over alias domains"). The alias lives in an alias
   domain. Nothing was created. In a bulk copy the item is reported `refused` with this problem.
 - **Client action**: Offer the action only for aliases with `inAliasDomain: false`.
+
+## current-password-incorrect
+
+- **Type**: `/api/v2/problems/current-password-incorrect`
+- **Status**: 403
+- **Meaning**: A self-service request that needs the account's current password (password
+  change, recovery address, second-factor enrolment, removing all second factors) carried a wrong
+  one. Nothing changed. The attempt is audited and counts towards the sign-in throttling of the
+  account and client address: later failures are delayed, and after 10 failures in 15 minutes the
+  answer is `too-many-requests`. It is not reported to fail2ban. Feature 005.
+- **Client action**: Ask for the current password again. Do not retry automatically.
+
+## password-managed-externally
+
+- **Type**: `/api/v2/problems/password-managed-externally`
+- **Status**: 403
+- **Meaning**: The mailbox's password lives in an external identity provider (LDAP, Keycloak or
+  generic OIDC), so its password, recovery address and second factors cannot be managed through
+  this API. Feature 005.
+- **Client action**: Hide these functions for the account (the self-service capabilities report
+  `passwordChangeAvailable: false`) and point the user to the identity provider.
+
+## permission-flag-missing
+
+- **Type**: `/api/v2/problems/permission-flag-missing`
+- **Status**: 403
+- **Meaning**: The change needs a permission flag the caller lacks: a mailbox user's own flag, or
+  for app passwords, push notifications and Sieve filters the domain administrator's own flag. The
+  whole request was refused and nothing changed. Values sent with their current value never need
+  the flag, and reading never needs it. Feature 005.
+- **Extension members**: `flag`, the missing flag as named in `PermissionFlags` (for example
+  `appPasswds`, `spamAlias`, `filters`, `pushover`, `delimiterAction`, `tlsPolicy`, `easReset`,
+  `sogoProfileReset`, `pwReset`).
+- **Client action**: Make the related controls read-only; explain that an administrator grants the
+  permission.
+
+## password-reset-unavailable
+
+- **Type**: `/api/v2/problems/password-reset-unavailable`
+- **Status**: 403
+- **Meaning**: Password reset does not work on this server, because the operator's reset message
+  has no sender or no subject. Every reset request answers this until it is configured. Feature
+  005.
+- **Client action**: Hide "Forgot password" (the self-service capabilities report
+  `passwordReset.available: false`) and tell the user to contact the administrator.
+
+## invalid-reset-token
+
+- **Type**: `/api/v2/problems/invalid-reset-token`
+- **Status**: 400
+- **Meaning**: The reset token is unknown, expired (15 minutes by default), already used (any
+  completed reset invalidates all tokens of the account), or belongs to a mailbox that is no longer
+  active or no longer uses the mailcow source. Feature 005.
+- **Client action**: Offer to request a new reset link.
+
+## second-factor-enrolment-expired
+
+- **Type**: `/api/v2/problems/second-factor-enrolment-expired`
+- **Status**: 400
+- **Meaning**: The session has no TOTP enrolment or WebAuthn second-factor registration options, or
+  they expired (10 and 5 minutes), were used up (five wrong TOTP codes, one WebAuthn attempt) or
+  were started in another session. Nothing was stored. Feature 005.
+- **Client action**: Start the enrolment again.
+
+## second-factor-enrolment-failed
+
+- **Type**: `/api/v2/problems/second-factor-enrolment-failed`
+- **Status**: 400
+- **Meaning**: The TOTP code did not match the enrolment's secret, the WebAuthn response did not
+  verify, or the Yubico service rejected the OTP. Nothing was stored. A TOTP enrolment stays open
+  while attempts remain; WebAuthn options are used up. Feature 005.
+- **Extension members**: `attemptsRemaining` (TOTP only), the wrong codes left before the
+  enrolment is cancelled.
+- **Client action**: Ask for a new code, or start again.
+
+## last-second-factor
+
+- **Type**: `/api/v2/problems/last-second-factor`
+- **Status**: 409
+- **Meaning**: The second-factor entry to remove is the account's only active entry, which legacy
+  does not allow to remove on its own. Nothing changed. Feature 005.
+- **Client action**: Offer "remove all second factors" (with the current password) or enrolling
+  another one first.
+
+## second-factor-required-by-policy
+
+- **Type**: `/api/v2/problems/second-factor-required-by-policy`
+- **Status**: 403
+- **Meaning**: An administrator requires the account to keep a second factor (legacy `force_tfa`),
+  so its entries cannot be removed. Nothing changed. Feature 005.
+- **Client action**: Do not offer removal when the self-service capabilities report
+  `account.secondFactorRequired: true`; enrol a new entry before replacing an old one.
+
+## push-notifications-not-configured
+
+- **Type**: `/api/v2/problems/push-notifications-not-configured`
+- **Status**: 409
+- **Meaning**: The mailbox has no stored Pushover application token and user key, so there is
+  nothing to verify. Feature 005.
+- **Client action**: Save the push notification settings first.
+
+## groupware-disabled
+
+- **Type**: `/api/v2/problems/groupware-disabled`
+- **Status**: 403
+- **Meaning**: mailcow runs without its groupware (`SKIP_SOGO=y`), so webmail, the webmail
+  hand-off, the ActiveSync cache and groupware profile resets, and the Apple profile with calendars
+  and contacts are not available. Feature 005.
+- **Client action**: Hide these functions (the self-service capabilities report
+  `groupware.enabled: false`).
+
+## Feature 005 use of shared types
+
+- `temporary-failure` carries the extension `dependency` (`sharedStore`, `mailStore`, `pushover` or
+  `addressGeneration`) in the self-service operations.
+- `second-factor-required` (status 401) is also the answer of `POST /api/v2/password-resets/completion`
+  when the account has active second factors and the request carried none. It then has the
+  extension `methods`, the usable methods in the recommended order; the token stays valid.
+- `second-factor-failed` (status 401) answers a wrong second factor in a reset completion; the token
+  stays valid and the failure counts towards the account's sign-in throttling.
+- `second-factor-unavailable` (status 403) answers a reset completion for an account whose only
+  second factors are deprecated U2F or HOTP entries.
+- `temporary-verification-failure` (status 503) also answers a Yubico OTP enrolment or reset when
+  the Yubico service cannot be reached.
+- `too-many-requests` also answers wrong current passwords (per account and client address) and
+  more than 10 reset requests, token checks or completions per client address in 15 minutes.
+- An outdated `If-Match` on a self-service resource answers `412` (`about:blank`); in the bulk TLS
+  change the item's outcome is `outdated`.

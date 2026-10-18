@@ -30,8 +30,10 @@ The technical approach reuses every decision of feature 001 and adds:
 - an impersonation model on top of 001's session: the signed-in account stays the session
   principal, the target is a second session key, and the request principal becomes the target
   with the impersonator attached, validated on every request;
-- binding of sessions, impersonations, API keys and tokens to the account's creation time and a
-  Redis account generation, so nothing ever acts for a later account with the same username;
+- immediate ending of a deleted or renamed account's sessions through feature 005's session
+  registry, and binding of sessions, impersonations, API keys and tokens to the account's creation
+  time (plus a Redis account generation for impersonation targets), so nothing ever acts for a
+  later account with the same username;
 - two API-owned schema changes: impersonation columns on `restv2_audit_events`, and owner binding
   plus a revocation reason on `restv2_api_keys`.
 
@@ -50,7 +52,8 @@ already in 001's image. Feature 007 builds on code of features 001, 002, 003 and
 `fido2`, read-only `domain`, `alias_domain`, `mailbox`; `sasl_log` through feature 005), the
 API-owned tables `restv2_audit_events` and `restv2_api_keys` (new columns) and
 `restv2_preferences`. mailcow's Redis for the Laravel session (new key `restv2.impersonation`), the
-account generation counters and the token sign-in throttle. Details in
+account generation counters of impersonation targets and the token sign-in throttle; feature
+005's session registry is used to end an account's sessions. Details in
 [data-model.md](./data-model.md).
 
 **Testing**: PHPUnit 12 feature and unit tests, written first, on MariaDB 10.11 with
@@ -102,7 +105,8 @@ server; 21 operations in 4 modules; 7 user stories.
 
 **Post-design re-check (after Phase 1)**: PASS. The contract, data model and research introduce no
 unjustified violation. The decisions that touched gates are: row locks for the last-administrator
-guard (VI, SC-003), the account generation counter (VI, FR-036), automatic impersonation end on any
+guard (VI, SC-003), the creation-time binding and the account generation of impersonation targets
+(VI, FR-036), automatic impersonation end on any
 request including `GET` (II, justified below), and the token issue answering `200` (II, justified
 below).
 
@@ -165,9 +169,9 @@ delivered class has another name, the delivered one is used.
 | Feature | Code used or extended by 007 | Why |
 |---|---|---|
 | 001 | `App\Auth\Principal`, `AuthMethod`, `PermissionFlag`; `SessionManager`; middleware `EnsureSessionIntegrity`, `RequireAuth`, `VerifyCsrfToken`, `EnforcePendingActions`; `IdentityService`, `PreferencesService`, `ApiKeyService`, `ApiKeyAuthenticator`, `AuditLogger`, `SignInThrottle`; `ListQuery`, `ETag`, `ProblemType`, `ApiFormRequest`; `IdentityResource`, `SessionResource`, `AuditEventResource`, `ApiKeyResource`; `SessionController@destroy`; `MailcowFactory` | Identity, sessions, keys, preferences, audit, lists and errors (R16–R18, R22) |
-| 002 | Domain name normaliser (002 FR-006); domain deletion service | Domain set validation (R6); orphaned domain administrators deleted through `AccountDeleter` (R10, FR-032) |
-| 003 | Password policy reader, checker and hasher (003 FR-024, FR-063); mailbox address normaliser (003 FR-007); mailbox deletion and rename service | Passwords (R5); impersonation and webmail targets (R16, R21); account generation bump (R11) |
-| 005 | Webmail hand-off service and its route; own password, second-factor, recovery e-mail routes | Webmail on behalf (R21); impersonation guard on credential routes (R19) |
+| 002 | `App\Support\Domain\DomainName` (002 FR-006); `App\Services\DomainAdmins\OrphanedDomainAdminRemover` (002 D18, planned to be extended by 007) | Domain set validation (R6); orphaned domain administrators deleted through `AccountDeleter` (R10, FR-032) |
+| 003 | `App\Services\Passwords\{PasswordPolicyReader,PasswordPolicyChecker,MailboxPasswordHasher}` (003 FR-024, FR-063); `App\Services\Mailboxes\MailboxAddress` (003 FR-007); `MailboxDeleter`, `MailboxRenamer` | Passwords (R5); impersonation and webmail targets (R16, R21); account generation bump (R11) |
+| 005 | `App\Services\Auth\SessionRegistry` and the stable session handle (005 R2); `App\Services\Webmail\WebmailHandOffService` (005 R3); the routes of the own password change, second-factor enrolment and removal, recovery e-mail change and own webmail hand-off | Ending an account's sessions on deletion and rename (R9–R11); webmail on behalf (R21); impersonation guard on credential routes (R19) |
 
 ## Project Structure
 
@@ -215,7 +219,7 @@ api/
                     MailboxWebmailSignInForbidden; additive: Forbidden
 
 app/
-├── Auth/{Principal,AuthMethod}.php                 # changed (001): impersonator, generation, ssoToken
+├── Auth/{Principal,AuthMethod}.php                 # changed (001): impersonator, accountCreatedAt, ssoToken
 ├── Auth/ImpersonationEndReason.php
 ├── Http/
 │   ├── Controllers/Api/V2/   AdminController, AdminSecondFactorSuspensionController,
@@ -248,7 +252,8 @@ app/
 │   ├── Webmail/   WebmailOnBehalfService
 │   └── changed:   Identity/IdentityService, Preferences/PreferencesService,
 │                  ApiKeys/{ApiKeyService,ApiKeyAuthenticator}, Audit/AuditLogger (001);
-│                  the domain deletion service (002); the mailbox deletion and rename service (003)
+│                  DomainAdmins/OrphanedDomainAdminRemover (002);
+│                  Mailboxes/{MailboxDeleter,MailboxRenamer} (003)
 └── Support/Http/ProblemType.php                    # changed (001): eight cases
 
 config/restv2.php                                    # allow_admin_email_login, bulk_limit

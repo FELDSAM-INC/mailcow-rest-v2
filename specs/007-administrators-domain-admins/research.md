@@ -247,10 +247,11 @@ fork is identical for this feature (spec, "Legacy Parity").
   3. `UPDATE restv2_api_keys SET owner_username = :new WHERE owner_username = :old` and
      `UPDATE restv2_preferences SET username = :new WHERE account_kind = 'admin' AND username = :old`;
   4. `DELETE FROM da_sso WHERE username = :old` (unused tokens);
-  5. after commit, `AccountGeneration::bump(admin, old)` (R11) ends the account's other sessions and
-     every impersonation of it at their next request. When the caller renamed its own account,
-     its session principal is rewritten to the new username and the new name's generation, so it
-     continues.
+  5. after commit, feature 005's `SessionRegistry::endAll('admin', old, exceptHandle)` ends the
+     account's other sessions at once (005 R2), and `AccountGeneration::bump(admin, old)` (R11)
+     ends every impersonation of it at its next request. When the caller renamed its own account,
+     `SessionRegistry::rename()` moves its handle and `SessionManager::rebindPrincipal(new)` rewrites
+     its principal, so it continues under the new name (`exceptHandle` is its handle).
 
   Audit records keep the username of their time (they are never updated). Any error rolls back the
   whole rename.
@@ -272,9 +273,11 @@ fork is identical for this feature (spec, "Legacy Parity").
   3. `DELETE FROM restv2_preferences WHERE account_kind = 'admin' AND username = ?`;
   4. the audit record (one per account).
 
-  After commit, `AccountGeneration::bump(admin, username)` ends the account's sessions and the
-  impersonations of it at their next request. Feature 002's domain deletion calls
-  `AccountDeleter::deleteOrphanedDomainAdmins(array $usernames, $actor)` instead of its own
+  After commit, feature 005's `SessionRegistry::endAll('admin', username)` ends the account's
+  sessions at once, and `AccountGeneration::bump(admin, username)` ends every impersonation of it at
+  its next request. Feature 002's `App\Services\DomainAdmins\OrphanedDomainAdminRemover`, which 002
+  planned to be extended here (002 D18), selects the orphaned usernames as before and hands each to
+  `AccountDeleter::deleteOrphanedDomainAdmins(array $usernames, $actor)` instead of running its own
   `admin`/`da_acl` deletion (FR-032), so accounts left without a domain get the full cascade.
   Deactivation never revokes keys: 001's `ApiKeyAuthenticator` already refuses keys of an inactive
   owner and accepts them again on reactivation (FR-035).
@@ -288,34 +291,43 @@ fork is identical for this feature (spec, "Legacy Parity").
 
 ### R11. Never acting for a later account with the same username (FR-036)
 
-- **Decision**: Two signals identify "the same account":
+- **Decision**: Deletions and renames made through this API end what belongs to the account
+  immediately: sessions through feature 005's `SessionRegistry::endAll()` (005 R2), keys by
+  revocation (R10), unused tokens by deletion. What survives a change made by legacy, or lives in
+  another account's session, is bound to the account itself by two signals:
   1. **Creation time**: `admin.created` (or `mailbox.created`), copied verbatim as the raw
      `DATETIME` string.
-  2. **Account generation**: a Redis counter `restv2:account-generation:<kind>:<username>` (kind
-     `admin` or `mailbox`, no TTL, absent = 0) that this API increments when it deletes or renames
-     the account.
+  2. **Account generation** (impersonation targets only): a Redis counter
+     `restv2:account-generation:<kind>:<username>` (kind `admin` or `mailbox`, no TTL, absent = 0)
+     that this API increments when it deletes or renames the account.
 
   They are bound as follows:
-  - **Sessions**: 001's principal gains `accountCreatedAt` and `generation`, written at sign-in;
-    001's `EnsureSessionIntegrity` ends the session when either differs.
+  - **Sessions**: 001's principal gains `accountCreatedAt`, written at sign-in; 001's
+    `EnsureSessionIntegrity`, which already reads the account row on every request, ends the
+    session when `created` differs (a legacy deletion followed by a re-creation).
   - **Impersonations**: the target's creation time and generation are stored at start and checked
-    on every request (R16).
+    on every impersonating request (R17). The target's own sessions are not the impersonator's, so
+    `SessionRegistry::endAll()` cannot reach them; the generation covers a deletion and re-creation
+    within the same second through this API.
   - **API keys**: `restv2_api_keys.owner_created_at` (new column) is written at key creation and
     back-filled by the migration; 001's `ApiKeyAuthenticator` treats a key whose owner's
     `created` differs as `api-key-invalid`. Deletion through this API also revokes the keys (R10).
   - **Single sign-on tokens**: a token signs in only when `admin.created <= da_sso.created`
-    (R19), and deletion and rename remove unused tokens.
+    (R20), and deletion and rename remove unused tokens.
 
-  Feature 003's mailbox deletion and rename call `AccountGeneration::bump(mailbox, address)`, so an
-  impersonation of a deleted or renamed mailbox ends even when a mailbox with the same address is
-  created within the same second.
-- **Rationale**: `created` has one-second precision, and an automation client can delete and
-  re-create an account within one second; the generation counter covers that case for changes made
-  through this API, and `created` covers legacy changes. If Redis loses a counter, the stored and
-  current values differ and the session ends, which fails safe.
-- **Alternatives considered**: A per-account set of session IDs to delete on change was rejected:
-  it needs bookkeeping on every sign-in and sign-out and leaves stale IDs. An upstream column was
-  rejected (constitution III).
+  Feature 003's `MailboxDeleter` and `MailboxRenamer` call `AccountGeneration::bump(mailbox,
+  address)`, so an impersonation of a deleted or renamed mailbox ends even when a mailbox with the
+  same address is created within the same second.
+- **Rationale**: Feature 005 already indexes sessions per account and rejected a per-request
+  generation check for sessions; reusing its registry ends sessions at once and frees them. The
+  creation time costs nothing extra, because the account row is read anyway. `created` has
+  one-second precision, so the generation covers the remaining case for impersonations, read only
+  while a session is impersonating. If Redis loses a counter, the stored and current values differ
+  and the impersonation ends, which fails safe.
+- **Alternatives considered**: A generation check for every session was rejected (005 R2: a read
+  per request, no memory freed). An index of impersonations per target, with revocation markers,
+  was rejected: it needs bookkeeping at every start and end for the same single read per request.
+  An upstream column was rejected (constitution III).
 
 ### R12. Permission flags (FR-037 to FR-041, FR-077)
 
@@ -412,9 +424,10 @@ fork is identical for this feature (spec, "Legacy Parity").
 
 - **Decision**:
   - **Storage**: the 001 session key `restv2.principal` keeps the authenticated account (the
-    impersonator) unchanged. A new key `restv2.impersonation` holds `id` (ULID), `startedAt`, and
-    the target's `username`, `role` (`mailboxUser` or `domainAdmin`), `accountKind`,
-    `accountCreatedAt` and `generation`.
+    impersonator) unchanged, and 005's session handle stays the same, so 005's `SessionRegistry`
+    keeps indexing the session under the impersonator. A new key `restv2.impersonation` holds `id`
+    (ULID), `startedAt`, and the target's `username`, `role` (`mailboxUser` or `domainAdmin`),
+    `accountKind`, `accountCreatedAt` and `generation`.
   - **Effective principal**: 001's `SessionManager::principal()` returns, during an impersonation,
     a `Principal` for the target (username, role, account kind) whose new `impersonator` property
     holds the impersonator's principal, and whose `authMethod` is the impersonator's. Every
@@ -427,8 +440,9 @@ fork is identical for this feature (spec, "Legacy Parity").
     administrator without `login_as`, domain administrator targeting a domain administrator) →
     `403 forbidden`; body validation → `422`; target lookup → `404` when it does not exist, is a
     resource, is an administrator, or is a mailbox outside the domain administrator's active
-    assignments. Then `restv2.impersonation` is written, `session()->migrate(true)` and
-    `regenerateToken()` renew the identifier and the CSRF token, `impersonationStart` is audited,
+    assignments. Then `restv2.impersonation` is written, the identifier and the CSRF token are
+    renewed through `SessionManager` (`migrate(true)` and `regenerateToken()`; 005 keeps its session
+    registry in step with the new identifier), `impersonationStart` is audited,
     and the answer is `201` with `Location: /api/v2/session/impersonation` and
     `ImpersonationStarted` (the impersonation, the new identity and the new CSRF token).
   - **End** (`DELETE /session/impersonation`): removes the key, renews the identifier and the CSRF
@@ -470,8 +484,10 @@ fork is identical for this feature (spec, "Legacy Parity").
 
   Ending removes the key, renews the identifier and the CSRF token, and audits `impersonationEnd`
   with `endedBy: automatic` and the reason. The request is then answered `403 impersonation-ended`
-  and **not** carried out, except `DELETE /session/impersonation` (answers `204`) and
-  `DELETE /session` (signs out). A deactivated target does not end the impersonation (FR-052).
+  and **not** carried out, whatever it is, including `DELETE /session/impersonation` and
+  `DELETE /session`, as the clarification requires ("the request that detects it is refused"); a
+  repeated end then succeeds as a no-op and a repeated sign-out signs out. A deactivated target does
+  not end the impersonation (FR-052).
 - **Rationale**: Legacy never re-checks; the spec requires that a write meant for the target never
   runs as the impersonator. Renewing the CSRF token on an automatic end protects other tabs the
   same way an explicit end does. `403` is used because the refusal can hit any operation, and every
@@ -479,7 +495,8 @@ fork is identical for this feature (spec, "Legacy Parity").
   lists the new type.
 - **Alternatives considered**: `409` was rejected because it would have to be added to every
   operation of every feature. Ending silently and carrying the request out as the impersonator
-  was rejected (FR-052).
+  was rejected (FR-052). Exempting the end and the sign-out from the refusal was rejected: it would
+  contradict FR-052 and its clarification, although their intent is fulfilled either way.
 
 ### R18. Effective permission flags during an impersonation (FR-046)
 
@@ -537,7 +554,8 @@ fork is identical for this feature (spec, "Legacy Parity").
     legacy `/domainadmin?sso_token=`) sees the row deleted.
   - **Session**: on success, 001's `SessionManager` replaces any existing session state (including
     an impersonation, audited as `sessionReplaced`), renews the identifier, writes the principal
-    with `authMethod = ssoToken`, the account's `created` and generation, and the answer is `201`
+    with `authMethod = ssoToken` and the account's `created` (005 registers the session), and the
+    answer is `201`
     with 001's `SessionCreated`. No second factor is asked and `tfa` is not re-activated (legacy
     does neither). 001's `PendingActionEvaluator` applies, so forced actions restrict the session
     (FR-061).
@@ -569,8 +587,10 @@ fork is identical for this feature (spec, "Legacy Parity").
     outside the domain administrator's active assignments → `404`; mailbox not active
     (`active` 0 or 2), domain inactive, or `SKIP_SOGO=y` → `422` with `notEligible` on `mailbox`
     and `{reason: mailboxInactive | loginDisabled | domainInactive | webmailDisabled}`.
-  - **Effect**: feature 005's webmail hand-off service (005 FR-067, FR-068) grants a webmail-only
-    legacy sign-in for the target mailbox to the requesting browser and records the legacy
+  - **Effect**: feature 005's `WebmailHandOffService::handOff($caller, $mailbox, $request)`
+    (005 R3, FR-067, FR-068), called only after the checks above (so its own `groupware-disabled`
+    check is never reached), grants a webmail-only legacy sign-in for the target mailbox to the
+    requesting browser, ends any previous hand-off of the same API session, and records the legacy
     recent-login entry `REPLACE INTO sasl_log (service, app_password, username, real_rip) VALUES
     ('SSO', 0, :mailbox, :ip)`. The caller's session in this API is not changed (FR-055). The
     response is `200` with `MailboxWebmailSignIn` (`mailbox`, `url`) and the hand-off's cookie.
@@ -668,14 +688,18 @@ fork is identical for this feature (spec, "Legacy Parity").
 
 - **Decision**: No new Composer package. `ext-intl` (IDN) is in 001's image. Feature 007 uses and
   extends code delivered by:
-  - 001: `Principal`, `SessionManager`, `EnsureSessionIntegrity`, `RequireAuth`,
+  - 001: `Principal`, `SessionManager` (with 005's handle and `SessionRegistry`), `EnsureSessionIntegrity`, `RequireAuth`,
     `EnforcePendingActions`, `IdentityService`, `PreferencesService`, `ApiKeyService`,
     `ApiKeyAuthenticator`, `AuditLogger`, `ListQuery`, `ETag`, `ApiFormRequest`, `ProblemType`,
     `SignInThrottle`, `MailcowFactory`;
-  - 002: the domain name normaliser and the domain deletion service (orphan cleanup delegation);
-  - 003: the password policy reader, checker and hasher, the mailbox address normaliser, and the
-    mailbox deletion and rename service (generation bump);
-  - 005: the webmail hand-off service and its routes (impersonation guard).
+  - 002: `App\Support\Domain\DomainName` (normalisation) and
+    `App\Services\DomainAdmins\OrphanedDomainAdminRemover` (orphan cleanup delegation, 002 D18);
+  - 003: `App\Services\Passwords\{PasswordPolicyReader, PasswordPolicyChecker,
+    MailboxPasswordHasher}`, `App\Services\Mailboxes\MailboxAddress`, and
+    `MailboxDeleter`/`MailboxRenamer` (generation bump);
+  - 005: `App\Services\Auth\SessionRegistry` (ending an account's sessions),
+    `App\Services\Webmail\WebmailHandOffService` and the routes of its credential operations
+    (impersonation guard).
 
   Where a class delivered by those features has another name than the plan expects, the delivered
   name is used; the tasks name the behaviour they need.

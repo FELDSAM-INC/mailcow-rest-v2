@@ -55,8 +55,9 @@ Written only by `App\Services\Accounts\AdminAccountService`, `DomainAdminAccount
                     └────────────┬─────────────────────┘
                                  │ DELETE / bulk delete (own account refused)
                                  ▼
-                              deleted  (keys revoked, sessions and impersonations end,
-                                        preferences removed, generation bumped)
+                              deleted  (keys revoked, sessions ended through 005's registry,
+                                        impersonations of it end (generation bumped),
+                                        preferences removed)
 ```
 
 Inactive accounts can be read, changed, impersonated and deleted, but cannot sign in, and their
@@ -255,14 +256,15 @@ No new column. Rename: `UPDATE … SET username = :new WHERE account_kind = 'adm
 
 | Key | Value | TTL | Owner |
 |---|---|---|---|
-| `restv2:account-generation:<kind>:<username>` | integer, absent = 0; `INCR` when this API deletes or renames the account (`kind` = `admin` or `mailbox`) | none | `App\Services\Accounts\AccountGeneration` |
+| `restv2:account-generation:<kind>:<username>` | integer, absent = 0; `INCR` when this API deletes or renames the account (`kind` = `admin` or `mailbox`); read only to validate impersonation targets | none | `App\Services\Accounts\AccountGeneration` |
+| `restv2:account-sessions:<accountKind>:<username>` (feature 005) | hash `handle → session ID`; used through `SessionRegistry::endAll()` and `rename()` on deletion and rename | `SESSION_LIFETIME` | 005's `SessionRegistry` |
 | `restv2:throttle:ssotoken:<sha256(ip)>` (+ `:timer`) | failed token sign-ins | `RESTV2_SIGNIN_FAILURE_WINDOW` | 001's `SignInThrottle`, new key kind |
 
 ### Session keys (001's Laravel session)
 
 | Key | Change |
 |---|---|
-| `restv2.principal` | gains `accountCreatedAt` (raw `created`) and `generation`, written at every sign-in; `authMethod` may be `ssoToken` |
+| `restv2.principal` | gains `accountCreatedAt` (raw `created`), written at every sign-in; `authMethod` may be `ssoToken` |
 | `restv2.impersonation` (new) | present while impersonating: `id` (ULID), `startedAt` (UTC), `target` (`username`, `role`, `accountKind`, `accountCreatedAt`, `generation`) |
 
 **Impersonation state**:
@@ -287,7 +289,7 @@ No new column. Rename: `UPDATE … SET username = :new WHERE account_kind = 'adm
 ## Value objects (no storage)
 
 - `App\Auth\Principal` (001) gains `?Principal $impersonator`, `?string $impersonationId`,
-  `?CarbonImmutable $impersonationStartedAt`, `?string $accountCreatedAt` and `int $generation`.
+  `?CarbonImmutable $impersonationStartedAt` and `?string $accountCreatedAt`.
 - `App\Auth\AuthMethod` (001) gains `SsoToken` (`ssoToken`).
 - `App\Auth\ImpersonationEndReason` (new): `TargetDeletedOrRenamed`, `TargetOutOfScope`,
   `LoginAsRevoked`.

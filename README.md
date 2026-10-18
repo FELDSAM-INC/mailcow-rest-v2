@@ -49,7 +49,7 @@ On a mailcow-dockerized host (see also `specs/001-auth-sessions-api-keys/quickst
 
 1. Merge [`deploy/docker-compose.override.yml`](deploy/docker-compose.override.yml) into the
    `docker-compose.override.yml` of your mailcow directory.
-2. Add to `mailcow.conf`:
+2. Add to `mailcow.conf` (or keep these settings in `restv2/restv2.env`, see below):
    - `RESTV2_APP_KEY=base64:…`, the output of
      `docker compose run --rm restv2-mailcow php artisan key:generate --show`;
    - for the FeldHost fork: `RESTV2_SASL_LOG_SERVICE=WEBUI`,
@@ -58,12 +58,29 @@ On a mailcow-dockerized host (see also `specs/001-auth-sessions-api-keys/quickst
      `RESTV2_DEFAULT_LOGO_DARK_URL=/img/feldhost_logo_white.png`.
 3. Copy [`deploy/nginx/site.restv2.custom`](deploy/nginx/site.restv2.custom) to
    `data/conf/nginx/site.restv2.custom`.
-4. Run `docker compose up -d restv2-mailcow` and `docker compose restart nginx-mailcow`.
-5. Check `docker compose ps restv2-mailcow` (healthy) and
+4. Start the API with `docker compose up -d --no-deps restv2-mailcow`. Without `--no-deps`,
+   Compose may also start or recreate dependencies such as netfilter.
+5. Load the nginx snippet with
+   `docker exec <nginx container> nginx -t && docker exec <nginx container> nginx -s reload`
+   (`<nginx container>` is the output of `docker compose ps -q nginx-mailcow`). The reload happens
+   only when the test passes.
+6. Restart ofelia with `docker compose restart ofelia-mailcow`. `mcuadros/ofelia` reads container
+   labels only when it starts, so the audit retention job (`restv2:audit-purge`) is not scheduled
+   until then. Check it with `docker compose logs ofelia-mailcow | grep restv2`.
+7. Check `docker compose ps restv2-mailcow` (healthy) and
    `curl -s https://$MAILCOW_HOSTNAME/api/v2/health/ready`.
 
+**Alternative to editing `mailcow.conf`**: keep the API's own settings (`APP_KEY`, `RESTV2_*`) in
+`./restv2/restv2.env` (mode 600) with a `restv2/.gitignore` containing `*`. mailcow's `update.sh`
+runs `git add -A` on its merge-conflict path, which would commit a top-level secrets file. Then
+uncomment `env_file: ./restv2/restv2.env` in the override and remove its `APP_KEY` and `RESTV2_*`
+`environment` lines (`environment` wins over `env_file`). When the image is loaded locally
+(`docker save | docker load`) instead of pulled from a registry, set `pull_policy: never` on the
+service.
+
 The container applies its own migrations at start (`migrate --isolated`, only `restv2_` tables).
-mailcow's ofelia scheduler runs the audit retention purge daily through the container's labels.
+mailcow's ofelia scheduler runs the audit retention purge daily through the container's labels
+(after the restart of step 6).
 
 ## Configuration
 

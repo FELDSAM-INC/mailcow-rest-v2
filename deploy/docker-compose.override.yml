@@ -3,7 +3,17 @@
 # Merge this service into the docker-compose.override.yml of your mailcow directory, add
 # RESTV2_APP_KEY (and, for the FeldHost fork, the RESTV2_* values of README.md) to mailcow.conf,
 # copy deploy/nginx/site.restv2.custom to data/conf/nginx/, then run
-#   docker compose up -d restv2-mailcow && docker compose restart nginx-mailcow
+#   docker compose up -d --no-deps restv2-mailcow
+#   NGINX=$(docker compose ps -q nginx-mailcow)
+#   docker exec $NGINX nginx -t && docker exec $NGINX nginx -s reload
+# (--no-deps keeps Compose from starting or recreating dependencies such as netfilter; the reload
+# happens only when the nginx test passes.) ofelia reads container labels only at its start, so also
+# run `docker compose restart ofelia-mailcow` once, and check it with
+#   docker compose logs ofelia-mailcow | grep restv2
+#
+# Settings of the API (APP_KEY, RESTV2_*) can live in ./restv2/restv2.env (mode 600) instead of
+# mailcow.conf; see the env_file option below. Add `pull_policy: never` to the service when the
+# image was loaded locally (docker save | docker load) instead of pulled from a registry.
 #
 # No other mailcow service is changed (constitution V). Variables keep their mailcow.conf names;
 # settings new to this API use the RESTV2_ prefix. Empty RESTV2_<legacy variable> settings leave the
@@ -12,6 +22,12 @@ services:
   restv2-mailcow:
     image: ${RESTV2_IMAGE:-ghcr.io/feldsam-inc/mailcow-rest-v2:0.1.0}
     restart: always
+    # Option: keep APP_KEY and RESTV2_* in ./restv2/restv2.env (mode 600, with ./restv2/.gitignore
+    # containing `*`), because mailcow's update.sh runs `git add -A` on its merge-conflict path and
+    # would commit a top-level secrets file. Uncomment, and drop the APP_KEY and RESTV2_* lines of
+    # `environment` below (environment wins over env_file).
+    # env_file: ./restv2/restv2.env
+    # pull_policy: never    # image loaded with docker load, not pulled
     read_only: true
     tmpfs:
       - /app/storage:uid=82,gid=82,mode=0755

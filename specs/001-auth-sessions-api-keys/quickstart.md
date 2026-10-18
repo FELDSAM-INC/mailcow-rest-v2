@@ -162,7 +162,11 @@ authenticator (`tests/Feature/Passkeys/*`, `tests/Feature/Auth/PasskeySignIn*`).
    1. Build or pull the image `ghcr.io/feldsam-inc/mailcow-rest-v2`.
    2. Append `deploy/docker-compose.override.yml` to the mailcow directory's
       `docker-compose.override.yml`.
-   3. Add these lines to `mailcow.conf`:
+   3. Add these lines to `mailcow.conf`, or to `./restv2/restv2.env` (mode 600, with
+      `restv2/.gitignore` containing `*`) and reference it from the override with
+      `env_file: ./restv2/restv2.env`, dropping the `APP_KEY` and `RESTV2_*` lines of
+      `environment` (it wins over `env_file`). The file keeps secrets out of the top level, because
+      mailcow's `update.sh` runs `git add -A` on its merge-conflict path and would commit them:
       - `RESTV2_APP_KEY=base64:...`, the output of
         `docker compose run --rm restv2-mailcow php artisan key:generate --show`;
       - for the FeldHost fork only: `RESTV2_SASL_LOG_SERVICE=WEBUI`,
@@ -170,7 +174,12 @@ authenticator (`tests/Feature/Passkeys/*`, `tests/Feature/Auth/PasskeySignIn*`).
         `RESTV2_DEFAULT_LOGO_URL=/img/feldhost_logo.png` and
         `RESTV2_DEFAULT_LOGO_DARK_URL=/img/feldhost_logo_white.png`.
    4. Copy `deploy/nginx/site.restv2.custom` to `data/conf/nginx/`.
-   5. Run `docker compose up -d restv2-mailcow` and `docker compose restart nginx-mailcow`.
+   5. Run `docker compose up -d --no-deps restv2-mailcow`. Without `--no-deps`, Compose may also
+      start or recreate dependencies such as netfilter. When the image was loaded locally
+      (`docker save | docker load`), set `pull_policy: never` on the service.
+   6. Run `docker exec <nginx container> nginx -t && docker exec <nginx container> nginx -s reload`
+      (`<nginx container>` is the output of `docker compose ps -q nginx-mailcow`). The reload
+      happens only when the test passes.
 2. **Health**: `docker compose ps restv2-mailcow` shows `healthy`.
    `curl -s https://$MAILCOW_HOSTNAME/api/v2/health/ready` shows
    `{"data":{"status":"ok","checks":{...}}}`.
@@ -191,5 +200,7 @@ authenticator (`tests/Feature/Passkeys/*`, `tests/Feature/Auth/PasskeySignIn*`).
    `GET /api/v2/public-config` returns it.
 6. **Real client address**: The audit records of the sign-ins show the browser's public address,
    not nginx's container address.
-7. **Retention job**: `docker compose logs ofelia-mailcow | grep restv2_audit_purge` shows the job
+7. **Retention job**: `mcuadros/ofelia` reads container labels only when it starts, so run
+   `docker compose restart ofelia-mailcow` after adding the `restv2-mailcow` service. Then
+   `docker compose logs ofelia-mailcow | grep restv2` shows the job `restv2:audit-purge`
    registered. `docker compose exec restv2-mailcow php artisan restv2:audit-purge` runs cleanly.

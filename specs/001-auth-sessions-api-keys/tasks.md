@@ -1410,7 +1410,7 @@ record for secrets.
 
 ## Phase 9: Polish, operations and cross-cutting concerns
 
-- [ ] T101 [P] Write `tests/Feature/System/HealthTest.php` for `getLiveness` and `getReadiness`:
+- [X] T101 [P] Write `tests/Feature/System/HealthTest.php` for `getLiveness` and `getReadiness`:
   - live → `200` even with the database configured to a bad host;
   - ready → `200` with `checks` all `ok`;
   - `UPDATE versions SET version = '01012000_0000'` → `503 service-unavailable` with
@@ -1421,18 +1421,29 @@ record for secrets.
 
   Write `tests/Feature/System/HealthCommandTest.php`: `restv2:health --live` and `--ready` give exit
   code 0 when healthy and 1 when not.
-- [ ] T102 Create the single-action controllers `app/Http/Controllers/Api/V2/LivenessController.php`
+
+  *Implementation note*: the bad database is a `broken` default connection while the test's
+  transaction stays on `mysql` (`connectionsToTransact()`); readiness then also reports
+  `database: failed` (and `schema` and `migrations`, which need it). The Redis manager is rebuilt
+  after the port change. The pending migration is a temporary file on an extra migrator path.
+  Health routes start no session.
+- [X] T102 Create the single-action controllers `app/Http/Controllers/Api/V2/LivenessController.php`
   and `ReadinessController.php` (each with `show`, constitution path table) and
   `app/Console/Commands/HealthCommand.php` (`restv2:health`), sharing
   `app/Services/Health/ReadinessChecker.php`. Register the routes named `system.liveness` and
   `system.readiness`, which `AuthenticateApiKey` skips, in `routes/api.php`. This makes T101 pass.
-- [ ] T103 [P] Write `tests/Feature/System/DocsTest.php`:
+
+  *Implementation note*: readiness is the default of `restv2:health`; it prints each check.
+- [X] T103 [P] Write `tests/Feature/System/DocsTest.php`:
   - `getOpenApiDocument` → `200 application/yaml`, byte-equal to `build/contract/openapi.yaml`;
   - `getApiDocs` → `200 text/html`, referencing only same-origin assets;
   - `getProblemTypeDocumentation` → `200 text/html` for every `ProblemType` case, containing the
     section heading of `docs/problems.md`; `unknown-type` → `404`.
   - `X-API-Key: bogus` on all three is ignored, with no fail2ban message.
-- [ ] T104 Create the single-action controllers (each with `show`) in
+
+  *Implementation note*: when the Swagger UI assets are installed they are inlined, so the
+  same-origin check scans the markup around the inline `<script>` and `<style>` blocks.
+- [X] T104 Create the single-action controllers (each with `show`) in
   `app/Http/Controllers/Api/V2/`:
   - `OpenApiDocumentController.php` serves `resources/contract/openapi.yaml`, built by the image or
     copied from `build/contract/` in dev;
@@ -1446,7 +1457,15 @@ record for secrets.
 
   Add `resources/docs/.gitkeep` and a `composer docs:assets` script that copies the
   `swagger-ui-dist` files with `npx`. Register the routes. This makes T103 pass.
-- [ ] T105 [P] Write `tests/Feature/Security/AuthorizationMatrixTest.php` (SC-005, SC-010, constitution VI, quality
+
+  *Implementation note*: `OpenApiDocumentController` serves `resources/contract/openapi.yaml`
+  (the image) or else `build/contract/openapi.yaml` (a development checkout). `composer
+  docs:assets` uses `npm pack swagger-ui-dist@5.33.0` (pinned) and copies `swagger-ui.css`,
+  `swagger-ui-bundle.js` and its `LICENSE`; `resources/contract/` and `resources/docs/*` are
+  generated and ignored by git. Without the assets the page links to the contract. Every
+  `## <name>` section of `docs/problems.md` is served, planned features' types included; the
+  problem pages carry a restrictive CSP.
+- [X] T105 [P] Write `tests/Feature/Security/AuthorizationMatrixTest.php` (SC-005, SC-010, constitution VI, quality
   gate 5). It is a data provider over **all 31 operations** × the callers anonymous, pending sign-in,
   restricted (`passwordChange`), restricted (`secondFactorSetup`), admin session, domain-admin
   session, mailbox session, admin read-write key, admin read-only key and domain-admin read-write
@@ -1455,13 +1474,18 @@ record for secrets.
   `X-API-Key` on the public `GET /public-config` → `401 api-key-invalid`. Object-level cases:
   another account's `passkeyId` → `404`; an unknown `apiKeyId` → `404` for admins and
   `403 forbidden` for others.
-- [ ] T106 [P] Write `tests/Unit/Support/ProblemTypeConsistencyTest.php` (FR-049). Every `ProblemType`
+
+  *Implementation note*: 312 cases (31 × 10, plus the invalid key and a completeness check that
+  the table lists exactly the registry's 31 operations). The pending sign-in has a TOTP method
+  (the contract requires at least one); the accounts use a fast hash scheme, because no password is
+  verified.
+- [X] T106 [P] Write `tests/Unit/Support/ProblemTypeConsistencyTest.php` (FR-049). Every `ProblemType`
   case must be a `## <name>` section of `docs/problems.md` and a `KnownProblemType` value in
   `build/contract/openapi.json`, with the status stated in its section. Every problem type that
   `tests/feature-registry.json` lists for an implemented feature must have a case; sections of
   planned features need none (orchestrator decision: `docs/problems.md` also documents planned
   features).
-- [ ] T107 [P] Write `tests/Feature/Performance/SignInLatencyTest.php` (SC-007). Over 20 iterations
+- [X] T107 [P] Write `tests/Feature/Performance/SignInLatencyTest.php` (SC-007). Over 20 iterations
   each, measure the server time of `createSession` without a second factor, with a pending TOTP and
   `verifySecondFactor`, and `createSessionWithPasskey`, excluding the faked `Sleeper`. Assert that
   the 95th percentile is under 1 s with a `BLF-CRYPT` cost of 10. The test is in the group

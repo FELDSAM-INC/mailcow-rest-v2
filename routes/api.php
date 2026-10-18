@@ -1,19 +1,24 @@
 <?php
 
+use App\Http\Controllers\Api\V2\ApiDocsController;
 use App\Http\Controllers\Api\V2\ApiKeyController;
 use App\Http\Controllers\Api\V2\ApiKeyOwnerCandidateController;
 use App\Http\Controllers\Api\V2\ApiKeyRevocationController;
 use App\Http\Controllers\Api\V2\AuditEventController;
 use App\Http\Controllers\Api\V2\CsrfTokenController;
 use App\Http\Controllers\Api\V2\IdentityController;
+use App\Http\Controllers\Api\V2\LivenessController;
+use App\Http\Controllers\Api\V2\OpenApiDocumentController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
 use App\Http\Controllers\Api\V2\PasskeyChallengeController;
 use App\Http\Controllers\Api\V2\PasskeyController;
 use App\Http\Controllers\Api\V2\PasskeyRegistrationOptionsController;
 use App\Http\Controllers\Api\V2\PendingSignInController;
 use App\Http\Controllers\Api\V2\PreferencesController;
+use App\Http\Controllers\Api\V2\ProblemTypeController;
 use App\Http\Controllers\Api\V2\PublicConfigController;
 use App\Http\Controllers\Api\V2\PublicConfigLogoController;
+use App\Http\Controllers\Api\V2\ReadinessController;
 use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SessionController;
@@ -129,4 +134,16 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     Route::get('/audit-events', [AuditEventController::class, 'index'])
         ->middleware(['restv2.auth:authenticated', 'restv2.pending'])
         ->name('audit-events.index');
+
+    // System (constitution runtime, R24): no authentication, no session; the `system.*` routes
+    // ignore X-API-Key (AuthenticateApiKey).
+    Route::middleware(['restv2.auth:public', 'restv2.pending:allow'])->group(function (): void {
+        Route::get('/health/live', [LivenessController::class, 'show'])->name('system.liveness');
+        Route::get('/health/ready', [ReadinessController::class, 'show'])->name('system.readiness');
+        Route::get('/openapi.yaml', [OpenApiDocumentController::class, 'show'])->name('system.openapi');
+        Route::get('/docs', [ApiDocsController::class, 'show'])->name('system.docs');
+        Route::get('/problems/{problemType}', [ProblemTypeController::class, 'show'])
+            ->where('problemType', '[a-z0-9-]+')
+            ->name('system.problem');
+    });
 });

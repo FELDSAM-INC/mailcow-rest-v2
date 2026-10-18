@@ -48,6 +48,11 @@
             "npx --yes @redocly/cli@2.64.1 bundle api/openapi.yaml --output build/contract/openapi.yaml",
             "npx --yes @redocly/cli@2.64.1 bundle api/openapi.yaml --dereferenced --ext json --output build/contract/openapi.json"
         ],
+        "docs:assets": [
+            "rm -rf build/swagger-ui && mkdir -p build/swagger-ui resources/docs",
+            "cd build/swagger-ui && npm pack --silent swagger-ui-dist@5.33.0 >/dev/null && tar -xzf swagger-ui-dist-5.33.0.tgz",
+            "cp build/swagger-ui/package/swagger-ui.css build/swagger-ui/package/swagger-ui-bundle.js build/swagger-ui/package/LICENSE resources/docs/"
+        ],
         "test": [
             "Composer\\Config::disableProcessTimeout",
             "@contract:bundle",
@@ -89,6 +94,7 @@
         "contract:bundle": "Bundle the contract to build/contract/openapi.yaml and dereferenced openapi.json.",
         "test": "Bundle the contract, prepare the MariaDB test database, run PHPUnit and check contract coverage.",
         "analyse": "Run Larastan (PHPStan).",
-        "format": "Format the code with Pint."
+        "format": "Format the code with Pint.",
+        "docs:assets": "Copy the Swagger UI assets (swagger-ui-dist, Apache-2.0) into resources/docs/ for the documentation page."
     }
 }

@@ -64,11 +64,5 @@
             ]
         }
     },
-    "pendingOperations": [
-        "getLiveness",
-        "getReadiness",
-        "getOpenApiDocument",
-        "getApiDocs",
-        "getProblemTypeDocumentation"
-    ]
+    "pendingOperations": []
 }

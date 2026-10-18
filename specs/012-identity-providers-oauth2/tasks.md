@@ -736,7 +736,7 @@ type and sign-in method.
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T086 [P] [US5] Write `tests/Feature/Audit/IdentityProviderAuditTest.php` (FR-052 to FR-054,
+- [X] T086 [P] [US5] Write `tests/Feature/Audit/IdentityProviderAuditTest.php` (FR-052 to FR-054,
   SC-010): AS-1 changing the bind password and the sync interval → one `identityProviderUpdate`
   record with `syncInterval` old and new and `bindPassword: {changed: true}`, no password text;
   AS-2 a mailbox created on single sign-on → `targetType=mailbox&targetId=<address>` lists the
@@ -751,7 +751,7 @@ type and sign-in method.
 
 ### Implementation for User Story 5
 
-- [ ] T087 [US5] Extend `app/Services/Audit/AuditLogger.php` (001 T043) with the `details` whitelists
+- [X] T087 [US5] Extend `app/Services/Audit/AuditLogger.php` (001 T043) with the `details` whitelists
   of this feature's event types (data model, audit table) and the new failure reasons and methods.
   No filter parameter is added: 002's `targetType` and `targetId` filters accept this feature's
   target types through the shared `AuditTarget` enumeration. This makes T086 pass.

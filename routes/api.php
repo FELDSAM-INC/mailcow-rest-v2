@@ -13,6 +13,9 @@ use App\Http\Controllers\Api\V2\ApiKeyRevocationController;
 use App\Http\Controllers\Api\V2\AuditEventController;
 use App\Http\Controllers\Api\V2\ContainerController;
 use App\Http\Controllers\Api\V2\ContainerResourceUsageController;
+use App\Http\Controllers\Api\V2\ContainerRestartController;
+use App\Http\Controllers\Api\V2\ContainerStartController;
+use App\Http\Controllers\Api\V2\ContainerStopController;
 use App\Http\Controllers\Api\V2\CsrfTokenController;
 use App\Http\Controllers\Api\V2\DomainBulkActionController;
 use App\Http\Controllers\Api\V2\DomainCapabilitiesController;
@@ -375,6 +378,21 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/containers/{containerName}/resource-usage', [ContainerResourceUsageController::class, 'show'])
             ->where('containerName', ContainerRegistry::NAME_PATTERN)
             ->name('container-resource-usage.show');
+    });
+
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending', AuthorizeMonitoring::class])->group(function (): void {
+        Route::post('/containers/{containerName}/start', [ContainerStartController::class, 'store'])
+            ->where('containerName', ContainerRegistry::NAME_PATTERN)
+            ->defaults('restv2.audit', ['event' => 'containerStart', 'target' => 'container'])
+            ->name('container-start.store');
+        Route::post('/containers/{containerName}/stop', [ContainerStopController::class, 'store'])
+            ->where('containerName', ContainerRegistry::NAME_PATTERN)
+            ->defaults('restv2.audit', ['event' => 'containerStop', 'target' => 'container'])
+            ->name('container-stop.store');
+        Route::post('/containers/{containerName}/restart', [ContainerRestartController::class, 'store'])
+            ->where('containerName', ContainerRegistry::NAME_PATTERN)
+            ->defaults('restv2.audit', ['event' => 'containerRestart', 'target' => 'container'])
+            ->name('container-restart.store');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

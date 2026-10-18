@@ -31,7 +31,7 @@ class MailStorageService
         $snapshot = $this->cache->get('mail-storage', (int) config('restv2.monitoring.max_age.mail_storage', 60), 6.0, function (): Snapshot {
             $service = (string) config('restv2.monitoring.dovecot_container', 'dovecot-mailcow');
 
-            if (! ($this->containers->find($service)?->running ?? false)) {
+            if (! ($this->containers->find($service)->running ?? false)) {
                 return new Snapshot($this->parser->parse(null), CarbonImmutable::now('UTC'));
             }
 

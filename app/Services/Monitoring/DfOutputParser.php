@@ -21,7 +21,7 @@ class DfOutputParser
     {
         $fields = $line === null ? [] : explode(',', trim($line));
 
-        if (count($fields) < 6 || trim($line ?? '') === '0,0,0,0,0,0') {
+        if (count($fields) < 6 || trim((string) $line) === '0,0,0,0,0,0') {
             return self::unavailable();
         }
 

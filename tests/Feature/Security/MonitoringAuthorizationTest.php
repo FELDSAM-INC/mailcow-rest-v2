@@ -61,6 +61,10 @@ class MonitoringAuthorizationTest extends TestCase
             'listContainers' => ['GET', '/api/v2/containers', null, null, null],
             'getContainer' => ['GET', '/api/v2/containers/postfix-mailcow', null, null, null],
             'getContainerResourceUsage' => ['GET', '/api/v2/containers/postfix-mailcow/resource-usage', null, null, null],
+            // US2 (T041).
+            'startContainer' => ['POST', '/api/v2/containers/sogo-mailcow/start', null, 'containerStart', 'container'],
+            'stopContainer' => ['POST', '/api/v2/containers/clamd-mailcow/stop', null, 'containerStop', 'container'],
+            'restartContainer' => ['POST', '/api/v2/containers/sogo-mailcow/restart', null, 'containerRestart', 'container'],
         ];
     }
 

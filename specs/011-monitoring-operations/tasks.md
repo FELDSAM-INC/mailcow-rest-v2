@@ -353,7 +353,7 @@ action.
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T037 [P] [US2] Write `tests/Feature/Containers/StartContainerTest.php` (AS-2, FR-014,
+- [X] T037 [P] [US2] Write `tests/Feature/Containers/StartContainerTest.php` (AS-2, FR-014,
   FR-016, R4): a running container → `200 alreadyInState` and no `start()`/`stop()`/`restart()` call; a stopped
   container → `done`, `container.running: true`, calls `start($service)` once; a
   container that starts on the third attempt → three calls and two `Sleeper` sleeps of 1.5 s; one
@@ -362,17 +362,17 @@ action.
   `step: start`; dockerapi unavailable before the action → `503`, nothing called; dockerapi
   unreachable on the second attempt after a first attempt was sent → `504 outcome-unknown`; an
   unknown name, a foreign project's container and a hidden scanner → `404`.
-- [ ] T038 [P] [US2] Write `tests/Feature/Containers/StopContainerTest.php` (AS-3, AS-4, FR-014,
+- [X] T038 [P] [US2] Write `tests/Feature/Containers/StopContainerTest.php` (AS-3, AS-4, FR-014,
   FR-015): `mysql-mailcow` → `409 container-protected` naming it, no dockerapi action; the own
   container (`restv2-mailcow`, and a container whose ID starts with the test's host name) →
   `409`; a stopped container → `alreadyInState`; `clamd-mailcow` running → `done`; retries as in
   T037; `RESTV2_PROTECTED_CONTAINERS` changes the list.
-- [ ] T039 [P] [US2] Write `tests/Feature/Containers/RestartContainerTest.php` (AS-1, AS-3, AS-5,
+- [X] T039 [P] [US2] Write `tests/Feature/Containers/RestartContainerTest.php` (AS-1, AS-3, AS-5,
   FR-014, FR-016, SC-009): SOGo running → `done` with a new `startedAt`; a stopped container is
   started by restart; `mysql-mailcow` may be restarted; the own container → `409`; timeout →
   `504 outcome-unknown` (`step: restart`); `danger` → `502`; after any action the next
   `GET /containers` makes a fresh `containers()` call (snapshot invalidated).
-- [ ] T040 [P] [US2] Write `tests/Feature/Containers/ContainerActionAuditTest.php` (AS-7, FR-062,
+- [X] T040 [P] [US2] Write `tests/Feature/Containers/ContainerActionAuditTest.php` (AS-7, FR-062,
   FR-064, R24): every outcome of T037–T039 (done, alreadyInState, protected, failed, outcome
   unknown) writes exactly one `restv2_audit_events` row with event `containerStart`/`Stop`/`Restart`,
   target `container` and the service name, `details.stateBefore` and `details.stateAfter`, and the
@@ -383,18 +383,18 @@ action.
   (AS-6) with exactly one failure row (`permissionDenied`, `details.problemType`) and no dockerapi
   call; a domain administrator's attempt → one `permissionDenied` row; dockerapi unavailable before
   the action → one row with `temporaryFailure`; an unknown container → one row with `notFound`.
-- [ ] T041 [US2] Add `POST /containers/{name}/start|stop|restart` to the provider of
+- [X] T041 [US2] Add `POST /containers/{name}/start|stop|restart` to the provider of
   `MonitoringAuthorizationTest`.
 
 ### Implementation for User Story 2
 
-- [ ] T042 [US2] Create `app/Services/Monitoring/ContainerControlService.php` (R4):
+- [X] T042 [US2] Create `app/Services/Monitoring/ContainerControlService.php` (R4):
   `start|stop|restart(Principal, string $service): ContainerActionOutcome`, using
   `ContainerRegistry::fresh()`, `IrreversibleOperationAudit`, the `Sleeper`, the request deadline
   (`DOCKER_TIMEOUT` from `MailcowConfig`) and `ContainerRegistry::forget()`; it raises
   `ProblemException(ContainerProtected|ContainerActionFailed|OutcomeUnknown)` with `container`,
   `serviceMessage` and `step`.
-- [ ] T043 [US2] Create `app/Http/Resources/Api/V2/ContainerActionResultResource.php` and the
+- [X] T043 [US2] Create `app/Http/Resources/Api/V2/ContainerActionResultResource.php` and the
   controllers `ContainerStartController`, `ContainerStopController`, `ContainerRestartController`
   (`store`, calling `set_time_limit(DOCKER_TIMEOUT + 20)`, adding `Audit-Recorded: false` when the
   outcome says so) in `app/Http/Controllers/Api/V2/`; register the three routes in
@@ -973,3 +973,12 @@ Deviations and decisions made while implementing, with the reason:
   looks up running containers only and a missing container must not be confused with an
   unreachable container service. `cpuPercent` is `null` when either delta is not positive, as
   research R7 says (the `docker stats` CLI shows 0).
+- **T042, T043** (US2): `ContainerControlService::perform(actor, action, service)` serves the three
+  actions. Refusals before anything is sent (`404`, `409 container-protected` with the states as
+  carried audit details, `503` before the first attempt) are recorded by the shared refusal
+  auditing; outcomes and failures after an attempt was sent (`502`, `504`) are recorded by the
+  service with retries until DOCKER_TIMEOUT, and it marks the request as recorded. A `danger` answer
+  does not end start or stop early: the fresh read decides, as research R4 says. When the container
+  cannot be read after a successful restart, the response shows its state before the restart. No
+  `ContainerActionResultResource` class: the controllers build the representation with
+  `ContainerPresenter`.

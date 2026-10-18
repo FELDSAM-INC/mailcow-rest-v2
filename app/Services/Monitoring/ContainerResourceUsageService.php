@@ -61,7 +61,7 @@ class ContainerResourceUsageService
      */
     private function failUnlessRunning(string $service, DockerApiUnreachable $failure): never
     {
-        if (! ($this->containers->find($service, fresh: true)?->running ?? false)) {
+        if (! ($this->containers->find($service, fresh: true)->running ?? false)) {
             $this->containers->forget($service);
 
             throw self::notRunning($service);

@@ -18,3 +18,6 @@ then marks the entry done here. Gaps that are a contract-wide rule are also reco
 | G9 | UI 011 | 011 | `meta.total` together with the `before` cursor is unspecified. | Document whether `total` counts all matches or the remaining ones. | open |
 | G10 | UI 011 | 006 | `rateLimitHash` has no pattern, while `bucketId` has one. | Add the same pattern. | open |
 | G11 | UI 011 | 003/011 | The `outcome-unknown` `step` extension member is prose only. | Add `step` to the problem schema (shared by 003 and 011). | open |
+| G12 | UI 004 | 004 | `MailboxSenderPermissionCandidate` and `MailboxSenderPermission` have no `kind` (domain, alias domain, alias, mailbox, any address), so FR-050's labels are impossible. | Add a `kind` enum to both. | open |
+| G13 | UI 004 | 004 | `Alias.destinations`, `AliasCopyOutcome.address` and `externalSenderAddresses` have no readable (Unicode) form. | Add Unicode display forms next to the ASCII values, as for domains. | open |
+| G14 | UI 004 | 004 | `MailboxSenderSettingsPatch` documents `reason: localDomain`, while `ValidationRuleCode` uses `kind`. | Align on `kind`. | open |

@@ -72,7 +72,7 @@
   believe a value was stored when it was not; a validation error is testable and consistent.
   **Deviation** for the four clamped fields.)
 - Q: Does the sync-job list support pagination, sorting, filtering and search? → A: Yes. The list
-  is paginated (default page size 25, maximum 100, per `docs/conventions.md`), sortable, filterable by
+  is paginated (default page size 25, maximum 1,000, per `docs/conventions.md`), sortable, filterable by
   target mailbox, domain, active state, running state and last result, and searchable by a
   case-insensitive substring over the local mailbox, the remote user and the remote host. (agent
   decision: the legacy tables load every row and page client-side; server-side paging is required
@@ -511,7 +511,7 @@ time, source address and changed attributes, and that no record contains the rem
 #### Listing and inspecting
 
 - **FR-011**: Callers holding the sync-jobs permission MUST be able to list the sync jobs in their
-  scope with pagination. The default page size MUST be 25 and the maximum 100, per
+  scope with pagination. The default page size MUST be 25 and the maximum 1,000, per
   `docs/conventions.md`.
   The response MUST include the total number of matching jobs. The list MUST be scopeable to a
   single mailbox and MUST otherwise span the caller's whole scope.
@@ -817,7 +817,7 @@ fork-only sync-job capabilities to make configurable.
   which move or remove a job's target, are handled in feature 003.
 - The remote password is stored in plain text because imapsync requires it; this is an inherent
   property of sync jobs, not a choice of this feature. The API keeps it hidden from every response.
-- These defaults can be changed by the operator: the list page size (25, maximum 100), the bulk
+- These defaults can be changed by the operator: the list page size (25, maximum 1,000), the bulk
   limit (100), the custom-parameter allow-list (default: upstream's `IMAPSYNC_OPTIONS.whitelist`)
   and whether custom imapsync parameters are restricted to administrators (default: not restricted,
   as in legacy). Clients read the values in effect through the capabilities read (FR-030).

@@ -37,8 +37,13 @@ services:
     depends_on:
       - mysql-mailcow
       - redis-mailcow
+    # mailcow's unbound, as php-fpm-mailcow uses (feature 009 research R15). dns_get_record() cannot
+    # be interrupted, so the resolver options bound one lookup to about 4 s.
     dns:
       - ${IPV4_NETWORK:-172.22.1}.254
+    dns_opt:
+      - timeout:2
+      - attempts:2
     environment:
       # Application
       - APP_ENV=production
@@ -115,6 +120,11 @@ services:
       - RESTV2_IP_CHECK_IPV4_URL=${RESTV2_IP_CHECK_IPV4_URL:-http://ipv4.mailcow.email}
       - RESTV2_IP_CHECK_IPV6_URL=${RESTV2_IP_CHECK_IPV6_URL:-http://ipv6.mailcow.email}
       - RESTV2_RSPAMD_SOCKET=${RESTV2_RSPAMD_SOCKET:-/var/lib/rspamd/rspamd.sock}
+      # Feature 009 (routing): defaults of the relayhost and transport connection test.
+      - RESTV2_ROUTING_TEST_SENDER=${RESTV2_ROUTING_TEST_SENDER:-relay@example.org}
+      - RESTV2_ROUTING_TEST_RECIPIENT=${RESTV2_ROUTING_TEST_RECIPIENT:-null@hosted.mailcow.de}
+      - RESTV2_ROUTING_TEST_STEP_TIMEOUT=${RESTV2_ROUTING_TEST_STEP_TIMEOUT:-15}
+      - RESTV2_ROUTING_TEST_TOTAL_TIMEOUT=${RESTV2_ROUTING_TEST_TOTAL_TIMEOUT:-60}
       # Legacy PHP configuration; empty means "read mailcow's vars files".
       - RESTV2_SESSION_LIFETIME=${RESTV2_SESSION_LIFETIME:-}
       - RESTV2_DEFAULT_LANG=${RESTV2_DEFAULT_LANG:-}

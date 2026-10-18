@@ -134,6 +134,18 @@ services:
     ports:
       - "127.0.0.1:${RESTV2_KEYCLOAK_PORT:-8081}:8080"
 
+  # Optional SMTP test target of feature 009's connection tests (quickstart Part B, research R24):
+  # `docker compose --profile routing up -d mailpit`. SMTP on mailpit:1025 inside the stack (any
+  # login is accepted, also without TLS), web UI on http://127.0.0.1:8025. MIT licensed.
+  mailpit:
+    image: axllent/mailpit:v1.27.10
+    profiles: [routing]
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    ports:
+      - "127.0.0.1:8025:8025"
+
 volumes:
   dev-home:
   mariadb-data:

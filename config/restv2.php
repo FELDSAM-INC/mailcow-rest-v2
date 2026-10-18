@@ -171,6 +171,28 @@ return [
         'sso_return_scheme' => Env::get('RESTV2_SSO_RETURN_SCHEME', 'https') === 'http' ? 'http' : 'https',
     ],
 
+    /*
+    |----------------------------------------------------------------------
+    | Routing and address rewriting (feature 009 research R21)
+    |----------------------------------------------------------------------
+    |
+    | Raw values: App\Services\Routing\RoutingSettings validates them and falls back to the
+    | default, with one logged warning, when a value is invalid (a non-address, a timeout below 1,
+    | a total below the step timeout).
+    */
+    'routing' => [
+        // Default sender and recipient of connection tests (legacy transport_check.php).
+        'test_sender' => env('RESTV2_ROUTING_TEST_SENDER', 'relay@example.org'),
+        'test_recipient' => env('RESTV2_ROUTING_TEST_RECIPIENT', 'null@hosted.mailcow.de'),
+        // Seconds per network step of a connection test, and for the whole test (FR-042).
+        'test_step_timeout' => env('RESTV2_ROUTING_TEST_STEP_TIMEOUT', 15),
+        'test_total_timeout' => env('RESTV2_ROUTING_TEST_TOTAL_TIMEOUT', 60),
+        // Seconds a write waits for a routing table's named lock (research R9); not a setting.
+        'lock_timeout' => 10,
+        // DNS lookups of a forwarding host's SPF evaluation (FR-076); fixed.
+        'spf_lookup_limit' => 10,
+    ],
+
     // Development only (APP_ENV=local): binds the dockerapi, memcached and ISPConfig fakes, because
     // the dev stack runs none of these services. Ignored in every other environment. Feature 011
     // adds its stand-ins (Rspamd, release source, IP check) and recorded monitoring payloads.

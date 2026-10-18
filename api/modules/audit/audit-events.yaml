@@ -96,9 +96,11 @@ get:
       in: query
       required: false
       description: |
-        Only records whose target identifier equals this value. Domain names (targets `domain` and
-        `domainFooter`) may be given in ASCII or Unicode form and any letter case. Without
-        `targetType`, a domain name matches the records of the domain and of its footer.
+        Only records whose target identifier equals this value. Domain names (targets `domain`,
+        `domainFooter` and `mtaStsPolicy`) may be given in ASCII or Unicode form and any letter case.
+        DKIM keys (`dkimKey`) match in that normalised form and, for an unused key that legacy stored
+        under another spelling, also by that exact spelling. Without `targetType`, a domain name
+        matches the records of the domain and of its footer.
       schema:
         type: string
         maxLength: 255

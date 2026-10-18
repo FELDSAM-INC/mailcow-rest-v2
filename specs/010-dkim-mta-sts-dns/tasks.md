@@ -918,9 +918,9 @@ target.
   `importDkimKey`, `copyDkimKey`, `exportDkimPrivateKey`, `publishDkimDnsRecord`,
   `getDnsCapabilities`, `listMtaStsPolicies`, `createMtaStsPolicy`, `getMtaStsPolicy`,
   `updateMtaStsPolicy`, `runDnsDiagnostics`) as covered; fix gaps.
-- [ ] T105 [P] Run `npx --yes @redocly/cli@2.64.1 lint api/openapi.yaml`, `vendor/bin/pint --test` and
+- [X] T105 [P] Run `npx --yes @redocly/cli@2.64.1 lint api/openapi.yaml`, `vendor/bin/pint --test` and
   `vendor/bin/phpstan analyse`; fix every finding in this feature's files.
-- [ ] T106 [P] Update `docs/legacy-inventory.md`: mark the DKIM, MTA-STS and DNS diagnostics rows as
+- [X] T106 [P] Update `docs/legacy-inventory.md`: mark the DKIM, MTA-STS and DNS diagnostics rows as
   covered by `/api/v2` with links to the operations, and note the deviations of the spec's parity
   table and the plan's parity notes.
 - [ ] T107 Walk through `specs/010-dkim-mta-sts-dns/quickstart.md` Part A and Part B against the dev

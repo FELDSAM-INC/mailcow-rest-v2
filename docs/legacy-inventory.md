@@ -162,3 +162,46 @@ to the mailcow-dockerized repo's `data/` directory.
 - Own JS is about 8.1k lines; vendor JS about 36k.
 - Mobile problems: `user-scalable=0`, huge modals (`modals/mailbox.twig` is 1,349 lines), 47
   DataTables relying on row collapse, collapsed cards used as tabs, only 14 `@media` rules.
+
+## Coverage by `/api/v2`
+
+Legacy surface that `/api/v2` covers, with the operations of `api/openapi.yaml` and the deliberate
+deviations of each feature's spec ("Legacy Parity and Deliberate Deviations").
+
+### DKIM, MTA-STS and DNS diagnostics (feature 010)
+
+| Legacy | `/api/v2` operations |
+|---|---|
+| `add/dkim`, *form* "Add ARC/DKIM key" (`dkim('add')`) | `generateDkimKey` (`POST /dkim-keys`), also the follow-up step of domain and alias domain creation |
+| `add/dkim_import`, *form* "Import private key" (`dkim('import')`) | `importDkimKey` (`POST /dkim-keys/{dkimName}/import`) |
+| `add/dkim_duplicate`, *form* "Duplicate DKIM record" (`dkim('duplicate')`) | `copyDkimKey` (`POST /dkim-keys/{dkimName}/copy`) |
+| `get/dkim/{domain}`, *form* System › ARC/DKIM keys, DKIM record of the Edit domain page (`dkim('details')`, `dkim('blind')`) | `listDkimKeys` (`GET /dkim-keys`), `getDkimKey` (`GET /dkim-keys/{dkimName}`) |
+| `delete/dkim`, *form* mass remove (`dkim('delete')`) | `deleteDkimKey` (`DELETE /dkim-keys/{dkimName}`), `applyDkimKeyBulkAction` (`POST /dkim-keys/bulk-actions`) |
+| *form* private key modal, `SHOW_DKIM_PRIV_KEYS` | `exportDkimPrivateKey` (`GET /dkim-keys/{dkimName}/private-key`) |
+| ISPConfig DKIM DNS push (fork, `dkim_update_in_dns()`) | the `dnsPublication` outcome of every key change, `publishDkimDnsRecord` (`POST /dkim-keys/{dkimName}/dns-publication`) |
+| `add/mta-sts`, `edit/mta-sts`, *form* MTA-STS tab (`mailbox('add'\|'edit'\|'get', 'mta_sts')`) | `listMtaStsPolicies`, `createMtaStsPolicy`, `getMtaStsPolicy`, `updateMtaStsPolicy` (`/mta-sts-policies`) |
+| `ajax/dns_diagnostics.php`, *form* DNS button and zone file download | `runDnsDiagnostics` (`GET /dns-diagnostics/{diagnosticsName}`) |
+| Server values rendered into the forms (default selector, key sizes, host name) | `getDnsCapabilities` (`GET /capabilities/dns`) |
+
+Unchanged in php-fpm: `/.well-known/mta-sts.txt` (`mta-sts.php`) serves the policies the API
+stores, and the certificate service reads the same rows; Rspamd signs and seals with the same
+`DKIM_*` hashes.
+
+Deviations (spec 010 parity table and plan parity notes): private keys only through the gated,
+audited export, for administrators; never logged (legacy logs import requests); names normalised to
+lower-case ASCII, legacy spellings listed as unused and reachable by their exact name; one name or
+target per generation and copy, bulk deletion with per-key results; generation refuses an existing
+key unless an administrator overwrites it atomically; key sizes 1024 to 4096; key length computed
+exactly; both record notations always; imports limited to unencrypted RSA keys of 1,024 to 8,192
+bits in 16 KiB; copies only to domains and alias domains, overwriting only on request and removing
+the old private key; deleting a name without a key is `404`; atomic `DKIM_*` writes with version
+tags; ISPConfig publication off by default, on every key change, with coded outcomes within 15
+seconds, fully qualified records updated, signed in once per publication over the JSON API, and an
+incomplete copy source refused (`409`); MTA-STS policies for domains only, maximum age up to
+31,557,600 at creation too, MX hosts normalised, deduplicated and limited to 255 characters, a
+conflict on a second creation and `404` on a change without a policy, and an identifier that always
+changes with the content; diagnostics as structured checks with stable identifiers, coded reasons,
+real statuses and a valid zone file, RFC 7208 SPF evaluation, the address-record fallback accepting
+an IPv4-only match, MTA-STS records compared by tags, `EHLO` before `STARTTLS` for the TLSA probe,
+5 seconds per lookup, 30 seconds per run and 10 runs per minute per caller; audit records in the
+API's audit log instead of the `logs` table.

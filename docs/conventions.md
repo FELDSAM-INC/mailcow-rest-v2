@@ -203,7 +203,14 @@ this document next to the constitution.
   clients with a maximum age), `App\Services\Monitoring\ContainerRegistry`,
   `App\Support\Regex\PythonRegexValidator`, `App\Support\Network\IpNetwork` and the test
   helpers `FlakyAuditLogger`, `FailingAuditProbe` and `UnavailableSharedStore`, which later
-  features (006, 013) reuse.
+  features (006, 013) reuse. 010 extended 009's `DnsResolver` with `cname()`, `srv()`, `ptr()` and
+  `tlsa()` and its `SmtpProbe` with a TLS-only request that returns the peer certificate, and
+  created `App\Services\Mailcow\AutodiscoverConfig` (legacy `$autodiscover_config` with the
+  `mailcow.conf` port variables), `App\Rules\OneOf` (`notInList` with typed or case-insensitive
+  values), `App\Support\Http\NoStore` (an exact `Cache-Control: no-store`, which Symfony would
+  otherwise extend with `private`), `App\Clients\Dns\PublicAddressDetector` with
+  `App\Services\DnsDiagnostics\ServerFactsCache`, and `App\Services\Dkim\DkimNameResolver`
+  (DKIM names, an unused legacy key by its exact spelling for administrators).
 
 ## Audit record details
 

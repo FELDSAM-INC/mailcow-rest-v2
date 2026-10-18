@@ -294,3 +294,35 @@ Contract changes made while implementing feature 009:
   (`docs/audit-events.md`).
 
 Release checks of feature 009 (quickstart Part C): not run yet.
+
+Contract: the 15 operations of feature 010 (DKIM, MTA-STS and DNS diagnostics):
+
+- DKIM keys: `listDkimKeys`, `generateDkimKey`, `getDkimKey`, `deleteDkimKey`,
+  `applyDkimKeyBulkAction`, `importDkimKey`, `copyDkimKey`, `exportDkimPrivateKey`,
+  `publishDkimDnsRecord`.
+- Capabilities: `getDnsCapabilities`.
+- MTA-STS policies: `listMtaStsPolicies`, `createMtaStsPolicy`, `getMtaStsPolicy`,
+  `updateMtaStsPolicy`.
+- DNS diagnostics: `runDnsDiagnostics`, with `RateLimit-Limit`, `RateLimit-Remaining` and
+  `RateLimit-Reset` on every result and on `429 too-many-requests`.
+- Problem types: `dkim-key-exists`, `dkim-private-key-export-disabled`,
+  `dkim-dns-publication-disabled` and `mta-sts-policy-exists`; `temporary-failure` (`dependency:
+  sharedStore`) and `too-many-requests` are reused.
+- Values appended to shared enumerations: the `AuditEventType` values `dkimKeyImport`,
+  `dkimKeyCopy`, `dkimKeyDeletion`, `dkimPrivateKeyExport`, `dkimDnsPublication`,
+  `mtaStsPolicyCreation` and `mtaStsPolicyUpdate` (`dkimKeyGeneration` came with feature 002), the
+  `AuditTarget` types `dkimKey` and `mtaStsPolicy`, and the `ValidationRuleCode` values of private
+  key imports and copies.
+- Server settings `RESTV2_SHOW_DKIM_PRIV_KEYS`, `RESTV2_AUTODISCOVER_CONFIG`,
+  `RESTV2_DKIM_BULK_PUBLICATION_BUDGET`, `RESTV2_DNS_*`, `RESTV2_PUBLIC_IPV4`, `RESTV2_PUBLIC_IPV6`,
+  `RESTV2_IP_ECHO_URL_*`, `RESTV2_SUGGESTED_SPF_RECORD`, and the `mailcow.conf` port variables.
+
+Contract changes made while implementing feature 010:
+
+- `DnsCapabilities.dkim.bulkLimit` (100), the most targets of one DKIM bulk deletion (G4).
+- `listAuditEvents` matches the `targetId` of `dkimKey` and `mtaStsPolicy` records in its
+  normalised form (Unicode and letter case), and of `dkimKey` records also by the exact spelling of
+  an unused legacy key.
+
+Release checks of feature 010 (quickstart Part C): not run yet; the ISPConfig publication on staging
+is skipped by the owner.

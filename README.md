@@ -207,6 +207,31 @@ service, as php-fpm-mailcow resolves. A test takes up to 60 seconds, within the 
 `docker compose --profile routing up -d mailpit` (SMTP on `mailpit:1025` inside the stack, any login
 accepted).
 
+### DKIM, MTA-STS and DNS diagnostics (feature 010)
+
+DKIM keys stay in mailcow's Redis hashes `DKIM_PUB_KEYS`, `DKIM_SELECTORS` and `DKIM_PRIV_KEYS`,
+which Rspamd reads for signing and ARC sealing; every change is one atomic script. MTA-STS policies
+are rows of mailcow's `mta_sts` table, which `mta-sts.php` and the certificate service read. The
+selector, the ISPConfig publication and its settings are those of the domains section above; each
+key change (generation, import, copy, deletion) is published when it is enabled. DNS diagnostics
+resolves through mailcow's unbound (the override's `dns` and `dns_opt`, as for feature 009) and
+reads the certificate on port 25 of the SMTP host. The `mailcow.conf` port variables `IMAP_PORT`,
+`IMAPS_PORT`, `POP_PORT`, `POPS_PORT`, `SMTPS_PORT`, `SUBMISSION_PORT` and `SIEVE_PORT` give the
+service ports that diagnostics expects in SRV records (the override passes them).
+
+| Variable | Default | Meaning | FeldHost |
+|---|---|---|---|
+| `RESTV2_SHOW_DKIM_PRIV_KEYS` | (empty: mailcow's vars files, upstream `false`) | Legacy `$SHOW_DKIM_PRIV_KEYS`: administrators may export private keys | |
+| `RESTV2_AUTODISCOVER_CONFIG` | (empty: mailcow's vars files, then the port variables) | Legacy `$autodiscover_config` as JSON: `imap`, `pop3`, `smtp`, `sieve` with `server`, `port`, `tlsport` | |
+| `RESTV2_DKIM_BULK_PUBLICATION_BUDGET` | `60` | Seconds the record removals of one bulk deletion may take together | |
+| `RESTV2_DNS_LOOKUP_TIMEOUT` | `5` | Seconds reserved per lookup, and the limit of the echo request and the certificate fetch | |
+| `RESTV2_DNS_RUN_TIMEOUT` | `30` | Seconds a diagnostics run may take | |
+| `RESTV2_DNS_DIAGNOSTICS_PER_MINUTE` | `10` | Diagnostics runs per caller (user or API key) per minute | |
+| `RESTV2_DNS_FACTS_TTL` | `600` | Seconds the public addresses and the certificate digest are reused | |
+| `RESTV2_PUBLIC_IPV4`, `RESTV2_PUBLIC_IPV6` | (empty: asked from the echo service) | The server's public addresses; `RESTV2_PUBLIC_IPV6=none` declares no IPv6 | |
+| `RESTV2_IP_ECHO_URL_IPV4`, `RESTV2_IP_ECHO_URL_IPV6` | `http://ip4.mailcow.email`, `http://ip6.mailcow.email` | mailcow's address echo service, as legacy asks it | |
+| `RESTV2_SUGGESTED_SPF_RECORD` | (empty) | The SPF record suggested in the SPF guidance | `v=spf1 mx a ~all` |
+
 ### Identity providers and OAuth2 clients (feature 012)
 
 The API reads and writes mailcow's single identity provider configuration (Keycloak, a generic

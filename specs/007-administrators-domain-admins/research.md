@@ -23,7 +23,7 @@ fork is identical for this feature (spec, "Legacy Parity").
 
 - **Decision**: Four contract modules, 21 operations (list in [plan.md](./plan.md#contract-operations)):
   - `admins`: `/admins`, `/admins/{username}`, `/admins/{username}/second-factor-suspension`,
-    `/admin-bulk-actions` and `/account-capabilities`;
+    `/admin-bulk-actions` and `/capabilities/accounts`;
   - `domain-admins`: `/domain-admins`, `/domain-admins/{username}`,
     `/domain-admins/{username}/second-factor-suspension` and `/domain-admin-bulk-actions`;
   - `sso-tokens`: `/domain-admins/{username}/sso-token` (issue) and `/session/sso-token` (sign in);
@@ -34,10 +34,12 @@ fork is identical for this feature (spec, "Legacy Parity").
   the domain administrator representation and are changed with the account's `PATCH`, which is a
   JSON Merge Patch, so a nested `permissions` object changes exactly the flags it names (FR-038).
 - **Rationale**:
-  - A username may be any string of `a-z`, `0-9`, `.`, `_` and `-` (FR-014), so `bulk-actions` and
-    `capabilities` are valid usernames. Under `/admins/` they would collide with
-    `/admins/{username}`, and OpenAPI matches concrete paths first. Top-level hyphenated nouns
-    cannot collide and need no reserved names beyond legacy's `api`.
+  - A username may be any string of `a-z`, `0-9`, `.`, `_` and `-` (FR-014), so `bulk-actions` is a
+    valid username. Under `/admins/` it would collide with `/admins/{username}`, and OpenAPI
+    matches concrete paths first. A top-level hyphenated noun cannot collide and needs no reserved
+    name beyond legacy's `api`. The capabilities read follows `docs/conventions.md`
+    ("Capabilities reads use the top-level path `/capabilities/{area}`"): `/capabilities/accounts`,
+    operation `getAccountCapabilities`.
   - Second-factor suspension, token issue and webmail sign-in are non-CRUD actions, so they are
     sub-resources answering `200` (root document conventions; 001 uses the same pattern for
     `/api-keys/{id}/revocation` and `/session/passkey-challenge`). A token cannot be read back, so
@@ -49,8 +51,8 @@ fork is identical for this feature (spec, "Legacy Parity").
   - One `PATCH` for every account value keeps the version tag single (FR-064) and avoids two ways
     of changing the same flag.
 - **Alternatives considered**:
-  - `/admins/bulk-actions` and `/admins/capabilities` were rejected because of the username
-    collision. Reserving those names would deviate from FR-014 and could hide legacy accounts.
+  - `/admins/bulk-actions` was rejected because of the username collision. Reserving the name
+    would deviate from FR-014 and could hide a legacy account.
   - A separate `/domain-admins/{username}/permissions` resource (legacy `edit/da-acl`) was
     rejected: it duplicates the account `PATCH`, and its version tag would have to equal the
     account's anyway (FR-064).
@@ -104,7 +106,9 @@ fork is identical for this feature (spec, "Legacy Parity").
 
   Values are taken as normalised booleans and raw `DATETIME` strings. The tag never covers
   `modified`, `tfa`, `fido2` or anything derived from them (`secondFactorStatus`,
-  `activePasskeyCount`), per `docs/conventions.md`. The same value is the `ETag` header of every
+  `activePasskeyCount`), per `docs/conventions.md`. It never covers the password hash or any other
+  secret, so the conventions' rule that tags over stored secrets use an HMAC keyed with the app key
+  does not come into play; a password change therefore does not change the tag. The same value is the `ETag` header of every
   single-account response and `etag` in every representation, including list entries and the
   `version` of bulk results.
 - **Rationale**: `domain_admins` and `da_acl` have no modification column, so a timestamp cannot
@@ -129,7 +133,9 @@ fork is identical for this feature (spec, "Legacy Parity").
   Uniqueness is checked against `admin` (both roles share the table) inside the creating or
   renaming transaction with `SELECT … FOR UPDATE`. The `admin` primary key with its
   case-insensitive collation is the final arbiter: a duplicate-key error (SQLSTATE 23000, 1062)
-  inside the transaction becomes `409 account-exists`. Mailbox addresses are not checked, because
+  inside the transaction becomes `409 account-exists`. Because upstream enforces this uniqueness
+  with its own primary key, the conventions' `GET_LOCK()` rule for uniqueness that upstream
+  enforces only in code is not needed here. Mailbox addresses are not checked, because
   a username cannot contain `@`. A rename to the same name in another letter case normalises to
   the current name and is no change.
 - **Rationale**: Legacy checks `ctype_alnum(str_replace(['_', '.', '-'], '', $u))`, which rejects
@@ -342,7 +348,7 @@ fork is identical for this feature (spec, "Legacy Parity").
     (FR-041). Flags are applied at the next request because 001 evaluates them per request.
   - A domain administrator can never change flags: every account operation is administrator-only
     (FR-001, FR-039).
-  - **Defaults** (`GET /account-capabilities`, FR-077): `SELECT COLUMN_NAME, COLUMN_DEFAULT FROM
+  - **Defaults** (`GET /capabilities/accounts`, FR-077): `SELECT COLUMN_NAME, COLUMN_DEFAULT FROM
     information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'da_acl'`, with
     MariaDB's quoted literals (`'1'`) parsed to booleans, read on every request.
 - **Rationale**: Legacy `acl('edit', 'domainadmin')` replaces the whole set and silently ignores
@@ -621,18 +627,24 @@ fork is identical for this feature (spec, "Legacy Parity").
     `removedSecondFactors`, `removedPasskeys`, `suspendedCount`, `expiresAt`, `endedBy`
     (`explicit`, `signOut`, `automatic`, `sessionReplaced`), `endReason`, `bulkRequestId`,
     `problemType` (for refusals).
-  - **Refusals**: every authenticated attempt that is refused (`403`, `404`, `409`, `412`, `422`)
-    writes a failure record with a `failureReason` that features 002 to 012 already added to
-    `AuditFailureReason` (`permissionDenied`, `notFound`, `validationFailed`, `versionOutdated`,
-    `conflict`, and 001's `accountInactive` for a token requested for an inactive account) and
-    `details.problemType`. Feature 007 adds no failure reason. Requests refused before
-    authentication (`401`, CSRF) are not audited, as in 001.
+  - **Refusals** (`docs/conventions.md`, "Refusal auditing"): every state-changing route of this
+    feature is marked for refusal auditing with the shared mechanism (`RefusalAuditor` as the
+    conventions name it, or the equivalent the first implemented feature created), so that every
+    refusal of an authenticated caller writes one failure record: read-only keys, keys on
+    session-only operations, restricted sessions, missing flags, out-of-scope objects (`404`),
+    conflicts (`409`), outdated versions (`412`) and invalid input (`422`). The record carries a
+    `failureReason` that is already in the shared, append-only `AuditFailureReason`
+    (`permissionDenied`, `notFound`, `validationFailed`, `versionOutdated`, `conflict`, and 001's
+    `accountInactive` for a token requested for an inactive account) and `details.problemType`.
+    Feature 007 adds no failure reason. CSRF failures and `401` are not audited.
   - **Impersonated account**: `restv2_audit_events` gains `impersonated_username` and
     `impersonated_role` (migration). `AuditLogger` fills them, and sets the actor to the
     impersonator, whenever the principal is impersonating, for every feature's records (FR-067).
     `AuditEvent` gains `impersonatedAccount` (`null` outside impersonations), and
-    `listAuditEvents` gains the `impersonatedAccount` filter. Filtering by target type and
-    identifier comes from feature 002 (002 FR-058), which is implemented first.
+    `listAuditEvents` gains the `impersonatedAccount` filter, the one feature-specific audit filter
+    that `docs/conventions.md` allows. History of an account uses the generic `targetType`
+    (`admin`, `domainAdmin`, `ssoToken`, `impersonation`, `mailbox`) and `targetId` filters of
+    feature 002 (002 FR-058), which is implemented first.
   - Passwords, hashes and tokens are never in `details` (the whitelist excludes them, and a test
     scans every record, SC-009).
 - **Rationale**: Exactly one record per affected account, including refusals (FR-066), in the same

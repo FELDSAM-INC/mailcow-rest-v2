@@ -8,5 +8,5 @@
   $ref: './admin-second-factor-suspension.yaml'
 /admin-bulk-actions:
   $ref: './admin-bulk-actions.yaml'
-/account-capabilities:
+/capabilities/accounts:
   $ref: './account-capabilities.yaml'

@@ -164,7 +164,11 @@ username rule and the policies. **No user story can start before this phase is c
   `endedBy`, `endReason`, `durationSeconds`, `targetRole`, `trigger`, `bulkRequestId`,
   `problemType`, `domains`, `permissions`, `active`, `forcePasswordChange`,
   `forceSecondFactorSetup`) and the failure reasons it may use (`permissionDenied`, `notFound`,
-  `validationFailed`, `versionOutdated`, `conflict`, `accountInactive`). Change
+  `validationFailed`, `versionOutdated`, `conflict`, `accountInactive`; `AuditFailureReason` is
+  append-only and gets no new value). Mark every state-changing route of this feature for the
+  shared refusal auditing of `docs/conventions.md` (`RefusalAuditor`, or the equivalent the first
+  implemented feature created) when its routes are registered (T045, T049, T062, T077, T084,
+  T086). Change
   `app/Http/Resources/Api/V2/AuditEventResource.php` to return `impersonatedAccount`. This makes
   T010 pass.
 - [ ] T021 [P] Create `app/Rules/AccountUsername.php` (rule codes of T006) and
@@ -420,7 +424,7 @@ with 001's identity of the domain administrator.
   `information_schema` query of data-model.md, parsing `'1'`/`1`/`'0'`/`0`, and the configured
   limits), `app/Http/Resources/Api/V2/AccountCapabilitiesResource.php` and
   `app/Http/Controllers/Api/V2/AccountCapabilitiesController.php` (`show`, `AdminPolicy::viewAny`).
-  Register `GET /account-capabilities` with `restv2.auth:authenticated` in `routes/api.php`. This
+  Register `GET /capabilities/accounts` with `restv2.auth:authenticated` in `routes/api.php`. This
   makes T048 pass.
 - [ ] T050 [US2] Complete the `permissions` paths of `DomainAdminAccountService::update()` and
   `UpdateDomainAdminRequest` where T047 still fails (partial change, missing record, unknown names,
@@ -772,7 +776,9 @@ behalf in the audit log, without secrets.
   `GET /audit-events?targetType=domainAdmin&targetId=reseller1` returns every record of that
   account; each operation of the feature, successful or refused after authentication (`403`, `404`
   where an account is addressed, `409`, `412`, `422`), writes exactly one record per affected
-  account with the failure reason and `details.problemType`; reads write none.
+  account with the failure reason and `details.problemType`, including refusals of read-only keys,
+  keys on session-only operations and restricted sessions (refusal auditing of
+  `docs/conventions.md`); CSRF failures, `401`s and reads write none.
 - [ ] T088 [P] [US7] Write `tests/Feature/Audit/AuditImpersonationFilterTest.php` (AS US7-2,
   FR-069): impersonations of `bob@a.example` by `alice` and by `reseller1`, with a change each;
   `GET /audit-events?impersonatedAccount=bob@a.example` returns both starts, both ends and both

@@ -3,7 +3,7 @@ description: |
   The 19 permission flags of a domain administrator (mailcow table `da_acl`), named in camelCase
   after the legacy columns. Without a stored permission record every flag reads as `false`. The
   defaults of a new account are those of the server's mailcow schema, readable through
-  `GET /account-capabilities`. Each flag is enforced by the feature that owns the matching
+  `GET /capabilities/accounts`. Each flag is enforced by the feature that owns the matching
   operations.
 required:
   - syncjobs

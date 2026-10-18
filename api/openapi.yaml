@@ -382,10 +382,10 @@ paths:
     $ref: './modules/sender-settings/_index.yaml#/~1mailboxes~1{mailbox}~1sender-settings~1permission-candidates'
   /mailboxes:
     $ref: './modules/mailboxes/_index.yaml#/~1mailboxes'
-  /mailboxes/capabilities:
-    $ref: './modules/mailboxes/_index.yaml#/~1mailboxes~1capabilities'
-  /mailboxes/tags:
-    $ref: './modules/mailboxes/_index.yaml#/~1mailboxes~1tags'
+  /capabilities/mailboxes:
+    $ref: './modules/mailboxes/_index.yaml#/~1capabilities~1mailboxes'
+  /mailbox-tags:
+    $ref: './modules/mailboxes/_index.yaml#/~1mailbox-tags'
   /mailboxes/bulk-actions:
     $ref: './modules/mailboxes/_index.yaml#/~1mailboxes~1bulk-actions'
   /mailboxes/{mailbox}:
@@ -412,8 +412,8 @@ paths:
     $ref: './modules/dkim/_index.yaml#/~1dkim-keys~1{dkimName}~1private-key'
   /dkim-keys/{dkimName}/dns-publication:
     $ref: './modules/dkim/_index.yaml#/~1dkim-keys~1{dkimName}~1dns-publication'
-  /mail-dns-capabilities:
-    $ref: './modules/dkim/_index.yaml#/~1mail-dns-capabilities'
+  /capabilities/dns:
+    $ref: './modules/dkim/_index.yaml#/~1capabilities~1dns'
   /mta-sts-policies:
     $ref: './modules/mta-sts/_index.yaml#/~1mta-sts-policies'
   /mta-sts-policies/{policyDomain}:
@@ -622,8 +622,8 @@ paths:
     $ref: './modules/quarantine/_index.yaml#/~1quarantine~1{itemId}~1message'
   /quarantine/{itemId}/attachments/{position}:
     $ref: './modules/quarantine/_index.yaml#/~1quarantine~1{itemId}~1attachments~1{position}'
-  /quarantine-capabilities:
-    $ref: './modules/quarantine/_index.yaml#/~1quarantine-capabilities'
+  /capabilities/quarantine:
+    $ref: './modules/quarantine/_index.yaml#/~1capabilities~1quarantine'
   /quarantine-notification-settings/bulk-actions:
     $ref: './modules/quarantine/_index.yaml#/~1quarantine-notification-settings~1bulk-actions'
   /mailboxes/{mailbox}/quarantine-notification-settings:

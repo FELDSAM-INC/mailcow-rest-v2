@@ -100,7 +100,7 @@ server; 21 operations in 4 modules; 7 user stories.
 | VI. Security | Object-level authorisation for every role and key type (R24), with `404` for objects outside the caller's scope. Administrator account writes need an interactive administrator session. Impersonation is session-only, renews the identifier and the CSRF token, is re-validated on every request, and cannot manage the target's credentials. Every state change and every refused attempt after authentication is audited with actor and impersonated account. Tokens are single-use, 30 s, generated from `random_bytes`, never logged. | PASS |
 | VII. Test-first | `tasks.md` puts every test task before its implementation, in every phase. Tests run on MariaDB with the real schema and on a real Redis, including concurrency and performance tests. | PASS |
 | VIII. Simplicity | No new package. Shared abstractions (`AccountRenamer`, `AccountDeleter`, `LastAdminGuard`, `AccountBulkActionRunner`) each have at least two concrete users (the two roles, or the single and bulk operations). No permissions sub-resource duplicating the account `PATCH` (R1). | PASS |
-| Cross-feature conventions | `404` for out-of-scope objects; whole-request refusal only for role, flag or key scope; field errors with rule codes; keys cannot write administrator accounts or impersonate; bulk actions of 100 with per-item version tags and outcomes; strong ETags over stored settings in every list entry; tokens shown once; one audit record per object with the bulk request ID; data read on every request; `ALLOW_ADMIN_EMAIL_LOGIN` reuses the `mailcow.conf` name; shared enumerations only appended; resource-named components; the deletion cascade is implemented once and reused by 002. | PASS |
+| Cross-feature conventions | `404` for out-of-scope objects; whole-request refusal only for role, flag or key scope; field errors with rule codes; keys cannot write administrator accounts or impersonate; bulk actions of 100 with per-item version tags and outcomes; strong ETags over stored settings in every list entry, covering no secret; tokens shown once; one audit record per object with the bulk request ID; refusals of authenticated callers audited through the shared refusal-auditing mechanism; history through the generic `targetType`/`targetId` filters plus the allowed `impersonatedAccount` filter; the capabilities read at `/capabilities/accounts`; uniqueness enforced by upstream's primary key (no `GET_LOCK()` needed); data read on every request; `ALLOW_ADMIN_EMAIL_LOGIN` reuses the `mailcow.conf` name; shared enumerations (including `AuditFailureReason`) only appended; resource-named components; the deletion cascade is implemented once and reused by 002's `OrphanedDomainAdminRemover`. | PASS |
 | Runtime constraints | No new process or container. Configuration through environment variables (`ALLOW_ADMIN_EMAIL_LOGIN`). Logs keep 001's redaction (`token`, `pass`). | PASS |
 
 **Post-design re-check (after Phase 1)**: PASS. The contract, data model and research introduce no
@@ -124,9 +124,9 @@ table, so the spec is unchanged:
 4. A token signs in only an account created no later than the token (R20, FR-036).
 5. Refused attempts after authentication (`403`, `404`, `409`, `412`, `422`) are audited with the
    failure reasons other features already added (R22).
-6. Bulk paths are `/admin-bulk-actions` and `/domain-admin-bulk-actions`, and the capabilities read
-   is `/account-capabilities`, because `bulk-actions` and `capabilities` are valid usernames (R1).
-   Features whose identifiers cannot collide use `/<collection>/bulk-actions`.
+6. Bulk paths are `/admin-bulk-actions` and `/domain-admin-bulk-actions`, because `bulk-actions` is
+   a valid username (R1); features whose identifiers cannot collide use `/<collection>/bulk-actions`.
+   The capabilities read is `/capabilities/accounts`, as `docs/conventions.md` requires.
 
 ## Contract Operations
 
@@ -139,7 +139,7 @@ table, so the spec is unchanged:
 | DELETE `/admins/{username}` | deleteAdmin | admin session + CSRF | US4, FR-028–FR-030, FR-033–FR-036 |
 | POST `/admins/{username}/second-factor-suspension` | suspendAdminSecondFactors | admin session + CSRF | US4, FR-027 |
 | POST `/admin-bulk-actions` | applyAdminBulkAction | admin session + CSRF | US4, FR-075, FR-076 |
-| GET `/account-capabilities` | getAccountCapabilities | admin session or admin key (read-only too) | US2, FR-077 |
+| GET `/capabilities/accounts` | getAccountCapabilities | admin session or admin key (read-only too) | US2, FR-077 |
 | GET `/domain-admins` | listDomainAdmins | admin session or admin key (read-only too) | US1, FR-007–FR-012 |
 | POST `/domain-admins` | createDomainAdmin | admin session + CSRF, or admin read-write key | US1, US2, FR-014–FR-020, FR-037 |
 | GET `/domain-admins/{username}` | getDomainAdmin | admin session or admin key | US1, US2, FR-013, FR-038 |
@@ -197,7 +197,7 @@ Only the files that feature 007 adds or changes are listed; the layout is 001's.
 ```text
 api/
 ├── openapi.yaml                                   # tags and path references added
-├── modules/admins/{_index,admins,admin,admin-second-factor-suspension,admin-bulk-actions,account-capabilities}.yaml
+├── modules/admins/{_index,admins,admin,admin-second-factor-suspension,admin-bulk-actions,account-capabilities}.yaml  # account-capabilities.yaml serves /capabilities/accounts
 ├── modules/domain-admins/{_index,domain-admins,domain-admin,domain-admin-second-factor-suspension,domain-admin-bulk-actions}.yaml
 ├── modules/sso-tokens/{_index,domain-admin-sso-token,session-sso-token}.yaml
 ├── modules/impersonation/{_index,session-impersonation,mailbox-webmail-sign-in}.yaml

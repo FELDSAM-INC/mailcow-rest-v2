@@ -6,7 +6,7 @@ description: |
   with `invalidFormat` (`format: domainName`), an alias domain name with `notEligible`
   (`expected: primaryDomain`) and an unknown name with `notFound`, each on `domains.<index>`.
   Duplicates are merged. Permission flags that are not sent get this server's defaults, the values
-  `GET /account-capabilities` reports. The account, its assignments (with the account's status) and
+  `GET /capabilities/accounts` reports. The account, its assignments (with the account's status) and
   its permission record are stored together or not at all; an orphaned permission record left by
   legacy for the same username is replaced.
 required: [username, password, domains]

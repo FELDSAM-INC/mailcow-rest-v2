@@ -42,7 +42,7 @@ T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session -d '{"username":"admin","password":"Passw0rd!dev"}' >/dev/null
 
 # US2: defaults of a new domain administrator, read before creating one.
-curl -s $C $B/account-capabilities | jq '.data.domainAdminPermissionDefaults | {loginAs, unlimitedQuota}'
+curl -s $C $B/capabilities/accounts | jq '.data.domainAdminPermissionDefaults | {loginAs, unlimitedQuota}'
 #   -> {"loginAs": true, "unlimitedQuota": false}
 
 # US1: create, list with a domain filter, change domains, rename.

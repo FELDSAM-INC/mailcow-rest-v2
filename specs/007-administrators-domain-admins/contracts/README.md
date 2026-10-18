@@ -4,7 +4,7 @@ The contract of this feature is not duplicated here. The OpenAPI 3.1 document in
 [`api/`](../../../api/) directory is the single source of truth (constitution I):
 
 - [`api/modules/admins/`](../../../api/modules/admins/): administrator accounts, their bulk
-  actions (`/admin-bulk-actions`) and the account capabilities (`/account-capabilities`);
+  actions (`/admin-bulk-actions`) and the account capabilities (`/capabilities/accounts`);
 - [`api/modules/domain-admins/`](../../../api/modules/domain-admins/): domain administrator
   accounts with their domains and permission flags, and their bulk actions
   (`/domain-admin-bulk-actions`);

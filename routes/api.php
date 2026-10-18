@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\V2\CsrfTokenController;
+use App\Http\Controllers\Api\V2\PasskeyAssertionController;
+use App\Http\Controllers\Api\V2\PasskeyChallengeController;
+use App\Http\Controllers\Api\V2\PasskeyController;
+use App\Http\Controllers\Api\V2\PasskeyRegistrationOptionsController;
 use App\Http\Controllers\Api\V2\PendingSignInController;
 use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
@@ -34,10 +38,38 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::delete('/session/pending-sign-in', [PendingSignInController::class, 'destroy'])->name('pending-sign-in.destroy');
         Route::post('/session/pending-sign-in/webauthn-challenge', [SecondFactorChallengeController::class, 'store'])->name('second-factor-challenge.store');
         Route::post('/session/pending-sign-in/second-factor', [SecondFactorController::class, 'store'])->name('second-factor.store');
+        Route::post('/session/passkey-challenge', [PasskeyChallengeController::class, 'store'])->name('passkey-challenge.store');
+        Route::post('/session/passkey-assertion', [PasskeyAssertionController::class, 'store'])->name('passkey-assertion.store');
     });
 
     // Signing out needs the token only with a live session (R7).
     Route::delete('/session', [SessionController::class, 'destroy'])
         ->middleware(['restv2.auth:browser', 'restv2.csrf:live', 'restv2.pending:allow'])
         ->name('session.destroy');
+
+    // The signed-in user's own passkeys (FR-052, FR-053). Registering is also allowed when the
+    // only pending action is second-factor setup, which it resolves (FR-054).
+    Route::middleware('restv2.auth:session')->group(function (): void {
+        Route::post('/me/passkeys/registration-options', [PasskeyRegistrationOptionsController::class, 'store'])
+            ->middleware(['restv2.csrf', 'restv2.pending:secondFactorSetup'])
+            ->name('passkey-registration-options.store');
+        Route::get('/me/passkeys', [PasskeyController::class, 'index'])
+            ->middleware('restv2.pending')
+            ->name('passkeys.index');
+        Route::post('/me/passkeys', [PasskeyController::class, 'store'])
+            ->middleware(['restv2.csrf', 'restv2.pending:secondFactorSetup'])
+            ->name('passkeys.store');
+        Route::get('/me/passkeys/{passkeyId}', [PasskeyController::class, 'show'])
+            ->middleware('restv2.pending')
+            ->where('passkeyId', '[0-9a-f]{64}')
+            ->name('passkeys.show');
+        Route::patch('/me/passkeys/{passkeyId}', [PasskeyController::class, 'update'])
+            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->where('passkeyId', '[0-9a-f]{64}')
+            ->name('passkeys.update');
+        Route::delete('/me/passkeys/{passkeyId}', [PasskeyController::class, 'destroy'])
+            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->where('passkeyId', '[0-9a-f]{64}')
+            ->name('passkeys.destroy');
+    });
 });

@@ -90,7 +90,7 @@ final class ListQuery
     /**
      * Restricts the query to rows where any of the columns contains the search term.
      *
-     * @template TQuery of Builder|EloquentBuilder<\Illuminate\Database\Eloquent\Model>
+     * @template TQuery of Builder|EloquentBuilder<covariant Model>
      *
      * @param  TQuery  $query
      * @param  list<string>  $columns
@@ -118,7 +118,7 @@ final class ListQuery
     /**
      * Counts, sorts and pages the query and returns the list envelope.
      *
-     * @param  Builder|EloquentBuilder<Model>  $query
+     * @param  Builder|EloquentBuilder<covariant Model>  $query
      * @param  callable(mixed): mixed|null  $map
      * @return array{data: list<mixed>, meta: array{total: int, limit: int, offset: int}}
      */

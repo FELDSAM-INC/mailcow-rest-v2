@@ -852,7 +852,7 @@ unknown credentials, and role mismatches. Register, rename and remove passkeys a
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T069 [P] [US2] Write `tests/Feature/Auth/PasskeySignInTest.php` (FR-015–FR-019, SC-001) for `createPasskeyChallenge`
+- [X] T069 [P] [US2] Write `tests/Feature/Auth/PasskeySignInTest.php` (FR-015–FR-019, SC-001) for `createPasskeyChallenge`
   and `createSessionWithPasskey`:
   - The challenge has empty `allowCredentials`, `userVerification` from `$FIDO2_UV_FLAG_LOGIN`
     (`preferred`), `rpId` = host, timeout 300000, and is replaced by a new request.
@@ -875,7 +875,12 @@ unknown credentials, and role mismatches. Register, rename and remove passkeys a
   - A tampered signature → `passkeyVerificationFailed`.
   - A passkey registered for `other.example.org` (`fido2.rpId` and the authenticator's RP ID hash)
     fails on `mail.example.org` (edge case "registered under a different host name").
-- [ ] T070 [P] [US2] Write `tests/Feature/Passkeys/PasskeyRegistrationTest.php` (FR-052, FR-054) for
+
+  *Implementation note*: the UV case is switched with the server setting
+  `RESTV2_FIDO2_UV_FLAG_LOGIN=false` (R14 precedence) instead of editing the shared vars fixture. A
+  passkey whose account no longer exists in either table is audited `invalidCredentials`. A
+  missing or expired challenge (`sign-in-expired`, `challengeExpired`) is not counted.
+- [X] T070 [P] [US2] Write `tests/Feature/Passkeys/PasskeyRegistrationTest.php` (FR-052, FR-054) for
   `createPasskeyRegistrationOptions` and `registerPasskey`:
   - The options have `residentKey required`, `requireResidentKey true`, `user.id` = base64url of
     the username, `user.name` = `displayName` = the username, `rp.id` = host, `rp.name` = the
@@ -894,7 +899,14 @@ unknown credentials, and role mismatches. Register, rename and remove passkeys a
     `details.restrictionLifted` is true (FR-054).
   - With `[passwordChange, secondFactorSetup]` → `403 pending-action-required`.
   - Audit `passkeyRegistration` success, and failure `registrationFailed`.
-- [ ] T071 [P] [US2] Write `tests/Feature/Passkeys/PasskeyManagementTest.php` for `listPasskeys`,
+
+  *Implementation note*: without an attestation certificate lbuchs reports `certificateSubject`
+  and `certificateIssuer` as empty strings, which legacy stores as they are; the API stores them the
+  same way and reports an empty subject as `authenticatorDescription: null`. lbuchs asks for
+  `indirect` attestation without root certificates (legacy sends that); `OptionsJson` maps it to
+  `direct` as the contract's `WebAuthnCreationOptions.attestation` states. The duplicate check and
+  insert run under `GET_LOCK('restv2_fido2_<cid>')`.
+- [X] T071 [P] [US2] Write `tests/Feature/Passkeys/PasskeyManagementTest.php` for `listPasskeys`,
   `getPasskey`, `updatePasskey` and `deletePasskey` (FR-053, AS-7):
   - The list shows legacy and API passkeys with `id` = `SHA2(credentialId)`, `name`,
     `authenticatorDescription` (null when `certificateSubject` is null), `registeredAt` converted
@@ -912,27 +924,40 @@ unknown credentials, and role mismatches. Register, rename and remove passkeys a
 
 ### Implementation for User Story 2
 
-- [ ] T072 [US2] Create `app/Services/Auth/PasskeySignInService.php` (R9, R16, FR-015–FR-018). It
+- [X] T072 [US2] Create `app/Services/Auth/PasskeySignInService.php` (R9, R16, FR-015–FR-018). It
   issues the challenge (`getGetArgs(null, 300, false, false, false, false, uvLogin)`, stored
   through `SessionManager`) and verifies. Verification consumes the challenge, looks up
   `fido2.credentialId = rawId`, runs `processGet` with the configured UV and UP flags, checks
   `fido2.active`, resolves the account (admin/domain admin, then mailbox, or the named role only),
   checks `AccountResolver` activity, then `promote()`, `sasl_log` for a mailbox, clears the
   throttle and audits. On failure it hits the passkey throttle, delays and audits with its reason.
-- [ ] T073 [US2] Create `app/Services/Passkeys/PasskeyService.php`, the only writer of `fido2`.
+
+  *Implementation note*: with lbuchs 2.2 the call is `getGetArgs([], 300, false, false, false,
+  false, false, $uvLogin)` (the extra `allowHybrid` parameter, see T066).
+- [X] T073 [US2] Create `app/Services/Passkeys/PasskeyService.php`, the only writer of `fido2`.
   It issues registration options (lbuchs `getCreateArgs` per R9, stored through `SessionManager`),
   registers (consumes the options, runs `processCreate`, checks for duplicates, inserts per
   data-model.md, audits `restrictionLifted`), lists and finds with a parameterised
   `SHA2(credentialId, 256)` comparison, renames (`friendlyName`, `If-Match` against
   `ETag::forPasskey`) and removes. Each write and its audit share one transaction.
-- [ ] T074 [P] [US2] Create the Form Requests `app/Http/Requests/Api/V2/PasskeySignInRequest.php`
+
+  *Implementation note*: the tag is `PasskeyService::etag()` (`ETag::of([cid, friendlyName,
+  active])`). Renaming to the current name changes and audits nothing. `deletePasskey` honours
+  `If-Match` too, as the contract documents. Rename and removal lock the row (`FOR UPDATE`) between
+  the `If-Match` check and the write.
+- [X] T074 [P] [US2] Create the Form Requests `app/Http/Requests/Api/V2/PasskeySignInRequest.php`
   (`credential` per `WebAuthnAuthenticationResponse`, `role` optional enum),
   `RegisterPasskeyRequest.php` (`credential` per `WebAuthnRegistrationResponse`, `name` "optional,
   string, 1–255 after trim"), `UpdatePasskeyRequest.php` (`name` "required, string, 1–255 after
   trim") and `ListPasskeysRequest.php` (through `ListQuery`: `limit` 1–1000, default 25,
   `offset` ≥ 0, `sort` in registeredAt, name, `order` in asc, desc, `q` over `friendlyName` and
   `certificateSubject`).
-- [ ] T075 [US2] Create `app/Http/Resources/Api/V2/PasskeyResource.php` (with `etag`) and the controllers
+
+  *Implementation note*: names are trimmed before validation and storage (trait
+  `Concerns\TrimsName`); `ListPasskeysRequest` builds its `ListQuery` after validation. Tests use
+  the new `TestCase` helpers `postEmpty()` (operations without a request body) and `patchMerge()`
+  (`application/merge-patch+json`).
+- [X] T075 [US2] Create `app/Http/Resources/Api/V2/PasskeyResource.php` (with `etag`) and the controllers
   `PasskeyChallengeController.php` (`@store`), `PasskeyAssertionController.php` (`@store`, `201` +
   `Location`), `PasskeyRegistrationOptionsController.php` (`@store`) and `PasskeyController.php`
   (`index`, `show`, `store`, `update`, `destroy`, with `ETag` headers). Register the routes in

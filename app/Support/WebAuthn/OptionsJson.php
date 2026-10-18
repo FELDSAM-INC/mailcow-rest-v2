@@ -15,6 +15,9 @@ use stdClass;
  *  - `allowCredentials` and `excludeCredentials` are always present (lbuchs omits empty lists);
  *  - registration requires a resident key (`residentKey: "required"`, `requireResidentKey: true`);
  *  - lbuchs's private `extensions.exts` is dropped; the second-factor challenge sets `appid`;
+ *  - registration asks for `direct` attestation unless only the `none` format is accepted
+ *    (contract `WebAuthnCreationOptions.attestation`; lbuchs asks for `indirect` without root
+ *    certificates);
  *  - `timeout` is 300000 ms (legacy sends 30 s; parity row in the spec).
  */
 final class OptionsJson
@@ -35,6 +38,10 @@ final class OptionsJson
         ]);
         $options['excludeCredentials'] ??= [];
         $options['timeout'] = self::TIMEOUT_MS;
+
+        if (($options['attestation'] ?? null) === 'indirect') {
+            $options['attestation'] = 'direct';
+        }
 
         return self::cleanExtensions($options);
     }

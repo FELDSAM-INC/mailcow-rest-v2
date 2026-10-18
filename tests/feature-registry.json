@@ -65,17 +65,9 @@
         }
     },
     "pendingOperations": [
-        "createPasskeyChallenge",
-        "createSessionWithPasskey",
         "getIdentity",
         "getPreferences",
         "updatePreferences",
-        "listPasskeys",
-        "registerPasskey",
-        "createPasskeyRegistrationOptions",
-        "getPasskey",
-        "updatePasskey",
-        "deletePasskey",
         "listApiKeys",
         "createApiKey",
         "listApiKeyOwnerCandidates",

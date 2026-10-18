@@ -134,6 +134,18 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
+     * A JSON Merge Patch (RFC 7396) request, `application/merge-patch+json`.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, string>  $headers
+     * @return TestResponse<Response>
+     */
+    public function patchMerge(string $uri, array $data, array $headers = []): TestResponse
+    {
+        return $this->json('PATCH', $uri, $data, array_merge(['Content-Type' => 'application/merge-patch+json'], $headers));
+    }
+
+    /**
      * Skips request validation for the rest of the test. Only tests that deliberately send
      * contract-violating input (a name containing "Invalid" or "Malformed") may do so.
      */

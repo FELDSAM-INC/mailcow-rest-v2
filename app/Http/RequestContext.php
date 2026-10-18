@@ -3,6 +3,8 @@
 namespace App\Http;
 
 use App\Auth\Principal;
+use App\Exceptions\ProblemException;
+use App\Support\Http\ProblemType;
 use Illuminate\Http\Request;
 
 /**
@@ -98,5 +100,13 @@ final class RequestContext
         $principal = $request->attributes->get(self::PRINCIPAL);
 
         return $principal instanceof Principal ? $principal : null;
+    }
+
+    /**
+     * The principal of a route behind `restv2.auth:session` or `restv2.auth:authenticated`.
+     */
+    public static function requirePrincipal(Request $request): Principal
+    {
+        return self::principal($request) ?? throw new ProblemException(ProblemType::Unauthenticated);
     }
 }

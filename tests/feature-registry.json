@@ -217,17 +217,6 @@
         "getInstallationVersion",
         "getUpdateStatus",
         "listRspamdHistory",
-        "getRspamdStatistics",
-        "getFail2BanSettings",
-        "updateFail2BanSettings",
-        "rotateFail2BanBanListId",
-        "getFail2BanRules",
-        "replaceFail2BanRules",
-        "resetFail2BanRules",
-        "listFail2BanActiveBans",
-        "liftFail2BanBan",
-        "allowlistFail2BanBan",
-        "denylistFail2BanBan",
-        "listFail2BanPermanentBans"
+        "getRspamdStatistics"
     ]
 }

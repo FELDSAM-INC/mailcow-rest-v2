@@ -25,6 +25,15 @@ use App\Http\Controllers\Api\V2\DomainFooterController;
 use App\Http\Controllers\Api\V2\DomainTagController;
 use App\Http\Controllers\Api\V2\DomainTemplateBulkActionController;
 use App\Http\Controllers\Api\V2\DomainTemplateController;
+use App\Http\Controllers\Api\V2\Fail2BanActiveBanController;
+use App\Http\Controllers\Api\V2\Fail2BanBanAllowlistController;
+use App\Http\Controllers\Api\V2\Fail2BanBanDenylistController;
+use App\Http\Controllers\Api\V2\Fail2BanBanLiftController;
+use App\Http\Controllers\Api\V2\Fail2BanBanListRotationController;
+use App\Http\Controllers\Api\V2\Fail2BanPermanentBanController;
+use App\Http\Controllers\Api\V2\Fail2BanRulesController;
+use App\Http\Controllers\Api\V2\Fail2BanRulesResetController;
+use App\Http\Controllers\Api\V2\Fail2BanSettingsController;
 use App\Http\Controllers\Api\V2\HostOverviewController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\LivenessController;
@@ -393,6 +402,11 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->defaults('restv2.audit', ['event' => 'mailQueueMessageView', 'target' => 'mailQueueMessage'])
             ->name('mail-queue-message-content.show');
 
+        Route::get('/fail2ban/settings', [Fail2BanSettingsController::class, 'show'])->name('fail2ban-settings.show');
+        Route::get('/fail2ban/rules', [Fail2BanRulesController::class, 'show'])->name('fail2ban-rules.show');
+        Route::get('/fail2ban/active-bans', [Fail2BanActiveBanController::class, 'index'])->name('fail2ban-active-bans.index');
+        Route::get('/fail2ban/permanent-bans', [Fail2BanPermanentBanController::class, 'index'])->name('fail2ban-permanent-bans.index');
+
         foreach (LogType::cases() as $logType) {
             Route::get('/logs/'.$logType->value, [LogEntryController::class, 'index'])
                 ->defaults('logType', $logType->value)
@@ -423,6 +437,31 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::post('/mail-queue/purge', [MailQueuePurgeController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'mailQueuePurge', 'target' => 'mailQueue'])
             ->name('mail-queue-purge.store');
+        Route::patch('/fail2ban/settings', [Fail2BanSettingsController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'fail2banSettingsUpdate', 'target' => 'fail2banSettings'])
+            ->name('fail2ban-settings.update');
+        Route::post('/fail2ban/ban-list-rotation', [Fail2BanBanListRotationController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fail2banBanListIdRotation', 'target' => 'fail2banBanListId'])
+            ->name('fail2ban-ban-list-rotation.store');
+        Route::put('/fail2ban/rules', [Fail2BanRulesController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'fail2banRulesReplacement', 'target' => 'fail2banRules'])
+            ->name('fail2ban-rules.update');
+        Route::post('/fail2ban/rules/reset', [Fail2BanRulesResetController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fail2banRulesReset', 'target' => 'fail2banRules'])
+            ->name('fail2ban-rules-reset.store');
+        // The network carries a percent-encoded `/` (research R30), so it matches `.+`.
+        Route::post('/fail2ban/active-bans/{network}/lift', [Fail2BanBanLiftController::class, 'store'])
+            ->where('network', '.+')
+            ->defaults('restv2.audit', ['event' => 'fail2banBanLift', 'target' => 'fail2banActiveBan'])
+            ->name('fail2ban-ban-lift.store');
+        Route::post('/fail2ban/active-bans/{network}/allowlist', [Fail2BanBanAllowlistController::class, 'store'])
+            ->where('network', '.+')
+            ->defaults('restv2.audit', ['event' => 'fail2banBanAllowlisting', 'target' => 'fail2banActiveBan'])
+            ->name('fail2ban-ban-allowlist.store');
+        Route::post('/fail2ban/active-bans/{network}/denylist', [Fail2BanBanDenylistController::class, 'store'])
+            ->where('network', '.+')
+            ->defaults('restv2.audit', ['event' => 'fail2banBanDenylisting', 'target' => 'fail2banActiveBan'])
+            ->name('fail2ban-ban-denylist.store');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

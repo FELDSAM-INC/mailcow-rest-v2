@@ -79,6 +79,9 @@ final class FakeDockerApiClient implements DockerApiClient
     /** @var array<string, int> service => attempts that start or stop ignore */
     private array $resist = [];
 
+    /** @var array<string, Closure(): void> service => callback run when the service is restarted */
+    private array $onRestart = [];
+
     /** @var list<array<string, mixed>>|null the simulated Postfix queue */
     private ?array $queue = null;
 
@@ -135,6 +138,10 @@ final class FakeDockerApiClient implements DockerApiClient
 
         if ($result->isSuccess()) {
             $this->transition($service, true, true);
+
+            if (isset($this->onRestart[$service])) {
+                ($this->onRestart[$service])();
+            }
         }
 
         return $result;
@@ -381,6 +388,19 @@ final class FakeDockerApiClient implements DockerApiClient
     public function failAlways(string $method, string $mode): self
     {
         $this->permanentFailures[$method] = $mode;
+
+        return $this;
+    }
+
+    /**
+     * Runs a callback when the service is restarted successfully, for example the ban service
+     * storing its default rules.
+     *
+     * @param  Closure(): void  $callback
+     */
+    public function onRestart(string $service, Closure $callback): self
+    {
+        $this->onRestart[$service] = $callback;
 
         return $this;
     }

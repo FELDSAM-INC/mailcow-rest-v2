@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\ApiKeys\ApiKeys;
 use Tests\Support\Mailcow\MailcowFactory;
 use Tests\Support\Monitoring\MonitoringFixtures;
+use Tests\Support\Redis\MailcowLogs;
 use Tests\TestCase;
 
 /**
@@ -38,6 +39,9 @@ class MonitoringAuthorizationTest extends TestCase
         $f->domainAdmin('reseller', ['example.org'], scheme: 'SSHA256');
         $f->mailbox('user@example.org', MailcowFactory::PASSWORD, 'SSHA256');
         $this->dockerApi()->withQueue(MonitoringFixtures::text('postqueue-j.txt'));
+        $this->dockerApi()->onRestart('netfilter-mailcow', fn () => MailcowLogs::f2bRegex(MailcowLogs::defaultRules()));
+        MailcowLogs::activeBan('203.0.113.0/24', time() + 3600);
+        $this->sleeper()->advancing($this->clock());
         $this->keys = [
             'adminKey' => $this->apiKey('admin', 'readWrite')['secret'],
             'adminReadOnlyKey' => $this->apiKey('admin', 'readOnly')['secret'],
@@ -85,6 +89,18 @@ class MonitoringAuthorizationTest extends TestCase
             'bulkMailQueueMessagesDelete' => ['POST', '/api/v2/mail-queue/messages/bulk-actions', ['action' => 'delete', 'targets' => [['id' => '9E5F607182']]], 'mailQueueDeletion', 'mailQueue'],
             'flushMailQueue' => ['POST', '/api/v2/mail-queue/flush', null, 'mailQueueFlush', 'mailQueue'],
             'purgeMailQueue' => ['POST', '/api/v2/mail-queue/purge', null, 'mailQueuePurge', 'mailQueue'],
+            // US5 (T083).
+            'getFail2BanSettings' => ['GET', '/api/v2/fail2ban/settings', null, null, null],
+            'updateFail2BanSettings' => ['PATCH', '/api/v2/fail2ban/settings', ['banTime' => 3600], 'fail2banSettingsUpdate', 'fail2banSettings'],
+            'rotateFail2BanBanListId' => ['POST', '/api/v2/fail2ban/ban-list-rotation', null, 'fail2banBanListIdRotation', 'fail2banBanListId'],
+            'getFail2BanRules' => ['GET', '/api/v2/fail2ban/rules', null, null, null],
+            'replaceFail2BanRules' => ['PUT', '/api/v2/fail2ban/rules', ['rules' => ['new (\\d+)']], 'fail2banRulesReplacement', 'fail2banRules'],
+            'resetFail2BanRules' => ['POST', '/api/v2/fail2ban/rules/reset', null, 'fail2banRulesReset', 'fail2banRules'],
+            'listFail2BanActiveBans' => ['GET', '/api/v2/fail2ban/active-bans', null, null, null],
+            'liftFail2BanBan' => ['POST', '/api/v2/fail2ban/active-bans/203.0.113.0%2F24/lift', null, 'fail2banBanLift', 'fail2banActiveBan'],
+            'allowlistFail2BanBan' => ['POST', '/api/v2/fail2ban/active-bans/203.0.113.0%2F24/allowlist', null, 'fail2banBanAllowlisting', 'fail2banActiveBan'],
+            'denylistFail2BanBan' => ['POST', '/api/v2/fail2ban/active-bans/203.0.113.0%2F24/denylist', null, 'fail2banBanDenylisting', 'fail2banActiveBan'],
+            'listFail2BanPermanentBans' => ['GET', '/api/v2/fail2ban/permanent-bans', null, null, null],
             // US2 (T041).
             'startContainer' => ['POST', '/api/v2/containers/sogo-mailcow/start', null, 'containerStart', 'container'],
             'stopContainer' => ['POST', '/api/v2/containers/clamd-mailcow/stop', null, 'containerStop', 'container'],

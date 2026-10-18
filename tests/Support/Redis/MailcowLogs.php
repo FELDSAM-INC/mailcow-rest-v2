@@ -227,9 +227,11 @@ final class MailcowLogs
         ];
     }
 
-    public static function get(string $key): mixed
+    public static function get(string $key): ?string
     {
-        return Redis::connection('mailcow')->command('get', [$key]);
+        $value = Redis::connection('mailcow')->command('get', [$key]);
+
+        return is_string($value) ? $value : null;
     }
 
     /**

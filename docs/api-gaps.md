@@ -13,7 +13,7 @@ then marks the entry done here. Gaps that are a contract-wide rule are also reco
 | G4 | UI 010 | 010 | `/capabilities/dns` has no DKIM bulk limit, unlike other capabilities reads. | Add `dkim.bulkLimit` (100) to `DnsCapabilities`. | open |
 | G5 | UI 001 | release | `info.version` stays `0.1.0` while features merge. | Tag a contract release per implemented feature (`contract-NNN`), and document how UI pins it. | open: at release |
 | G6 | UI 011 | 011 | The meaning of the `before` cursor with `order=asc` is not documented for logs. | Document it, or refuse `before` with `asc`. | done (011 US3: `before` always selects older entries and `order` sorts the selection; `LogBefore.yaml`) |
-| G7 | UI 011 | 011 | The ban (fail2ban) parameter ranges are prose only. | Add `minimum`/`maximum` to the schema properties. | open |
+| G7 | UI 011 | 011 | The ban (fail2ban) parameter ranges are prose only. | Add `minimum`/`maximum` to the schema properties. | done (011 US5: `Fail2BanSettingsPatch`; a resent unchanged stored value outside its range stays accepted) |
 | G8 | UI 011 | 011 | `Audit-Recorded` is not declared on the queue bulk responses. | Declare the header wherever it can be sent. | done (011 US4: optional header on the shared `BulkResultResponse`) |
 | G9 | UI 011 | 011 | `meta.total` together with the `before` cursor is unspecified. | Document whether `total` counts all matches or the remaining ones. | done (011 US3: `total` counts the matching entries older than the cursor; `LogBefore.yaml`) |
 | G10 | UI 011 | 006 | `rateLimitHash` has no pattern, while `bucketId` has one. | Add the same pattern. | open |

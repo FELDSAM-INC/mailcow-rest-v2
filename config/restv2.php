@@ -154,6 +154,8 @@ return [
         'postfix_container' => (string) env('RESTV2_POSTFIX_CONTAINER', 'postfix-mailcow'),
         'dovecot_container' => (string) env('RESTV2_DOVECOT_CONTAINER', 'dovecot-mailcow'),
         'ban_service_container' => (string) env('RESTV2_BAN_SERVICE_CONTAINER', 'netfilter-mailcow'),
+        // The interpreter that checks ban rules in the ban service's dialect (Python `re`).
+        'python' => (string) env('RESTV2_PYTHON', 'python3'),
 
         // Constants reported by GET /capabilities/monitoring (not settings).
         'poll_interval' => 5,

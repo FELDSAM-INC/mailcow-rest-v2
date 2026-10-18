@@ -600,26 +600,26 @@ netfilter-formatted keys and the fake for the netfilter restart.
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T071 [P] [US5] Write `tests/Unit/Fail2Ban/Fail2BanVersionTagTest.php` (FR-057, R18): the tag
+- [X] T071 [P] [US5] Write `tests/Unit/Fail2Ban/Fail2BanVersionTagTest.php` (FR-057, R18): the tag
   is equal for PHP-encoded and Python-encoded `F2B_OPTIONS` with the same values, for `"1800"` and
   `1800`, for `true` and `1`, and for lists in different order; it changes when any value or list
   entry or the ban list ID changes; the settings tag is an HMAC keyed with the app key and does
   not equal the plain SHA-256 of the canonical JSON; rules tag changes with order or content only.
-- [ ] T072 [P] [US5] Write `tests/Unit/Fail2Ban/BanListEntryRulesTest.php` (FR-047, R19): allowlist
+- [X] T072 [P] [US5] Write `tests/Unit/Fail2Ban/BanListEntryRulesTest.php` (FR-047, R19): allowlist
   accepts `192.0.2.1`, `2001:db8::/32`, `10.0.0.5/24`, `mail.example.org`, refuses `not a host!`,
   `10.0.0.0/33`, `10.0.0.0/-1`, `10.0.0.0/x`; denylist refuses host names and `0.0.0.0`,
   `0.0.0.0/0`, `0.0.0.0/00`, `::/0`, `172.22.1.0/24`, `172.22.1.0`, `fd4d:6169:6c63:6f77::/64` with
   `reserved`; entries are trimmed.
-- [ ] T073 [P] [US5] Write `tests/Unit/Fail2Ban/PythonRegexValidatorTest.php` (FR-050, R20, real
+- [X] T073 [P] [US5] Write `tests/Unit/Fail2Ban/PythonRegexValidatorTest.php` (FR-050, R20, real
   python3): netfilter's nine default rules pass; `(?P<ip>[0-9.]+)` passes; `(?<ip>x)` and `[a-`
   fail with Python's message; `foo bar` reports zero groups; a missing interpreter path throws.
-- [ ] T074 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanSettingsReadTest.php` (FR-044,
+- [X] T074 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanSettingsReadTest.php` (FR-044,
   FR-056): nothing stored → defaults 1,800 / 10,000 / `true` / 10 / 600 / 32 / 128 / `false`,
   `banListId: null`, `stored: false`; with only the old `F2B_BAN_TIME` key → 3,600 from it; stored
   netfilter JSON maps to the contract; allowlist and denylist sorted naturally; `banListUrl` built
   from `MAILCOW_HOSTNAME`; `banServiceRunning` true, false, or `null` with dockerapi unavailable
   (the read still succeeds); `ETag` header equals `data.etag`.
-- [ ] T075 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanSettingsUpdateTest.php` (AS-1, AS-10,
+- [X] T075 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanSettingsUpdateTest.php` (AS-1, AS-10,
   FR-045, FR-061): `{"banTime":3600}` changes only `ban_time` and keeps both lists and every other
   value; `F2B_OPTIONS` is written with legacy's key order and types; a sent list replaces the whole
   hash; `If-Match` with a stale tag → `412` and nothing written; a tag read before netfilter
@@ -628,7 +628,7 @@ netfilter-formatted keys and the fake for the netfilter restart.
   second connection in a test hook) is retried and the final state contains both changes; nothing
   stored → the first save writes a complete set with a new UUID v4 `banlist_id`; Redis unavailable
   → `503` and nothing written.
-- [ ] T076 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanSettingsValidationInvalidTest.php` (AS-2,
+- [X] T076 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanSettingsValidationInvalidTest.php` (AS-2,
   AS-3, FR-046, FR-047, SC-010): `banTime: 30` → `outOfRange` `{min: 60, max: 2147483647}`;
   `ipv4PrefixLength: 4` → `outOfRange` `{min: 8, max: 32}`; `maxBanTime` below the ban time →
   `outOfRange` with `minField: banTime`; only `banTime` above the stored `maxBanTime` →
@@ -639,24 +639,24 @@ netfilter-formatted keys and the fake for the netfilter restart.
   → `tooMany`; `null` → `invalidType`; `{}` → `required` on `body`; every invalid entry is named,
   both lists stay unchanged in Redis, and each refused request writes one `validationFailed` audit
   row (rule codes only, never the values).
-- [ ] T077 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanRulesTest.php` (AS-7, FR-049, FR-050):
+- [X] T077 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanRulesTest.php` (AS-7, FR-049, FR-050):
   `GET` returns rules numbered from 1 in key order and `stored`; `PUT` with two rules stores
   `{"1":…,"2":…}` with unescaped slashes; a rule without a group → `422 missingCaptureGroup` on
   `rules.1`; a rule that does not compile → `invalidRegex` with `error`; `[]` → `required`; 101
   rules → `tooMany`; a 1,001-character rule → `tooLong`; stale `If-Match` → `412`; the stored rules
   are unchanged after every refusal.
-- [ ] T078 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanRulesResetTest.php` (AS-8, FR-051,
+- [X] T078 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanRulesResetTest.php` (AS-8, FR-051,
   FR-064, R21): `F2B_REGEX` is deleted, `restart('netfilter-mailcow')` is called, and
   when the fake writes the defaults during the restart the response is `200` with them; when nothing
   appears within ten faked 1 s polls → `504 ban-rules-not-restored` and an audit row with
   `rulesNotRestored`; dockerapi unavailable → `503` and `F2B_REGEX` kept; restart timeout → `504
   outcome-unknown` (`step: rulesReset`), and dockerapi unreachable on the restart after the `DEL` →
   `504 outcome-unknown` too (never `503`); audit probe failure → `503`, nothing deleted.
-- [ ] T079 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanBanListsTest.php` (FR-052): active bans
+- [X] T079 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanBanListsTest.php` (FR-052): active bans
   with `endsAt`, `remainingSeconds` and `queuedForLifting`; permanent bans with `startedAt`; sort by
   `endsAt` (default asc) and `network` (address then prefix, IPv4 before IPv6); `startedAt` default
   desc; `q` on the network; `queuedForLifting` filter; paging; `sort=address` → `422`.
-- [ ] T080 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanBanActionsTest.php` (AS-4, AS-5, AS-6,
+- [X] T080 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanBanActionsTest.php` (AS-4, AS-5, AS-6,
   FR-053, FR-054): lift `203.0.113.0%2F24` → `F2B_QUEUE_UNBAN` has it and the response shows
   `queuedForLifting: true`; allowlist → the network is in `F2B_WHITELIST`, removed from
   `F2B_BLACKLIST`, queued for lifting, in one transaction; denylist → in `F2B_BLACKLIST`, removed from
@@ -664,44 +664,44 @@ netfilter-formatted keys and the fake for the netfilter restart.
   banned → `404`; `banServiceRunning: false` when netfilter is stopped and the lift stays queued;
   allowlisting or denylisting when that list already holds 10,000 other entries → `422 tooMany`
   on `network`.
-- [ ] T081 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanBanListRotationTest.php` (AS-9, FR-055):
+- [X] T081 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanBanListRotationTest.php` (AS-9, FR-055):
   a new UUID v4 replaces `banlist_id` in `F2B_OPTIONS`, all other values unchanged; the response
   carries the new `banListUrl` and a new `ETag`; stale `If-Match` → `412`.
-- [ ] T082 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanAuditTest.php` (FR-062, US8 AS-2, AS-3):
+- [X] T082 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanAuditTest.php` (FR-062, US8 AS-2, AS-3):
   settings change → one row with `changes.banTime {old, new}` and `allowlistAdded`/`Removed`;
   rules replacement and reset → `oldRules`/`newRules`; ban actions → network and list changes;
   rotation → no ID anywhere in the row; the first save that generates a `banlist_id` records no ID
   in `changes`; a refused `412` → a failure row with `versionOutdated`; Redis unavailable → a
   failure row with `temporaryFailure`.
-- [ ] T083 [US5] Add the eleven fail2ban operations to the provider of
+- [X] T083 [US5] Add the eleven fail2ban operations to the provider of
   `MonitoringAuthorizationTest`.
 
 ### Implementation for User Story 5
 
-- [ ] T084 [P] [US5] Create `app/Support/Network/IpNetwork.php` (port of legacy `valid_network()`,
+- [X] T084 [P] [US5] Create `app/Support/Network/IpNetwork.php` (port of legacy `valid_network()`,
   canonical form, `inet_pton` sort key) and `NetworkSort.php`, and the rules
   `app/Rules/Fail2BanAllowlistEntry.php` and `Fail2BanDenylistEntry.php` (codes of R19). This makes
   T072 pass.
-- [ ] T085 [P] [US5] Create `resources/bin/validate-python-regex.py` (reads a JSON list of strings
+- [X] T085 [P] [US5] Create `resources/bin/validate-python-regex.py` (reads a JSON list of strings
   on stdin, prints `[{ok, groups, error}]`) and `app/Support/Regex/PythonRegexValidator.php`
   (Symfony `Process`, `python3 -I -S -B`, 5 s timeout). This makes T073 pass.
-- [ ] T086 [US5] Create `app/Clients/Fail2Ban/Fail2BanStore.php` (R18: reads with fallbacks and
+- [X] T086 [US5] Create `app/Clients/Fail2Ban/Fail2BanStore.php` (R18: reads with fallbacks and
   normalisation, `transaction(callable)` with `WATCH`/`MULTI`/`EXEC` and 5 retries, list hashes,
   `F2B_REGEX`, ban hashes) and `app/Services/Fail2Ban/Fail2BanSettingsValues.php` and
   `Fail2BanVersionTag.php` (`banServiceRunning` comes from `ContainerRegistry`). This makes T071
   pass.
-- [ ] T087 [US5] Create `app/Services/Fail2Ban/Fail2BanSettingsService.php` (read, update with the
+- [X] T087 [US5] Create `app/Services/Fail2Ban/Fail2BanSettingsService.php` (read, update with the
   stored-value exemption and cross-field rules, rotation; audit in a DB transaction around `EXEC`,
   R24) and `app/Http/Requests/Api/V2/UpdateFail2BanSettingsRequest.php` (merge patch types, list
   limits) with `app/Http/Resources/Api/V2/Fail2BanSettingsResource.php`.
-- [ ] T088 [US5] Create `app/Services/Fail2Ban/Fail2BanRulesService.php` (read, replace, reset per
+- [X] T088 [US5] Create `app/Services/Fail2Ban/Fail2BanRulesService.php` (read, replace, reset per
   R20 and R21 with `IrreversibleOperationAudit` for the reset) and
   `app/Http/Requests/Api/V2/ReplaceFail2BanRulesRequest.php` with `Fail2BanRulesResource.php`.
-- [ ] T089 [US5] Create `app/Services/Fail2Ban/Fail2BanBanService.php` (lists, lift, allowlist,
+- [X] T089 [US5] Create `app/Services/Fail2Ban/Fail2BanBanService.php` (lists, lift, allowlist,
   denylist per R22) and `app/Http/Requests/Api/V2/ListFail2BanBansRequest.php` with
   `Fail2BanActiveBanResource.php`, `Fail2BanPermanentBanResource.php` and
   `Fail2BanBanActionResultResource.php`.
-- [ ] T090 [US5] Create the controllers `Fail2BanSettingsController` (`show`, `update`),
+- [X] T090 [US5] Create the controllers `Fail2BanSettingsController` (`show`, `update`),
   `Fail2BanBanListRotationController`, `Fail2BanRulesController` (`show`, `update`),
   `Fail2BanRulesResetController` (calling `set_time_limit(DOCKER_TIMEOUT + 20)`),
   `Fail2BanActiveBanController` (`index`),
@@ -997,3 +997,14 @@ Deviations and decisions made while implementing, with the reason:
   plan's Complexity Tracking row assumed a referenced response could not get it). A view whose
   record cannot be written answers `503` and returns no content. No resource classes: the service
   returns the contract representations.
+- **T084–T090** (US5): the network sort is `IpNetwork::sort()` (no separate `NetworkSort` class).
+  `Fail2BanStore::transaction()` runs WATCH, the decision, MULTI, the audit insert in a database
+  transaction, EXEC and the commit, retrying up to five times when a watched key changed; a sent
+  list replaces its hash, a list that was not sent is left as it is. When only the allowlist is
+  sent, an entry that is on the stored denylist is refused on the allowlist entry
+  (`conflictsWith`, `field: denylist`). A rule reset whose ban service container does not exist
+  answers `502 container-action-failed` before anything is removed. The Python interpreter is the
+  setting `RESTV2_PYTHON` (default `python3`; the dev image has Python 3.14). Contract gap G7 is
+  fixed with `minimum`/`maximum` on `Fail2BanSettingsPatch`; a resent unchanged stored value
+  outside its range stays accepted (FR-046), as the schema description says. OpenApiContract
+  already matched the raw (percent-encoded) path, so the `{network}` routes needed no change there.

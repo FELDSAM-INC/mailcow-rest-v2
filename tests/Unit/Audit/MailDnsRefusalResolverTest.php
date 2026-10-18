@@ -8,6 +8,7 @@ use App\Support\Http\FieldViolations;
 use App\Support\Http\ProblemType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Route;
 use stdClass;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -201,7 +202,7 @@ class MailDnsRefusalResolverTest extends TestCase
     {
         config(['database.redis.mailcow.port' => 1]);
         $this->app->forgetInstance('redis');
-        \Illuminate\Support\Facades\Redis::clearResolvedInstances();
+        Redis::clearResolvedInstances();
 
         $this->send('DELETE', '/api/v2/__testing/dkim-keys/Example.ORG', ['problem' => 'notFound']);
 

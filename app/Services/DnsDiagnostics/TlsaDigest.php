@@ -11,16 +11,11 @@ final class TlsaDigest
 {
     public static function fromCertificate(string $pem): ?string
     {
-        while (openssl_error_string() !== false) {
-            // Keep OpenSSL's error queue empty for later callers.
-        }
-
+        self::drainOpenSslErrors();
         $key = @openssl_pkey_get_public($pem);
         $details = $key === false ? false : openssl_pkey_get_details($key);
-
-        while (openssl_error_string() !== false) {
-            // Drain the errors of a text that is not a certificate.
-        }
+        // Drain the errors of a text that is not a certificate.
+        self::drainOpenSslErrors();
 
         if (! is_array($details) || ! is_string($details['key'] ?? null)) {
             return null;
@@ -30,5 +25,12 @@ final class TlsaDigest
         $der = base64_decode($body, true);
 
         return $der === false || $der === '' ? null : '3 1 1 '.hash('sha256', $der);
+    }
+
+    private static function drainOpenSslErrors(): void
+    {
+        while (openssl_error_string() !== false) {
+            // Keep OpenSSL's error queue empty for later callers.
+        }
     }
 }

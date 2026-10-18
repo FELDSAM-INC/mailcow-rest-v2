@@ -48,6 +48,7 @@ class ListDkimKeysTest extends TestCase
     }
 
     /**
+     * @param  TestResponse<Response>  $response
      * @return list<string>
      */
     private function names(TestResponse $response): array
@@ -151,7 +152,7 @@ class ListDkimKeysTest extends TestCase
         $this->mailcow()->partialDkimKey('e.example', ['publicKey' => DkimFixtures::RSA_1024_PUBLIC, 'selector' => 'dkim']);
         $this->mailcow()->partialDkimKey('f.example', ['selector' => 'sel']);
 
-        $data = collect($this->list('kind=domain')->json('data'))->keyBy('name');
+        $data = collect((array) $this->list('kind=domain')->json('data'))->keyBy('name');
 
         $this->assertSame('valid', $data['e.example']['state']);
         $this->assertFalse($data['e.example']['key']['complete']);
@@ -169,7 +170,7 @@ class ListDkimKeysTest extends TestCase
         $this->mailcow()->legacyDkimKey('Example.ORG');
         $this->mailcow()->redisHash('DKIM_PRIV_KEYS', 'oldsel.copied.example', DkimFixtures::RSA_1024_PRIVATE);
 
-        $data = collect($this->list('state=unused')->json('data'))->keyBy('name');
+        $data = collect((array) $this->list('state=unused')->json('data'))->keyBy('name');
 
         $this->assertSame(['Example.ORG', 'gone.example'], $data->keys()->all());
         $this->assertSame('Example.ORG', $data['Example.ORG']['displayName']);

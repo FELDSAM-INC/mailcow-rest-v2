@@ -35,7 +35,7 @@ final class RecordComparator
      */
     public static function mx(string $expectedHost, array $records): DnsComparison
     {
-        $found = array_values(array_map(fn (array $r): string => self::host($r['host']), $records));
+        $found = array_map(fn (array $r): string => self::host($r['host']), $records);
 
         return self::exact(self::host($expectedHost), $found);
     }
@@ -50,7 +50,7 @@ final class RecordComparator
     {
         $ipv6 = str_contains($expected, ':');
         $normalise = fn (string $a): string => $ipv6 ? self::expandIpv6($a) : $a;
-        $values = array_values(array_map($normalise, $found));
+        $values = array_map($normalise, $found);
 
         if ($cnames !== []) {
             return new DnsComparison(DnsCheckResult::MISMATCH, $values, DnsCheckMessage::hostIsAlias(self::host($cnames[0])));
@@ -67,7 +67,7 @@ final class RecordComparator
      */
     public static function addresses(array $found): array
     {
-        return array_values(array_map(fn (string $a): string => str_contains($a, ':') ? self::expandIpv6($a) : $a, $found));
+        return array_map(fn (string $a): string => str_contains($a, ':') ? self::expandIpv6($a) : $a, $found);
     }
 
     /**
@@ -75,7 +75,7 @@ final class RecordComparator
      */
     public static function ptr(string $expectedHost, array $found): DnsComparison
     {
-        return self::exact(self::host($expectedHost), array_values(array_map(self::host(...), $found)));
+        return self::exact(self::host($expectedHost), array_map(self::host(...), $found));
     }
 
     /**
@@ -83,7 +83,7 @@ final class RecordComparator
      */
     public static function tlsa(string $expected, array $found): DnsComparison
     {
-        return self::exact(strtolower($expected), array_values(array_map('strtolower', $found)));
+        return self::exact(strtolower($expected), array_map('strtolower', $found));
     }
 
     /**
@@ -100,7 +100,7 @@ final class RecordComparator
     public static function cname(string $expectedHost, array $cnames, array $nameIpv4, array $nameIpv6, array $hostIpv4, array $hostIpv6): DnsComparison
     {
         if ($cnames !== []) {
-            return self::exact(self::host($expectedHost), array_values(array_map(self::host(...), $cnames)));
+            return self::exact(self::host($expectedHost), array_map(self::host(...), $cnames));
         }
 
         $v4 = self::addressSet($nameIpv4);
@@ -134,11 +134,11 @@ final class RecordComparator
      */
     public static function srvValues(array $records): array
     {
-        return array_values(array_map(function (array $r): string {
+        return array_map(function (array $r): string {
             $target = self::host($r['target']);
 
             return ($target === '' ? '.' : $target).' '.$r['port'];
-        }, $records));
+        }, $records);
     }
 
     /**

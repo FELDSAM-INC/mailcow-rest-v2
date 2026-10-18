@@ -71,9 +71,10 @@ class DiagnosticsRateLimiter
     public function hit(Principal $principal): array
     {
         $now = $this->now();
-        $answer = Redis::connection('restv2')->eval(self::HIT, 1, self::key($principal), (string) $now, (string) self::WINDOW);
-        $count = (int) ($answer[0] ?? 1);
-        $reset = (float) ($answer[1] ?? $now + self::WINDOW);
+        $client = Redis::connection('restv2')->client();
+        $answer = $client instanceof \Redis ? $client->eval(self::HIT, [self::key($principal), (string) $now, (string) self::WINDOW], 1) : false;
+        $count = is_array($answer) ? (int) ($answer[0] ?? 1) : 1;
+        $reset = is_array($answer) ? (float) ($answer[1] ?? $now + self::WINDOW) : $now + self::WINDOW;
         $limit = self::limit();
 
         return ['limit' => $limit, 'remaining' => max(0, $limit - $count), 'reset' => max(0, (int) ceil($reset - $now))];

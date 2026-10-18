@@ -3,6 +3,7 @@
 namespace Tests\Feature\Dkim;
 
 use App\Clients\SharedStore\DkimKeyStore;
+use App\Services\Dkim\DkimKeyGenerator;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Process\PhpExecutableFinder;
@@ -82,7 +83,7 @@ class DkimConcurrencyTest extends TestCase
         $this->assertSame('dkim', $key->selector);
         // The stored private key belongs to the stored public key: one generator's material.
         $private = (string) $this->redis()->hGet('DKIM_PRIV_KEYS', 'dkim.race.example');
-        $this->assertSame($key->publicKey, (new \App\Services\Dkim\DkimKeyGenerator)->publicKeyOf($private));
+        $this->assertSame($key->publicKey, (new DkimKeyGenerator)->publicKeyOf($private));
         $this->assertSame(1, DB::table('restv2_audit_events')->where('target_id', 'race.example')->where('outcome', 'success')->count());
     }
 }

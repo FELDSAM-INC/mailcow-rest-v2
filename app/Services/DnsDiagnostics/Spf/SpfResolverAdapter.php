@@ -53,7 +53,7 @@ final class SpfResolverAdapter implements Resolver
 
     public function getMXRecords(string $domain): array
     {
-        return array_values(array_map(fn (array $r): string => $r['host'], $this->lookup($domain, fn (): array => $this->dns->mx($domain))));
+        return array_map(fn (array $r): string => $r['host'], $this->lookup($domain, fn (): array => $this->dns->mx($domain)));
     }
 
     public function getPTRRecords(string $domain): array

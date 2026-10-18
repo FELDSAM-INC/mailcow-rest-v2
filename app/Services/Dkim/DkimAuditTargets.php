@@ -81,9 +81,10 @@ final class DkimAuditTargets
     private static function pathName(string $raw): ?array
     {
         try {
+            // MariaDB compares case-insensitively; the exact spelling decides here.
             $legacy = app(DkimKeyStore::class)->hasKey($raw)
-                && ! DB::table('domain')->where('domain', $raw)->pluck('domain')->contains($raw)
-                && ! DB::table('alias_domain')->where('alias_domain', $raw)->pluck('alias_domain')->contains($raw);
+                && ! in_array($raw, DB::table('domain')->where('domain', $raw)->pluck('domain')->all(), true)
+                && ! in_array($raw, DB::table('alias_domain')->where('alias_domain', $raw)->pluck('alias_domain')->all(), true);
         } catch (SharedStoreUnavailable) {
             $legacy = false;
         }

@@ -134,7 +134,7 @@ class DnsDiagnosticsService
         $found = $guard->run(fn (): array => $this->dns->tlsa($check->recordName));
 
         return $check->expected === null
-            ? new DnsComparison(DnsCheckResult::EXPECTED_UNKNOWN, array_values(array_map('strtolower', $found)), $check->unknownReason)
+            ? new DnsComparison(DnsCheckResult::EXPECTED_UNKNOWN, array_map('strtolower', $found), $check->unknownReason)
             : RecordComparator::tlsa($check->expected, $found);
     }
 

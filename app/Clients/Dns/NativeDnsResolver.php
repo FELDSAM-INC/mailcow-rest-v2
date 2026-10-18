@@ -17,11 +17,11 @@ class NativeDnsResolver implements DnsResolver
     /** The TLSA record type, queried in raw mode. */
     private const TYPE_TLSA = 52;
 
-    /** @var Closure(string, int, bool): (array<int, mixed>|false) */
+    /** @var Closure(string, int, bool=): (array<int, mixed>|false) */
     private readonly Closure $lookup;
 
     /**
-     * @param  (Closure(string, int, bool): (array<int, mixed>|false))|null  $lookup  dns_get_record() unless given (tests); the third argument asks for raw mode
+     * @param  (Closure(string, int, bool=): (array<int, mixed>|false))|null  $lookup  dns_get_record() unless given (tests); the third argument asks for raw mode
      */
     public function __construct(?Closure $lookup = null)
     {

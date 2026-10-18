@@ -4,7 +4,6 @@ namespace App\Clients\Dns;
 
 use App\Services\DnsDiagnostics\ServerFactsCache;
 use Carbon\CarbonImmutable;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
@@ -66,7 +65,7 @@ class PublicAddressDetector
             return null;
         }
 
-        if (! $response instanceof Response || ! $response->successful()) {
+        if (! $response->successful()) {
             return null;
         }
 

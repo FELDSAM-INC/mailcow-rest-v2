@@ -4,7 +4,6 @@ namespace App\Services\MtaSts;
 
 use App\Auth\Principal;
 use App\Exceptions\ProblemException;
-use App\Models\Mailcow\MtaStsPolicy;
 use App\Services\Domains\DomainScope;
 use App\Support\Clock\Clock;
 use App\Support\Http\ETag;

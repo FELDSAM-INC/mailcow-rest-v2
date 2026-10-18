@@ -37,6 +37,8 @@ class SpfEvaluatorTest extends TestCase
 
     /**
      * @return array{string, string|null, array<string, mixed>}
+     *
+     * @phpstan-impure
      */
     private function outcome(?string $ipv4 = self::IPV4, ?string $ipv6 = self::IPV6): array
     {

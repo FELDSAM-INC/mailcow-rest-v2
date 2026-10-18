@@ -5,6 +5,7 @@ namespace Tests\Unit\DnsDiagnostics;
 use App\Services\DnsDiagnostics\DnsCheckMessage;
 use App\Services\DnsDiagnostics\DnsCheckResult;
 use App\Services\DnsDiagnostics\ZoneFileRenderer;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
@@ -19,6 +20,9 @@ class ZoneFileRendererTest extends TestCase
 {
     private const LONG_KEY = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6ebjqiSHfgf9aldl8sqG5NWIkbV3h/slVCnGVmjTLRNhf5jFUfuLxIt4xvn7HJujSfR2EPGXKHuYGaVp1lsJxyZVasL31ks8DcF2QbkxCDvgaXEmBNSD4mlOwOWJ8DcTcsxQRx+s8QZGyvRo4XVguQYvO5r21n+hAqqXbkr5s6LI+Um3iqq9VEqH/7AIjUgg2uCxRLmqbc5cE/GKoADWm0ZxvIArgR10SWERPBpa/egthIvXsNIj9e95DLgANz4cfYE6f+/LQ/QJOS5uT7bx39lpAG8ZMrThVKbEdmhQdOU2K2mHO1EMsI9U43YsaLDiE2qNN/W6wQ+NnXbu9N+ZrQIDAQAB';
 
+    /**
+     * @param  list<string>  $found
+     */
     private static function check(string $id, string $scope, string $name, string $type, string $status, ?string $expected, array $found = [], bool $optional = false): DnsCheckResult
     {
         return new DnsCheckResult($id, $scope, $name, $type, $status, $optional, $expected, $found, [], null, []);
@@ -109,7 +113,7 @@ class ZoneFileRendererTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('matrix')]
+    #[DataProvider('matrix')]
     public function test_every_rendering_passes_named_checkzone(string $name, bool $withValues): void
     {
         config(['restv2.dns.suggested_spf_record' => $withValues ? '' : 'v=spf1 mx a ~all']);

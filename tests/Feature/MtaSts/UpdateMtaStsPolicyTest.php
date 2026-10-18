@@ -3,7 +3,9 @@
 namespace Tests\Feature\MtaSts;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Testing\TestResponse;
 use stdClass;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Dkim\DkimTestHelpers;
 use Tests\TestCase;
 
@@ -34,7 +36,12 @@ class UpdateMtaStsPolicyTest extends TestCase
         return $row;
     }
 
-    private function patchPolicy(array $body, array $headers = []): \Illuminate\Testing\TestResponse
+    /**
+     * @param  array<string, mixed>  $body
+     * @param  array<string, string>  $headers
+     * @return TestResponse<Response>
+     */
+    private function patchPolicy(array $body, array $headers = []): TestResponse
     {
         return $this->send('PATCH', '/api/v2/mta-sts-policies/example.org', $body, $headers);
     }

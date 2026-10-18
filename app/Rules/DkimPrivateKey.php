@@ -55,16 +55,11 @@ class DkimPrivateKey extends CodedRule
             return $this->invalid();
         }
 
-        while (openssl_error_string() !== false) {
-            // Drain earlier OpenSSL errors.
-        }
-
+        self::drainOpenSslErrors();
         $key = @openssl_pkey_get_private($text);
         $details = $key === false ? false : openssl_pkey_get_details($key);
-
-        while (openssl_error_string() !== false) {
-            // Keep OpenSSL's error queue empty: its messages could describe the key.
-        }
+        // Keep OpenSSL's error queue empty: its messages could describe the key.
+        self::drainOpenSslErrors();
 
         if (! is_array($details)) {
             return $this->invalid();
@@ -79,6 +74,13 @@ class DkimPrivateKey extends CodedRule
         return $bits < $minBits || $bits > $maxBits
             ? $this->violation('keyLengthOutOfRange', ['min' => $minBits, 'max' => $maxBits], "The RSA key must have {$minBits} to {$maxBits} bits.")
             : null;
+    }
+
+    private static function drainOpenSslErrors(): void
+    {
+        while (openssl_error_string() !== false) {
+            // Discard the message.
+        }
     }
 
     /**

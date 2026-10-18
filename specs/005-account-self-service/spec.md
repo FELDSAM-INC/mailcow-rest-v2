@@ -92,9 +92,9 @@
   through `/api/v1` lack the flag while their administrators rely on the reset working.)
 - Q: Are the Pushover application token and user key returned when settings are read, as the
   legacy form shows them? → A: No. They are write-only after saving: reads show only whether they
-  are set and their last four characters. A replacement that omits them keeps the stored values
-  (FR-054, FR-055). (agent decision: they are credentials of a third-party service, and the
-  constraint that secrets never appear after creation covers them.)
+  are set. A replacement that omits them keeps the stored values (FR-054, FR-055). (agent decision:
+  they are credentials of a third-party service, the constraint that secrets never appear after
+  creation covers them, and the cross-feature conventions make stored secrets write-only.)
 - Q: Does the API offer the legacy mass actions of this feature as batch requests? → A: Only for
   TLS enforcement, which administrators and domain administrators apply from the mailbox list; it
   follows feature 003's bulk-action pattern (up to 100 mailboxes, one result per mailbox). The mass
@@ -116,6 +116,12 @@
   Every signed-in account can read the rules for its own password, and so can the holder of a valid
   reset token (FR-014, FR-069). (agent decision: the legacy user page is this feature's screen, and
   feature 003 exposes the same rules to administrators.)
+- Q: How does a client learn the server settings it needs before submitting, such as whether
+  webmail is enabled or whether password reset works? → A: Through a read-only "self-service
+  capabilities" operation for every signed-in account; signed-out clients can read whether password
+  reset is available (FR-080). (agent decision: the cross-feature conventions ask each feature to
+  expose such settings through its own capabilities read, as features 002 and 004 do; legacy renders
+  them into its pages.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -277,7 +283,7 @@ passwords.
 ### User Story 4 - Manage app passwords (Priority: P1)
 
 A user whose phone mail app does not support second factors creates an app password named "Phone"
-that works only for IMAP and SMTP. The web app generates a strong password, shows it once, and the
+that works only for IMAP and SMTP. The API generates a strong password and shows it once, and the
 user types it into the phone. Later the user deactivates it while the phone is being repaired,
 renames another one, and deletes an old one. An administrator, or a domain administrator with the
 app-password permission, does the same for a mailbox in their scope.
@@ -295,7 +301,9 @@ data with that of the legacy UI.
 1. **Given** a mailbox user with the app-password permission, **When** they create "Phone" with IMAP
    and SMTP and a password that meets the policy, **Then** the app password is stored hashed, the
    response contains its identifier but not the password, IMAP and SMTP accept it, POP3 refuses it,
-   and the web sign-in of feature 001 refuses it.
+   and the web sign-in of feature 001 refuses it. **When** they create another one without giving a
+   password, **Then** the response contains a generated 32-character password, and no later
+   response contains it again.
 2. **Given** a mailbox user without the permission, **When** they create an app password, **Then**
    the request is refused as forbidden with an error that names the flag. **When** they list their
    app passwords, **Then** the list is returned.
@@ -417,8 +425,8 @@ values.
    one is reported as not found, and each change has its own audit record.
 5. **Given** a user with the push-notification permission, **When** they save a 30-character
    application token and user key, a title, a text, one sender address and the sound "bike",
-   **Then** the settings are stored, and reading them shows the token and key only masked. **When**
-   they verify the settings, **Then** the response reports the Pushover service's verdict.
+   **Then** the settings are stored, and reading them shows only that a token and a key are set.
+   **When** they verify the settings, **Then** the response reports the Pushover service's verdict.
 6. **Given** a token of 29 characters or an invalid sender address, **When** the settings are saved,
    **Then** the request is refused with a validation error naming the field.
 7. **Given** saved push notification settings, **When** the user removes them, **Then** no further
@@ -659,6 +667,7 @@ target and scan every record for secrets.
   |---|---|---|---|
   | Change own password, resolve forced actions | Yes | Yes | Yes; password change for the mailcow source only |
   | Read the password rules for the own password | Yes | Yes | Yes |
+  | Read the self-service capabilities (FR-080) | Yes | Yes | Yes; signed out: reset availability only |
   | Own second factors | Yes | Yes | Mailcow source only |
   | Own recovery address | Forbidden | Forbidden | Mailcow source (`pw_reset`) |
   | Password reset through the recovery address | Not applicable | Not applicable | Signed out, mailcow-source mailboxes |
@@ -742,8 +751,9 @@ target and scan every record for secrets.
   restricted session by enrolling a TOTP, WebAuthn or Yubico OTP second factor without its current
   password (FR-029 to FR-032), in addition to registering a passkey (feature 001, FR-052 there). The
   restriction MUST be lifted at once, and later sign-ins MUST NOT be restricted for it.
-- **FR-017**: In a restricted session, this feature MUST allow only: reading the password rules and
-  changing the own password while a forced password change is pending; listing the own second
+- **FR-017**: In a restricted session, this feature MUST allow only: reading the self-service
+  capabilities (FR-080); reading the password rules and changing the own password while a forced
+  password change is pending; listing the own second
   factors and enrolling a second factor while a forced second-factor setup is pending. Every other
   operation of this feature MUST be refused with feature 001's pending-action error.
 
@@ -771,8 +781,8 @@ target and scan every record for secrets.
 - **FR-021**: Reset tokens MUST follow legacy:
   - five groups of six random hexadecimal characters joined by hyphens, from a cryptographically
     secure source;
-  - valid for 15 minutes after issue;
-  - at most 3 outstanding per account;
+  - valid for 15 minutes after issue, a server setting with the legacy default;
+  - at most 3 outstanding per account, a server setting with the legacy default;
   - stored where legacy stores them, so that a token issued by either UI works in both;
   - expired tokens removed whenever a new one is requested.
 - **FR-022**: The reset message MUST be built from the operator's existing template and sender (the
@@ -831,9 +841,10 @@ target and scan every record for secrets.
   deployment sets `FeldHost™ Mailhosting UI`.
 - **FR-031**: WebAuthn enrolment MUST work in two steps:
   - requesting options returns registration options bound to the server's host name and the
-    account, which exclude the account's existing WebAuthn second factors and follow the operator's
-    existing settings for user verification (legacy: not required), accepted attestation formats and
-    trusted vendors. The options are bound to the session, single-use, and expire after 5 minutes;
+    account, which exclude the account's existing WebAuthn second factors and follow the server
+    settings that mirror legacy's choices for user verification (not required by default), accepted
+    attestation formats and trusted vendors. The options are bound to the session, single-use, and
+    expire after 5 minutes;
   - completing it with a name, the authenticator's response and the current password stores the
     entry.
 - **FR-032**: Yubico OTP enrolment MUST take a name, the Yubico API client identifier (digits only)
@@ -857,21 +868,25 @@ target and scan every record for secrets.
 #### App passwords
 
 - **FR-037**: Clients MUST be able to list the app passwords of a mailbox in their scope with
-  pagination (default 25, maximum 1,000), sorting by name, creation time, modification time or
+  pagination (default 25, maximum 100, as the cross-feature conventions set), sorting by name,
+  creation time, modification time or
   active state (default name, ascending), a filter on the active state and a search on the name, and
   to inspect one. An app password MUST be represented with its identifier, name, mailbox, allowed
   protocols, active state, and creation and modification times, and never with its password or hash.
 - **FR-038**: Creating an app password MUST take:
   - a name, trimmed, 1 to 255 characters in the form legacy stores (HTML special characters
     encoded), returned as plain text;
-  - a password (FR-009);
+  - a password given by the client (FR-009) or, when none is given, a password generated by the
+    system: 32 random characters that meet the password policy;
   - the allowed protocols, any subset of IMAP, POP3, SMTP, Sieve, ActiveSync and CalDAV/CardDAV, all
     six by default;
   - the active state, active by default.
 
-  The response MUST NOT contain the password.
-- **FR-039**: Changing an app password MUST change only the values sent: name, password, protocols
-  and active state. The mailbox it belongs to MUST never change.
+  A generated password MUST be returned exactly once, in the creation response. A given password
+  MUST NOT be returned.
+- **FR-039**: Changing an app password MUST change only the values sent: name, password (given, or
+  generated and returned once as in FR-038), protocols and active state. The mailbox it belongs to
+  MUST never change.
 - **FR-040**: Deleting an app password MUST remove it at once.
 - **FR-041**: The contract MUST state that an app password authenticates only to its allowed
   protocols, independently of the mailbox's own protocol access; that it never signs in to the web
@@ -924,13 +939,14 @@ target and scan every record for secrets.
 - **FR-053**: Every permitted caller MUST be able to read the active Sieve script of a mailbox in
   scope, which the user manages in webmail, as the mail server reports it through mailcow's
   container service. A mailbox without an active script MUST return an empty result. When the mail
-  server cannot be reached, the request MUST fail with a temporary-failure error.
+  server cannot be reached, or does not answer within the container-service timeout of the
+  cross-feature conventions, the request MUST fail with a temporary-failure error.
 
 #### Push notifications
 
 - **FR-054**: Clients MUST be able to read the push notification settings of a mailbox in scope:
   whether they are configured, the active state, whether an application token and a user key are
-  stored together with their last four characters, the title, the text, the sender addresses, the
+  stored (never their values), the title, the text, the sender addresses, the
   sender pattern, the sound, whether the message priority is evaluated, and whether only
   high-priority messages notify. A mailbox without settings MUST return "not configured" with the
   defaults of FR-055.
@@ -970,9 +986,12 @@ target and scan every record for secrets.
   shared store and TLS enforcement in the mailbox, where legacy stores them, so that the mail filter
   and the mail server apply them to the next message.
 - **FR-060**: Administrators and domain administrators MUST be able to set inbound and/or outbound
-  TLS enforcement for up to 100 mailboxes in one request. Each mailbox MUST be checked, changed and
-  audited on its own, a failure MUST NOT stop the others, and the response MUST report one result per
-  distinct mailbox: done, not found, or failed with its error type.
+  TLS enforcement for up to 100 mailboxes in one request, following the bulk-action rules of the
+  cross-feature conventions. The whole request MUST be refused only when the caller's role or key
+  scope does not allow it. Otherwise each mailbox MUST be authorised, changed and audited on its own,
+  MAY carry the version tag of its mailbox settings, and MUST get one result: done, not found,
+  refused, outdated, or failed with its error type. A failure MUST NOT stop the others, and a mailbox
+  named twice MUST be processed and reported once.
 
 #### Recent logins
 
@@ -1040,12 +1059,28 @@ target and scan every record for secrets.
 
   Texts MUST be returned as plain text.
 
+#### Self-service capabilities
+
+- **FR-080**: Every signed-in account MUST be able to read the self-service capabilities, the server
+  settings and limits a client needs before it submits:
+  - whether the groupware and webmail are enabled (`SKIP_SOGO`);
+  - whether password reset is available (FR-019) and the reset token lifetime;
+  - the temporary alias lifetime range and default, the recent-login period range and default, the
+    bulk limit, and the default and maximum page sizes;
+  - the size limits of this feature (names, descriptions, scripts, notification texts, sender
+    lists) and Pushover's built-in sounds.
+
+  Signed-out clients MUST be able to read whether password reset is available and the token
+  lifetime, so that the sign-in page offers "Forgot password" only when it works. The values MUST
+  reflect the server's current configuration, MUST NOT include any secret, and the read MUST change
+  nothing. Read-only keys MAY use it.
+
 #### Version tags
 
 - **FR-070**: App passwords, temporary aliases, filters, push notification settings, mailbox
   settings and the recovery address MUST carry a version tag that changes whenever the stored values
   change, through this API, the legacy UI or `/api/v1`. The tag of mailbox settings MUST cover only
-  the three settings.
+  the three settings. Every list entry MUST carry its version tag.
 - **FR-071**: A client MAY send the version tag it read with a change, a replacement or a deletion.
   When the tag no longer matches, the request MUST be refused as outdated and MUST change nothing, as
   in feature 002 (FR-042 there).
@@ -1087,9 +1122,10 @@ target and scan every record for secrets.
   parser message.
 - **FR-076**: Passwords, current passwords, second-factor secrets after the enrolment start, Yubico
   credentials, one-time codes, WebAuthn responses, reset tokens, app passwords and push credentials
-  MUST NOT appear in any response, log line or audit record. The only exception is the TOTP secret,
-  its provisioning address and its QR code in the response that starts an enrolment (FR-030). Request
-  logging MUST redact them.
+  MUST NOT appear in any response, log line or audit record. The only exceptions are the TOTP
+  secret, its provisioning address and its QR code in the response that starts an enrolment
+  (FR-030), and a generated app password in the response that creates or changes it (FR-038,
+  FR-039). Request logging MUST redact them.
 - **FR-077**: Every operation MUST be described in the published API contract before it is
   implemented, and its behaviour MUST match the contract.
 - **FR-078**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response of
@@ -1207,6 +1243,7 @@ this feature:
 | App password permission | Not checked by the server; the UI hides the tab | Enforced for changes (FR-006). **Deviation** (security fix) |
 | App password reads | `SELECT *`, including the password hash | Never the password or its hash (FR-037). **Deviation** (security fix) |
 | App password defaults | Server: no protocols and inactive when omitted. UI: all protocols, active | UI defaults (FR-038). **Deviation** from the server |
+| App password generation | The UI generates a 32-character password in the browser; the server never generates one | Given by the client, or generated by the system when omitted and shown once (FR-038). **Deviation** (addition, cross-feature conventions) |
 | App password changed by an administrator or domain administrator | Ownership rewritten to the editor's username and a new password silently not applied | Ownership never changes and the password is applied (FR-039). **Deviation** (bug fix) |
 | App password name | Stored HTML-encoded | Same storage, plain text in the API (FR-038) |
 | App password behaviour | Per-protocol flags only, independent of mailbox protocol access; never for the web UI | Same, documented (FR-041) |
@@ -1218,7 +1255,7 @@ this feature:
 | Filters | `filters` domain administrator flag for changes; users cannot change filters; one active filter per kind; Sieve parser validation; stored in `sieve_filters`, read by the mail server through views | Same (FR-047 to FR-051). Script limited to 64 KiB, the size of the storage column |
 | Filter list | `get/filters/all` loops over every domain and mailbox | Paginated list with filters (FR-047). **Deviation** (performance) |
 | Active Sieve script | dockerapi exec of `doveadm sieve list` and `sieve get` | Same (FR-053) |
-| Pushover reads | Token and key returned in full | Masked, write-only (FR-054). **Deviation** |
+| Pushover reads | Token and key returned in full | Write-only; reads say only whether they are set (FR-054). **Deviation** |
 | Pushover validation | Token and key 30 letters or digits; invalid sender addresses silently dropped; empty title or text keeps the old value; any sound; no length limits; regex checked | Same token, key and regex rules; invalid senders refused; empty title or text means the default; sound name rule; length limits (FR-055). **Deviation** |
 | Pushover verification | `users/validate` call with the stored credentials | Same (FR-057) |
 | Tagged-mail handling | `RCPT_WANTS_SUBJECT_TAG` / `RCPT_WANTS_SUBFOLDER_TAG` hashes in the shared store | Same (FR-059) |
@@ -1230,6 +1267,7 @@ this feature:
 | Groupware profile reset | Deletes `sogo_user_profile`, `sogo_cache_folder`, `sogo_acl` (objects of and grants to the mailbox), `sogo_store`, `sogo_quick_contact`, `sogo_quick_appointment` and `sogo_folder_info` of the mailbox | Same (FR-065, FR-066) |
 | Webmail single sign-on | The legacy session gets `sogo-sso-user-allowed` at sign-in; nginx asks `sogo-auth.php`, which reads the session from the shared store; blocked while actions are pending; `sasl_log` entry `SSO` | Webmail-only hand-off for the requesting browser, with the same entry and blocks (FR-067, FR-068). **Deviation**: a link between the two implementations' sessions, which constitution V allows when a spec states it |
 | Overview | `mailbox_details` and `user_get_alias_details`, comments HTML-encoded | Same content, plain text (FR-069) |
+| Server settings for the screens | Rendered into the pages: `SKIP_SOGO` hides webmail and the groupware resets; the "Forgot password" link is always shown | Readable self-service capabilities, also signed out for the reset availability (FR-080), an addition |
 | Out-of-scope objects | `access_denied` or an empty result | "Not found" (FR-003) |
 | Permission flags | Loaded into the legacy session at sign-in | Evaluated on every request (FR-002) |
 | Mass actions on temporary aliases, app passwords and filters | One request with a list of items | One request per item (FR-079). **Deviation** |
@@ -1265,6 +1303,8 @@ this feature:
 - **Webmail hand-off** (owned by this API, linked to the legacy session store): a webmail-only
   sign-in of one browser for one mailbox, tied to the session of this API that created it.
 - **Mailbox overview** (computed): the read-only view of FR-069.
+- **Self-service capabilities** (computed from the server configuration): the settings and limits
+  of FR-080.
 - **Audit record** (owned by this API, defined in feature 001): extended with the target types of
   FR-073.
 
@@ -1325,13 +1365,18 @@ this feature:
 - The session store of feature 001 can find and end all sessions of an account.
 - The external country lookup service is the one legacy uses. Operators who do not want client
   addresses sent to a third party switch the lookup off.
+- Legacy values that live in its PHP configuration (`PW_RESET_TOKEN_LIFETIME`,
+  `PW_RESET_TOKEN_LIMIT`, `OTP_LABEL`, `SESSION_LIFETIME`, `WEBAUTHN_UV_FLAG_REGISTER`,
+  `FIDO2_FORMATS`) become server settings of this API with the upstream defaults, and the operator
+  keeps them aligned with legacy, as the cross-feature conventions require. Values from
+  `mailcow.conf` (`SKIP_SOGO`, `MAILCOW_PASS_SCHEME`, `MAILCOW_HOSTNAME`, `ADDITIONAL_SERVER_NAMES`,
+  `WEBAUTHN_ONLY_TRUSTED_VENDORS`) keep their names.
 - These defaults can be changed by the operator: the reset token lifetime (15 minutes) and limit
-  (3), reusing the legacy settings; the reset page address; the reset throttling (10 per 15
-  minutes); the TOTP issuer name (`mailcow UI`); the enrolment lifetimes (10 minutes for TOTP, 5
-  minutes for WebAuthn); the country lookup (on); the bulk limit (100); the page sizes (25, maximum
-  1,000).
-- The web app generates passwords and app passwords in the browser, as legacy does. The API does not
-  generate passwords.
+  (3); the reset page address; the reset throttling (10 per 15 minutes); the TOTP issuer name
+  (`mailcow UI`); the enrolment lifetimes (10 minutes for TOTP, 5 minutes for WebAuthn); the country
+  lookup (on); the bulk limit (100); the page sizes (25, maximum 100).
+- Own passwords are chosen by the user, and the web app may suggest one generated in the browser, as
+  legacy does. The API generates only app passwords, and only when the client gives none.
 - **Out of scope**:
   - passkeys (feature 001);
   - administrators setting mailbox passwords, recovery addresses and forced flags (003), and

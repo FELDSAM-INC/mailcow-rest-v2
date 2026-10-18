@@ -32,15 +32,17 @@ domains on 5,000 domains and 100,000 mailboxes.
 
 ## Part B: Manual flows against the dev stack
 
-Reset the dev database as in 001's quickstart. `DevelopmentSeeder` additionally creates
-`example.org` and `example.net` (managed by `reseller`), the Default domain template, and a
-mailbox `alice@example.org`. Sign in as `admin` and keep the CSRF token in `$T` (001 Part B).
-dockerapi, memcached and ISPConfig are absent in the dev stack: `.env.example` binds their fakes
-(`RESTV2_FAKE_OUTBOUND=y`, development only), so restarts and maildir moves report `done`
-without effect.
+Reset the dev database as in 001's quickstart (`docker compose run --rm app
+scripts/dev/reset-dev-database.sh`). `DevelopmentSeeder` creates `example.org` and `example.net`
+(managed by `reseller`), the Default domain template, and the mailboxes `alice@example.org` and
+`bob@example.org`; every password is `Passw0rd!dev`. Sign in as `admin` and keep the CSRF token in
+`$T` (001 Part B). dockerapi, memcached and ISPConfig are absent in the dev stack: `.env.example`
+binds stand-ins (`RESTV2_FAKE_OUTBOUND=y`, development only), so restarts and maildir moves report
+`done` without effect. The session cookie needs the dev stack's HTTPS listener (self-signed,
+`curl -k`).
 
 ```bash
-B=http://localhost:8080/api/v2; J='-H Content-Type:application/json'; C='-c jar -b jar'
+B=https://127.0.0.1:18443/api/v2; J='-H Content-Type:application/json'; C='-k -c jar -b jar'
 M='-H Content-Type:application/merge-patch+json'
 
 # US2: capabilities, then create a domain from the Default template.
@@ -48,8 +50,8 @@ curl -s $C $B/capabilities/domains | jq '.data | {groupwareEnabled, taggingLimit
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/domains -D - \
   -d '{"name":"München.de","tags":["customer-a"],"restartGroupware":true}' | tee created.txt
 #   -> 201, Location: /api/v2/domains/xn--mnchen-3ya.de, creationReport.dkimKey "created"
-docker compose exec redis redis-cli -a "$REDISPASS" HGET DOMAIN_MAP xn--mnchen-3ya.de   # "1"
-docker compose exec redis redis-cli -a "$REDISPASS" HGET DKIM_SELECTORS xn--mnchen-3ya.de  # "dkim"
+docker compose exec redis redis-cli -a devredispass HGET DOMAIN_MAP xn--mnchen-3ya.de   # "1"
+docker compose exec redis redis-cli -a devredispass HGET DKIM_SELECTORS xn--mnchen-3ya.de  # "dkim"
 
 # Creating it again (any spelling) is a conflict.
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/domains -d '{"name":"MÜNCHEN.de"}' | jq .type
@@ -68,7 +70,7 @@ curl -s $C $M -H "X-CSRF-Token: $T" -H "If-Match: $ETAG" -X PATCH $B/domains/exa
 curl -s $C $M -H "X-CSRF-Token: $T" -H "If-Match: $ETAG" -X PATCH $B/domains/example.org \
   -d '{"maxMailboxes":21}' -o /dev/null -w '%{http_code}\n'                  # 412
 curl -s $C $M -H "X-CSRF-Token: $T" -X PATCH $B/domains/example.org \
-  -d '{"maxMailboxes":0}' | jq '.errors.maxMailboxes'                        # belowInUse, inUse 1
+  -d '{"maxMailboxes":0}' | jq '.errors.maxMailboxes'                        # belowInUse, inUse 2
 
 # US7: footer.
 curl -s $C $J -H "X-CSRF-Token: $T" -X PUT $B/domains/example.org/footer \

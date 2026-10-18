@@ -829,7 +829,7 @@ and list the audit log filtered by target.
 - [X] T095 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
   `composer contract:lint`; fix every finding until all are green and the coverage check lists the
   16 operations as covered (FR-060).
-- [ ] T096 Run quickstart.md Parts A and B against the dev stack and confirm every expected output;
+- [X] T096 Run quickstart.md Parts A and B against the dev stack and confirm every expected output;
   correct quickstart.md where commands drifted.
 - [ ] T097 Before the release that ships this feature, run quickstart.md Part C on a mailcow host
   (upstream `2026-09a` and the FeldHost fork): figure parity (SC-001), creation parity and mail

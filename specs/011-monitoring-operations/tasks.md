@@ -996,7 +996,11 @@ Deviations and decisions made while implementing, with the reason:
   fixed by declaring the optional `Audit-Recorded` header on the shared `BulkResultResponse` (the
   plan's Complexity Tracking row assumed a referenced response could not get it). A view whose
   record cannot be written answers `503` and returns no content. No resource classes: the service
-  returns the contract representations.
+  returns the contract representations. As 003's runner now does, the IDs are deduplicated and
+  every one is resolved before the single command runs. A queue request refused as a whole is
+  recorded by `MonitoringAuditTargetResolver::mailQueue()`, not by 003's
+  `RefusalAuditor::bulkRefusal()`, because it sends `ids` rather than `targets` (the record carries
+  `itemIds` and `bulkAction`).
 - **T084–T090** (US5): the network sort is `IpNetwork::sort()` (no separate `NetworkSort` class).
   `Fail2BanStore::transaction()` runs WATCH, the decision, MULTI, the audit insert in a database
   transaction, EXEC and the commit, retrying up to five times when a watched key changed; a sent

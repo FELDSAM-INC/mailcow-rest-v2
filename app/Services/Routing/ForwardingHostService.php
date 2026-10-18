@@ -40,7 +40,7 @@ class ForwardingHostService implements RoutingBulkHandler
      */
     public function page(ListQuery $list, array $filters): array
     {
-        $entries = [];
+        $rows = [];
         $search = $list->search === null ? null : mb_strtolower($list->search);
 
         foreach ($this->store->all() as $address => $entry) {
@@ -50,22 +50,31 @@ class ForwardingHostService implements RoutingBulkHandler
                 continue;
             }
 
-            $entries[] = self::present($address, $entry['source'], $entry['keepSpam']);
+            $rows[] = [
+                'address' => (string) $address,
+                'source' => $entry['source'],
+                'keepSpam' => $entry['keepSpam'],
+                'key' => IpNetworkLiteral::sortKeyOf((string) $address),
+                'sourceKey' => mb_strtolower($entry['source']),
+            ];
         }
 
+        // Sort keys are computed once per entry; only the page is presented (with its version tags).
         $direction = $list->order === 'desc' ? -1 : 1;
-        usort($entries, function (array $a, array $b) use ($list, $direction): int {
-            $byAddress = strcmp(IpNetworkLiteral::sortKeyOf($a['address']), IpNetworkLiteral::sortKeyOf($b['address']));
+        usort($rows, function (array $a, array $b) use ($list, $direction): int {
             $primary = match ($list->sort) {
-                'source' => strcmp(mb_strtolower($a['source']), mb_strtolower($b['source'])),
-                'spamFilter' => (int) $a['spamFilter'] <=> (int) $b['spamFilter'],
-                default => $byAddress,
+                'source' => strcmp($a['sourceKey'], $b['sourceKey']),
+                'spamFilter' => (int) $b['keepSpam'] <=> (int) $a['keepSpam'],
+                default => 0,
             };
 
-            return $direction * ($primary !== 0 ? $primary : $byAddress);
+            return $direction * ($primary !== 0 ? $primary : strcmp($a['key'], $b['key']));
         });
 
-        return ['data' => array_slice($entries, $list->offset, $list->limit), 'meta' => $list->meta(count($entries))];
+        return [
+            'data' => array_map(fn (array $row): array => self::present($row['address'], $row['source'], $row['keepSpam']), array_slice($rows, $list->offset, $list->limit)),
+            'meta' => $list->meta(count($rows)),
+        ];
     }
 
     /**

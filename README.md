@@ -190,6 +190,23 @@ Sync jobs (feature 008) use these settings:
 The imapsync runner in mailcow's dovecot container is unchanged: it runs active jobs on its own
 schedule, and the API never starts a run.
 
+Routing and address rewriting (feature 009) use these settings:
+
+| Variable | Default | Meaning | FeldHost |
+|---|---|---|---|
+| `RESTV2_ROUTING_TEST_SENDER` | `relay@example.org` | Envelope sender of a relayhost or transport connection test when the request gives none | |
+| `RESTV2_ROUTING_TEST_RECIPIENT` | `null@hosted.mailcow.de` | Envelope recipient of a connection test when the request gives none | |
+| `RESTV2_ROUTING_TEST_STEP_TIMEOUT` | `15` | Seconds each network step of a connection test may take | |
+| `RESTV2_ROUTING_TEST_TOTAL_TIMEOUT` | `60` | Seconds a whole connection test may take (never below the step timeout) | |
+
+Invalid values fall back to these defaults, with one warning in the log. Connection tests connect
+from the API's container and resolve names, like forwarding host names, through mailcow's unbound:
+the override sets `dns: [${IPV4_NETWORK}.254]` with `dns_opt: [timeout:2, attempts:2]` for the API's
+service, as php-fpm-mailcow resolves. A test takes up to 60 seconds, within the 900 s
+`fastcgi_read_timeout` of `deploy/nginx/site.restv2.custom`. The dev stack offers an SMTP test target:
+`docker compose --profile routing up -d mailpit` (SMTP on `mailpit:1025` inside the stack, any login
+accepted).
+
 ### Identity providers and OAuth2 clients (feature 012)
 
 The API reads and writes mailcow's single identity provider configuration (Keycloak, a generic

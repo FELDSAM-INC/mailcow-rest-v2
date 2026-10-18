@@ -248,3 +248,49 @@ Contract changes made while implementing feature 012:
   `Oauth2ClientBulkItemResult`), a `BulkResult` whose items may carry `clientSecret` (gap G42).
 
 Release checks of feature 012 (quickstart Part C): not run yet.
+
+Contract: the 46 operations of feature 009 (routing and address rewriting):
+
+- Relayhosts: `listRelayhosts`, `createRelayhost`, `listRelayhostChoices`,
+  `applyRelayhostBulkAction`, `getRelayhost`, `updateRelayhost`, `deleteRelayhost`,
+  `listRelayhostUsage`, `testRelayhostConnection`.
+- Relayhost assignments: `getDomainRelayhostAssignment`, `replaceDomainRelayhostAssignment`,
+  `getMailboxRelayhostAssignment`, `replaceMailboxRelayhostAssignment`.
+- Transports: `listTransports`, `createTransport`, `applyTransportBulkAction`, `getTransport`,
+  `updateTransport`, `deleteTransport`, `testTransportConnection`.
+- BCC maps: `listBccMaps`, `createBccMap`, `listBccDestinationChoices`, `applyBccMapBulkAction`,
+  `getBccMap`, `updateBccMap`, `deleteBccMap`.
+- Recipient maps: `listRecipientMaps`, `createRecipientMap`, `applyRecipientMapBulkAction`,
+  `getRecipientMap`, `updateRecipientMap`, `deleteRecipientMap`.
+- TLS policy maps: `listTlsPolicyMaps`, `createTlsPolicyMap`, `applyTlsPolicyMapBulkAction`,
+  `getTlsPolicyMap`, `updateTlsPolicyMap`, `deleteTlsPolicyMap`.
+- Forwarding hosts: `listForwardingHosts`, `createForwardingHost`, `applyForwardingHostBulkAction`,
+  `getForwardingHost`, `updateForwardingHost`, `deleteForwardingHost`.
+- Capabilities: `getRoutingCapabilities`.
+- Problem types: `routing-entry-exists`, `next-hop-credentials-differ` and `next-hop-interferes`;
+  the shared `permission-flag-required` and `temporary-failure` are reused (the latter with
+  `dependency` `sharedStore`, `dns` or `database`).
+- Values appended to shared enumerations: 21 `AuditEventType` values (`relayhost*`,
+  `relayhostAssignmentUpdate`, `transport*`, `bccMap*`, `recipientMap*`, `tlsPolicyMap*`,
+  `forwardingHost*`), 8 `AuditTarget` types, `KnownProblemType` (the three new types) and
+  `ValidationRuleCode` (`invalidCharacter`, `notResolvable`, `required` with `because: password`, and
+  the formats `nextHop`, `transportDestination`, `recipientMapDestination`, `tlsPolicyDestination`,
+  `tlsPolicyParameters`).
+- Server settings `RESTV2_ROUTING_TEST_SENDER`, `RESTV2_ROUTING_TEST_RECIPIENT`,
+  `RESTV2_ROUTING_TEST_STEP_TIMEOUT` and `RESTV2_ROUTING_TEST_TOTAL_TIMEOUT`.
+
+Contract changes made while implementing feature 009:
+
+- `RelayhostChoice.username` (`null` without one): the relayhost choices carry the username, as the
+  legacy selectors show it (G41).
+- `RelayhostPatch` names the rule code `immutable` (G37); the patches of relayhosts, transports, BCC
+  maps, recipient maps, TLS policy maps and forwarding hosts accept the representation's read-only
+  members (`passwordSet`, `etag`, times, `orphaned`) with their current value and refuse unknown
+  members (`immutable`).
+- The `nextHop` filter of `listTransports` is normalised like a stored next hop (G35).
+- `RoutingCapabilities.administration.maxLengths` gained `forwardingHost`, `testSender` and
+  `testRecipient` (G36).
+- Refusal records of the routing event types carry `requiredFlags` for `permission-flag-required`
+  (`docs/audit-events.md`).
+
+Release checks of feature 009 (quickstart Part C): not run yet.

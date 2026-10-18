@@ -114,6 +114,16 @@
   remove? → A: The alias domain's domain-level BCC maps in both forms, `@<alias domain>` and the bare
   name. (orchestrator decision: legacy defect found by feature 009; feature 002's domain deletion is
   aligned the same way.)
+- Q: May a bulk action check version tags? → A: Yes, per item. Each item may carry the version tag the
+  client read; an item whose tag is outdated gets the result "outdated" and stays unchanged while the
+  others proceed, and items without a tag are not checked. Every list entry carries its version tag
+  (FR-059, FR-060). (orchestrator decision: cross-feature conventions in `docs/conventions.md`.)
+- Q: Does a client need server settings before it submits, and where does it read them? → A: Yes. A
+  capabilities read gives whether the groupware is enabled, whether external alias destinations are
+  disabled, the bulk limit, page sizes and field limits, and the DKIM defaults for the alias domain
+  form (FR-068). (orchestrator decision: legacy renders these settings into its screens, for example
+  `SKIP_SOGO` hides the visibility option; the conventions route such settings through the owning
+  feature's capabilities read, as feature 002 does in its FR-064.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -384,6 +394,9 @@ results, stored data and audit records with the same mass action in the legacy U
    reported as skipped because the address is in use.
 5. **Given** a selection of resources, **When** they are deactivated, **Then** none of them can be
    booked in the groupware any more.
+6. **Given** a selection of three aliases sent with the version tags from the list, one of which was
+   changed in the legacy UI since, **When** they are deactivated, **Then** that alias is reported
+   "outdated" and stays active, and the other two are deactivated.
 
 ---
 
@@ -516,8 +529,9 @@ log filtered by target.
   cannot remove it, because it is outside their scope.
 - **External sender address that later becomes local** because a domain or alias domain is added:
   removed when that domain or alias domain is created.
-- **Bulk action naming the same object twice**: it is processed once and reported once. Bulk actions
-  do not check version tags.
+- **Bulk action naming the same object twice**: it is processed once and reported once.
+- **Bulk item with an outdated version tag**: that item is reported "outdated" and left unchanged;
+  the other items proceed. Items sent without a tag are not version-checked.
 - **Concurrent edits from the legacy UI**: the legacy UI never sends a version, so a legacy save can
   still overwrite a change made through this API.
 - **Shared store unavailable** during an alias domain creation or deletion: the request is refused
@@ -562,6 +576,7 @@ log filtered by target.
   | Change and delete alias domains | All | Own scope, no permission flag needed (legacy behaviour) | Forbidden |
   | Resources (all operations) | All | Resources of own domains | Forbidden |
   | Read sender settings and grantable entries | All mailboxes | Mailboxes of own domains | Forbidden |
+  | Read the capabilities of this feature (FR-068) | All values | Without the DKIM DNS publication state; DKIM defaults only with `alias_domains` | Forbidden |
   | Replace explicit sender permissions | All mailboxes, including "any address" | Mailboxes of own domains; entries within own scope only; no "any address" (FR-054) | Forbidden |
   | Replace external sender addresses | All mailboxes | Mailboxes of own domains, with `extend_sender_acl` | Forbidden |
   | Bulk actions | As the single operation | As the single operation, per object | Forbidden |
@@ -914,10 +929,12 @@ log filtered by target.
 - **FR-059**: A bulk action MUST be refused as a whole when the caller's role, key scope or flags do
   not allow the action. Otherwise each named object MUST be processed on its own, with the same
   checks, follow-up steps and audit record as a single request for it, and the response MUST report
-  one result per distinct object: done, not found, refused (with the error type), or failed (with
-  the error type). The result of a copy over alias domains MUST include the per-alias-domain outcomes
-  of FR-037. A failure on one object MUST NOT stop or undo the others, as in legacy. Bulk actions
-  MUST NOT check version tags.
+  one result per distinct object: done, not found, refused (with the error type), outdated, or
+  failed (with the error type). The result of a copy over alias domains MUST include the
+  per-alias-domain outcomes of FR-037. A failure on one object MUST NOT stop or undo the others, as
+  in legacy. Each item MAY carry the version tag the client read, for example from the list
+  (FR-060). An item whose tag no longer matches MUST get the result "outdated" and stay unchanged,
+  and the other items MUST proceed. Items without a tag MUST be processed without a version check.
 
 #### Version tags
 
@@ -926,7 +943,8 @@ log filtered by target.
   made through this API, the legacy UI or `/api/v1`. For an alias domain, the tag MUST NOT change
   with the alias count, the target's relay state or the rate limit. For sender settings, it MUST
   cover the explicit permissions and the external sender addresses, and MUST NOT change with the
-  addresses the mailbox may send as without a permission.
+  addresses the mailbox may send as without a permission. Every list entry MUST carry its version
+  tag, so that a client can send it with a change or a bulk action without inspecting each object.
 - **FR-061**: A client MAY send the version tag it read with a change, a replacement or a deletion.
   When the tag no longer matches, the request MUST be refused as outdated and MUST change nothing.
   The contract MUST recommend that interactive clients always send it.
@@ -968,6 +986,27 @@ log filtered by target.
 - **FR-067**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response of
   this API.
 
+#### Capabilities
+
+- **FR-068**: Administrators and domain administrators MUST be able to read the capabilities of this
+  feature, the server settings and limits a client needs before it submits:
+  - whether the groupware is enabled (legacy `SKIP_SOGO`). When it is disabled, clients can hide the
+    groupware visibility option and the "show in the groupware" and "hide in the groupware" bulk
+    actions, as legacy does;
+  - whether external alias destinations are disabled for every role (FR-007);
+  - the bulk limit (FR-058) and the default and maximum page sizes (FR-014);
+  - the comment limit in bytes (FR-023), the destination length limit (FR-025), the maximum
+    resource description length and the booking rule range (FR-046, FR-049);
+  - the allowed rate limit time frames and the allowed DKIM key sizes (FR-040);
+  - for administrators, and for domain administrators who hold `alias_domains`, the default DKIM
+    selector and default key size that pre-fill the alias domain creation form (FR-042);
+  - for administrators only, whether the DKIM DNS publication is enabled (FR-042).
+
+  Whether the caller holds `alias_domains`, `alias_external_goto` or `extend_sender_acl` comes from
+  the identity of feature 001 (FR-028 there). The values MUST reflect the server's current
+  configuration and MUST NOT include any secret or connection detail. The read MUST change nothing,
+  and read-only keys MAY use it.
+
 ### Legacy Coverage
 
 Every legacy capability allocated to feature 004 in `docs/roadmap.md` maps to requirements as
@@ -997,6 +1036,7 @@ version tag, audit and error requirements (FR-001 to FR-004 and FR-060 to FR-067
 | Domain administrator flag `alias_domains` | check in `mailbox('add', 'alias_domain')` | FR-005, FR-006, FR-040 |
 | Domain administrator flag `alias_external_goto` and server setting `ALIAS_DISABLE_EXTERNAL_DOMAINS` | alias add and edit, `is_local_mailcow_domain()` | FR-006, FR-007, FR-027 |
 | Domain alias limit | `domain_details` (`aliases_left`) | FR-022, FR-030, FR-037, FR-044 |
+| Server settings rendered into the screens: `SKIP_SOGO` hides the visibility option and the "Show/Hide alias in SOGo" actions; the add-alias-domain form pre-fills the DKIM selector and key size; the `maxlength` of the comment fields | `templates/edit/alias.twig`, `mailbox/tab-mbox-aliases.twig`, `modals/mailbox.twig` | FR-068 |
 
 Parts of the legacy screens that belong to other features: the rate limit form of the Edit alias
 domain page (`edit/rl-domain`, feature 006), the DKIM record and the DNS button of alias domains
@@ -1077,7 +1117,7 @@ translations. The fork differs in three ways:
 | Explicit sender permissions | One list per save: `default` resets, `*` is stored alone and only by administrators; domains must be domains or alias domains of the server in scope; addresses must be aliases or mailboxes in scope; entries outside a domain administrator's scope are kept; entries for aliases that allow sending are skipped, for aliases that do not are stored; invalid entries are dropped | The same model as set replacement; invalid entries refuse the request (FR-028, FR-054). **Deviation** for the refusal |
 | External sender addresses | Needs `extend_sender_acl`; addresses or domains outside the server's domains and alias domains; the set is replaced; domains stored as `@domain`; full addresses become groupware identities (`ext_acl`); invalid entries are dropped | Same; invalid entries refuse the request (FR-028, FR-055, FR-057). **Deviation** for the refusal |
 | Reading sender settings | Fixed aliases split into allowed and blocked (catch-alls hidden), alias-domain addresses, read-only and changeable entries, selectable domains and addresses | Same information; catch-all aliases shown and stale entries marked (FR-053, FR-056). **Deviation** |
-| Mass actions | One request with a list of items; processing continues past failures | Bulk action with one result per object (FR-058, FR-059) |
+| Mass actions | One request with a list of items; processing continues past failures; no version check | Bulk action with one result per object and an optional version tag per item (FR-058, FR-059) |
 | Concurrent edits | Last write wins | Version tags (FR-060, FR-061). **Deviation** |
 | UI log entries | Written to the `logs` table | Written to this API's audit log (FR-063), as in feature 001. **Deviation** |
 | Domain administrator flags | `alias_domains` (creation only), `alias_external_goto`, `extend_sender_acl`, `ratelimit`; values the flags do not allow are dropped with a message | Same flags; requests that need a missing flag are refused and named (FR-006). **Deviation** |

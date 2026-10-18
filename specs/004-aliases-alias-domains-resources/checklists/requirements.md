@@ -71,6 +71,12 @@
   under "Clarifications" and as a bug-fix deviation in the parity table. Feature 002 now has bulk
   actions, so the bulk-action clarification cites features 002 and 003 as the pattern. All items
   still pass.
+- Iteration 5 (orchestrator follow-up, 2026-10-18): aligned with `docs/conventions.md`. Bulk items
+  may carry a version tag and an outdated item gets the result "outdated" while the others proceed
+  (FR-059); every list entry carries its version tag (FR-060). A capabilities read was added
+  (FR-068), because the legacy screens render `SKIP_SOGO`, the external-destination switch, the DKIM
+  defaults and field limits into their forms. Both are recorded as orchestrator decisions under
+  "Clarifications". The spec now has FR-001 to FR-068. All items still pass.
 - The alias, alias domain, resource and sender permission files of the FeldHost fork were diffed
   against upstream `2026-09a`. The logic is identical. The differences are the pre-filled DKIM
   selector, the ISPConfig DKIM DNS push and branding texts. The external-destination flag and

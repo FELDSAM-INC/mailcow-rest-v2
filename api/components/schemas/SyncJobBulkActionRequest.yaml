@@ -1,14 +1,14 @@
 type: object
 description: |
-  One action applied to several sync jobs. The number of items must not exceed the bulk limit
+  One action applied to several sync jobs. The number of targets must not exceed the bulk limit
   (default 100, see `GET /capabilities/sync-jobs`); a larger request is refused with `tooMany`
-  (param `max`) on `items`. A malformed item refuses the whole request, with every bad item named.
-  A job named twice is processed and reported once.
-required: [action, items]
+  (param `max`) on `targets`. A malformed target refuses the whole request, with every bad target
+  named. A job named twice is processed and reported once.
+required: [action, targets]
 properties:
   action:
     $ref: './SyncJobBulkAction.yaml'
-  items:
+  targets:
     type: array
     minItems: 1
     items:

@@ -1,0 +1,29 @@
+description: |
+  The caller is authenticated but may not perform this request. Possible types:
+  - `/api/v2/problems/permission-flag-required`: a domain administrator or mailbox user lacks the
+    `syncjobs` permission flag (extension `flag: syncjobs`). Every sync-job operation needs it;
+    administrators always hold it.
+  - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request.
+  - `/api/v2/problems/pending-action-required`: the session is restricted (extension
+    `pendingActions`).
+  - `/api/v2/problems/csrf-token-mismatch`, `/api/v2/problems/api-key-source-not-allowed`: see
+    `Forbidden`.
+
+  `/api/v2/problems/forbidden` does not occur here: every role, and every key type, may use sync
+  jobs when the flag allows it.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/SyncJobPermissionFlagProblem.yaml'
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      permissionFlagRequired:
+        value:
+          type: /api/v2/problems/permission-flag-required
+          title: Permission flag required
+          status: 403
+          detail: Sync jobs need the syncjobs permission.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          flag: syncjobs

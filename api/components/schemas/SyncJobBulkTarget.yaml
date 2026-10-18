@@ -1,7 +1,7 @@
 description: |
   One sync job of a bulk action. `id` is the job's `id` written as a decimal string, as in its
   path. `version` is the job's `etag` as last read (the surrounding double quotes may be left out);
-  an outdated tag gives the item `outdated`. Version tags of `reschedule` items are not checked.
+  an outdated tag gives the target `outdated`. Version tags of `reschedule` targets are not checked.
 allOf:
   - $ref: './BulkTarget.yaml'
   - type: object

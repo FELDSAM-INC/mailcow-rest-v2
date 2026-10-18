@@ -8,18 +8,18 @@ post:
     requests.
 
     The whole request is refused only when the caller may never perform the action: `403
-    forbidden` without the sync-jobs permission, `403 insufficient-key-scope` for a read-only key,
-    and `422` for a malformed body or more jobs than the bulk limit. Otherwise each job is checked,
+    permission-flag-required` (`flag: syncjobs`) without the sync-jobs permission, `403 insufficient-key-scope` for a read-only key,
+    and `422` for a malformed body or more targets than the bulk limit. Otherwise each job is checked,
     processed and audited on its own, as a single request for it would be, and gets one result in
     request order:
 
     - `done`: the action was applied. `version` carries the job's version tag without its
-      surrounding quotes (the form an item's `version` takes), except after `delete`. Activating
+      surrounding quotes (the form a target's `version` takes), except after `delete`. Activating
       an active job or deactivating an inactive one is `done` and changes nothing.
     - `notFound`: the job does not exist or its mailbox lies outside the caller's scope.
-    - `outdated`: the item's `version` no longer matches; the job is unchanged. Not checked for
-      `reschedule`, and not checked for items without `version`.
-    - `refused` or `failed`: the item's `problem` explains why.
+    - `outdated`: the target's `version` no longer matches; the job is unchanged. Not checked for
+      `reschedule`, and not checked for targets without `version`.
+    - `refused` or `failed`: the result's `problem` explains why.
 
     A failure on one job never stops or undoes the others. A job named twice is processed and
     reported once. Every audit record of the request carries `bulkRequestId`.
@@ -37,7 +37,7 @@ post:
           deactivate:
             value:
               action: deactivate
-              items:
+              targets:
                 - id: '17'
                   version: 'V3kQ0u1lH5o2tKpN8bYzR4cX6mE9aJfD7sGhLwTqUiA'
                 - id: '18'
@@ -49,7 +49,7 @@ post:
     '401':
       $ref: '../../components/responses/Unauthorized.yaml'
     '403':
-      $ref: '../../components/responses/Forbidden.yaml'
+      $ref: '../../components/responses/SyncJobForbidden.yaml'
     '422':
       $ref: '../../components/responses/SyncJobValidationFailed.yaml'
     '500':

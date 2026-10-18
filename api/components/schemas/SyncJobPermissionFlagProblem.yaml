@@ -1,0 +1,15 @@
+description: |
+  Problem of type `/api/v2/problems/permission-flag-required` (status `403`): the caller is a domain
+  administrator or mailbox user without the `syncjobs` permission flag (`da_acl.syncjobs` or
+  `user_acl.syncjobs`), which every sync-job operation needs. The flag is checked before any object
+  is looked up, so the answer reveals nothing about objects outside the caller's scope. Nothing
+  changed.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [flag]
+    properties:
+      flag:
+        type: string
+        description: Name of the missing flag, as in `PermissionFlags`.
+        enum: [syncjobs]

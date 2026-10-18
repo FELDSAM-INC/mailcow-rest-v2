@@ -20,13 +20,14 @@ The contract of this feature is not duplicated here. The OpenAPI 3.1 document in
   - parameters: `SyncJobId`, `SyncJobSort`;
   - schemas: `SyncJob`, `SyncJobRunStatus`, `SyncJobLastResult`, `SyncJobEncryption`,
     `SyncJobCreateRequest`, `SyncJobPatch`, `SyncJobLog`, `SyncJobCapabilities`, `SyncJobDefaults`,
-    `SyncJobRange`, `SyncJobBulkAction`, `SyncJobBulkTarget`, `SyncJobBulkActionRequest`;
+    `SyncJobRange`, `SyncJobBulkAction`, `SyncJobBulkTarget`, `SyncJobBulkActionRequest`,
+    `SyncJobPermissionFlagProblem` (`permission-flag-required` with `flag: syncjobs`);
   - responses: `SyncJobResponse`, `SyncJobCreatedResponse`, `SyncJobListResponse`,
     `SyncJobLogResponse`, `SyncJobCapabilitiesResponse`, `SyncJobExists`,
-    `SyncJobValidationFailed`.
+    `SyncJobValidationFailed`, `SyncJobForbidden`.
 - Shared components reused: `ListMeta`, `Problem`, `ValidationProblem`, `Limit`, `Offset`, `Order`,
   `Search`, `IfMatch`, `BulkTarget` (extended by `SyncJobBulkTarget`), `BulkResultResponse`, the
-  security schemes and the standard responses (`BadRequest`, `Unauthorized`, `Forbidden`,
+  security schemes and the standard responses (`BadRequest`, `Unauthorized`,
   `NotFound`, `PreconditionFailed`, `ValidationFailed`, `NoContent`, `InternalError`).
 - Values appended to the shared enumerations:
   - `KnownProblemType`: `/api/v2/problems/sync-job-exists`;

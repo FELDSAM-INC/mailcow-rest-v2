@@ -195,7 +195,9 @@ the representation, the audit wiring, the configuration reader extension and the
 - [ ] T014 [P] (FR-027) Add the case `SyncJobExists` (`/api/v2/problems/sync-job-exists`, 409, "Sync job
   already exists") to `app/Support/Http/ProblemType.php`. Add `SyncJobCreation`, `SyncJobUpdate`,
   `SyncJobReschedule` and `SyncJobDeletion` to the PHP `AuditEventType` enum (001), and
-  `PermissionDenied` and `NotFound` to its failure-reason enum, if 001 keeps one. 001's
+  `PermissionDenied` and `NotFound` to its failure-reason enum, if 001 keeps one. Reuse the
+  `PermissionFlagRequired` case (`/api/v2/problems/permission-flag-required`, 403, extension
+  `flag`) that an earlier feature added; add it only if it is missing. 001's
   `ProblemTypeConsistencyTest` must stay green.
 - [ ] T015 [P] Create the enums in `app/Services/SyncJobs/` and make T008 pass:
   - `SyncJobEncryption.php`: string-backed `Ssl = 'SSL'`, `Starttls = 'TLS'`, `Plain = 'PLAIN'`,
@@ -229,7 +231,8 @@ the representation, the audit wiring, the configuration reader extension and the
 - [ ] T018 Create `app/Policies/SyncJobPolicy.php` with `use(Principal): bool`, true when
   `IdentityService` reports `PermissionFlag::Syncjobs`. Register it in
   `app/Providers/AppServiceProvider.php` as the gate `syncJobs.use`. A failing gate throws
-  `ProblemException(ProblemType::Forbidden)`. This makes T011 pass.
+  `ProblemException(ProblemType::PermissionFlagRequired, ['flag' => 'syncjobs'])`. This makes T011
+  pass.
 - [ ] T019 Create `app/Http/Resources/Api/V2/SyncJobResource.php` (R3). It renders the contract
   `SyncJob` from a model plus an optional `logAvailable` value and the tag from `SyncJobVersion`,
   and never touches `password1` beyond `remotePasswordSet`. This makes T012 pass.
@@ -255,13 +258,14 @@ the representation, the audit wiring, the configuration reader extension and the
     - for a route `{syncJob}`: the ID and `imapsync.user2`, looked up without scope;
     - for `POST sync-jobs`: the `mailbox` member truncated to 255, or the mailbox user's own
       address;
-    - for `POST sync-jobs/bulk-actions`: a `null` target with `details.itemIds` (at most the bulk
+    - for `POST sync-jobs/bulk-actions`: a `null` target with `details.targetIds` (at most the bulk
       limit, IDs only), and `details.bulkAction`. The event type is derived from the body's
       `action` when the route declares `'event' => 'fromBulkAction'`.
 
   Write `tests/Feature/Audit/RefusalAuditorTest.php` against a test-only route under
   `/api/v2/__testing/` that declares `restv2.audit`:
-  - `forbidden`, `insufficient-key-scope`, `pending-action-required`, `404`, `409`, `412`, `422`
+  - `permission-flag-required`, `forbidden`, `insufficient-key-scope`, `pending-action-required`,
+    `404`, `409`, `412`, `422`
     and a malformed-JSON `400` each write exactly one failure record with the mapped reason and
     `details.problemType`;
   - `csrf-token-mismatch` and `401` write none;
@@ -330,13 +334,14 @@ values for the same rows (spec US1, Independent Test).
   - reading writes no audit record.
 - [ ] T025 [P] [US1] Write `tests/Feature/SyncJobs/SyncJobReadAccessTest.php` (FR-001, FR-003,
   FR-004, AS-6, AS-7). For `listSyncJobs`, `getSyncJob` and `getSyncJobLog`:
-  - a domain admin without `da_acl.syncjobs` → `403 forbidden` (AS-6);
-  - a mailbox user without `user_acl.syncjobs` → `403 forbidden` (AS-7), also for a job in their
+  - a domain admin without `da_acl.syncjobs` → `403 permission-flag-required` with `flag: syncjobs` (AS-6);
+  - a mailbox user without `user_acl.syncjobs` → `403 permission-flag-required` (AS-7), also for a job in their
     own mailbox;
   - anonymous → `401 unauthenticated`;
   - a restricted session (`force_pw_update`) → `403 pending-action-required`;
   - admin read-only and read-write keys → `200`;
-  - a domain-admin key whose owner lacks the flag → `403 forbidden`.
+  - a domain-admin key whose owner lacks the flag → `403 permission-flag-required`;
+  - `forbidden` never occurs for these operations.
 
 ### Implementation for User Story 1
 
@@ -438,12 +443,13 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
     `remotePasswordSet` is true, and the password appears nowhere in the body or headers.
   - **Admin creation** (AS-2): an admin naming a mailbox in scope gets the job on that mailbox; a
     domain admin likewise for their domain.
-  - **Refusals**: a user without the flag → `403 forbidden`; an admin read-only key →
+  - **Refusals**: a user without the flag → `403 permission-flag-required` (`flag: syncjobs`); an
+    admin read-only key →
     `403 insufficient-key-scope` (AS-10); nothing is stored in either case.
   - **Audit**:
     - one `syncJobCreation` success record with `target {syncJob, id, mailbox}` and `attributes`
       without the password;
-    - failure records for the `403 forbidden` (`permissionDenied`), `404` (`notFound`), `422`
+    - failure records for the `403 permission-flag-required` (`permissionDenied`), `404` (`notFound`), `422`
       (`validationFailed`, `errors` with codes only) and `409` (`conflict`) refusals;
     - a failure record for the read-only key refusal too (`permissionDenied`, `details.problemType`
       `insufficient-key-scope`), but none for a CSRF failure (R16).
@@ -597,7 +603,7 @@ the rows and the runner's selection with legacy's edit form (spec US3).
   - **Invalid values** (AS-6): an unknown custom option, `exclude: "("`, an IPv6 host and
     `remotePort: 0` each give `422` naming the member, and the row is unchanged.
   - **Refusals** (AS-7, AS-8):
-    - a user without the flag → `403 forbidden`;
+    - a user without the flag → `403 permission-flag-required`;
     - an admin read-only key → `403 insufficient-key-scope`;
     - a domain admin editing a foreign job → `404`.
   - **Target mailbox** (AS-9): `mailbox: "b@example.org"` on an `a@example.org` job →
@@ -736,10 +742,10 @@ deleted just before processing, and stale and missing version tags (spec US5).
     to the request ID. There are 50 `syncJobUpdate` records, each with `details.bulkRequestId`.
   - **Mixed scope** (AS-2): a domain admin reschedules 3 own and 2 foreign jobs. The 3 are reset
     and the 2 are `notFound`, and the foreign rows are byte-equal.
-  - **Whole-request refusals** (AS-3): no flag → `403 forbidden`; read-only key →
+  - **Whole-request refusals** (AS-3): no flag → `403 permission-flag-required`; read-only key →
     `403 insufficient-key-scope`. Nothing changes.
-  - **Item limit** (AS-4): 101 items → `422 tooMany {max: 100}` on `items`. With
-    `RESTV2_SYNC_JOBS_BULK_LIMIT=50`, 51 items are refused.
+  - **Target limit** (AS-4): 101 targets → `422 tooMany {max: 100}` on `targets`. With
+    `RESTV2_SYNC_JOBS_BULK_LIMIT=50`, 51 targets are refused.
   - **Vanished job** (AS-5): a bulk delete of 5, one deleted just before, gives 4 `done` and 1
     `notFound`, with 5 results.
   - **Own jobs** (AS-6): a user activates their own jobs.
@@ -751,8 +757,8 @@ deleted just before processing, and stale and missing version tags (spec US5).
     - a stale version on a `reschedule` item still gives `done`;
     - a `done` result carries the new version, unquoted, except after `delete`;
     - an ID named twice is processed and reported once;
-    - `{"id":"abc"}` or `{"id":"0"}` → `422` naming `items.N.id`;
-    - `items: []` → `422`;
+    - `{"id":"abc"}` or `{"id":"0"}` → `422` naming `targets.N.id`;
+    - `targets: []` → `422`;
     - an unknown `action` → `422 notInList`.
   - **Failure isolation**: bind a decorator of `SyncJobService` in the container that throws for
     one ID. That item is `failed` with an `about:blank` 500 problem, and the others are `done`.
@@ -762,12 +768,12 @@ deleted just before processing, and stale and missing version tags (spec US5).
 - [ ] T058 [P] [US5] Create `app/Http/Requests/Api/V2/SyncJobBulkActionRequest.php`:
   - `authorize()` runs the gate;
   - `action` uses the `SyncJobBulkAction` enum;
-  - `items` must be a list with at least 1 and at most `config('restv2.sync_jobs.bulk_limit')`
+  - `targets` must be a list with at least 1 and at most `config('restv2.sync_jobs.bulk_limit')`
     entries (`tooMany {max}`);
-  - `items.*.id` must match `^[1-9][0-9]{0,9}$` (`invalidFormat`), and `items.*.version` is an
+  - `targets.*.id` must match `^[1-9][0-9]{0,9}$` (`invalidFormat`), and `targets.*.version` is an
     optional string.
 - [ ] T059 [US5] Create `app/Services/SyncJobs/SyncJobBulkService.php` (R15):
-  - it processes items in order, deduplicates by `id` and keeps the first occurrence;
+  - it processes targets in order, deduplicates by `id` and keeps the first occurrence;
   - per item, it runs one transaction: `findInScopeForUpdate` (`notFound`); for `activate`,
     `deactivate` and `delete` with a version, an unquoted comparison with `SyncJobVersion`
     (`outdated`); then `SyncJobService::update(['active' => …])`, `reschedule()` or `delete()`,

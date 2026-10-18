@@ -19,7 +19,7 @@ get:
     '401':
       $ref: '../../components/responses/Unauthorized.yaml'
     '403':
-      $ref: '../../components/responses/Forbidden.yaml'
+      $ref: '../../components/responses/SyncJobForbidden.yaml'
     '404':
       $ref: '../../components/responses/NotFound.yaml'
     '500':

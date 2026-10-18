@@ -70,7 +70,9 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
      effective flag `PermissionFlag::Syncjobs` from 001's `IdentityService` is set. That flag is
      always true for administrators (legacy `acl('to_session')`), comes from `da_acl.syncjobs` for
      domain administrators and from `user_acl.syncjobs` for mailbox users. A false gate answers
-     `403 forbidden` on every operation, reads and the capabilities read included (FR-001).
+     `403 permission-flag-required` with `flag: syncjobs` (`docs/conventions.md`, "Permission
+     refusals") on every operation, reads and the capabilities read included (FR-001). `forbidden`
+     never occurs: every role and key type may use sync jobs when the flag allows it.
   3. **Scope**: `App\Services\SyncJobs\SyncJobScope::apply(Builder, Principal)` restricts every
      query that loads jobs. It ports legacy `hasMailboxObjectAccess()` on `imapsync.user2`:
 
@@ -96,7 +98,7 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
 - **Alternatives considered**: Letting administrators see orphan jobs (no join) was rejected. Legacy
   hides them, and the domain filter and the domain-administrator scope need the join anyway. Legacy
   reads without the flag check (`json_api.php` never checks `acl.syncjobs` on `get`), but the spec
-  decides "forbidden" for every operation (FR-001 and its clarification).
+  decides on a 403 refusal for every operation (FR-001 and its clarification).
 
 ## R3. Representation mapping
 
@@ -436,11 +438,12 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
 ## R15. Bulk actions
 
 - **Decision**:
-  - **Request**: `{action, items[]}`. The items extend the shared `BulkTarget` with the integer
-    pattern `^[1-9][0-9]{0,9}$`. At most `config('restv2.sync_jobs.bulk_limit')` items (default
-    100) are allowed, counted as sent; more give `422 tooMany {max}` on `items`. Malformed items
+  - **Request**: `{action, targets[]}` (the member name `targets` is the project-wide convention,
+    `docs/conventions.md`). The targets extend the shared `BulkTarget` with the integer pattern
+    `^[1-9][0-9]{0,9}$`. At most `config('restv2.sync_jobs.bulk_limit')` targets (default 100) are
+    allowed, counted as sent; more give `422 tooMany {max}` on `targets`. Malformed targets
     refuse the whole request with each bad entry named (`docs/conventions.md`).
-  - **Processing**: `App\Services\SyncJobs\SyncJobBulkService` handles items in request order,
+  - **Processing**: `App\Services\SyncJobs\SyncJobBulkService` handles targets in request order,
     skipping repeated `id`s, which keep the result of their first occurrence. Each item runs in its
     own transaction through the same service methods as the single operations, so it gets the same
     checks, side effects and audit record:
@@ -455,7 +458,8 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
     except after `delete`.
   - **Response**: the shared `BulkResultResponse`. `bulkRequestId` is the request ID (001
     `AssignRequestId`).
-  - **Whole-request refusals**: the gate (`403 forbidden`), 001's `insufficient-key-scope`, and
+  - **Whole-request refusals**: the gate (`403 permission-flag-required`), 001's
+    `insufficient-key-scope`, and
     body validation. There is no other.
   - **Shared plumbing**: if feature 002 (implemented earlier) created reusable bulk plumbing
     (building `BulkResult`, its summary and per-item problems), this feature uses it. Otherwise it
@@ -479,7 +483,8 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
   - **Failures** have `outcome: failure`, a `failureReason` and the details `problemType`,
     `status`, `errors` (member → list of rule codes, never values), `mailbox` when known and
     `bulkRequestId`. The reasons map as follows:
-    - missing flag (`forbidden`), read-only key (`insufficient-key-scope`) or restricted session
+    - missing flag (`permission-flag-required`), read-only key (`insufficient-key-scope`) or
+      restricted session
       (`pending-action-required`) → `permissionDenied`, told apart by `details.problemType`;
     - unknown or out of scope → `notFound`;
     - `412` or `outdated` → `versionOutdated`;
@@ -500,7 +505,7 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
       `{syncJob}` it looks up the ID and `user2`, regardless of scope, because the audit log is for
       administrators only. For a creation it uses the `mailbox` member as sent (truncated to 255),
       or the mailbox user's own address.
-    - A whole-request bulk refusal gives one record with a `null` target and `details.itemIds`.
+    - A whole-request bulk refusal gives one record with a `null` target and `details.targetIds`.
       Per-item outcomes are recorded by `SyncJobBulkService`.
     - If feature 002 already built such a hook, it is reused and only the `syncJob` resolver is
       registered.
@@ -558,7 +563,7 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
 |---|---|---|
 | `RESTV2_IMAPSYNC_OPTIONS` | unset: the mounted `vars*.inc.php`, else the upstream `2026-09a` list | JSON `{"whitelist": [...], "blacklist": [...]}`, the legacy `$IMAPSYNC_OPTIONS` (R7). `showpasswords` is always removed |
 | `RESTV2_SYNC_JOBS_CUSTOM_PARAMS_ADMIN_ONLY` | `n` | `y` restricts custom imapsync parameters to administrators (FR-006) |
-| `RESTV2_SYNC_JOBS_BULK_LIMIT` | `100` | Maximum items per bulk action, 1–1000 (FR-023) |
+| `RESTV2_SYNC_JOBS_BULK_LIMIT` | `100` | Maximum targets per bulk action, 1–1000 (FR-023) |
 
 They live in `config/restv2.php` under `sync_jobs`, with `IMAPSYNC_OPTIONS` added to
 `vars_overrides`. The `y`/`n` form follows `mailcow.conf` (`SKIP_SOGO=y`).
@@ -685,7 +690,9 @@ No new Composer or npm dependency. The feature uses:
 - **Decision**:
   - **New problem type**: `/api/v2/problems/sync-job-exists` (`409`, extension `syncJobId`), added
     to `KnownProblemType`, `docs/problems.md` and 001's `ProblemType` enum.
-  - **Reused problem types**: `forbidden`, `insufficient-key-scope`, `validation-failed`, and
+  - **Reused problem types**: `permission-flag-required` (with the extension `flag: syncjobs`,
+    schema `SyncJobPermissionFlagProblem`, response `SyncJobForbidden`), `insufficient-key-scope`,
+    `validation-failed`, and
     `about:blank` for `404` and `412`.
   - **New rule codes**, appended to `ValidationRuleCode`: `optionNotAllowed`,
     `optionContainsSpace`, `customParamsNotPermitted`, `invalidRegex` and `immutable`.

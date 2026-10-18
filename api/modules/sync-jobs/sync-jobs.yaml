@@ -14,7 +14,8 @@ get:
 
     Requires the sync-jobs permission (`permissions.syncjobs` of `GET /me`): administrators always
     hold it, domain administrators and mailbox users only when their `syncjobs` flag is set.
-    Callers without it get `403` with type `/api/v2/problems/forbidden`.
+    Callers without it get `403` with type `/api/v2/problems/permission-flag-required` and
+    `flag: syncjobs`.
   security:
     - sessionCookie: []
     - apiKeyAuth: []
@@ -62,7 +63,7 @@ get:
     '401':
       $ref: '../../components/responses/Unauthorized.yaml'
     '403':
-      $ref: '../../components/responses/Forbidden.yaml'
+      $ref: '../../components/responses/SyncJobForbidden.yaml'
     '422':
       $ref: '../../components/responses/ValidationFailed.yaml'
     '500':
@@ -83,7 +84,7 @@ post:
     running and whose interval has elapsed since its last run (or that never ran).
 
     Refusals:
-    - `403 forbidden`: the caller lacks the sync-jobs permission; `403 insufficient-key-scope`: a
+    - `403 permission-flag-required` (`flag: syncjobs`): the caller lacks the sync-jobs permission; `403 insufficient-key-scope`: a
       read-only key.
     - `404`: the target mailbox does not exist or lies outside the caller's scope (also when a
       mailbox user names another mailbox).
@@ -127,7 +128,7 @@ post:
     '401':
       $ref: '../../components/responses/Unauthorized.yaml'
     '403':
-      $ref: '../../components/responses/Forbidden.yaml'
+      $ref: '../../components/responses/SyncJobForbidden.yaml'
     '404':
       $ref: '../../components/responses/NotFound.yaml'
     '409':

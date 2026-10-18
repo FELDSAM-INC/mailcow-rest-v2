@@ -7,7 +7,7 @@ get:
   description: |
     Returns the job's full configuration, its version tag and its run status. The remote password
     is never included; `remotePasswordSet` says whether one is stored. Requires the sync-jobs
-    permission (`403 forbidden` otherwise). A job outside the caller's scope answers `404`.
+    permission (`403 permission-flag-required`, `flag: syncjobs`, otherwise). A job outside the caller's scope answers `404`.
   security:
     - sessionCookie: []
     - apiKeyAuth: []
@@ -17,7 +17,7 @@ get:
     '401':
       $ref: '../../components/responses/Unauthorized.yaml'
     '403':
-      $ref: '../../components/responses/Forbidden.yaml'
+      $ref: '../../components/responses/SyncJobForbidden.yaml'
     '404':
       $ref: '../../components/responses/NotFound.yaml'
     '500':
@@ -67,7 +67,7 @@ patch:
     '401':
       $ref: '../../components/responses/Unauthorized.yaml'
     '403':
-      $ref: '../../components/responses/Forbidden.yaml'
+      $ref: '../../components/responses/SyncJobForbidden.yaml'
     '404':
       $ref: '../../components/responses/NotFound.yaml'
     '409':
@@ -101,7 +101,7 @@ delete:
     '401':
       $ref: '../../components/responses/Unauthorized.yaml'
     '403':
-      $ref: '../../components/responses/Forbidden.yaml'
+      $ref: '../../components/responses/SyncJobForbidden.yaml'
     '404':
       $ref: '../../components/responses/NotFound.yaml'
     '412':

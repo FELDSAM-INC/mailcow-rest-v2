@@ -132,9 +132,9 @@ Records written by this feature (`AuditLogger` whitelists the `details` keys per
 | `event_type` | `target_type` / `target_id` / `target_name` | `details` keys |
 |---|---|---|
 | `syncJobCreation` | `syncJob` / id or null / mailbox or null | `mailbox`, `attributes`, `problemType`, `status`, `errors` |
-| `syncJobUpdate` | `syncJob` / id or null / mailbox or null | `mailbox`, `changes`, `bulkRequestId`, `bulkAction`, `itemIds`, `problemType`, `status`, `errors` |
-| `syncJobReschedule` | `syncJob` / id or null / mailbox or null | `mailbox`, `cleared`, `previous`, `bulkRequestId`, `bulkAction`, `itemIds`, `problemType`, `status` |
-| `syncJobDeletion` | `syncJob` / id or null / mailbox or null | `mailbox`, `remoteHost`, `remoteUser`, `bulkRequestId`, `bulkAction`, `itemIds`, `problemType`, `status` |
+| `syncJobUpdate` | `syncJob` / id or null / mailbox or null | `mailbox`, `changes`, `bulkRequestId`, `bulkAction`, `targetIds`, `problemType`, `status`, `errors` |
+| `syncJobReschedule` | `syncJob` / id or null / mailbox or null | `mailbox`, `cleared`, `previous`, `bulkRequestId`, `bulkAction`, `targetIds`, `problemType`, `status` |
+| `syncJobDeletion` | `syncJob` / id or null / mailbox or null | `mailbox`, `remoteHost`, `remoteUser`, `bulkRequestId`, `bulkAction`, `targetIds`, `problemType`, `status` |
 
 - `changes` maps contract member names to `{old, new}`. The remote password appears only as
   `remotePassword: "changed"`.
@@ -144,7 +144,7 @@ Records written by this feature (`AuditLogger` whitelists the `details` keys per
 - `failure_reason` is one of `permissionDenied` (missing flag, read-only key or restricted
   session, told apart by `details.problemType`), `notFound`, `versionOutdated`, `validationFailed`
   (`422` or a malformed `400` body) or `conflict`, or NULL for an unexpected failure. A
-  whole-request bulk refusal has a NULL target and `details.itemIds`.
+  whole-request bulk refusal has a NULL target and `details.targetIds`.
 - Refusals are recorded by `App\Services\Audit\RefusalAuditor` for the routes that declare
   `restv2.audit`, for every authenticated caller, except CSRF failures. `401` requests have no
   principal and are not recorded (research R16).

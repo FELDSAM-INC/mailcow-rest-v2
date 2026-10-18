@@ -185,9 +185,10 @@ api/                                         # Contract (source of truth), alrea
 └── components/
     ├── parameters/{SyncJobId,SyncJobSort}.yaml
     ├── responses/SyncJob{Response,CreatedResponse,ListResponse,LogResponse,
-    │                     CapabilitiesResponse,Exists,ValidationFailed}.yaml
+    │                     CapabilitiesResponse,Exists,ValidationFailed,Forbidden}.yaml
     └── schemas/SyncJob{,RunStatus,LastResult,Encryption,CreateRequest,Patch,Log,Capabilities,
-                        Defaults,Range,BulkAction,BulkTarget,BulkActionRequest}.yaml
+                        Defaults,Range,BulkAction,BulkTarget,BulkActionRequest,
+                        PermissionFlagProblem}.yaml
         (+ appended values in KnownProblemType, AuditEventType, AuditTarget,
            AuditFailureReason, ValidationRuleCode)
 

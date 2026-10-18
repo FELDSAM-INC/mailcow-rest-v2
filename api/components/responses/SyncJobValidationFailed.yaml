@@ -4,7 +4,7 @@ description: |
   `format: hostName` on `remoteHost`, `invalidRegex` on `exclude`, `optionNotAllowed` (param
   `option`), `optionContainsSpace` (param `token`) and `customParamsNotPermitted` on
   `customParameters`, `notEligible` (param `kind`) and `immutable` on `mailbox`, `outOfRange` (params
-  `min`, `max`) on every whole-number field, and `tooMany` (param `max`) on bulk `items`.
+  `min`, `max`) on every whole-number field, and `tooMany` (param `max`) on bulk `targets`.
 content:
   application/problem+json:
     schema:

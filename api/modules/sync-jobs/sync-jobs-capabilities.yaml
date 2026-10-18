@@ -7,7 +7,8 @@ get:
     caller: whether custom imapsync parameters are allowed for the caller and the allow-list in
     effect (never containing `showpasswords`), the bulk limit, the page sizes, every field's limits,
     the allowed encryption values and the creation defaults. Changes nothing; read-only keys may use
-    it. Requires the sync-jobs permission (`403 forbidden` otherwise).
+    it. Requires the sync-jobs permission (`403 permission-flag-required`,
+    `flag: syncjobs`, otherwise).
   security:
     - sessionCookie: []
     - apiKeyAuth: []
@@ -17,6 +18,6 @@ get:
     '401':
       $ref: '../../components/responses/Unauthorized.yaml'
     '403':
-      $ref: '../../components/responses/Forbidden.yaml'
+      $ref: '../../components/responses/SyncJobForbidden.yaml'
     '500':
       $ref: '../../components/responses/InternalError.yaml'

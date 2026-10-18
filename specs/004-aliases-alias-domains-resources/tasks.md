@@ -707,7 +707,7 @@ FR-064).
 
 ### Tests for User Story 8 (write first, observe failing) ⚠️
 
-- [ ] T080 [P] [US8] Write `tests/Feature/Audit/AliasFeatureAuditTest.php`: AS1 a domain
+- [X] T080 [P] [US8] Write `tests/Feature/Audit/AliasFeatureAuditTest.php`: AS1 a domain
   administrator replaces destinations; `GET /audit-events?targetType=alias&targetId=<id>` as an
   administrator shows actor, time, client address and `details.changes.destinations {old, new}`;
   AS2 a refused external destination is listed with `outcome: failure`,
@@ -720,7 +720,7 @@ FR-064).
 
 ### Implementation for User Story 8
 
-- [ ] T081 [US8] Make T080 pass: complete the target `id` and `name` of R20 in the services and the
+- [X] T081 [US8] Make T080 pass: complete the target `id` and `name` of R20 in the services and the
   four resolvers. No audit filter parameter is added.
 
 ---
@@ -902,3 +902,6 @@ what exists map as listed.
   stays manageable (legacy). Resource deletion records the removed groupware rows in
   `removed` (`groupwareProfiles`, `groupwareFolders`, `groupwareItems`,
   `groupwareSharingPermissions`, `groupwareCacheEntries`).
+- **T080, T081**: the target IDs and names of R20 were completed with the write stories (services
+  and `AliasAuditTargets`), whose tests saw the audit assertions fail first; T080 therefore passed on
+  its first run and T081 needed no further code.

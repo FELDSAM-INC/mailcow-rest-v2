@@ -1,0 +1,14 @@
+description: |
+  The export is not allowed. Possible types:
+  - `/api/v2/problems/dkim-private-key-export-disabled`: the operator has not enabled private key
+    export (legacy `SHOW_DKIM_PRIV_KEYS`, off by default). The refused attempt is audited.
+  - `/api/v2/problems/forbidden`: the caller is not an administrator. Domain administrators can never
+    export.
+  - `/api/v2/problems/pending-action-required`: the session is restricted.
+  - `/api/v2/problems/api-key-source-not-allowed`: the key is used from a disallowed address.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'

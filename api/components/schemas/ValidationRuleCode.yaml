@@ -61,8 +61,7 @@ description: |
     accountUsername` (only `a-z`, `0-9`, `.`, `_`, `-`, with at least one letter or digit);
     `reserved` (param `reserved: [api]`) for the username `api`; `notEligible` uses `kind:
     aliasDomain` for an assigned domain that is an alias domain, and `reason` (`mailboxInactive`,
-    `loginDisabled`, `domainInactive`, `webmailDisabled`) for a mailbox whose webmail cannot be
-    opened; `immutable` for a read-only member sent back with a different value; password rules
+    `loginDisabled`, `domainInactive`) for a mailbox whose webmail cannot be opened; `immutable` for a read-only member sent back with a different value; password rules
     use feature 003's codes; `unknownField` (a member the schema does not define, for example an
     unknown permission flag, named by its path).
   - Routing (feature 009): `invalidFormat` also uses `format: nextHop` (`host`, `host:port`,

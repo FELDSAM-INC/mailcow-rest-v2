@@ -1,0 +1,24 @@
+description: |
+  The key was stored for a name that had no key. Outgoing mail of the name is signed with it from the
+  next message on. The response contains the entry and the DKIM DNS publication outcome, never the
+  private key.
+headers:
+  Location:
+    description: Absolute path of the DKIM entry (`/api/v2/dkim-keys/{name}`).
+    required: true
+    schema:
+      type: string
+      format: uri-reference
+  ETag:
+    description: Version tag (strong ETag) of the stored key, equal to `data.etag`.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/DkimKeyChangeResult.yaml'

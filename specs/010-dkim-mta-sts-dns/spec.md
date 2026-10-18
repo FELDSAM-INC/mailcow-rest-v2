@@ -106,6 +106,36 @@
   always carries the server's public addresses. A suggested SPF record is a server setting, empty by
   default; the FeldHost deployment sets `v=spf1 mx a ~all` (FR-050). (agent decision: fork-only
   behaviour is kept but configurable, per the roadmap.)
+- Q: How does a client translate and group the diagnostics checks, and their reasons, notes and
+  guidance? → A: Every check carries a stable check identifier, for example `mx`, `spf`,
+  `dkim:<selector>`, `dmarc`, `tlsa:25`, `srv:imaps` or `autodiscover`. Every reason, note and
+  guidance item is a stable code with parameters; English text may accompany it (FR-044).
+  (orchestrator decision: the UI 010 spec found that without identifiers and codes the app cannot
+  translate a check's purpose, reason or guidance, which feature 001 FR-055 requires for every
+  message a client shows.)
+- Q: What form does the reason of a failed DKIM DNS publication take? → A: A stable reason code plus
+  optional technical detail without secrets (FR-030). (orchestrator decision: the UI 010 spec found
+  that a free-text reason can only be shown untranslated.)
+- Q: How does an administrator rotate a key without a period in which mail is unsigned? → A: Key
+  generation for a name that already has a key accepts an explicit overwrite flag. Only
+  administrators may use it; it is audited and replaces the whole old key atomically, as import and
+  copy with overwrite already do (FR-013, FR-014, FR-020). (orchestrator decision: the UI 010 spec
+  found that rotation otherwise needs a deletion followed by a generation, with a gap in which
+  outgoing mail is not signed.)
+- Q: How does a client learn the server values it needs before it submits a form, such as the server
+  host name to pre-fill the MTA-STS MX hosts? → A: A read-only capabilities operation of this
+  feature returns them, on the pattern of feature 002 FR-064: the server host name, the DKIM
+  defaults and limits, the MTA-STS defaults and limits, and the DNS diagnostics limits (FR-012).
+  (orchestrator decision: the UI 010 spec found that the host name is visible only inside a
+  diagnostics result, so the MTA-STS form cannot pre-fill the MX hosts.)
+- Q: Can a client see the diagnostics rate limit before it is reached? → A: Yes. Every diagnostics
+  response carries the standard rate-limit headers `RateLimit-Limit`, `RateLimit-Remaining` and
+  `RateLimit-Reset` (IETF HTTPAPI rate-limit headers draft), and the "too many requests" refusal
+  carries the retry time (FR-049). (orchestrator decision: the UI 010 spec found that the app cannot
+  warn before a refusal.)
+- Q: How does a client learn the DNS publication outcome of a key deletion, which responds without
+  a body? → A: From the audit history of the name (FR-024, FR-055). The deletion keeps responding
+  `204`, as the constitution requires for deletions. (orchestrator decision: constitution II.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -176,8 +206,11 @@ published.
    selector or size, **Then** a 2,048-bit key is stored with the server's default selector, the
    response is "created" and contains the entry and its record, and the next message sent from the
    domain is signed with it.
-2. **Given** a domain that already has a key, **When** a key is generated for it, **Then** the
-   request is refused as a conflict and the existing key is unchanged.
+2. **Given** a domain that already has a key, **When** a key is generated for it without asking to
+   overwrite, **Then** the request is refused as a conflict and the existing key is unchanged.
+   **When** an administrator asks to overwrite, **Then** the old key, including its private key
+   under the old selector, is replaced by the new key in one step, the response is "updated", and
+   every message from then on is signed with the new key, with no unsigned message in between.
 3. **Given** a selector containing a space or a slash, or a key size of 1536, **When** generation is
    requested, **Then** it is refused with a validation error naming the field and its rule.
 4. **Given** a name that is not a domain or alias domain, **When** an administrator generates a key
@@ -187,6 +220,8 @@ published.
    domain, **Then** the response is "not found".
 6. **Given** a read-only API key owned by an administrator, **When** it is used to generate a key,
    **Then** the request is refused with the "insufficient key scope" error.
+7. **Given** a domain administrator and a domain they manage that has a key, **When** they generate
+   a key with overwrite, **Then** the request is refused as forbidden and the key is unchanged.
 
 ---
 
@@ -228,7 +263,12 @@ found value with the zone contents. Load the zone file into a standard zone-file
 7. **Given** any diagnostics result, **When** its zone file is loaded into a standard zone-file
    checker, **Then** it is accepted.
 8. **Given** a caller who started 10 runs within the last minute, **When** they start another,
-   **Then** it is refused as "too many requests" with a hint on when to retry.
+   **Then** it is refused as "too many requests" with a hint on when to retry. **Given** a caller
+   who started 3 runs, **When** the fourth result arrives, **Then** it states that 6 runs remain and
+   when the limit resets.
+9. **Given** any diagnostics result, **When** a client reads a check, **Then** the check carries
+   its stable identifier (for example `dkim:<selector>` or `srv:imaps`), and each of its reasons,
+   notes and guidance items carries a stable code with its parameters.
 
 ---
 
@@ -268,6 +308,10 @@ the legacy publication endpoint serves with the result of the same steps in the 
    response is "not found".
 7. **Given** a domain administrator, **When** they change the policy of a domain they manage,
    **Then** the change is saved, with no permission flag needed, as in legacy.
+8. **Given** an administrator or a domain administrator, **When** they read the capabilities of this
+   feature, **Then** the response contains the server host name, the allowed modes, the maximum-age
+   limits and the MX list length limit, so that the form can pre-fill the MX hosts with the host
+   name.
 
 ---
 
@@ -360,8 +404,10 @@ server fail or time out, and check the zone contents and each reported outcome.
 3. **Given** no ISPConfig zone for the domain, **When** a key is generated, **Then** the key is
    stored and the response reports "no DNS zone found".
 4. **Given** an unreachable ISPConfig server, **When** a key is generated, **Then** the key is
-   stored and the response reports "failed" within 15 seconds. **When** a key is deleted, **Then**
-   the key is deleted within 15 seconds and the audit record names the failed removal.
+   stored and the response reports "failed" with the reason code for an unreachable server within
+   15 seconds. **When** a key is deleted, **Then** the key is deleted within 15 seconds, the
+   response has no body, and the audit record of the deletion names the failed removal and its
+   reason code.
 5. **Given** a failed publication, **When** an administrator asks for the record to be published
    again, **Then** the record is published and the outcome is "published".
 6. **Given** the publication disabled, the default, **When** a key is generated, **Then** ISPConfig
@@ -481,8 +527,10 @@ filtered by target.
 
   | Operation | Administrator | Domain administrator | Mailbox user |
   |---|---|---|---|
-  | List and inspect DKIM entries, read the DKIM configuration | All names, including unused keys | Own domains and their alias domains | Forbidden |
-  | Generate a DKIM key | Any domain or alias domain | Own domains and their alias domains | Forbidden |
+  | List and inspect DKIM entries | All names, including unused keys | Own domains and their alias domains | Forbidden |
+  | Read the capabilities (FR-012) | All values | Without the private key export setting | Forbidden |
+  | Generate a DKIM key for a name without a key | Any domain or alias domain | Own domains and their alias domains | Forbidden |
+  | Generate a DKIM key that overwrites an existing key | Yes | Forbidden | Forbidden |
   | Import, copy or delete a DKIM key | Yes | Forbidden | Forbidden |
   | Export a private key | Yes, only while export is enabled (FR-026) | Forbidden | Forbidden |
   | Publish a DKIM record again (FR-031) | Yes | Forbidden | Forbidden |
@@ -531,21 +579,36 @@ filtered by target.
 - **FR-011**: A client MUST be able to inspect the entry of one name in its scope. A name that is
   neither a domain or alias domain in the caller's scope nor, for administrators, the name of an
   unused key MUST be answered "not found".
-- **FR-012**: Administrators and domain administrators MUST be able to read the DKIM configuration
-  that forms need: the default selector (feature 002, FR-028), the default key size of 2,048 bits,
-  the allowed key sizes, and whether the DKIM DNS publication is enabled. Administrators MUST also
-  be able to read whether private key export is enabled. Connection details and secrets MUST NOT be
-  returned.
+- **FR-012**: Administrators and domain administrators MUST be able to read the capabilities of this
+  feature, the server values and limits a client needs before it submits, on the pattern of feature
+  002 FR-064:
+  - the server host name, which is the expected mail exchanger and MTA-STS host;
+  - DKIM: the default selector (feature 002, FR-028), the default key size of 2,048 bits, the
+    allowed key sizes, the selector length limit, the private key text limit and the allowed
+    imported key lengths (FR-019), and whether the DKIM DNS publication is enabled;
+  - MTA-STS: the version, the allowed modes, the maximum-age limits, the MX list length limit and
+    the default active state (FR-033);
+  - DNS diagnostics: the runs allowed per minute, the lookup and run time limits (FR-048, FR-049)
+    and whether the caller gets the server-wide checks (FR-041).
+
+  Administrators MUST also be able to read whether private key export is enabled. Connection
+  details and secrets MUST NOT be returned. The read MUST change nothing, and read-only keys MAY use
+  it.
 
 #### Generating a key
 
 - **FR-013**: Administrators MUST be able to generate a key for any domain or alias domain, and
   domain administrators for a domain or alias domain in their scope. The request names one domain or
-  alias domain and MAY give a selector and a key size. An omitted selector MUST be the default
-  selector, and an omitted key size MUST be 2,048 bits.
+  alias domain and MAY give a selector, a key size and whether an existing key may be overwritten
+  (default: no). An omitted selector MUST be the default selector, and an omitted key size MUST be
+  2,048 bits. Only administrators MAY ask to overwrite; a domain administrator's request that asks
+  to overwrite MUST be refused as forbidden.
 - **FR-014**: A generation request MUST be refused:
   - as "not found" when the name is not a domain or alias domain in the caller's scope;
-  - as a conflict when the name already has a key, whether complete or not;
+  - as a conflict when the name already has a key, whether complete or not, and the request does
+    not ask to overwrite. A generation that asks to overwrite MUST remove the whole old key,
+    including the private key stored under the old selector, and store the new key as one change,
+    so that no message is sent unsigned in between;
   - with a validation error when the selector is empty, longer than 255 characters or contains
     anything but letters, digits, `-`, `_` and `.` (the rule of feature 002, FR-020);
   - with a validation error when the key size is not 1,024, 2,048, 3,072 or 4,096 bits.
@@ -553,8 +616,8 @@ filtered by target.
   selector and its private key where legacy stores DKIM keys, all together or not at all. Outgoing
   mail from the name MUST be signed with the key from the next message on, and forwarded mail for
   the name MUST be sealed with it (ARC), because the mail filter reads the same stored keys. The
-  response MUST be "created", MUST contain the entry and the DNS publication outcome (FR-030), and
-  MUST NOT contain the private key.
+  response MUST be "created" when the name had no key and "updated" when a key was overwritten, MUST
+  contain the entry and the DNS publication outcome (FR-030), and MUST NOT contain the private key.
 - **FR-016**: When domain creation (feature 002, FR-027) or alias domain creation (feature 004)
   generates a key, it MUST store it as in FR-015 and publish it as in FR-029. An existing key is
   kept, as those features specify.
@@ -601,7 +664,8 @@ filtered by target.
   or unused. The public key, the selector and the private key MUST be removed together. Signing and
   sealing with the key MUST stop from the next message. A name without a key MUST be answered "not
   found". A successful deletion MUST respond with no body. The DNS publication outcome MUST be
-  recorded in the audit record.
+  recorded in the audit record, and clients read it from the audit history of the name (FR-055).
+  The contract MUST say so.
 - **FR-025**: Deleting a key MUST NOT change the domain or alias domain. Its entry then shows
   "missing". The entry of an unused key disappears.
 
@@ -636,8 +700,11 @@ filtered by target.
   - when an overwrite changed the selector, remove the old selector's record and publish the new
     one.
 - **FR-030**: The publication MUST report one outcome: "published", "removed", "no record to
-  remove", "no DNS zone found", "failed" (with a reason) or "not configured". It MUST complete or
-  give up within 15 seconds. Its outcome MUST be recorded in the audit record and, except for
+  remove", "no DNS zone found", "failed" (with a reason) or "not configured". The reason of a
+  failure MUST be a stable code (for example ISPConfig unreachable, timed out, sign-in refused,
+  remote error, unexpected answer, old selector's record not removed) and
+  MAY carry technical detail, which MUST NOT contain secrets. It MUST complete or give up within 15
+  seconds. Its outcome MUST be recorded in the audit record and, except for
   deletions, which respond without a body, returned with the key change. A failed publication MUST
   NOT undo or fail the key change.
 - **FR-031**: Administrators MUST be able to ask for the record of a name that has a key to be
@@ -754,8 +821,12 @@ filtered by target.
     honouring address ranges, and stopping at the limit of 10 lookups. More than one SPF record, or
     more than 10 lookups, is a mismatch with that reason;
   - DMARC and TLS reporting: never a mismatch; the values found are reported as informational.
-- **FR-044**: Each check in the result MUST carry its record name, type, expected value or guidance,
-  every value found, the optional flag of FR-040, a reason where one applies, and one status:
+- **FR-044**: Each check in the result MUST carry a stable check identifier (for example `mx`,
+  `autodiscover`, `srv:imaps`, `spf`, `dmarc`, `dkim:<selector>`, `tlsa:25`), its record name, type,
+  expected value or guidance, every value found, the optional flag of FR-040, a reason and notes
+  where they apply, and one status. Every reason, note and guidance item MUST be a stable code with
+  its parameters, so that clients can translate it; English text MAY accompany it. The statuses
+  are:
   - **match**: a found value equals the expected value;
   - **mismatch**: records were found, but none equals the expected value;
   - **missing**: the name has no record of that type;
@@ -785,8 +856,11 @@ filtered by target.
   checks still open at that point MUST report "lookup failed" with a timeout reason. A run whose
   checks failed MUST still succeed as a request and return every result.
 - **FR-049**: Each caller (user or API key) MUST be able to start at most 10 runs per minute.
-  Further runs MUST be refused with the "too many requests" error of feature 001 and a retry hint.
-  The public addresses and the certificate digest MAY be reused for up to 10 minutes.
+  Further runs MUST be refused with the "too many requests" error of feature 001 and the retry time.
+  Every diagnostics result and every "too many requests" refusal MUST carry the rate-limit headers
+  `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (IETF HTTPAPI rate-limit headers
+  draft): the runs allowed per window, the runs left, and the seconds until the window resets. The
+  public addresses and the certificate digest MAY be reused for up to 10 minutes.
 - **FR-050**: A server setting MAY define a suggested SPF record. Its default MUST be empty, as
   upstream shows no suggestion; the FeldHost deployment sets `v=spf1 mx a ~all`. When it is set, the
   SPF check's guidance MUST include it. The guidance MUST always include the server's public
@@ -796,8 +870,8 @@ filtered by target.
 
 - **FR-051**: Every DKIM entry that has a key, and every MTA-STS policy, MUST carry a version tag.
   The tag MUST change whenever the stored key or policy changes, whether through this API, the
-  legacy UI or `/api/v1`. A client MAY send the version tag it read with an import or copy that
-  overwrites, a deletion, or a policy change; when the tag no longer matches, the request MUST be
+  legacy UI or `/api/v1`. A client MAY send the version tag it read with a generation, import or
+  copy that overwrites, a deletion, a request to publish again, or a policy change; when the tag no longer matches, the request MUST be
   refused as outdated and MUST change nothing (feature 002, FR-042).
 
 #### Reliability
@@ -823,7 +897,10 @@ filtered by target.
   - for policy changes: each changed attribute with its old and new value, and the old and new
     policy identifier.
 
-  It MUST NOT contain private key material or the ISPConfig password.
+  It MUST NOT contain private key material or the ISPConfig password. Refusals of authenticated
+  callers are recorded, including a read-only key on a state-changing operation and a restricted
+  session; requests without valid credentials and requests refused for a missing anti-forgery token
+  are not recorded (`docs/conventions.md`, refusal auditing).
 - **FR-055**: Administrators MUST be able to filter the audit log by these target types and by
   target name, as feature 002 adds (FR-058 there).
 
@@ -838,8 +915,10 @@ filtered by target.
   implemented, and its behaviour MUST match the contract.
 - **FR-058**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response
   of this API.
-- **FR-059**: This feature MUST NOT offer batch operations, as feature 002 (FR-062 there). Each key
-  is generated, imported, copied to one target or deleted with its own request.
+- **FR-059**: This feature MUST NOT offer batch operations. Each key is generated, imported, copied
+  to one target or deleted with its own request, and clients that act on several names send one
+  request per name. (Creating several objects in one request is excluded by `docs/conventions.md`;
+  a bulk deletion is not offered by this specification.)
 
 ### Legacy Coverage
 
@@ -916,7 +995,8 @@ certificate service are identical. The fork differs in four ways:
 | Private key in logs | `api_log` writes the whole import request, including the private key, to `API_LOG`; only fields matching "pass" are masked | Never logged or audited (FR-027). **Deviation** (security fix) |
 | Name normalisation for DKIM | `dkim('add')` and `dkim('import')` validate but store the name as typed, so an upper-case or Unicode name gets a key that Rspamd never uses | Normalised to lower-case ASCII; legacy leftovers listed as unused (FR-006). **Deviation** |
 | Several domains per generation, several copy targets | One request with a list | One name or target per request (FR-059). **Deviation** |
-| Existing key at generation | Refused with the generic "domain or selector invalid" message | Refused as a conflict (FR-014) |
+| Existing key at generation | Refused with the generic "domain or selector invalid" message | Refused as a conflict, unless an administrator asks to overwrite, which replaces the key atomically (FR-013, FR-014). **Deviation** (addition: rotation without an unsigned gap) |
+| Server values for the forms | Rendered into the pages: the selector pre-filled from the fork's hard-coded value, the key sizes 1024 to 4096; the host name never shown on the MTA-STS tab | Capabilities read with the host name, DKIM, MTA-STS and diagnostics limits (FR-012), an addition |
 | Selector rule | Letters, digits, `-`, `_`, `.`; empty refused | Same, at most 255 characters (FR-014) |
 | Key size | Any number the key generator accepts; the form offers 1024 to 4096 | 1024, 2048, 3072 or 4096, default 2048 (FR-013, FR-014). **Deviation** |
 | Key storage | `DKIM_PUB_KEYS[name]`, `DKIM_SELECTORS[name]`, `DKIM_PRIV_KEYS[selector.name]`, written one after another, so a failure can leave a partial key | Same keys, written together or not at all (FR-015, FR-052). **Deviation** for atomicity |
@@ -940,7 +1020,8 @@ certificate service are identical. The fork differs in four ways:
 | MTA-STS side effects | `mta-sts.php` serves active policies of the domain and its alias domains; the certificate service adds `mta-sts.` names of active policies at its next daily run | Same, from the same data (FR-037) |
 | MTA-STS read and list | Only on the Edit domain page; no `get/mta-sts` route | Read and list (FR-036, FR-038) |
 | Diagnostics access | Administrators and domain administrators; server-wide checks for administrators only | Same (FR-005, FR-039, FR-041) |
-| Diagnostics output | An HTML table with icons, rendered into a modal | Structured checks plus a zone file (FR-044, FR-047). **Deviation** |
+| Diagnostics output | An HTML table with icons, rendered into a modal | Structured checks with stable identifiers, coded reasons, notes and guidance, plus a zone file (FR-044, FR-047). **Deviation** |
+| Diagnostics rate limit | None | 10 runs per minute per caller, visible in rate-limit headers on every response (FR-049). **Deviation** |
 | Diagnostics statuses | A missing record, and a DKIM or TLS-reporting record that does not match, show the "optional" footnote; mismatches show "?" | Real statuses with an optional flag (FR-044). **Deviation** |
 | Diagnostics record set | The records of FR-040 and FR-041; the check meant to skip client-configuration records for alias domains never takes effect, so alias domains get them too | Same records, alias domains included (FR-040) |
 | Public addresses | Fetched from `ip4.mailcow.email` and `ip6.mailcow.email` on every run, 3-second connect timeout | Same service, or operator-configured addresses, reused up to 10 minutes (FR-042, FR-049) |
@@ -959,17 +1040,20 @@ certificate service are identical. The fork differs in four ways:
 - **DKIM entry** (computed): one name (a domain, an alias domain, or the name of a key without a
   domain) with its state (valid, missing, unused), its key details when a key exists, and whether
   the key is complete.
-- **DKIM configuration** (operator settings, read-only here): default selector, default and allowed
-  key sizes, whether private key export is enabled, whether the DKIM DNS publication is enabled.
+- **Capabilities** (operator settings and fixed limits, read-only here): the server host name; the
+  DKIM default selector, default and allowed key sizes and import limits, whether private key export
+  is enabled, whether the DKIM DNS publication is enabled; the MTA-STS defaults and limits; the DNS
+  diagnostics limits.
 - **DKIM DNS publication settings** (operator settings, FeldHost): enabled flag, ISPConfig remote
   interface address, remote user, password (secret) and DNS server identifier.
-- **Publication outcome**: the result of one attempt to update the ISPConfig zone of a name.
+- **Publication outcome**: the result of one attempt to update the ISPConfig zone of a name, with a
+  reason code and optional technical detail when it failed.
 - **MTA-STS policy** (existing mailcow data): for one domain, the version, mode, MX hosts, maximum
   age, active state and policy identifier. Published for the domain and its alias domains.
 - **DNS diagnostics result** (computed, never stored): the checks of one run, the server facts used
   and a zone-file rendering.
-- **Record check**: one expected DNS record with its expected value or guidance, the values found, a
-  status, an optional flag and a reason.
+- **Record check**: one expected DNS record with its stable identifier, its expected value or coded
+  guidance, the values found, a status, an optional flag, and a coded reason and notes.
 - **Audit record** (owned by this API, defined in feature 001): extended with the DKIM key and
   MTA-STS policy target types, the key and policy changes and the publication outcomes.
 
@@ -1013,8 +1097,9 @@ certificate service are identical. The fork differs in four ways:
 - Domains and alias domains are managed in features 002 and 004. This feature reads them and defines
   the DKIM generation they trigger.
 - The operator settings of this feature come from the operator's existing configuration where legacy
-  has one (`SHOW_DKIM_PRIV_KEYS`, the ISPConfig configuration file, the service ports, the host
-  name) and are otherwise new settings with the stated defaults: default DKIM selector `dkim`
+  has one (`SHOW_DKIM_PRIV_KEYS`, the service ports, the host name; the ISPConfig connection values,
+  which the operator copies from the fork's configuration file into server settings) and are
+  otherwise new settings with the stated defaults: default DKIM selector `dkim`
   (feature 002), private key export off, DKIM DNS publication off, suggested SPF record empty,
   public addresses detected through the echo service. The plan decides how the API reads them.
 - The FeldHost deployment enables the DKIM DNS publication with its ISPConfig server, sets the
@@ -1028,9 +1113,10 @@ certificate service are identical. The fork differs in four ways:
 - These limits are defaults the operator can change: the 5-second lookup and 30-second run limits,
   the 10 runs per minute, the 10-minute reuse of server facts, the 15-second publication limit, and
   the list page size (25, maximum 1,000).
-- Key rotation is done as legacy does it: delete the key and generate a new one, or import a new key
-  with overwrite. Publishing two selectors side by side is not supported, because mailcow stores one
-  key per name.
+- Key rotation replaces the key of a name in one step: an administrator generates or imports a new
+  key with overwrite (FR-013, FR-020). Deleting the key and generating a new one, as in legacy,
+  still works but leaves a gap in which mail is unsigned. Publishing two selectors side by side is
+  not supported, because mailcow stores one key per name.
 - **Out of scope**:
   - creating, changing and deleting domains and alias domains;
   - ARC settings, which have no UI in legacy;

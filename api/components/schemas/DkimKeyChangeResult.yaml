@@ -1,0 +1,10 @@
+description: |
+  The DKIM entry after a key change (generation, import, copy or publishing again), together with
+  the outcome of the DKIM DNS publication of that change. Never contains the private key.
+allOf:
+  - $ref: './DkimKey.yaml'
+  - type: object
+    required: [dnsPublication]
+    properties:
+      dnsPublication:
+        $ref: './DkimDnsPublicationOutcome.yaml'

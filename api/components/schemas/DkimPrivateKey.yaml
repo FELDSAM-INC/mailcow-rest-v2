@@ -1,0 +1,17 @@
+type: object
+description: |
+  The private key of one name, exactly as stored. Returned only by `exportDkimPrivateKey`, only to
+  administrators, and only while the operator setting `SHOW_DKIM_PRIV_KEYS` is enabled. Every export
+  is audited, without the key.
+required: [name, selector, privateKey]
+properties:
+  name:
+    type: string
+    examples: [example.org]
+  selector:
+    type: string
+    examples: [dkim]
+  privateKey:
+    type: string
+    description: PEM text, unchanged from storage (legacy stores PKCS #8 for generated keys).
+    examples: ["-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC...\n-----END PRIVATE KEY-----"]

@@ -1,0 +1,15 @@
+type: string
+description: |
+  Status of one DNS record check.
+  - `match`: a found value equals the expected value.
+  - `mismatch`: records were found, but none equals the expected value.
+  - `missing`: the name has no record of that type.
+  - `lookupFailed`: the lookup failed, was refused, failed validation or timed out.
+  - `informational`: records were found for a check that has no exact expected value (DMARC, TLS
+    reporting).
+  - `expectedUnknown`: the expected value could not be determined, for example because the
+    server's public address or its certificate could not be read.
+
+  Optional checks report their real status; their `optional` flag tells clients not to treat a
+  missing record as an error.
+enum: [match, mismatch, missing, lookupFailed, informational, expectedUnknown]

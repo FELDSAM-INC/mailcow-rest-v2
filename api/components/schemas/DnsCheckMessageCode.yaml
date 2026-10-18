@@ -1,0 +1,76 @@
+type: string
+description: |
+  Stable code of a reason, note or guidance item of DNS diagnostics. Clients translate from the
+  code and its `params`, and must treat unknown codes as untranslatable (showing `message`), because
+  later releases may add codes.
+
+  Reasons for `lookupFailed`:
+  - `lookupTimeout`: the lookup took longer than allowed. Params: `timeoutSeconds`.
+  - `runTimeout`: the run's time limit was reached before this check completed. Params:
+    `timeoutSeconds`.
+  - `lookupError`: the resolver answered with an error or failed validation. Params: `rcode`
+    (`SERVFAIL`, `REFUSED`, `FORMERR`, `NOTIMP`, `YXDOMAIN` or `network`).
+
+  Reasons for `expectedUnknown`:
+  - `publicAddressUnknown`: the server's public address could not be determined. Params: `family`
+    (`ipv4`).
+  - `certificateUnavailable`: the certificate presented on SMTP port 25 could not be read. Params:
+    `host`, `port`, `cause` (`connectionFailed`, `timeout`, `starttlsRefused`,
+    `tlsHandshakeFailed`, `noCertificate`).
+  - `dkimKeyUnavailable`: the stored DKIM key could not be read from mailcow's shared store.
+
+  Reasons for `mismatch`:
+  - `hostIsAlias`: the server host name is published as an alias (CNAME), which mail exchangers
+    must not be. Params: `target`.
+  - `dkimPublicKeyDiffers`: the DKIM records found carry another public key than the stored one.
+  - `spfMultipleRecords`: the name publishes more than one SPF record. Params: `count`.
+  - `spfTooManyLookups`: evaluating the SPF policy needs more than 10 DNS lookups. Params: `limit`.
+  - `spfTooManyVoidLookups`: evaluating the SPF policy hits more than 2 lookups without an answer.
+    Params: `limit`.
+  - `spfNotPass`: the SPF policy does not authorise a public address of the server. Params:
+    `address`, `result` (`fail`, `softfail`, `neutral`, `none`).
+  - `spfError`: the SPF policy could not be evaluated. Params: `result` (`permerror`,
+    `temperror`).
+
+  Notes:
+  - `matchedByAddressRecords`: an alias was expected, and the name instead publishes address records
+    equal to the server host name's. Params: `ipv4` (list), `ipv6` (list).
+  - `nullServiceRecord`: the name publishes a null service record (target `.`), which marks the
+    service as not offered; it is accepted as the expected value.
+  - `noPublicIpv6`: the server has no public IPv6 address, so the IPv6 address and reverse name
+    checks are left out and SPF needs to authorise only the IPv4 address (result level).
+  - `serverChecksOmitted`: the server-wide checks are only run for administrators (result level).
+  - `propagationDelay`: DNS changes can take up to 24 hours to show, because resolvers cache records
+    (result level). Params: `hours`.
+
+  Guidance (checks without an exact expected value):
+  - `spfAuthorizeAddresses`: the SPF policy must authorise these addresses. Params: `ipv4`, `ipv6`
+    (either may be `null`).
+  - `spfSuggestedRecord`: the operator's suggested SPF record. Params: `record`.
+  - `spfSyntaxReference`: where the SPF syntax is explained. Params: `url`.
+  - `dmarcPublishPolicy`: publish a DMARC policy. Params: `url`.
+  - `tlsReportingPublishRecord`: publish a TLS reporting record. Params: `url`.
+enum:
+  - lookupTimeout
+  - runTimeout
+  - lookupError
+  - publicAddressUnknown
+  - certificateUnavailable
+  - dkimKeyUnavailable
+  - hostIsAlias
+  - dkimPublicKeyDiffers
+  - spfMultipleRecords
+  - spfTooManyLookups
+  - spfTooManyVoidLookups
+  - spfNotPass
+  - spfError
+  - matchedByAddressRecords
+  - nullServiceRecord
+  - noPublicIpv6
+  - serverChecksOmitted
+  - propagationDelay
+  - spfAuthorizeAddresses
+  - spfSuggestedRecord
+  - spfSyntaxReference
+  - dmarcPublishPolicy
+  - tlsReportingPublishRecord

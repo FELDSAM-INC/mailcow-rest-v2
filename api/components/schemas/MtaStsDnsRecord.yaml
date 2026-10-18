@@ -1,0 +1,14 @@
+type: object
+description: A DNS record that an MTA-STS policy needs.
+required: [name, type, value]
+properties:
+  name:
+    type: string
+    description: Fully qualified record name, without a trailing dot.
+    examples: [_mta-sts.example.org]
+  type:
+    type: string
+    enum: [TXT, CNAME]
+  value:
+    type: string
+    examples: ['v=STSv1;id=20261018123000;']

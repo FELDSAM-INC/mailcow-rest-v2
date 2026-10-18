@@ -1,0 +1,6 @@
+type: string
+description: |
+  MTA-STS policy mode (RFC 8461): `enforce` (sending servers must not deliver without a valid TLS
+  connection to a listed MX host), `testing` (they deliver anyway and report), `none` (the policy is
+  withdrawn).
+enum: [enforce, testing, none]

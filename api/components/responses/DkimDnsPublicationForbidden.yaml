@@ -1,0 +1,14 @@
+description: |
+  Publishing the record again is not allowed. Possible types:
+  - `/api/v2/problems/dkim-dns-publication-disabled`: the DKIM DNS publication is disabled on this
+    server (the default). The refused attempt is audited.
+  - `/api/v2/problems/forbidden`: the caller is not an administrator.
+  - `/api/v2/problems/csrf-token-mismatch`, `/api/v2/problems/insufficient-key-scope`,
+    `/api/v2/problems/pending-action-required`, `/api/v2/problems/api-key-source-not-allowed`: as for
+    every state-changing operation.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'

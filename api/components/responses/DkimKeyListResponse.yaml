@@ -1,0 +1,13 @@
+description: DKIM entries matching the filters. Never contains private keys.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/DkimKey.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

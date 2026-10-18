@@ -1,0 +1,34 @@
+type: object
+description: |
+  Outcome of the DKIM DNS publication that accompanied a key change. A failed publication never
+  undoes or fails the key change; an administrator can publish the record again with
+  `publishDkimDnsRecord`.
+required: [status, recordName, reason]
+properties:
+  status:
+    $ref: './DkimDnsPublicationStatus.yaml'
+  recordName:
+    description: |
+      Record name relative to the zone (`<selector>._domainkey`) that was published or removed;
+      `null` for `notConfigured`.
+    oneOf:
+      - type: string
+      - type: 'null'
+    examples: [dkim._domainkey]
+  reason:
+    description: Present for `failed`, otherwise `null`.
+    oneOf:
+      - type: object
+        required: [code, detail]
+        properties:
+          code:
+            $ref: './DkimDnsPublicationReasonCode.yaml'
+          detail:
+            description: |
+              Technical detail for operators, in English, at most 500 characters (for example the
+              ISPConfig fault message). Never contains the remote password or key material.
+            oneOf:
+              - type: string
+                maxLength: 500
+              - type: 'null'
+      - type: 'null'

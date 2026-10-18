@@ -1,0 +1,22 @@
+get:
+  operationId: getDnsCapabilities
+  tags: [DKIM, MTA-STS, DNS diagnostics]
+  summary: Get the DKIM, MTA-STS and DNS diagnostics capabilities
+  description: |
+    Returns the server values and limits that clients need before they submit: the server host name
+    (to pre-fill MTA-STS MX hosts), the DKIM defaults and limits, the MTA-STS defaults and limits,
+    and the DNS diagnostics limits. Administrators and domain administrators; read-only keys may use
+    it. `dkim.privateKeyExportEnabled` is `null` for domain administrators. Contains no secret and
+    no connection detail.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/DnsCapabilitiesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -1,0 +1,18 @@
+type: string
+description: |
+  Stable reason of a failed DKIM DNS publication. Clients must treat unknown codes as a generic
+  failure, because later releases may add codes.
+  - `unreachable`: the ISPConfig remote API could not be reached (connection or TLS failure).
+  - `timeout`: the publication did not complete within 15 seconds.
+  - `authenticationFailed`: ISPConfig refused the remote user's sign-in.
+  - `remoteFault`: ISPConfig answered a call with an error.
+  - `invalidResponse`: ISPConfig answered with something that is not a valid remote API answer.
+  - `staleRecordRemovalFailed`: the new record was published, but the old selector's record could not
+    be removed.
+enum:
+  - unreachable
+  - timeout
+  - authenticationFailed
+  - remoteFault
+  - invalidResponse
+  - staleRecordRemovalFailed

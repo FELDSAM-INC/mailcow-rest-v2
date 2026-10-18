@@ -1,0 +1,65 @@
+parameters:
+  - $ref: '../../components/parameters/MtaStsPolicyDomain.yaml'
+get:
+  operationId: getMtaStsPolicy
+  tags: [MTA-STS]
+  summary: Get an MTA-STS policy
+  description: |
+    Returns the policy of a domain in the caller's scope with its identifier, the address at which it
+    is published, the policy text that is served while it is active, and the DNS records it needs.
+    A domain without a policy, a domain outside the caller's scope and an alias domain's name answer
+    `404`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MtaStsPolicyResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateMtaStsPolicy
+  tags: [MTA-STS]
+  summary: Change an MTA-STS policy
+  description: |
+    Changes the members sent; the others keep their values. A change of the version, the mode, the
+    MX hosts (including their order) or the maximum age assigns a new policy identifier, always
+    different from the previous one, so that senders fetch the new policy; a change of only the
+    active state, or a patch that changes nothing, keeps it. A domain without a policy answers
+    `404`. Audited with each changed member and the old and new identifier; a patch that changes
+    nothing is not audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/MtaStsPolicyPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MtaStsPolicyResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

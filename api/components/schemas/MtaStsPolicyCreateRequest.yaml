@@ -1,0 +1,45 @@
+type: object
+description: |
+  A new MTA-STS policy for a domain. Rules, each refused with its rule code in a `422` problem:
+  - `version`: `STSv1` in any letter case (`notInList`). Omit for `STSv1`.
+  - `mode`: `enforce`, `testing` or `none` in any letter case (`required`, `notInList`).
+  - `maxAge`: whole seconds from 1 to 31,557,600 (`required`, `outOfRange`, `min: 1`,
+    `max: 31557600`).
+  - `mxHosts`: at least one entry (`required`). Each entry is trimmed, lower-cased and converted to
+    ASCII (UTS #46), may start with `*.`, and must then be a valid domain name
+    (`invalidFormat`, `format: mxHost`, on `mxHosts.<index>`). Duplicates are stored once, keeping
+    the first occurrence and the order. Joined by commas they must not exceed 255 characters
+    (`tooLong`, `max: 255`, on `mxHosts`).
+required: [domain, mode, maxAge, mxHosts]
+properties:
+  domain:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: |
+      A domain in the caller's scope, in ASCII or Unicode form. Any other name, including an alias
+      domain's, answers `404`.
+    examples: [example.org]
+  version:
+    type: string
+    maxLength: 16
+    examples: [STSv1]
+  mode:
+    type: string
+    maxLength: 16
+    examples: [enforce]
+  maxAge:
+    type: integer
+    examples: [86400]
+  mxHosts:
+    type: array
+    maxItems: 128
+    items:
+      type: string
+      maxLength: 255
+    examples:
+      - [mail.example.org]
+  active:
+    type: boolean
+    default: false
+    description: Omit to create an inactive policy, as legacy does.

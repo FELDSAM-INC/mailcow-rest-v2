@@ -1,0 +1,9 @@
+description: The capabilities of the DKIM, MTA-STS and DNS diagnostics operations.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/DnsCapabilities.yaml'

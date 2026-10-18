@@ -1,0 +1,38 @@
+type: object
+description: |
+  Generates a new RSA key pair for one domain or alias domain. Rules, each refused with its rule
+  code in a `422` problem:
+  - `selector`: letters, digits, `-`, `_` and `.` only (`invalidFormat`, `format: dkimSelector`),
+    1 to 255 characters (`required`, `tooLong`).
+  - `keySize`: 1024, 2048, 3072 or 4096 (`notInList`).
+required: [name]
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: |
+      A domain or an alias domain in the caller's scope, in ASCII or Unicode form and in any letter
+      case. Any other name answers `404`.
+    examples: [example.org]
+  selector:
+    type: string
+    minLength: 1
+    maxLength: 255
+    pattern: '^[A-Za-z0-9._-]+$'
+    description: Omit to use the server's default selector (see `getDnsCapabilities`).
+    examples: [dkim]
+  keySize:
+    type: integer
+    enum: [1024, 2048, 3072, 4096]
+    default: 2048
+    description: Key length in bits.
+  overwrite:
+    type: boolean
+    default: false
+    description: |
+      Replace an existing key of the name. Administrators only: a domain administrator who sends
+      `true` gets `403 forbidden`. The whole old key, including the private key stored under the
+      old selector, is replaced by the new key in one atomic step, so no message is sent unsigned.
+      Without it, a name that already has a key answers `409` with type
+      `/api/v2/problems/dkim-key-exists`.

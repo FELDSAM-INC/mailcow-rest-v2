@@ -1,0 +1,10 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. Default `name` with `order=asc`. Ties are broken by `name`. Entries without a key sort
+  after the others for `selector` and `keyLength` in ascending order.
+schema:
+  type: string
+  enum: [name, state, selector, keyLength]
+  default: name

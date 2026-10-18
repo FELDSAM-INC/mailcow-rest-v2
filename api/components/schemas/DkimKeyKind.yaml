@@ -1,0 +1,3 @@
+type: string
+description: What the name of a DKIM entry is.
+enum: [domain, aliasDomain, none]

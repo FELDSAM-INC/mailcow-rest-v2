@@ -1,0 +1,21 @@
+type: object
+description: |
+  Copies the selector, public key and private key of the name in the path (the source) to one
+  target. Rules, each refused with its rule code in a `422` problem:
+  - `target` must be an existing domain or alias domain (`notFound`);
+  - `target` must differ from the source (`sameAsSource`).
+required: [target]
+properties:
+  target:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: Target domain or alias domain, in ASCII or Unicode form and in any letter case.
+    examples: [example.net]
+  overwrite:
+    type: boolean
+    default: false
+    description: |
+      Replace an existing key of the target, including the private key stored under its old
+      selector, in one atomic step. Without it, a target that already has a key answers `409` with
+      type `/api/v2/problems/dkim-key-exists`. `If-Match` applies to the target's key.

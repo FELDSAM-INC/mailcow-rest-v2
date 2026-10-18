@@ -1,0 +1,16 @@
+# Paths of the dkim module (feature 010): DKIM signing keys, their DNS records, the FeldHost
+# ISPConfig DNS publication, and the capabilities read of feature 010.
+/dkim-keys:
+  $ref: './dkim-keys.yaml'
+/dkim-keys/{dkimName}:
+  $ref: './dkim-key.yaml'
+/dkim-keys/{dkimName}/import:
+  $ref: './dkim-key-import.yaml'
+/dkim-keys/{dkimName}/copy:
+  $ref: './dkim-key-copy.yaml'
+/dkim-keys/{dkimName}/private-key:
+  $ref: './dkim-key-private-key.yaml'
+/dkim-keys/{dkimName}/dns-publication:
+  $ref: './dkim-key-dns-publication.yaml'
+/capabilities/dns:
+  $ref: './dns-capabilities.yaml'

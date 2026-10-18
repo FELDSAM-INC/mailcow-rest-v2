@@ -1,0 +1,41 @@
+type: object
+description: |
+  The DKIM entry of one name: a domain, an alias domain, or the name of a key left without a domain.
+  Rspamd signs outgoing mail (DKIM, by envelope sender domain) and seals forwarded mail (ARC, by
+  recipient domain) with the stored key. Never contains the private key.
+required: [name, displayName, kind, targetDomain, state, key, etag]
+properties:
+  name:
+    type: string
+    maxLength: 255
+    description: |
+      ASCII (punycode) name. For an unused key that legacy stored under a name that is not
+      lower-case ASCII, the exact stored spelling, which also addresses the entry.
+    examples: [example.org]
+  displayName:
+    type: string
+    description: Readable (Unicode) form of the name.
+    examples: [example.org]
+  kind:
+    $ref: './DkimKeyKind.yaml'
+  targetDomain:
+    description: For an alias domain, the domain it points to; otherwise `null`.
+    oneOf:
+      - type: string
+      - type: 'null'
+  state:
+    $ref: './DkimKeyState.yaml'
+  key:
+    description: The stored key, or `null` when the state is `missing`.
+    oneOf:
+      - $ref: './DkimKeyDetails.yaml'
+      - type: 'null'
+  etag:
+    description: |
+      Version tag of the stored key (selector, public key and private key), equal to the `ETag`
+      header of a single read. It changes whenever the key changes, whichever UI or API changed it.
+      `null` when the name has no key. Send it in `If-Match` when overwriting, publishing again or
+      deleting the key.
+    oneOf:
+      - type: string
+      - type: 'null'

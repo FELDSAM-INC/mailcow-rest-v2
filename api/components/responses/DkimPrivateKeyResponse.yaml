@@ -1,0 +1,16 @@
+description: The private key, exactly as stored. The export is audited without the key.
+headers:
+  Cache-Control:
+    description: Always `no-store`, so that no cache keeps the key.
+    required: true
+    schema:
+      type: string
+      const: no-store
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/DkimPrivateKey.yaml'

@@ -1,0 +1,125 @@
+get:
+  operationId: listDkimKeys
+  tags: [DKIM]
+  summary: List DKIM entries
+  description: |
+    Lists one entry per domain, per alias domain and, for administrators, per unused key (a key whose
+    name is neither a domain nor an alias domain), with its key state. Domain administrators see the
+    domains assigned to them and the alias domains that point to those domains, never unused keys.
+    No permission flag is needed. Entries never contain private keys.
+
+    `q` searches the ASCII and the readable name, case-insensitively and as a substring.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/DkimKeySort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: state
+      in: query
+      required: false
+      description: Only entries in one of these states. Repeat the parameter for several.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 3
+        items:
+          $ref: '../../components/schemas/DkimKeyState.yaml'
+    - name: kind
+      in: query
+      required: false
+      schema:
+        $ref: '../../components/schemas/DkimKeyKind.yaml'
+    - name: selector
+      in: query
+      required: false
+      description: Only entries whose key has exactly this selector.
+      schema:
+        type: string
+        maxLength: 255
+    - name: complete
+      in: query
+      required: false
+      description: |
+        `true`: only entries with a complete key. `false`: only entries with an incomplete key.
+        Entries without a key never match.
+      schema:
+        type: boolean
+    - name: domain
+      in: query
+      required: false
+      description: Only this domain and the alias domains that point to it (ASCII or Unicode form).
+      schema:
+        type: string
+        maxLength: 255
+  responses:
+    '200':
+      $ref: '../../components/responses/DkimKeyListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/DkimTemporaryFailure.yaml'
+post:
+  operationId: generateDkimKey
+  tags: [DKIM]
+  summary: Generate a DKIM key
+  description: |
+    Creates a new RSA key pair for one domain or alias domain and stores its public key, selector and
+    private key where mailcow keeps DKIM keys (Redis `DKIM_PUB_KEYS`, `DKIM_SELECTORS` and
+    `DKIM_PRIV_KEYS`), all together or not at all. Rspamd signs the name's outgoing mail and seals
+    its forwarded mail (ARC) with it from the next message on. Domain and alias domain creation use
+    the same generation.
+
+    Administrators may generate for any domain or alias domain, domain administrators for those in
+    their scope; any other name answers `404`. A name that already has a key answers `409`
+    (`dkim-key-exists`) unless an administrator sends `overwrite: true`, which replaces the whole old
+    key atomically and answers `200`; `If-Match` then applies to the old key.
+
+    When the FeldHost DKIM DNS publication is enabled, the record is published to the name's
+    ISPConfig zone within 15 seconds, and `data.dnsPublication` reports the outcome; a failure never
+    undoes the key. Audited, without the private key.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/DkimKeyGenerateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/DkimKeyCreatedResponse.yaml'
+    '200':
+      $ref: '../../components/responses/DkimKeyChangedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/DkimKeyConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/DkimTemporaryFailure.yaml'

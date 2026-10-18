@@ -1,0 +1,90 @@
+type: object
+description: |
+  Result of one DNS diagnostics run for a domain or an alias domain. Nothing is stored and nothing is
+  audited. Lookups use the same recursive resolver as mailcow's mail services, so the result shows
+  what they see; DNS changes can take up to 24 hours to show.
+required:
+  - name
+  - displayName
+  - aliasDomain
+  - targetDomain
+  - serverHostname
+  - publicIpv4
+  - publicIpv6
+  - suggestedSpfRecord
+  - checkedAt
+  - serverChecksIncluded
+  - summary
+  - checks
+  - notes
+  - zoneFile
+properties:
+  name:
+    type: string
+    description: ASCII (punycode) name that was checked.
+    examples: [example.org]
+  displayName:
+    type: string
+    description: Readable (Unicode) form of the name.
+  aliasDomain:
+    type: boolean
+  targetDomain:
+    description: For an alias domain, its target domain, whose MTA-STS policy applies; otherwise `null`.
+    oneOf:
+      - type: string
+      - type: 'null'
+  serverHostname:
+    type: string
+    examples: [mail.example.org]
+  publicIpv4:
+    description: The server's public IPv4 address used for the checks, or `null` when it could not be determined.
+    oneOf:
+      - type: string
+      - type: 'null'
+    examples: [192.0.2.10]
+  publicIpv6:
+    description: The server's public IPv6 address used for the checks, or `null` when the server has none.
+    oneOf:
+      - type: string
+      - type: 'null'
+  suggestedSpfRecord:
+    description: The operator's suggested SPF record (server setting, empty by default), or `null`.
+    oneOf:
+      - type: string
+      - type: 'null'
+    examples: ['v=spf1 mx a ~all']
+  checkedAt:
+    type: string
+    format: date-time
+  serverChecksIncluded:
+    type: boolean
+    description: '`true` when the server-wide checks were run (administrators only).'
+  summary:
+    type: object
+    description: Number of checks per status.
+    required: [match, mismatch, missing, lookupFailed, informational, expectedUnknown]
+    properties:
+      match: {type: integer, minimum: 0}
+      mismatch: {type: integer, minimum: 0}
+      missing: {type: integer, minimum: 0}
+      lookupFailed: {type: integer, minimum: 0}
+      informational: {type: integer, minimum: 0}
+      expectedUnknown: {type: integer, minimum: 0}
+  checks:
+    type: array
+    description: The checks in legacy's order, server-wide checks first.
+    items:
+      $ref: './DnsCheck.yaml'
+  notes:
+    type: array
+    description: Notes about the run as a whole (`noPublicIpv6`, `serverChecksOmitted`, `propagationDelay`).
+    items:
+      $ref: './DnsCheckMessage.yaml'
+  zoneFile:
+    type: string
+    description: |
+      A zone-file rendering for the name, for import at a DNS provider: an `$ORIGIN` line and one
+      line per checked record inside the name, with absolute names, MX preference 10, SRV priority 0
+      and weight 1, and TXT values quoted and split into strings of at most 255 characters. Checks
+      with an exact expected value contribute that value; SPF, DMARC and TLS reporting contribute
+      the values found, or a commented placeholder when none was found.

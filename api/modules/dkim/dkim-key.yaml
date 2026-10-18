@@ -1,0 +1,64 @@
+parameters:
+  - $ref: '../../components/parameters/DkimName.yaml'
+get:
+  operationId: getDkimKey
+  tags: [DKIM]
+  summary: Get a DKIM entry
+  description: |
+    Returns the entry of one name with its key state and, when it has a key, its selector, its exact
+    key length, its public key and the DNS TXT record to publish, as one text and split into pieces
+    of at most 255 characters. Administrators reach every domain, alias domain and unused key;
+    domain administrators reach the domains assigned to them and their alias domains. Any other name
+    answers `404`. Never contains the private key.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/DkimKeyResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/DkimTemporaryFailure.yaml'
+delete:
+  operationId: deleteDkimKey
+  tags: [DKIM]
+  summary: Delete a DKIM key
+  description: |
+    Removes the public key, the selector and the private key of the name together. Signing and
+    sealing with the key stop from the next message. The domain or alias domain itself is unchanged:
+    its entry then shows `missing`; the entry of an unused key disappears. A name without a key
+    answers `404`. Administrators only.
+
+    Unless the FeldHost DKIM DNS publication is enabled, the published DNS record stays until the
+    operator removes it. When the publication is enabled, the record is removed from the name's
+    ISPConfig zone within 15 seconds. The response has no body: the publication outcome is recorded
+    in the audit record of the deletion, which clients read from the audit history of the name
+    (`listAuditEvents` filtered by target).
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/DkimTemporaryFailure.yaml'

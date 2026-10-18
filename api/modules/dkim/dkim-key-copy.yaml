@@ -1,0 +1,51 @@
+parameters:
+  - $ref: '../../components/parameters/DkimName.yaml'
+post:
+  operationId: copyDkimKey
+  tags: [DKIM]
+  summary: Copy a DKIM key to another name
+  description: |
+    Copies the selector, public key and private key of the name in the path (the source, which must
+    have a key, valid or unused) to one target, which must be an existing domain or alias domain.
+    The source stays unchanged. A source without a key answers `404`. Administrators only.
+
+    A target that already has a key answers `409` (`dkim-key-exists`) unless `overwrite: true` is
+    sent, which replaces the target's whole old key, including the private key stored under its old
+    selector, atomically and answers `200`; `If-Match` then applies to the target's old key. The
+    response contains the target's entry and the DKIM DNS publication outcome for the target.
+    Audited on the target, with the source name.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/DkimKeyCopyRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/DkimKeyCreatedResponse.yaml'
+    '200':
+      $ref: '../../components/responses/DkimKeyChangedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/DkimKeyConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/DkimTemporaryFailure.yaml'

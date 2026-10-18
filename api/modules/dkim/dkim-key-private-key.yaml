@@ -1,0 +1,29 @@
+parameters:
+  - $ref: '../../components/parameters/DkimName.yaml'
+get:
+  operationId: exportDkimPrivateKey
+  tags: [DKIM]
+  summary: Export a DKIM private key
+  description: |
+    Returns the private key of the name exactly as stored. Administrators only, and only while the
+    operator setting mirroring legacy's `SHOW_DKIM_PRIV_KEYS` is enabled (off by default); otherwise
+    `403` with type `/api/v2/problems/dkim-private-key-export-disabled`. An export is a read, so an
+    administrator's API key may export with either access level. A name without a key answers
+    `404`. Every export and every refused attempt is audited, without the key. No other operation
+    ever returns a private key.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/DkimPrivateKeyResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/DkimPrivateKeyExportForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/DkimTemporaryFailure.yaml'

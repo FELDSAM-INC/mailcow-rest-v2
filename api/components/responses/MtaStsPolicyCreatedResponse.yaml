@@ -1,0 +1,21 @@
+description: The policy was created.
+headers:
+  Location:
+    description: Absolute path of the policy (`/api/v2/mta-sts-policies/{domain}`).
+    required: true
+    schema:
+      type: string
+      format: uri-reference
+  ETag:
+    description: Version tag (strong ETag) of the stored policy, equal to `data.etag`.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/MtaStsPolicy.yaml'

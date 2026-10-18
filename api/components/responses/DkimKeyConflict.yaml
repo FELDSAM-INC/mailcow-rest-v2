@@ -1,0 +1,18 @@
+description: |
+  The key cannot be changed in its current state. Possible types:
+  - `/api/v2/problems/dkim-key-exists`: the name (for a copy, the target) already has a key, complete
+    or not, and the request does not ask to overwrite. Concurrent requests for a name without a key
+    are serialised: exactly one succeeds and the others get this problem.
+  - `about:blank`: the source of a copy has an incomplete key (see `detail`).
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'
+    examples:
+      exists:
+        value:
+          type: /api/v2/problems/dkim-key-exists
+          title: DKIM key already exists
+          status: 409
+          detail: example.org already has a DKIM key. Send "overwrite" to replace it.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736

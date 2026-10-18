@@ -1,0 +1,50 @@
+parameters:
+  - $ref: '../../components/parameters/DkimName.yaml'
+post:
+  operationId: importDkimKey
+  tags: [DKIM]
+  summary: Import a DKIM private key
+  description: |
+    Stores an existing unencrypted RSA private key (PEM, PKCS #1 or PKCS #8, 1,024 to 8,192 bits) for
+    the name in the path, with the public key derived from it, all together or not at all. The name
+    must be a valid domain name but need not be a domain or alias domain, as in legacy: a key
+    imported for another name is listed as unused until that domain or alias domain is created,
+    which then reuses it. Administrators only.
+
+    A name that already has a key answers `409` (`dkim-key-exists`) unless `overwrite: true` is sent,
+    which replaces the whole old key, including the private key stored under the old selector,
+    atomically and answers `200`; `If-Match` then applies to the old key. The key text never appears
+    in any response, error, log or audit record. Publication and audit as for `generateDkimKey`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/DkimKeyImportRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/DkimKeyCreatedResponse.yaml'
+    '200':
+      $ref: '../../components/responses/DkimKeyChangedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/DkimKeyConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/DkimTemporaryFailure.yaml'

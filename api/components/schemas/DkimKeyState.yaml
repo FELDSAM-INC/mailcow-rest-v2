@@ -1,0 +1,11 @@
+type: string
+description: |
+  Key state of a DKIM entry.
+  - `valid`: a key exists for a domain or an alias domain.
+  - `missing`: the domain or alias domain has no key, so its outgoing mail is not signed.
+  - `unused`: a key exists for a name that is neither a domain nor an alias domain, for example after
+    a domain was deleted, or because legacy stored it under an upper-case or Unicode name. It is
+    never used for signing. Only administrators see unused keys.
+
+  A name has a key when a public key or a selector is stored for it.
+enum: [valid, missing, unused]

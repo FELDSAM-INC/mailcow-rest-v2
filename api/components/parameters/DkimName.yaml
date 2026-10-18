@@ -1,0 +1,18 @@
+name: dkimName
+in: path
+required: true
+description: |
+  Name of a domain, an alias domain or an unused key, percent-encoded. It is accepted in ASCII
+  (punycode) or Unicode form and in any letter case, and it is trimmed, lower-cased and converted to
+  ASCII with the UTS #46 rules before the lookup. For administrators, an unused key that legacy stored
+  under a name that is not in this form is also found by its exact stored name, which is compared
+  first. A name outside the caller's scope answers `404`, exactly like a name that does not exist.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 255
+examples:
+  domain:
+    value: example.org
+  unicode:
+    value: bücher.example

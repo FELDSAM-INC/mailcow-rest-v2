@@ -1,0 +1,17 @@
+description: |
+  The existing key was replaced (overwrite), or its record was published again. The response contains
+  the entry and the DKIM DNS publication outcome, never the private key.
+headers:
+  ETag:
+    description: Version tag (strong ETag) of the stored key, equal to `data.etag`.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/DkimKeyChangeResult.yaml'

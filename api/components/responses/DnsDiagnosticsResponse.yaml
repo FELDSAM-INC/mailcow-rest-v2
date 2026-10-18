@@ -1,0 +1,36 @@
+description: |
+  The diagnostics result. The run succeeds as a request even when checks failed: each check carries
+  its own status.
+headers:
+  RateLimit-Limit:
+    description: Runs each caller may start per window (10 per minute by default).
+    required: true
+    schema:
+      type: integer
+      minimum: 1
+  RateLimit-Remaining:
+    description: Runs the caller may still start in the current window.
+    required: true
+    schema:
+      type: integer
+      minimum: 0
+  RateLimit-Reset:
+    description: Seconds until the current window resets.
+    required: true
+    schema:
+      type: integer
+      minimum: 0
+  Cache-Control:
+    description: Always `no-store`.
+    required: true
+    schema:
+      type: string
+      const: no-store
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/DnsDiagnosticsResult.yaml'

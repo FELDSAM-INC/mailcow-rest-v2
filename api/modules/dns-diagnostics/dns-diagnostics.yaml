@@ -1,0 +1,40 @@
+parameters:
+  - $ref: '../../components/parameters/DnsDiagnosticsName.yaml'
+get:
+  operationId: runDnsDiagnostics
+  tags: [DNS diagnostics]
+  summary: Run DNS diagnostics for a domain or alias domain
+  description: |
+    Looks up every DNS record the name needs (MX, autodiscover and autoconfig, MTA-STS when the
+    policy that applies is active, SPF, DMARC, DKIM when the name has a key, and the service
+    records of non-standard ports), compares each with the value expected from the server's
+    configuration, and returns one structured check per record plus a zone file. Administrators
+    first get the server-wide checks: the host name's IPv4 and IPv6 addresses, their reverse names
+    and the TLSA record for SMTP on port 25. Domain administrators reach the domains assigned to
+    them and their alias domains, without the server-wide checks. For an alias domain, the MTA-STS
+    checks expect its target domain's policy.
+
+    Lookups use the same recursive resolver as mailcow's mail services. Each lookup gives up after
+    5 seconds and the whole run returns within 30 seconds: checks still open then report
+    `lookupFailed` with reason `runTimeout`. DNS changes can take up to 24 hours to show. A run
+    changes nothing and is not audited.
+
+    Each caller (user or API key) may start 10 runs per minute; every response carries
+    `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`. The server's public addresses
+    and certificate digest may be reused for up to 10 minutes.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/DnsDiagnosticsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '429':
+      $ref: '../../components/responses/DnsDiagnosticsTooManyRequests.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

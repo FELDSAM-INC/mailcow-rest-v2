@@ -1,0 +1,17 @@
+description: One DKIM entry. Never contains the private key.
+headers:
+  ETag:
+    description: |
+      Version tag (strong ETag) of the stored key, equal to `data.etag`. Present when the name has a
+      key. Send it in `If-Match` when overwriting, publishing again or deleting the key.
+    required: false
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/DkimKey.yaml'

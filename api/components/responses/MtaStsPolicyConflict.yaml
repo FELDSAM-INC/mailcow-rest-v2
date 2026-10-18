@@ -1,0 +1,7 @@
+description: |
+  The domain already has an MTA-STS policy (type `/api/v2/problems/mta-sts-policy-exists`). Change it
+  with `updateMtaStsPolicy` instead.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

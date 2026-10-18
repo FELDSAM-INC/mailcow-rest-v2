@@ -1,0 +1,24 @@
+type: object
+description: |
+  JSON Merge Patch of an MTA-STS policy. Omitted members keep their values; `null` is refused. The
+  rules of `MtaStsPolicyCreateRequest` apply to each member sent. A change of `version`, `mode`,
+  `mxHosts` (including their order) or `maxAge` assigns a new `policyId`; a change of only `active`,
+  or a patch that changes nothing, keeps it.
+minProperties: 1
+properties:
+  version:
+    type: string
+    maxLength: 16
+  mode:
+    type: string
+    maxLength: 16
+  maxAge:
+    type: integer
+  mxHosts:
+    type: array
+    maxItems: 128
+    items:
+      type: string
+      maxLength: 255
+  active:
+    type: boolean

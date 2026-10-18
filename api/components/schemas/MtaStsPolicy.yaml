@@ -1,0 +1,79 @@
+type: object
+description: |
+  The MTA-STS policy of one domain. While it is active, mailcow's publication endpoint (which stays
+  in the legacy stack) serves `policyText` at `policyUrl` for the domain and for each of its alias
+  domains, from the next request on. mailcow's certificate service requests certificates for
+  `mta-sts.<domain>` and the `mta-sts.` names of the alias domains at its next run, which can take
+  up to one day. An alias domain never has a policy of its own; it publishes its target domain's.
+required:
+  - domain
+  - displayDomain
+  - version
+  - mode
+  - mxHosts
+  - maxAge
+  - active
+  - policyId
+  - policyUrl
+  - policyText
+  - dnsRecords
+  - etag
+properties:
+  domain:
+    type: string
+    description: ASCII (punycode) domain name.
+    examples: [example.org]
+  displayDomain:
+    type: string
+    description: Readable (Unicode) domain name.
+  version:
+    type: string
+    const: STSv1
+  mode:
+    $ref: './MtaStsMode.yaml'
+  mxHosts:
+    type: array
+    minItems: 1
+    description: Host names that sending servers may deliver to, in order. `*.` marks a wildcard.
+    items:
+      type: string
+    examples:
+      - [mail.example.org]
+  maxAge:
+    type: integer
+    minimum: 1
+    maximum: 31557600
+    description: Seconds for which senders may cache the policy.
+    examples: [86400]
+  active:
+    type: boolean
+  policyId:
+    type: string
+    pattern: '^[0-9]{14}$'
+    description: |
+      Policy identifier, a 14-digit timestamp (`YYYYMMDDhhmmss`, server time zone) as legacy writes
+      it. It changes whenever the version, the mode, the MX hosts or their order, or the maximum age
+      changes, and stays the same when only the active state changes.
+    examples: ['20261018123000']
+  policyUrl:
+    type: string
+    format: uri
+    description: Address at which the policy is published.
+    examples: [https://mta-sts.example.org/.well-known/mta-sts.txt]
+  policyText:
+    type: string
+    description: The policy text that the publication endpoint serves while the policy is active.
+    examples: ["version: STSv1\nmode: enforce\nmax_age: 86400\nmx: mail.example.org\n"]
+  dnsRecords:
+    type: array
+    description: |
+      The records to publish: `_mta-sts.<domain>` TXT `v=STSv1;id=<policyId>;` and
+      `mta-sts.<domain>` CNAME to the server's host name. Alias domains need the same two records
+      under their own names.
+    items:
+      $ref: './MtaStsDnsRecord.yaml'
+  etag:
+    type: string
+    description: |
+      Version tag of the stored policy, equal to the `ETag` header of a single read. Send it in
+      `If-Match` when changing the policy.

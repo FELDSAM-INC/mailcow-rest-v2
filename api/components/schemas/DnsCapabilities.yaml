@@ -1,0 +1,117 @@
+type: object
+description: |
+  Server values and limits that shape the DKIM, MTA-STS and DNS diagnostics forms, read from the
+  current configuration on every request. Contains no secret and no connection detail.
+required: [serverHostname, defaultPageSize, maxPageSize, dkim, mtaSts, dnsDiagnostics]
+properties:
+  serverHostname:
+    type: string
+    description: |
+      The server's host name (`MAILCOW_HOSTNAME`), lower-case ASCII. It is the expected mail
+      exchanger and the target of the `mta-sts.` and autodiscover names, so clients can pre-fill
+      the MTA-STS MX hosts with it.
+    examples: [mail.example.org]
+  defaultPageSize:
+    type: integer
+    examples: [25]
+  maxPageSize:
+    type: integer
+    examples: [1000]
+  dkim:
+    type: object
+    required:
+      - defaultSelector
+      - defaultKeySize
+      - allowedKeySizes
+      - selectorMaxLength
+      - privateKeyMaxBytes
+      - importKeyLengthMin
+      - importKeyLengthMax
+      - dnsPublicationEnabled
+      - privateKeyExportEnabled
+    properties:
+      defaultSelector:
+        type: string
+        description: Server setting, `dkim` upstream (`feldhost` on the FeldHost deployment).
+        examples: [dkim]
+      defaultKeySize:
+        type: integer
+        examples: [2048]
+      allowedKeySizes:
+        type: array
+        items:
+          type: integer
+        examples:
+          - [1024, 2048, 3072, 4096]
+      selectorMaxLength:
+        type: integer
+        examples: [255]
+      privateKeyMaxBytes:
+        type: integer
+        description: Maximum size of an imported private key text.
+        examples: [16384]
+      importKeyLengthMin:
+        type: integer
+        description: Smallest RSA key length in bits accepted by an import.
+        examples: [1024]
+      importKeyLengthMax:
+        type: integer
+        description: Largest RSA key length in bits accepted by an import.
+        examples: [8192]
+      dnsPublicationEnabled:
+        type: boolean
+        description: |
+          Whether key changes are published to an ISPConfig DNS server: the FeldHost setting is on
+          (off by default) and the ISPConfig remote API address, user and password are configured.
+      privateKeyExportEnabled:
+        description: |
+          Whether administrators may export private keys (legacy `SHOW_DKIM_PRIV_KEYS`, off by
+          default). `null` for domain administrators, who can never export.
+        oneOf:
+          - type: boolean
+          - type: 'null'
+  mtaSts:
+    type: object
+    required: [version, modes, defaultActive, maxAgeMin, maxAgeMax, mxMaxLength]
+    properties:
+      version:
+        type: string
+        const: STSv1
+      modes:
+        type: array
+        items:
+          $ref: './MtaStsMode.yaml'
+        examples:
+          - [enforce, testing, none]
+      defaultActive:
+        type: boolean
+        description: Active state of a policy created without one (`false`, as in legacy).
+      maxAgeMin:
+        type: integer
+        examples: [1]
+      maxAgeMax:
+        type: integer
+        examples: [31557600]
+      mxMaxLength:
+        type: integer
+        description: Maximum length of the MX hosts joined by commas, as mailcow stores them.
+        examples: [255]
+  dnsDiagnostics:
+    type: object
+    required: [runsPerMinute, lookupTimeoutSeconds, runTimeoutSeconds, serverChecks]
+    properties:
+      runsPerMinute:
+        type: integer
+        description: Runs each caller may start per minute.
+        examples: [10]
+      lookupTimeoutSeconds:
+        type: integer
+        examples: [5]
+      runTimeoutSeconds:
+        type: integer
+        examples: [30]
+      serverChecks:
+        type: boolean
+        description: |
+          Whether the caller's runs include the server-wide checks (host addresses, reverse names,
+          TLSA). `true` for administrators, `false` for domain administrators.

@@ -1,0 +1,5 @@
+# Paths of the mta-sts module (feature 010): MTA-STS policies of domains.
+/mta-sts-policies:
+  $ref: './mta-sts-policies.yaml'
+/mta-sts-policies/{policyDomain}:
+  $ref: './mta-sts-policy.yaml'

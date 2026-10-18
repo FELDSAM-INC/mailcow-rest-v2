@@ -1,0 +1,11 @@
+name: diagnosticsName
+in: path
+required: true
+description: |
+  Domain or alias domain to check, percent-encoded, in ASCII (punycode) or Unicode form and in any
+  letter case. It is trimmed, lower-cased and converted to ASCII with the UTS #46 rules. A name that
+  is not a domain or alias domain in the caller's scope answers `404`.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 255

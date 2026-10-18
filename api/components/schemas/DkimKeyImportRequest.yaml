@@ -1,0 +1,33 @@
+type: object
+description: |
+  Imports an existing RSA private key for the name in the path. Rules, each refused with its rule
+  code in a `422` problem that never echoes any part of the key text:
+  - `privateKey`: required; at most 16,384 bytes (`tooLong`, `max: 16384`); one PEM-encoded
+    private key, PKCS #1 (`RSA PRIVATE KEY`) or PKCS #8 (`PRIVATE KEY`) (`invalidPrivateKey`); not
+    encrypted (`encryptedPrivateKey`); RSA (`unsupportedKeyType`, `allowed: [rsa]`); 1,024 to 8,192
+    bits (`keyLengthOutOfRange`, `min: 1024`, `max: 8192`). Line endings are normalised to line
+    feeds and surrounding whitespace is removed before the key is stored.
+  - `selector`: as for generation (`invalidFormat`, `format: dkimSelector`; `tooLong`).
+  - The name in the path must be a valid domain name (`invalidFormat`, `format: domainName`, on
+    the key `dkimName`).
+required: [privateKey]
+properties:
+  privateKey:
+    type: string
+    minLength: 1
+    maxLength: 16384
+    writeOnly: true
+    description: PEM text of the private key. Never logged, audited or returned by this operation.
+  selector:
+    type: string
+    minLength: 1
+    maxLength: 255
+    pattern: '^[A-Za-z0-9._-]+$'
+    description: Omit to use the server's default selector.
+  overwrite:
+    type: boolean
+    default: false
+    description: |
+      Replace an existing key of the name, including the private key stored under the old
+      selector, in one atomic step. Without it, a name that already has a key answers `409` with
+      type `/api/v2/problems/dkim-key-exists`.

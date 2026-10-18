@@ -1,0 +1,81 @@
+get:
+  operationId: listMtaStsPolicies
+  tags: [MTA-STS]
+  summary: List MTA-STS policies
+  description: |
+    Lists the policies of the domains in the caller's scope: every domain for administrators, the
+    domains assigned to them for domain administrators. No permission flag is needed. Policies
+    belong to domains only; alias domains publish their target domain's policy. `q` searches the
+    ASCII and the readable domain name.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/MtaStsPolicySort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: active
+      in: query
+      required: false
+      schema:
+        type: boolean
+    - name: mode
+      in: query
+      required: false
+      schema:
+        $ref: '../../components/schemas/MtaStsMode.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MtaStsPolicyListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createMtaStsPolicy
+  tags: [MTA-STS]
+  summary: Create an MTA-STS policy
+  description: |
+    Creates the policy of a domain in the caller's scope, with version `STSv1` unless sent, a new
+    policy identifier, and inactive unless `active: true` is sent, as in legacy. Any other name,
+    including an alias domain's, answers `404`. A domain that already has a policy answers `409`
+    (`mta-sts-policy-exists`).
+
+    While the policy is active, mailcow's publication endpoint serves it for the domain and its
+    alias domains from the next request on, and mailcow's certificate service requests
+    certificates for the `mta-sts.` names at its next run, which can take up to one day. Policies
+    cannot be deleted through this API: deactivate them instead; a policy is removed with its
+    domain. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/MtaStsPolicyCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/MtaStsPolicyCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/MtaStsPolicyConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

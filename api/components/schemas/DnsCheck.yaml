@@ -1,0 +1,63 @@
+type: object
+description: |
+  One expected DNS record, compared with what mailcow's recursive resolver returns. Values are given
+  in comparison form: host names in lower case without a trailing dot, IPv6 addresses in full
+  (expanded) form as legacy shows them, SRV records as `<target> <port>` (priority and weight are not
+  compared), TLSA records as `<usage> <selector> <matching type> <hex data>`, MX records as the host
+  name (the preference is not compared), and TXT records with their strings joined.
+required: [id, scope, recordName, recordType, status, optional, expected, found, guidance, reason, notes]
+properties:
+  id:
+    type: string
+    pattern: '^[a-z0-9]+(-[a-z0-9]+)*(:[A-Za-z0-9._-]+)?$'
+    description: |
+      Stable check identifier, unique within a result. Server-wide checks: `a`, `ptr:ipv4`, `aaaa`,
+      `ptr:ipv6`, `tlsa:25`. Checks of the name: `mx`, `autodiscover`, `srv:autodiscover`,
+      `autoconfig`, `mta-sts`, `mta-sts-record`, `tls-rpt`, `spf`, `dmarc`, `dkim:<selector>`,
+      `srv:pop3`, `srv:pop3s`, `srv:imap`, `srv:imaps`, `srv:submission`, `srv:smtps`, `srv:sieve`.
+      When the stored DKIM key cannot be read, its check has the identifier `dkim` and the status
+      `expectedUnknown`. Later releases may add identifiers.
+    examples: [mx, 'dkim:dkim', 'srv:imaps', 'tlsa:25']
+  scope:
+    type: string
+    enum: [server, domain]
+    description: '`server` for the server-wide checks (administrators only), `domain` for the checks of the name.'
+  recordName:
+    type: string
+    description: Fully qualified record name, without a trailing dot.
+    examples: [_imaps._tcp.example.org]
+  recordType:
+    type: string
+    enum: [A, AAAA, PTR, TLSA, MX, CNAME, SRV, TXT]
+  status:
+    $ref: './DnsCheckStatus.yaml'
+  optional:
+    type: boolean
+    description: '`true` for records whose content is up to the operator (SPF, DMARC, TLS reporting).'
+  expected:
+    description: |
+      The exact expected value in comparison form, or `null` for checks that only give guidance
+      (SPF, DMARC, TLS reporting) and when the expected value is unknown.
+    oneOf:
+      - type: string
+      - type: 'null'
+    examples: [mail.example.org 993]
+  found:
+    type: array
+    description: Every value found, in comparison form. Empty when nothing was found.
+    items:
+      type: string
+  guidance:
+    type: array
+    description: What to publish, for checks without an exact expected value.
+    items:
+      $ref: './DnsCheckMessage.yaml'
+  reason:
+    description: Why the check has its status, where a reason applies; otherwise `null`.
+    oneOf:
+      - $ref: './DnsCheckMessage.yaml'
+      - type: 'null'
+  notes:
+    type: array
+    items:
+      $ref: './DnsCheckMessage.yaml'

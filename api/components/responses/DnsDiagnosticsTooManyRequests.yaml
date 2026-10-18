@@ -1,0 +1,33 @@
+description: |
+  The caller already started the allowed number of runs in the current window (type
+  `/api/v2/problems/too-many-requests`). Each caller, a user or an API key, may start 10 runs per
+  minute by default.
+headers:
+  Retry-After:
+    description: Seconds after which a run may be started again.
+    required: true
+    schema:
+      type: integer
+      minimum: 1
+  RateLimit-Limit:
+    description: Runs each caller may start per window.
+    required: true
+    schema:
+      type: integer
+      minimum: 1
+  RateLimit-Remaining:
+    description: Always `0`.
+    required: true
+    schema:
+      type: integer
+      minimum: 0
+  RateLimit-Reset:
+    description: Seconds until the current window resets.
+    required: true
+    schema:
+      type: integer
+      minimum: 0
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/TooManyRequestsProblem.yaml'

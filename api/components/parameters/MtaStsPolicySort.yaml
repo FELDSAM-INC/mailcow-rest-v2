@@ -1,0 +1,8 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `domain` with `order=asc`. Ties are broken by `domain`.
+schema:
+  type: string
+  enum: [domain, mode, maxAge, policyId]
+  default: domain

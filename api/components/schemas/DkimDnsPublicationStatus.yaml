@@ -1,0 +1,15 @@
+type: string
+description: |
+  Outcome of one attempt to update the ISPConfig DNS zone of a name (FeldHost DKIM DNS publication).
+  - `published`: the TXT record `<selector>._domainkey` was created or updated with the current key.
+    When the selector changed, the old selector's record was removed as well.
+  - `removed`: the record of a deleted key was removed.
+  - `noRecordToRemove`: the key was deleted, and the zone held no record for its selector.
+  - `noZone`: the ISPConfig server has no zone whose origin is exactly the name, so nothing was
+    published. A name inside a parent zone (`mail.example.org` in `example.org`) counts as having no
+    zone.
+  - `failed`: the update did not complete within 15 seconds or was refused; see `reason`. The key
+    change itself stands.
+  - `notConfigured`: the DKIM DNS publication is disabled on this server (the default), or enabled
+    without the ISPConfig remote API address, user and password, so ISPConfig was not contacted.
+enum: [published, removed, noRecordToRemove, noZone, failed, notConfigured]

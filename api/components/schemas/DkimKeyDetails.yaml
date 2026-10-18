@@ -1,0 +1,46 @@
+type: object
+description: |
+  The stored key of a DKIM entry, without its private part. A key is complete when its public key,
+  its selector and its private key are all stored. An incomplete key, for example after a partial
+  legacy write, is never used for signing; delete it, or replace it by an import or a generation
+  with overwrite.
+required: [selector, keyLength, publicKey, record, complete, missingParts]
+properties:
+  selector:
+    description: Selector, or `null` when only a public key is stored.
+    oneOf:
+      - type: string
+        maxLength: 255
+      - type: 'null'
+    examples: [dkim]
+  keyLength:
+    description: |
+      Key length in bits, computed exactly from the public key. `null` when no public key is stored
+      or the stored text is not a valid RSA public key.
+    oneOf:
+      - type: integer
+        minimum: 1
+      - type: 'null'
+    examples: [2048]
+  publicKey:
+    description: |
+      Public key as stored by mailcow: the base64 text of the DER `SubjectPublicKeyInfo`, without PEM
+      header, footer or line breaks. `null` when only a selector is stored.
+    oneOf:
+      - type: string
+      - type: 'null'
+  record:
+    description: The DNS record to publish, or `null` when the selector or the public key is missing.
+    oneOf:
+      - $ref: './DkimDnsRecord.yaml'
+      - type: 'null'
+  complete:
+    type: boolean
+    description: '`true` when the public key, the selector and the private key are all stored.'
+  missingParts:
+    type: array
+    description: The parts that are not stored. Empty when `complete` is `true`.
+    uniqueItems: true
+    items:
+      type: string
+      enum: [publicKey, selector, privateKey]

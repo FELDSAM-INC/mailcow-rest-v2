@@ -1,0 +1,13 @@
+type: object
+description: One reason, note or guidance item of DNS diagnostics.
+required: [code, params, message]
+properties:
+  code:
+    $ref: './DnsCheckMessageCode.yaml'
+  params:
+    type: object
+    description: Parameters of the code, as documented in `DnsCheckMessageCode`.
+    additionalProperties: true
+  message:
+    type: string
+    description: English text for logs and scripts. Clients translate from `code` and `params`.

@@ -1,0 +1,12 @@
+name: policyDomain
+in: path
+required: true
+description: |
+  Domain of the policy, percent-encoded, in ASCII (punycode) or Unicode form and in any letter case.
+  It is trimmed, lower-cased and converted to ASCII with the UTS #46 rules. Policies belong to
+  domains: an alias domain's name answers `404`, because an alias domain publishes its target
+  domain's policy. A domain outside the caller's scope answers `404` too.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 255

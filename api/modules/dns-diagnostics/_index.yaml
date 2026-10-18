@@ -1,0 +1,3 @@
+# Paths of the dns-diagnostics module (feature 010): DNS checks of a domain or alias domain.
+/dns-diagnostics/{diagnosticsName}:
+  $ref: './dns-diagnostics.yaml'

@@ -6,13 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Http\RequestContext;
 use App\Http\Requests\Api\V2\ListAliasesRequest;
 use App\Http\Requests\Api\V2\StoreAliasRequest;
+use App\Http\Requests\Api\V2\UpdateAliasRequest;
 use App\Http\Resources\Api\V2\AliasResource;
 use App\Models\Mailcow\Alias;
 use App\Services\Aliases\AliasCreator;
+use App\Services\Aliases\AliasDeleter;
 use App\Services\Aliases\AliasPresenter;
 use App\Services\Aliases\AliasQuery;
+use App\Services\Aliases\AliasUpdater;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -51,6 +55,26 @@ class AliasController extends Controller
         Gate::forUser($principal)->authorize('view', Alias::class);
 
         return AliasResource::response($this->presenter->present($this->found($request, $aliasId)));
+    }
+
+    public function update(UpdateAliasRequest $request, AliasUpdater $updater): JsonResponse
+    {
+        $principal = RequestContext::requirePrincipal($request);
+        $updater->update($principal, $request->aliasId(), $request->members(), $request->header('If-Match'));
+        $row = $this->query->find($principal, $request->aliasId()) ?? throw new NotFoundHttpException('The alias does not exist.');
+
+        return AliasResource::response($this->presenter->present($row));
+    }
+
+    public function destroy(Request $request, string $aliasId, AliasDeleter $deleter): Response
+    {
+        $principal = RequestContext::requirePrincipal($request);
+        Gate::forUser($principal)->authorize('delete', Alias::class);
+
+        $id = $this->query->resolve($principal, $aliasId) ?? throw new NotFoundHttpException('The alias does not exist.');
+        $deleter->delete($principal, $id, $request->header('If-Match'));
+
+        return response()->noContent();
     }
 
     /** The alias of the path in the caller's scope, or `404`. */

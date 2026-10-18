@@ -166,8 +166,6 @@
         "updateMailboxTemplate",
         "deleteMailboxTemplate",
         "applyAliasBulkAction",
-        "updateAlias",
-        "deleteAlias",
         "copyAliasOverAliasDomains",
         "listAliasDomains",
         "createAliasDomain",

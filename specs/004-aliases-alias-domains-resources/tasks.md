@@ -366,7 +366,7 @@ write, delete aliases with and without explicit sender permissions; compare with
 
 ### Tests for User Story 3 (write first, observe failing) ⚠️
 
-- [ ] T041 [P] [US3] Write `tests/Feature/Aliases/UpdateAliasTest.php` (`updateAlias`):
+- [X] T041 [P] [US3] Write `tests/Feature/Aliases/UpdateAliasTest.php` (`updateAlias`):
   - AS1: destinations Anna → Bob: `goto` updated, `sales@` removed from Anna's view row and added to
     Bob's (both refreshed), response with the new `ETag`;
   - AS2: read the tag, update the row directly (as the legacy UI does), send the old tag →
@@ -395,30 +395,30 @@ write, delete aliases with and without explicit sender permissions; compare with
   - an orphaned alias: a change without a new address → `422` `notFound` on `address`; moving it to
     an existing domain succeeds (administrator);
   - audit: `aliasUpdate` with `details.changes` holding old and new values per changed field.
-- [ ] T042 [P] [US3] Write `tests/Feature/Aliases/DeleteAliasTest.php` (`deleteAlias`): AS7 an alias
+- [X] T042 [P] [US3] Write `tests/Feature/Aliases/DeleteAliasTest.php` (`deleteAlias`): AS7 an alias
   with two explicit permissions → `204` without body; the row and both `sender_acl` rows are gone;
   the destinations' view rows refreshed; memcached flushed; deleting the catch-all `@example.org`
   also deletes the `sender_acl` rows with `send_as = '@example.org'` (legacy parity, R8); other
   aliases naming the deleted address keep it; an orphaned alias is deletable by an administrator;
   `If-Match` mismatch → `412`; unknown, out-of-scope or own-alias id → `404` (out of scope audited
   as `notFound`); audit `aliasDeletion` with `details.removed.senderPermissions = 2`.
-- [ ] T043 [P] [US3] Extend `tests/Feature/Aliases/AliasWriteAuthorizationTest.php` with
+- [X] T043 [P] [US3] Extend `tests/Feature/Aliases/AliasWriteAuthorizationTest.php` with
   `updateAlias` and `deleteAlias`: AS8 a read-only key → `403 insufficient-key-scope`; a mailbox user
   → `403`; a domain administrator on a foreign alias → `404`; moving an alias into a foreign domain
   → `422 notFound`; each refusal audited.
 
 ### Implementation for User Story 3
 
-- [ ] T044 [US3] Create `app/Services/Aliases/AliasUpdater.php` and `AliasDeleter.php`:
+- [X] T044 [US3] Create `app/Services/Aliases/AliasUpdater.php` and `AliasDeleter.php`:
   `SELECT … FOR UPDATE`, version check, merge with stored values, read-only member check
   (`immutable`), validation, `aliasExternalGoto` check on added destinations only, `AddressLock` and
   the limit lock when the address or primary domain changes, legacy's `UPDATE`, the `sender_acl`
   carry-over and cleanup of R8, `SogoDirectory::refresh()` of old ∪ new destinations, audit with
   `changes`; deletion with legacy's statements, the refresh and `details.removed`.
-- [ ] T045 [P] [US3] Create `app/Http/Requests/Api/V2/UpdateAliasRequest.php` (merge-patch members of
+- [X] T045 [P] [US3] Create `app/Http/Requests/Api/V2/UpdateAliasRequest.php` (merge-patch members of
   `AliasPatch`; an empty body → `required` on `body`) and extend `AliasController` with `update`
   and `destroy`.
-- [ ] T046 [US3] Register `PATCH` and `DELETE /aliases/{aliasId}` (`restv2.csrf`, `restv2.audit`
+- [X] T046 [US3] Register `PATCH` and `DELETE /aliases/{aliasId}` (`restv2.csrf`, `restv2.audit`
   defaults with `aliasUpdate` / `aliasDeletion`) in `routes/api.php`. Makes T041–T043 pass.
 
 **Checkpoint**: All P1 stories done; aliases are fully managed.
@@ -866,3 +866,8 @@ what exists map as listed.
   `App\Services\Groupware\GroupwareRefresh` (also used for resources and sender settings). Invalid
   destination entries do not hide the other entries' violations (FR-028).
 - **T034, T043**: one test file, `AliasWriteAuthorizationTest`, covers creation, change and deletion.
+- **T044**: a change whose values equal the stored ones writes nothing and is audited with empty
+  `changes`, as 002's domain edits are (003's mailbox edits write no record); the FR-032 cleanup of
+  redundant explicit permissions runs on every successful change of an alias that allows sending.
+  An address change that would make the address one of the kept destinations is refused with
+  `conflictsWith` on `address`.

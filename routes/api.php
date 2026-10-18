@@ -239,6 +239,14 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::post('/aliases', [AliasController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'aliasCreation', 'target' => 'alias'])
             ->name('aliases.store');
+        Route::patch('/aliases/{aliasId}', [AliasController::class, 'update'])
+            ->where('aliasId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'aliasUpdate', 'target' => 'alias'])
+            ->name('aliases.update');
+        Route::delete('/aliases/{aliasId}', [AliasController::class, 'destroy'])
+            ->where('aliasId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'aliasDeletion', 'target' => 'alias'])
+            ->name('aliases.destroy');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

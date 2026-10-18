@@ -7,8 +7,8 @@ get:
   description: |
     Returns the stored message as an e-mail file to save. Administrators may always download it;
     domain administrators need `quarantine`; mailbox users need `quarantine` and
-    `quarantineAttachments`, because the file contains the attachments
-    (`permission-flag-required` names the missing flags). A message larger than the content size
+    `quarantine_attachments`, because the file contains the attachments
+    (`permission-flag-required` names the first missing flag in `flag`). A message larger than the content size
     limit is refused with `409 quarantine-message-too-large`. Read-only keys may download. Not
     audited.
   security:

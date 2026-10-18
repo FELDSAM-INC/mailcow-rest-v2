@@ -140,27 +140,27 @@ plan-level rows (constitution IV requires every deviation to be stated in the sp
 | DELETE `/quarantine/{itemId}` | deleteQuarantineItem | admin; DA, user (`quarantine`) | US1, FR-024, FR-026 |
 | POST `/quarantine/{itemId}/release` | releaseQuarantineItem | admin; DA, user (`quarantine`) | US1, FR-019–FR-022, FR-025, FR-026 |
 | POST `/quarantine/{itemId}/spam-learning` | learnQuarantineItemAsSpam | admin; DA, user (`quarantine`) | US1, FR-023, FR-025, FR-026 |
-| GET `/quarantine/{itemId}/message` | downloadQuarantineMessage | admin; DA (`quarantine`); user (`quarantine`, `quarantineAttachments`) | US1, US2, FR-017, FR-018 |
-| GET `/quarantine/{itemId}/attachments/{position}` | downloadQuarantineAttachment | admin, DA; user (`quarantineAttachments`) | US1, US2, FR-016, FR-018 |
+| GET `/quarantine/{itemId}/message` | downloadQuarantineMessage | admin; DA (`quarantine`); user (`quarantine`, `quarantine_attachments`) | US1, US2, FR-017, FR-018 |
+| GET `/quarantine/{itemId}/attachments/{position}` | downloadQuarantineAttachment | admin, DA; user (`quarantine_attachments`) | US1, US2, FR-016, FR-018 |
 | GET `/capabilities/quarantine` | getQuarantineCapabilities | all | US2, FR-072 |
 | POST `/quarantine-notification-settings/bulk-actions` | applyQuarantineNotificationBulkAction | admin, DA | US4, FR-037 |
 | GET `/mailboxes/{mailbox}/quarantine-notification-settings` | getMailboxQuarantineNotificationSettings | all, scoped | US4, FR-035 |
-| PATCH `/mailboxes/{mailbox}/quarantine-notification-settings` | updateMailboxQuarantineNotificationSettings | admin, DA; user (`quarantineNotification`/`quarantineCategory`) | US4, FR-036, FR-038 |
+| PATCH `/mailboxes/{mailbox}/quarantine-notification-settings` | updateMailboxQuarantineNotificationSettings | admin, DA; user (`quarantine_notification`/`quarantine_category`) | US4, FR-036, FR-038 |
 | GET `/domains/{domain}/spam-policy-entries` | listDomainSpamPolicyEntries | admin, DA | US5, FR-043, FR-045 |
-| POST `/domains/{domain}/spam-policy-entries` | createDomainSpamPolicyEntry | admin; DA (`spamPolicy`) | US5, FR-046, FR-047 |
+| POST `/domains/{domain}/spam-policy-entries` | createDomainSpamPolicyEntry | admin; DA (`spam_policy`) | US5, FR-046, FR-047 |
 | GET `/domains/{domain}/spam-policy-entries/{entryId}` | getDomainSpamPolicyEntry | admin, DA | US5, FR-045 |
-| DELETE `/domains/{domain}/spam-policy-entries/{entryId}` | deleteDomainSpamPolicyEntry | admin; DA (`spamPolicy`) | US5, FR-048 |
+| DELETE `/domains/{domain}/spam-policy-entries/{entryId}` | deleteDomainSpamPolicyEntry | admin; DA (`spam_policy`) | US5, FR-048 |
 | GET `/alias-domains/{aliasDomain}/spam-policy-entries` | listAliasDomainSpamPolicyEntries | admin, DA | US5, FR-043 |
-| POST `/alias-domains/{aliasDomain}/spam-policy-entries` | createAliasDomainSpamPolicyEntry | admin; DA (`spamPolicy`) | US5, FR-046 |
+| POST `/alias-domains/{aliasDomain}/spam-policy-entries` | createAliasDomainSpamPolicyEntry | admin; DA (`spam_policy`) | US5, FR-046 |
 | GET `/alias-domains/{aliasDomain}/spam-policy-entries/{entryId}` | getAliasDomainSpamPolicyEntry | admin, DA | US5, FR-045 |
-| DELETE `/alias-domains/{aliasDomain}/spam-policy-entries/{entryId}` | deleteAliasDomainSpamPolicyEntry | admin; DA (`spamPolicy`) | US5, FR-048 |
+| DELETE `/alias-domains/{aliasDomain}/spam-policy-entries/{entryId}` | deleteAliasDomainSpamPolicyEntry | admin; DA (`spam_policy`) | US5, FR-048 |
 | GET `/mailboxes/{mailbox}/spam-policy-entries` | listMailboxSpamPolicyEntries | all, scoped | US5, FR-044, FR-045 |
-| POST `/mailboxes/{mailbox}/spam-policy-entries` | createMailboxSpamPolicyEntry | admin; DA, user (`spamPolicy`) | US5, FR-046, FR-047 |
+| POST `/mailboxes/{mailbox}/spam-policy-entries` | createMailboxSpamPolicyEntry | admin; DA, user (`spam_policy`) | US5, FR-046, FR-047 |
 | GET `/mailboxes/{mailbox}/spam-policy-entries/{entryId}` | getMailboxSpamPolicyEntry | all, scoped | US5, FR-045 |
-| DELETE `/mailboxes/{mailbox}/spam-policy-entries/{entryId}` | deleteMailboxSpamPolicyEntry | admin; DA, user (`spamPolicy`) | US5, FR-048 |
+| DELETE `/mailboxes/{mailbox}/spam-policy-entries/{entryId}` | deleteMailboxSpamPolicyEntry | admin; DA, user (`spam_policy`) | US5, FR-048 |
 | GET `/mailboxes/{mailbox}/spam-score` | getMailboxSpamScore | all, scoped | US5, FR-039 |
-| PUT `/mailboxes/{mailbox}/spam-score` | setMailboxSpamScore | admin, DA; user (`spamScore`) | US5, FR-040, FR-042 |
-| DELETE `/mailboxes/{mailbox}/spam-score` | resetMailboxSpamScore | admin, DA; user (`spamScore`) | US5, FR-041 |
+| PUT `/mailboxes/{mailbox}/spam-score` | setMailboxSpamScore | admin, DA; user (`spam_score`) | US5, FR-040, FR-042 |
+| DELETE `/mailboxes/{mailbox}/spam-score` | resetMailboxSpamScore | admin, DA; user (`spam_score`) | US5, FR-041 |
 | GET `/spam-filter-action-statistics` | getSpamFilterActionStatistics | admin | US7, FR-058 |
 | GET `/rate-limits` | listRateLimits | admin, DA | US6, FR-051 |
 | GET `/domains/{domain}/rate-limit` | getDomainRateLimit | admin, DA | US6, FR-050, FR-052 |

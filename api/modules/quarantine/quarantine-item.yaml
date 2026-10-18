@@ -11,7 +11,7 @@ get:
     never returned.
 
     Attachment details are returned only to callers who may download attachments: administrators,
-    domain administrators, and mailbox users with `quarantineAttachments`; for others
+    domain administrators, and mailbox users with `quarantine_attachments`; for others
     `content.attachments` is `null`. `authenticatedSender` is returned to administrators only.
 
     A stored message larger than the content size limit (10 MiB by default) is not parsed:

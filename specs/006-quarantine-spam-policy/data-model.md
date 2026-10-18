@@ -254,9 +254,9 @@ on stdout (`ok`, `renders[{html, text}]` or `reason`, `line`, `message`).
 | `rateLimitBucketReset` | `rateLimitBucket` / bucket id / bucket id | `countersExisted`, `logEntriesRemoved` |
 
 Failures (every refusal of an authenticated caller on a state-changing route, research R19) carry
-`outcome: failure`, a shared `failureReason` (`permissionDenied`, `notFound`, `versionOutdated`,
-`validationFailed`, `conflict`, `serviceFailure` for a refused delivery, `temporaryFailure`) and
-`details.problemType`; `422` records list the invalid field names only.
+`outcome: failure`, a shared `failureReason` (`permissionDenied`, `attributeNotPermitted`,
+`notFound`, `versionOutdated`, `validationFailed`, `conflict`, `serviceFailure` for a refused
+delivery, `temporaryFailure`) and `details.problemType`; `422` records list the invalid field names only.
 Never recorded: subjects, bodies, attachments, `qhash`, template text.
 
 ---

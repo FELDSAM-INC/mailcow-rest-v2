@@ -55,7 +55,7 @@ post:
     trimmed and lower-cased before it is checked and stored. The same pattern on either list of
     the same owner is refused with `409 spam-policy-entry-exists`, which names the list and the
     existing entry. The spam filter applies the entry within one refresh of its settings map (at
-    most 1 minute). Administrators may always add; domain administrators and mailbox users need `spamPolicy`. Audited with the owner, the list and the pattern.
+    most 1 minute). Administrators may always add; domain administrators and mailbox users need `spam_policy`. Audited with the owner, the list and the pattern.
   security:
     - sessionCookie: []
       csrfToken: []

@@ -382,8 +382,11 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
 ### R15. Authorisation order and scope
 
 - **Decision**: For every operation: (1) role allowed at all, else `403 forbidden`; (2) flags
-  (FR-005/FR-006, effective flags from 001), else `403 permission-flag-required` with
-  `requiredFlags` (all missing flags); (3) object in scope, else `404`; (4) `If-Match`; (5)
+  (FR-005/FR-006, effective flags from 001), else `403 permission-flag-required` with `flag`, the
+  legacy column name of the first missing flag (`quarantine` before `quarantine_attachments`), or,
+  for a mailbox user's notification change, `403 attribute-not-permitted` with `attributes` and
+  `requiredFlags` for the members that would change (conventions "Permission refusals"); (3) object
+  in scope, else `404`; (4) `If-Match`; (5)
   validation; (6) the action. The flag check precedes the lookup, so a refusal never reveals
   whether an object exists (same order as 009). Policies:
   `app/Policies/QuarantinePolicy.php`, `SpamPolicyPolicy.php`, `RateLimitPolicy.php`.
@@ -465,7 +468,8 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
     target types (for `quarantineItem` the queue identifier and recipient are looked up regardless of
     scope, since the audit log is for administrators only; never the subject). Per-item refusals of
     bulk actions are recorded by the bulk services. `failureReason` uses the shared values
-    (`permissionDenied` for role, flag, key scope and restricted session; `notFound`;
+    (`permissionDenied` for role, flag, key scope and restricted session; `attributeNotPermitted`;
+    `notFound`;
     `versionOutdated`; `validationFailed` with field names only; `conflict` for a busy item or an
     existing entry; `serviceFailure` for a delivery the mail server refused; `temporaryFailure`),
     with `details.problemType`. `503` refusals are recorded by the services. Validate-only requests
@@ -501,8 +505,9 @@ The override adds the volumes `rspamd-vol-1:/var/lib/rspamd:ro` and
 - **Decision**: New types (appended to `KnownProblemType` and `docs/problems.md`):
   `quarantine-item-busy` (409, `Retry-After: 5`), `quarantine-delivery-refused` (409, `smtpCode`,
   `smtpResponse`), `quarantine-message-too-large` (409, `size`, `limit`),
-  `spam-policy-entry-exists` (409, `list`, `entryId`). Reused: `permission-flag-required` (009,
-  `requiredFlags`), `temporary-failure` (002, with the 006 extensions `dependency` and `step`),
+  `spam-policy-entry-exists` (409, `list`, `entryId`). Reused: `permission-flag-required`
+  (`flag`), `attribute-not-permitted` (002; `attributes`, plus `requiredFlags` for the notification
+  settings), `temporary-failure` (002, with the 006 extensions `dependency` and `step`),
   `forbidden`, `validation-failed`, `412`/`404` `about:blank`. `409` is chosen for the item states
   (busy, too large, delivery refused) because the request is valid but the item's current state
   does not permit it.

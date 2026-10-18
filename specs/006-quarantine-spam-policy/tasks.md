@@ -170,11 +170,12 @@ plumbing that every story needs.
 - [ ] T016 [P] Write `tests/Unit/Quarantine/SpamFilterAccessTest.php` (R15, FR-001 to FR-006,
   FR-069) for `App\Policies\QuarantinePolicy`, `SpamPolicyPolicy` and `RateLimitPolicy` with
   principals built from `MailcowFactory` rows:
-  - admin: every ability; domain admin: `quarantine`, `spamPolicy`, `ratelimit` from `da_acl`, the
+  - admin: every ability; domain admin: `quarantine`, `spam_policy`, `ratelimit` from `da_acl`, the
     user-only flags always held (a `da_acl` row with `quarantine = 0` and a `user_acl`-style
-    restriction cannot remove `quarantineAttachments`); mailbox user: its `user_acl` row;
-  - whole-message download requires `quarantine` and, for mailbox users, `quarantineAttachments`;
-    the missing flags are listed in `requiredFlags` (both when both are missing);
+    restriction cannot remove `quarantine_attachments`); mailbox user: its `user_acl` row;
+  - whole-message download requires `quarantine` and, for mailbox users, `quarantine_attachments`;
+    the problem names the first missing flag in `flag` as its legacy column (`quarantine` before
+    `quarantine_attachments` when both are missing);
   - role refusals (mailbox user and rate limits, domain admin and settings) are `forbidden`, not
     `permission-flag-required`;
   - the flags of the target mailbox never restrict admins or domain admins (FR-005).
@@ -205,13 +206,15 @@ plumbing that every story needs.
 - [ ] T021 Add the four problem types to `app/Support/Http/ProblemType.php` with their English
   titles ("Quarantine item is being processed", "Delivery refused", "Quarantine message too large",
   "List entry already exists"), and factory methods in `app/Exceptions/ProblemException.php`:
-  `permissionFlagRequired(array $flags)`, `quarantineItemBusy()`, `quarantineDeliveryRefused(int
+  `permissionFlagRequired(string $flag)`, `attributeNotPermitted(array $attributes, array
+  $requiredFlags)` (if 002 has no factory for it), `quarantineItemBusy()`, `quarantineDeliveryRefused(int
   $code, string $reply)`, `quarantineMessageTooLarge(int $size, int $limit)`,
   `spamPolicyEntryExists(string $list, int $entryId)`, `temporaryFailure(string $dependency, ?string
   $step = null)` (on top of 002's case). This makes T017 pass.
 - [ ] T022 Create `app/Policies/QuarantinePolicy.php`, `app/Policies/SpamPolicyPolicy.php` and
   `app/Policies/RateLimitPolicy.php` with the abilities of FR-006 (role check → `forbidden`, flag
-  check → `permissionFlagRequired(requiredFlags)`), using 001's effective flags, and
+  check → `permissionFlagRequired(flag)`, or `attributeNotPermitted(attributes, requiredFlags)` for a
+  mailbox user's notification members that would change), using 001's effective flags, and
   `app/Services/Access/SpamFilterScope.php` with `itemScope(Principal): Closure` (admin: none;
   domain admin: `SUBSTRING_INDEX(rcpt, '@', -1) IN (<managed domains>)`; mailbox user:
   `rcpt = <username>`) and `mailbox()`, `domain()`, `aliasDomain()` resolvers that normalise the
@@ -227,7 +230,8 @@ plumbing that every story needs.
   if no earlier feature did. Register resolvers for the target types `quarantineItem` (id, queue
   id, recipient; never the subject), `quarantineSettings`, `quarantineNotificationSettings`,
   `spamScore`, `spamPolicyEntry`, `rateLimit` and `rateLimitBucket`, and the `failureReason`
-  mapping `permissionDenied` (role, flag, key scope, restricted session), `notFound`,
+  mapping `permissionDenied` (role, flag, key scope, restricted session), `attributeNotPermitted`,
+  `notFound`,
   `versionOutdated`, `validationFailed` (field names only), `conflict` (busy item, existing entry),
   `serviceFailure` (refused delivery), `temporaryFailure`. Every state-changing route registered by
   the tasks below declares `restv2.audit`.
@@ -242,7 +246,7 @@ plumbing that every story needs.
 spam and deletes the items of their own mailbox.
 
 **Independent test**: Seed items for several mailboxes (rejected, junk, virus, attachments, over
-10 MiB, unparseable) and run the four flag combinations of `quarantine` × `quarantineAttachments`
+10 MiB, unparseable) and run the four flag combinations of `quarantine` × `quarantine_attachments`
 for a mailbox user; compare deliveries, remaining rows and Rspamd calls with legacy.
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
@@ -279,7 +283,7 @@ for a mailbox user; compare deliveries, remaining rows and Rspamd calls with leg
   `getQuarantineItem` (FR-012 to FR-015, AS-1.2, AS-1.7, AS-1.8, AS-1.9): a virus item returns
   score, `action: rejected`, `virus: true`, symbols with name/score/options, `fuzzyHashes`,
   `sourceAddress`, `size` = `LENGTH(msg)`, `contentStatus: available`, `from`, `subject`,
-  recipients and both texts, no HTML; without `quarantineAttachments` `content.attachments` is
+  recipients and both texts, no HTML; without `quarantine_attachments` `content.attachments` is
   `null`, with it the two attachments are listed; `authenticatedSender` is absent for a mailbox
   user (and present for an admin); a >10 MiB item → `contentStatus: tooLarge`, `content: null`,
   symbols still present; an item without `msg` → `missing`; bob's item and an unknown id → the same
@@ -291,8 +295,8 @@ for a mailbox user; compare deliveries, remaining rows and Rspamd calls with leg
   attachments; every download carries `Content-Disposition: attachment`,
   `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` and
   `Cache-Control: private, no-store`; a mailbox user without `quarantine` → `403
-  permission-flag-required` `["quarantine"]` for the message; without `quarantineAttachments` →
-  `requiredFlags` `["quarantineAttachments"]` for both downloads; position 9 → `404`; >10 MiB →
+  permission-flag-required` `flag: quarantine` for the message; without `quarantine_attachments` →
+  `flag: quarantine_attachments` for both downloads; position 9 → `404`; >10 MiB →
   `409 quarantine-message-too-large` with `size` and `limit`; a read-only key of an admin may
   download; not audited.
 - [ ] T030 [P] [US1] Write `tests/Feature/Quarantine/ReleaseQuarantineItemTest.php` for
@@ -572,10 +576,12 @@ singly and in bulk; confirm the stored attributes the legacy pages and the notif
   `getMailboxQuarantineNotificationSettings` and `updateMailboxQuarantineNotificationSettings`
   (FR-035, FR-036, FR-038, FR-069, AS-4.1, AS-4.2, AS-4.4): read returns `frequency`, `category`,
   `etag`; a mailbox without the attributes → `never`, `null`; stored `add_header` → `junk`;
-  `PATCH {"frequency":"daily"}` with `quarantineNotification` → `JSON_VALUE(attributes,
+  `PATCH {"frequency":"daily"}` with `quarantine_notification` → `JSON_VALUE(attributes,
   '$.quarantine_notification')` = `daily`, the category unchanged, `quarantine.notified` and
   `Q_LAST_NOTIFIED` untouched; `{"category":"junk"}` stores `add_header`; without
-  `quarantineCategory` → `403 permission-flag-required` `["quarantineCategory"]`; a domain admin
+  `quarantine_category` → `403 attribute-not-permitted` with `attributes: [category]` and
+  `requiredFlags: {category: quarantine_category}`, while the same request sending the current
+  category is accepted; a domain admin
   and an admin may always change; another mailbox → `404`; a resource → `404`; `{"frequency":
   "monthly"}` → `notInList`; `{}` → `required` on `body`; `If-Match` mismatch → `412`; audit with
   old and new values.
@@ -608,8 +614,8 @@ singly and in bulk; confirm the stored attributes the legacy pages and the notif
 
 **Goal**: Spam scores per mailbox and allow/block lists for domains, alias domains and mailboxes.
 
-**Independent test**: Read and change scores and lists as each role with and without `spamScore`
-and `spamPolicy`; confirm the `filterconf` rows the settings map reads.
+**Independent test**: Read and change scores and lists as each role with and without `spam_score`
+and `spam_policy`; confirm the `filterconf` rows the settings map reads.
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
@@ -622,7 +628,7 @@ and `spamPolicy`; confirm the `filterconf` rows the settings map reads.
   `422 mustNotExceed` `field: rejectScore`, rows unchanged; `5000.1` → `outOfRange`; `6.55` →
   `notMultipleOf` `factor: 0.1`; only one stored row → `custom: true` with the other from the
   defaults; `DELETE` → both rows removed, `204`, defaults again; resetting without rows → `204`,
-  no audit; a mailbox user without `spamScore` → `403 permission-flag-required` `["spamScore"]`; a
+  no audit; a mailbox user without `spam_score` → `403 permission-flag-required` `flag: spam_score`; a
   domain admin always may within scope; another domain's mailbox → `404`; a resource → `404`;
   `If-Match` mismatch → `412`; audit with old and new values.
 - [ ] T063 [P] [US5] Write `tests/Feature/SpamPolicy/MailboxSpamPolicyEntryTest.php` for the mailbox
@@ -634,19 +640,19 @@ and `spamPolicy`; confirm the `filterconf` rows the settings map reads.
   the list includes the domain entry with `own: false`, owner kind `domain`; filters `list`,
   `ownership`, `q`, sorts `pattern` (default asc), `createdAt`, `id`; `DELETE` of the domain entry
   through the mailbox → `404`; `DELETE` own entry → `204`, row gone; `GET` of the domain entry
-  through the mailbox → `404`; a mailbox user without `spamPolicy` reads but gets `403
+  through the mailbox → `404`; a mailbox user without `spam_policy` reads but gets `403
   permission-flag-required` on create and delete; two concurrent identical creations from two
   processes (separate database connections) → one `201`, one `409`, one row (`GET_LOCK`); a resource in the mailbox path → `404` (FR-069); a mailbox of another domain for a
   domain admin → `404`; audit with owner, list and pattern.
 - [ ] T064 [P] [US5] Write `tests/Feature/SpamPolicy/DomainSpamPolicyEntryTest.php` for the domain
   list operations (FR-043, FR-045 to FR-048, AS-5.8): the list contains the domain's entries
   (`own: true`, kind `domain`) and the mailbox entries of the domain (`own: false`, kind
-  `mailbox`); a domain admin with `spamPolicy` adds and removes; without it → `403
-  permission-flag-required` `["spamPolicy"]` (reads allowed); a mailbox user → `403 forbidden` for
+  `mailbox`); a domain admin with `spam_policy` adds and removes; without it → `403
+  permission-flag-required` `flag: spam_policy` (reads allowed); a mailbox user → `403 forbidden` for
   read and write; a domain outside the scope → `404`; an alias domain name in the domain path →
   `404`; the same pattern may exist for another owner.
 - [ ] T065 [P] [US5] Write `tests/Feature/SpamPolicy/AliasDomainSpamPolicyEntryTest.php` (FR-043,
-  AS-5.7): a domain admin with `spamPolicy` adds an allow entry for an alias domain of their domain
+  AS-5.7): a domain admin with `spam_policy` adds an allow entry for an alias domain of their domain
   → row with `object` = the alias domain, kind `aliasDomain`; an alias domain of another domain →
   `404`; a mailbox user → `403 forbidden`; removal through the target domain's path → `404`.
 
@@ -698,7 +704,7 @@ reset existing and missing buckets; confirm `RL_VALUE` and `RL_LOG`.
   → the domain limit again; `value` 0 and -1 → `outOfRange`; `frame: week` → `notInList`; a
   legacy-written invalid value is reported with `invalidStoredValue` and can be replaced and
   removed; removing an unset limit → `204`, no audit; a domain admin without `ratelimit` reads
-  (`200`) but cannot set (`403 permission-flag-required` `["ratelimit"]`); a mailbox user → `403
+  (`200`) but cannot set (`403 permission-flag-required` `flag: ratelimit`); a mailbox user → `403
   forbidden` for every operation; an alias domain limit is stored under the alias domain; a
   resource → `404`; `If-Match` mismatch → `412`, unchanged; Redis down → `503 sharedStore`; audit
   with old and new values.
@@ -808,7 +814,7 @@ filtered by target.
 - [ ] T080 [P] Write `tests/Feature/Security/SpamFilterAuthorizationMatrixTest.php` (constitution
   VI, quality gate 5, SC-005): a data provider over **all 42 operations** × anonymous, restricted
   session, admin session, domain-admin session with all flags, domain-admin session without
-  `quarantine`/`spamPolicy`/`ratelimit`, mailbox session with all flags, mailbox session without the
+  `quarantine`/`spam_policy`/`ratelimit`, mailbox session with all flags, mailbox session without the
   six user flags, admin read-write key, admin read-only key, domain-admin read-write key and
   domain-admin read-only key; expected status and problem `type` from a table derived from FR-006
   and the contract; object-level cases: foreign item, foreign mailbox, foreign domain, foreign

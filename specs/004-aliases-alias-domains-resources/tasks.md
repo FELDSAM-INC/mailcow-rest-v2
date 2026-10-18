@@ -256,7 +256,7 @@ the alias limit; compare rows, sender permissions and groupware rows with legacy
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T030 [P] [US2] Write `tests/Feature/Aliases/CreateAliasTest.php` (`createAlias`):
+- [X] T030 [P] [US2] Write `tests/Feature/Aliases/CreateAliasTest.php` (`createAlias`):
   - AS1: `sales@example.org` → `anna`, `bob`: `201`, `Location: /api/v2/aliases/<id>`, `ETag`; the
     `alias` row has legacy's columns (`goto = 'anna@example.org,bob@example.org'`, `sogo_visible = 1`,
     `sender_allowed = 1`, `internal = 0`, `active = 1`, comments `''`); `_sogo_static_view.aliases`
@@ -274,7 +274,7 @@ the alias limit; compare rows, sender permissions and groupware rows with legacy
     `details.groupwareUpdate = done`; with `SKIP_SOGO=y` nothing is written to the view and the
     record says `groupwareDisabled`; a forced view failure keeps the alias and records `failed`
     (FR-034); a forced audit insert failure rolls the alias back and answers `500` (edge case).
-- [ ] T031 [P] [US2] Write `tests/Feature/Aliases/CreateAliasRefusalTest.php` (FR-009, FR-010,
+- [X] T031 [P] [US2] Write `tests/Feature/Aliases/CreateAliasRefusalTest.php` (FR-009, FR-010,
   FR-021–FR-028):
   - AS4: an address held by a mailbox, a resource, an alias (also `INFO@example.org` against
     `info@example.org`) or a temporary alias → `409 address-in-use` with `holder`; nothing created;
@@ -296,7 +296,7 @@ the alias limit; compare rows, sender permissions and groupware rows with legacy
     `notFound` on `address` (FR-003);
   - every refusal above is audited by the `RefusalAuditor` with its failure reason (`conflict`,
     `validationFailed`).
-- [ ] T032 [P] [US2] Write `tests/Feature/Aliases/AliasExternalDestinationTest.php` (FR-006, FR-007,
+- [X] T032 [P] [US2] Write `tests/Feature/Aliases/AliasExternalDestinationTest.php` (FR-006, FR-007,
   FR-027): AS7 a domain administrator without `alias_external_goto` adding `someone@gmail.example`
   → `403 attribute-not-permitted` `{attributes: [destinations.0], requiredFlags: {destinations.0: aliasExternalGoto}}`,
   a local destination succeeds, and with the flag it succeeds; AS8 with the server setting on, an
@@ -305,18 +305,18 @@ the alias limit; compare rows, sender permissions and groupware rows with legacy
   alias domain is external; the refusal is audited with `failureReason: attributeNotPermitted`;
   FR-002: setting `da_acl.alias_external_goto = 0` between two requests of the same session makes the
   second refused, and setting it back makes the next one succeed.
-- [ ] T033 [P] [US2] Write `tests/Unit/Services/AliasLimitLockTest.php` (FR-022, R6): with two
+- [X] T033 [P] [US2] Write `tests/Unit/Services/AliasLimitLockTest.php` (FR-022, R6): with two
   database connections, A takes `AliasLimit::lockPrimaryDomain('example.org')` in a transaction;
   B's lock attempt with `innodb_lock_wait_timeout = 1` times out until A commits; after A inserts the
   last allowed alias and commits, B's check refuses. With 003's `AddressLock` held by A for
   `sales@example.org`, B cannot take it. A duplicate-key error on `alias.address` maps to
   `409 address-in-use`.
-- [ ] T034 [P] [US2] Write `tests/Feature/Aliases/AliasWriteAuthorizationTest.php` for `createAlias`
+- [X] T034 [P] [US2] Write `tests/Feature/Aliases/AliasWriteAuthorizationTest.php` for `createAlias`
   as admin session (with and without CSRF token), admin read-write key, admin read-only key
   (`403 insufficient-key-scope`, audited as `permissionDenied`), domain-admin session and key in and
   out of scope, mailbox user (`403 forbidden`, audited) and a restricted session
   (`403 pending-action-required`, audited); a CSRF failure and a `401` write no audit record.
-- [ ] T035 [P] [US2] Write `tests/Feature/Aliases/AliasesCapabilitiesTest.php`
+- [X] T035 [P] [US2] Write `tests/Feature/Aliases/AliasesCapabilitiesTest.php`
   (`getAliasesCapabilities`, FR-068): an administrator sees `groupwareEnabled` (false with
   `SKIP_SOGO=y`), `externalDestinationsDisabled`, `bulkLimit: 100`, `defaultPageSize: 25`,
   `maxPageSize: 1000`, `commentMaxBytes: 160`, `destinationsMaxLength: 65535`,
@@ -328,27 +328,27 @@ the alias limit; compare rows, sender permissions and groupware rows with legacy
 
 ### Implementation for User Story 2
 
-- [ ] T036 [P] [US2] Create `app/Services/Aliases/AliasLimit.php` (`lockPrimaryDomain()` with
+- [X] T036 [P] [US2] Create `app/Services/Aliases/AliasLimit.php` (`lockPrimaryDomain()` with
   `SELECT … FOR UPDATE`; `assertRoom(string $primary, int $adding)` with 002's
   `DomainUsageCalculator`, throwing `domain-alias-limit-reached`) and
   `app/Services/Aliases/AliasAddressAvailability.php` (003's `AddressAvailability` plus the
   alias-domain clause of R7). Makes T033 pass with T037.
-- [ ] T037 [US2] Create `app/Services/Aliases/AliasSenderAclEffects.php` (the statements of R8) and
+- [X] T037 [US2] Create `app/Services/Aliases/AliasSenderAclEffects.php` (the statements of R8) and
   `app/Services/Aliases/AliasCreator.php`: normalise (R3); collect every validation error of DM's
   alias table into one `422` (the server-setting external rule included); check `aliasExternalGoto`
   for added external destinations (`attribute-not-permitted`); take 003's `AddressLock`; in one
   transaction lock the primary domain, check the address and the limit, insert with legacy's column
   list, apply the FR-032 cleanup, `SogoDirectory::refresh()` of the destinations in a savepoint,
   write the audit record, commit; release the lock; flush memcached after the commit.
-- [ ] T038 [P] [US2] Create `app/Http/Requests/Api/V2/StoreAliasRequest.php` (types and lengths of
+- [X] T038 [P] [US2] Create `app/Http/Requests/Api/V2/StoreAliasRequest.php` (types and lengths of
   `AliasCreateRequest`, comment byte length, rule codes of DM) and extend `AliasController` with
   `store` (`201`, `Location`, `ETag`).
-- [ ] T039 [P] [US2] Create `app/Services/Aliases/AliasesCapabilitiesService.php`,
+- [X] T039 [P] [US2] Create `app/Services/Aliases/AliasesCapabilitiesService.php`,
   `app/Http/Resources/Api/V2/AliasesCapabilitiesResource.php` and
   `app/Http/Controllers/Api/V2/AliasesCapabilitiesController.php` (`show`), reading `SKIP_SOGO`,
   `MailcowConfig::aliasDisableExternalDomains()`, `ListQuery`'s sizes, the fixed bulk limit and 002's
   DKIM settings, with the role rules of FR-005.
-- [ ] T040 [US2] Register `POST /aliases` (`restv2.auth:authenticated`, `restv2.csrf`,
+- [X] T040 [US2] Register `POST /aliases` (`restv2.auth:authenticated`, `restv2.csrf`,
   `restv2.pending:enforce`, `->defaults('restv2.audit', ['event' => 'aliasCreation', 'target' => 'alias'])`)
   and `GET /capabilities/aliases` in `routes/api.php`. Makes T030–T035 pass.
 
@@ -861,3 +861,8 @@ what exists map as listed.
 - **T026**: ties are broken by the identifier in the requested direction (001's `ListQuery`
   convention); `active`, `senderAllowed`, `groupwareVisible` and `internal` filters treat any
   non-zero flag as `true`, as the representation does.
+- **T036, T037**: the field rules shared by creations, changes and copies are in
+  `App\Services\Aliases\AliasRules`; the groupware refresh in a savepoint is the new shared
+  `App\Services\Groupware\GroupwareRefresh` (also used for resources and sender settings). Invalid
+  destination entries do not hide the other entries' violations (FR-028).
+- **T034, T043**: one test file, `AliasWriteAuthorizationTest`, covers creation, change and deletion.

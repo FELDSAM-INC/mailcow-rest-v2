@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V2\AliasController;
+use App\Http\Controllers\Api\V2\AliasesCapabilitiesController;
 use App\Http\Controllers\Api\V2\ApiDocsController;
 use App\Http\Controllers\Api\V2\ApiKeyController;
 use App\Http\Controllers\Api\V2\ApiKeyOwnerCandidateController;
@@ -227,9 +228,17 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     // (bulk-actions, capabilities) come before the parameterised ones; `{aliasId}` is digits only.
     Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
         Route::get('/aliases', [AliasController::class, 'index'])->name('aliases.index');
+        Route::get('/capabilities/aliases', [AliasesCapabilitiesController::class, 'show'])->name('aliases-capabilities.show');
         Route::get('/aliases/{aliasId}', [AliasController::class, 'show'])
             ->where('aliasId', '[1-9][0-9]{0,9}')
             ->name('aliases.show');
+    });
+
+    // State-changing routes of feature 004: refusals of authenticated callers are audited.
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::post('/aliases', [AliasController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'aliasCreation', 'target' => 'alias'])
+            ->name('aliases.store');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

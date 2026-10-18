@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V2;
 use App\Http\Controllers\Controller;
 use App\Http\RequestContext;
 use App\Http\Requests\Api\V2\ListAliasesRequest;
+use App\Http\Requests\Api\V2\StoreAliasRequest;
 use App\Http\Resources\Api\V2\AliasResource;
 use App\Models\Mailcow\Alias;
+use App\Services\Aliases\AliasCreator;
 use App\Services\Aliases\AliasPresenter;
 use App\Services\Aliases\AliasQuery;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +34,15 @@ class AliasController extends Controller
         $page = $this->query->page($principal, $list, $request->filters());
 
         return AliasResource::list(array_map($this->presenter->present(...), $page['rows']), $list->meta($page['total']));
+    }
+
+    public function store(StoreAliasRequest $request, AliasCreator $creator): JsonResponse
+    {
+        $principal = RequestContext::requirePrincipal($request);
+        $id = $creator->create($principal, $request->members());
+        $row = $this->query->find($principal, $id) ?? throw new NotFoundHttpException('The alias does not exist.');
+
+        return AliasResource::response($this->presenter->present($row), 201)->header('Location', '/api/v2/aliases/'.$id);
     }
 
     public function show(Request $request, string $aliasId): JsonResponse

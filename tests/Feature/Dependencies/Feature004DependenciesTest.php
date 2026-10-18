@@ -3,6 +3,9 @@
 namespace Tests\Feature\Dependencies;
 
 use App\Audit\AuditEventType;
+use App\Auth\AccountKind;
+use App\Auth\AuthMethod;
+use App\Auth\Principal;
 use App\Auth\Role;
 use App\Clients\SharedStore\SharedStore;
 use App\Clients\SharedStore\SharedStoreUnavailable;
@@ -21,12 +24,8 @@ use App\Services\Mailboxes\AddressLock;
 use App\Services\RateLimits\RateLimitStore;
 use App\Support\Domain\DomainName;
 use App\Support\Http\ProblemType;
-use App\Auth\AccountKind;
-use App\Auth\AuthMethod;
-use App\Auth\Principal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use Tests\Support\Domains\DomainTestHelpers;
 use Tests\Support\Mailboxes\MailboxTestHelpers;
 use Tests\TestCase;
 

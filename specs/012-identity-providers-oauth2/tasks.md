@@ -781,7 +781,7 @@ type and sign-in method.
   `ADDITIONAL_SERVER_NAMES`, private CAs for LDAP (`LDAPTLS_CACERT`), and that the synchronisation
   jobs stay in php-fpm (FR-018). Add a `CHANGELOG.md` entry listing the 19 operations and the additive
   changes to feature 001's contract for mailcowui-ng.
-- [ ] T093 Run `composer test` (contract coverage must list all 19 operations of this feature),
+- [ ] T093 Run `composer test` (contract coverage must list all 19 operations of this feature, FR-058),
   `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and `vendor/bin/phpunit --group idp`, and
   fix every finding.
 - [ ] T094 Run quickstart.md Part A and Part B against the dev stack and confirm every expected

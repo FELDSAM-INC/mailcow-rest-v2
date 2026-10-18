@@ -163,8 +163,7 @@ specs/012-identity-providers-oauth2/
 ├── quickstart.md        # Phase 1: validation guide
 ├── contracts/README.md  # Phase 1: pointer to api/ (the contract is not duplicated)
 ├── checklists/requirements.md
-├── tasks.md             # Phase 2 (/speckit-tasks)
-└── analysis.md          # /speckit-analyze summary
+└── tasks.md             # Phase 2 (/speckit-tasks); the /speckit-analyze summary is in the planning report
 ```
 
 ### Source Code (repository root)

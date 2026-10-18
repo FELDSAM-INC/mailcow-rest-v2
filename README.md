@@ -151,6 +151,30 @@ of new passwords, `BLF-CRYPT` by default, or `SSHA`, `SSHA256`, `SSHA512`), `MAI
 A mailbox rename or a bulk deletion can make several container calls of up to `DOCKER_TIMEOUT` each;
 `deploy/nginx/site.restv2.custom` therefore allows FastCGI answers of up to 900 seconds.
 
+Monitoring and operations (feature 011) also use `COMPOSE_PROJECT_NAME`, `SKIP_CLAMD`,
+`SKIP_OLEFY` (hide the optional scanners) and `LOG_LINES` (in-memory logs keep `LOG_LINES` + 1
+entries) from `mailcow.conf`, the Rspamd controller socket of the read-only `rspamd-vol-1` mount,
+and these settings:
+
+| Variable | Default | Meaning | FeldHost |
+|---|---|---|---|
+| `RESTV2_SELF_SERVICE` | `restv2-mailcow` | This API's own compose service, which can be neither stopped nor restarted through the API | |
+| `RESTV2_PROTECTED_CONTAINERS` | `dockerapi-mailcow,mysql-mailcow,redis-mailcow,nginx-mailcow,restv2-mailcow` | Containers that cannot be stopped (they can be restarted) | |
+| `RESTV2_CONTAINER_ROLES` | (empty) | JSON map of extra or overriding service => `ContainerRole` entries, for renamed services | |
+| `RESTV2_POSTFIX_CONTAINER`, `RESTV2_DOVECOT_CONTAINER`, `RESTV2_BAN_SERVICE_CONTAINER` | `postfix-mailcow`, `dovecot-mailcow`, `netfilter-mailcow` | Containers the queue, the mail storage measurement and the rule reset use | |
+| `RESTV2_UPDATE_CHECK` | `y` | Whether the update check asks the release source | `n` |
+| `RESTV2_UPDATE_SOURCE_URL` | (empty: GitHub's API for the installation's owner and repository) | GitHub-compatible release source | |
+| `RESTV2_UPDATE_STABLE_BRANCH` | `master` | The branch the update check runs on (other branches report it as disabled) | |
+| `RESTV2_IP_CHECK_IPV4_URL`, `RESTV2_IP_CHECK_IPV6_URL` | `http://ipv4.mailcow.email`, `http://ipv6.mailcow.email` | mailcow's external IP check service, asked only when the IP check is enabled | |
+| `RESTV2_RSPAMD_SOCKET` | `/var/lib/rspamd/rspamd.sock` | Rspamd's controller socket (shared with feature 006) | |
+| `RESTV2_PYTHON` | `python3` | The interpreter that checks ban rules in the ban service's dialect (Python `re`; the image ships Alpine's `python3`, PSF-2.0) | |
+
+Container and queue actions and the ban rule reset are synchronous and bounded by
+`DOCKER_TIMEOUT` (60 seconds by default). nginx's `fastcgi_read_timeout` (900 s in
+`deploy/nginx/site.restv2.custom`) covers them; when raising `DOCKER_TIMEOUT`, keep
+`fastcgi_read_timeout` at least `DOCKER_TIMEOUT + 30` and any php-fpm `request_terminate_timeout`
+at least `DOCKER_TIMEOUT + 40` (the image sets none).
+
 ## Development
 
 The host needs only Docker with Compose v2; every PHP, Composer and Node command runs in the dev

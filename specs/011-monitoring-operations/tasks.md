@@ -834,20 +834,20 @@ refused ones, and each content view, then filter the audit log.
 
 ## Phase 11: Polish and cross-cutting concerns
 
-- [ ] T107 Run `tests/Feature/Security/MonitoringAuthorizationTest.php` with all 42 operations in
+- [X] T107 Run `tests/Feature/Security/MonitoringAuthorizationTest.php` with all 42 operations in
   its provider and verify the provider matches the contract's operations of the six modules
   (a test that reads `build/contract/openapi.json` and fails on a missing operation) (SC-005).
-- [ ] T108 [P] Write `tests/Feature/Performance/MonitoringLatencyTest.php` (group `performance`,
+- [X] T108 [P] Write `tests/Feature/Performance/MonitoringLatencyTest.php` (group `performance`,
   SC-003, R31): with recorded fixtures and the fakes, p95 of 20 iterations under 1 s for `GET /host`,
   `GET /containers` and `GET /logs/postfix?limit=100` over 10,000 entries.
-- [ ] T109 [P] Write `tests/Feature/Containers/ContainerEnvironmentLeakTest.php` (constitution VI):
+- [X] T109 [P] Write `tests/Feature/Containers/ContainerEnvironmentLeakTest.php` (constitution VI):
   after exercising every container operation, scan the `restv2:monitoring:*` Redis values, every
   response body and the captured log output for the planted environment values of
   `containers.json`; none may appear.
-- [ ] T110 [P] Write `tests/Unit/Architecture/MonitoringWritesTest.php`: no class under
+- [X] T110 [P] Write `tests/Unit/Architecture/MonitoringWritesTest.php`: no class under
   `app/Http/Controllers/Api/V2/` of this feature calls `Redis::`, `DB::` or a dockerapi method
   directly (services only, constitution IV), and `LegacyUiLogEntry` is never written.
-- [ ] T111 [P] Document the new settings of R27 in `README.md` (configuration table, FeldHost:
+- [X] T111 [P] Document the new settings of R27 in `README.md` (configuration table, FeldHost:
   `RESTV2_UPDATE_CHECK=n`; raising `DOCKER_TIMEOUT` needs `fastcgi_read_timeout` ≥ `DOCKER_TIMEOUT + 30`
   and `request_terminate_timeout` ≥ `DOCKER_TIMEOUT + 40`) and add the feature's contract changes to `CHANGELOG.md` under the next
   release (42 operations, shared enum values, problem types).
@@ -1025,3 +1025,9 @@ Deviations and decisions made while implementing, with the reason:
   `AuditEventType::detailKeys()` (001's mechanism), not in `AuditLogger`. Contract gap G11 is fixed
   with `MonitoringOutcomeUnknownProblem` (`step` with the action names) and `step` on
   `Fail2BanRulesNotRestored`.
+- **T107–T111** (polish): the matrix check maps each provider row to its contract operation and
+  compares the set with the registry's 42 operations (the bulk queue action has one row per action
+  value). The architecture check forbids the outbound clients, Redis and the database in this
+  feature's controllers, and a feature test proves the legacy activity log model refuses writes.
+  The README documents the settings and the timeouts; `docs/conventions.md` lists the shared
+  pieces 011 created.

@@ -9,6 +9,8 @@ use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\ApiKeys\ApiKeys;
+use Tests\Support\Contract\OpenApiContract;
+use Tests\Support\FeatureRegistry;
 use Tests\Support\Mailcow\MailcowFactory;
 use Tests\Support\Monitoring\MonitoringFixtures;
 use Tests\Support\Redis\MailcowLogs;
@@ -242,6 +244,23 @@ class MonitoringAuthorizationTest extends TestCase
         $this->assertSame($target, $row->target_type);
         $this->assertSame('permissionDenied', $row->failure_reason);
         $this->assertSame('/api/v2/problems/'.$type, json_decode((string) $row->details, true)['problemType'] ?? null);
+    }
+
+    /**
+     * T107 (SC-005): the matrix covers every operation of the feature, as the contract names them.
+     */
+    public function test_the_matrix_covers_every_operation_of_the_feature(): void
+    {
+        $covered = [];
+
+        foreach (self::operations() as $name => [$method, $path]) {
+            $match = OpenApiContract::shared()->match($method, (string) parse_url($path, PHP_URL_PATH));
+            $this->assertNotNull($match, "{$name} is not a contract operation");
+            $covered[] = $match->operationId;
+        }
+
+        $this->assertEqualsCanonicalizing(FeatureRegistry::load()->features['011-monitoring-operations']['operations'], array_values(array_unique($covered)));
+        $this->assertCount(42, array_unique($covered));
     }
 
     #[DataProvider('cases')]

@@ -180,7 +180,19 @@ this document next to the constitution.
   actions and refusal auditing, `App\Support\Bulk\BulkActionRunner` and
   `App\Services\Audit\RefusalAuditor` (008's design: route default `restv2.audit`). 003 owns
   `AddressLock`, `NamedLock`, `TagSet`, `MailboxPasswordHasher` and `PasswordPolicyChecker`. 009
-  owns `app/Clients/Dns` and `app/Clients/Smtp`.
+  owns `app/Clients/Dns` and `app/Clients/Smtp`. 011 (implemented before 006) created
+  `App\Clients\Rspamd\RspamdController` with `UnixSocketRspamdController`, `RspamdUnavailable` and
+  `tests/Support/Rspamd/FakeRspamdController.php` at 006's canonical paths, with the two reads it
+  needs (`stat()`, `history()`); 006 extends them with its learning calls and `actions()`. 011 also
+  added `DockerApiClient::containers()`, `start()`, `stop()`, `containerStats()`, `hostStats()`
+  and `execText()` (text answers) with `ContainerSnapshot`, and created
+  `App\Services\Audit\IrreversibleOperationAudit` (audit probe before, and record with retries
+  after, an irreversible dockerapi operation; `Audit-Recorded: false` through the response macro
+  `withAuditRecorded()`), `App\Services\Monitoring\SharedSnapshotCache` (data shared by all
+  clients with a maximum age), `App\Services\Monitoring\ContainerRegistry`,
+  `App\Support\Regex\PythonRegexValidator`, `App\Support\Network\IpNetwork` and the test
+  helpers `FlakyAuditLogger`, `FailingAuditProbe` and `UnavailableSharedStore`, which later
+  features (006, 013) reuse.
 
 ## Audit record details
 

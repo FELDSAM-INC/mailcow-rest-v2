@@ -140,3 +140,35 @@ Contract changes made while implementing feature 004:
 - `MailboxSenderSettingsPatch` names the refusal parameter `kind: localDomain` (G14).
 
 Release checks of feature 004 (quickstart Part C): not run yet.
+
+Contract: the 42 operations of feature 011 (monitoring and operations), administrators only:
+
+- Host and installation: `getHostOverview`, `getMailStorageUsage`, `getPublicAddresses`,
+  `getInstallationVersion`, `getUpdateStatus`, `getMonitoringCapabilities`.
+- Containers: `listContainers`, `getContainer`, `getContainerResourceUsage`, `startContainer`,
+  `stopContainer`, `restartContainer`.
+- Logs: `listPostfixLog`, `listDovecotLog`, `listSogoLog`, `listNetfilterLog`,
+  `listAutodiscoverLog`, `listWatchdogLog`, `listAcmeLog`, `listCronLog`, `listRateLimitLog`,
+  `listLegacyApiRequestLog`, `listLegacyUiActivityLog`, `listLoginLog`.
+- Rspamd: `listRspamdHistory`, `getRspamdStatistics`.
+- Mail queue: `listMailQueueMessages`, `getMailQueueMessageContent`, `bulkMailQueueMessages`,
+  `flushMailQueue`, `purgeMailQueue`.
+- Ban service: `getFail2BanSettings`, `updateFail2BanSettings`, `rotateFail2BanBanListId`,
+  `getFail2BanRules`, `replaceFail2BanRules`, `resetFail2BanRules`, `listFail2BanActiveBans`,
+  `liftFail2BanBan`, `allowlistFail2BanBan`, `denylistFail2BanBan`, `listFail2BanPermanentBans`.
+- Shared enumerations: `KnownProblemType` (`container-protected`, `container-not-running`,
+  `container-action-failed`, `mail-service-not-running`, `queue-action-failed`,
+  `ban-rules-not-restored`, `ip-check-disabled`), 17 `AuditEventType` values, 7 `AuditTarget`
+  types, `AuditFailureReason` `serviceFailure` and `rulesNotRestored`, `ValidationRuleCode`
+  `missingCaptureGroup`.
+
+Contract changes made while implementing feature 011:
+
+- `LogBefore`: `before` always selects older entries and `order` sorts the selection; with
+  `before`, `meta.total` counts the remaining entries (G6, G9).
+- `Fail2BanSettingsPatch` declares the parameter ranges as `minimum`/`maximum` (G7).
+- The shared `BulkResultResponse` declares the optional `Audit-Recorded: false` header (G8).
+- `MonitoringOutcomeUnknownProblem` declares `step` with the action names, and
+  `Fail2BanRulesNotRestored` an optional `step` (G11).
+
+Release checks of feature 011 (quickstart Part C): not run yet.

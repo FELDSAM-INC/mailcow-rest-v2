@@ -1614,8 +1614,12 @@ record for secrets.
     client address (an external `X-Forwarded-For` is ignored), recent logins labelled `WEBUI`, and
     no secret in the API logs.
 
-  Still open: the ban on a host with a working netfilter, the passkey stopwatch in a real browser,
-  and the change half of SC-008 (skipped to leave the shared
+  - SC-004's ban passes (2026-10-18, after the fork's netfilter fix `1b7c446b`): ten `F2B_CHANNEL`
+    messages in the API's text for the reserved address 233.252.0.1 made the unmodified netfilter
+    ban it on the tenth (`max_attempts` 10 in 600 s), as for the legacy UI; the queued unban removed
+    the rule. Failed sign-ins from the checking host were avoided, since they would ban it.
+
+  Still open: the passkey stopwatch in a real browser and the change half of SC-008 (skipped to leave the shared
   announcement alone). A host on plain upstream `2026-09a` was waived by the owner on 2026-10-18
   (none is available). Deployment gap: `mcuadros/ofelia` reads labels only when it starts, so
   `restv2_audit_purge` is not registered until `ofelia-mailcow` restarts. Part C step 7 expects the

@@ -51,8 +51,9 @@
   and constitution VI requires that a guessed identifier reveals nothing.)
 - Q: Custom imapsync parameters are a security risk. How are they filtered and hardened? → A: The
   API mirrors legacy's allow-list exactly: each parameter token must be a known imapsync option
-  from the list in `vars.inc.php` (`IMAPSYNC_OPTIONS.whitelist`) and must contain no space;
-  anything else is refused with a validation error naming the offending option. In addition, the
+  from the allow-list (an API server setting whose default is upstream's `IMAPSYNC_OPTIONS.whitelist`
+  in `vars.inc.php`, kept aligned with legacy by the operator, per `docs/conventions.md`) and must
+  contain no space; anything else is refused with a validation error naming the offending option. In addition, the
   option `showpasswords` is removed from the accepted set, so the remote password can never be
   written into the run log (**Deviation**, hardening). A server setting MAY further restrict custom
   parameters to administrators; its default reproduces legacy (any role holding the sync-jobs
@@ -71,7 +72,7 @@
   believe a value was stored when it was not; a validation error is testable and consistent.
   **Deviation** for the four clamped fields.)
 - Q: Does the sync-job list support pagination, sorting, filtering and search? → A: Yes. The list
-  is paginated (default page size 25, maximum 1,000, as in feature 002), sortable, filterable by
+  is paginated (default page size 25, maximum 100, per `docs/conventions.md`), sortable, filterable by
   target mailbox, domain, active state, running state and last result, and searchable by a
   case-insensitive substring over the local mailbox, the remote user and the remote host. (agent
   decision: the legacy tables load every row and page client-side; server-side paging is required
@@ -85,10 +86,13 @@
 - Q: What are a sync job's defaults when a field is omitted at creation? → A: The legacy add-form
   defaults: active, "subscribe all folders", "delete duplicates on destination" and "automap
   folders" on; a 20-minute interval; SSL encryption; `600`-second timeouts; `0` for maximum age
-  (ignore age) and speed limit (unlimited); an empty destination subfolder and custom parameters;
-  and every other flag off. The remote host, port, remote user and remote password are always
-  required. (agent decision: these match the values the legacy "Add sync job" modal pre-fills, so
-  the web app and automation produce the same job legacy would.)
+  (ignore age) and speed limit (unlimited); the exclusion pattern `(?i)spam|(?i)junk`; an empty
+  destination subfolder and custom parameters; and every other flag off. An exclusion pattern sent
+  explicitly empty means "no exclusion". The remote host, port, remote user and remote password are
+  always required. (orchestrator decision: the UI 008 spec found that the earlier default of an empty
+  exclusion contradicted the legacy add form, which pre-fills `(?i)spam|(?i)junk`. These values match
+  what the legacy "Add sync job" modal pre-fills, so the web app and automation produce the same job
+  legacy would.)
 - Q: The run log is produced by the imapsync runner and may be large. Who may read it, and what is
   redacted? → A: Anyone who may read the job may read its log. The log is the remote server's and
   imapsync's own output; the runner masks passwords in it, and because `showpasswords` is refused
@@ -99,11 +103,31 @@
   jobs at once. Should these mass actions be one bulk request, and what happens when some jobs
   fail? → A: One request applies one action (activate, deactivate, reschedule or delete) to up to
   100 sync jobs. Each job is checked, processed and audited on its own, failures do not stop the
-  others, and the response reports one result per job (FR-023, FR-024). Bulk actions do not check
-  version tags. Creation and other edits stay single-job requests. (orchestrator decision:
-  cross-feature consistency with features 003 and 004. Legacy `edit/syncjob` and `delete/syncjob`
-  take arrays and continue past per-job access failures, both legacy sync-job tabs offer these mass
-  actions, and the web app needs them. 100 covers a large page.)
+  others, and the response reports one result per job: `done`, `notFound`, `refused`, `outdated` or
+  `failed` (FR-023, FR-024). Each item may carry its own version tag: an outdated tag gives that item
+  `outdated` and the others proceed, and untagged items are not version-checked. A reschedule item's
+  tag is not checked, because rescheduling changes only run status (FR-021). Creation and other
+  edits stay single-job requests. (orchestrator decision: cross-feature consistency with features
+  003 and 004 and with `docs/conventions.md`. Legacy `edit/syncjob` and `delete/syncjob` take arrays
+  and continue past per-job access failures, both legacy sync-job tabs offer these mass actions, and
+  the web app needs them. 100 covers a large page.)
+- Q: The server setting that restricts custom imapsync parameters to administrators is invisible to
+  clients. How does a client learn which limits apply to it, and how is a refused custom-parameter
+  request reported? → A: A sync-job capabilities read tells the caller whether custom parameters
+  are allowed for them, the allow-list in effect, the bulk limit, the page sizes, every field's
+  limits and the creation defaults (FR-030). When the restriction applies and a caller sends a
+  custom-parameter value that differs from the stored one (on creation: any non-empty value), the
+  request is refused with a field validation error on the custom-parameter field, with the rule code
+  `customParamsNotPermitted`. (orchestrator decision: the UI 008 spec found this gap. Feature 002
+  FR-064 sets the pattern of a capabilities read, and `docs/conventions.md` sends clients to the
+  owning feature's capabilities read for server settings they need before they submit.)
+- Q: Can an existing job's target mailbox be changed on edit? → A: No. The target mailbox is fixed
+  at creation. An edit that sends a different target is refused with a field validation error on the
+  target-mailbox field, with the rule code `immutable`. Sending the current target is accepted, so a
+  client can send back what it read. To sync into another mailbox, the client creates a new job.
+  (orchestrator decision: the UI 008 spec found this gap. Legacy `edit/syncjob` never reads the
+  target, so it cannot be changed there either. Refusing instead of ignoring a sent value follows
+  feature 002 and `docs/conventions.md`.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -181,8 +205,9 @@ input, and confirm the remote password is stored but never returned.
 1. **Given** a mailbox user with the sync-jobs permission, **When** they create a job with only the
    remote host, port, remote user and remote password, **Then** the job is created for their own
    mailbox with the documented defaults (active, SSL, 20-minute interval, subscribe-all,
-   delete-duplicates and automap on, timeouts 600, maximum age and speed limit 0), and the response
-   points to the new job and never contains the password.
+   delete-duplicates and automap on, timeouts 600, maximum age and speed limit 0, exclusion pattern
+   `(?i)spam|(?i)junk`), and the response points to the new job, says a remote password is set and
+   never contains the password.
 2. **Given** an administrator, **When** they create a job and name a target mailbox in their scope,
    **Then** the job is created for that mailbox.
 3. **Given** an existing job for the same local mailbox, remote user and remote host, **When** an
@@ -205,6 +230,12 @@ input, and confirm the remote password is stored but never returned.
 10. **Given** a mailbox user without the sync-jobs permission, or a read-only API key, **When**
     they try to create a job, **Then** the request is refused (forbidden, or insufficient key scope
     for the key).
+11. **Given** a server that restricts custom parameters to administrators, **When** a mailbox user
+    reads the sync-job capabilities, **Then** they are told that custom parameters are not allowed
+    for them, together with the bulk limit and the field limits. **When** they create a job with a
+    custom-parameter value, **Then** it is refused with a field validation error on the
+    custom-parameter field with the rule code `customParamsNotPermitted`, and nothing is stored.
+    **When** an administrator creates the same job, **Then** it is created.
 
 ---
 
@@ -246,6 +277,10 @@ edit form for the same input.
    try to edit, activate, deactivate or reschedule a job, **Then** the request is refused.
 8. **Given** a job of a mailbox outside the caller's scope, **When** the caller edits it, **Then**
    the response is "not found".
+9. **Given** a job targeting `a@example.org`, **When** an administrator edits it and sends the
+   target `b@example.org`, **Then** the edit is refused with a field validation error on the target
+   mailbox with the rule code `immutable`, and nothing changes. **When** the edit sends the target
+   `a@example.org` unchanged together with a new interval, **Then** the interval is saved.
 
 ---
 
@@ -307,6 +342,10 @@ results, stored rows and audit records with the same mass action in the legacy U
    and the response has five results.
 6. **Given** a mailbox user with the sync-jobs permission, **When** they activate a selection of
    their own jobs, **Then** each is activated and reported on its own.
+7. **Given** a bulk deactivation of three jobs, each sent with the version tag the client listed,
+   and one of them changed in the legacy UI after the list was read, **When** it is processed,
+   **Then** that job is reported `outdated` and stays unchanged, and the other two are deactivated.
+   **When** the same three jobs are sent without version tags, **Then** all three are deactivated.
 
 ---
 
@@ -349,8 +388,14 @@ time, source address and changed attributes, and that no record contains the rem
 - **Interval, port, maximum age, speed limit or timeout out of range**: refused with a validation
   error naming the field and its range. Maximum age `0` means "ignore age" and speed limit `0`
   means "unlimited"; both are accepted.
-- **Empty exclude, subfolder or custom parameters**: accepted; they mean "no exclude", "no
-  subfolder" and "no extra parameters".
+- **Empty exclude, subfolder or custom parameters**: accepted when sent explicitly; they mean "no
+  exclude", "no subfolder" and "no extra parameters". An omitted exclusion at creation takes the
+  default `(?i)spam|(?i)junk`.
+- **Target mailbox sent with an edit**: a different target is refused with the `immutable` field
+  error; the current target is accepted.
+- **Custom parameters restricted to administrators, and a non-administrator edits a job whose
+  parameters an administrator set**: an edit that omits the parameters, or sends them unchanged, is
+  accepted; any other value is refused with the `customParamsNotPermitted` field error.
 - **Custom parameters joined form**: tokens are the imapsync options the legacy form accepts, in the
   form `--option` or `--option=value`, concatenated as legacy stores them. An option not on the
   allow-list, an option containing a space, or `showpasswords`, is refused.
@@ -369,7 +414,9 @@ time, source address and changed attributes, and that no record contains the rem
   can still overwrite a change made through this API, as before. Only clients of this API are
   protected against lost updates.
 - **Concurrent creation of the same job**: exactly one succeeds; the other is refused as a conflict.
-- **Version tag sent with a bulk action**: not supported; bulk actions do not check versions.
+- **Version tags in a bulk action**: each item may carry its own tag. An outdated tag gives that
+  item `outdated` and leaves it unchanged, and the other items proceed. Untagged items, and the tags
+  of reschedule items, are not checked.
 - **Bulk action naming the same sync job twice**: it is processed once and reported once.
 - **Mailbox renamed or deleted** (feature 003): feature 003 moves this job's target to the new
   address on a rename and removes the job on a mailbox deletion. This feature does not duplicate
@@ -408,13 +455,18 @@ time, source address and changed attributes, and that no record contains the rem
   | Edit, activate, deactivate, reschedule a sync job | All jobs | Jobs of mailboxes in their domains | Jobs targeting their own mailbox | Forbidden |
   | Delete a sync job | All jobs | Jobs of mailboxes in their domains | Jobs targeting their own mailbox | Forbidden |
   | Bulk actions: activate, deactivate, reschedule, delete (FR-023, FR-024) | All jobs | Jobs of mailboxes in their domains | Jobs targeting their own mailbox | Forbidden |
+  | Read sync-job capabilities (FR-030) | Yes | Yes | Yes | Forbidden |
   | Read the audit log | Yes | Forbidden | Forbidden | Forbidden |
 
   A mailbox user MUST NOT be able to change their own `syncjobs` permission (feature 003 owns the
   permission flags).
 - **FR-006**: A server setting MAY restrict the custom imapsync parameters of FR-017 to
   administrators. Its default MUST reproduce legacy: any caller holding the sync-jobs permission may
-  set custom parameters.
+  set custom parameters. When the restriction applies to a caller, a custom-parameter value that
+  differs from the stored one (on creation: any non-empty value) MUST be refused with a field
+  validation error on the custom-parameter field, with the rule code `customParamsNotPermitted`, and
+  nothing MUST change. Omitting the field, or sending the stored value unchanged, MUST be accepted.
+  Whether the restriction applies MUST be readable through the capabilities read (FR-030).
 
 #### Sync-job representation
 
@@ -432,7 +484,8 @@ time, source address and changed attributes, and that no record contains the rem
   - the creation and last modification times;
   - its version tag (FR-020).
 
-  The representation MUST NOT contain the remote password (FR-018), nor the internal columns legacy
+  The representation MUST say whether a remote password is set, and MUST NOT contain the remote
+  password itself (FR-018), nor the internal columns legacy
   never exposes through the forms (`authmech1`, which is always `PLAIN`; `regextrans2`; `domain2`;
   `authmd51`). The authentication mechanism MUST be reported as `PLAIN` and MUST NOT be settable.
 - **FR-008**: The run status MUST be read from the columns the imapsync runner maintains and MUST
@@ -458,7 +511,8 @@ time, source address and changed attributes, and that no record contains the rem
 #### Listing and inspecting
 
 - **FR-011**: Callers holding the sync-jobs permission MUST be able to list the sync jobs in their
-  scope with pagination. The default page size MUST be 25 and the maximum 1,000, as in feature 002.
+  scope with pagination. The default page size MUST be 25 and the maximum 100, per
+  `docs/conventions.md`.
   The response MUST include the total number of matching jobs. The list MUST be scopeable to a
   single mailbox and MUST otherwise span the caller's whole scope.
 - **FR-012**: The list MUST support a free-text search that matches, case-insensitively and as a
@@ -469,9 +523,10 @@ time, source address and changed attributes, and that no record contains the rem
   remote host, remote user, polling interval, active state, last run time, last result, creation
   time and modification time. The default MUST be by identifier, ascending. Ties MUST be broken by
   identifier.
-- **FR-015**: Each list entry MUST carry the sync-job representation of FR-007 and its run status
-  (FR-008), but MUST NOT include the log by default, so that a list of many jobs stays small. A
-  client reads a job's log explicitly (FR-009).
+- **FR-015**: Each list entry MUST carry the sync-job representation of FR-007, including its
+  version tag (FR-020), and its run status (FR-008), so that a client can send per-item version
+  tags with a bulk action (FR-024) without inspecting each job. It MUST NOT include the log, so that
+  a list of many jobs stays small. A client reads a job's log explicitly (FR-009).
 
 #### Creating, editing, deleting and rescheduling
 
@@ -479,7 +534,10 @@ time, source address and changed attributes, and that no record contains the rem
   - create a sync job; an administrator or a domain administrator MUST name the target mailbox, and
     a mailbox user's job MUST always target their own mailbox;
   - edit a sync job, sending only the attributes that change; unsent attributes MUST keep their
-    values, including the remote password;
+    values, including the remote password. The target mailbox MUST NOT be changeable: an edit that
+    sends a different target MUST be refused with a field validation error on the target-mailbox
+    field, with the rule code `immutable`, and nothing MUST change. Sending the current target MUST
+    be accepted. To sync into another mailbox, a client creates a new job;
   - activate and deactivate a sync job (a change of the active flag), each as an ordinary edit;
   - reschedule a sync job: clear its last run time and last result so the runner selects it on its
     next cycle. Rescheduling MUST change only the run status and MUST NOT change the version tag
@@ -491,9 +549,9 @@ time, source address and changed attributes, and that no record contains the rem
   successful delete MUST respond with no body. Activating, deactivating, rescheduling and deleting
   many jobs at once are covered by the bulk actions (FR-023, FR-024).
 - **FR-017**: The attributes MUST meet these rules, at creation and on every edit:
-  - target mailbox: an existing, in-scope mailbox (`kind` empty). A resource, alias, alias domain or
-    domain MUST be refused with a validation error. A mailbox user MUST NOT be able to target any
-    mailbox but their own;
+  - target mailbox (at creation only; fixed afterwards, FR-016): an existing, in-scope mailbox
+    (`kind` empty). A resource, alias, alias domain or domain MUST be refused with a validation
+    error. A mailbox user MUST NOT be able to target any mailbox but their own;
   - remote host: required; a valid host name (letter/digit labels with inner hyphens, at most 253
     characters, labels at most 63) or an IPv4 literal (FR, clarification 4). At most 255 characters;
   - port: required; a whole number from 1 to 65535;
@@ -507,11 +565,12 @@ time, source address and changed attributes, and that no record contains the rem
   - timeout to the remote host and timeout to the local host: whole numbers of seconds from 1 to
     32000; default 600 each;
   - destination subfolder: at most 255 characters; may be empty; default empty;
-  - exclude: at most 500 characters; must be a valid regular expression; may be empty; default
-    empty;
-  - custom parameters: at most 512 characters; each option token MUST be on the legacy allow-list
-    and MUST contain no space, and the option `showpasswords` MUST be refused (FR-019); may be
-    empty; default empty;
+  - exclude: at most 500 characters; must be a valid regular expression (rule code
+    `invalidRegex`); may be sent empty to mean "no exclusion"; default when omitted at creation:
+    `(?i)spam|(?i)junk`, as the legacy add form pre-fills;
+  - custom parameters: at most 512 characters; each option token MUST be on the allow-list and MUST
+    contain no space, and the option `showpasswords` MUST be refused (FR-019); subject to the
+    restriction of FR-006; may be empty; default empty;
   - the boolean options and the active flag: default per clarification 8 (active, subscribe-all,
     delete-duplicates-on-destination and automap on; delete-on-source, delete-on-destination,
     skip-cross-duplicates and dry run off).
@@ -523,17 +582,21 @@ time, source address and changed attributes, and that no record contains the rem
 - **FR-018**: The remote password MUST be stored as plain text, because the imapsync runner needs it
   to authenticate to the remote server, but MUST be treated as a write-only secret: it MUST NOT
   appear in any representation, list, log or audit record, and the API MUST NOT offer a mode that
-  returns it (the legacy "with password" read is not exposed). On an edit, an omitted or empty
-  password MUST keep the stored value and a non-empty password MUST replace it.
+  returns it (the legacy "with password" read is not exposed). Responses MUST say only whether a
+  remote password is set. On an edit, an omitted or empty password MUST keep the stored value and a
+  non-empty password MUST replace it.
 - **FR-019**: Custom imapsync parameters MUST be validated exactly as legacy validates them, using
-  the allow-list in mailcow's configuration (`IMAPSYNC_OPTIONS.whitelist`): the value is split into
-  option tokens as legacy splits it, each token's option name MUST be on the allow-list, and no
-  token may contain a space. Any other option, including every option on the legacy blacklist
-  (`skipmess`, `pipemess`, `regexmess`, `regexflag`, `regextrans2`, `maxlinelengthcmd`,
-  `delete2foldersonly`, `delete2foldersbutnot`), MUST be refused with a validation error naming the
-  offending option. In addition, `showpasswords` MUST be refused even though legacy allows it, so
-  that the remote password can never be written into the run log (**Deviation**, hardening). The
-  server setting of FR-006 MAY further restrict who may set custom parameters.
+  the allow-list. The allow-list MUST be an API server setting whose default is upstream's
+  `IMAPSYNC_OPTIONS.whitelist`, which the operator keeps aligned with legacy (`docs/conventions.md`).
+  The value is split into option tokens as legacy splits it, each token's option name MUST be on the
+  allow-list (rule code `optionNotAllowed`, with the option as parameter), and no token may contain
+  a space (rule code `optionContainsSpace`, with the token as parameter). Every option on the legacy
+  blacklist (`skipmess`, `pipemess`, `regexmess`, `regexflag`, `regextrans2`, `maxlinelengthcmd`,
+  `delete2foldersonly`, `delete2foldersbutnot`) is absent from the allow-list and is therefore
+  refused. In addition, `showpasswords` MUST be refused even if the configured allow-list contains
+  it, so that the remote password can never be written into the run log (**Deviation**, hardening).
+  Every refusal MUST be a field validation error on the custom-parameter field. The server setting
+  of FR-006 MAY further restrict who may set custom parameters.
 
 #### Version tags
 
@@ -566,9 +629,12 @@ time, source address and changed attributes, and that no record contains the rem
 - **FR-024**: A bulk action MUST be refused as a whole when the caller's role, key scope or
   permission flag (FR-001, FR-004) does not allow the action. Otherwise each named sync job MUST be
   processed on its own, with the same checks, side effects and audit record as a single request for
-  it, and the response MUST report one result per distinct sync job: done, not found, refused (with
-  the error type), or failed (with the error type). A failure on one sync job MUST NOT stop or undo
-  the others, as in legacy. Bulk actions do not check version tags.
+  it, and the response MUST report one result per distinct sync job: `done`, `notFound`, `refused`
+  (with the error type), `outdated` or `failed` (with the error type). A failure on one sync job
+  MUST NOT stop or undo the others, as in legacy. Each item MAY carry its own version tag: when the
+  tag no longer matches, that item MUST get `outdated` and stay unchanged, and the other items MUST
+  proceed. Items without a tag MUST NOT be version-checked, and the tag of a reschedule item MUST NOT
+  be checked (FR-021). A sync job named twice MUST be processed once and reported once.
 
 #### Reliability and cross-cutting
 
@@ -585,14 +651,33 @@ time, source address and changed attributes, and that no record contains the rem
   administrators and mailbox users MUST be refused the audit log.
 - **FR-027**: Errors MUST follow feature 001's conventions (FR-049 and FR-055 there). This feature
   MUST document at least these error types: sync job not found, sync job already exists (duplicate),
-  invalid custom parameter, invalid exclude pattern, outdated version, forbidden (permission not
-  held), and validation failed with field-level rule codes and parameters (including each numeric
-  range, the offending custom option and the bulk limit).
+  outdated version, forbidden (permission not held), and validation failed with field-level rule
+  codes and parameters. The rule codes MUST include `optionNotAllowed`, `optionContainsSpace` and
+  `customParamsNotPermitted` on the custom-parameter field, `invalidRegex` on the exclude field,
+  `immutable` on the target-mailbox field, each numeric range rule with its minimum and maximum, and
+  the bulk limit.
 - **FR-028**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response of
   this API. The remote password changed through the legacy UI MUST remain usable by the runner and
   MUST stay hidden from this API's responses.
 - **FR-029**: Every operation MUST be described in the published API contract before it is
   implemented, and its behaviour MUST match the contract.
+
+#### Capabilities
+
+- **FR-030**: Every caller holding the sync-jobs permission MUST be able to read the sync-job
+  capabilities, the server settings and limits a client needs before it submits:
+  - whether custom imapsync parameters are allowed for this caller (FR-006), and the allow-list in
+    effect, without `showpasswords` (FR-019);
+  - the bulk limit (FR-023), and the default and maximum page sizes (FR-011);
+  - each field's limits from FR-017: the numeric ranges of the port, polling interval, maximum age,
+    speed limit and both timeouts, the maximum lengths of the remote host, remote user, remote
+    password, destination subfolder, exclusion pattern and custom parameters, and the allowed
+    encryption values;
+  - the creation defaults of FR-017, including the exclusion pattern `(?i)spam|(?i)junk`.
+
+  The values MUST reflect the server's current configuration and MUST NOT include any secret. The
+  read MUST change nothing, and read-only keys MAY use it. A caller without the sync-jobs permission
+  MUST be refused as forbidden.
 
 ### Legacy Coverage
 
@@ -608,7 +693,8 @@ follows. Actions are `/api/v1` names; *form* marks legacy UI form handlers.
 | `delete/syncjob`, single and mass | `mailbox('delete', 'syncjob')` | FR-016, FR-023 to FR-025 |
 | Sync-job table mass actions: activate, deactivate and delete (administrator, domain-administrator and user tabs), "Schedule next" (administrator and domain-administrator tab) | Multi-select `edit_selected` / `delete_selected` in `tab-syncjobs.twig` and `user/Syncjobs.twig`, `js/site/mailbox.js`, `js/site/user.js` | FR-023, FR-024 |
 | `user_acl.syncjobs`, `da_acl.syncjobs` permission gate | `acl('to_session')`, `$_SESSION['acl']['syncjobs']` check in every syncjob case | FR-001, FR-005 |
-| Custom-parameter allow-list | `IMAPSYNC_OPTIONS.whitelist` in `vars.inc.php` | FR-019 |
+| Custom-parameter allow-list | `IMAPSYNC_OPTIONS.whitelist` in `vars.inc.php` | FR-019, FR-030 |
+| Form limits and hints (`min`/`max` attributes and range hints, `custom_params_hint`, pre-filled defaults) | `templates/modals/mailbox.twig`, `templates/modals/user.twig`, `templates/edit/syncjob.twig` | FR-017, FR-030 |
 | Run status columns and log maintained by the runner | `imapsync_runner.pl`, `imapsync` columns `is_running`, `last_run`, `success`, `exit_status`, `returned_text` | FR-008, FR-009, FR-022 |
 
 ### Legacy Parity and Deliberate Deviations
@@ -643,13 +729,16 @@ fork-only sync-job capabilities to make configurable.
 | Object outside scope | `access_denied` / empty result | "Not found" (FR-003) |
 | Remote password in reads | Redacted by default; returned by the internal `with_password` mode, which `/api/v1` can request | Never returned; the `with_password` mode is not offered (FR-018). **Deviation** (security) |
 | `showpasswords` custom option | Allowed (would unmask the password in the log) | Refused (FR-019). **Deviation** (hardening) |
-| Other custom options | Allow-list in `vars.inc.php`; non-listed options and tokens with a space refused | Same allow-list and checks (FR-019) |
+| Other custom options | Allow-list in `vars.inc.php`; non-listed options and tokens with a space refused | Same checks, against an API server setting with the upstream allow-list as default; field errors with rule codes (FR-019) |
+| Restricting custom parameters | Not possible; any caller with `syncjobs` may set them | Server setting, default as legacy; a refusal is the `customParamsNotPermitted` field error, and clients see the restriction in the capabilities read (FR-006, FR-030) |
+| Target mailbox on edit | `edit/syncjob` never reads it, so a sent value is silently ignored | Fixed; a different value is refused with the `immutable` field error (FR-016). **Deviation**: refused instead of ignored |
+| Form limits and defaults | Hard-coded in the add and edit forms | Readable through the capabilities read (FR-030) |
 | Remote host validation | Not validated on create (check commented out); validated as a host name on edit | Validated as a host name or IPv4 literal on both create and edit (FR-017). **Deviation** (bug fix) |
 | `maxage`, `maxbytespersecond`, `timeout1`, `timeout2` out of range | Silently clamped to the default | Refused with a validation error naming the field and range (FR-017). **Deviation** |
 | `port1`, `mins_interval` out of range | Refused (generic error) | Refused with a field-level validation error (FR-017) |
 | Authentication mechanism | Column `authmech1` exists (PLAIN/LOGIN/CRAM-MD5); add always stores `PLAIN`, edit never changes it | Always `PLAIN`, reported read-only, not settable (FR-007) |
 | Unused columns | `regextrans2`, `domain2`, `authmd51` kept at defaults | Not exposed (FR-007) |
-| Defaults at creation | The add modal pre-fills active, SSL, interval 20, timeouts 600, maxage 0, maxbytespersecond 0, delete-duplicates/automap/subscribe-all on | Same defaults applied when a field is omitted (FR-017, clarification 8) |
+| Defaults at creation | The add modal pre-fills active, SSL, interval 20, timeouts 600, maxage 0, maxbytespersecond 0, exclusion `(?i)spam|(?i)junk`, delete-duplicates/automap/subscribe-all on | Same defaults applied when a field is omitted (FR-017, clarification 8) |
 | Duplicate job | `(user2, user1, host1)` must be unique → `object_exists` on create | Same, as a conflict, on create and on an edit that would duplicate (FR-017) |
 | Run status and log | Read from `is_running`, `last_run`, `success`, `exit_status`, `returned_text`; `returned_text` surfaced as `log` | Same, read-only (FR-008, FR-009) |
 | Last-run reset ("Schedule next") | `edit/syncjob` with `last_run` and `success` set to empty → stored as NULL | A dedicated reschedule that clears both and does not change the version tag (FR-016) |
@@ -657,7 +746,7 @@ fork-only sync-job capabilities to make configurable.
 | Runner | Every minute on the master, selects `active = 1 AND is_running = 0` whose interval elapsed, runs imapsync, writes status and log | Unchanged; this API only manages rows and reads status (FR-022) |
 | List | Both tables load every row and page client-side | Server-side pagination, sorting, filters and search (FR-011 to FR-015). **Deviation** (enhancement) |
 | Concurrent edits | Last write wins | Version tags (FR-020, FR-021). **Deviation** |
-| Mass actions | `edit/syncjob` and `delete/syncjob` with arrays; processing continues past per-job access failures, but a custom-parameter validation failure on one job stops the jobs after it | Bulk action with one result per job; no failure stops the others (FR-023, FR-024). **Deviation** for the stop on a validation failure |
+| Mass actions | `edit/syncjob` and `delete/syncjob` with arrays; processing continues past per-job access failures, but a custom-parameter validation failure on one job stops the jobs after it | Bulk action with one result per job; optional per-item version tags (`outdated` result); no failure stops the others (FR-023, FR-024). **Deviation** for the stop on a validation failure |
 | UI log entries | Written to the `logs` table | Written to this API's audit log (FR-025), as in feature 001. **Deviation** |
 | SOGo / memcached side effects | None for sync jobs (the closing `update_sogo_static_view` block skips the `syncjob` type) | None (FR-022) |
 
@@ -678,7 +767,9 @@ fork-only sync-job capabilities to make configurable.
 - **Mailbox** (existing mailcow data, feature 003): the sync job's target; this feature reads it to
   resolve the target and the caller's scope.
 - **Bulk action** (transient): one action (activate, deactivate, reschedule or delete), up to 100
-  sync jobs and one result per sync job.
+  sync jobs, each with an optional version tag, and one result per sync job.
+- **Sync-job capabilities** (computed): whether custom parameters are allowed for the caller, the
+  allow-list in effect, the bulk limit, page sizes, field limits and creation defaults.
 - **Audit record** (owned by this API, defined in feature 001): extended with the sync-job target
   type, the target identifier, the target mailbox and the attribute changes, with the remote
   password recorded only as "changed".
@@ -701,8 +792,9 @@ fork-only sync-job capabilities to make configurable.
   space, or `showpasswords` are refused with a validation error naming the offending option, and
   100% of out-of-range numeric values are refused with a field-level validation error.
 - **SC-005**: 100% of changes sent with an outdated version tag are refused, and no change sent with
-  a current version tag overwrites a configuration change it did not see. Rescheduling a job never
-  fails on a version check.
+  a current version tag overwrites a configuration change it did not see. In bulk actions, 100% of
+  items with an outdated tag are reported `outdated` and left unchanged while the other items
+  proceed. Rescheduling a job never fails on a version check.
 - **SC-006**: In 95% of requests, a page of 25 sync jobs with run status is returned within 1 second
   on a server with 5,000 sync jobs across 100,000 mailboxes.
 - **SC-007**: Every request in FR-025 produces exactly one audit record per affected sync job, and no
@@ -725,9 +817,10 @@ fork-only sync-job capabilities to make configurable.
   which move or remove a job's target, are handled in feature 003.
 - The remote password is stored in plain text because imapsync requires it; this is an inherent
   property of sync jobs, not a choice of this feature. The API keeps it hidden from every response.
-- These defaults can be changed by the operator: the list page size (25, maximum 1,000), the bulk
-  limit (100) and whether custom imapsync parameters are restricted to administrators (default: not
-  restricted, as in legacy).
+- These defaults can be changed by the operator: the list page size (25, maximum 100), the bulk
+  limit (100), the custom-parameter allow-list (default: upstream's `IMAPSYNC_OPTIONS.whitelist`)
+  and whether custom imapsync parameters are restricted to administrators (default: not restricted,
+  as in legacy). Clients read the values in effect through the capabilities read (FR-030).
 - Creating a sync job has no effect on Postfix, Dovecot delivery, SOGo, Redis or memcached beyond
   the runner eventually connecting to the remote server; the legacy code performs no such side
   effect for sync jobs.

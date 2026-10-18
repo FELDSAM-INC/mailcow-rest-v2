@@ -9,8 +9,9 @@
 -- Modes and answers:
 --   fingerprint  {'ok', fingerprint}
 --   create       {'exists'} when a public key or a selector is stored, else {'ok', '', ''}
---   replace      {'outdated'} when the expected fingerprint differs, else {'ok', old selector, old public key}
---   delete       {'absent'} without a key, {'outdated'}, else {'ok', old selector, old public key}
+--   replace      {'outdated'} when the expected fingerprint differs, else {'ok', old selector, old public key,
+--                old private key} (the old fields let the caller restore them when its audit record fails)
+--   delete       {'absent'} without a key, {'outdated'}, else {'ok', old selector, old public key, old private key}
 --   restore      {'outdated'} unless the current fingerprint is the expected one; then the given
 --                fields replace the current ones ('' = absent): {'ok'}
 
@@ -61,14 +62,14 @@ if mode == 'replace' then
   if expected ~= '' and expected ~= fingerprint then return {'outdated'} end
   removeCurrent()
   write(ARGV[4], ARGV[5], ARGV[6])
-  return {'ok', s(sel), s(pub)}
+  return {'ok', s(sel), s(pub), s(priv)}
 end
 
 if mode == 'delete' then
   if not pub and not sel then return {'absent'} end
   if expected ~= '' and expected ~= fingerprint then return {'outdated'} end
   removeCurrent()
-  return {'ok', s(sel), s(pub)}
+  return {'ok', s(sel), s(pub), s(priv)}
 end
 
 if mode == 'restore' then

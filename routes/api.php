@@ -760,6 +760,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->name('dkim-keys.show');
     });
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::post('/dkim-keys', [DkimKeyController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'dkimKeyGeneration', 'target' => 'dkimKey'])
+            ->name('dkim-keys.store');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

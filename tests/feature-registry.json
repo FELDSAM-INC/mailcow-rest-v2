@@ -340,7 +340,6 @@
         }
     },
     "pendingOperations": [
-        "generateDkimKey",
         "deleteDkimKey",
         "applyDkimKeyBulkAction",
         "importDkimKey",

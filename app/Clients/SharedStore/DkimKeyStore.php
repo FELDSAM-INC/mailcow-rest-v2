@@ -255,6 +255,7 @@ class DkimKeyStore
             $status,
             isset($answer[1]) && $answer[1] !== '' ? (string) $answer[1] : null,
             isset($answer[2]) && $answer[2] !== '' ? (string) $answer[2] : null,
+            isset($answer[3]) && $answer[3] !== '' ? (string) $answer[3] : null,
         );
     }
 

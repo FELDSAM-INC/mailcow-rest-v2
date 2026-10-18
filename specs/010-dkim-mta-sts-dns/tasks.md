@@ -406,7 +406,7 @@ with overwrite, and compare the Redis hashes with legacy's format.
 
 ### Tests for User Story 2
 
-- [ ] T043 [P] [US2] Write `tests/Feature/Dkim/GenerateDkimKeyTest.php`:
+- [X] T043 [P] [US2] Write `tests/Feature/Dkim/GenerateDkimKeyTest.php`:
   - AS1: no selector or size → `201`, `Location: /api/v2/dkim-keys/example.org`, `ETag`,
     `data.state valid`, `data.key.keyLength 2048`, `data.key.selector` = the default selector,
     `data.dnsPublication.status notConfigured`; the three hashes hold the key in legacy format;
@@ -431,23 +431,23 @@ with overwrite, and compare the Redis hashes with legacy's format.
     record with the details and failure reason of research R22 and no private key;
   - audit insert failing (database trigger in the test) → `500`, the previous key restored (or no
     key), the log names the name.
-- [ ] T044 [P] [US2] Write `tests/Feature/Dkim/DkimConcurrencyTest.php` (FR-053): five worker
+- [X] T044 [P] [US2] Write `tests/Feature/Dkim/DkimConcurrencyTest.php` (FR-053): five worker
   processes (`Symfony\Component\Process\Process` running `php artisan tinker --execute` against the
   test database and Redis) generate a key for the same name at once → exactly one `created`, four
   `exists`; the stored key is complete and consistent (fingerprint of one generator's material).
 
 ### Implementation for User Story 2
 
-- [ ] T045 [US2] Create `app/Http/Requests/Api/V2/GenerateDkimKeyRequest.php`: `name` "required, string, 1 to 255 characters"; `selector` "optional, 1 to 255
+- [X] T045 [US2] Create `app/Http/Requests/Api/V2/GenerateDkimKeyRequest.php`: `name` "required, string, 1 to 255 characters"; `selector` "optional, 1 to 255
   characters, letters, digits, `-`, `_` and `.` only" (`App\Rules\DkimSelector` from 002:
   `invalidFormat`/`dkimSelector`, `tooLong`); `keySize` "optional, one of 1024, 2048, 3072, 4096"
   (`notInList`); `overwrite` "optional boolean" (`invalidType`).
-- [ ] T046 [US2] Implement `DkimKeyService::generate(Principal, name, ?selector, ?bits, overwrite,
+- [X] T046 [US2] Implement `DkimKeyService::generate(Principal, name, ?selector, ?bits, overwrite,
   ?ifMatch): DkimKeyChange` in `app/Services/Dkim/DkimKeyService.php`: resolve the name (domain or
   alias domain in scope, else not found), refuse `overwrite` for domain administrators, generate,
   `create` or `replace` through the store with the `If-Match` fingerprint, publish, audit
   (`commitChange`). Create `app/Services/Dkim/DkimKeyChange.php`.
-- [ ] T047 [US2] Create `app/Http/Resources/Api/V2/DkimKeyChangeResource.php` (contract
+- [X] T047 [US2] Create `app/Http/Resources/Api/V2/DkimKeyChangeResource.php` (contract
   `DkimKeyChangeResult`: `DkimKeyResource` plus `dnsPublication {status, recordName, reason {code,
   detail} | null}`) and implement `store` in `app/Http/Controllers/Api/V2/DkimKeyController.php`
   (`201` with `Location` and `ETag`, or `200` with `ETag`; `4xx` refusals audited by

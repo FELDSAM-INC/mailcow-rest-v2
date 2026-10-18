@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Api\V2;
 
 use App\Http\Controllers\Controller;
 use App\Http\RequestContext;
+use App\Http\Requests\Api\V2\GenerateDkimKeyRequest;
 use App\Http\Requests\Api\V2\ListDkimKeysRequest;
+use App\Http\Resources\Api\V2\DkimKeyChangeResource;
 use App\Http\Resources\Api\V2\DkimKeyResource;
 use App\Services\Dkim\DkimEntryQuery;
+use App\Services\Dkim\DkimKeyService;
 use App\Services\Dkim\DkimNameResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,6 +35,20 @@ class DkimKeyController extends Controller
         $page = $this->query->page($principal, $request->filters(), $list);
 
         return DkimKeyResource::list($page['entries'], $list->meta($page['total']));
+    }
+
+    public function store(GenerateDkimKeyRequest $request, DkimKeyService $service): JsonResponse
+    {
+        $change = $service->generate(
+            RequestContext::requirePrincipal($request),
+            $request->name(),
+            $request->selector(),
+            $request->keySize(),
+            $request->overwrite(),
+            $request->header('If-Match'),
+        );
+
+        return DkimKeyChangeResource::response($change);
     }
 
     public function show(Request $request, string $dkimName): JsonResponse

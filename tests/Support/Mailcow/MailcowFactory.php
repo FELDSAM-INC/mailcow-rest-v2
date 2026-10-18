@@ -2,10 +2,12 @@
 
 namespace Tests\Support\Mailcow;
 
+use App\Services\Dkim\DkimKeyGenerator;
 use Database\Factories\MailcowRows;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use RuntimeException;
+use Tests\Support\Dkim\DkimFixtures;
 use Tests\Support\WebAuthn\VirtualCredential;
 
 /**
@@ -51,6 +53,61 @@ class MailcowFactory extends MailcowRows
         }
 
         $client->hSet($key, $field, $value);
+    }
+
+    /**
+     * A DKIM key in legacy's format (feature 010 T029): a fixture key of the given length
+     * (DkimFixtures), or the public key derived from the given PEM. Returns the key pair.
+     *
+     * @return array{public: string, private: string}
+     */
+    public function dkimKey(string $name, string $selector = 'dkim', int|string $bitsOrPem = 1024, bool $withPrivateKey = true): array
+    {
+        if (is_int($bitsOrPem)) {
+            $pair = DkimFixtures::rsa()[$bitsOrPem] ?? throw new RuntimeException("No {$bitsOrPem}-bit DKIM fixture.");
+        } else {
+            $public = (new DkimKeyGenerator)->publicKeyOf($bitsOrPem) ?? throw new RuntimeException('The PEM is not a private key.');
+            $pair = ['public' => $public, 'private' => $bitsOrPem];
+        }
+
+        $this->dkimKeyHashes($name, $selector, $pair['public'], $withPrivateKey ? $pair['private'] : null);
+
+        return $pair;
+    }
+
+    /**
+     * A key that legacy stored under a name as typed, for example `Example.ORG` or
+     * `bücher.example`, which Rspamd never uses (feature 010 FR-006).
+     *
+     * @return array{public: string, private: string}
+     */
+    public function legacyDkimKey(string $rawName, string $selector = 'dkim', int|string $bitsOrPem = 1024): array
+    {
+        return $this->dkimKey($rawName, $selector, $bitsOrPem);
+    }
+
+    /**
+     * An incomplete key, for example after a partial legacy write: only the given parts
+     * (`publicKey`, `selector`, `privateKey` (stored under `<selector>.<name>`, the selector
+     * defaulting to `dkim`)).
+     *
+     * @param  array{publicKey?: string, selector?: string, privateKey?: string}  $parts
+     */
+    public function partialDkimKey(string $name, array $parts): void
+    {
+        $redis = Redis::connection('mailcow');
+
+        if (isset($parts['publicKey'])) {
+            $redis->hset('DKIM_PUB_KEYS', $name, $parts['publicKey']);
+        }
+
+        if (isset($parts['selector'])) {
+            $redis->hset('DKIM_SELECTORS', $name, $parts['selector']);
+        }
+
+        if (isset($parts['privateKey'])) {
+            $redis->hset('DKIM_PRIV_KEYS', ($parts['selector'] ?? 'dkim').'.'.$name, $parts['privateKey']);
+        }
     }
 
     /**

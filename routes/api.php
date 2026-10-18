@@ -746,6 +746,15 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->name('mailbox-relayhost-assignment.update');
     });
 
+    // Feature 010: DKIM keys, MTA-STS policies and DNS diagnostics. Names are percent-encoded
+    // domain names, so `[^/]+`. The sub-resources of a key and the POST-only bulk path come before
+    // `/dkim-keys/{dkimName}`, which never accepts POST (a key named `bulk-actions` stays readable
+    // and deletable). State-changing routes and the export declare `restv2.audit` (research R22).
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+    });
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+    });
+
     Route::get('/audit-events', [AuditEventController::class, 'index'])
         ->middleware(['restv2.auth:authenticated', 'restv2.pending'])
         ->name('audit-events.index');

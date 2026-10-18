@@ -396,18 +396,47 @@ class MailcowRows
         ]);
     }
 
-    /** An MTA-STS policy (`mta_sts`), as legacy stores it. */
-    public function mtaSts(string $domain): void
-    {
+    /**
+     * An MTA-STS policy (`mta_sts`), as legacy `mailbox('add', 'mta_sts')` stores it: `version`
+     * lower-case, `mode` lower-case, the MX hosts joined by `,`, `max_age` as a string and the
+     * identifier `YmdHis` (now in mailcow's time zone unless given).
+     *
+     * @param  list<string>|string  $mx
+     */
+    public function mtaSts(
+        string $domain,
+        string $mode = 'enforce',
+        array|string $mx = 'mail.example.org',
+        int|string $maxAge = 86400,
+        int $active = 1,
+        ?string $id = null,
+        string $version = 'stsv1',
+    ): void {
         DB::table('mta_sts')->insert([
-            'id' => (int) date('YmdHis'),
+            'id' => (int) ($id ?? CarbonImmutable::now((string) (config('restv2.timezone') ?: 'UTC'))->format('YmdHis')),
             'domain' => $domain,
-            'version' => 'stsv1',
-            'mode' => 'enforce',
-            'mx' => 'mail.example.org',
-            'max_age' => '86400',
-            'active' => 1,
+            'version' => $version,
+            'mode' => $mode,
+            'mx' => is_array($mx) ? implode(',', $mx) : $mx,
+            'max_age' => (string) $maxAge,
+            'active' => $active,
         ]);
+    }
+
+    /**
+     * A DKIM key in mailcow's Redis hashes, as legacy `dkim('add')` writes it (connection
+     * `mailcow`): `DKIM_PUB_KEYS[name]`, `DKIM_SELECTORS[name]` and, unless null,
+     * `DKIM_PRIV_KEYS[selector.name]`. The name is written as given.
+     */
+    public function dkimKeyHashes(string $name, string $selector, string $publicKey, ?string $privateKey): void
+    {
+        $redis = Redis::connection('mailcow');
+        $redis->hset('DKIM_PUB_KEYS', $name, $publicKey);
+        $redis->hset('DKIM_SELECTORS', $name, $selector);
+
+        if ($privateKey !== null) {
+            $redis->hset('DKIM_PRIV_KEYS', $selector.'.'.$name, $privateKey);
+        }
     }
 
     /** Pushover settings of a mailbox (`pushover`). */

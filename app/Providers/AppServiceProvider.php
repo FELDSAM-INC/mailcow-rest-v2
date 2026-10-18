@@ -42,17 +42,21 @@ use App\Models\Mailcow\Mailbox;
 use App\Models\Mailcow\MailboxTemplate;
 use App\Models\Mailcow\Oauth2Client;
 use App\Policies\AliasPolicy;
+use App\Policies\DkimKeyPolicy;
+use App\Policies\DnsDiagnosticsPolicy;
 use App\Policies\DomainPolicy;
 use App\Policies\DomainTemplatePolicy;
 use App\Policies\IdentityProviderPolicy;
 use App\Policies\MailboxPolicy;
 use App\Policies\MailboxTemplatePolicy;
 use App\Policies\MonitoringPolicy;
+use App\Policies\MtaStsPolicyPolicy;
 use App\Policies\Oauth2ClientPolicy;
 use App\Policies\SyncJobPolicy;
 use App\Services\Aliases\AliasAuditTargets;
 use App\Services\Audit\RefusalAuditor;
 use App\Services\Config\MailcowConfig;
+use App\Services\Dkim\DkimAuditTargets;
 use App\Services\Domains\DomainAuditTargets;
 use App\Services\Groupware\GroupwareCacheFlush;
 use App\Services\IdentityProvider\IdentityProviderAuditTargetResolver;
@@ -60,6 +64,7 @@ use App\Services\Mailboxes\MailboxAuditTargets;
 use App\Services\Monitoring\MonitoringAuditTargetResolver;
 use App\Services\Monitoring\SharedSnapshotCache;
 use App\Services\Monitoring\UpdateCheckService;
+use App\Services\MtaSts\MtaStsAuditTargets;
 use App\Services\Oauth2\Oauth2ClientAuditTargetResolver;
 use App\Services\Oauth2\Oauth2ClientService;
 use App\Services\Routing\RoutingAuditTargets;
@@ -161,6 +166,17 @@ class AppServiceProvider extends ServiceProvider
             return $this;
         });
         SyncJobAuditTargets::register($this->app->make(RefusalAuditor::class));
+
+        // Feature 010: DKIM keys, MTA-STS policies and DNS diagnostics (FR-005), and their refusal
+        // auditing (research R22).
+        foreach (['viewAny', 'view', 'generate', 'overwrite', 'import', 'copy', 'delete', 'export', 'publish'] as $ability) {
+            Gate::define("dkim.{$ability}", [DkimKeyPolicy::class, $ability]);
+        }
+        Gate::define('mtaSts.use', [MtaStsPolicyPolicy::class, 'use']);
+        Gate::define('dnsDiagnostics.run', [DnsDiagnosticsPolicy::class, 'run']);
+        Gate::define('dnsDiagnostics.serverChecks', [DnsDiagnosticsPolicy::class, 'serverChecks']);
+        DkimAuditTargets::register($this->app->make(RefusalAuditor::class));
+        MtaStsAuditTargets::register($this->app->make(RefusalAuditor::class));
 
         // mailcow's SESSION_LIFETIME (seconds) is the idle lifetime of browser sessions (R6).
         try {

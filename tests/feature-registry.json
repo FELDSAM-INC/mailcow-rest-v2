@@ -312,7 +312,48 @@
                 "next-hop-credentials-differ",
                 "next-hop-interferes"
             ]
+        },
+        "010-dkim-mta-sts-dns": {
+            "operations": [
+                "listDkimKeys",
+                "generateDkimKey",
+                "getDkimKey",
+                "deleteDkimKey",
+                "applyDkimKeyBulkAction",
+                "importDkimKey",
+                "copyDkimKey",
+                "exportDkimPrivateKey",
+                "publishDkimDnsRecord",
+                "getDnsCapabilities",
+                "listMtaStsPolicies",
+                "createMtaStsPolicy",
+                "getMtaStsPolicy",
+                "updateMtaStsPolicy",
+                "runDnsDiagnostics"
+            ],
+            "problemTypes": [
+                "dkim-key-exists",
+                "dkim-private-key-export-disabled",
+                "dkim-dns-publication-disabled",
+                "mta-sts-policy-exists"
+            ]
         }
     },
-    "pendingOperations": []
+    "pendingOperations": [
+        "listDkimKeys",
+        "generateDkimKey",
+        "getDkimKey",
+        "deleteDkimKey",
+        "applyDkimKeyBulkAction",
+        "importDkimKey",
+        "copyDkimKey",
+        "exportDkimPrivateKey",
+        "publishDkimDnsRecord",
+        "getDnsCapabilities",
+        "listMtaStsPolicies",
+        "createMtaStsPolicy",
+        "getMtaStsPolicy",
+        "updateMtaStsPolicy",
+        "runDnsDiagnostics"
+    ]
 }

@@ -53,6 +53,15 @@ class DkimKeyStore
         });
     }
 
+    /**
+     * Whether a public key or a selector is stored for the exact name (FR-008), without reading the
+     * private key.
+     */
+    public function hasKey(string $name): bool
+    {
+        return $this->store->run(fn (Redis $redis): bool => (bool) $redis->hExists(self::PUB_KEYS, $name) || (bool) $redis->hExists(self::SELECTORS, $name));
+    }
+
     public function create(string $name, string $selector, DkimKeyMaterial $material): DkimStoreResult
     {
         return $this->run('create', $name, null, $selector, $material->publicKey, $material->privateKey);

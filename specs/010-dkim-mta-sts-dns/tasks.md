@@ -56,13 +56,13 @@ the shared `AuditFailureReason` value of research R22; `401` and CSRF refusals w
 
 **Purpose**: dependencies, settings and fixtures on top of 001's stack. No business logic.
 
-- [ ] T001 Run `composer require mlocati/spf-lib:^3.3` and check in `composer.lock` that
+- [X] T001 Run `composer require mlocati/spf-lib:^3.3` and check in `composer.lock` that
   `mlocati/spf-lib`, `mlocati/ip-lib` and `mlocati/idna` are MIT-licensed (R25). DNS and SMTP use
   feature 009's clients; no DNS library is added. Record the justification lines of R25 in the `composer.json` `extra`
   block that 001 uses for R28 (or in `docs/` if 001 keeps it there).
-- [ ] T002 [P] Add `bind-tools` (for `named-checkzone`) to the `dev` stage of `docker/php/Dockerfile`
+- [X] T002 [P] Add `bind-tools` (for `named-checkzone`) to the `dev` stage of `docker/php/Dockerfile`
   (R21, R25). The `production` stage is unchanged.
-- [ ] T003 [P] Extend `config/restv2.php` with the settings of research R24, each with its default:
+- [X] T003 [P] Extend `config/restv2.php` with the settings of research R24, each with its default:
   `dkim.default_selector` (`RESTV2_DEFAULT_DKIM_SELECTOR`, `dkim`, if 002 has not added it),
   `dkim.allowed_key_sizes` `[1024, 2048, 3072, 4096]`, `dkim.default_key_size` `2048`,
   `dkim.private_key_max_bytes` `16384`, `dkim.import_bits` `[1024, 8192]`,
@@ -77,17 +77,17 @@ the shared `AuditFailureReason` value of research R22; `401` and CSRF refusals w
   `SIEVE_PORT` (defaults 143, 993, 110, 995, 465, 587, 4190, last `:`-separated part). Add the dev
   values to `.env.example` and the test values to `.env.testing` (`RESTV2_PUBLIC_IPV4=`,
   `TZ=Europe/Prague` from 001).
-- [ ] T004 [P] Extend `deploy/docker-compose.override.yml` for the API service (the `dns:` server
+- [X] T004 [P] Extend `deploy/docker-compose.override.yml` for the API service (the `dns:` server
   `${IPV4_NETWORK:-172.22.1}.254` and `dns_opt: ["timeout:2", "attempts:2"]` come from 009 and
   satisfy FR-046 and FR-048; keep them): the environment variables `IPV4_NETWORK`,
   `IMAP_PORT`, `IMAPS_PORT`, `POP_PORT`, `POPS_PORT`, `SMTPS_PORT`, `SUBMISSION_PORT`, `SIEVE_PORT`,
   and commented examples of every `RESTV2_*` setting of R24 with its default and FeldHost value.
-- [ ] T005 Write `tests/Unit/Support/MailcowConfigDkimTest.php` (fails first): with
+- [X] T005 Write `tests/Unit/Support/MailcowConfigDkimTest.php` (fails first): with
   `tests/fixtures/mailcow-inc/vars.local.inc.php` setting `$SHOW_DKIM_PRIV_KEYS = true;` and an
   `$autodiscover_config['imap']['port'] = 10993`, `MailcowConfig` returns them; `RESTV2_SHOW_DKIM_PRIV_KEYS=false`
   wins; without the mount the defaults are `false` and ports derived from the port variables; the
   `sieve` entry falls back to `SIEVE_PORT` (legacy `dns_diagnostics.php`).
-- [ ] T006 Extend 001's `resources/bin/export-mailcow-vars.php` and
+- [X] T006 Extend 001's `resources/bin/export-mailcow-vars.php` and
   `app/Services/Config/MailcowConfig.php` to export `SHOW_DKIM_PRIV_KEYS` and the `imap`, `pop3`,
   `smtp` and `sieve` entries (`server`, `port`, `tlsport`) of `$autodiscover_config`, with the R14
   precedence (`RESTV2_SHOW_DKIM_PRIV_KEYS`, `RESTV2_AUTODISCOVER_CONFIG` as JSON). Create
@@ -99,7 +99,7 @@ the shared `AuditFailureReason` value of research R22; `401` and CSRF refusals w
   extraction, private key export and trim) and writes `tests/fixtures/legacy/dkim/generated-2048.pem`,
   `generated-2048.pub` (legacy's public key text) and `README.md` (tag, source SHA-256, GPL-3.0
   notice). Run it for `2026-09a` and commit the fixtures.
-- [ ] T008 [P] Create `tests/Support/Dkim/DkimFixtures.php`: pre-generated PEM texts for RSA 1024,
+- [X] T008 [P] Create `tests/Support/Dkim/DkimFixtures.php`: pre-generated PEM texts for RSA 1024,
   2048, 3072, 4096 and 8192 bits (PKCS #1 and PKCS #8), a 512-bit and a 9216-bit RSA key, an
   encrypted PKCS #8 key, a PKCS #1 key with `Proc-Type: 4,ENCRYPTED`, an EC P-256 key, a public key,
   a certificate, two concatenated keys, and a 17 KiB text; each with its expected public key text
@@ -253,7 +253,7 @@ Runs when feature 010 is implemented (after 002–009).
 
 ### Tests for Phase 3
 
-- [ ] T024 [P] Write `tests/Unit/Dkim/DkimNameResolverTest.php` (R7): an administrator's raw name
+- [X] T024 [P] Write `tests/Unit/Dkim/DkimNameResolverTest.php` (R7): an administrator's raw name
   that is a field of `DKIM_PUB_KEYS` or `DKIM_SELECTORS` but neither a domain nor an alias domain
   resolves to that unused key by its exact spelling (`Example.ORG`, `bücher.example`); otherwise
   the name is trimmed, lower-cased and converted with UTS #46 (`BÜCHER.example` →
@@ -261,7 +261,7 @@ Runs when feature 010 is implemented (after 002–009).
   domain administrator resolves own domains (also inactive ones) and alias domains whose target is
   own, and gets "out of scope" for foreign names and every `none` name; an unconvertible name is
   "invalid".
-- [ ] T025 [P] Write `tests/Unit/Support/DomainNameMxHostTest.php`: the MX-host rule accepts
+- [X] T025 [P] Write `tests/Unit/Support/DomainNameMxHostTest.php`: the MX-host rule accepts
   `mail.example.org`, `*.example.org`, `MAIL.Example.ORG` (normalised) and IDN names, and refuses
   `mail..example`, `-mail.example.org`, `*.`, `a*.example.org`, labels over 63 and names over 253
   characters (002's `domainName` rule plus the `*.` prefix, legacy `is_valid_domain_name` with
@@ -269,29 +269,29 @@ Runs when feature 010 is implemented (after 002–009).
 
 ### Implementation for Phase 3
 
-- [ ] T026 [P] Create `app/Models/Mailcow/MtaStsPolicy.php` (`$table = 'mta_sts'`, `$primaryKey =
+- [X] T026 [P] Create `app/Models/Mailcow/MtaStsPolicy.php` (`$table = 'mta_sts'`, `$primaryKey =
   'domain'`, `$keyType = 'string'`, `$incrementing = false`, `$timestamps = false`, `active` cast to
   boolean, accessor `policy_id` for column `id`) and, unless feature 004 created it,
   `app/Models/Mailcow/AliasDomain.php` (`$table = 'alias_domain'`, `$primaryKey = 'alias_domain'`).
-- [ ] T027 [P] Create `app/Services/Dkim/DkimName.php` and `app/Services/Dkim/DkimNameResolver.php`
+- [X] T027 [P] Create `app/Services/Dkim/DkimName.php` and `app/Services/Dkim/DkimNameResolver.php`
   (R7, using 001's `IdentityService` scope and 002's `App\Support\Domain\DomainName`). T024 passes.
-- [ ] T028 [P] Create `app/Rules/MtaStsMxHost.php` (rule-code aware: `invalidFormat` with `format:
+- [X] T028 [P] Create `app/Rules/MtaStsMxHost.php` (rule-code aware: `invalidFormat` with `format:
   mxHost`) on top of 002's `App\Support\Domain\DomainName`. T025 passes.
-- [ ] T029 [P] Extend `tests/Support/Mailcow/MailcowFactory.php` (and
+- [X] T029 [P] Extend `tests/Support/Mailcow/MailcowFactory.php` (and
   `database/factories/MailcowRows.php`) with `alias_domain` rows (if 004 has not), `mta_sts` rows
   exactly as legacy writes them (`version 'stsv1'`, lower-case `mode`, `mx` joined by `,`, `max_age`
   as string, `id` as `YmdHis`), and `dkimKey(name, selector, bits|pem, withPrivateKey: true)` that
   writes the three hashes in legacy format, plus `legacyDkimKey(rawName, …)` for non-normalised
   names and `partialDkimKey(name, parts)` for incomplete keys.
-- [ ] T030 [P] Create `tests/Support/Dkim/DkimAssertions.php` (trait): `assertDkimStored(name,
+- [X] T030 [P] Create `tests/Support/Dkim/DkimAssertions.php` (trait): `assertDkimStored(name,
   selector, pub, pem)`, `assertNoDkim(name)`, `assertNoPrivateKeyField(selector.name)`,
   `assertNoPemInResponse()`; use it in `tests/TestCase.php`.
-- [ ] T031 [P] Create `app/Policies/DkimKeyPolicy.php` (`viewAny`/`view`/`generate`: admin or domain
+- [X] T031 [P] Create `app/Policies/DkimKeyPolicy.php` (`viewAny`/`view`/`generate`: admin or domain
   admin; `overwrite`, `import`, `copy`, `delete`, `export`, `publish`: admin), 
   `app/Policies/MtaStsPolicyPolicy.php` (admin or domain admin) and
   `app/Policies/DnsDiagnosticsPolicy.php` (admin or domain admin; `serverChecks`: admin); register
   them as gates in `app/Providers/AppServiceProvider.php`. Mailbox users get `403 forbidden`.
-- [ ] T032 Register this feature with the shared refusal auditing (`docs/conventions.md`, research
+- [X] T032 Register this feature with the shared refusal auditing (`docs/conventions.md`, research
   R22): in `app/Providers/AppServiceProvider.php`, add `RefusalAuditor` target resolvers for
   `dkimKey` (normalised path `dkimName`, else the body `name` or, for a copy, the body `target`,
   truncated to 255) and `mtaStsPolicy` (path `policyDomain`, else the body `domain`), and map this
@@ -302,7 +302,7 @@ Runs when feature 010 is implemented (after 002–009).
   for each route, never read the private key text, and `details.errors` of a refused import holds
   codes and parameters only. Use 008's `App\Services\Audit\RefusalAuditor` (or the equivalent the
   first implemented feature created); do not create a second mechanism.
-- [ ] T033 Prepare `routes/api.php`: a block for this feature inside the `api.v2` group with
+- [X] T033 Prepare `routes/api.php`: a block for this feature inside the `api.v2` group with
   `restv2.auth:authenticated` and `restv2.pending:enforce`, the constraints
   `where('dkimName', '[^/]+')`, `where('policyDomain', '[^/]+')` and
   `where('diagnosticsName', '[^/]+')`, and the rule that the sub-resource routes

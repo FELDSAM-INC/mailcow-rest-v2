@@ -29,6 +29,7 @@ use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Clock\FakeSleeper;
 use Tests\Support\Contract\OpenApiContract;
+use Tests\Support\Dkim\DkimAssertions;
 use Tests\Support\Dns\FakeClock;
 use Tests\Support\Dns\FakeDnsResolver;
 use Tests\Support\Fakes\FakeDockerApiClient;
@@ -60,6 +61,7 @@ use Tests\Support\Smtp\FakeSmtpProbe;
 abstract class TestCase extends BaseTestCase
 {
     use DatabaseTransactions;
+    use DkimAssertions;
 
     /** The User-Agent that Laravel's test requests send. */
     protected const USER_AGENT = 'Symfony';

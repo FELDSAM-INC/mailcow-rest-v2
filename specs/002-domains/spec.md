@@ -82,6 +82,13 @@
   leftover domain map entries make the mail filter keep treating removed alias domains as local,
   and a leftover footer reappears when the name is added again. Both are legacy defects;
   constitution IV allows a stated deviation.)
+- Q: Legacy deletion removes BCC maps whose local destination is the bare domain name, but legacy
+  stores domain BCC maps as `@<domain>`, so they survive. Should the API remove them? → A: Yes.
+  Deleting a domain removes its BCC maps in the `@<domain>` form and in the bare form, and does the
+  same for each of its alias domains, as a deletion of that alias domain alone would (FR-037).
+  (orchestrator decision: feature 009 found the defect. Surviving BCC maps keep copying mail for a
+  domain that no longer exists, and would apply again if the name were added back. Feature 004
+  applies the same fix to alias domain deletion.)
 - Q: Legacy lets domain administrators read domain templates through `/api/v1`. Should they? → A:
   No. All template operations are for administrators only. (agent decision: domain administrators
   cannot create domains, the legacy UI shows the templates tab only to administrators, and least
@@ -733,7 +740,7 @@ and list the audit log filtered by target.
   - the alias domains that point to it;
   - the sender permissions, quota records, replicated quota records, notification settings and
     temporary aliases of addresses in the domain;
-  - the domain's spam allow and block lists, its domain-level BCC maps and its MTA-STS policy;
+  - the domain's spam allow and block lists and its MTA-STS policy;
   - the domain's entries in the domain map and in the rate limits;
   - the domain's stored mail, by asking mailcow's container service to move it to the garbage area
     (FR-039).
@@ -741,8 +748,11 @@ and list the audit log filtered by target.
   It MUST then update the groupware directory view and flush its cache, unless the groupware is
   disabled.
 - **FR-037**: A deletion MUST also remove, unlike legacy:
-  - for each alias domain that pointed to the domain: its aliases, the temporary aliases and
-    domain-level BCC maps of its addresses, and its entries in the domain map and in the rate
+  - the domain's BCC maps, both those stored for `@<domain>`, the form legacy creates, and any
+    stored for the bare domain name. Legacy removes only the bare form, so the domain's BCC maps
+    survive a legacy deletion;
+  - for each alias domain that pointed to the domain: its aliases, the temporary aliases of its
+    addresses, its BCC maps in both forms, and its entries in the domain map and in the rate
     limits, as a deletion of that alias domain alone would;
   - the domain's footer.
 - **FR-038**: A deletion MUST keep the domain's DKIM key, as in legacy, so that a domain created
@@ -975,8 +985,9 @@ in three ways:
 | Partial failure at creation | A shared-store failure after the row insert leaves a domain without its map entry. Rate limit, DKIM and SOGo restart failures leave the domain created, with a message each | Domain, tags and map entry atomic; follow-up outcomes reported (FR-024, FR-025). **Deviation** for atomicity |
 | Edit side effects | `update_sogo_static_view()` and memcached flush. GAL changes need a SOGo restart | Same (FR-034) |
 | Delete preconditions | Any `mailbox` row, including resources, blocks. A missing domain is reported as removed | Same; a missing domain is "not found" (FR-035, FR-040). **Deviation** |
-| Delete side effects | Rows in `domain`, `domain_admins`, `alias` (domain), `alias_domain` (target), `sender_acl`, `quota2`, `quota2replica`, `pushover`, `spamalias`, `filterconf`, `bcc_maps`, `mta_sts`; `admin` rows with `superadmin = 0` left without `domain_admins`, orphaned `da_acl`; `tags_domain` by cascade; `DOMAIN_MAP` and `RL_VALUE` entries; dockerapi exec in dovecot `maildir cleanup`; SOGo view and memcached | Same (FR-036, FR-038, FR-039) |
+| Delete side effects | Rows in `domain`, `domain_admins`, `alias` (domain), `alias_domain` (target), `sender_acl`, `quota2`, `quota2replica`, `pushover`, `spamalias`, `filterconf`, `mta_sts`; `admin` rows with `superadmin = 0` left without `domain_admins`, orphaned `da_acl`; `tags_domain` by cascade; `DOMAIN_MAP` and `RL_VALUE` entries; dockerapi exec in dovecot `maildir cleanup`; SOGo view and memcached | Same (FR-036, FR-038, FR-039) |
 | Delete leftovers | Aliases, temporary aliases, BCC maps, `DOMAIN_MAP` and `RL_VALUE` entries of the alias domains, and the `domain_wide_footer` row stay | Removed (FR-037). **Deviation** |
+| Domain BCC maps on delete | `DELETE FROM bcc_maps WHERE local_dest = '<domain>'`, but `bcc` add stores domain BCC maps as `@<domain>` (`functions.address_rewriting.inc.php`), so they survive. Alias domain deletion has the same defect | Removed in both forms, for the domain and its alias domains (FR-037). **Deviation** (bug fix) |
 | DKIM key on delete | Kept, shown as an unassigned key on the DKIM screen | Kept (FR-038) |
 | Templates | Name required; uniqueness checked only at creation; renaming Default silently ignored; deleting Default silently ignored but reported as done; bulk delete stops after the first; values not validated; 0 replaced by defaults | Uniqueness also on rename; Default rename and delete refused; values validated like domains; explicit values kept (FR-046 to FR-048). **Deviation** |
 | Footer | Stored per name in `domain_wide_footer` (replaced as a whole). Exclusions must exist anywhere on the server; invalid entries are skipped and the rest saved; no size limit; alias domain names accepted but never applied by the mail pipeline | Same storage; exclusions must belong to the domain; invalid entries refuse the whole request; 1 MiB per text; alias domain names "not found" (FR-051 to FR-055). **Deviation** |

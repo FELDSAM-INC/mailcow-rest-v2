@@ -49,7 +49,7 @@
   - version tags cover stored settings only and are optional to send (FR-041, FR-042);
   - deletion also cleans up alias domains and the footer (FR-037);
   - templates are administrator-only (FR-005, FR-045);
-  - there are no batch operations (FR-062), later replaced in iteration 4.
+  - one request per object (FR-062); iteration 4 superseded this with bulk actions.
 
   The legacy coverage table, the parity table with fork differences, and the creation report were
   added. The spec was renumbered to FR-001 to FR-062 and SC-001 to SC-009, and every cross-reference
@@ -86,6 +86,14 @@
   SC-011 and SC-012 and three entities were added. Footer exclusion candidates are left to features
   003 and 004. The spec now has FR-001 to FR-066 and SC-001 to SC-012. All checklist items pass, and
   every FR reference resolves.
+- Iteration 6 (orchestrator): FR-062 already defined the bulk actions. The only leftover "no batch"
+  wording was in this checklist, and it is now reworded. BCC maps: legacy `bcc` add stores domain
+  BCC maps as `@<domain>`, while legacy deletion matches the bare name, so they survive (found by
+  feature 009 and confirmed in `functions.address_rewriting.inc.php`). Domain BCC maps moved from
+  FR-036 (as legacy) to FR-037 (unlike legacy). FR-037 now removes both forms, for the domain and
+  its alias domains, with wording compatible with feature 004. The spec gained an
+  orchestrator-decision clarification, a **Deviation** (bug fix) parity row, and a corrected
+  "Delete side effects" row. All checklist items pass, and every FR reference resolves.
 - The domain-related legacy files of the FeldHost fork were diffed against upstream `2026-09a`. The
   domain logic is identical. The differences are the default DKIM selector and the ISPConfig DKIM DNS
   push, both now explicit (FR-027, FR-028 and the parity table).

@@ -234,10 +234,11 @@ app/
 │   └── Resources/Api/V2/{MailboxResource,MailboxCreatedResource,MailboxRenamedResource,
 │                         MailboxTemplateResource,MailboxDeletionPreviewResource,
 │                         MailboxCapabilitiesResource,MailboxTagUsageResource,PasswordPolicyResource}.php
+├── Exceptions/{MailboxDependencyUnavailable,OutcomeUnknown}.php   # 503 temporary-failure, 504 outcome-unknown
 ├── Models/Mailcow/
-│   ├── Mailbox.php                                # 001; + casts, scopes (notResource, inScope)
-│   ├── {MailboxTemplate,MailboxTag,QuotaUsage,QuotaReplicaUsage,Alias,SpamAlias,
-│   │    SenderAcl,Pushover}.php                   # new, read models (writes via services)
+│   ├── Mailbox.php                                # 001; + columns, casts, scopes (mailboxesOnly, inScope)
+│   ├── {MailboxTemplate,MailboxTag,QuotaUsage,QuotaReplicaUsage,SpamAlias,
+│   │    SenderAcl,Pushover}.php                   # new, read models (writes via services); Alias is 002's
 ├── Policies/{MailboxPolicy,MailboxTemplatePolicy}.php
 ├── Rules/{MailboxLocalPart,CustomAttributeName}.php
 ├── Services/
@@ -248,15 +249,15 @@ app/
 │   │   ├── MailboxReader.php                      # representation, batch loading, list query
 │   │   ├── MailboxListQuery.php                   # filters, search, sort expressions
 │   │   ├── MailboxVersion.php                     # ETag inputs
-│   │   ├── MailboxDefaults.php                    # built-in defaults (MailcowConfig) + template chain
+│   │   ├── MailboxDefaults.php, ResolvedMailboxValues.php   # built-in defaults + template chain
 │   │   ├── MailboxPermissionGuard.php             # FR-006/FR-035 choices and requiredFlags
 │   │   ├── MailboxValidator.php                   # business rules, all violations collected
 │   │   ├── AddressAvailability.php                # mailbox, resource, alias, temporary alias
-│   │   ├── MailboxCreator.php
+│   │   ├── MailboxCreator.php, MailboxCreationReport.php
 │   │   ├── MailboxUpdater.php
 │   │   ├── MailboxDeleter.php
-│   │   ├── MailboxDeletionPlanner.php             # shared by deletion and preview
-│   │   ├── MailboxRenamer.php                     # the compensated step sequence
+│   │   ├── MailboxDeletionPlanner.php, DeletionPlan.php     # shared by deletion and preview
+│   │   ├── MailboxRenamer.php, RenameStep.php, RenameStepOutcome.php   # the compensated step sequence
 │   │   ├── MailboxDataMover.php                   # rename's database part, both directions
 │   │   ├── MailStoreCommands.php                  # maildir cleanup/move, doveadm ACLs, sogo rename
 │   │   ├── MailboxBulkActions.php
@@ -264,7 +265,7 @@ app/
 │   │   ├── MailboxCapabilities.php
 │   │   ├── TaggedMailHandlingStore.php            # RCPT_WANTS_* hashes
 │   │   └── MailboxTemplateService.php
-│   ├── Passwords/{PasswordPolicyReader,MailboxPasswordHasher,PasswordPolicyChecker}.php
+│   ├── Passwords/{PasswordPolicyReader,EffectivePasswordPolicy,MailboxPasswordHasher,PasswordPolicyChecker}.php
 │   ├── Config/MailcowConfig.php                   # 001; + showLastLogin(), mailboxDefaultAttributes()
 │   └── Audit/AuditLogger.php                      # 001/002; + mailbox details whitelist
 └── Support/Tags/TagSet.php                        # generalised from 002's DomainTagSet
@@ -278,6 +279,8 @@ tests/
 ├── Support/Fakes/FakeDockerApiClient.php          # 002; + scripted exec answers, broadcast log
 ├── Support/Mailcow/MailcowFactory.php             # 001/002; + mailbox rows exactly as legacy
 ├── Feature/Mailboxes/                             # one test class per operation and concern
+├── Feature/Groupware/SogoDirectoryRefreshTest.php, Feature/Clients/DockerApiBroadcastTest.php
+├── Feature/Security/MailboxAuthorizationMatrixTest.php
 ├── Feature/MailboxTemplates/
 ├── Feature/PasswordPolicy/
 ├── Feature/Performance/MailboxListPerformanceTest.php

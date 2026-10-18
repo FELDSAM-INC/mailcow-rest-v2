@@ -44,6 +44,24 @@ final class OptionsJson
     }
 
     /**
+     * The creation options of a WebAuthn second factor (feature 005 research R8): like legacy's
+     * `webauthn-tfa-registration`, the credential need not be discoverable, so lbuchs's
+     * authenticator selection is kept as it is.
+     *
+     * @return array<string, mixed>
+     */
+    public static function secondFactorCreation(stdClass $args): array
+    {
+        /** @var array<string, mixed> $options */
+        $options = self::normalize($args->publicKey);
+
+        $options['excludeCredentials'] ??= [];
+        $options['timeout'] = self::TIMEOUT_MS;
+
+        return self::cleanExtensions($options);
+    }
+
+    /**
      * @param  string|null  $appId  the FIDO AppID extension of the second-factor challenge
      * @return array<string, mixed>
      */

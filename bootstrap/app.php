@@ -57,6 +57,10 @@ return Application::configure(basePath: dirname(__DIR__))
             $middleware->prependToPriorityList(StartSession::class, $step);
         }
 
+        // The routes of the signed-in account's own credentials and functions (feature 005 research
+        // R5). Empty for now; feature 007 adds its "not while impersonating" refusal here.
+        $middleware->group('restv2.own', []);
+
         // Per route, in this order: restv2.auth:<mode>, restv2.csrf, restv2.pending:<mode>.
         $middleware->alias([
             'restv2.auth' => RequireAuth::class,

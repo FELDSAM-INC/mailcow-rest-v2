@@ -75,6 +75,12 @@ use App\Http\Controllers\Api\V2\Oauth2ClientController;
 use App\Http\Controllers\Api\V2\Oauth2ClientSecretRegenerationController;
 use App\Http\Controllers\Api\V2\Oauth2ClientTokenRevocationController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
+use App\Http\Controllers\Api\V2\OwnPasswordController;
+use App\Http\Controllers\Api\V2\OwnPasswordPolicyController;
+use App\Http\Controllers\Api\V2\OwnSecondFactorController;
+use App\Http\Controllers\Api\V2\OwnSecondFactorRemovalController;
+use App\Http\Controllers\Api\V2\OwnSecondFactorWebAuthnOptionsController;
+use App\Http\Controllers\Api\V2\OwnTotpEnrolmentController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
 use App\Http\Controllers\Api\V2\PasskeyChallengeController;
 use App\Http\Controllers\Api\V2\PasskeyController;
@@ -815,6 +821,44 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('policyDomain', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'mtaStsPolicyUpdate', 'target' => 'mtaStsPolicy'])
             ->name('mta-sts-policies.update');
+    // The signed-in account's own password and second factors (feature 005 US1, US2): sessions
+    // only, every role. A restricted session may resolve its forced actions here (research R5).
+    Route::middleware(['restv2.own', 'restv2.auth:session'])->group(function (): void {
+        Route::get('/me/password-policy', [OwnPasswordPolicyController::class, 'show'])
+            ->middleware('restv2.pending:includes,passwordChange')
+            ->name('own-password-policy.show');
+        Route::put('/me/password', [OwnPasswordController::class, 'update'])
+            ->middleware(['restv2.csrf', 'restv2.pending:includes,passwordChange'])
+            ->defaults('restv2.audit', ['event' => 'ownPasswordChange', 'target' => 'accountPassword'])
+            ->name('own-password.update');
+
+        Route::get('/me/second-factors', [OwnSecondFactorController::class, 'index'])
+            ->middleware('restv2.pending:includes,secondFactorSetup')
+            ->name('own-second-factors.index');
+        Route::post('/me/second-factors', [OwnSecondFactorController::class, 'store'])
+            ->middleware(['restv2.csrf', 'restv2.pending:includes,secondFactorSetup'])
+            ->defaults('restv2.audit', ['event' => 'ownSecondFactorEnrolment', 'target' => 'secondFactor'])
+            ->name('own-second-factors.store');
+        // Ceremony requests (TOTP start, WebAuthn options) are not audited (plan Complexity Tracking).
+        Route::post('/me/second-factors/totp-enrolment', [OwnTotpEnrolmentController::class, 'store'])
+            ->middleware(['restv2.csrf', 'restv2.pending:includes,secondFactorSetup'])
+            ->name('own-totp-enrolment.store');
+        Route::post('/me/second-factors/webauthn-registration-options', [OwnSecondFactorWebAuthnOptionsController::class, 'store'])
+            ->middleware(['restv2.csrf', 'restv2.pending:includes,secondFactorSetup'])
+            ->name('own-second-factor-webauthn-options.store');
+        Route::post('/me/second-factors/removal', [OwnSecondFactorRemovalController::class, 'store'])
+            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->defaults('restv2.audit', ['event' => 'ownSecondFactorRemoval', 'target' => 'secondFactor'])
+            ->name('own-second-factor-removal.store');
+        Route::get('/me/second-factors/{secondFactorId}', [OwnSecondFactorController::class, 'show'])
+            ->middleware('restv2.pending')
+            ->where('secondFactorId', '[1-9][0-9]{0,9}')
+            ->name('own-second-factors.show');
+        Route::delete('/me/second-factors/{secondFactorId}', [OwnSecondFactorController::class, 'destroy'])
+            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->where('secondFactorId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'ownSecondFactorRemoval', 'target' => 'secondFactor'])
+            ->name('own-second-factors.destroy');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

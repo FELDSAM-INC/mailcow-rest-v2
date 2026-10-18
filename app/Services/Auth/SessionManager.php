@@ -47,6 +47,9 @@ class SessionManager
 
     public const HANDLE = 'restv2.handle';
 
+    /** Ceremonies of a signed-in account (feature 005), which a new sign-in discards. */
+    private const ACCOUNT_CEREMONIES = ['restv2.totpEnrolment', 'restv2.secondFactorWebauthn'];
+
     public function __construct(
         private readonly PendingActionEvaluator $evaluator,
         private readonly SessionRegistry $registry,
@@ -173,7 +176,7 @@ class SessionManager
     {
         $this->unregister($session);
         $session->migrate(true);
-        $session->forget([self::PENDING, self::PASSKEY_CHALLENGE, self::PASSKEY_REGISTRATION]);
+        $session->forget([self::PENDING, self::PASSKEY_CHALLENGE, self::PASSKEY_REGISTRATION, ...self::ACCOUNT_CEREMONIES]);
         $session->put(self::PRINCIPAL, array_filter([
             'username' => $principal->username,
             'role' => $principal->role->value,

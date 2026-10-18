@@ -263,6 +263,15 @@ class SecondFactorService
     }
 
     /**
+     * Marks a TOTP code's time slice as used for the entry, as a sign-in does (feature 005: the
+     * code that confirmed an enrolment must not sign in again). False when it was used before.
+     */
+    public function markTotpCodeUsed(int $tfaId, int $timeslice): bool
+    {
+        return $this->markTotpUsed($tfaId, $timeslice);
+    }
+
+    /**
      * Records the accepted time slice; false when it (or a later one) was accepted before.
      */
     private function markTotpUsed(int $tfaId, int $timeslice): bool

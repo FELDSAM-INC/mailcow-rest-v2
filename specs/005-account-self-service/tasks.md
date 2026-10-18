@@ -240,7 +240,7 @@ repeat with every refusal of AS-3 to AS-9.
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T030 [P] [US1] Write `tests/Feature/OwnAccount/OwnPasswordChangeTest.php` for
+- [X] T030 [P] [US1] Write `tests/Feature/OwnAccount/OwnPasswordChangeTest.php` for
   `changeOwnPassword`:
   - AS-1: a mailcow-source mailbox user with two other sessions and an active app password changes
     the password → `200` with `sessionsEnded: 2`, `activeAppPasswords: 1`,
@@ -270,23 +270,23 @@ repeat with every refusal of AS-3 to AS-9.
   - Legacy hash formats for the current password (SSHA, MD5-CRYPT, PBKDF2-SHA512 from 001's vectors)
     verify.
   - The account is both a mailbox and an administrator: the session's account changes only.
-- [ ] T031 [P] [US1] Write `tests/Feature/OwnAccount/OwnPasswordPolicyTest.php` for
+- [X] T031 [P] [US1] Write `tests/Feature/OwnAccount/OwnPasswordPolicyTest.php` for
   `getOwnPasswordPolicy` (FR-014): every role gets 003's policy values and the same `ETag` as
   `getPasswordPolicy`; a session restricted by `passwordChange` may read it; one restricted only by
   `secondFactorSetup` gets `pending-action-required`; a key gets `session-required`.
 
 ### Implementation for User Story 1
 
-- [ ] T032 [P] [US1] Create `app/Http/Requests/Api/V2/ChangeOwnPasswordRequest.php`: `newPassword`
+- [X] T032 [P] [US1] Create `app/Http/Requests/Api/V2/ChangeOwnPasswordRequest.php`: `newPassword`
   "required, string, 1–4096"; `currentPassword` "string, 1–4096, required unless `passwordChange` is
   pending" (`required`); `endOtherSessions` "boolean, default true"; then `NewPasswordValidator`.
-- [ ] T033 [US1] Create `app/Services/Account/OwnPasswordService.php` (R4): eligibility, throttle
+- [X] T033 [US1] Create `app/Services/Account/OwnPasswordService.php` (R4): eligibility, throttle
   check, current password, rules, hash with 003's `MailboxPasswordHasher`, the `mailbox` or `admin`
   update of DM in one transaction with the audit record, `SogoDirectory::rebuild()` for mailboxes
   unless `SKIP_SOGO=y`, `MemcachedFlusher` after commit, `SessionRegistry::endAll(…,
   exceptHandle)` when requested, `SessionManager::renew()` (`migrate(true)` + registry rename),
   active app password count.
-- [ ] T034 [US1] Create `app/Http/Resources/Api/V2/OwnPasswordChangeResultResource.php`,
+- [X] T034 [US1] Create `app/Http/Resources/Api/V2/OwnPasswordChangeResultResource.php`,
   `app/Http/Controllers/Api/V2/OwnPasswordController.php` (`update`) and
   `OwnPasswordPolicyController.php` (`show`, 003's `PasswordPolicyReader` and
   `PasswordPolicyResource`). Register `PUT /me/password` (`restv2.auth:session`, `restv2.csrf`,
@@ -309,9 +309,9 @@ storage, including the forced setup (FR-016, FR-027 to FR-036).
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T035 [P] [US2] Write `tests/Unit/Support/QrCodeProviderTest.php`: the data URI starts with
+- [X] T035 [P] [US2] Write `tests/Unit/Support/QrCodeProviderTest.php`: the data URI starts with
   `data:image/svg+xml;base64,`, decodes to SVG, and needs no `imagick`.
-- [ ] T036 [P] [US2] Write `tests/Feature/SecondFactors/OwnSecondFactorListTest.php` for
+- [X] T036 [P] [US2] Write `tests/Feature/SecondFactors/OwnSecondFactorListTest.php` for
   `listOwnSecondFactors` and `getOwnSecondFactor` (FR-027, AS-8): rows of every `authmech` and both
   states are listed with `type`, `name`, `active`, `usable` (false for `u2f`/`hotp`),
   `yubicoPublicId` (12 modhex characters for Yubico, else `null`); the entry used for the current
@@ -319,7 +319,7 @@ storage, including the forced setup (FR-016, FR-027 to FR-036).
   secret, key handle, public key or certificate; pagination, `sort` and `q`; another account's ID →
   `404`; restricted by `secondFactorSetup` → allowed, by `passwordChange` only → refused; key →
   `session-required`.
-- [ ] T037 [P] [US2] Write `tests/Feature/SecondFactors/TotpEnrolmentTest.php` (FR-030, AS-1, AS-2):
+- [X] T037 [P] [US2] Write `tests/Feature/SecondFactors/TotpEnrolmentTest.php` (FR-030, AS-1, AS-2):
   start → `200` with a 32-character base32 `secret`, a `provisioningUri` with the username and
   `OTP_LABEL` (`RESTV2_OTP_LABEL=FeldHost™ Mailhosting UI` variant), a QR data URI, `expiresAt` +10
   min; confirm with a valid code, a name and the current password → `201`, `Location:
@@ -331,7 +331,7 @@ storage, including the forced setup (FR-016, FR-027 to FR-036).
   in another session → expired; a wrong current password → `403 current-password-incorrect` with
   the enrolment intact and the throttle counted; the start is not audited, the enrolment is
   (`ownSecondFactorEnrolment`, no secret); an LDAP mailbox → `password-managed-externally`.
-- [ ] T038 [P] [US2] Write `tests/Feature/SecondFactors/WebAuthnSecondFactorEnrolmentTest.php` (FR-031,
+- [X] T038 [P] [US2] Write `tests/Feature/SecondFactors/WebAuthnSecondFactorEnrolmentTest.php` (FR-031,
   AS-3) with 001's `VirtualAuthenticator`: options exclude the account's existing WebAuthn second
   factors, `rp.id` = host, `authenticatorSelection.userVerification` per
   `WEBAUTHN_UV_FLAG_REGISTER`, `residentKey` not required, `expiresAt` +5 min; completion stores
@@ -339,13 +339,13 @@ storage, including the forced setup (FR-016, FR-027 to FR-036).
   001's second-factor step; reused or expired options → `400 second-factor-enrolment-expired`; a
   response for another challenge → `400 second-factor-enrolment-failed` and the options are used up;
   the same key registered as a passkey too stays a separate `fido2` row.
-- [ ] T039 [P] [US2] Write `tests/Feature/SecondFactors/YubiOtpEnrolmentTest.php` (FR-032, AS-4) with
+- [X] T039 [P] [US2] Write `tests/Feature/SecondFactors/YubiOtpEnrolmentTest.php` (FR-032, AS-4) with
   a fake `YubicoOtpVerifier`: a valid OTP with credentials → row `secret` =
   `<clientId>:<secretKey>:<first 12 of OTP>`; enrolling the same key again replaces the row; a
   rejected OTP → `400 second-factor-enrolment-failed`, nothing stored; an unreachable service →
   `503 temporary-verification-failure` with `Retry-After`, nothing stored; `clientId` with letters →
   `422 invalidFormat` (`digits`); the verifier received the given credentials, not stored ones.
-- [ ] T040 [P] [US2] Write `tests/Feature/SecondFactors/SecondFactorRemovalTest.php` (FR-034,
+- [X] T040 [P] [US2] Write `tests/Feature/SecondFactors/SecondFactorRemovalTest.php` (FR-034,
   FR-035, AS-5, AS-6): removing one of two active entries → `204`, row gone, audited; removing the
   only active entry → `409 last-second-factor`; removing an inactive entry while one entry is active
   → `204` (plan parity note); `force_tfa` `"1"` and `1` → `403 second-factor-required-by-policy`
@@ -353,12 +353,12 @@ storage, including the forced setup (FR-016, FR-027 to FR-036).
   rows untouched, one audit record with the removed IDs; a wrong current password → `403` and
   throttled; two concurrent removals of the last two active entries leave one (named lock
   `restv2_tfa_…`, run with two parallel processes).
-- [ ] T041 [P] [US2] Write `tests/Feature/SecondFactors/ForcedSecondFactorSetupTest.php` (FR-016,
+- [X] T041 [P] [US2] Write `tests/Feature/SecondFactors/ForcedSecondFactorSetupTest.php` (FR-016,
   FR-017, AS-7): an administrator with `force_tfa` and no second factor or passkey is restricted;
   the TOTP start, the WebAuthn options and the enrolment work without `currentPassword`; the next
   request shows `active`; the next sign-in is not restricted; `DELETE /me/second-factors/{id}` and
   the removal stay refused while restricted.
-- [ ] T042 [P] [US2] Write `tests/Feature/SecondFactors/SecondFactorAuthorizationTest.php`: for every
+- [X] T042 [P] [US2] Write `tests/Feature/SecondFactors/SecondFactorAuthorizationTest.php`: for every
   `/me/second-factors*` operation, admin, domain admin and mailcow mailbox user succeed for
   themselves; Keycloak and generic OIDC mailboxes → `password-managed-externally` (AS-9); read-only
   and read-write keys of an admin and of a domain admin → `session-required`; refusals of
@@ -366,27 +366,27 @@ storage, including the forced setup (FR-016, FR-027 to FR-036).
 
 ### Implementation for User Story 2
 
-- [ ] T043 [P] [US2] Create `app/Support/Totp/QrCodeProvider.php` (robthree's `BaconQrCodeProvider`
+- [X] T043 [P] [US2] Create `app/Support/Totp/QrCodeProvider.php` (robthree's `BaconQrCodeProvider`
   with format `svg`), bound for enrolment only. This makes T035 pass.
-- [ ] T044 [P] [US2] Extend `app/Clients/Yubico/YubicoOtpVerifier.php` and
+- [X] T044 [P] [US2] Extend `app/Clients/Yubico/YubicoOtpVerifier.php` and
   `HttpYubicoOtpVerifier.php` with `verifyWithCredentials(clientId, secretKey, otp)` (extends 001,
   R9); the per-row verification calls it.
-- [ ] T045 [US2] Create `app/Services/SecondFactors/SecondFactorQueryService.php` (list query of DM,
+- [X] T045 [US2] Create `app/Services/SecondFactors/SecondFactorQueryService.php` (list query of DM,
   no secret columns, `usedForCurrentSignIn`) and
   `app/Http/Resources/Api/V2/OwnSecondFactorResource.php`.
-- [ ] T046 [US2] Create `app/Services/SecondFactors/SecondFactorEnrolmentService.php` (R7–R9):
+- [X] T046 [US2] Create `app/Services/SecondFactors/SecondFactorEnrolmentService.php` (R7–R9):
   eligibility, current password (unless `secondFactorSetup` pending, through `OwnPasswordService`'s
   verifier and 001's throttle), TOTP start and confirmation (`restv2.totpEnrolment`, attempts,
   replay marker), WebAuthn options and completion (`restv2.secondFactorWebauthn`), Yubico
   replace-and-insert, all under `NamedLock` `restv2_tfa_<sha1(username)>`, inserts of DM, audit.
-- [ ] T047 [US2] Create `app/Services/SecondFactors/SecondFactorRemovalService.php` (R10, force_tfa
+- [X] T047 [US2] Create `app/Services/SecondFactors/SecondFactorRemovalService.php` (R10, force_tfa
   via `JSON_UNQUOTE(JSON_EXTRACT(…))`, last-active rule, remove all, named lock, audit).
-- [ ] T048 [P] [US2] Create `app/Http/Requests/Api/V2/ListOwnSecondFactorsRequest.php` (`ListQuery`,
+- [X] T048 [P] [US2] Create `app/Http/Requests/Api/V2/ListOwnSecondFactorsRequest.php` (`ListQuery`,
   sort `id|type|name`), `EnrolOwnSecondFactorRequest.php` (`type` in `totp|webauthn|yubiOtp`;
   `name` "required, trimmed, 1–255"; `code` `^[0-9]{6}$`; `credential` per 001's
   `WebAuthnRegistrationResponse` rules; `clientId` `^[0-9]{1,32}$` (`digits`); `secretKey` 1–128;
   `otp` `^[A-Za-z0-9]{44}$`; `currentPassword` 1–4096) and `RemoveAllOwnSecondFactorsRequest.php`.
-- [ ] T049 [US2] Create `app/Http/Resources/Api/V2/OwnTotpEnrolmentResource.php`, the controllers
+- [X] T049 [US2] Create `app/Http/Resources/Api/V2/OwnTotpEnrolmentResource.php`, the controllers
   `OwnSecondFactorController.php` (`index`, `show`, `store`, `destroy`),
   `OwnTotpEnrolmentController.php`, `OwnSecondFactorWebAuthnOptionsController.php` and
   `OwnSecondFactorRemovalController.php` in `app/Http/Controllers/Api/V2/`, and register the routes
@@ -1116,3 +1116,27 @@ that differ from what exists map as listed.
 - **Legacy Sieve parser**: copied unmodified under `resources/legacy/sieve/` and excluded from Pint.
   It triggers a compile warning (`continue` targeting `switch`) and dynamic-property deprecations
   under PHP 8.4, so `SieveValidator` loads and runs it under a scoped error handler.
+- **T030–T034 (US1)**: the re-authentication shared by US1–US3 is
+  `App\Services\Account\CurrentPasswordCheck` (001's `SignInThrottle::passwordKey()`, the same
+  delay and `429`, no fail2ban). The route group `restv2.own` is an empty middleware group in
+  `bootstrap/app.php`, which feature 007 fills. No `OwnPasswordChangeResultResource`: the controller
+  returns the service's array. Other sessions are ended inside the transaction, so that the audit
+  record carries `sessionsEnded`; the groupware rebuild (002's `SogoDirectory::rebuild()`, which
+  flushes memcached itself) runs after the commit.
+- **T040**: the concurrency of removals is shown by holding the account's named lock
+  `restv2_tfa_<sha1(username)>` from a second database session (a removal then waits and fails
+  with 003's lock timeout, `500`), as 003's `AddressLockTest` does, instead of two PHP processes:
+  the tests run inside one database transaction that other processes cannot see. A lock timeout
+  answers `500` as 003 decided, not `503` as data-model.md says.
+- **T044**: 001's `YubicoOtpVerifier::verify()` already takes the API credentials as arguments, so
+  no `verifyWithCredentials()` was needed; the enrolment passes the given ones.
+- **T046**: the WebAuthn options keep lbuchs's authenticator selection
+  (`OptionsJson::secondFactorCreation()`, no resident key), so `userVerification` is `preferred`
+  for `WEBAUTHN_UV_FLAG_REGISTER = false`, exactly as legacy's options. The attestation check
+  requires user verification only for `true` or `required` (legacy passes the flag through, so a
+  `preferred` string would require it). A new sign-in discards open enrolments and options
+  (`SessionManager::promote()`). `SecondFactorService::markTotpCodeUsed()` exposes 001's replay
+  marker for the confirming code; `promote()` records the factor that completed a sign-in
+  (`restv2.principal.secondFactorId`).
+- **T048**: no `ListOwnSecondFactorsRequest`; the controller uses 001's `ListQuery`. Sorting by
+  `type` sorts by the type name (`CAST(authmech AS CHAR)`), not by the ENUM's index.

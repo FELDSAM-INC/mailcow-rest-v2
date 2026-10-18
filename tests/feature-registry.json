@@ -407,15 +407,6 @@
         }
     },
     "pendingOperations": [
-        "changeOwnPassword",
-        "getOwnPasswordPolicy",
-        "listOwnSecondFactors",
-        "enrolOwnSecondFactor",
-        "startOwnTotpEnrolment",
-        "createOwnSecondFactorWebAuthnOptions",
-        "removeAllOwnSecondFactors",
-        "getOwnSecondFactor",
-        "deleteOwnSecondFactor",
         "getOwnRecoveryEmail",
         "replaceOwnRecoveryEmail",
         "getOwnMailboxOverview",

@@ -420,32 +420,35 @@ behaviour comes from `git -C ~/Projects/mailhosting diff 2026-09a HEAD` on branc
 
 ## 5. DNS diagnostics
 
-### R16. Resolver
+### R16. Resolver: feature 009's DNS client, extended
 
-- **Decision**: `mikepultz/netdns2` ^2.0 (MIT) behind `App\Clients\Dns\DnsResolver`
-  (`lookup(string $name, DnsRecordType $type, Deadline $deadline): DnsAnswer`).
-  - **Server (FR-046)**: mailcow's `unbound-mailcow` at `${IPV4_NETWORK:-172.22.1}.254`, the fixed
-    address the mail services use as their `dns:` server in mailcow's `docker-compose.yml`.
-    `RESTV2_DNS_RESOLVER` overrides it (a comma-separated list is allowed). The override file also
-    sets the container's `dns:` to the same address, so the echo service and ISPConfig host names
-    resolve the same way.
-  - **Time limits (FR-048)**: per lookup `min(RESTV2_DNS_LOOKUP_TIMEOUT (5 s), deadline remaining)`
-    as netdns2's `timeout`; one attempt per server; TCP fallback on truncation.
-  - **Answer classes**: `records` (answer RRs of the type, with CNAME chains reported separately),
-    `noData` and `nxDomain` (both mean "missing"), `error` with the RCODE (`SERVFAIL` — also what
-    unbound answers for a DNSSEC validation failure — `REFUSED`, `FORMERR`, `NOTIMP`, `YXDOMAIN`) or
-    `network`, and `timeout`. Errors and timeouts become `lookupFailed` with `lookupError` or
-    `lookupTimeout` (spec edge case: never "missing").
-  - **Run deadline**: one `App\Support\Clock\Deadline` of `RESTV2_DNS_RUN_TIMEOUT` (30 s) per run.
-    Checks run in legacy order; when the deadline has passed, every remaining check reports
-    `lookupFailed` with `runTimeout` (`timeoutSeconds: 30`) without a lookup, and the run returns.
-- **Rationale**: PHP's `dns_get_record()` (legacy) has no per-call timeout, cannot tell SERVFAIL from
-  an empty answer, and needs raw mode for TLSA. netdns2 supports every type needed (A, AAAA, CNAME,
-  MX, PTR, SRV, TXT, TLSA), timeouts and RCODEs, has no dependencies, and is MIT, which is
-  GPL-3.0-compatible.
-- **Alternatives considered**: `react/dns` and `amphp/dns` were rejected: they bring an event loop
-  for parallelism that the deadline makes unnecessary (unbound answers cached names in
-  milliseconds and caches failures). A hand-written DNS client was rejected as a maintenance risk.
+- **Decision**: Diagnostics uses feature 009's `App\Clients\Dns\DnsResolver` (009 research R15:
+  interface with `txt()`, `mx()`, `a()`, `aaaa()`; implementation `NativeDnsResolver` wrapping
+  `dns_get_record()`; `[]` for "no records" (NXDOMAIN or NODATA); `DnsTemporaryFailure` for a
+  resolver failure; TXT strings concatenated) and extends it with `cname()`, `srv()` (a null
+  record keeps its target `.`), `ptr()` and `tlsa()` (`dns_get_record($name, 52, …, true)` raw
+  mode, decoded as legacy does into `<usage> <selector> <matching type> <hex>`). The test double is
+  009's `Tests\Support\Dns\FakeDnsResolver`, extended the same way and with a programmable delay
+  on the fake clock.
+  - **Server (FR-046)**: the container resolves through mailcow's `unbound-mailcow`
+    (`dns: ["${IPV4_NETWORK:-172.22.1}.254"]` in the override, 009), the resolver of the mail
+    services, so the result shows what they see.
+  - **Time limits (FR-048)**: `dns_get_record()` cannot be interrupted, so each lookup is bounded by
+    the container's `dns_opt: ["timeout:2", "attempts:2"]` (009), about 4 s, which is within the
+    5-second limit. The run has one `App\Support\Clock\Deadline` of `RESTV2_DNS_RUN_TIMEOUT` (30 s):
+    before each lookup the service checks that at least `RESTV2_DNS_LOOKUP_TIMEOUT` (5 s) remains;
+    otherwise this and every remaining check report `lookupFailed` with `runTimeout` without a
+    lookup, so the run returns within 30 s.
+  - **Classification**: `[]` → `missing`; `DnsTemporaryFailure` → `lookupFailed` with
+    `lookupTimeout` (`timeoutSeconds`) when the call lasted at least the resolver bound, otherwise
+    `lookupError` (SERVFAIL, which unbound also answers for a DNSSEC validation failure, REFUSED or
+    a network error). Never "missing" for a failure (spec edge case).
+- **Rationale**: `docs/conventions.md` and the orchestrator require reusing 009's client instead of
+  a second DNS stack. The native resolver already tells "no records" from failures, which is what
+  the statuses need; the container options bound each lookup; the run deadline bounds the whole run.
+- **Alternatives considered**: `mikepultz/netdns2` (per-call timeouts and RCODEs) was rejected: it
+  would duplicate 009's client and add a dependency that 009 rejected for the same reason. Exact
+  RCODEs are not needed by the contract (`lookupError` has no parameters).
 
 ### R17. Expected values and comparisons (FR-040 to FR-043)
 
@@ -507,14 +510,20 @@ behaviour comes from `git -C ~/Projects/mailhosting diff 2026-09a HEAD` on branc
 
 ### R19. TLSA and public addresses
 
-- **TLSA (FR-042)**: `App\Clients\Dns\SmtpCertificateProbe` (adapter
-  `StreamSmtpCertificateProbe`, test fake) ports legacy `generate_tlsa_digest($host, 25, 1)`:
-  TCP connect (5 s), read the `220` banner, `EHLO`, `STARTTLS`, upgrade with `capture_peer_cert`
-  and no verification, then `3 1 1 ` + SHA-256 of the DER `SubjectPublicKeyInfo` of the peer
-  certificate. Failures map to `certificateUnavailable` with `cause` (`connectionFailed`,
-  `timeout`, `starttlsRefused`, `tlsHandshakeFailed`, `noCertificate`). The found TLSA records are
-  always listed. Legacy sends `HELO`; `EHLO` is used because Postfix advertises `STARTTLS` only
-  after `EHLO`, so a strict server would refuse the legacy sequence.
+- **TLSA (FR-042)**: feature 009's SMTP client `App\Clients\Smtp\SmtpProbe` (`StreamSmtpProbe`,
+  009 research R13) is extended with a TLS-only request: `SmtpProbeRequest` gets
+  `stopAfterTls: true`, `capturePeerCertificate: true` and a per-request deadline (5 s here), and
+  `SmtpProbeResult` gets the peer certificate (PEM). The probe connects to the SMTP host of
+  `$autodiscover_config` on port 25, reads the `220` greeting, sends `EHLO <MAILCOW_HOSTNAME>`
+  (falling back to `HELO`, as 009 does), `STARTTLS`, and completes the handshake without
+  verification, then `QUIT`. `App\Services\DnsDiagnostics\TlsaDigest` computes `3 1 1 ` + the
+  SHA-256 of the DER `SubjectPublicKeyInfo`, as legacy `generate_tlsa_digest($host, 25, 1)`. The
+  probe's failure steps map to `certificateUnavailable` causes: `connect` → `connectionFailed`,
+  `timeout` → `timeout`, no `STARTTLS` advertised or refused → `starttlsRefused`, `tls` →
+  `tlsHandshakeFailed`, no certificate → `noCertificate`. The found TLSA records are always listed.
+  Legacy sends `HELO tlsa.generator.local`; `EHLO` is used because servers advertise `STARTTLS`
+  only after `EHLO` (plan parity note 1). Feature tests use 009's `FakeSmtpProbe`; the TLS-only
+  path is tested against 009's `ScriptedSmtpServer`.
 - **Public addresses (FR-042)**: `App\Clients\Dns\PublicAddressDetector` uses Laravel's HTTP client
   with Guzzle's `force_ip_resolve` (`v4`, `v6`), `connectTimeout(3)` and `timeout(5)` against
   `RESTV2_IP_ECHO_URL_IPV4` (`http://ip4.mailcow.email`) and `RESTV2_IP_ECHO_URL_IPV6`
@@ -630,8 +639,7 @@ behaviour comes from `git -C ~/Projects/mailhosting diff 2026-09a HEAD` on branc
 | `RESTV2_DKIM_DNS_PUBLICATION` | `n` | FeldHost ISPConfig publication (FR-028; 002 D24) |
 | `RESTV2_ISPCONFIG_URL`, `RESTV2_ISPCONFIG_USERNAME`, `RESTV2_ISPCONFIG_PASSWORD`, `RESTV2_ISPCONFIG_DNS_SERVER_ID`, `RESTV2_ISPCONFIG_VERIFY_TLS` | empty, empty, empty, `1`, `y` | Connection (002 D24, R11); the password is a secret |
 | `RESTV2_ISPCONFIG_TIMEOUT` | `15` | Publication limit in seconds (FR-030) |
-| `RESTV2_DNS_RESOLVER` | `${IPV4_NETWORK:-172.22.1}.254` | Recursive resolver (FR-046) |
-| `RESTV2_DNS_LOOKUP_TIMEOUT` | `5` | Seconds per lookup, echo request and certificate fetch (FR-048) |
+| `RESTV2_DNS_LOOKUP_TIMEOUT` | `5` | Seconds reserved per lookup by the run deadline, and the limit of the echo request and the certificate fetch (FR-048); the resolver's own bound is the container's `dns_opt` (009, about 4 s), which must stay below it |
 | `RESTV2_DNS_RUN_TIMEOUT` | `30` | Seconds per run (FR-048) |
 | `RESTV2_DNS_DIAGNOSTICS_PER_MINUTE` | `10` | Runs per caller per minute (FR-049) |
 | `RESTV2_DNS_FACTS_TTL` | `600` | Reuse of public addresses and certificate digest (FR-049) |
@@ -646,14 +654,14 @@ capabilities read reports the effective values.
 
 | Package | Licence | Scope | Justification |
 |---|---|---|---|
-| `mikepultz/netdns2` ^2.0 | MIT | runtime | DNS lookups with per-call timeouts, RCODEs and TLSA support against a chosen resolver (R16) |
 | `mlocati/spf-lib` ^3.3 (+ `mlocati/ip-lib` ^1.11, `mlocati/idna` ^1, MIT) | MIT | runtime | RFC 7208 evaluation with lookup limits and an injectable resolver (R18) |
 | `bind-tools` (Alpine) | MPL-2.0 | dev image only | `named-checkzone` for the zone-file test (R21) |
 
 All are GPL-3.0-compatible (MIT; MPL-2.0 for a dev-only tool that is not distributed with the
-code). Without a package: RSA keys (ext-openssl), IDNA (ext-intl, already present), the ISPConfig
-JSON remote API and the echo service (Laravel's HTTP client), the rate limiter (Laravel), the SMTP
-probe (PHP streams). No PHP extension is added.
+code). Without a package: RSA keys (ext-openssl), IDNA (ext-intl, already present), DNS (009's
+`dns_get_record()` client, extended), the SMTP certificate fetch (009's SMTP client, extended), the
+ISPConfig JSON remote API and the echo service (Laravel's HTTP client), the rate limiter (Laravel).
+No PHP extension is added.
 
 ### R26. Tests
 
@@ -661,15 +669,15 @@ probe (PHP streams). No PHP extension is added.
   - Feature tests on MariaDB with the `2026-09a` fixture and the real Redis (database 15), so every
     DKIM side effect is asserted on the real `DKIM_*` hashes, including the exact field names and
     the stored private key text.
-  - ISPConfig, DNS, the SMTP probe and the echo service are faked: `FakeIspconfigDnsClient` holds
-    in-memory zones and records, records every call, and can fail per call (unreachable, timeout,
-    fault); `FakeDnsResolver` serves a programmable zone and can return each RCODE or a timeout and
-    advance a fake clock; `FakeSmtpCertificateProbe` returns a digest or a cause; the echo service
-    uses `Http::fake()`.
+  - ISPConfig, DNS, the SMTP probe and the echo service are faked: `FakeIspconfigDnsClient` (002)
+    holds in-memory zones and records, records every call, and can fail per call (unreachable,
+    timeout, fault); 009's `FakeDnsResolver`, extended, serves a programmable zone, throws
+    `DnsTemporaryFailure` on demand and advances a fake clock; 009's `FakeSmtpProbe`, extended,
+    returns a certificate or a failing step; the echo service uses `Http::fake()`.
   - Adapters get their own tests: `JsonIspconfigDnsClient` with `Http::fake()` (exact JSON bodies
-    and the time limit); `NetDns2Resolver` against a tiny UDP responder started with
-    `Symfony\Component\Process\Process`; `StreamSmtpCertificateProbe` against a local STARTTLS stub
-    with a generated self-signed certificate.
+    and the time limit); the new methods of 009's `NativeDnsResolver` in 009's
+    `NativeDnsResolverTest`; the TLS-only path of 009's `StreamSmtpProbe` against 009's
+    `ScriptedSmtpServer` with a generated self-signed certificate.
   - Parity: `tests/fixtures/legacy/dkim/` holds a key pair generated by legacy's code path (an
     extraction of `dkim('add')`'s key handling, like 001's `verify_hash` extraction), so the stored
     format is compared byte for byte.

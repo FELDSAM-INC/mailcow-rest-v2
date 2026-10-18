@@ -199,8 +199,9 @@ written by the shared `RefusalAuditor` (002/008), with resolvers for `dkimKey` a
   reason code and detail.
 - `App\Services\DnsDiagnostics\DnsCheckResult`, `DnsCheckMessage`, `DnsDiagnosticsReport`: the
   contract shapes of a run.
-- `App\Clients\Dns\DnsAnswer`: `records`, `noData`, `nxDomain`, `error(rcode)` or `timeout`, with
-  the CNAME chain.
+- 009's `App\Clients\Dns\DnsResolver` answers (record arrays, `[]` for none,
+  `DnsTemporaryFailure`), extended here with CNAME, SRV, PTR and TLSA; 009's
+  `App\Clients\Smtp\SmtpProbeResult`, extended with the peer certificate.
 - `App\Support\Clock\Deadline`: start, limit, `remaining()`, `expired()`; built on an injectable
   clock so that tests can advance time.
 - `App\Services\Mailcow\AutodiscoverConfig`: SMTP host and the IMAP, POP3, SMTP and Sieve ports.

@@ -82,7 +82,7 @@ curl -s $C $H -H 'Content-Type: application/merge-patch+json' -X PATCH $B/mta-st
   -d '{"active":false}' | jq .data.policyId                                            # unchanged
 curl -s $C $B/mta-sts-policies/example.com -o /dev/null -w '%{http_code}\n'             # -> 404 (alias)
 
-# US3: diagnostics with rate-limit headers (the dev stack resolves through RESTV2_DNS_RESOLVER).
+# US3: diagnostics with rate-limit headers (the dev stack resolves through the app container's DNS).
 curl -s $C $B/dns-diagnostics/example.org -D headers.txt | jq '.data | {summary, checks: [.checks[] | {id, status}]}'
 grep -i '^ratelimit' headers.txt
 

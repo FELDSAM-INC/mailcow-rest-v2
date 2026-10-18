@@ -5,11 +5,11 @@ description: |
   later releases may add codes.
 
   Reasons for `lookupFailed`:
-  - `lookupTimeout`: the lookup took longer than allowed. Params: `timeoutSeconds`.
-  - `runTimeout`: the run's time limit was reached before this check completed. Params:
+  - `lookupTimeout`: the lookup reached the resolver's time limit. Params: `timeoutSeconds`.
+  - `runTimeout`: the run's time limit was reached before this check could start. Params:
     `timeoutSeconds`.
-  - `lookupError`: the resolver answered with an error or failed validation. Params: `rcode`
-    (`SERVFAIL`, `REFUSED`, `FORMERR`, `NOTIMP`, `YXDOMAIN` or `network`).
+  - `lookupError`: the resolver reported a temporary failure or an error, which is also what
+    mailcow's validating resolver answers when DNSSEC validation fails. No params.
 
   Reasons for `expectedUnknown`:
   - `publicAddressUnknown`: the server's public address could not be determined. Params: `family`

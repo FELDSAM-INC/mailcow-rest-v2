@@ -35,8 +35,9 @@ The technical approach:
   seconds, and reports coded outcomes.
 - MTA-STS policies are rows of the upstream `mta_sts` table, written in the same transaction as
   their audit record.
-- Diagnostics queries mailcow's own unbound resolver with `mikepultz/netdns2` (5 s per lookup,
-  30 s per run), evaluates SPF with `mlocati/spf-lib`, reads the SMTP certificate for TLSA, and
+- Diagnostics queries mailcow's own unbound resolver through feature 009's DNS client, extended
+  with CNAME, SRV, PTR and TLSA lookups (about 4 s per lookup, 30 s per run), reads the SMTP
+  certificate through 009's SMTP client, evaluates SPF with `mlocati/spf-lib`, reads the SMTP certificate for TLSA, and
   limits each caller to 10 runs per minute with `RateLimit-*` headers.
 - Tests are written first, run on MariaDB with the `2026-09a` schema and on a real Redis, assert the
   `DKIM_*` hashes and `mta_sts` rows, and fake ISPConfig, DNS, the SMTP probe and the echo service.
@@ -45,8 +46,8 @@ The technical approach:
 
 **Language/Version**: PHP 8.4, Laravel 13.x (001)
 
-**Primary Dependencies**: 001's set, plus `mikepultz/netdns2` ^2.0 (MIT, DNS) and `mlocati/spf-lib`
-^3.3 (MIT, SPF, with `mlocati/ip-lib` and `mlocati/idna`). No new PHP extension. Dev image:
+**Primary Dependencies**: 001's set, plus `mlocati/spf-lib` ^3.3 (MIT, SPF, with `mlocati/ip-lib`
+and `mlocati/idna`). DNS and SMTP use feature 009's clients. No new PHP extension. Dev image:
 `bind-tools` for `named-checkzone`. Justified in
 [research R25](./research.md#r25-dependencies-constitution-viii).
 
@@ -61,8 +62,9 @@ records in 001's `restv2_audit_events`.
 request and response (001 R13). Fakes with call assertions for ISPConfig, the DNS resolver, the
 SMTP certificate probe and the echo service (`Http::fake()`). Adapter tests against local stubs.
 
-**Target Platform**: 001's Linux container, reached over FastCGI at `/api/v2/`. The override adds
-`dns: ${IPV4_NETWORK:-172.22.1}.254` and the port variables of `mailcow.conf` to the API service.
+**Target Platform**: 001's Linux container, reached over FastCGI at `/api/v2/`. 009's override
+already sets `dns: ${IPV4_NETWORK:-172.22.1}.254` and `dns_opt: [timeout:2, attempts:2]`; this
+feature adds the port variables of `mailcow.conf` to the API service.
 
 **Project Type**: web service (REST API).
 
@@ -98,7 +100,7 @@ modules; 8 user stories; no API-owned table.
 | V. Coexistence | Same container; mailcow's publication endpoint, certificate service, Rspamd and unbound are used unchanged; nothing is patched. | PASS |
 | VI. Security | Object-level authorisation for admin, domain admin and mailbox user, and for read-only and read-write keys of each, on every operation. Out-of-scope names answer `404`. Private keys are write-only except the gated, audited export with `Cache-Control: no-store`; the import never echoes key text; version tags carry the private key only as an HMAC keyed with the app key; the ISPConfig password is never returned, logged or cached. Outbound lookups are rate-limited and time-bounded (OWASP API4). Every state change, every export and every refusal of an authenticated caller is audited. | PASS |
 | VII. Test-first | `tasks.md` puts tests before implementation in every phase. MariaDB and Redis are real; ISPConfig, DNS, SMTP probe and echo service are faked with asserting fakes. | PASS |
-| VIII. Simplicity | Two runtime packages, each replacing a protocol implementation that would otherwise be hand-written (DNS, SPF). The ISPConfig client and its settings are feature 002's, reused. Interfaces exist only for faked external services (`IspconfigDnsClient`, `DnsResolver`, `SmtpCertificateProbe`); the echo service uses Laravel's HTTP client directly. | PASS |
+| VIII. Simplicity | One runtime package, replacing an SPF evaluator that would otherwise be hand-written. The ISPConfig client and settings (002) and the DNS and SMTP clients (009) are reused and extended, not duplicated. Interfaces exist only for faked external services (`IspconfigDnsClient`, `DnsResolver`, `SmtpProbe`); the echo service uses Laravel's HTTP client directly. | PASS |
 | Cross-feature conventions | `404` for scope, `403` for roles; keys act as their owner; lists 25/1,000 with `q`; capabilities at `/capabilities/dns` (`getDnsCapabilities`); history through the generic `targetType`/`targetId` filters (no own filter parameter); refusal auditing through `RefusalAuditor` with the shared `AuditFailureReason` values; strong ETags over stored values with secrets only as HMAC; secrets write-only; legacy settings through 001's reader with `RESTV2_*` precedence; FeldHost behaviour as settings with upstream defaults; creation follow-ups for 002/004 report outcomes; one audit record per affected object. Bulk deletion is not offered because spec FR-059 excludes it (owner question below). | PASS (owner question) |
 
 **Post-design re-check (after Phase 1)**: PASS. The contract, data model and research add no new
@@ -194,8 +196,9 @@ app/
 │   ├── SharedStore/DkimKeyStore.php                 # Lua compare-and-set on DKIM_*, next to 002's SharedStore
 │   ├── Ispconfig/{IspconfigDnsClient,JsonIspconfigDnsClient,IspconfigZone,IspconfigRecord,
 │   │              IspconfigException}.php              # created with 002 (D10), extended here
-│   └── Dns/{DnsResolver,NetDns2Resolver,DnsAnswer,DnsRecordType,SmtpCertificateProbe,
-│            StreamSmtpCertificateProbe,TlsaProbeResult,PublicAddressDetector}.php
+│   ├── Dns/{DnsResolver,NativeDnsResolver}.php      # 009's, extended (cname, srv, ptr, tlsa)
+│   ├── Dns/PublicAddressDetector.php
+│   └── Smtp/{SmtpProbeRequest,SmtpProbeResult,StreamSmtpProbe}.php   # 009's, extended (TLS-only mode)
 ├── Http/
 │   ├── Controllers/Api/V2/{DkimKeyController,DkimKeyImportController,DkimKeyCopyController,
 │   │                        DkimPrivateKeyController,DkimDnsPublicationController,
@@ -216,7 +219,7 @@ app/
 │   ├── MtaSts/{MtaStsPolicyService,MtaStsPolicyId,MtaStsPolicyText,MtaStsAudit}.php
 │   ├── DnsDiagnostics/{DnsDiagnosticsService,DnsDiagnosticsReport,DnsCheckResult,DnsCheckMessage,
 │   │                   ExpectedRecordSet,RecordComparator,ServerFactsCache,ZoneFileRenderer,
-│   │                   DiagnosticsRateLimiter,Spf/{SpfEvaluator,SpfResolverAdapter}}.php
+│   │                   TlsaDigest,DiagnosticsRateLimiter,Spf/{SpfEvaluator,SpfResolverAdapter}}.php
 │   └── Mailcow/AutodiscoverConfig.php
 └── Support/Clock/{Clock,SystemClock,Deadline}.php        # 002's App\Support\Domain\DomainName is reused
 
@@ -224,15 +227,15 @@ app/Services/Audit/RefusalAuditor.php                # existing (002/008); resol
 
 resources/redis/dkim-key-store.lua                    # the atomic DKIM script
 resources/bin/export-mailcow-vars.php                 # 001's script, extended (SHOW_DKIM_PRIV_KEYS,
-                                                      #   autodiscover_config, ispconfig.inc.php)
+                                                      #   autodiscover_config)
 config/restv2.php                                     # 001's file, extended with research R24
 routes/api.php                                        # 001's file, extended
-deploy/docker-compose.override.yml                    # dns: and port variables added
+deploy/docker-compose.override.yml                    # port variables added (dns: and dns_opt from 009)
 docker/php/Dockerfile                                 # bind-tools in the dev stage
 
 tests/
 ├── Support/{Fakes/FakeIspconfigDnsClient (002, extended),Dkim/{DkimFixtures,DkimAssertions},Dns/{FakeDnsResolver,
-│            FakeSmtpCertificateProbe,FakeClock,UdpDnsStub},Smtp/StartTlsStub.php}
+│            FakeClock},Smtp/FakeSmtpProbe (009, extended)}
 ├── Feature/Dkim/{ListDkimKeysTest,GetDkimKeyTest,DnsCapabilitiesTest,DkimReadAuthorizationTest,
 │                 GenerateDkimKeyTest,DkimConcurrencyTest,DkimCreationStepTest,ImportDkimKeyTest,
 │                 CopyDkimKeyTest,DeleteDkimKeyTest,DkimWriteAuthorizationTest,
@@ -248,8 +251,10 @@ tests/
 ├── Unit/Dkim/{DkimKeyStoreTest,DkimKeyGeneratorTest,DkimPublicKeyTest,DkimPrivateKeyRuleTest,
 │              DkimDnsPublisherTest,JsonIspconfigDnsClientTest,DkimNameResolverTest}.php
 ├── Unit/MtaSts/{MtaStsPolicyIdTest,MtaStsPolicyTextTest}.php
+├── Unit/Clients/{NativeDnsResolverTest,StreamSmtpProbeTest}.php   # 009's, extended
+├── Unit/Audit/MailDnsRefusalResolverTest.php
 ├── Unit/DnsDiagnostics/{RecordComparatorTest,SpfEvaluatorTest,ZoneFileRendererTest,
-│                        NetDns2ResolverTest,StreamSmtpCertificateProbeTest,PublicAddressDetectorTest,
+│                        TlsaDigestTest,PublicAddressDetectorTest,
 │                        ExpectedRecordSetTest}.php
 └── fixtures/legacy/dkim/{generated-2048.pem,generated-2048.pub,README.md}
 ```
@@ -257,7 +262,7 @@ tests/
 **Structure Decision**: The single Laravel project of 001. Three services own the writes and side
 effects: `DkimKeyService` (DKIM keys and their ISPConfig records, also used by 002 and 004),
 `MtaStsPolicyService` (MTA-STS rows), and `DnsDiagnosticsService` (read-only, outbound lookups).
-External systems sit behind `app/Clients/`: the DKIM Redis store (real in tests), ISPConfig, the
+External systems sit behind `app/Clients/` (ISPConfig from 002, DNS and SMTP from 009, extended): the DKIM Redis store (real in tests), ISPConfig, the
 DNS resolver and the SMTP probe (faked in tests). Controllers stay thin, one per resource or action
 sub-resource.
 
@@ -272,6 +277,11 @@ sub-resource.
   is implemented together with feature 002, before 002's creation tasks.
 - **004**: alias domain creation calls `generateForNewName()` too (FR-042 there); by then Phase 2
   exists.
+- **008**: the shared `RefusalAuditor` (route defaults `restv2.audit`), unless an earlier feature
+  created the equivalent.
+- **009**: `App\Clients\Dns\DnsResolver` with `NativeDnsResolver` and `DnsTemporaryFailure`,
+  `App\Clients\Smtp\SmtpProbe` with `StreamSmtpProbe`, their fakes and the override's `dns:` and
+  `dns_opt`; this feature extends them (research R16, R19).
 
 ## Owner-level questions (defaults applied)
 

@@ -30,6 +30,7 @@ required:
   - taggedMailHandling
   - tlsEnforceInbound
   - tlsEnforceOutbound
+  - mailSettingsVersion
   - quarantineNotification
   - quarantineCategory
   - rateLimit
@@ -152,6 +153,13 @@ properties:
     type: boolean
     readOnly: true
     description: Outbound TLS is enforced (`attributes.tls_enforce_out`). Read-only here, changed through feature 005. May be given at creation.
+  mailSettingsVersion:
+    type: string
+    readOnly: true
+    description: |
+      The version tag of the mailbox's mail settings (`taggedMailHandling`, `tlsEnforceInbound`,
+      `tlsEnforceOutbound`), equal to the `etag` of `GET /mailboxes/{mailbox}/mail-settings`. Send it
+      as a target's `version` in `POST /mailboxes/mail-settings/bulk-actions` (feature 005, G22).
   quarantineNotification:
     allOf:
       - $ref: './MailboxQuarantineNotification.yaml'

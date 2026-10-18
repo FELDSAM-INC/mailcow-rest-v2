@@ -4,6 +4,7 @@ namespace Tests\Feature\Mailboxes;
 
 use App\Auth\Role;
 use App\Services\Mailboxes\UserPermissions;
+use App\Services\MailSettings\MailSettingsService;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ApiKeys\ApiKeys;
 use Tests\Support\Mailboxes\MailboxTestHelpers;
@@ -103,6 +104,7 @@ class GetMailboxTest extends TestCase
             'taggedMailHandling' => 'subject',
             'tlsEnforceInbound' => true,
             'tlsEnforceOutbound' => false,
+            'mailSettingsVersion' => MailSettingsService::etag(['taggedMailHandling' => 'subject', 'tlsEnforceInbound' => true, 'tlsEnforceOutbound' => false]),
             'quarantineNotification' => 'daily',
             'quarantineCategory' => 'junk',
             'rateLimit' => ['value' => 10, 'frame' => 'hour'],

@@ -26,6 +26,8 @@ use App\Clients\Oidc\LeagueOidcClient;
 use App\Clients\Oidc\OidcClient;
 use App\Clients\PublicAddress\HttpPublicAddressLookup;
 use App\Clients\PublicAddress\PublicAddressLookup;
+use App\Clients\Pushover\HttpPushoverClient;
+use App\Clients\Pushover\PushoverClient;
 use App\Clients\Releases\GitHubReleaseSource;
 use App\Clients\Releases\ReleaseSource;
 use App\Clients\Rspamd\RspamdController;
@@ -97,7 +99,9 @@ class AppServiceProvider extends ServiceProvider
         // Outbound services of features 002 and 010, faked in tests (tests/TestCase.php) and, in
         // development only, with RESTV2_FAKE_OUTBOUND=y.
         $this->app->singleton(RefusalAuditor::class);
-        // Feature 005: what ends with a session of this API (the webmail hand-off).
+        // Feature 005: outbound services (faked in tests) and what ends with a session of this API
+        // (the webmail hand-off).
+        $this->app->bind(PushoverClient::class, HttpPushoverClient::class);
         $this->app->tag([WebmailHandOffService::class], SessionRegistry::LISTENER_TAG);
         $this->app->scoped(GroupwareCacheFlush::class);
         $this->app->bind(Clock::class, SystemClock::class);

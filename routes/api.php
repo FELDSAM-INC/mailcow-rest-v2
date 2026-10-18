@@ -57,6 +57,7 @@ use App\Http\Controllers\Api\V2\MailboxBulkActionController;
 use App\Http\Controllers\Api\V2\MailboxCapabilitiesController;
 use App\Http\Controllers\Api\V2\MailboxController;
 use App\Http\Controllers\Api\V2\MailboxDeletionPreviewController;
+use App\Http\Controllers\Api\V2\MailboxMailSettingsController;
 use App\Http\Controllers\Api\V2\MailboxRenameController;
 use App\Http\Controllers\Api\V2\MailboxSenderSettingsController;
 use App\Http\Controllers\Api\V2\MailboxTagController;
@@ -96,6 +97,7 @@ use App\Http\Controllers\Api\V2\ProblemTypeController;
 use App\Http\Controllers\Api\V2\PublicAddressesController;
 use App\Http\Controllers\Api\V2\PublicConfigController;
 use App\Http\Controllers\Api\V2\PublicConfigLogoController;
+use App\Http\Controllers\Api\V2\PushNotificationSettingsController;
 use App\Http\Controllers\Api\V2\ReadinessController;
 use App\Http\Controllers\Api\V2\RecipientMapController;
 use App\Http\Controllers\Api\V2\RelayhostAssignmentController;
@@ -916,9 +918,35 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/mailboxes/{mailbox}/temporary-alias-domains', [TemporaryAliasController::class, 'domains'])
             ->where('mailbox', '[^/]+')
             ->name('temporary-alias-domains.index');
+        Route::get('/mailboxes/{mailbox}/mail-settings', [MailboxMailSettingsController::class, 'show'])
+            ->where('mailbox', '[^/]+')
+            ->name('mailbox-mail-settings.show');
+        Route::get('/mailboxes/{mailbox}/push-notifications', [PushNotificationSettingsController::class, 'show'])
+            ->where('mailbox', '[^/]+')
+            ->name('push-notifications.show');
     });
 
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        // POST-only bulk path: object paths never accept POST.
+        Route::post('/mailboxes/mail-settings/bulk-actions', [MailboxMailSettingsController::class, 'bulk'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'mailSettings'])
+            ->name('mailbox-mail-settings-bulk-actions.store');
+        Route::patch('/mailboxes/{mailbox}/mail-settings', [MailboxMailSettingsController::class, 'update'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'mailSettingsUpdate', 'target' => 'mailSettings'])
+            ->name('mailbox-mail-settings.update');
+        Route::put('/mailboxes/{mailbox}/push-notifications', [PushNotificationSettingsController::class, 'update'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'pushNotificationSettingsUpdate', 'target' => 'pushNotificationSettings'])
+            ->name('push-notifications.update');
+        Route::delete('/mailboxes/{mailbox}/push-notifications', [PushNotificationSettingsController::class, 'destroy'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'pushNotificationSettingsDeletion', 'target' => 'pushNotificationSettings'])
+            ->name('push-notifications.destroy');
+        Route::post('/mailboxes/{mailbox}/push-notifications/verification', [PushNotificationSettingsController::class, 'verify'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'pushNotificationVerification', 'target' => 'pushNotificationSettings'])
+            ->name('push-notification-verification.store');
         Route::post('/mailboxes/{mailbox}/app-passwords', [AppPasswordController::class, 'store'])
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'appPasswordCreation', 'target' => 'appPassword'])

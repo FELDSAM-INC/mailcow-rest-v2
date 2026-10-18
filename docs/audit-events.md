@@ -1782,7 +1782,7 @@ recorded with empty `changes`. The target is `{type: mailSettings, id: <mailbox>
 
 | Key | Type | Meaning | Present |
 |---|---|---|---|
-| `changes` | object | `taggedMailHandling`, `tlsEnforceIn` and `tlsEnforceOut` as `{old, new}`, each when it changed. | on success |
+| `changes` | object | `taggedMailHandling`, `tlsEnforceInbound` and `tlsEnforceOutbound` as `{old, new}`, each when it changed. | on success |
 | `bulkRequestId` | string | The bulk request the item belongs to. | on records of bulk items |
 | `targetIds` | array of strings | See "Refusal records". | on a refused bulk request |
 | `bulkAction` | string | See "Refusal records". | on a refused bulk request |

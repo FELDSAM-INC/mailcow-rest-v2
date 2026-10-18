@@ -9,6 +9,7 @@ use App\Clients\SharedStore\SharedStoreUnavailable;
 use App\Services\Config\MailcowConfig;
 use App\Services\Domains\DomainPresenter;
 use App\Services\Identity\IdentityService;
+use App\Services\MailSettings\MailSettingsService;
 use App\Services\RateLimits\RateLimitStore;
 use App\Support\Domain\DomainName;
 use App\Support\Http\ListQuery;
@@ -162,9 +163,11 @@ class MailboxReader
                 'recoveryEmail' => is_string($recovery) && $recovery !== '' ? mb_substr($recovery, 0, 255) : null,
                 'passwordChangedAt' => self::passwordChangedAt($attributes['passwd_update'] ?? null),
                 'lastLogins' => $logins[$address] ?? ['imap' => null, 'pop3' => null, 'smtp' => null, 'webmailSso' => null],
-                'taggedMailHandling' => isset($subject[$address]) ? 'subject' : (isset($subfolder[$address]) ? 'subfolder' : 'none'),
-                'tlsEnforceInbound' => $flag('tls_enforce_in', false),
-                'tlsEnforceOutbound' => $flag('tls_enforce_out', false),
+                'taggedMailHandling' => $tagging = isset($subject[$address]) ? 'subject' : (isset($subfolder[$address]) ? 'subfolder' : 'none'),
+                'tlsEnforceInbound' => $tlsIn = $flag('tls_enforce_in', false),
+                'tlsEnforceOutbound' => $tlsOut = $flag('tls_enforce_out', false),
+                // Feature 005 (G22): the version tag of the mailbox's mail settings, for bulk TLS items.
+                'mailSettingsVersion' => MailSettingsService::etag(['taggedMailHandling' => $tagging, 'tlsEnforceInbound' => $tlsIn, 'tlsEnforceOutbound' => $tlsOut]),
                 'quarantineNotification' => in_array($notification, MailboxValues::QUARANTINE_NOTIFICATIONS, true) ? $notification : $builtIn['quarantineNotification'],
                 'quarantineCategory' => MailboxValues::quarantineCategory($attributes['quarantine_category'] ?? null) ?? $builtIn['quarantineCategory'],
                 'rateLimit' => $rateLimit ?? $domainRateLimit,

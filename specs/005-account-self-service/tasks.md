@@ -722,7 +722,7 @@ verify and remove Pushover settings with valid and invalid values.
 
 ### Tests for User Story 7 ⚠️
 
-- [ ] T087 [P] [US7] Write `tests/Feature/MailSettings/MailboxMailSettingsTest.php` (FR-058, FR-059,
+- [X] T087 [P] [US7] Write `tests/Feature/MailSettings/MailboxMailSettingsTest.php` (FR-058, FR-059,
   FR-072, AS-1 to AS-3): read reflects `RCPT_WANTS_*` (subject wins when both are set) and
   `tls_enforce_*` stored as `1`, `"1"`, `true`; `subfolder` → `HSET RCPT_WANTS_SUBFOLDER_TAG`, `HDEL`
   the other; `none` → both removed; TLS → `JSON_SET` integers; `ETag` covers only the three values
@@ -731,14 +731,14 @@ verify and remove Pushover settings with valid and invalid values.
   value → `200`; without `delimiter_action` likewise (`delimiterAction`); Redis down during a change
   with TLS and tagging → `503 temporary-failure` (`sharedStore`) and the TLS columns unchanged; stale
   `If-Match` → `412`; audited with old and new values; scope and keys as T064.
-- [ ] T088 [P] [US7] Write `tests/Feature/MailSettings/MailboxMailSettingsBulkActionTest.php` for
+- [X] T088 [P] [US7] Write `tests/Feature/MailSettings/MailboxMailSettingsBulkActionTest.php` for
   `applyMailboxMailSettingsBulkAction` (FR-060, AS-4): 30 targets with one deleted mailbox → 29
   `done` (each with its new `version`), one `notFound`, summary counts, 29 audit records with the
   same `bulkRequestId`; a target with an outdated `version` → `outdated`, the others proceed; a
   mailbox outside a domain admin's scope → `notFound`; a duplicate address processed once; 101
   targets → `422 tooMany`; neither TLS member → `422`; a mailbox user → `403 forbidden`; a read-only
   key → `insufficient-key-scope`; a Redis-independent failure of one item → `failed` with its problem.
-- [ ] T089 [P] [US7] Write `tests/Feature/PushNotifications/PushNotificationSettingsTest.php`
+- [X] T089 [P] [US7] Write `tests/Feature/PushNotifications/PushNotificationSettingsTest.php`
   (FR-054 to FR-056, AS-5 to AS-8): unconfigured read → `configured false`, defaults (`sound
   pushover`, `active true`), no token/key fields; replace with 30-character token and key, title,
   text, one sender, sound `bike` → row as `pushover('edit')` writes it (`attributes` with string
@@ -750,30 +750,30 @@ verify and remove Pushover settings with valid and invalid values.
   row gone; tag changes when only the token changes and never contains a plain hash of it; domain
   admin without `pushover` → `403 permission-flag-required`; audit with credentials as `set` or
   `changed` and texts as sizes.
-- [ ] T090 [P] [US7] Write `tests/Feature/PushNotifications/PushNotificationVerificationTest.php`
+- [X] T090 [P] [US7] Write `tests/Feature/PushNotifications/PushNotificationVerificationTest.php`
   (FR-057) with `FakePushoverClient`: accepted → `{accepted: true, reason: null}`; rejected →
   `accepted false` with Pushover's errors; unreachable → `503 temporary-failure` (`pushover`); no
   settings → `409 push-notifications-not-configured`; a read-only key → `insufficient-key-scope`;
   audited; the fake received the stored token and key.
-- [ ] T091 [P] [US7] Write `tests/Unit/Clients/HttpPushoverClientTest.php` with `Http::fake()`: `POST`
+- [X] T091 [P] [US7] Write `tests/Unit/Clients/HttpPushoverClientTest.php` with `Http::fake()`: `POST`
   form fields `token` and `user` to the configured URL, 10 s timeout; 200 `status: 1` → accepted; 400
   `status: 0` with `errors` → rejected with reason; 5xx and connection errors → temporary failure.
 
 ### Implementation for User Story 7
 
-- [ ] T092 [P] [US7] Create `app/Clients/Pushover/{PushoverClient,HttpPushoverClient,PushoverVerdict}.php`
+- [X] T092 [P] [US7] Create `app/Clients/Pushover/{PushoverClient,HttpPushoverClient,PushoverVerdict}.php`
   and `tests/Support/Fakes/FakePushoverClient.php`; bind in `app/Providers/AppServiceProvider.php`.
   This makes T091 pass.
-- [ ] T093 [US7] Create `app/Services/MailSettings/MailSettingsService.php` (R15, on 003's
+- [X] T093 [US7] Create `app/Services/MailSettings/MailSettingsService.php` (R15, on 003's
   `TaggedMailHandlingStore` and 002's `SharedStore`, transaction with Redis last and compensation,
   `ETag`, flags, audit) and the bulk action through `BulkActionRunner`.
-- [ ] T094 [US7] Create `app/Http/Requests/Api/V2/{UpdateMailboxMailSettingsRequest,MailboxMailSettingsBulkActionRequest}.php`,
+- [X] T094 [US7] Create `app/Http/Requests/Api/V2/{UpdateMailboxMailSettingsRequest,MailboxMailSettingsBulkActionRequest}.php`,
   `app/Http/Resources/Api/V2/MailboxMailSettingsResource.php` and the controllers
   `MailboxMailSettingsController.php` (`show`, `update`) and
   `MailboxMailSettingsBulkActionController.php`; register `POST /mailboxes/mail-settings/bulk-actions`
   before 003's `/mailboxes/{mailbox}` routes and the two mail-settings routes (`restv2.audit` target
   `mailSettings`). This makes T087 and T088 pass.
-- [ ] T095 [US7] Create `app/Services/PushNotifications/PushNotificationService.php` (R14, 003's
+- [X] T095 [US7] Create `app/Services/PushNotifications/PushNotificationService.php` (R14, 003's
   `Pushover` model, `ETag` with `hmac(key)` and `hmac(token)`, flags, audit),
   `app/Http/Requests/Api/V2/ReplacePushNotificationSettingsRequest.php`,
   `app/Http/Resources/Api/V2/{PushNotificationSettingsResource,PushNotificationVerificationResource}.php`,
@@ -1191,3 +1191,12 @@ that differ from what exists map as listed.
   on the route, which kept a seeded generator between test requests).
 - **T086**: no `List…Request` or resource classes; the controllers use `ListQuery` and validate
   the boolean filters with `QueryBoolean`.
+- **T087–T095**: one `MailboxMailSettingsController` (`show`, `update`, `bulk`) and one
+  `PushNotificationSettingsController` (`show`, `update`, `destroy`, `verify`) instead of separate
+  bulk and verification controllers, and no resource classes (the services build the contract
+  arrays). The tagging read counts a present `RCPT_WANTS_*` field, as 003's `MailboxReader` does
+  (legacy only writes `1`), so the mail-settings tag and the mailbox list agree. G22: the `Mailbox`
+  representation carries `mailSettingsVersion`, equal to the mail-settings `etag`; a mailbox patch
+  refuses it as `immutable` like the other read-only members. `DelimitedRegex` (a coded rule) checks
+  the sender pattern with legacy's delimiters. Pushover is reached through `PushoverClient`
+  (`HttpPushoverClient`, 10 s timeout, `FakePushoverClient` in tests).

@@ -646,16 +646,41 @@ class MailcowRows
         DB::table('spamalias')->insert(['address' => $address, 'goto' => $goto, 'description' => '', 'validity' => $validity ?? time() + 3600, 'permanent' => $permanent]);
     }
 
-    /** A sync job delivering into a mailbox (`imapsync`). Returns its ID. */
-    public function syncJob(string $user2): int
+    /**
+     * A sync job delivering into a mailbox (`imapsync`) exactly as legacy's mailbox('add',
+     * 'syncjob') inserts it from the "Add sync job" form's defaults (feature 008 data-model.md):
+     * legacy's column list, `authmech1 = 'PLAIN'`, `maxbytespersecond` as a decimal string. Any
+     * column may be overridden, the runner's status columns included. Returns its ID.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public function syncJob(string $user2, array $overrides = []): int
     {
-        return (int) DB::table('imapsync')->insertGetId([
+        return (int) DB::table('imapsync')->insertGetId(array_merge([
             'user2' => $user2,
+            'exclude' => '(?i)spam|(?i)junk',
+            'delete1' => 0,
+            'delete2' => 0,
+            'timeout1' => 600,
+            'timeout2' => 600,
+            'automap' => 1,
+            'skipcrossduplicates' => 0,
+            'maxbytespersecond' => '0',
+            'subscribeall' => 1,
+            'dry' => 0,
+            'maxage' => 0,
+            'subfolder2' => '',
             'host1' => 'imap.example.net',
+            'authmech1' => 'PLAIN',
             'user1' => 'remote@example.net',
             'password1' => 'remote-secret',
+            'mins_interval' => 20,
             'port1' => 993,
-        ]);
+            'enc1' => 'SSL',
+            'delete2duplicates' => 1,
+            'custom_params' => '',
+            'active' => 1,
+        ], $overrides));
     }
 
     /** A quarantine item for a recipient (`quarantine`). Returns its ID. */

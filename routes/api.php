@@ -99,6 +99,7 @@ use App\Http\Controllers\Api\V2\PublicConfigController;
 use App\Http\Controllers\Api\V2\PublicConfigLogoController;
 use App\Http\Controllers\Api\V2\PushNotificationSettingsController;
 use App\Http\Controllers\Api\V2\ReadinessController;
+use App\Http\Controllers\Api\V2\RecentLoginController;
 use App\Http\Controllers\Api\V2\RecipientMapController;
 use App\Http\Controllers\Api\V2\RelayhostAssignmentController;
 use App\Http\Controllers\Api\V2\RelayhostChoiceController;
@@ -924,6 +925,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/mailboxes/{mailbox}/push-notifications', [PushNotificationSettingsController::class, 'show'])
             ->where('mailbox', '[^/]+')
             ->name('push-notifications.show');
+        Route::get('/mailboxes/{mailbox}/recent-logins', [RecentLoginController::class, 'index'])
+            ->where('mailbox', '[^/]+')
+            ->name('recent-logins.index');
     });
 
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
@@ -943,6 +947,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'pushNotificationSettingsDeletion', 'target' => 'pushNotificationSettings'])
             ->name('push-notifications.destroy');
+        Route::delete('/mailboxes/{mailbox}/recent-logins', [RecentLoginController::class, 'destroy'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'recentLoginsClear', 'target' => 'recentLogins'])
+            ->name('recent-logins.destroy');
         Route::post('/mailboxes/{mailbox}/push-notifications/verification', [PushNotificationSettingsController::class, 'verify'])
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'pushNotificationVerification', 'target' => 'pushNotificationSettings'])

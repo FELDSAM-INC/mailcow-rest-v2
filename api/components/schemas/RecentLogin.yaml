@@ -5,11 +5,19 @@ description: |
 required: [service, clientAddress, internal, country, appPassword, lastSeenAt]
 properties:
   service:
-    type: string
     description: |
-      The service as stored, upper-cased: for example `IMAP`, `POP3`, `SMTP`, `SIEVE`, `EAS`, `DAV`,
-      `SSO` (webmail single sign-on), `SOGO`. Web UI sign-ins are always `WEBUI`, whether mailcow
-      stored `MAILCOWUI` (upstream) or `WEBUI` (FeldHost fork).
+      The service as stored, upper-cased. The known values are `IMAP`, `POP3`, `SMTP`, `SIEVE`
+      (Dovecot's service names), `SOGO` (the groupware's own sign-ins, including ActiveSync and DAV),
+      `SSO` (webmail single sign-on), `EAS`, `DAV` and `WEBUI`. Web UI sign-ins are always `WEBUI`,
+      whether mailcow stored `MAILCOWUI` (upstream) or `WEBUI` (FeldHost fork). Other mailcow
+      versions may store other services, which are returned as they are (upper-cased), so clients
+      show unknown values as given (G24).
+    anyOf:
+      - type: string
+        enum: [IMAP, POP3, SMTP, SIEVE, SOGO, SSO, EAS, DAV, WEBUI]
+      - type: string
+        minLength: 1
+        maxLength: 32
     examples: [IMAP]
   clientAddress:
     type: string

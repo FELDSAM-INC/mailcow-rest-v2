@@ -793,7 +793,7 @@ days as each role, clear them and compare with legacy's queries.
 
 ### Tests for User Story 8 ⚠️
 
-- [ ] T096 [P] [US8] Write `tests/Feature/RecentLogins/RecentLoginListTest.php` (FR-061, AS-1 to
+- [X] T096 [P] [US8] Write `tests/Feature/RecentLogins/RecentLoginListTest.php` (FR-061, AS-1 to
   AS-3, AS-5, AS-6): IMAP from one public address on three days plus a web sign-in → two entries,
   the IMAP one with the latest time; an app-password login names the app password (and `name: null`
   once it was deleted); `MAILCOWUI` and `WEBUI` both reported as `WEBUI` and both matched by
@@ -801,28 +801,28 @@ days as each role, clear them and compare with legacy's queries.
   `422 outOfRange` (`max: 31`); a row 8 days old is excluded with the default; pagination after
   grouping, sort `service`, `clientAddress`, `q`; the result equals legacy's grouping query run
   verbatim on the same rows; domain admin outside scope → `404`; reads need no flag.
-- [ ] T097 [P] [US8] Write `tests/Feature/RecentLogins/RecentLoginCountryTest.php` (FR-062, SC-010)
+- [X] T097 [P] [US8] Write `tests/Feature/RecentLogins/RecentLoginCountryTest.php` (FR-062, SC-010)
   with `FakeCountryLookup`: a cached `IP_SHORTCOUNTRY` value is used without a lookup; an uncached
   public address is looked up and written back with `HSET`; lookups of one page run concurrently and
   a slow address (3 s) is reported without a country while the response returns within 2 s;
   `RESTV2_COUNTRY_LOOKUP=false` → no lookup; Redis down → `503 temporary-failure`.
-- [ ] T098 [P] [US8] Write `tests/Feature/RecentLogins/RecentLoginClearTest.php` (FR-063, AS-4): the
+- [X] T098 [P] [US8] Write `tests/Feature/RecentLogins/RecentLoginClearTest.php` (FR-063, AS-4): the
   mailbox user clears → `204`, every `sasl_log` row of the mailbox gone and the `logs` rows that
   legacy's statement matches gone; a domain admin clears → `sasl_log` gone, `logs` untouched; an
   administrator → both; audited (`recentLoginsClear`); a read-only key → `insufficient-key-scope`;
   a login recorded after the clear appears afterwards.
-- [ ] T099 [P] [US8] Write `tests/Unit/Clients/HttpCountryLookupTest.php` with `Http::fake()`: `GET
+- [X] T099 [P] [US8] Write `tests/Unit/Clients/HttpCountryLookupTest.php` with `Http::fake()`: `GET
   <url><ip>` with `User-Agent: Moocow`, pooled requests, `shortcountry` parsed, errors and timeouts
   give no country.
 
 ### Implementation for User Story 8
 
-- [ ] T100 [P] [US8] Create `app/Clients/Geo/{CountryLookup,HttpCountryLookup}.php` and
+- [X] T100 [P] [US8] Create `app/Clients/Geo/{CountryLookup,HttpCountryLookup}.php` and
   `tests/Support/Fakes/FakeCountryLookup.php`; bind in `AppServiceProvider`. This makes T099 pass.
-- [ ] T101 [US8] Create `app/Services/RecentLogins/RecentLoginService.php` (R16: grouped query,
+- [X] T101 [US8] Create `app/Services/RecentLogins/RecentLoginService.php` (R16: grouped query,
   service mapping, internal flag, cache and budgeted lookups after pagination, clear statements of
   DM, audit).
-- [ ] T102 [US8] Create `app/Http/Requests/Api/V2/ListRecentLoginsRequest.php` (`days` 1–31 default
+- [X] T102 [US8] Create `app/Http/Requests/Api/V2/ListRecentLoginsRequest.php` (`days` 1–31 default
   7, `service` ≤ 32, `ListQuery`), `app/Http/Resources/Api/V2/RecentLoginResource.php` and
   `app/Http/Controllers/Api/V2/RecentLoginController.php` (`index`, `destroy`); register the routes
   (`restv2.audit` target `recentLogins` on `DELETE`). This makes T096–T098 pass.
@@ -1200,3 +1200,13 @@ that differ from what exists map as listed.
   refuses it as `immutable` like the other read-only members. `DelimitedRegex` (a coded rule) checks
   the sender pattern with legacy's delimiters. Pushover is reached through `PushoverClient`
   (`HttpPushoverClient`, 10 s timeout, `FakePushoverClient` in tests).
+- **T096–T102**: `sasl_log`'s primary key (service, address, mailbox) and legacy's `REPLACE INTO`
+  keep one row per group, so "IMAP on three days" is one row with the latest time; the tests write
+  logins the way set_sasl_log() does. Pagination wraps legacy's grouping query in a derived table
+  (so `meta.total` counts groups) and breaks ties on the remaining group columns. The default order
+  is `desc` only with the default sort (`lastSeenAt`); `sort=service` or `clientAddress` defaults
+  to `asc`. Countries outside `^[A-Z]{2}$` (contract) are reported as unknown and never written
+  back. `FakeCountryLookup` waits as long as its slowest address (at most the budget), as the pooled
+  lookups do. No `ListRecentLoginsRequest` or resource class: the controller validates `days` and
+  `service` with the validator, as T086. G24: `RecentLogin.service` is `anyOf` the known codes and
+  any other code.

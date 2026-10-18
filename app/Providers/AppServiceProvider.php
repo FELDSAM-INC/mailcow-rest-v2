@@ -14,6 +14,8 @@ use App\Clients\DockerApi\DockerApiClient;
 use App\Clients\DockerApi\HttpDockerApiClient;
 use App\Clients\Fail2Ban\Fail2BanReporter;
 use App\Clients\Fail2Ban\RedisFail2BanReporter;
+use App\Clients\Geo\CountryLookup;
+use App\Clients\Geo\HttpCountryLookup;
 use App\Clients\Ispconfig\IspconfigDnsClient;
 use App\Clients\Ispconfig\JsonIspconfigDnsClient;
 use App\Clients\Keycloak\HttpKeycloakAdminClient;
@@ -102,6 +104,7 @@ class AppServiceProvider extends ServiceProvider
         // Feature 005: outbound services (faked in tests) and what ends with a session of this API
         // (the webmail hand-off).
         $this->app->bind(PushoverClient::class, HttpPushoverClient::class);
+        $this->app->bind(CountryLookup::class, HttpCountryLookup::class);
         $this->app->tag([WebmailHandOffService::class], SessionRegistry::LISTENER_TAG);
         $this->app->scoped(GroupwareCacheFlush::class);
         $this->app->bind(Clock::class, SystemClock::class);

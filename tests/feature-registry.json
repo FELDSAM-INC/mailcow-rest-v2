@@ -410,8 +410,6 @@
         "getOwnClientConfiguration",
         "getOwnAppleProfile",
         "createOwnAppleProfileWithAppPassword",
-        "listRecentLogins",
-        "clearRecentLogins",
         "resetActiveSyncCache",
         "resetGroupwareProfile",
         "listSieveFilters",

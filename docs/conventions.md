@@ -62,9 +62,11 @@ this document next to the constitution.
 ## Legacy configuration the API cannot read
 
 - Values from legacy's PHP configuration (`vars.inc.php`, `vars.local.inc.php`) become **API
-  server settings** with upstream defaults. Examples are `ALIAS_DISABLE_EXTERNAL_DOMAINS`,
+  server settings** with upstream defaults. When mailcow's `data/web/inc` is mounted read-only,
+  001's configuration reader takes the operator's current values from those files, and a
+  `RESTV2_<VAR>` setting always wins. Features reuse this reader; none writes its own. Examples are `ALIAS_DISABLE_EXTERNAL_DOMAINS`,
   `SHOW_DKIM_PRIV_KEYS`, `ALLOW_ADMIN_EMAIL_LOGIN`, `DOCKER_TIMEOUT` and `IMAPSYNC_OPTIONS`. The
-  operator keeps them aligned with legacy.
+  operator keeps them aligned with legacy when the files are not mounted.
 - Values that live in `mailcow.conf` reuse its variable names.
 - FeldHost fork behaviour is a server setting whose default is upstream behaviour. Examples are
   the default DKIM selector, the ISPConfig DNS push, the update check, license verification and

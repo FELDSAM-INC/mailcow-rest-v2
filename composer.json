@@ -60,6 +60,12 @@
             "@php vendor/bin/phpunit",
             "@php tests/bin/check-contract-coverage.php @no_additional_args"
         ],
+        "test:performance": [
+            "Composer\\Config::disableProcessTimeout",
+            "@contract:bundle",
+            "tests/bin/prepare-database.sh restv2_test @no_additional_args",
+            "@php vendor/bin/phpunit --group performance"
+        ],
         "analyse": [
             "phpstan analyse --memory-limit=1G"
         ],
@@ -93,6 +99,7 @@
         "contract:lint": "Lint the OpenAPI contract with Redocly.",
         "contract:bundle": "Bundle the contract to build/contract/openapi.yaml and dereferenced openapi.json.",
         "test": "Bundle the contract, prepare the MariaDB test database, run PHPUnit and check contract coverage.",
+        "test:performance": "Run the timing tests (group performance) alone, on an otherwise idle machine.",
         "analyse": "Run Larastan (PHPStan).",
         "format": "Format the code with Pint.",
         "docs:assets": "Copy the Swagger UI assets (swagger-ui-dist, Apache-2.0) into resources/docs/ for the documentation page."

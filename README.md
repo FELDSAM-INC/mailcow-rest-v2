@@ -189,6 +189,7 @@ docker compose run --rm app scripts/dev/reset-dev-database.sh   # dev database a
 
 docker compose run --rm app composer contract:lint              # Redocly lint
 docker compose run --rm app composer test                       # bundle, MariaDB schema, PHPUnit, coverage
+docker compose run --rm app composer test:performance           # timing tests alone, on an idle machine
 docker compose run --rm app vendor/bin/pint --test
 docker compose run --rm app vendor/bin/phpstan analyse
 docker compose run --rm app composer docs:assets                # Swagger UI assets for /api/v2/docs

@@ -143,6 +143,14 @@ jobs:
             -e REDISHOST=redis -e REDISPASS=devredispass \
             -e MAILCOW_SCHEMA="${{ matrix.schema }}" \
             "$DEV_IMAGE" composer test
+      - name: composer test:performance
+        run: |
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app \
+            --network "${{ job.services.mariadb.network }}" \
+            -e DBHOST=mariadb -e DBUSER=mailcow -e DBPASS=mailcow -e DBROOT=root \
+            -e REDISHOST=redis -e REDISPASS=devredispass \
+            -e MAILCOW_SCHEMA="${{ matrix.schema }}" \
+            "$DEV_IMAGE" composer test:performance
       - uses: actions/upload-artifact@v4
         if: always()
         with:

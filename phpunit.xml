@@ -21,6 +21,15 @@
             <directory>tests/Feature</directory>
         </testsuite>
     </testsuites>
+    <!--
+      Timing tests (#[Group('performance')]) measure wall-clock budgets and fail on a loaded machine,
+      so `composer test` leaves them out. `composer test:performance` runs them on their own.
+    -->
+    <groups>
+        <exclude>
+            <group>performance</group>
+        </exclude>
+    </groups>
     <source>
         <include>
             <directory>app</directory>

@@ -21,7 +21,8 @@ surface. Never modify `source_code/`.
 **Development** (decided in `specs/001-auth-sessions-api-keys/plan.md` and `research.md`):
 - Everything runs in the Docker dev stack (`compose.yaml`: php-fpm 8.4, nginx, MariaDB 10.11, Redis
   7.4.11). Run `docker compose run --rm app composer test`, then `vendor/bin/pint --test` and
-  `vendor/bin/phpstan analyse`. The host PHP is too old.
+  `vendor/bin/phpstan analyse`. The host PHP is too old. Timing tests (`#[Group('performance')]`)
+  are left out of `composer test`; run `composer test:performance` on an otherwise idle machine.
 - Tests load `tests/fixtures/schema/<release>.sql`, which `scripts/schema/generate-fixture.sh`
   generates from upstream's own `init_db_schema()`. Never use `RefreshDatabase`, `migrate:fresh` or
   `db:wipe`: they drop mailcow's tables.

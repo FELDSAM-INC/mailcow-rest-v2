@@ -19,3 +19,52 @@ content:
       properties:
         data:
           $ref: '../schemas/PublicConfig.yaml'
+    examples:
+      customised:
+        summary: Customised server with SOGo enabled
+        value:
+          data:
+            pageTitle: Example Mail
+            productName: Example Mail
+            logos:
+              light:
+                url: /api/v2/public-config/logos/light?v=5f3c1a9e0b7d4c21
+                isDefault: false
+              dark:
+                url: /img/cow_mailcow.svg
+                isDefault: true
+            loginHelpHtml: <p>Need help? Call <b>+420 123 456 789</b>.</p>
+            footerHtml: null
+            announcement:
+              text: Maintenance on Sunday 02:00–04:00 UTC.
+              type: warning
+              active: true
+            loginPage:
+              hideAdminLogin: false
+              hideDomainAdminLogin: false
+              hideMailboxUserLogin: false
+              forceSingleSignOn: false
+            languages:
+              - code: cs-cz
+                name: Čeština (Czech)
+              - code: en-gb
+                name: English
+              - code: sk-sk
+                name: Slovenčina (Slovak)
+            defaultLanguage: en-gb
+            externalIdentityProvider:
+              configured: false
+            appsLabel: null
+            appLinks:
+              - name: Webmail
+                url: /SOGo/so
+                signedInUrl: /SOGo/so
+                description: null
+                showOnLoginPage: false
+                source: builtIn
+              - name: Helpdesk
+                url: https://helpdesk.example.org/
+                signedInUrl: https://helpdesk.example.org/?user=%u
+                description: null
+                showOnLoginPage: true
+                source: operator

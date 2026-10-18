@@ -5,7 +5,8 @@ get:
   description: |
     Lists audit records, newest first by default. Administrators only: a signed-in administrator
     or a key owned by an administrator. Records cannot be changed or deleted through the API and
-    are removed after the configured retention period (365 days by default).
+    are removed after the configured retention period (365 days by default). `q` searches the
+    actor username, the target name and the user agent.
   security:
     - sessionCookie: []
     - apiKeyAuth: []
@@ -14,6 +15,7 @@ get:
     - $ref: '../../components/parameters/Offset.yaml'
     - $ref: '../../components/parameters/AuditEventSort.yaml'
     - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
     - name: from
       in: query
       required: false

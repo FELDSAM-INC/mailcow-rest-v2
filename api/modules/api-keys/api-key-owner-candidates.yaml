@@ -1,0 +1,36 @@
+get:
+  operationId: listApiKeyOwnerCandidates
+  tags: [API keys]
+  summary: List possible key owners
+  description: |
+    Lists the active administrators and active domain administrators that can own an API key
+    (mailcow's `admin` table with `active = 1`), for the owner field of the key form. Mailbox users
+    are never listed. Administrators only: a signed-in administrator or a key owned by an
+    administrator, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/ApiKeyOwnerCandidateSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: role
+      in: query
+      required: false
+      description: Only this role.
+      schema:
+        type: string
+        enum: [admin, domainAdmin]
+  responses:
+    '200':
+      $ref: '../../components/responses/ApiKeyOwnerCandidateListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

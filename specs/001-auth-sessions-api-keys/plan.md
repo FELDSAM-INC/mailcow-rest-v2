@@ -18,11 +18,13 @@ Feature 001 builds the foundation of mailcow REST API v2 and covers the followin
 - "who am I" with role, scope, permission flags and pending actions, plus per-account preferences;
 - administrator-managed, scoped, expiring, network-restricted API keys (`X-API-Key`);
 - the public branding configuration read from mailcow's customisation;
-- an immutable audit log.
+- an immutable audit log;
+- the app links of the legacy login page and apps menu, and a list of possible key owners for the
+  key form (orchestrator additions FR-056 and FR-057).
 
 The technical approach:
 
-- The OpenAPI 3.1 contract in `api/` was authored first. It has 30 operations and lints clean.
+- The OpenAPI 3.1 contract in `api/` was authored first. It has 31 operations and lints clean.
 - A Laravel 13 / PHP 8.4 service runs as its own php-fpm container next to mailcow. nginx-mailcow
   reaches it over FastCGI through mailcow's `site.*.custom` include.
 - Legacy business logic is ported line by line: `check_login`, `verify_hash`, `fido2`,
@@ -81,7 +83,7 @@ most one `UPDATE` per key per minute.
 - All dependencies are GPL-3.0-compatible.
 
 **Scale/Scope**: One mailcow server with up to about 10,000 accounts, a few hundred API keys, and
-up to about 1 million audit records a year, kept for 365 days. The feature has 30 operations in
+up to about 1 million audit records a year, kept for 365 days. The feature has 31 operations in
 7 modules, 3 API-owned tables and 6 user stories.
 
 ## Constitution Check
@@ -90,7 +92,7 @@ up to about 1 million audit records a year, kept for 365 days. The feature has 3
 
 | Principle | Gate | Status |
 |---|---|---|
-| I. Contract-first | The contract for all 30 operations is authored in `api/` before any code. `npx @redocly/cli lint` passes. Every test request and response is validated (R13). The breaking-change check runs in CI (R25). The bundled contract is a release artifact served at `/api/v2/openapi.yaml`. | PASS |
+| I. Contract-first | The contract for all 31 operations is authored in `api/` before any code. `npx @redocly/cli lint` passes. Every test request and response is validated (R13). The breaking-change check runs in CI (R25). The bundled contract is a release artifact served at `/api/v2/openapi.yaml`. | PASS |
 | II. HTTP contract | Base path `/api/v2`; plural nouns; actions are sub-resources (`/api-keys/{id}/revocation`, `/session/passkey-challenge`); PATCH uses JSON Merge Patch. 201 with `Location`, 200, 204. `{data, meta}` lists and `{data}` single resources. RFC 9457 problems with `errors` on 422. `ETag` and `If-Match` on preferences, passkeys and API keys. camelCase, booleans, RFC 3339 UTC. Status codes 503 and 405 are justified under Complexity Tracking. | PASS (justified) |
 | III. Upstream schema | No migration touches an upstream table (architecture test `MigrationPrefixTest`). The prefix is `restv2_`, also for `restv2_migrations`. Destructive database commands are prohibited. The fixture is generated from upstream `init_db_schema()` (R2). The CI matrix runs over every supported schema. | PASS |
 | IV. Parity | The legacy code was read and ported (R9–R12, R16). Every upstream write goes through `app/Services/` and reproduces legacy's side effects: `tfa` re-activation, `sasl_log`, `fido2` insert, update and delete, and the fail2ban publish. Deviations are only those stated in the spec's parity table, which this plan completes with the plan-level rows (see "Parity notes added to the spec"). | PASS |
@@ -98,6 +100,7 @@ up to about 1 million audit records a year, kept for 365 days. The feature has 3
 | VI. Security | Object-level authorisation for every role and key type. Keys are stored as SHA-256, shown once, scoped, expiring and network-restricted. Invalid keys go to fail2ban. The cookie is `__Host-`, `Secure`, `HttpOnly` and `SameSite=Strict`, and CSRF applies to every unsafe session request. Existing second factors keep working. Every state-changing request is audited in the same transaction. Secrets are redacted from logs. Unknown accounts get timing equalisation. | PASS |
 | VII. Test-first | `tasks.md` orders tests before implementation in every phase. Tests run on MariaDB with the real schema and on a real Redis. Only the Yubico HTTP service is faked. | PASS |
 | VIII. Simplicity | Three runtime packages, two of them legacy's own (R28). No package for Yubico, `verify_hash`, CBOR or IP matching. Interfaces exist only where a fake or a second adapter is needed (`Fail2BanReporter`, `YubicoOtpVerifier`). | PASS |
+| Cross-feature conventions (`docs/conventions.md`) | Out-of-scope objects answer `404`. Lists default to 25 entries (at most 1,000) and take `q`. Version tags cover stored settings and appear as `etag` on every representation. Keys cannot create or revoke keys. Secrets are shown once. Reads are not audited. Nothing is cached by time. Legacy PHP settings are server settings with upstream defaults (R14, R29). | PASS |
 | Runtime constraints | Stateless php-fpm, non-root, read-only root filesystem. Liveness and readiness endpoints plus a CLI health check. JSON logs with the request ID (`traceparent`). Configuration from environment variables with `mailcow.conf` names (R14, R23, R24). | PASS |
 
 **Post-design re-check (after Phase 1)**: PASS. The contract, data model and research introduce
@@ -120,6 +123,8 @@ rows (constitution IV requires every deviation to be stated in the spec):
 4. Throttled password attempts are still published to fail2ban.
 5. New passkeys get the product name as the WebAuthn relying-party name instead of legacy's
    `WebAuthn Library`, may be named at registration, and a duplicate credential ID is refused.
+6. App links honour the signed-in address of built-in apps, which legacy's header ignores because
+   of a bug. Possible key owners are a new list, since legacy keys have no owner.
 
 ## Contract Operations
 
@@ -145,9 +150,10 @@ rows (constitution IV requires every deviation to be stated in the spec):
 | DELETE `/me/passkeys/{passkeyId}` | deletePasskey | session + CSRF | US2, FR-053 |
 | GET `/api-keys` | listApiKeys | admin session or admin key | US4, FR-035, FR-037 |
 | POST `/api-keys` | createApiKey | admin session + CSRF | US4, FR-032, FR-034, FR-037 |
+| GET `/api-keys/owner-candidates` | listApiKeyOwnerCandidates | admin session or admin key (read-only too) | US4, FR-057 |
 | GET `/api-keys/{apiKeyId}` | getApiKey | admin session or admin key | US4, FR-035 |
 | POST `/api-keys/{apiKeyId}/revocation` | revokeApiKey | admin session + CSRF | US4, FR-036, FR-037 |
-| GET `/public-config` | getPublicConfig | public | US5, FR-042–FR-044 |
+| GET `/public-config` | getPublicConfig | public | US5, FR-042–FR-044, FR-056 |
 | GET `/public-config/logos/{variant}` | getPublicConfigLogo | public | US5, FR-042 |
 | GET `/audit-events` | listAuditEvents | admin session or admin key | US6, FR-047 |
 | GET `/health/live` | getLiveness | public | constitution runtime |
@@ -198,7 +204,7 @@ app/
 │   ├── Controllers/Api/V2/            # CsrfToken, Session, PendingSignIn, SecondFactorChallenge,
 │   │                                  # SecondFactor, PasskeyChallenge, PasskeyAssertion, Identity,
 │   │                                  # Preferences, Passkey, PasskeyRegistrationOptions, ApiKey,
-│   │                                  # ApiKeyRevocation, PublicConfig, PublicConfigLogo,
+│   │                                  # ApiKeyRevocation, ApiKeyOwnerCandidate, PublicConfig, PublicConfigLogo,
 │   │                                  # AuditEvent, Health, Docs controllers
 │   ├── Middleware/                    # AssignRequestId, AuthenticateApiKey, StartSessionUnlessApiKey,
 │   │                                  # EnsureSessionIntegrity, VerifyCsrfToken, RequireAuth,

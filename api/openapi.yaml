@@ -15,14 +15,17 @@ info:
 
     - Names are camelCase. Booleans are `true`/`false`. Times are RFC 3339 in UTC.
     - A single resource is returned as `{"data": {...}}`. A list is returned as
-      `{"data": [...], "meta": {"total", "limit", "offset"}}` and accepts `limit`, `offset`,
-      `sort` and `order` plus the documented filters.
+      `{"data": [...], "meta": {"total", "limit", "offset"}}` and accepts `limit` (default 25, at
+      most 1,000), `offset`, `sort`, `order`, a substring search `q` and the documented filters.
     - Create returns `201` with a `Location` header, read and update return `200`, delete returns
       `204`. Non-CRUD actions are sub-resources (for example `POST /api-keys/{apiKeyId}/revocation`)
       and return `200` with the affected resource or the ceremony data.
     - `PATCH` takes JSON Merge Patch (RFC 7396, `application/merge-patch+json`).
-    - Mutable single resources return a strong `ETag`. Writes accept `If-Match` and answer `412`
-      when it does not match. The legacy UI edits the same rows, so clients should send it.
+    - Mutable resources carry a version tag: a strong ETag over their stored settings, never over
+      usage data. A single read returns it in the `ETag` header, and every representation,
+      including each list entry, carries the same value in `etag`. Writes accept `If-Match` and
+      answer `412` when it does not match. The legacy UI edits the same rows, so clients should
+      send it.
 
     ## Errors
 
@@ -127,6 +130,8 @@ paths:
     $ref: './modules/passkeys/_index.yaml#/~1me~1passkeys~1{passkeyId}'
   /api-keys:
     $ref: './modules/api-keys/_index.yaml#/~1api-keys'
+  /api-keys/owner-candidates:
+    $ref: './modules/api-keys/_index.yaml#/~1api-keys~1owner-candidates'
   /api-keys/{apiKeyId}:
     $ref: './modules/api-keys/_index.yaml#/~1api-keys~1{apiKeyId}'
   /api-keys/{apiKeyId}/revocation:

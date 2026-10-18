@@ -1,6 +1,8 @@
 # Paths of the api-keys module: administrator-managed keys for automation clients.
 /api-keys:
   $ref: './api-keys.yaml'
+/api-keys/owner-candidates:
+  $ref: './api-key-owner-candidates.yaml'
 /api-keys/{apiKeyId}:
   $ref: './api-key.yaml'
 /api-keys/{apiKeyId}/revocation:

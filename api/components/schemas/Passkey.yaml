@@ -2,7 +2,7 @@ type: object
 description: |
   A passkey of the signed-in account: a discoverable WebAuthn credential stored where legacy
   mailcow stores FIDO2 credentials (table `fido2`), so it works in both UIs.
-required: [id, name, authenticatorDescription, registeredAt, hostName, active]
+required: [id, name, authenticatorDescription, registeredAt, hostName, active, etag]
 properties:
   id:
     type: string
@@ -31,3 +31,8 @@ properties:
   active:
     type: boolean
     description: Inactive passkeys cannot sign in (`fido2.active`).
+  etag:
+    type: string
+    description: |
+      Version tag of the stored settings, equal to the `ETag` header of a single read. Send it in
+      `If-Match` when changing the resource.

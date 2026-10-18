@@ -15,6 +15,7 @@ required:
   - lastUsedFrom
   - revokedAt
   - revokedBy
+  - etag
 properties:
   id:
     type: string
@@ -69,3 +70,8 @@ properties:
     oneOf:
       - $ref: './AccountRef.yaml'
       - type: 'null'
+  etag:
+    type: string
+    description: |
+      Version tag of the stored settings (not of `lastUsedAt`, `lastUsedFrom` or `status`), equal to the `ETag` header of a single read. Send it in
+      `If-Match` when changing the resource.

@@ -236,19 +236,30 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
   4. `StartSessionUnlessApiKey`.
   5. `EnsureSessionIntegrity` (sessions only): idle timeout, UA pinning, and account still
      existing and active. Any failure invalidates the session.
-  6. Route middleware `restv2.auth:<mode>`, where mode is `public`, `session` (session only),
-     `authenticated` (session or key) or `signed-in-session` (no pending sign-in):
-     - `401 unauthenticated`, or `401 second-factor-required` during a pending sign-in;
-     - `403 session-required` for key requests to session-only operations.
+  6. Route middleware `restv2.auth:<mode>` (`RequireAuth`), with four modes:
+     - `public`: anyone, keys included. Used by the public configuration, logos, docs and problem
+       pages.
+     - `browser`: anonymous or signed-in browser sessions. Key requests get
+       `403 session-required`. Used by `GET /csrf-token`, `GET`, `POST` and `DELETE /session`, the
+       pending-sign-in operations, and the passkey challenge and assertion.
+     - `session`: a signed-in session only. No session gives `401 unauthenticated`, a pending
+       sign-in gives `401 second-factor-required`, and a key gives `403 session-required`. Used by
+       preferences, passkey management, and creating and revoking keys.
+     - `authenticated`: a signed-in session or a key. Without either the answer is
+       `401 unauthenticated` (or `second-factor-required`). Used by `GET /me`, listing and reading
+       keys, and listing audit records.
+
+     Key principals are never restricted by pending actions: FR-014 restricts sessions only, and
+     `Identity.pendingActions` is `[]` for a key.
   7. `VerifyCsrfToken` (sessions, unsafe methods): `403 csrf-token-mismatch`. It runs after step
      6, so that a request without a live session on a protected route gets `401`, not a CSRF
      error. On public unsafe routes (sign-in, passkey challenge and assertion, pending-sign-in
      operations) it applies to the anonymous session.
   8. `EnforcePendingActions` (route middleware `restv2.pending:<mode>`): a restricted session
-     answers `403 pending-action-required`, except on routes with mode `allow` (`GET /me`,
-     `GET /session`, `DELETE /session`, the public routes) and with mode `secondFactorSetup`
-     (passkey registration options and registration, allowed only when that is the sole pending
-     action).
+     answers `403 pending-action-required`, except on routes with mode `allow` (every `public` and
+     `browser` route, and `GET /me`) and with mode `secondFactorSetup` (passkey registration
+     options and registration, allowed only when that is the sole pending action). The default
+     mode is `enforce`.
   9. Policies or gates in controllers: `403 forbidden`, and `404` for objects outside the caller's
      scope.
   10. Form Request validation: `422 validation-failed`.
@@ -433,7 +444,8 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
 - **Decision**:
   - **Environment variables reuse `mailcow.conf` names**: `MAILCOW_HOSTNAME`, `TZ`, `DBNAME`,
     `DBUSER`, `DBPASS`, `REDISPASS`, `REDIS_SLAVEOF_IP`, `REDIS_SLAVEOF_PORT`, `IPV4_NETWORK`,
-    `IPV6_NETWORK`, `WEBAUTHN_ONLY_TRUSTED_VENDORS` and `ADDITIONAL_SERVER_NAMES`. `DBHOST`
+    `IPV6_NETWORK`, `WEBAUTHN_ONLY_TRUSTED_VENDORS`, `SKIP_SOGO` (default `n`, for app links) and
+    `ADDITIONAL_SERVER_NAMES`. `DBHOST`
     defaults to `mysql-mailcow`, and `REDISHOST` (an existing name) to `redis-mailcow`.
   - **New settings** use the prefix `RESTV2_`:
 
@@ -460,13 +472,29 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     2. It includes `vars.inc.php`, then `vars.local.inc.php` if it exists.
     3. It prints JSON with `SESSION_LIFETIME`, `DEFAULT_LANG`, `AVAILABLE_LANGUAGES`,
        `FIDO2_UV_FLAG_REGISTER`, `FIDO2_UV_FLAG_LOGIN`, `FIDO2_USER_PRESENT_FLAG`, `FIDO2_FORMATS`,
-       `WEBAUTHN_UV_FLAG_LOGIN`, `WEBAUTHN_USER_PRESENT_FLAG` and `OTP_LABEL`.
+       `WEBAUTHN_UV_FLAG_LOGIN`, `WEBAUTHN_USER_PRESENT_FLAG`, `OTP_LABEL` and `MAILCOW_APPS`.
 
-    The result is cached in Redis (`restv2:mailcow-vars`) for 60 s. When the directory is missing,
-    or the script fails or times out, the built-in defaults of upstream `2026-09a` apply and a
-    warning is logged once per cache period. Those defaults are 10800, `en-gb`, the 31 languages,
-    `'preferred'`, `'preferred'`, `true`, the seven formats, `false`, `true` and `mailcow UI`. Laravel's
-    `session.lifetime` (minutes) is set from `SESSION_LIFETIME` at boot, rounded up.
+    **Precedence**, per value: an explicit API server setting `RESTV2_<legacy variable name>`
+    (for example `RESTV2_SESSION_LIFETIME`, or `RESTV2_MAILCOW_APPS` and
+    `RESTV2_AVAILABLE_LANGUAGES` as JSON) wins. Otherwise the value read from the mounted legacy
+    files applies. Otherwise the built-in default of upstream `2026-09a` applies: 10800, `en-gb`,
+    the 31 languages, `'preferred'`, `'preferred'`, `true`, the seven formats, `false`, `true`,
+    `mailcow UI` and the single Webmail entry (`/SOGo/so`, hidden on the login page).
+
+    **Freshness**: the exported JSON is cached in Redis under a key that contains a fingerprint of
+    the two files (path, size, modification time and inode, from `stat()` on every request), so any
+    change to the files is picked up by the next request without a time-based cache
+    (`docs/conventions.md`: data is read on every request). When the directory is missing, or the
+    script fails or times out, the defaults apply and a warning is logged once per fingerprint.
+    Laravel's `session.lifetime` (minutes) is set from `SESSION_LIFETIME` at boot, rounded up.
+
+    **Relation to `docs/conventions.md`**: the conventions make legacy PHP configuration "API
+    server settings with upstream defaults that the operator keeps aligned". This design keeps that
+    rule, because every value is a `RESTV2_*` server setting with the upstream default. It also
+    satisfies spec 001's assumption that the values "come from the operator's existing mailcow
+    configuration, including local overrides", by reading the deployed files when they are mounted.
+    Later features can reuse `MailcowConfig` for their own legacy variables, so that operators
+    need not copy values.
 - **Rationale**: The operator keeps configuring mailcow in one place: `mailcow.conf` plus
   `vars.local.inc.php`. A subprocess evaluates the operator's PHP exactly like legacy does, without
   polluting the API process. `vars.inc.php` calls `error_reporting(E_ERROR)` and defines globals.
@@ -495,12 +523,19 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
   | `loginPage.*` | `CUSTOM_LOGIN` (JSON) | `hide_admin_quicklink`, `hide_domainadmin_quicklink`, `hide_user_quicklink`, `force_sso` `== 1`; all `false` when unset |
   | `languages`, `defaultLanguage` | — | `AVAILABLE_LANGUAGES` and `DEFAULT_LANG` (R14) |
   | `externalIdentityProvider.configured` | table `identity_provider` | `true` when the `authsource` row is `keycloak`, `generic-oidc` or `ldap` |
+  | `appsLabel` | `APPS_NAME` | `htmlspecialchars_decode(ENT_QUOTES)`; `null` when unset (legacy falls back to its translated "Apps", which the client translates instead) |
+  | `appLinks` (built-in) | `$MAILCOW_APPS` (R14) | In array order. `name`, `url` = `link`, `signedInUrl` = `user_link` or else `link`, `description`, `showOnLoginPage` = `!hide`, `source: builtIn`. With `SKIP_SOGO=y`, entries whose `link` or `user_link` matches `/SOGo/i` are left out (legacy `is_uri('SOGo', …)`) |
+  | `appLinks` (operator) | `APP_LINKS` (JSON list of one-key maps `{name: {link, user_link, hide}}`) | After the built-in apps, in stored order. Old-style entries `{name: "address"}` become `link = user_link = address`, `hide = false`, as legacy's `customize('get', 'app_links')` converts them. `user_link` empty → `link`. `description: null`, `source: operator` |
 
   `GET /public-config/logos/{variant}` decodes the data URI. It serves only the MIME types legacy
   accepts on upload (`image/gif`, `image/jpeg`, `image/pjpeg`, `image/png`, `image/x-png`,
   `image/svg+xml`), normalising `image/pjpeg` and `image/x-png`, and it sets a sandboxing CSP so
   that SVGs cannot run scripts. The public configuration has a strong `ETag` and
   `Cache-Control: no-cache`, so changes are visible on the next request (FR-043: within one minute).
+  Legacy's header uses `link` instead of `user_link` for `$MAILCOW_APPS` entries, because
+  `header.inc.php` tests `$app_links_processed[$i]['user_link']` by mistake. The API returns the
+  configured `user_link`, as recorded in the spec's parity table. `%u` is never substituted by the
+  API, so that the public configuration stays free of account data (FR-044).
 - **Rationale**: Legacy keys and defaults make the branding identical in both UIs (US5). Reading
   without a cache takes about 12 Redis GETs, a few milliseconds. Logos can reach 15 MB
   (`$LOGO_LIMITS`), so they are served separately, not inlined into JSON.
@@ -642,6 +677,15 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     `allowedRoles: [admin, domainAdmin]`. `expiresAt` must be later than now (`mustBeInFuture`).
     Each `allowedNetworks` entry must parse with `IpUtils` as an address or prefix (IPv4 0–32, IPv6
     0–128) and is normalised to `address/prefix`, with duplicates removed.
+  - **Version tag**: strong ETag over the stored settings only: `id`, `name`, `owner_username`,
+    `access_level`, `allowed_networks`, `expires_at`, `revoked_at` and `revoked_by`. It excludes
+    `last_used_*` and the derived `status`, per `docs/conventions.md`. The same value is returned as
+    `etag` on every list entry.
+  - **Possible owners (FR-057)**: `GET /api-keys/owner-candidates` runs
+    `SELECT username, superadmin FROM admin WHERE active = '1'`, with `q` as
+    `username LIKE %q%` (escaped) and `role` as the `superadmin` value, ordered by username, paged.
+    It needs an administrator principal, from a session or a key, read-only keys included. Reads
+    are not audited.
 - **Rationale**: Only an irreversible form is stored (constitution VI, FR-034). A recognisable
   prefix helps secret scanners and administrators. Per-request owner evaluation implements
   FR-029 and FR-033.
@@ -675,7 +719,8 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
   username)`, where `account_kind` is `admin` for admin and domain-admin accounts (both live in
   `admin`) and `mailbox` for mailbox users. A row is created on first update. Reads fall back to
   `DEFAULT_LANG` and `system`, and a stored language that is no longer enabled reads as the
-  default. The `ETag` is a hash of the effective representation.
+  default. The version tag is a strong ETag over the stored `language` and `theme` (null
+  included), per `docs/conventions.md`.
 - **Rationale**: Legacy keeps the language in a cookie and the theme in browser storage, so
   nothing per account exists upstream (spec parity table). The kind-plus-username key survives a
   domain admin being promoted to admin.
@@ -855,3 +900,30 @@ Without a package: the Yubico client (R11), `verify_hash` (R12), CBOR and the vi
 authenticator in tests (R3), IP matching (Symfony `IpUtils`, already present), ULIDs (Laravel),
 JSON logs (Monolog, already present) and Markdown (`league/commonmark`, already present). The
 PHP extension `redis` (phpredis) is part of the runtime image, as in mailcow's php-fpm image.
+
+### R29. Cross-feature conventions (`docs/conventions.md`)
+
+- **Decision**: Feature 001 follows the conventions document as follows:
+  - **Scope**: objects outside the caller's scope answer `404`. Another account's passkey and an
+    unknown key ID are examples. `403 forbidden` is used only for a role that may never use an
+    operation, for example a domain administrator listing API keys.
+  - **Lists**: `limit` defaults to 25 with a maximum of 1,000, `offset` starts at 0, and every list
+    accepts `sort`, `order` and `q` (shared parameter `api/components/parameters/Search.yaml`).
+    The search fields: passkeys search the name and authenticator description; API keys the
+    name, prefix and owner username; possible owners the username; audit records the actor
+    username, target name and user agent. `q` is a case-insensitive `LIKE` with `%` and `_`
+    escaped.
+  - **Version tags**: strong ETags over stored settings only (R19, R21, data-model). Every
+    representation of a mutable resource carries the same value in `etag`, list entries included.
+    `If-Match` is optional, and a mismatch answers `412`.
+  - **Keys**: creating and revoking keys needs an interactive administrator session (FR-037).
+  - **Secrets**: the key secret is shown exactly once and never logged or audited (FR-034,
+    FR-050).
+  - **Audit**: one record per state change. Reads are not audited.
+  - **Freshness**: no time-based caching (R14 fingerprint cache, R15 uncached branding).
+  - **Legacy PHP configuration**: R14.
+  - **FeldHost behaviour**: server settings with upstream defaults (`RESTV2_SASL_LOG_SERVICE`,
+    `RESTV2_DEFAULT_UI_NAME`, `RESTV2_DEFAULT_LOGO_URL`, `RESTV2_DEFAULT_LOGO_DARK_URL`).
+  - There are no bulk actions: legacy offers no mass actions for this feature's resources.
+- **Rationale**: The conventions apply wherever spec 001 is silent, and the next spec change
+  aligns any contradiction. FR-058 records the list rules in the spec.

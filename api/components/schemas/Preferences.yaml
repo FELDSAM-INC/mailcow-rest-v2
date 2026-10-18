@@ -3,7 +3,7 @@ description: |
   Per-account web app preferences, stored by this API and shared by every device. Defaults: the
   server's default language and `system`. A stored language that is no longer enabled falls back
   to the default language.
-required: [language, theme]
+required: [language, theme, etag]
 properties:
   language:
     type: string
@@ -11,3 +11,8 @@ properties:
     examples: [cs-cz]
   theme:
     $ref: './Theme.yaml'
+  etag:
+    type: string
+    description: |
+      Version tag of the stored settings, equal to the `ETag` header of a single read. Send it in
+      `If-Match` when changing the resource.

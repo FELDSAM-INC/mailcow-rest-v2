@@ -44,7 +44,7 @@ docker compose run --rm app vendor/bin/phpstan analyse
 - `contract:lint` reports no errors. The four `operation-4xx-response` findings on the system
   endpoints are listed in `.redocly.lint-ignore.yaml`.
 - `composer test` ends green.
-- `build/contract/coverage.json` lists all 30 operations as covered.
+- `build/contract/coverage.json` lists all 31 operations as covered.
 - Pint and PHPStan report nothing.
 
 ### Regenerating the schema fixture (only for a new upstream release)
@@ -80,6 +80,7 @@ B=http://localhost:8080/api/v2; J='-H Content-Type:application/json'; C='-c jar 
 curl -s $B/public-config | jq '.data | {productName, defaultLanguage, logos}'
 ETAG=$(curl -sI $B/public-config | awk -F': ' 'tolower($1)=="etag"{print $2}' | tr -d '\r')
 curl -s -o /dev/null -w '%{http_code}\n' -H "If-None-Match: $ETAG" $B/public-config  # 304
+curl -s $B/public-config | jq '.data | {appsLabel, appLinks}'   # Webmail (builtIn), hidden on login
 
 # CSRF bootstrap (US1). Without the token, sign-in is refused.
 T=$(curl -s $C $B/csrf-token | jq -r .data.token)
@@ -121,6 +122,7 @@ docker compose exec redis redis-cli -a "$REDISPASS" SUBSCRIBE F2B_CHANNEL
 #   (Sign in as admin first, as above.)
 KEY=$(curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/api-keys \
   -d '{"name":"billing","ownerUsername":"reseller","accessLevel":"readOnly"}' | jq -r .data.secret)
+curl -s $C "$B/api-keys/owner-candidates?q=res" | jq '.data'     # [{"username":"reseller","role":"domainAdmin"}]
 curl -s -H "X-API-Key: $KEY" $B/me | jq '.data | {role, scope, authentication}'
 curl -s -H "X-API-Key: $KEY" $J -X POST $B/api-keys -d '{}' | jq .type          # session-required
 curl -s -H "X-API-Key: $KEY" -H 'X-CSRF-Token: x' -X DELETE $B/session | jq .type # session-required

@@ -4,7 +4,8 @@ get:
   summary: List my passkeys
   description: |
     Lists the signed-in user's passkeys, including those registered in the legacy UI as "FIDO2"
-    or "Touch ID" credentials. Not available to API keys or in restricted sessions.
+    or "Touch ID" credentials. `q` searches the name and the authenticator description. Not
+    available to API keys or in restricted sessions.
   security:
     - sessionCookie: []
   parameters:
@@ -12,6 +13,7 @@ get:
     - $ref: '../../components/parameters/Offset.yaml'
     - $ref: '../../components/parameters/PasskeySort.yaml'
     - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
   responses:
     '200':
       $ref: '../../components/responses/PasskeyListResponse.yaml'

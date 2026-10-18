@@ -37,6 +37,11 @@ Accounts of the roles `admin` (`superadmin = 1`) and `domainAdmin` (`superadmin 
 Model `Admin`: string key `username`, `$keyType = 'string'`, `$incrementing = false`, cast
 `attributes` → array.
 
+**Possible key owners (FR-057)**: `SELECT username, superadmin FROM admin WHERE active = '1'`, plus
+`AND username LIKE ?` for `q` (with `%` and `_` escaped) and `AND superadmin = ?` for `role`
+(`admin` → 1, `domainAdmin` → 0), `ORDER BY username`, paged. Contract `ApiKeyOwnerCandidate`:
+`username`, `role`.
+
 ### DomainAdminAssignment (`domain_admins`), read only
 
 | Column | Type | Use |
@@ -121,7 +126,11 @@ The three operations:
 - `credential`: must match `WebAuthnRegistrationResponse`. Missing members → `required`;
   non-base64url values → `invalidFormat` (`format: base64url`).
 
-**ETag**: SHA-256 of `id|friendlyName|active|modified`, base64url, quoted.
+**Version tag**: strong ETag, SHA-256 of the stored settings `id|friendlyName|active`, base64url,
+quoted. It is returned in the `ETag` header and as `etag` on every representation, list entries
+included (`docs/conventions.md`).
+
+**List search** (`q`): `friendlyName LIKE ? OR certificateSubject LIKE ?`.
 
 ### TfaEntry (`tfa`): second factors
 
@@ -222,7 +231,12 @@ Migration `database/migrations/2026_10_18_000001_create_restv2_api_keys_table.ph
  revoked ◄──────────────────────────────┘     (final; revoke again = no-op 200)
 ```
 
-**ETag**: SHA-256 of the JSON representation (including `lastUsedAt`).
+**Version tag**: strong ETag over the stored settings only: `id`, `name`, `owner_username`,
+`access_level`, `allowed_networks`, `expires_at`, `revoked_at` and `revoked_by`. It never covers
+`last_used_*` or the derived `status`. It is returned as `ETag` and as `etag` on every
+representation, including list entries.
+
+**List search** (`q`): `name LIKE ? OR prefix LIKE ? OR owner_username LIKE ?`.
 
 ### AuditEvent (`restv2_audit_events`)
 
@@ -272,7 +286,10 @@ Migration `database/migrations/2026_10_18_000002_create_restv2_audit_events_tabl
   `IpUtils::checkIp` in PHP before pagination. That is acceptable at audit volumes, and an index
   on `client_address` keeps it bounded.
 
-Sort: `occurredAt` (default `desc`). Retention: the command `restv2:audit-purge` deletes rows with
+- `q` → `actor_username LIKE ? OR target_name LIKE ? OR user_agent LIKE ?`.
+
+Sort: `occurredAt` (default `desc`). Audit records are immutable and carry no version tag.
+Retention: the command `restv2:audit-purge` deletes rows with
 `occurred_at < now() - RESTV2_AUDIT_RETENTION_DAYS days`.
 
 ### Preference (`restv2_preferences`)
@@ -303,7 +320,8 @@ Migration `database/migrations/2026_10_18_000003_create_restv2_preferences_table
 **Effective values**: `language` is the stored value when it is still enabled, else
 `DEFAULT_LANG`. `theme` is the stored value, else `system`.
 
-**ETag**: SHA-256 of the effective `language|theme`.
+**Version tag**: strong ETag over the stored `language|theme` (null included), returned as `ETag`
+and `etag`.
 
 ---
 
@@ -311,9 +329,22 @@ Migration `database/migrations/2026_10_18_000003_create_restv2_preferences_table
 
 ### mailcow-owned keys (connection `mailcow`, database 0, no prefix, read only)
 
-`TITLE_NAME`, `MAIN_NAME`, `HELP_TEXT`, `UI_FOOTER`, `UI_IMPRESS`, `UI_ANNOUNCEMENT_TEXT`,
-`UI_ANNOUNCEMENT_TYPE`, `UI_ANNOUNCEMENT_ACTIVE`, `MAIN_LOGO`, `MAIN_LOGO_DARK` and `CUSTOM_LOGIN`.
-Their mapping is in [research R15](./research.md#r15-branding-from-redis). The channel
+`TITLE_NAME`, `MAIN_NAME`, `APPS_NAME`, `HELP_TEXT`, `UI_FOOTER`, `UI_IMPRESS`,
+`UI_ANNOUNCEMENT_TEXT`, `UI_ANNOUNCEMENT_TYPE`, `UI_ANNOUNCEMENT_ACTIVE`, `MAIN_LOGO`,
+`MAIN_LOGO_DARK`, `CUSTOM_LOGIN` and `APP_LINKS`. Their mapping is in
+[research R15](./research.md#r15-branding-from-redis).
+
+### App links (no storage of their own)
+
+`PublicConfig.appLinks` concatenates two sources. Legacy writes both, and feature 013 will edit
+`APP_LINKS`.
+
+| Source | Shape | Mapping to `AppLink` |
+|---|---|---|
+| `$MAILCOW_APPS` from `vars.inc.php` / `vars.local.inc.php` (via `MailcowConfig`, or `RESTV2_MAILCOW_APPS`) | list of `{name, link, user_link?, hide?, description?}`; upstream default `[{name: Webmail, link: /SOGo/so, user_link: /SOGo/so, hide: true}]` | `source: builtIn`, `url` = `link`, `signedInUrl` = `user_link` or `link`, `showOnLoginPage` = `!hide`, `description`. Left out when `SKIP_SOGO=y` and `link` or `user_link` matches `/SOGo/i` |
+| Redis `APP_LINKS` | JSON list of one-key maps `{name: {link, user_link, hide}}`, or old-style `{name: "address"}` | `source: operator`, `url` = `link`, `signedInUrl` = `user_link` or `link`, `showOnLoginPage` = `!hide`, `description: null` |
+
+Built-in apps come first, then operator links, each in their own order. The channel
 `F2B_CHANNEL` is published to, never subscribed.
 
 ### API-owned keys (connection `restv2`, database 0, prefix `restv2:`)
@@ -324,7 +355,7 @@ Their mapping is in [research R15](./research.md#r15-branding-from-redis). The c
 | `restv2:throttle:signin:<sha256(username\|ip)>` (+ `:timer`) | failure count | `RESTV2_SIGNIN_FAILURE_WINDOW` | `SignInThrottle` |
 | `restv2:throttle:passkey:<sha256(ip)>` (+ `:timer`) | failure count | same | `SignInThrottle` |
 | `restv2:totp:last:<tfa.id>` | last accepted timeslice | 120 s | `SecondFactorService` |
-| `restv2:mailcow-vars` | JSON of the exported `vars.inc.php` values | 60 s | `MailcowConfig` |
+| `restv2:mailcow-vars:<fingerprint>` | JSON of the exported `vars.inc.php` values; the fingerprint covers path, size, modification time and inode of both files | 1 day (refreshed by any file change, which changes the key) | `MailcowConfig` |
 | `restv2:migrations-lock` | `migrate --isolated` lock | transient | entrypoint |
 
 ### Session (Redis)

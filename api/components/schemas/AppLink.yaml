@@ -1,0 +1,34 @@
+type: object
+description: |
+  A link of the apps menu. Built-in apps (`source: builtIn`) come from mailcow's `$MAILCOW_APPS`
+  (by default Webmail at `/SOGo/so`). Operator links (`source: operator`) come from the legacy
+  customisation "App links" (Redis `APP_LINKS`). Addresses are as configured: relative to the
+  mailcow host or absolute.
+required: [name, url, signedInUrl, description, showOnLoginPage, source]
+properties:
+  name:
+    type: string
+    examples: [Webmail]
+  url:
+    type: string
+    description: Address used on the login page (legacy `link`).
+    examples: [/SOGo/so]
+  signedInUrl:
+    type: string
+    description: |
+      Address used for signed-in users (legacy `user_link`, or `link` when unset). It may contain
+      the placeholder `%u`, which the client replaces with the signed-in username, as legacy does.
+    examples: [/SOGo/so, 'https://helpdesk.example.org/?user=%u']
+  description:
+    description: Tooltip text of a built-in app (`$MAILCOW_APPS` `description`), `null` otherwise.
+    oneOf:
+      - type: string
+      - type: 'null'
+  showOnLoginPage:
+    type: boolean
+    description: |
+      `false` when the link is hidden (legacy `hide`). Hiding applies only to the login page; the
+      apps menu of signed-in users shows every link.
+  source:
+    type: string
+    enum: [builtIn, operator]

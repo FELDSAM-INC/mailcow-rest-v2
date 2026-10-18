@@ -7,7 +7,7 @@ headers:
       type: string
       format: uri-reference
   ETag:
-    description: Strong entity tag of the returned representation. Send it in `If-Match` when changing the resource.
+    description: Version tag (strong ETag) of the resource's stored settings, equal to `data.etag`. Send it in `If-Match` when changing the resource.
     required: true
     schema:
       type: string

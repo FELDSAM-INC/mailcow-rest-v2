@@ -1,0 +1,10 @@
+type: object
+description: An active administrator or domain administrator that can own an API key.
+required: [username, role]
+properties:
+  username:
+    type: string
+    examples: [reseller]
+  role:
+    type: string
+    enum: [admin, domainAdmin]

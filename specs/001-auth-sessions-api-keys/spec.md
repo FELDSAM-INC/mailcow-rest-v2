@@ -64,6 +64,20 @@
   change in the new web app in feature 001, or keep using the legacy UI for it until feature 005?
   → A: Keep it in 005. Until then the restricted session names the pending password change, and
   the user changes the password in the legacy UI.
+- Q: Should the public configuration also carry the app links that legacy shows on its login page
+  and in its header menu? → A: Yes, read-only (FR-056). They include the server's built-in apps
+  (by default Webmail), the operator's links and the operator's label for the apps menu. Webmail
+  is left out when SOGo is disabled. Editing app links stays in feature 013. (orchestrator
+  decision: the UI 001 spec found the gap; legacy shows the links before and after sign-in, so the
+  new web app needs them from the same place.)
+- Q: How does an administrator choose the owner of a new API key before administrator management
+  (feature 007) exists? → A: An administrator-only read lists the active administrators and domain
+  administrators who can own a key, with search and paging (FR-057). A key owned by an
+  administrator, including a read-only one, may use it. (orchestrator decision: the UI 001 spec
+  found that the key form otherwise needs a typed username with no way to look it up.)
+- Q: Do the lists of this feature follow the cross-feature list conventions? → A: Yes (FR-058):
+  default page size 25 and at most 1,000, a substring search, and the version tag on every entry
+  of a resource that can change. (orchestrator decision: `docs/conventions.md`.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -257,6 +271,9 @@ outcome and each fail2ban report.
    a signed-in administrator session.
 9. **Given** a domain administrator or a mailbox user, **When** they try to list, create or revoke
    keys, **Then** the request is refused as forbidden.
+10. **Given** an administrator filling in the key form, **When** they search the possible owners for
+    "res", **Then** they see the active administrators and domain administrators whose username
+    contains "res", each with their role. Deactivated accounts and mailbox users are not listed.
 
 ---
 
@@ -283,6 +300,10 @@ new value is returned within one minute.
    configuration, **Then** it receives the same defaults the legacy UI shows.
 3. **Given** an operator who changes the announcement text in the legacy UI, **When** a client
    reads the public configuration up to one minute later, **Then** it receives the new text.
+4. **Given** a server with SOGo disabled and an operator link "Helpdesk" that is hidden on the login
+   page, **When** a client reads the public configuration, **Then** the app links do not contain
+   Webmail, and they contain "Helpdesk", marked as not shown on the login page and with its
+   address for signed-in users.
 
 ---
 
@@ -574,6 +595,11 @@ with each filter and confirm exactly the expected entries appear and contain no 
   be reported.
 - **FR-041**: Legacy `/api/v1` keys MUST NOT be accepted by this API, and this feature MUST NOT
   change them.
+- **FR-057**: Administrators MUST be able to list the accounts that can own an API key: the active
+  administrators and the active domain administrators, each with its username and role. The list
+  is sorted by username, paged, and offers a substring search on the username and a role filter.
+  Requests authenticated by a key owned by an administrator, including a read-only key, MAY use it.
+  Domain administrators and mailbox users MUST be refused.
 
 #### Public branding configuration
 
@@ -585,7 +611,8 @@ with each filter and confirm exactly the expected entries appear and contain no 
   - the login page options: hiding the administrator, domain-administrator and mailbox-user login
     links, and "force single sign-on";
   - the enabled languages and the default language;
-  - whether an external identity provider is configured.
+  - whether an external identity provider is configured;
+  - the app links and the label of the apps menu (FR-056).
 - **FR-043**: These values MUST come from mailcow's existing customisation and language settings,
   so that the operator configures them in one place. A change saved in the legacy UI MUST be
   visible within one minute without a restart. Unset values MUST fall back to the defaults the
@@ -595,6 +622,19 @@ with each filter and confirm exactly the expected entries appear and contain no 
 - **FR-044**: The public configuration MUST NOT contain secrets or anything account-specific. The
   contract MUST state which text fields may contain operator-authored HTML (the help text and the
   footer, as in legacy), so that clients can render them safely.
+- **FR-056**: The public configuration MUST include the app links that legacy shows, in legacy
+  order: first the server's built-in apps (`$MAILCOW_APPS`, by default the Webmail entry), then the
+  operator's links (the legacy customisation "App links"). Each link has:
+  - its name;
+  - the address used on the login page;
+  - the address used for signed-in users, which may contain legacy's `%u` placeholder for the
+    username;
+  - an optional description;
+  - whether it is shown on the login page. As in legacy, "hidden" applies only to the login page.
+
+  Built-in apps that point to SOGo MUST be left out when SOGo is disabled (`SKIP_SOGO=y`). The
+  label of the apps menu MUST be included when the operator has set one, and is empty otherwise, so
+  that the client shows its own translated default. Editing app links stays in feature 013.
 
 #### Audit log
 
@@ -645,6 +685,43 @@ with each filter and confirm exactly the expected entries appear and contain no 
   appear in any log, audit record or response, apart from the one-time secret in FR-034.
 - **FR-051**: Every operation in this feature MUST be described in the published API contract
   before it is implemented, and its behaviour MUST match the contract.
+- **FR-058**: Every list of this feature (passkeys, API keys, possible key owners, audit records)
+  MUST follow the cross-feature list conventions:
+  - a page size of 25 by default and at most 1,000;
+  - an offset;
+  - a sort order;
+  - a substring search in addition to the documented filters.
+
+  Every entry of a resource that can change (passkeys, API keys) MUST carry the same version tag
+  that reading the single resource returns. The tag covers only the stored settings, never usage
+  data such as the last use of a key.
+
+### Legacy Coverage
+
+Every legacy capability allocated to feature 001 in `docs/roadmap.md` maps to requirements as
+follows. Actions are `/api/v1` names; *form* marks legacy UI form handlers.
+
+| Legacy action or form | Legacy implementation | Requirements |
+|---|---|---|
+| *form* login on `/admin`, `/domainadmin` and `/` (`login_user`, `pass_user`) | `triggers.{admin,domainadmin,user}.inc.php`, `check_login()`, `admin_login()`, `domainadmin_login()`, `user_login()`, `verify_hash()` | FR-001 to FR-008 |
+| *form* second-factor step (`verify_tfa_login`) and cancel (`cancel_tfa_login`) | `verify_tfa_login()`, `get_tfa()`, `json_api.php` `webauthn-tfa-get-args` | FR-020 to FR-026 |
+| FIDO2 login (`fido2-get-args`, *form* `verify_fido2_login`) | `fido2('verify')`, `fido2('get_by_b64cid')` | FR-015 to FR-019 |
+| `fido2-registration` (options and response) | `getCreateArgs()`, `processCreate()`, `fido2('register')`, `fido2('get_user_cids')` | FR-052, FR-054 |
+| `edit/fido2-fn`, *form* `unset_fido2_key`, the FIDO2 list | `fido2('edit_fn')`, `fido2('unset_fido2_key')`, `fido2('get_friendly_names')` | FR-053, FR-058 |
+| *form* `logout` | `sessions.inc.php` | FR-010 |
+| Session lifetime, user-agent pinning, CSRF token | `sessions.inc.php`, `$SESSION_LIFETIME` | FR-009, FR-011 to FR-013 |
+| Forced actions (`pending_pw_update`, `pending_tfa_setup`, `cancel_tfa_setup`) | `*_login()`, `protect_route()`, `fido2-registration` hold release | FR-014, FR-054 |
+| Recent-login entry of UI sign-ins | `set_sasl_log()` | FR-027 |
+| *form* API key management (System › Configuration › API: read-write and read-only key, allowed networks, skip IP check) | `admin_api()` | FR-032 to FR-037, FR-041, FR-057 |
+| `X-API-Key` authentication and its fail2ban report | `sessions.inc.php` API block | FR-038 to FR-040 |
+| Identity of the session: username, role, `acl('to_session')`, managed domains | `acl()`, `mailbox('get', 'domains')` | FR-028, FR-029 |
+| Language and theme choice | `mailcow_locale` cookie, browser storage | FR-030, FR-031 |
+| Branding read: `customize('get', 'ui_texts' \| 'main_logo' \| 'main_logo_dark' \| 'custom_login' \| 'app_links')`, `$MAILCOW_APPS`, `$AVAILABLE_LANGUAGES`, `$DEFAULT_LANG` | `functions.customize.inc.php`, `inc/header.inc.php`, `vars.inc.php` | FR-042 to FR-044, FR-056 |
+| UI log entries of logins | `logger()` → `logs` | FR-045 to FR-048 (own audit log) |
+
+Parts of the legacy sign-in screens that belong to other features: identity-provider sign-in
+(012), dual login and login-as (007), password reset (005) and the forced password change itself
+(005).
 
 ### Legacy Parity and Deliberate Deviations
 
@@ -684,6 +761,8 @@ product name (FR-043).
 | fail2ban message content | The username is inserted as typed. A newline in it could inject a second line that bans another address | Control characters are replaced by `?`. The text is unchanged for every valid username (FR-006). **Deviation** (added by the plan, security fix) |
 | Failures after the throttling limit | No hard limit, and every failure is published to fail2ban | Throttled password attempts are refused without checking the password, and are still published, so fail2ban counts every attempt (FR-006, FR-007, SC-004) |
 | Passkey sign-in with a named role | A mailbox-user FIDO2 login fails when the username also exists as an administrator or domain administrator | Only the named account type is tried (FR-002, FR-015). **Deviation** |
+| App links | The login page shows the non-hidden `$MAILCOW_APPS` entries, leaving out SOGo entries when `SKIP_SOGO=y`, then the non-hidden operator links. The header shows every entry with its signed-in address and `%u` replaced by the username. Old-style operator entries (name and address only) are converted. For `$MAILCOW_APPS`, legacy's header uses the login address instead of the signed-in address because of a bug | Same entries, order, hiding and `SKIP_SOGO` rule, delivered as data (FR-056). The client replaces `%u`. **Deviation**: the signed-in address of built-in apps is used (bug fix) |
+| Owner of a key | Legacy keys have no owner, and the key form lists nothing | List of possible owners (FR-057). New |
 | Passkey registration details | Relying-party name `WebAuthn Library`. No name at registration. A credential ID already stored would be stored again if an authenticator ignored the exclusion list | The relying-party name is the product name. A name may be given at registration. An already stored credential ID is refused (FR-052). **Deviation** (added by the plan) |
 
 ### Key Entities *(include if feature involves data)*
@@ -711,7 +790,7 @@ product name (FR-043).
   expiry, creator and creation time, last use time and address, and revocation time and actor.
 - **Preferences** (owned by this API): language and theme for one account.
 - **Public configuration** (read-only view of existing mailcow settings): branding texts, logos,
-  announcement, login page options and languages.
+  announcement, login page options, languages, app links and the apps menu label.
 - **Audit record** (owned by this API): one immutable authentication or key-management event, with
   the fields in FR-046.
 - **Recent-login entry** (existing mailcow data): service, client address and time of a mailbox
@@ -763,7 +842,8 @@ product name (FR-043).
   for the address.
 - The session lifetime, the passkey user-verification setting, the enabled languages and the
   default language come from the operator's existing mailcow configuration, including local
-  overrides. The plan decides how the API reads them.
+  overrides. The plan decides how the API reads them. Each of them is also an API server setting
+  with the upstream default, as `docs/conventions.md` prescribes for legacy PHP configuration.
 - Legacy customisation has no colour setting, so the public configuration includes no colours for
   now. Colours can be added later without breaking clients, for example in feature 013.
 - Forced second-factor setup can be resolved in the new web app by registering a passkey. A forced

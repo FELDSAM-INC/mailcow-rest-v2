@@ -4,7 +4,8 @@ get:
   summary: List API keys
   description: |
     Lists API keys, including revoked and expired ones. Administrators only: a signed-in
-    administrator or a key owned by an administrator. Secrets are never included.
+    administrator or a key owned by an administrator. Secrets are never included. `q` searches
+    the name, the prefix and the owner's username.
   security:
     - sessionCookie: []
     - apiKeyAuth: []
@@ -13,6 +14,7 @@ get:
     - $ref: '../../components/parameters/Offset.yaml'
     - $ref: '../../components/parameters/ApiKeySort.yaml'
     - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
     - name: ownerUsername
       in: query
       required: false

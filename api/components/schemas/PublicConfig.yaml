@@ -18,6 +18,8 @@ required:
   - languages
   - defaultLanguage
   - externalIdentityProvider
+  - appsLabel
+  - appLinks
 properties:
   pageTitle:
     type: string
@@ -67,3 +69,18 @@ properties:
         description: |
           `true` when mailcow has an external identity provider (Keycloak, generic OIDC or LDAP)
           configured. Sign-in through it is not available in this API yet.
+  appsLabel:
+    description: |
+      Label of the apps menu set by the operator (`APPS_NAME`, plain text). `null` when unset; the
+      client then shows its own translated "Apps".
+    oneOf:
+      - type: string
+      - type: 'null'
+  appLinks:
+    type: array
+    description: |
+      App links in legacy order: built-in apps first, then operator links in their stored order.
+      Built-in apps that point to SOGo are left out when SOGo is disabled (`SKIP_SOGO=y`). Show the
+      login-page block only when at least one link has `showOnLoginPage: true`.
+    items:
+      $ref: './AppLink.yaml'

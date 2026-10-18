@@ -1,0 +1,13 @@
+description: Accounts that can own an API key.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/ApiKeyOwnerCandidate.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

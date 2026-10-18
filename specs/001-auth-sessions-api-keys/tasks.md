@@ -42,7 +42,7 @@ business logic.
     `docker-php-ext-enable`. Set `WORKDIR /app` and `USER www-data` (uid 82).
   - `dev`: from `base`, as root. Add `pcov` (PECL), `composer` (copied from `composer:2`), `nodejs`,
     `npm`, `mariadb-client`, `redis` (for `redis-cli`), `git` and `unzip`, then switch back to uid 82.
-  - `production`: a placeholder, completed in T103.
+  - `production`: a placeholder, completed in T106.
 
   Also create `docker/php/php.ini` (`expose_php=0`, `memory_limit=256M`, `opcache.enable=1`,
   `display_errors=0`, `log_errors=1`, `error_log=/proc/self/fd/2`) and `docker/php/php-fpm.conf`
@@ -88,11 +88,14 @@ business logic.
   paths `app`, `tests`, `config`, `routes`) and `pint.json` (`"preset": "laravel"`).
 - [ ] T008 [P] Create `config/restv2.php`, `.env.example` and `.env.testing`.
   - `config/restv2.php` holds every `RESTV2_*` setting of R14 with its default, plus
-    `supported_schema_versions => ['18082026_1200']`, `mailcow_hostname => env('MAILCOW_HOSTNAME')`
-    and `timezone => env('TZ', 'UTC')`.
+    `supported_schema_versions => ['18082026_1200']`, `mailcow_hostname => env('MAILCOW_HOSTNAME')`,
+    `skip_sogo => env('SKIP_SOGO', 'n') === 'y'`, `timezone => env('TZ', 'UTC')`, and
+    `vars_overrides`, which maps each exported legacy variable to its `RESTV2_<NAME>` server
+    setting (R14).
   - `.env.example` holds the dev defaults: `APP_ENV=local`, `DBHOST=mariadb`, `DBNAME=mailcow`,
     `DBUSER=mailcow`, `DBPASS=mailcow`, `REDISHOST=redis`, `REDISPASS=devredispass`,
-    `MAILCOW_HOSTNAME=localhost`, `SESSION_COOKIE=restv2_session` and `RESTV2_MAILCOW_INC_DIR=`.
+    `MAILCOW_HOSTNAME=localhost`, `SKIP_SOGO=n`, `SESSION_COOKIE=restv2_session` and
+    `RESTV2_MAILCOW_INC_DIR=`.
   - `.env.testing` holds `APP_ENV=testing`, `DBNAME=restv2_test`, `REDIS_DB=15`,
     `MAILCOW_HOSTNAME=mail.example.org`, `TZ=Europe/Prague` (so that the time-zone conversion is
     exercised) and `RESTV2_MAILCOW_INC_DIR=tests/fixtures/mailcow-inc`.
@@ -104,7 +107,9 @@ business logic.
     `restv2:`. Connection `mailcow`: the same server, database `REDIS_DB` default 0, prefix `''`.
   - `config/cache.php`: store `restv2` (driver `redis`, connection `restv2`, prefix `''`) as the
     default.
-  - `config/session.php`: driver `redis`, connection `restv2`, cookie
+  - `config/session.php`: driver `redis`, `store => 'sessions'` (an extra cache store in
+    `config/cache.php`: driver `redis`, connection `restv2`, prefix `session:`, so session keys are
+    `restv2:session:<id>`), connection `restv2`, cookie
     `env('SESSION_COOKIE', '__Host-restv2_session')`, `secure => true`, `http_only => true`,
     `same_site => 'strict'`, `path => '/'`, `domain => null`, `lifetime => 180` (overridden at boot
     by T038).
@@ -259,7 +264,11 @@ this phase is complete.**
   - `App\Rules\FutureDateTime` → `mustBeInFuture`;
   - `App\Rules\EligibleKeyOwner` → `notFound` / `notEligible` `{allowedRoles}`.
 
-  It also asserts the error keys: dot paths, query names, and `body` (FR-055).
+  It also asserts the error keys: dot paths, query names, and `body` (FR-055). It also tests
+  `App\Support\Http\ListQuery`: `limit` defaults to 25, accepts 1–1000 (`outOfRange` beyond), and
+  `offset` ≥ 0; `sort` and `order` are checked against each list's allowed values (`notInList`);
+  `q` is 1–255 characters, with `%`, `_` and `\` escaped in the generated `LIKE` pattern; `meta`
+  is `{total, limit, offset}` (FR-058, R29).
 - [ ] T026 [P] Write `tests/Feature/Auth/CsrfTokenTest.php` for `getCsrfToken` (FR-011, R6, R7).
   It must return `200` with `data.token` (at least 40 characters) and `headerName "X-CSRF-Token"`,
   and the same token on a second call with the cookie. `Set-Cookie` must be
@@ -291,7 +300,13 @@ this phase is complete.**
   - The values must come from the local override.
   - With the directory missing, the upstream defaults of R14 apply and one warning is logged.
   - A syntax error in the local file falls back to the defaults.
-  - The result is cached in Redis `restv2:mailcow-vars` for 60 s.
+  - `MAILCOW_APPS` is exported: the upstream default Webmail entry, or a local override with a
+    second entry.
+  - A `RESTV2_SESSION_LIFETIME=600` server setting beats the files, and `RESTV2_MAILCOW_APPS`
+    (JSON) replaces the apps (precedence of R14).
+  - The result is cached in Redis under `restv2:mailcow-vars:<fingerprint>`. Touching
+    `vars.local.inc.php` (`touch()` with a new modification time) makes the next call re-export,
+    so there is no time-based staleness.
   - The subprocess does not change the parent's `error_reporting`.
 - [ ] T030 [P] Write `tests/Unit/Services/PendingActionEvaluatorTest.php` (FR-014, FR-054, R16):
   - `passwordChange` iff `attributes.force_pw_update` equals `"1"` or `1`, for admin, domain admin
@@ -324,9 +339,11 @@ this phase is complete.**
     32-hex ID.
 - [ ] T034 [P] Write `tests/Unit/Http/Middleware/RequireAuthTest.php` and
   `tests/Unit/Http/Middleware/EnforcePendingActionsTest.php`:
-  - mode `authenticated` without a principal → `401 unauthenticated`;
-  - a pending sign-in → `401 second-factor-required`;
-  - mode `session` with a key principal → `403 session-required`;
+  - modes `session` and `authenticated` without a principal → `401 unauthenticated`;
+  - modes `session` and `authenticated` during a pending sign-in → `401 second-factor-required`;
+  - modes `session` and `browser` with a key principal → `403 session-required`;
+  - mode `browser` without any session, and mode `public` with a key, pass;
+  - a key principal is never refused by `EnforcePendingActions`;
   - a restricted session on an unmarked route → `403 pending-action-required` with
     `pendingActions`;
   - `restv2.pending:allow` passes;
@@ -351,8 +368,10 @@ this phase is complete.**
 - [ ] T036 Create `app/Http/Requests/Api/V2/ApiFormRequest.php`, which turns validator failures into
   `errors[field] = [{code, params, message}]` per T025, and the rule objects
   `app/Rules/IpNetwork.php`, `app/Rules/FutureDateTime.php`, `app/Rules/EnabledLanguage.php` and
-  `app/Rules/EligibleKeyOwner.php`. Each rule reports its rule code and params. This makes T025
-  pass.
+  `app/Rules/EligibleKeyOwner.php`. Each rule reports its rule code and params. Create
+  `app/Support/Http/ListQuery.php`, which validates `limit` (default 25, 1–1000), `offset`, `sort`,
+  `order` and `q`, applies a case-insensitive escaped `LIKE` over the fields a list names, and
+  builds the `{data, meta}` envelope. This makes T025 pass.
 - [ ] T037 Create `app/Http/Middleware/AssignRequestId.php` (parses `traceparent` or generates 16
   random bytes as hex, stored in request attributes and the `Log::withContext()`), and
   `app/Logging/RequestContextProcessor.php` and `app/Logging/RedactSecrets.php`, registered on the
@@ -360,7 +379,9 @@ this phase is complete.**
 - [ ] T038 Create `resources/bin/export-mailcow-vars.php` and
   `app/Services/Config/MailcowConfig.php` (R14). It has typed getters `sessionLifetime()`,
   `defaultLanguage()`, `availableLanguages()`, `fido2UvRegister()`, `fido2UvLogin()`,
-  `fido2UserPresent()`, `fido2Formats()`, `webauthnUvLogin()` and `webauthnUserPresent()`. In
+  `fido2UserPresent()`, `fido2Formats()`, `webauthnUvLogin()`, `webauthnUserPresent()`,
+  `otpLabel()` and `mailcowApps()`. It applies the precedence of R14 (server setting `RESTV2_<NAME>`,
+  then the mounted files, then the upstream defaults) and caches by file fingerprint. In
   `app/Providers/AppServiceProvider.php`:
   - bind `MailcowConfig` as a singleton;
   - set `config(['session.lifetime' => (int) ceil(sessionLifetime() / 60)])` at boot;
@@ -400,13 +421,14 @@ this phase is complete.**
   challenge helpers (`issue`, `consume`; single-use, `RESTV2_CHALLENGE_TTL`), and stores the
   user-agent SHA-256.
 - [ ] T046 Create the middleware `app/Http/Middleware/StartSessionUnlessApiKey.php` (extends
-  Laravel's `StartSession`; the API-key skip is added in T085), `EnsureSessionIntegrity.php`,
+  Laravel's `StartSession`; the API-key skip is added in T086), `EnsureSessionIntegrity.php`,
   `VerifyCsrfToken.php` (R7), `RequireAuth.php` and `EnforcePendingActions.php` (R8). In
   `bootstrap/app.php`:
   - define the group `api.v2` in the order `AssignRequestId`, `StartSessionUnlessApiKey`,
-    `EnsureSessionIntegrity`; T085 inserts `AuthenticateApiKey` and `EnforceKeyScope` after
+    `EnsureSessionIntegrity`; T086 inserts `AuthenticateApiKey` and `EnforceKeyScope` after
     `AssignRequestId`;
-  - add the route middleware aliases `restv2.auth:<mode>` (RequireAuth), `restv2.csrf`
+  - add the route middleware aliases `restv2.auth:<mode>` (RequireAuth, modes `public`,
+    `browser`, `session` and `authenticated` per R8), `restv2.csrf`
     (VerifyCsrfToken) and `restv2.pending:<mode>` (EnforcePendingActions, mode `enforce` by default,
     `allow` or `secondFactorSetup`), applied per route in that order;
   - configure `TrustProxies` with **no** trusted proxies (R23).
@@ -422,8 +444,9 @@ this phase is complete.**
   `resources/webauthn/rootCertificates/`.
 - [ ] T048 Create `routes/api.php` with the prefix `api/v2` and the group `api.v2`, and register it
   in `bootstrap/app.php` (`withRouting(api: …, apiPrefix: '')`). Add
-  `GET /csrf-token` → `App\Http\Controllers\Api\V2\CsrfTokenController@show` (`restv2.auth:public`)
-  and `GET /session` → `SessionController@show` (`restv2.auth:public`, `restv2.pending:allow`).
+  `GET /csrf-token` → `App\Http\Controllers\Api\V2\CsrfTokenController@show` and
+  `GET /session` → `SessionController@show`, both with `restv2.auth:browser` and
+  `restv2.pending:allow`.
   Create `app/Http/Resources/Api/V2/SessionResource.php` (contract `Session`). This makes T026 and
   T028 pass.
 
@@ -497,6 +520,8 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
     `Retry-After` equal to `retryAfter`, and no password verification.
   - Throttled attempts are still published to fail2ban and audited with reason `throttled`.
   - Another IP or another username is unaffected.
+  - A spoofed `X-Forwarded-For: 203.0.113.9` header is ignored. Throttling, fail2ban and audit use
+    `REMOTE_ADDR` (R23, edge case "request through the mailcow reverse proxy").
   - A new cookie (a new session) does not reset the count.
   - A verified password resets it.
   - `RESTV2_SIGNIN_MAX_FAILURES=3` and `RESTV2_SIGNIN_FAILURE_WINDOW=60` are honoured, and the
@@ -622,8 +647,8 @@ fail2ban messages, `sasl_log` and `tfa` side effects, and the audit records.
   `app/Http/Controllers/Api/V2/SessionController.php`, and create
   `PendingSignInController.php` (`@destroy`), `SecondFactorChallengeController.php` (`@store`) and
   `SecondFactorController.php` (`@store`). Register the routes in `routes/api.php` with
-  `restv2.auth:public` + `restv2.csrf`; `DELETE /session` uses CSRF only when a live session exists
-  (R7) and `restv2.pending:allow`. This makes T050–T057 pass.
+  `restv2.auth:browser`, `restv2.csrf` and `restv2.pending:allow`. `DELETE /session` uses CSRF only
+  when a live session exists (R7). This makes T050–T057 pass.
 
 **Checkpoint**: US1 is fully functional. The MVP can be demonstrated with password sign-in, second
 factors and sign-out.
@@ -663,6 +688,8 @@ unknown credentials, and role mismatches. Register, rename and remove passkeys a
   - The challenge is single-use (a second assertion → `sign-in-expired`) and expires after 300 s.
   - Failures count per IP: the 11th → `429` (FR-018).
   - A tampered signature → `passkeyVerificationFailed`.
+  - A passkey registered for `other.example.org` (`fido2.rpId` and the authenticator's RP ID hash)
+    fails on `mail.example.org` (edge case "registered under a different host name").
 - [ ] T068 [P] [US2] Write `tests/Feature/Passkeys/PasskeyRegistrationTest.php` for
   `createPasskeyRegistrationOptions` and `registerPasskey`:
   - The options have `residentKey required`, `requireResidentKey true`, `user.id` = base64url of
@@ -686,8 +713,9 @@ unknown credentials, and role mismatches. Register, rename and remove passkeys a
   `getPasskey`, `updatePasskey` and `deletePasskey` (FR-053, AS-7):
   - The list shows legacy and API passkeys with `id` = `SHA2(credentialId)`, `name`,
     `authenticatorDescription` (null when `certificateSubject` is null), `registeredAt` converted
-    from `TZ` to UTC, `hostName` and `active`. Sort by `registeredAt`/`name`, `limit`/`offset`, and
-    `meta`.
+    from `TZ` to UTC, `hostName`, `active` and `etag`. Each entry's `etag` equals the `ETag` of
+    `getPasskey` for that passkey. Sort by `registeredAt`/`name`, `limit`/`offset` (`limit=1000`
+    accepted, `1001` → `outOfRange`), `q` over the name and authenticator description, and `meta`.
   - `getPasskey` returns an `ETag`.
   - `PATCH` with `If-Match` → `200` and a new `ETag`. A stale `If-Match` → `412` with the row
     unchanged. A name over 255 characters → `422 tooLong`.
@@ -716,15 +744,18 @@ unknown credentials, and role mismatches. Register, rename and remove passkeys a
   (`credential` per `WebAuthnAuthenticationResponse`, `role` optional enum),
   `RegisterPasskeyRequest.php` (`credential` per `WebAuthnRegistrationResponse`, `name` "optional,
   string, 1–255 after trim"), `UpdatePasskeyRequest.php` (`name` "required, string, 1–255 after
-  trim") and `ListPasskeysRequest.php` (`limit` 1–100, `offset` ≥ 0, `sort` in registeredAt, name,
-  `order` in asc, desc).
-- [ ] T073 [US2] Create `app/Http/Resources/Api/V2/PasskeyResource.php` and the controllers
+  trim") and `ListPasskeysRequest.php` (through `ListQuery`: `limit` 1–1000, default 25,
+  `offset` ≥ 0, `sort` in registeredAt, name, `order` in asc, desc, `q` over `friendlyName` and
+  `certificateSubject`).
+- [ ] T073 [US2] Create `app/Http/Resources/Api/V2/PasskeyResource.php` (with `etag`) and the controllers
   `PasskeyChallengeController.php` (`@store`), `PasskeyAssertionController.php` (`@store`, `201` +
   `Location`), `PasskeyRegistrationOptionsController.php` (`@store`) and `PasskeyController.php`
   (`index`, `show`, `store`, `update`, `destroy`, with `ETag` headers). Register the routes in
   `routes/api.php`: `/me/passkeys/registration-options` **before** `/me/passkeys/{passkeyId}`
-  (`where passkeyId [0-9a-f]{64}`). Registration routes carry
-  `restv2.pending:secondFactorSetup`. This makes T067–T069 pass.
+  (`where passkeyId [0-9a-f]{64}`). The passkey challenge and assertion use
+  `restv2.auth:browser`, `restv2.csrf` and `restv2.pending:allow`. The `/me/passkeys*` routes use
+  `restv2.auth:session` (plus `restv2.csrf` on unsafe methods). The two registration routes carry
+  `restv2.pending:secondFactorSetup`, the others the default `enforce`. This makes T067–T069 pass.
 
 **Checkpoint**: Passkeys work end to end, independently of US3 and US4.
 
@@ -753,6 +784,8 @@ from a new session.
     assignment deactivated in `domain_admins`.
   - AS-5: a restricted session can read `/me` with `pendingActions`.
   - The account deactivated mid-session → `401 unauthenticated` and the session is gone.
+  - FR-013: after a sign-in, no Redis key outside the `restv2:` prefix was created or changed
+    (`SCAN` before and after), so a legacy `PHPREDIS_SESSION:*` session stays untouched.
   - A pending sign-in → `401 second-factor-required`.
   - No session → `401 unauthenticated`.
   - Times are UTC.
@@ -769,6 +802,8 @@ from a new session.
 - [ ] T076 [P] [US3] Write `tests/Feature/Identity/PreferencesTest.php` for `getPreferences` and
   `updatePreferences` (FR-030, AS-3, AS-4):
   - The defaults are `DEFAULT_LANG` from the vars fixture (`cs-cz`) and `system`.
+  - The body carries `etag`, equal to the `ETag` header. The tag covers the stored values, so it
+    does not change when the server's default language changes.
   - `PATCH {language: sk-sk, theme: dark}` → `200` with a new `ETag`. A new session for the same
     account sees the values. The admin and mailbox namespaces are separate for the same username.
   - AS-4: `language: de-de` (not enabled in the fixture) → `422` `language` `notInList` with
@@ -793,9 +828,10 @@ from a new session.
 - [ ] T079 [US3] Create `app/Http/Requests/Api/V2/UpdatePreferencesRequest.php`: body "at least one
   of language, theme"; `language` "string, max 16, `EnabledLanguage`"; `theme` "in light, dark,
   system"; `null` → `invalidType`. Create `app/Http/Resources/Api/V2/IdentityResource.php` and
-  `PreferencesResource.php`, and `app/Http/Controllers/Api/V2/IdentityController.php` (`show`) and
+  `PreferencesResource.php` (with `etag`), and `app/Http/Controllers/Api/V2/IdentityController.php` (`show`) and
   `PreferencesController.php` (`show`, `update`). Register `GET /me` (`restv2.auth:authenticated`,
-  `restv2.pending:allow`) and `GET`/`PATCH /me/preferences` (`restv2.auth:session`) in
+  `restv2.pending:allow`) and `GET`/`PATCH /me/preferences` (`restv2.auth:session`, `restv2.csrf`
+  on `PATCH`) in
   `routes/api.php`. This makes T074–T076 pass.
 
 **Checkpoint**: Identity and preferences work for sessions. Key-based identity follows in US4.
@@ -832,6 +868,8 @@ and after expiry and revocation, and check every outcome and fail2ban message.
   - `last_used_at` and `last_used_from` are set on first use, not updated within 60 s from the same
     IP, updated from a new IP or after 60 s (`travel`).
   - A domain admin's key with no domains → `scope.domains = []`.
+  - A key whose owner has `force_pw_update` is not restricted, and `GET /me` shows
+    `pendingActions: []` (R8).
   - An invalid key on the public `GET /public-config` → `401 api-key-invalid`.
   - Health routes ignore `X-API-Key`.
 - [ ] T081 [P] [US4] Write `tests/Feature/ApiKeys/ApiKeyManagementTest.php` for `createApiKey`,
@@ -849,7 +887,10 @@ and after expiry and revocation, and check every outcome and fail2ban message.
     - 101 networks → `tooMany`;
     - networks are normalised (`198.51.100.7` → `198.51.100.7/32`) and deduplicated.
   - List filters `ownerUsername`, `status` (`active`, `expired`, `revoked`) and `accessLevel`, sort
-    `createdAt`/`name`/`expiresAt`/`lastUsedAt`, and `meta` (FR-035).
+    `createdAt`/`name`/`expiresAt`/`lastUsedAt`, `q` over name, prefix and owner username, and
+    `meta` (FR-035, FR-058).
+  - Every list entry carries `etag`, equal to the `ETag` of `getApiKey`. A key use that updates
+    `lastUsedAt`, and an expiry passing, leave the `etag` unchanged; a revocation changes it.
   - `getApiKey` returns every field of FR-035, including `owner.role` and `owner.active`.
   - AS-5: revocation → `200` with `status revoked`, `revokedAt` and `revokedBy`. The key stays
     listed. A second revocation → `200` unchanged, with no second audit (FR-036). A stale `If-Match`
@@ -867,36 +908,57 @@ and after expiry and revocation, and check every outcome and fail2ban message.
   challenges, `verifySecondFactor`, `createSessionWithPasskey`, preferences, and all passkey
   operations. A read-only key on the unsafe ones → `403 insufficient-key-scope`, because the scope
   check comes first (R8).
+- [ ] T083 [P] [US4] Write `tests/Feature/ApiKeys/ApiKeyOwnerCandidatesTest.php` for
+  `listApiKeyOwnerCandidates` (FR-057, AS-10):
+  - An admin session lists the active admins and domain admins, sorted by username, with `role`.
+    Inactive admin rows and mailbox users are absent, also when a mailbox has the same username as
+    nothing in `admin`.
+  - `q=res` matches `reseller` and `res-admin`, case-insensitively, and treats `%` and `_`
+    literally.
+  - `role=domainAdmin` filters, and `limit`, `offset` and `meta` work.
+  - An admin read-only key and an admin read-write key → `200`.
+  - A domain-admin session, a mailbox session and a domain-admin key → `403 forbidden`.
+  - The route `/api-keys/owner-candidates` is not captured by `/api-keys/{apiKeyId}`.
+  - No audit record is written.
 
 ### Implementation for User Story 4
 
-- [ ] T083 [P] [US4] Create
+- [ ] T084 [P] [US4] Create
   `database/migrations/2026_10_18_000001_create_restv2_api_keys_table.php` (columns, unique
   `secret_hash` and indexes of data-model.md) and `app/Models/ApiKey.php` (`HasUlids`,
   `$table = 'restv2_api_keys'`, casts `allowed_networks` array, datetimes UTC; `status()`;
   scopes `active()`, `expired()`, `revoked()`).
-- [ ] T084 [US4] Create `app/Services/ApiKeys/ApiKeyAuthenticator.php` (R19). It runs the format
+- [ ] T085 [US4] Create `app/Services/ApiKeys/ApiKeyAuthenticator.php` (R19). It runs the format
   check, the hash lookup, then revoked → expired → owner → network in that order, calls
   `Fail2BanReporter::invalidApiKey` on each failure, and does the throttled last-use update. It
   returns a `Principal` with `AuthMethod::ApiKey`.
-- [ ] T085 [US4] Create `app/Http/Middleware/AuthenticateApiKey.php` and `EnforceKeyScope.php`.
+- [ ] T086 [US4] Create `app/Http/Middleware/AuthenticateApiKey.php` and `EnforceKeyScope.php`.
   `AuthenticateApiKey` skips the health routes and marks the request. Update
   `StartSessionUnlessApiKey.php` to skip marked requests, `VerifyCsrfToken.php` to skip them, and
   `RequireAuth.php` to accept a key principal (`authenticated`) or answer `session-required`
   (`session`). Insert the two middleware right after `AssignRequestId` in the `api.v2` group in
   `bootstrap/app.php` (R8 order). This makes T080 and T082 pass.
-- [ ] T086 [US4] Create `app/Services/ApiKeys/ApiKeyService.php`. `create` generates the secret
+- [ ] T087 [US4] Create `app/Services/ApiKeys/ApiKeyService.php`. `create` generates the secret
   with `random_bytes` base62, stores the hash and prefix, normalises the networks and audits, in
   one transaction, and returns the secret once. `revoke` is idempotent, compares `If-Match`, and
   audits only the first revocation. `list` applies the filters, sort and pagination.
-- [ ] T087 [US4] Create `app/Policies/ApiKeyPolicy.php` (`viewAny`/`view`: principal role admin,
+- [ ] T088 [US4] Create `app/Policies/ApiKeyPolicy.php` (`viewAny`/`view`: principal role admin,
   session or key; `create`/`revoke`: admin with a session, else `session-required` for keys and
   `forbidden` for other roles), and the Form Requests
   `app/Http/Requests/Api/V2/StoreApiKeyRequest.php` (rules quoted from data-model.md "ApiKey ›
   Validation") and `ListApiKeysRequest.php`. Create `app/Http/Resources/Api/V2/ApiKeyResource.php`
   (with `secret` only when created) and the controllers `ApiKeyController.php` (`index`, `show`,
-  `store`) and `ApiKeyRevocationController.php` (`store`). Register the routes in
-  `routes/api.php`. This makes T081 pass.
+  `store`) and `ApiKeyRevocationController.php` (`store`). Register the routes in `routes/api.php`:
+  list and get with `restv2.auth:authenticated`; create and revoke with `restv2.auth:session` and
+  `restv2.csrf`. `ListApiKeysRequest` uses `ListQuery` (`limit` 1–1000, `q`), and `ApiKeyResource`
+  includes `etag` (tag over the stored settings of R19). Also create
+  `app/Http/Requests/Api/V2/ListApiKeyOwnerCandidatesRequest.php` (`ListQuery`, `sort` username,
+  `role` in admin, domainAdmin), `app/Http/Resources/Api/V2/ApiKeyOwnerCandidateResource.php`, and
+  `app/Http/Controllers/Api/V2/ApiKeyOwnerCandidateController.php` (`index`, the query of
+  data-model.md "Possible key owners", authorised through `ApiKeyPolicy::viewAny`). Register
+  `GET /api-keys/owner-candidates` with `restv2.auth:authenticated` **before**
+  `/api-keys/{apiKeyId}`, which is constrained to the ULID pattern. This makes T081 and T083
+  pass.
 
 **Checkpoint**: Keys work. US3 identity now also works with keys.
 
@@ -912,12 +974,13 @@ the way legacy's `customize('edit', …)` writes them. Change a key and read aga
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T088 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigTest.php` for `getPublicConfig`
+- [ ] T089 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigTest.php` for `getPublicConfig`
   (FR-042–FR-044, AS-1–AS-3, R15):
   - With empty Redis: `pageTitle` = `productName` = `"mail.example.org - mail UI"`, logos with
     `url /img/cow_mailcow.svg` and `isDefault: true`, help, footer and announcement null and
     inactive, `loginPage` all false, `externalIdentityProvider.configured` false, `languages` and
-    `defaultLanguage` from the vars fixture.
+    `defaultLanguage` from the vars fixture, `appsLabel` null, and `appLinks` equal to the
+    fixture's `$MAILCOW_APPS` (app links are tested in depth in T091).
   - With `RESTV2_DEFAULT_UI_NAME="FeldHost™ Mailhosting UI"` and the FeldHost logo URLs, those
     defaults apply.
   - With keys written like legacy (`TITLE_NAME` = `htmlspecialchars("A & B")`, `MAIN_NAME`,
@@ -930,7 +993,7 @@ the way legacy's `customize('edit', …)` writes them. Change a key and read aga
   - `ETag` and `Cache-Control: no-cache`; `If-None-Match` → `304`.
   - No password, secret or account data appears (scan the payload for `REDISPASS`, `DBPASS` and
     usernames).
-- [ ] T089 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigLogoTest.php` for
+- [ ] T090 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigLogoTest.php` for
   `getPublicConfigLogo`:
   - PNG, JPEG, GIF and SVG data URIs are served with their media type.
   - `image/x-png` and `image/pjpeg` are normalised.
@@ -939,18 +1002,35 @@ the way legacy's `customize('edit', …)` writes them. Change a key and read aga
   - `ETag` and `304`.
   - The CSP `default-src 'none'; style-src 'unsafe-inline'; sandbox` is set.
   - An unset variant → `404`. An unknown variant → `404` (route constraint).
+- [ ] T091 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigAppLinksTest.php` (FR-056, AS-4,
+  R15):
+  - The upstream default `$MAILCOW_APPS` gives one `builtIn` Webmail link with `url` and
+    `signedInUrl` `/SOGo/so` and `showOnLoginPage: false`.
+  - A vars override with a second built-in app that has a `description` and a `user_link`
+    containing `%u` keeps the order and returns the template unchanged, with `%u` unsubstituted.
+  - `APP_LINKS` written as legacy's `customize('edit', 'app_links')` writes it
+    (`[{"Helpdesk": {"link": "https://h.example/", "user_link": "https://h.example/?u=%u",
+    "hide": true}}]`), plus an old-style entry `{"Wiki": "https://wiki.example/"}`, gives two
+    `operator` links after the built-ins. Helpdesk has `showOnLoginPage: false`. Wiki has
+    `url = signedInUrl` and `showOnLoginPage: true`.
+  - `SKIP_SOGO=y` drops the Webmail entry (and any built-in whose `link` or `user_link` matches
+    `/SOGo/i`), but keeps operator links that point to SOGo, as legacy does.
+  - `APPS_NAME` = `htmlspecialchars("Tools & Apps")` gives `appsLabel "Tools & Apps"`.
+  - Malformed `APP_LINKS` JSON gives the built-ins only and logs a warning.
 
 ### Implementation for User Story 5
 
-- [ ] T090 [US5] Create `app/Services/Branding/PublicConfigService.php` (R15: Redis connection
+- [ ] T092 [US5] Create `app/Services/Branding/PublicConfigService.php` (R15: Redis connection
   `mailcow`, entity decoding, defaults from `config/restv2.php`, languages from `MailcowConfig`,
   IdP flag from `IdentityProviderSetting`, logo decoding with the MIME whitelist). It reuses
-  `ProductName` from T047 for `productName` and the title default.
-- [ ] T091 [US5] Create `app/Http/Resources/Api/V2/PublicConfigResource.php` and the controllers
+  `ProductName` from T047 for `productName` and the title default. Add `appsLabel` (`APPS_NAME`,
+  decoded) and `appLinks`, built from `MailcowConfig::mailcowApps()` and `APP_LINKS` per
+  data-model.md "App links", including the old-style conversion and the `SKIP_SOGO` rule.
+- [ ] T093 [US5] Create `app/Http/Resources/Api/V2/PublicConfigResource.php` and the controllers
   `PublicConfigController.php` (`show`, with `ETag`, `304`, `Cache-Control`) and
   `PublicConfigLogoController.php` (`show`). Register the routes (`restv2.auth:public`,
-  `restv2.pending:allow`, `variant` constrained to `light|dark`) in `routes/api.php`. This makes
-  T088 and T089 pass.
+  `restv2.pending:allow`, `variant` constrained to `light|dark`) in `routes/api.php`. The resource
+  includes `appsLabel` and `appLinks` (contract `AppLink`). This makes T089, T090 and T091 pass.
 
 **Checkpoint**: Branding is readable before sign-in.
 
@@ -965,41 +1045,43 @@ record for secrets.
 
 ### Tests for User Story 6 (write first, observe failing) ⚠️
 
-- [ ] T092 [P] [US6] Write `tests/Feature/Audit/AuditEventListTest.php` for `listAuditEvents`
+- [ ] T094 [P] [US6] Write `tests/Feature/Audit/AuditEventListTest.php` for `listAuditEvents`
   (FR-047):
   - Newest first by default; `order=asc` works.
   - The filters `from`, `to`, repeated `eventType`, `outcome`, `actor` (an attempted username and
     an API key ID) and `clientAddress` (an exact IPv4, an exact IPv6, and the prefix
     `192.0.2.0/24`) work.
   - `limit` and `offset` give `meta.total`.
-  - Invalid filters: `limit=0` → `outOfRange`; `eventType=foo` → `notInList`; `from=yesterday` →
-    `invalidFormat`; `clientAddress=999.1.1.1` → `invalidFormat`.
+  - `q` searches the actor username, target name and user agent.
+  - Invalid filters: `limit=0` and `limit=1001` → `outOfRange`; `eventType=foo` → `notInList`;
+    `from=yesterday` → `invalidFormat`; `clientAddress=999.1.1.1` → `invalidFormat`.
+  - Entries carry no `etag`, because audit records never change.
   - AS-1: a failed sign-in of `alice@example.org` from `192.0.2.10` is listed with the attempted
     username, time, address and `failureReason`.
   - AS-2: a key creation and revocation listed with actor, key name and time, without the secret.
   - AS-3: a mailbox user, a domain admin and a domain-admin key → `403 forbidden`; an admin key →
     `200`.
-- [ ] T093 [P] [US6] Write `tests/Feature/Security/SecretLeakScanTest.php` (SC-009, FR-050). It
+- [ ] T095 [P] [US6] Write `tests/Feature/Security/SecretLeakScanTest.php` (SC-009, FR-050). It
   runs every audited flow once with known secrets (password `S3cret-Pass!`, a TOTP code, an OTP,
   WebAuthn assertion bytes as base64url, a key secret), captures the `stderr_json` log through a
   test handler, and asserts that none of these strings appear in any `restv2_audit_events` row, any
   log line or any response body other than the single `createApiKey` response.
-- [ ] T094 [P] [US6] Write `tests/Feature/Audit/AuditPurgeCommandTest.php` (FR-048): with
+- [ ] T096 [P] [US6] Write `tests/Feature/Audit/AuditPurgeCommandTest.php` (FR-048): with
   `RESTV2_AUDIT_RETENTION_DAYS=30`, `php artisan restv2:audit-purge` deletes only the records older
   than 30 days, in batches of 1000, and prints the count. No HTTP route modifies or deletes records:
   assert that `PUT`, `PATCH` and `DELETE` on `/api/v2/audit-events` answer `405`.
 
 ### Implementation for User Story 6
 
-- [ ] T095 [US6] Create `app/Policies/AuditEventPolicy.php` (admin principal, session or key),
+- [ ] T097 [US6] Create `app/Policies/AuditEventPolicy.php` (admin principal, session or key),
   `app/Http/Requests/Api/V2/ListAuditEventsRequest.php` (`from`/`to` RFC 3339, `eventType[]` in the
   enum with at most 20 items, `outcome` enum, `actor` max 255, `clientAddress` `IpNetwork` or
-  address, plus pagination), `app/Http/Resources/Api/V2/AuditEventResource.php` and
+  address, plus `ListQuery` pagination and `q`), `app/Http/Resources/Api/V2/AuditEventResource.php` and
   `app/Http/Controllers/Api/V2/AuditEventController.php` (`index`, with the prefix filter of
   data-model.md). Register `GET /audit-events` (`restv2.auth:authenticated`) in `routes/api.php`.
-  This makes T092 pass.
-- [ ] T096 [US6] Create `app/Console/Commands/AuditPurgeCommand.php` (`restv2:audit-purge`,
-  batched deletes). This makes T094 pass. T093 passes once US1, US2 and US4 are implemented.
+  This makes T094 pass.
+- [ ] T098 [US6] Create `app/Console/Commands/AuditPurgeCommand.php` (`restv2:audit-purge`,
+  batched deletes). This makes T096 pass. T095 passes once US1, US2 and US4 are implemented.
 
 **Checkpoint**: All six user stories work independently.
 
@@ -1007,7 +1089,7 @@ record for secrets.
 
 ## Phase 9: Polish, operations and cross-cutting concerns
 
-- [ ] T097 [P] Write `tests/Feature/System/HealthTest.php` for `getLiveness` and `getReadiness`:
+- [ ] T099 [P] Write `tests/Feature/System/HealthTest.php` for `getLiveness` and `getReadiness`:
   - live → `200` even with the database configured to a bad host;
   - ready → `200` with `checks` all `ok`;
   - `UPDATE versions SET version = '01012000_0000'` → `503 service-unavailable` with
@@ -1018,16 +1100,16 @@ record for secrets.
 
   Write `tests/Feature/System/HealthCommandTest.php`: `restv2:health --live` and `--ready` give exit
   code 0 when healthy and 1 when not.
-- [ ] T098 Create `app/Http/Controllers/Api/V2/HealthController.php` (`live`, `ready`) and
+- [ ] T100 Create `app/Http/Controllers/Api/V2/HealthController.php` (`live`, `ready`) and
   `app/Console/Commands/HealthCommand.php` (`restv2:health`), sharing
   `app/Services/Health/ReadinessChecker.php`. Register the routes named `health.live` and
-  `health.ready`, which `AuthenticateApiKey` skips, in `routes/api.php`. This makes T097 pass.
-- [ ] T099 [P] Write `tests/Feature/System/DocsTest.php`:
+  `health.ready`, which `AuthenticateApiKey` skips, in `routes/api.php`. This makes T099 pass.
+- [ ] T101 [P] Write `tests/Feature/System/DocsTest.php`:
   - `getOpenApiDocument` → `200 application/yaml`, byte-equal to `build/contract/openapi.yaml`;
   - `getApiDocs` → `200 text/html`, referencing only same-origin assets;
   - `getProblemTypeDocumentation` → `200 text/html` for every `ProblemType` case, containing the
     section heading of `docs/problems.md`; `unknown-type` → `404`.
-- [ ] T100 Create `app/Http/Controllers/Api/V2/DocsController.php`:
+- [ ] T102 Create `app/Http/Controllers/Api/V2/DocsController.php`:
   - `openapi` serves `resources/contract/openapi.yaml`, built by the image or copied from
     `build/contract/` in dev;
   - `ui` serves an HTML page with Swagger UI (`swagger-ui-dist`, Apache-2.0), whose JS and CSS
@@ -1036,20 +1118,25 @@ record for secrets.
     HTML escaped.
 
   Add `resources/docs/.gitkeep` and a `composer docs:assets` script that copies the
-  `swagger-ui-dist` files with `npx`. Register the routes. This makes T099 pass.
-- [ ] T101 [P] Write `tests/Feature/Security/AuthorizationMatrixTest.php` (constitution VI, quality
-  gate 5). It is a data provider over **all 30 operations** × the callers anonymous, pending sign-in,
+  `swagger-ui-dist` files with `npx`. Register the routes. This makes T101 pass.
+- [ ] T103 [P] Write `tests/Feature/Security/AuthorizationMatrixTest.php` (constitution VI, quality
+  gate 5). It is a data provider over **all 31 operations** × the callers anonymous, pending sign-in,
   restricted (`passwordChange`), restricted (`secondFactorSetup`), admin session, domain-admin
   session, mailbox session, admin read-write key, admin read-only key and domain-admin read-write
   key. It asserts the expected status and problem `type` from a table kept in the test. That table
   is derived from the security and descriptions of `api/`, R8 and FR-014. Object-level cases:
   another account's `passkeyId` → `404`; an unknown `apiKeyId` → `404` for admins and
   `403 forbidden` for others.
-- [ ] T102 [P] Write `tests/Unit/Support/ProblemTypeConsistencyTest.php`. The set of `ProblemType`
+- [ ] T104 [P] Write `tests/Unit/Support/ProblemTypeConsistencyTest.php`. The set of `ProblemType`
   enum URIs must equal the `## <name>` sections of `docs/problems.md` (excluding `Conventions`) and
   the `KnownProblemType` enum in `build/contract/openapi.json`. Each case's status must equal the
   status stated in its section.
-- [ ] T103 Complete the `production` stage of `docker/php/Dockerfile` (R23):
+- [ ] T105 [P] Write `tests/Feature/Performance/SignInLatencyTest.php` (SC-007). Over 20 iterations
+  each, measure the server time of `createSession` without a second factor, with a pending TOTP and
+  `verifySecondFactor`, and `createSessionWithPasskey`, excluding the faked `Sleeper`. Assert that
+  the 95th percentile is under 1 s with a `BLF-CRYPT` cost of 10. The test is in the group
+  `performance`, which CI runs.
+- [ ] T106 Complete the `production` stage of `docker/php/Dockerfile` (R23):
   1. a `node:22-alpine` build stage runs `npx @redocly/cli@2.64.1 bundle` into
      `resources/contract/openapi.yaml` and copies the Swagger UI assets;
   2. `composer install --no-dev --classmap-authoritative --no-interaction`;
@@ -1058,7 +1145,7 @@ record for secrets.
 
   Create `docker/php/entrypoint.sh`: `set -eu`, `php artisan config:cache`,
   `php artisan migrate --force --isolated`, then `exec php-fpm -F`.
-- [ ] T104 Create `deploy/docker-compose.override.yml` with the service `restv2-mailcow` exactly as
+- [ ] T107 Create `deploy/docker-compose.override.yml` with the service `restv2-mailcow` exactly as
   in R23:
   - image `${RESTV2_IMAGE:-mailcow-rest-v2:0.1.0}`, `restart: always`, `read_only: true`;
   - tmpfs `/app/storage` and `/app/bootstrap/cache` (`uid=82,gid=82`) and `/tmp`;
@@ -1070,7 +1157,7 @@ record for secrets.
     `ofelia.job-exec.restv2_audit_purge.command: "php /app/artisan restv2:audit-purge"`;
   - healthcheck `["CMD", "php", "/app/artisan", "restv2:health", "--ready"]`;
   - network `mailcow-network` with alias `restv2`.
-- [ ] T105 Create `deploy/nginx/site.restv2.custom` (R23):
+- [ ] T108 Create `deploy/nginx/site.restv2.custom` (R23):
   - `location ^~ /api/v2/` with `resolver 127.0.0.11 valid=30s;`,
     `set $restv2_upstream restv2-mailcow:9000;` (guarded so that `docker/nginx/dev.conf` can
     pre-set `app:9000`), `include /etc/nginx/fastcgi_params;`,
@@ -1082,10 +1169,10 @@ record for secrets.
 
   Verify with `docker compose up web` that `http://localhost:8080/api/v2/health/live` answers
   `200`.
-- [ ] T106 [P] Create `database/seeders/DevelopmentSeeder.php`, which seeds the Part B accounts of
+- [ ] T109 [P] Create `database/seeders/DevelopmentSeeder.php`, which seeds the Part B accounts of
   quickstart.md through `database/factories/MailcowRows.php`. It refuses to run unless
   `APP_ENV=local`.
-- [ ] T107 [P] Write `README.md`:
+- [ ] T110 [P] Write `README.md`:
   - a supported-releases table: mailcow `2026-09a`, `db_version 18082026_1200`, fixture
     `tests/fixtures/schema/2026-09a.sql`;
   - architecture;
@@ -1094,12 +1181,12 @@ record for secrets.
   - development commands;
   - licence.
 
-  Write `CHANGELOG.md` with "0.1.0 — contract: the 30 operations of feature 001", for
+  Write `CHANGELOG.md` with "0.1.0 — contract: the 31 operations of feature 001", for
   mailcowui-ng to pin.
-- [ ] T108 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
+- [ ] T111 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
   `composer contract:lint` in the dev container. Fix every finding until all are green and
-  `build/contract/coverage.json` lists 30 of 30 operations.
-- [ ] T109 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
+  `build/contract/coverage.json` lists 31 of 31 operations.
+- [ ] T112 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
   output. Correct quickstart.md where commands drifted from the implementation, keeping it a
   validation guide.
 
@@ -1118,11 +1205,11 @@ record for secrets.
 - **User stories (Phases 3–8)** all depend on Foundational only:
   - US1, US2, US3, US5 and US6 are independent of each other, thanks to `signInAs()` and
     `MailcowFactory`.
-  - US4 changes the middleware of Foundational (T085). Its key-related assertions on other
+  - US4 changes the middleware of Foundational (T086). Its key-related assertions on other
     stories' operations (T082) need those operations to exist, so run T082 after US1–US3 or mark
     those cases skipped until then.
-  - US6's secret scan (T093) exercises flows of US1, US2 and US4, so implement it after them.
-- **Polish (Phase 9)** depends on every story. T101 needs all 30 operations. T103–T105 can start
+  - US6's secret scan (T095) exercises flows of US1, US2 and US4, so implement it after them.
+- **Polish (Phase 9)** depends on every story. T103 needs all 31 operations. T106–T108 can start
   once the Foundational phase exists.
 
 ### Within each story
@@ -1172,7 +1259,7 @@ Task: "T058 LegacyPasswordVerifier", "T059 Sleeper + SignInThrottle", "T060 Rece
 2. Then US5 (branding) and US6 (audit listing).
 3. Polish: health, docs, deployment, authorisation matrix, README and CHANGELOG.
 
-Each story ends with its checkpoint green and the contract coverage growing towards 30 of 30.
+Each story ends with its checkpoint green and the contract coverage growing towards 31 of 31.
 
 ## Notes
 

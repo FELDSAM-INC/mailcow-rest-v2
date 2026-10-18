@@ -10,7 +10,7 @@ The contract of this feature is not duplicated here. The OpenAPI 3.1 document in
 - `api/components/{schemas,parameters,responses}/`: PascalCase shared components.
 - [`docs/problems.md`](../../../docs/problems.md): every problem `type` of the feature.
 
-The 30 operations, with their authentication and the requirements they serve, are listed in
+The 31 operations, with their authentication and the requirements they serve, are listed in
 [plan.md](../plan.md#contract-operations).
 
 Check the contract with:

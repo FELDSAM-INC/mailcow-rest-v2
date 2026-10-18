@@ -1,0 +1,1 @@
+/dev/sda1,107G,27G,76G,26%,/var/vmail

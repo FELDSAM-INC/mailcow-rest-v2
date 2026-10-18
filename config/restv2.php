@@ -125,8 +125,73 @@ return [
     'bulk_limit' => max(1, min(100, (int) env('RESTV2_BULK_LIMIT', 100))),
 
     // Development only (APP_ENV=local): binds the dockerapi, memcached and ISPConfig fakes, because
-    // the dev stack runs none of these services. Ignored in every other environment.
+    // the dev stack runs none of these services. Ignored in every other environment. Feature 011
+    // adds its stand-ins (Rspamd, release source, IP check) and recorded monitoring payloads.
     'fake_outbound' => env('RESTV2_FAKE_OUTBOUND', 'n') === 'y',
+
+    /*
+    |----------------------------------------------------------------------
+    | Feature 011: monitoring and operations (011 research R27)
+    |----------------------------------------------------------------------
+    */
+
+    // mailcow.conf: optional scanners hidden when skipped (legacy dashboard.php matches
+    // ^([yY][eE][sS]|[yY])+$), and the in-memory log length (lists keep LOG_LINES + 1 entries).
+    'skip_clamd' => (string) env('SKIP_CLAMD', 'n'),
+    'skip_olefy' => (string) env('SKIP_OLEFY', 'n'),
+    'log_lines' => (int) env('LOG_LINES', 9999),
+
+    'monitoring' => [
+        // This API's own compose service; also any container whose ID starts with this process's
+        // host name (HOSTNAME, set by Docker to the short container ID).
+        'self_service' => (string) env('RESTV2_SELF_SERVICE', 'restv2-mailcow'),
+        'hostname' => (string) env('HOSTNAME', ''),
+        // Containers that cannot be stopped (comma-separated service names).
+        'protected_containers' => (string) env('RESTV2_PROTECTED_CONTAINERS', 'dockerapi-mailcow,mysql-mailcow,redis-mailcow,nginx-mailcow,restv2-mailcow'),
+        // JSON map of extra or overriding service => ContainerRole entries, for renamed services.
+        'container_roles' => (string) env('RESTV2_CONTAINER_ROLES', '{}'),
+        // Containers this feature execs into or restarts.
+        'postfix_container' => (string) env('RESTV2_POSTFIX_CONTAINER', 'postfix-mailcow'),
+        'dovecot_container' => (string) env('RESTV2_DOVECOT_CONTAINER', 'dovecot-mailcow'),
+        'ban_service_container' => (string) env('RESTV2_BAN_SERVICE_CONTAINER', 'netfilter-mailcow'),
+
+        // Constants reported by GET /capabilities/monitoring (not settings).
+        'poll_interval' => 5,
+        'max_age' => [
+            'containers' => 5,
+            'host' => 10,
+            'usage_sample' => 15,
+            'usage_cache' => 5,
+            'mail_storage' => 60,
+        ],
+        'queue_listing_max' => 10000,
+        'queue_bulk_max' => 1000,
+        'rules_max' => 100,
+        'rule_max_length' => 1000,
+        'ban_list_max_entries' => 10000,
+        'ban_list_entry_max_length' => 253,
+    ],
+
+    // Update check (legacy update_check.php). Upstream: on; FeldHost: RESTV2_UPDATE_CHECK=n. An
+    // empty source URL means the GitHub releases API of MAILCOW_GIT_OWNER/MAILCOW_GIT_REPO.
+    'update_check' => [
+        'enabled' => ! in_array(strtolower((string) env('RESTV2_UPDATE_CHECK', 'y')), ['n', 'no', 'false', '0', 'off'], true),
+        'source_url' => rtrim((string) env('RESTV2_UPDATE_SOURCE_URL', ''), '/'),
+        'stable_branch' => (string) env('RESTV2_UPDATE_STABLE_BRANCH', 'master'),
+    ],
+
+    // mailcow's external IP check service (legacy get/status/host/ip).
+    'ip_check' => [
+        'ipv4_url' => (string) env('RESTV2_IP_CHECK_IPV4_URL', 'http://ipv4.mailcow.email'),
+        'ipv6_url' => (string) env('RESTV2_IP_CHECK_IPV6_URL', 'http://ipv6.mailcow.email'),
+    ],
+
+    // Rspamd controller socket (feature 006 research R2, created with feature 011): HTTP over the
+    // Unix socket of the mounted rspamd-vol-1, which Rspamd trusts without a password.
+    'rspamd' => [
+        'socket' => (string) env('RESTV2_RSPAMD_SOCKET', '/var/lib/rspamd/rspamd.sock'),
+        'timeout' => (int) env('RESTV2_RSPAMD_TIMEOUT', 30),
+    ],
 
     /*
     |----------------------------------------------------------------------

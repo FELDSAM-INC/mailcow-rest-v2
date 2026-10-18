@@ -1,0 +1,1090 @@
+{
+    "1b194021448413ae0df1a9505b9b70603bfb8746064bed5370d0d63f7eae6681": {
+        "Id": "1b194021448413ae0df1a9505b9b70603bfb8746064bed5370d0d63f7eae6681",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z",
+            "Health": {
+                "Status": "healthy",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2026-10-18T06:00:30Z",
+                        "End": "2026-10-18T06:00:31Z",
+                        "ExitCode": 0,
+                        "Output": "ok REDISPASS=planted-secret-health"
+                    }
+                ]
+            }
+        },
+        "Image": "sha256:c82b726515a3d892677224208ccb89a1b7c439ba8793e36a2885d1c757ae5a75",
+        "Name": "/mailcowdockerized-unbound-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "1b1940214484",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/unbound:1.26.1-1",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "unbound-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "653425c087ffa31cbac4d6a72ed27530cecfcb0ed212bdc951dfc65d38dfe04f": {
+        "Id": "653425c087ffa31cbac4d6a72ed27530cecfcb0ed212bdc951dfc65d38dfe04f",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:79f254866c9d18056d42c1a0d65ef054b3f3d1b16df843c0d11fa33530b8c340",
+        "Name": "/mailcowdockerized-mysql-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "653425c087ff",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "mariadb:10.11",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "mysql-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "3dd23aef64543d58b184efcb237e0675c2678f5807a50813a1cb8185f763c535": {
+        "Id": "3dd23aef64543d58b184efcb237e0675c2678f5807a50813a1cb8185f763c535",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:7d72f15e3cd8077faf57511ca7ea501f86740a4e670ba16b3bad6dff26b2ea23",
+        "Name": "/mailcowdockerized-redis-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "3dd23aef6454",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "redis:7.4.11-alpine",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "redis-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "6ddf3858704b27646780ff2d7b2146916bd6d656b70df6c13b84f2181af38f37": {
+        "Id": "6ddf3858704b27646780ff2d7b2146916bd6d656b70df6c13b84f2181af38f37",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:472fdc64fd5d08df74056b562e78b500d35feb329afe1d980efc3def24d96903",
+        "Name": "/mailcowdockerized-clamd-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "6ddf3858704b",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/clamd:1.4.6-1",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "clamd-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "394557ed55dfa6a63b1cf47148ddf675f49c929a8f4e2626ce346f1cb50b3d5c": {
+        "Id": "394557ed55dfa6a63b1cf47148ddf675f49c929a8f4e2626ce346f1cb50b3d5c",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:2ed8ef71ccffd30449ccfdec70ec727a40b03b9626c42e712b67e9dd9a5532a4",
+        "Name": "/mailcowdockerized-rspamd-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "394557ed55df",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/rspamd:4.2.1-1",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "rspamd-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "72fae84f3d555793487f18a5985a9d2027b9d0ecc44afda1821c628cccdaefe8": {
+        "Id": "72fae84f3d555793487f18a5985a9d2027b9d0ecc44afda1821c628cccdaefe8",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:c217f34653bbc5b9a2af3e2faa2d06cc05a8f966fa06ed033284cc78293dc56c",
+        "Name": "/mailcowdockerized-php-fpm-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "72fae84f3d55",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/phpfpm:8.2.29-3",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "php-fpm-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "509227ea3b56c02c5367cca233766cf76622f86c146d5de60d90a15fa943e868": {
+        "Id": "509227ea3b56c02c5367cca233766cf76622f86c146d5de60d90a15fa943e868",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "exited",
+            "Running": false,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 0,
+            "ExitCode": 137,
+            "Error": "",
+            "StartedAt": "2026-10-17T22:15:30.5Z",
+            "FinishedAt": "2026-10-18T05:59:01.25Z"
+        },
+        "Image": "sha256:22a4916fb08dd1aa4426cb5861055dbd3d909f7aa4551f91ba72dc2b88b6477d",
+        "Name": "/mailcowdockerized-sogo-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "509227ea3b56",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/sogo:5.12.11-1",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "sogo-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "cbc0bd49975307f0f91e02a5c7f8d1ba61a8e3d5335770f5d56658f05a39ca65": {
+        "Id": "cbc0bd49975307f0f91e02a5c7f8d1ba61a8e3d5335770f5d56658f05a39ca65",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:3b12b8fe3feba109646eda2e2de8f79c7b80b73ccae65dda17e69d04cf4a133b",
+        "Name": "/mailcowdockerized-dovecot-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "cbc0bd499753",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/dovecot:2.3.21.1-2",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "dovecot-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "701c03d419e86edfa66adb5812b14cabb1cad3647ec09bd0d8f5f47d9b048a0d": {
+        "Id": "701c03d419e86edfa66adb5812b14cabb1cad3647ec09bd0d8f5f47d9b048a0d",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:0b5d41ca9eac213831279ae713f632ce0b414c9c6f0031d0c4e08a1401140799",
+        "Name": "/mailcowdockerized-postfix-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "701c03d419e8",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/postfix:3.10.12-1",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "postfix-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "8f1b97d1370d16c347fb7042825870e469a56a37edd9fc8c513bc59321bb60ff": {
+        "Id": "8f1b97d1370d16c347fb7042825870e469a56a37edd9fc8c513bc59321bb60ff",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:423fd79a4d9c5d5d74f49354a52c33e991e3a01147c7fa0adb5171ad6d39b7a5",
+        "Name": "/mailcowdockerized-postfix-tlspol-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "8f1b97d1370d",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/postfix-tlspol:1.14.0",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "postfix-tlspol-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "5a9eb0f79d58d257867e423c6f3340215f9a052952e7238be48e3ea04a25ba08": {
+        "Id": "5a9eb0f79d58d257867e423c6f3340215f9a052952e7238be48e3ea04a25ba08",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z",
+            "Health": {
+                "Status": "none",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2026-10-18T06:00:30Z",
+                        "End": "2026-10-18T06:00:31Z",
+                        "ExitCode": 0,
+                        "Output": "ok REDISPASS=planted-secret-health"
+                    }
+                ]
+            }
+        },
+        "Image": "sha256:fdaa177d919d334541cd32f9af12990209a19ff082e8d7576b7065920619ae6e",
+        "Name": "/mailcowdockerized-memcached-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "5a9eb0f79d58",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "memcached:alpine",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "memcached-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "3c66c42c60b7ff4c66a02533ed0550857308a4b09e421602f5e42c600134e008": {
+        "Id": "3c66c42c60b7ff4c66a02533ed0550857308a4b09e421602f5e42c600134e008",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z",
+            "Health": {
+                "Status": "healthy",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2026-10-18T06:00:30Z",
+                        "End": "2026-10-18T06:00:31Z",
+                        "ExitCode": 0,
+                        "Output": "ok REDISPASS=planted-secret-health"
+                    }
+                ]
+            }
+        },
+        "Image": "sha256:d02bb340ad1b14a14ffeb384d6aaf5022877abe600ba98a8450d4d8276901275",
+        "Name": "/mailcowdockerized-nginx-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "3c66c42c60b7",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/nginx:1.30.4-1",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "nginx-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "c995bbe43794117722879877a4bdbd026b8f414fbd7f6a817d36383928b7d428": {
+        "Id": "c995bbe43794117722879877a4bdbd026b8f414fbd7f6a817d36383928b7d428",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:bab410db142d6a103c19eb7cdeb7f59babb5f98b3260c520f871c65e717f1db0",
+        "Name": "/mailcowdockerized-acme-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "c995bbe43794",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/acme:1.98",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "acme-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "42746024b1c9d1023c99e49bcafab971b32755ef36ce75f007dab4f53b7d275d": {
+        "Id": "42746024b1c9d1023c99e49bcafab971b32755ef36ce75f007dab4f53b7d275d",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:300586a781fce1415b1807eb6eb3aa07cec0cc02552186a34bb99a2c4c949fa0",
+        "Name": "/mailcowdockerized-netfilter-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "42746024b1c9",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/netfilter:1.64",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "netfilter-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "fc2d701c5a975087621c45eaf8df469c5ba892d37006a199430f87ebc50e0cbf": {
+        "Id": "fc2d701c5a975087621c45eaf8df469c5ba892d37006a199430f87ebc50e0cbf",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:a205bc98367faf598bb8bba6be253977fd6e57925d543b89f530bc86cad0073c",
+        "Name": "/mailcowdockerized-watchdog-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "fc2d701c5a97",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/watchdog:2.11",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "watchdog-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "647a3d270d13b87d53dd690f0c73d7590fad661563eb3b27411510f0768f86fc": {
+        "Id": "647a3d270d13b87d53dd690f0c73d7590fad661563eb3b27411510f0768f86fc",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:9101bf751880e0f93002aea6bdf336e433435747a00c69b62e929ceb1b32ec10",
+        "Name": "/mailcowdockerized-dockerapi-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "647a3d270d13",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/dockerapi:2.12",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "dockerapi-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "da720546c002a39b487f91588eb027df08d4fc2af2c9ff0fd474b5fbe3575982": {
+        "Id": "da720546c002a39b487f91588eb027df08d4fc2af2c9ff0fd474b5fbe3575982",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:415ad35e193ec6a9501716a8c78e9cce2aec427ddb689b82fe89579a1ff9d938",
+        "Name": "/mailcowdockerized-olefy-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "da720546c002",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/mailcow/olefy:1.15",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "olefy-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "1cb6d6819d893cc4e907789bdb478602c9c1860dae27ed59b4fbd6d59d7a443a": {
+        "Id": "1cb6d6819d893cc4e907789bdb478602c9c1860dae27ed59b4fbd6d59d7a443a",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:90248fa4173fa3626fef586cec05c7a491b668c402c8c27ddd0ca6fcaf2d9e1b",
+        "Name": "/mailcowdockerized-ofelia-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "1cb6d6819d89",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "mcuadros/ofelia:latest",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "ofelia-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "43c0188a94ccea5e885c9a50936c7e1088bcd5ff35764d33bbacd9f4df77814c": {
+        "Id": "43c0188a94ccea5e885c9a50936c7e1088bcd5ff35764d33bbacd9f4df77814c",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z",
+            "Health": {
+                "Status": "healthy",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2026-10-18T06:00:30Z",
+                        "End": "2026-10-18T06:00:31Z",
+                        "ExitCode": 0,
+                        "Output": "ok REDISPASS=planted-secret-health"
+                    }
+                ]
+            }
+        },
+        "Image": "sha256:7c7931ba2c82f361ebb0e94e5c2416dab0bc19ee06108e1cfd87de9faf2d4ee9",
+        "Name": "/mailcowdockerized-restv2-mailcow-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "43c0188a94cc",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "ghcr.io/feldsam-inc/mailcow-rest-v2:0.1.0",
+            "Labels": {
+                "com.docker.compose.project": "mailcowdockerized",
+                "com.docker.compose.service": "restv2-mailcow",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "mailcowdockerized_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    },
+    "0a4b1201b2003ee1fd2df10bb2b541a1a4bcd31ef6b460d2ed35a2910fa093fe": {
+        "Id": "0a4b1201b2003ee1fd2df10bb2b541a1a4bcd31ef6b460d2ed35a2910fa093fe",
+        "Created": "2026-10-01T10:00:00.000000000Z",
+        "Path": "/docker-entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 4242,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-18T06:00:00.123456789Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:05b54a031725ba977462f9fea0949f8fd82c4a57113e15a825f8e877df9c923b",
+        "Name": "/otherproject-website-1",
+        "RestartCount": 0,
+        "Config": {
+            "Hostname": "0a4b1201b200",
+            "Env": [
+                "TZ=Europe/Prague",
+                "DBPASS=planted-secret",
+                "DBROOT=planted-secret-root",
+                "REDISPASS=planted-secret-redis",
+                "API_KEY=planted-secret-api-key",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            ],
+            "Image": "nginx:1.28-alpine",
+            "Labels": {
+                "com.docker.compose.project": "otherproject",
+                "com.docker.compose.service": "website",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.oneoff": "False"
+            }
+        },
+        "HostConfig": {
+            "RestartPolicy": {
+                "Name": "always"
+            }
+        },
+        "NetworkSettings": {
+            "Networks": {
+                "otherproject_mailcow-network": {
+                    "IPAddress": "172.22.1.10"
+                }
+            }
+        }
+    }
+}

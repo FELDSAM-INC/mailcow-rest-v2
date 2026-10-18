@@ -58,7 +58,10 @@ services:
       - IPV6_NETWORK=${IPV6_NETWORK:-fd4d:6169:6c63:6f77::/64}
       - WEBAUTHN_ONLY_TRUSTED_VENDORS=${WEBAUTHN_ONLY_TRUSTED_VENDORS:-n}
       - SKIP_SOGO=${SKIP_SOGO:-n}
-      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+      - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-mailcow-dockerized}
+      - SKIP_CLAMD=${SKIP_CLAMD:-n}
+      - SKIP_OLEFY=${SKIP_OLEFY:-n}
+      - LOG_LINES=${LOG_LINES:-9999}
       # Settings of this API
       - RESTV2_SASL_LOG_SERVICE=${RESTV2_SASL_LOG_SERVICE:-MAILCOWUI}
       - RESTV2_DEFAULT_UI_NAME=${RESTV2_DEFAULT_UI_NAME:-}
@@ -91,6 +94,20 @@ services:
       - RESTV2_ISPCONFIG_DNS_SERVER_ID=${RESTV2_ISPCONFIG_DNS_SERVER_ID:-1}
       - RESTV2_ISPCONFIG_VERIFY_TLS=${RESTV2_ISPCONFIG_VERIFY_TLS:-y}
       - RESTV2_ISPCONFIG_TIMEOUT=${RESTV2_ISPCONFIG_TIMEOUT:-15}
+      # Feature 011 (monitoring and operations): containers, the ban service, the update check
+      # (FeldHost: RESTV2_UPDATE_CHECK=n), the IP check service and the Rspamd controller socket.
+      - RESTV2_SELF_SERVICE=${RESTV2_SELF_SERVICE:-restv2-mailcow}
+      - RESTV2_PROTECTED_CONTAINERS=${RESTV2_PROTECTED_CONTAINERS:-dockerapi-mailcow,mysql-mailcow,redis-mailcow,nginx-mailcow,restv2-mailcow}
+      - RESTV2_CONTAINER_ROLES=${RESTV2_CONTAINER_ROLES:-}
+      - RESTV2_POSTFIX_CONTAINER=${RESTV2_POSTFIX_CONTAINER:-postfix-mailcow}
+      - RESTV2_DOVECOT_CONTAINER=${RESTV2_DOVECOT_CONTAINER:-dovecot-mailcow}
+      - RESTV2_BAN_SERVICE_CONTAINER=${RESTV2_BAN_SERVICE_CONTAINER:-netfilter-mailcow}
+      - RESTV2_UPDATE_CHECK=${RESTV2_UPDATE_CHECK:-y}
+      - RESTV2_UPDATE_SOURCE_URL=${RESTV2_UPDATE_SOURCE_URL:-}
+      - RESTV2_UPDATE_STABLE_BRANCH=${RESTV2_UPDATE_STABLE_BRANCH:-master}
+      - RESTV2_IP_CHECK_IPV4_URL=${RESTV2_IP_CHECK_IPV4_URL:-http://ipv4.mailcow.email}
+      - RESTV2_IP_CHECK_IPV6_URL=${RESTV2_IP_CHECK_IPV6_URL:-http://ipv6.mailcow.email}
+      - RESTV2_RSPAMD_SOCKET=${RESTV2_RSPAMD_SOCKET:-/var/lib/rspamd/rspamd.sock}
       # Legacy PHP configuration; empty means "read mailcow's vars files".
       - RESTV2_SESSION_LIFETIME=${RESTV2_SESSION_LIFETIME:-}
       - RESTV2_DEFAULT_LANG=${RESTV2_DEFAULT_LANG:-}
@@ -111,6 +128,9 @@ services:
     volumes:
       # Read-only: legacy's vars.inc.php and vars.local.inc.php (R14).
       - ./data/web/inc:/mailcow/web/inc:ro,z
+      # Read-only: Rspamd's controller socket (features 006 and 011). Connecting to the socket
+      # works on a read-only mount; Rspamd's data cannot be changed.
+      - rspamd-vol-1:/var/lib/rspamd:ro
     labels:
       # mailcow's ofelia runs the audit retention purge daily (R22).
       ofelia.enabled: "true"

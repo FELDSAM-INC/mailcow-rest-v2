@@ -1,0 +1,57 @@
+{
+    "read_only": false,
+    "scanned": 12345,
+    "learned": 67,
+    "actions": {
+        "reject": 100,
+        "soft reject": 5,
+        "rewrite subject": 0,
+        "add header": 200,
+        "greylist": 50,
+        "no action": 11990
+    },
+    "scan_times": [
+        0.25,
+        0.31,
+        0.12
+    ],
+    "spam_count": 300,
+    "ham_count": 12045,
+    "connections": 13000,
+    "control_connections": 42,
+    "pools_allocated": 1234,
+    "pools_freed": 1200,
+    "bytes_allocated": 40960000,
+    "chunks_allocated": 900,
+    "shared_chunks_allocated": 30,
+    "chunks_freed": 0,
+    "chunks_oversized": 12,
+    "fragmented": 0,
+    "total_learns": 67,
+    "statfiles": [
+        {
+            "revision": 40,
+            "used": 0,
+            "total": 0,
+            "size": 0,
+            "symbol": "BAYES_SPAM",
+            "type": "redis",
+            "languages": 0,
+            "users": 1
+        },
+        {
+            "revision": 27,
+            "used": 0,
+            "total": 0,
+            "size": 0,
+            "symbol": "BAYES_HAM",
+            "type": "redis",
+            "languages": 0,
+            "users": 1
+        }
+    ],
+    "fuzzy_hashes": {
+        "local": 1234,
+        "rspamd.com": 5678
+    }
+}

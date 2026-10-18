@@ -21,7 +21,8 @@ location ^~ /api/v2/ {
     # Two domain footer texts of 1 MiB each, with JSON escaping (feature 002 research D21).
     client_max_body_size 5m;
     # A mailbox rename or a bulk deletion makes several container calls of up to DOCKER_TIMEOUT
-    # (60 s) each; the API finishes them even when the client goes away (feature 003 R26).
+    # (60 s) each; the API finishes them even when the client goes away (feature 003 R26). It also
+    # covers feature 011's container and queue actions (DOCKER_TIMEOUT plus retries, R28).
     fastcgi_read_timeout 900s;
     fastcgi_pass $restv2_upstream;
 }

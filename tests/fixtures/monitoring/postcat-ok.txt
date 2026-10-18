@@ -1,0 +1,22 @@
+*** ENVELOPE RECORDS deferred/4F0A1C2B3D ***
+message_size:            2345             623               1               0            2345               0
+message_arrival_time: Sat Oct 18 10:00:00 2026
+create_time: Sat Oct 18 10:00:00 2026
+named_attribute: rewrite_context=local
+sender: alice@example.org
+named_attribute: log_client_name=localhost
+original_recipient: bob@partner.example
+recipient: bob@partner.example
+*** MESSAGE CONTENTS deferred/4F0A1C2B3D ***
+Received: by mail.example.org (Postfix, from userid 0)
+	id 4F0A1C2B3D; Sat, 18 Oct 2026 10:00:00 +0200 (CEST)
+Subject: Quarterly report
+From: Alice <alice@example.org>
+To: Bob <bob@partner.example>
+Message-Id: <20261018080000.4F0A1C2B3D@mail.example.org>
+Date: Sat, 18 Oct 2026 10:00:00 +0200 (CEST)
+
+Hello Bob, the confidential quarterly figures are attached.
+*** HEADER EXTRACTED deferred/4F0A1C2B3D ***
+named_attribute: encoding=7bit
+*** MESSAGE FILE END deferred/4F0A1C2B3D ***

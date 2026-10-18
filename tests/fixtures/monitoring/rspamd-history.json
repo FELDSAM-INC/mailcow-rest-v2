@@ -1,0 +1,1312 @@
+{
+    "version": 2,
+    "rows": [
+        {
+            "message-id": "<msg00@example.net>",
+            "time_virtual": 0.012,
+            "rcpt_mime": [
+                "user00@example.org"
+            ],
+            "rcpt_smtp": [
+                "user00@example.org"
+            ],
+            "time_real": 0.25,
+            "unix_time": 1760781600,
+            "action": "no action",
+            "size": 1000,
+            "user": "unknown",
+            "ip": "198.51.100.1",
+            "sender_smtp": "sender00@example.net",
+            "sender_mime": "Sender 00 <sender00@example.net>",
+            "subject": "Message 00",
+            "required_score": 15,
+            "score": -1.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg01@example.net>",
+            "time_virtual": 0.013000000000000001,
+            "rcpt_mime": [
+                "user01@example.org"
+            ],
+            "rcpt_smtp": [
+                "user01@example.org"
+            ],
+            "time_real": 0.26,
+            "unix_time": 1760781540,
+            "action": "add header",
+            "size": 1100,
+            "user": "unknown",
+            "ip": "198.51.100.2",
+            "sender_smtp": "sender01@example.net",
+            "sender_mime": "Sender 01 <sender01@example.net>",
+            "subject": "Message 01",
+            "required_score": 15,
+            "score": -1.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg02@example.net>",
+            "time_virtual": 0.014,
+            "rcpt_mime": [
+                "user02@example.org"
+            ],
+            "rcpt_smtp": [
+                "user02@example.org"
+            ],
+            "time_real": 0.27,
+            "unix_time": 1760781480,
+            "action": "greylist",
+            "size": 1200,
+            "user": "unknown",
+            "ip": "198.51.100.3",
+            "sender_smtp": "sender02@example.net",
+            "sender_mime": "Sender 02 <sender02@example.net>",
+            "subject": "Message 02",
+            "required_score": 15,
+            "score": -0.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg03@example.net>",
+            "time_virtual": 0.015,
+            "rcpt_mime": [],
+            "rcpt_smtp": [
+                "user03@example.org"
+            ],
+            "time_real": 0.28,
+            "unix_time": 1760781420,
+            "action": "no action",
+            "size": 1300,
+            "user": "alice@example.org",
+            "ip": "198.51.100.4",
+            "sender_smtp": "sender03@example.net",
+            "sender_mime": "Sender 03 <sender03@example.net>",
+            "subject": "Message 03",
+            "required_score": 15,
+            "score": 0.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg04@example.net>",
+            "time_virtual": 0.016,
+            "rcpt_mime": [
+                "user04@example.org"
+            ],
+            "rcpt_smtp": [
+                "user04@example.org"
+            ],
+            "time_real": 0.29,
+            "unix_time": 1760781360,
+            "action": "soft reject",
+            "size": 1400,
+            "user": "unknown",
+            "ip": "198.51.100.5",
+            "sender_smtp": "sender04@example.net",
+            "sender_mime": "Sender 04 <sender04@example.net>",
+            "subject": "Message 04",
+            "required_score": 15,
+            "score": 0.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg05@example.net>",
+            "time_virtual": 0.017,
+            "rcpt_mime": [
+                "user05@example.org"
+            ],
+            "rcpt_smtp": [
+                "user05@example.org"
+            ],
+            "time_real": 0.3,
+            "unix_time": 1760781300,
+            "action": "no action",
+            "size": 1500,
+            "user": "unknown",
+            "ip": "198.51.100.6",
+            "sender_smtp": "sender05@example.net",
+            "sender_mime": "Sender 05 <sender05@example.net>",
+            "subject": "Message 05",
+            "required_score": 15,
+            "score": 1.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg06@example.net>",
+            "time_virtual": 0.018000000000000002,
+            "rcpt_mime": [
+                "user06@example.org"
+            ],
+            "rcpt_smtp": [
+                "user06@example.org"
+            ],
+            "time_real": 0.31,
+            "unix_time": 1760781240,
+            "action": "add header",
+            "size": 1600,
+            "user": "unknown",
+            "ip": "198.51.100.7",
+            "sender_smtp": "sender06@example.net",
+            "sender_mime": "Sender 06 <sender06@example.net>",
+            "subject": "Message 06",
+            "required_score": 15,
+            "score": 1.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<spam-0007@example.net>",
+            "time_virtual": 0.019,
+            "rcpt_mime": [
+                "user07@example.org"
+            ],
+            "rcpt_smtp": [
+                "user07@example.org"
+            ],
+            "time_real": 0.32,
+            "unix_time": 1760781180,
+            "action": "reject",
+            "size": 5432,
+            "user": "unknown",
+            "ip": "203.0.113.66",
+            "sender_smtp": "spammer@example.net",
+            "sender_mime": "Totally Legit <spammer@example.net>",
+            "subject": "You won a prize",
+            "required_score": 15,
+            "score": 23.45,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "R_SPF_FAIL": {
+                    "name": "R_SPF_FAIL",
+                    "score": 1,
+                    "metric_score": 1,
+                    "options": [
+                        "-all"
+                    ]
+                },
+                "BAYES_SPAM": {
+                    "name": "BAYES_SPAM",
+                    "score": 5.1,
+                    "metric_score": 5.1,
+                    "options": [
+                        "99.99%"
+                    ]
+                },
+                "DMARC_POLICY_REJECT": {
+                    "name": "DMARC_POLICY_REJECT",
+                    "score": 2,
+                    "metric_score": 2,
+                    "options": [
+                        "example.net : No valid SPF",
+                        "reject"
+                    ]
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                },
+                "R_DKIM_ALLOW": {
+                    "name": "R_DKIM_ALLOW",
+                    "score": -0.2,
+                    "metric_score": -0.2,
+                    "options": [
+                        "example.net:s=dkim"
+                    ]
+                },
+                "RCVD_COUNT_ZERO": {
+                    "name": "RCVD_COUNT_ZERO",
+                    "score": 0,
+                    "metric_score": 0,
+                    "options": [
+                        "0"
+                    ]
+                },
+                "FUZZY_DENIED": {
+                    "name": "FUZZY_DENIED",
+                    "score": 15.65,
+                    "metric_score": 12,
+                    "options": [
+                        "1:abcdef:1.00:txt"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg08@example.net>",
+            "time_virtual": 0.02,
+            "rcpt_mime": [
+                "user08@example.org"
+            ],
+            "rcpt_smtp": [
+                "user08@example.org"
+            ],
+            "time_real": 0.33,
+            "unix_time": 1760781120,
+            "action": "no action",
+            "size": 1800,
+            "user": "unknown",
+            "ip": "198.51.100.9",
+            "sender_smtp": "sender08@example.net",
+            "sender_mime": "Sender 08 <sender08@example.net>",
+            "subject": "Message 08",
+            "required_score": 15,
+            "score": 2.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg09@example.net>",
+            "time_virtual": 0.020999999999999998,
+            "rcpt_mime": [
+                "user09@example.org"
+            ],
+            "rcpt_smtp": [
+                "user09@example.org"
+            ],
+            "time_real": 0.33999999999999997,
+            "unix_time": 1760781060,
+            "action": "soft reject",
+            "size": 1900,
+            "user": "unknown",
+            "ip": "198.51.100.10",
+            "sender_smtp": "sender09@example.net",
+            "sender_mime": "Sender 09 <sender09@example.net>",
+            "subject": "Message 09",
+            "required_score": 15,
+            "score": 3.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg10@example.net>",
+            "time_virtual": 0.022,
+            "rcpt_mime": [
+                "user10@example.org"
+            ],
+            "rcpt_smtp": [
+                "user10@example.org"
+            ],
+            "time_real": 0.35,
+            "unix_time": 1760781000,
+            "action": "no action",
+            "size": 2000,
+            "user": "unknown",
+            "ip": "198.51.100.11",
+            "sender_smtp": "sender10@example.net",
+            "sender_mime": "Sender 10 <sender10@example.net>",
+            "subject": "Message 10",
+            "required_score": 15,
+            "score": 3.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg11@example.net>",
+            "time_virtual": 0.023,
+            "rcpt_mime": [
+                "user11@example.org"
+            ],
+            "rcpt_smtp": [
+                "user11@example.org"
+            ],
+            "time_real": 0.36,
+            "unix_time": 1760780940,
+            "action": "add header",
+            "size": 2100,
+            "user": "unknown",
+            "ip": "198.51.100.12",
+            "sender_smtp": "sender11@example.net",
+            "sender_mime": "Sender 11 <sender11@example.net>",
+            "subject": "Message 11",
+            "required_score": 15,
+            "score": 4.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg12@example.net>",
+            "time_virtual": 0.024,
+            "rcpt_mime": [
+                "user12@example.org"
+            ],
+            "rcpt_smtp": [
+                "user12@example.org"
+            ],
+            "time_real": 0.37,
+            "unix_time": 1760780880,
+            "action": "greylist",
+            "size": 2200,
+            "user": "unknown",
+            "ip": "198.51.100.13",
+            "sender_smtp": "sender12@example.net",
+            "sender_mime": "Sender 12 <sender12@example.net>",
+            "subject": "Message 12",
+            "required_score": 15,
+            "score": 4.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg13@example.net>",
+            "time_virtual": 0.025,
+            "rcpt_mime": [
+                "user13@example.org"
+            ],
+            "rcpt_smtp": [
+                "user13@example.org"
+            ],
+            "time_real": 0.38,
+            "unix_time": 1760780820,
+            "action": "no action",
+            "size": 2300,
+            "user": "unknown",
+            "ip": "198.51.100.14",
+            "sender_smtp": "sender13@example.net",
+            "sender_mime": "Sender 13 <sender13@example.net>",
+            "subject": "Message 13",
+            "required_score": 15,
+            "score": 5.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg14@example.net>",
+            "time_virtual": 0.026000000000000002,
+            "rcpt_mime": [
+                "user14@example.org"
+            ],
+            "rcpt_smtp": [
+                "user14@example.org"
+            ],
+            "time_real": 0.39,
+            "unix_time": 1760780760,
+            "action": "soft reject",
+            "size": 2400,
+            "user": "unknown",
+            "ip": "198.51.100.15",
+            "sender_smtp": "sender14@example.net",
+            "sender_mime": "Sender 14 <sender14@example.net>",
+            "subject": "Message 14",
+            "required_score": 15,
+            "score": 5.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg15@example.net>",
+            "time_virtual": 0.027,
+            "rcpt_mime": [
+                "user15@example.org"
+            ],
+            "rcpt_smtp": [
+                "user15@example.org"
+            ],
+            "time_real": 0.4,
+            "unix_time": 1760780700,
+            "action": "no action",
+            "size": 2500,
+            "user": "unknown",
+            "ip": "198.51.100.16",
+            "sender_smtp": "sender15@example.net",
+            "sender_mime": "Sender 15 <sender15@example.net>",
+            "subject": "Message 15",
+            "required_score": 15,
+            "score": 6.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg16@example.net>",
+            "time_virtual": 0.028,
+            "rcpt_mime": [
+                "user16@example.org"
+            ],
+            "rcpt_smtp": [
+                "user16@example.org"
+            ],
+            "time_real": 0.41000000000000003,
+            "unix_time": 1760780640,
+            "action": "add header",
+            "size": 2600,
+            "user": "unknown",
+            "ip": "198.51.100.17",
+            "sender_smtp": "sender16@example.net",
+            "sender_mime": "Sender 16 <sender16@example.net>",
+            "subject": "Message 16",
+            "required_score": 15,
+            "score": 6.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg17@example.net>",
+            "time_virtual": 0.029,
+            "rcpt_mime": [
+                "user17@example.org"
+            ],
+            "rcpt_smtp": [
+                "user17@example.org"
+            ],
+            "time_real": 0.42000000000000004,
+            "unix_time": 1760780580,
+            "action": "greylist",
+            "size": 2700,
+            "user": "unknown",
+            "ip": "198.51.100.18",
+            "sender_smtp": "sender17@example.net",
+            "sender_mime": "Sender 17 <sender17@example.net>",
+            "subject": "Message 17",
+            "required_score": 15,
+            "score": 7.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg18@example.net>",
+            "time_virtual": 0.03,
+            "rcpt_mime": [
+                "user18@example.org"
+            ],
+            "rcpt_smtp": [
+                "user18@example.org"
+            ],
+            "time_real": 0.43,
+            "unix_time": 1760780520,
+            "action": "no action",
+            "size": 2800,
+            "user": "unknown",
+            "ip": "198.51.100.19",
+            "sender_smtp": "sender18@example.net",
+            "sender_mime": "Sender 18 <sender18@example.net>",
+            "subject": "Message 18",
+            "required_score": 15,
+            "score": 7.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg19@example.net>",
+            "time_virtual": 0.031,
+            "rcpt_mime": [
+                "user19@example.org"
+            ],
+            "rcpt_smtp": [
+                "user19@example.org"
+            ],
+            "time_real": 0.44,
+            "unix_time": 1760780460,
+            "action": "soft reject",
+            "size": 2900,
+            "user": "unknown",
+            "ip": "198.51.100.20",
+            "sender_smtp": "sender19@example.net",
+            "sender_mime": "Sender 19 <sender19@example.net>",
+            "subject": "Message 19",
+            "required_score": 15,
+            "score": 8.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg20@example.net>",
+            "time_virtual": 0.032,
+            "rcpt_mime": [
+                "user20@example.org"
+            ],
+            "rcpt_smtp": [
+                "user20@example.org"
+            ],
+            "time_real": 0.45,
+            "unix_time": 1760780400,
+            "action": "no action",
+            "size": 3000,
+            "user": "unknown",
+            "ip": "198.51.100.21",
+            "sender_smtp": "sender20@example.net",
+            "sender_mime": "Sender 20 <sender20@example.net>",
+            "subject": "Message 20",
+            "required_score": 15,
+            "score": 8.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg21@example.net>",
+            "time_virtual": 0.033,
+            "rcpt_mime": [
+                "user21@example.org"
+            ],
+            "rcpt_smtp": [
+                "user21@example.org"
+            ],
+            "time_real": 0.45999999999999996,
+            "unix_time": 1760780340,
+            "action": "add header",
+            "size": 3100,
+            "user": "unknown",
+            "ip": "198.51.100.22",
+            "sender_smtp": "sender21@example.net",
+            "sender_mime": "Sender 21 <sender21@example.net>",
+            "subject": "Message 21",
+            "required_score": 15,
+            "score": 9.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg22@example.net>",
+            "time_virtual": 0.034,
+            "rcpt_mime": [
+                "user22@example.org"
+            ],
+            "rcpt_smtp": [
+                "user22@example.org"
+            ],
+            "time_real": 0.47,
+            "unix_time": 1760780280,
+            "action": "greylist",
+            "size": 3200,
+            "user": "unknown",
+            "ip": "198.51.100.23",
+            "sender_smtp": "sender22@example.net",
+            "sender_mime": "Sender 22 <sender22@example.net>",
+            "subject": "Message 22",
+            "required_score": 15,
+            "score": 9.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg23@example.net>",
+            "time_virtual": 0.035,
+            "rcpt_mime": [
+                "user23@example.org"
+            ],
+            "rcpt_smtp": [
+                "user23@example.org"
+            ],
+            "time_real": 0.48,
+            "unix_time": 1760780220,
+            "action": "no action",
+            "size": 3300,
+            "user": "unknown",
+            "ip": "198.51.100.24",
+            "sender_smtp": "sender23@example.net",
+            "sender_mime": "Sender 23 <sender23@example.net>",
+            "subject": "Message 23",
+            "required_score": 15,
+            "score": 10.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg24@example.net>",
+            "time_virtual": 0.036000000000000004,
+            "rcpt_mime": [
+                "user24@example.org"
+            ],
+            "rcpt_smtp": [
+                "user24@example.org"
+            ],
+            "time_real": 0.49,
+            "unix_time": 1760780160,
+            "action": "soft reject",
+            "size": 3400,
+            "user": "unknown",
+            "ip": "198.51.100.25",
+            "sender_smtp": "sender24@example.net",
+            "sender_mime": "Sender 24 <sender24@example.net>",
+            "subject": "Message 24",
+            "required_score": 15,
+            "score": 10.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg25@example.net>",
+            "time_virtual": 0.037000000000000005,
+            "rcpt_mime": [
+                "user25@example.org"
+            ],
+            "rcpt_smtp": [
+                "user25@example.org"
+            ],
+            "time_real": 0.5,
+            "unix_time": 1760780100,
+            "action": "no action",
+            "size": 3500,
+            "user": "unknown",
+            "ip": "198.51.100.26",
+            "sender_smtp": "sender25@example.net",
+            "sender_mime": "Sender 25 <sender25@example.net>",
+            "subject": "Message 25",
+            "required_score": 15,
+            "score": 11.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg26@example.net>",
+            "time_virtual": 0.038,
+            "rcpt_mime": [
+                "user26@example.org"
+            ],
+            "rcpt_smtp": [
+                "user26@example.org"
+            ],
+            "time_real": 0.51,
+            "unix_time": 1760780040,
+            "action": "add header",
+            "size": 3600,
+            "user": "unknown",
+            "ip": "198.51.100.27",
+            "sender_smtp": "sender26@example.net",
+            "sender_mime": "Sender 26 <sender26@example.net>",
+            "subject": "Message 26",
+            "required_score": 15,
+            "score": 11.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg27@example.net>",
+            "time_virtual": 0.039,
+            "rcpt_mime": [
+                "user27@example.org"
+            ],
+            "rcpt_smtp": [
+                "user27@example.org"
+            ],
+            "time_real": 0.52,
+            "unix_time": 1760779980,
+            "action": "greylist",
+            "size": 3700,
+            "user": "unknown",
+            "ip": "198.51.100.28",
+            "sender_smtp": "sender27@example.net",
+            "sender_mime": "Sender 27 <sender27@example.net>",
+            "subject": "Message 27",
+            "required_score": 15,
+            "score": 12.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg28@example.net>",
+            "time_virtual": 0.04,
+            "rcpt_mime": [
+                "user28@example.org"
+            ],
+            "rcpt_smtp": [
+                "user28@example.org"
+            ],
+            "time_real": 0.53,
+            "unix_time": 1760779920,
+            "action": "no action",
+            "size": 3800,
+            "user": "unknown",
+            "ip": "198.51.100.29",
+            "sender_smtp": "sender28@example.net",
+            "sender_mime": "Sender 28 <sender28@example.net>",
+            "subject": "Message 28",
+            "required_score": 15,
+            "score": 12.5,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        },
+        {
+            "message-id": "<msg29@example.net>",
+            "time_virtual": 0.041,
+            "rcpt_mime": [
+                "user29@example.org"
+            ],
+            "rcpt_smtp": [
+                "user29@example.org"
+            ],
+            "time_real": 0.54,
+            "unix_time": 1760779860,
+            "action": "soft reject",
+            "size": 3900,
+            "user": "unknown",
+            "ip": "198.51.100.30",
+            "sender_smtp": "sender29@example.net",
+            "sender_mime": "Sender 29 <sender29@example.net>",
+            "subject": "Message 29",
+            "required_score": 15,
+            "score": 13.0,
+            "thresholds": {
+                "reject": 15,
+                "add header": 6,
+                "greylist": 4
+            },
+            "symbols": {
+                "ARC_NA": {
+                    "name": "ARC_NA",
+                    "score": 0,
+                    "metric_score": 0
+                },
+                "MIME_GOOD": {
+                    "name": "MIME_GOOD",
+                    "score": -0.1,
+                    "metric_score": -0.1,
+                    "options": [
+                        "text/plain"
+                    ]
+                }
+            },
+            "is_skipped": false
+        }
+    ]
+}

@@ -1,0 +1,19 @@
+description: |
+  Problem of type `/api/v2/problems/permission-flag-required` (status `403`): the operation needs a
+  permission flag that the caller lacks (`docs/conventions.md`, "Permission refusals"). For
+  mailboxes this is a bulk `allowProtocol` or `disallowProtocol` by a domain administrator without
+  the `protocolAccess` flag; the whole request is refused and nothing changed.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [flag]
+    properties:
+      flag:
+        type: string
+        description: Name of the missing flag, as in `PermissionFlags`.
+        examples: [protocolAccess]
+      requiredFlags:
+        type: array
+        description: The same flag as a one-element list, as `docs/problems.md` documents the type.
+        items:
+          type: string

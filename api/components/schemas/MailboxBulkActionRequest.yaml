@@ -8,9 +8,10 @@ description: |
   At most the server's bulk limit of targets (`MailboxCapabilities.bulkLimit`, 100 by default) may
   be sent (`tooMany` on `targets`).
 
-  The whole request is refused (`403`) when the caller may never apply the action: a mailbox user,
-  a read-only key, or a domain administrator without the `protocolAccess` flag for
-  `allowProtocol` and `disallowProtocol`.
+  The whole request is refused (`403`) when the caller may never apply the action: a mailbox user
+  (`forbidden`), a read-only key (`insufficient-key-scope`), or a domain administrator without the
+  `protocolAccess` flag for `allowProtocol` and `disallowProtocol` (`permission-flag-required`
+  with `flag: protocolAccess`).
 required: [action, targets]
 properties:
   action:

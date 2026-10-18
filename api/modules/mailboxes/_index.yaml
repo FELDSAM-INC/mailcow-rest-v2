@@ -1,11 +1,7 @@
 # Paths of the mailboxes module (feature 003): mailbox list, creation, inspection, change, deletion,
-# rename, bulk actions, capabilities, tags in use and the deletion preview.
+# rename, bulk actions, the deletion preview, the mailbox capabilities and the tags in use.
 /mailboxes:
   $ref: './mailboxes.yaml'
-/mailboxes/capabilities:
-  $ref: './mailbox-capabilities.yaml'
-/mailboxes/tags:
-  $ref: './mailbox-tags.yaml'
 /mailboxes/bulk-actions:
   $ref: './mailbox-bulk-actions.yaml'
 /mailboxes/{mailbox}:
@@ -14,3 +10,7 @@
   $ref: './mailbox-deletion-preview.yaml'
 /mailboxes/{mailbox}/rename:
   $ref: './mailbox-rename.yaml'
+/capabilities/mailboxes:
+  $ref: './mailbox-capabilities.yaml'
+/mailbox-tags:
+  $ref: './mailbox-tags.yaml'

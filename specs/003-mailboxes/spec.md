@@ -243,9 +243,10 @@ mailbox. Repeat at each domain limit.
     administrator's client reads the mailbox capabilities, **Then** it learns that the provider type
     is LDAP, that the groupware is disabled, and the bulk, tag and custom-attribute limits in force.
     **Given** no identity provider, **Then** the provider type is "none".
-13. **Given** a creation with an initial rate limit while the shared store is unreachable, **When**
-    the mailbox is created, **Then** it exists, and the response reports the rate-limit step as
-    failed.
+13. **Given** a creation with an initial rate limit while the shared store is unreachable, and a
+    pre-hashed password or an external authentication source (which need no policy check),
+    **When** the mailbox is created, **Then** it exists, and the response reports the rate-limit
+    step as failed.
 
 ---
 
@@ -1262,8 +1263,10 @@ other default change, the DKIM selector of the Default domain template, belongs 
   shown read-only here and changed there. Their mass actions arrive with those features.
 - When upstream adds a user permission flag, the contract gains it in a later release. Until then it
   keeps its database default.
-- The tagging limit, the bulk limit of 100, the page size limits and the custom-attribute limits are
-  API server settings with these defaults. Clients read the values in force from FR-064.
+- The tagging limit, the bulk limit of 100 and the custom-attribute limits are API server settings
+  with these defaults; a setting can lower the bulk and custom-attribute limits but not raise them.
+  The page sizes (25 by default, at most 1,000) are fixed for every list by `docs/conventions.md`.
+  Clients read the values in force from FR-064.
 - There is no breached-password check. Legacy's check runs in the browser against a third-party
   service. The new web app makes no third-party calls, and the API does not replace the check
   (orchestrator decision).

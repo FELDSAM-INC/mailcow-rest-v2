@@ -360,8 +360,6 @@ paths:
     $ref: './modules/aliases/_index.yaml#/~1capabilities~1aliases'
   /aliases/bulk-actions:
     $ref: './modules/aliases/_index.yaml#/~1aliases~1bulk-actions'
-  /aliases/alias-domain-copies:
-    $ref: './modules/aliases/_index.yaml#/~1aliases~1alias-domain-copies'
   /aliases/{aliasId}:
     $ref: './modules/aliases/_index.yaml#/~1aliases~1{aliasId}'
   /aliases/{aliasId}/alias-domain-copies:
@@ -522,14 +520,8 @@ paths:
     $ref: './modules/rspamd-stats/_index.yaml#/~1rspamd~1statistics'
   /mail-queue/messages:
     $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages'
-  /mail-queue/messages/delivery:
-    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages~1delivery'
-  /mail-queue/messages/hold:
-    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages~1hold'
-  /mail-queue/messages/release:
-    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages~1release'
-  /mail-queue/messages/deletion:
-    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages~1deletion'
+  /mail-queue/messages/bulk-actions:
+    $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages~1bulk-actions'
   /mail-queue/messages/{queueId}/content:
     $ref: './modules/mail-queue/_index.yaml#/~1mail-queue~1messages~1{queueId}~1content'
   /mail-queue/flush:
@@ -744,8 +736,8 @@ paths:
     $ref: './modules/self-service/_index.yaml#/~1password-resets~1webauthn-challenge'
   /password-resets/completion:
     $ref: './modules/self-service/_index.yaml#/~1password-resets~1completion'
-  /mailboxes/tls-enforcement:
-    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1tls-enforcement'
+  /mailboxes/mail-settings/bulk-actions:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1mail-settings~1bulk-actions'
   /mailboxes/{mailbox}/app-passwords:
     $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1app-passwords'
   /mailboxes/{mailbox}/app-passwords/{appPasswordId}:

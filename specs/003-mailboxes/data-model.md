@@ -134,7 +134,7 @@ A key a stored template lacks is reported, and applied at creation, with the bui
 `rl_value: ""` and `rl_frame: "s"` for no rate limit.
 
 **Validation**: `name` "trimmed, 1 to 255 characters, unique among mailbox templates compared with
-`LOWER()`" (`required`, `tooLong`, `409 mailbox-template-name-exists`); values as for mailboxes.
+`LOWER()`" (checked under the template-name lock below) (`required`, `tooLong`, `409 mailbox-template-name-exists`); values as for mailboxes.
 Renaming or deleting the row named `Default` → `409 mailbox-template-protected`.
 
 ### `quota2` and `quota2replica` — written at creation, rename and deletion
@@ -240,11 +240,16 @@ when `SKIP_SOGO=y`.
 | `RCPT_WANTS_SUBFOLDER_TAG` | hash | `<address>` → `1` | representation | creation, rename, deletion |
 | `MC_CHANNEL` | pub/sub channel | `{"api_call":"container_post","container_name","post_action":"exec","request"}` | — | published in cluster mode (R16) |
 
-### API-owned keys (connection `restv2`, prefix `restv2:`)
+### API-owned keys
 
-| Key | Value | TTL | Owner |
-|---|---|---|---|
-| `restv2:lock:mailbox:<address>` | Laravel atomic lock owner token | `4 × DOCKER_TIMEOUT` | `MailboxDeleter`, `MailboxRenamer` (old and new address) |
+None. Per-address serialisation uses MariaDB named locks instead (below).
+
+## MariaDB named locks
+
+| Name | Held by | Around |
+|---|---|---|
+| `restv2_address_<first 40 hex of sha1(normalised address)>` (`GET_LOCK(name, 5)`) | `MailboxCreator` (new address), `MailboxDeleter` (address), `MailboxRenamer` (old and new address) | the availability check and the insert (creation), the whole deletion, the whole rename step sequence; released in `finally`. Features 004 and 005 take the same name before creating an alias or a temporary alias |
+| `restv2_mailbox_template_<first 40 hex of sha1(lower(name))>` | `MailboxTemplateService` | the case-insensitive name check and the insert or rename |
 
 ---
 

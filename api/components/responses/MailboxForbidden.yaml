@@ -2,9 +2,9 @@ description: |
   The caller is authenticated but may not perform this request. Possible types:
   - `/api/v2/problems/attribute-not-permitted`: a domain administrator would choose settings their
     permission flags do not allow (extensions `attributes`, `requiredFlags`). Nothing changed.
-  - `/api/v2/problems/forbidden`: the caller's role may never use the operation (a mailbox user, or
-    a domain administrator writing templates), or, for a bulk action, a domain administrator
-    without the `protocolAccess` flag toggling a protocol.
+  - `/api/v2/problems/permission-flag-required`: a bulk protocol action by a domain administrator
+    without the `protocolAccess` flag (extension `flag`). Nothing changed.
+  - `/api/v2/problems/forbidden`: the caller's role may never use the operation (a mailbox user).
   - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request.
   - `/api/v2/problems/csrf-token-mismatch`, `/api/v2/problems/pending-action-required`,
     `/api/v2/problems/api-key-source-not-allowed`: see `Forbidden`.
@@ -13,6 +13,7 @@ content:
     schema:
       anyOf:
         - $ref: '../schemas/MailboxAttributeNotPermittedProblem.yaml'
+        - $ref: '../schemas/MailboxPermissionFlagRequiredProblem.yaml'
         - $ref: '../schemas/PendingActionProblem.yaml'
         - $ref: '../schemas/Problem.yaml'
     examples:

@@ -122,10 +122,12 @@ properties:
   customAttributes:
     $ref: './MailboxCustomAttributes.yaml'
   recoveryEmail:
-    description: Password recovery address set by an administrator (`attributes.recovery_email`). Only for the `mailcow` authentication source.
+    description: |
+      Password recovery address set by an administrator (`attributes.recovery_email`). Only for the
+      `mailcow` authentication source. Values written through this API are valid addresses; legacy
+      mailcow does not validate them, so a stored value is returned as is.
     oneOf:
       - type: string
-        format: email
         maxLength: 255
       - type: 'null'
   passwordChangedAt:

@@ -27,10 +27,12 @@ only in display texts (spec, parity section).
     Feature 004 already uses `/mailboxes/{mailbox}/sender-settings`, so the path and parameter
     name agree.
   - Non-CRUD actions are sub-resources: `POST /mailboxes/{mailbox}/rename`,
-    `GET /mailboxes/{mailbox}/deletion-preview`, `POST /mailboxes/bulk-actions`. Reads that are not
-    one mailbox use literal segments before the template (`/mailboxes/capabilities`,
-    `/mailboxes/tags`). The address pattern (`^[^@/\s]+@[^@/\s]+$`) can never equal them, and
-    routes register literal paths first (001 R8).
+    `GET /mailboxes/{mailbox}/deletion-preview`, `POST /mailboxes/bulk-actions` (the address
+    pattern `^[^@/\s]+@[^@/\s]+$` can never equal `bulk-actions`, and routes register literal
+    paths first, 001 R8).
+  - The capabilities read is `GET /capabilities/mailboxes` (operation `getMailboxCapabilities`)
+    and the tags in use are `GET /mailbox-tags`, both top-level as `docs/conventions.md`
+    ("Capabilities, history and refusals") requires for every feature.
   - Templates are `/mailbox-templates/{mailboxTemplateId}` (the integer `templates.id`).
   - The password policy is its own module, `api/modules/password-policy/`, holding only `GET`.
     Feature 013 adds its change operation to the same path file, so the read and the change share
@@ -202,9 +204,12 @@ only in display texts (spec, parity section).
     calling `MailboxCreator` against a domain with room for 10.
 - **Rationale**: FR-023 and SC-006 demand that the limits hold for concurrent requests; legacy
   checks without a lock. The domain row lock also serialises with 002's domain edits.
-- **Alternatives considered**: `GET_LOCK()` named locks were rejected: the row lock exists already
-  and is released with the transaction. Optimistic retry was rejected: it can still exceed the
-  limit between check and insert.
+  - Address uniqueness across `mailbox`, `alias` and `spamalias` is enforced by upstream only in
+    code, so the availability check and the insert run under the MariaDB named lock of R7, as
+    `docs/conventions.md` requires. No index is added to an upstream table.
+- **Alternatives considered**: a `GET_LOCK()` for the domain limits was rejected: the domain row
+  lock already serialises them and is released with the transaction. Optimistic retry was
+  rejected: it can still exceed the limit between check and insert.
 
 ### R7. Address normalisation and availability
 
@@ -217,6 +222,16 @@ only in display texts (spec, parity section).
   - `AddressAvailability` checks, in this order, `mailbox.username` (holder `mailbox`, or
     `resource` when `kind <> ''`), `alias.address` (`alias`) and `spamalias.address`
     (`temporaryAlias`), and answers `409 address-in-use` with `address` and `holder`.
+  - **Address lock**: `App\Services\Mailboxes\AddressLock`, on a generic
+    `App\Support\Database\NamedLock` helper (`GET_LOCK`/`RELEASE_LOCK`; created here as the first
+    implemented user, reused by 005 and 009), takes the MariaDB named lock
+    `'restv2_address_' . substr(sha1(<normalised address>), 0, 40)` with `SELECT GET_LOCK(name, 5)`
+    (0 → unexpected failure, `500`) before the availability check and releases it with
+    `RELEASE_LOCK` in a `finally` after the commit (008's pattern). Creation takes it for the new
+    address; deletion for the address; rename for the old and the new address for the whole step
+    sequence. The same lock name serves features 004 and 005 when they create aliases and
+    temporary aliases, so two features can never hand out one address twice. A named lock is
+    bound to the request's database connection and is released if the process dies.
   - The creation domain must exist in `domain` and be in the caller's scope (else `notFound` on
     `domain`); a name found in `alias_domain` gives `notEligible` with `kind: aliasDomain`.
     Inactive and backup-MX domains are accepted.
@@ -234,7 +249,9 @@ only in display texts (spec, parity section).
   `sogoAccess`; `rateLimit` (creation) → `ratelimit`; `userPermissions.{syncjobs, quarantine,
   appPasswds, pushover, spamPolicy}` → the flag of the same name. All refused members are
   collected into one `403 attribute-not-permitted` with `attributes` (paths) and `requiredFlags`
-  (path → flag). Bulk protocol actions need `protocolAccess` as a whole (`403 forbidden`).
+  (path → flag). Bulk protocol actions need `protocolAccess` as a whole (`403 permission-flag-required` with
+  `flag: protocolAccess`, `docs/conventions.md` "Permission refusals"); a role that may never use
+  an operation gets `403 forbidden`.
   - Order of checks, as 002 D11: role (`403 forbidden` before any lookup), scope (`404`), shape
     (`422`), version under the row lock (`412`), permissions (`403 attribute-not-permitted`),
     read-only members (`422 immutable`), business rules (`422`, all violations together), state
@@ -312,6 +329,9 @@ only in display texts (spec, parity section).
   `user_acl` columns, and the tags sorted by `mb_strtolower`. It excludes `modified`, usage,
   last logins and Redis values (read-only here, owned by 005 and 006). Templates: `id`,
   `template`, decoded `attributes`. The password policy: R4.
+- **Secrets**: the inputs never include `mailbox.password` or any other stored secret, so a
+  plain SHA-256 tag is allowed (`docs/conventions.md` requires an HMAC only when a secret is an
+  input).
 - **Rationale**: Conventions: tags cover stored settings, never usage. A change made by the
   legacy UI to any of these values changes the tag (FR-038, SC-005). `attributes` changes on every
   password set (`passwd_update`), so a password reset elsewhere also invalidates stale clients.
@@ -397,9 +417,8 @@ only in display texts (spec, parity section).
 ### R15. Deletion
 
 - **Decision**: `MailboxDeleter`, with `MailboxDeletionPlanner` shared with the preview:
-  1. Resolve in scope (`404`), lock `restv2:lock:mailbox:<address>` (Laravel atomic cache lock on
-     the `restv2` store, TTL `4 × DOCKER_TIMEOUT`), check `If-Match` against a fresh read (`412`),
-     and `SharedStore::ping()` (`503`, `sharedStore`).
+  1. Resolve in scope (`404`), take the address lock of R7, check `If-Match` against a fresh read
+     (`412`), and `SharedStore::ping()` (`503`, `sharedStore`).
   2. Mail store first (FR-040): `MailStoreCommands::cleanupMaildir(domain, localPart)` →
      `DockerApiClient::exec('dovecot-mailcow', {cmd: maildir, task: cleanup, maildir:
      "<domain>/<local_part>"})`. `failed` or unreachable → `503 temporary-failure`
@@ -466,8 +485,8 @@ only in display texts (spec, parity section).
 ### R17. Rename as a compensated sequence of steps
 
 - **Decision**: `App\Services\Mailboxes\MailboxRenamer`.
-  - **Preflight**, nothing changed yet: role, scope (`404`), shape; atomic locks on the old and the
-    new address (`restv2:lock:mailbox:*`); `If-Match`; status 1 or 2 (else
+  - **Preflight**, nothing changed yet: role, scope (`404`), shape; the address locks of R7 on the
+    old and the new address, held until the audit record is written; `If-Match`; status 1 or 2 (else
     `409 mailbox-not-renamable`); normalised new local part valid and different, also ignoring
     case (`unchanged`); new address free (`address-in-use`); with `keepOldAddressAsAlias`, room
     for one alias (002's alias count: aliases of the domain and its alias domains whose address is
@@ -541,7 +560,7 @@ only in display texts (spec, parity section).
 
 - **Decision**: `App\Services\Mailboxes\MailboxBulkActions`, as 002 D20: the request is refused as
   a whole only for the role, the key scope, a domain administrator without `protocolAccess` for a
-  protocol action (`403 forbidden`) and for more targets than the bulk limit (`422 tooMany`).
+  protocol action (`403 permission-flag-required`, `flag: protocolAccess`) and for more targets than the bulk limit (`422 tooMany`).
   Targets are normalised (R7) and deduplicated in request order (the first spelling is the result
   `id`); an address that does not normalise gives `notFound`. Each target runs `MailboxUpdater`
   (`status` or one `protocolAccess` member) or `MailboxDeleter` with its own transaction, version
@@ -549,6 +568,9 @@ only in display texts (spec, parity section).
   mapping: success → `done` (with the new `version` unless deleted), `404` → `notFound`, `412` →
   `outdated`, `403`/`409`/`422` → `refused`, `503`, `504` and exceptions → `failed`, each with its
   problem. The memcached flush runs once at the end if anything changed.
+  - The per-target loop (deduplication, version check, outcome mapping, summary) is extracted from
+    002's `DomainBulkActions` into `App\Support\Bulk\BulkActionRunner` and `BulkOutcome` on its
+    second use (constitution VIII); 002's class then uses it, and 004 to 013 reuse it.
 - **Rationale**: FR-054, FR-055, FR-067 and the conventions.
 
 ### R20. Tags
@@ -578,9 +600,26 @@ only in display texts (spec, parity section).
   (creation, without the password), `passwordSet`, `preHashed`, `creationReport`,
   `mailStoreCleanup`, `removed` (counts), `previousAddress`, `newAddress`,
   `keepOldAddressAsAlias`, `steps`, `bulkRequestId`, `bulkAction`, `problemType`, `errors`.
-  Refusals after scope resolution are audited with outcome `failure` and 002's failure reasons
-  (`attributeNotPermitted`, `versionOutdated`, `validationFailed`, `conflict`,
-  `temporaryFailure`) or the two this feature adds (`outcomeUnknown`, `partiallyCompleted`).
+  - **Refusals**: every state-changing route (`createMailbox`, `updateMailbox`, `deleteMailbox`,
+    `renameMailbox`, `applyMailboxBulkAction` and the three template writes) declares the route
+    default `restv2.audit` (`['event' => …, 'target' => 'mailbox' | 'mailboxTemplate']`; the bulk
+    route uses `'event' => 'fromBulkAction'`), so that 008's `App\Services\Audit\RefusalAuditor`,
+    or the equivalent hook of the first implemented feature, writes one failure record for every
+    refusal by an authenticated caller: read-only keys, restricted sessions, missing roles and
+    flags, out-of-scope and unknown objects (`404`), outdated versions, validation failures,
+    conflicts and temporary failures. CSRF failures and `401`s are not recorded
+    (`docs/conventions.md`). `MailboxAuditTargetResolver` supplies the target: for
+    `{mailbox}` routes the normalised address as sent (looked up without scope; the audit log is
+    for administrators only), for a creation `localPart@domain` as sent (normalised when possible,
+    truncated to 255), for template routes the id and name, for a whole-request bulk refusal a
+    `null` target with `details.itemIds`. Failure reasons are 002's and 008's shared values
+    (`attributeNotPermitted`, `versionOutdated`, `validationFailed`, `conflict`,
+    `temporaryFailure`, `permissionDenied`, `notFound`) and the two this feature appends to the
+    shared `AuditFailureReason` (`outcomeUnknown`, `partiallyCompleted`). Refusals raised inside a
+    rename or a deletion after the preflight are recorded by those services, not twice.
+    `RefusalAuditor` handles `4xx` problems only; the services record their own `5xx` outcomes
+    (`temporaryFailure`, `outcomeUnknown`, `partiallyCompleted`, and a database failure after the
+    mail move) in their own transaction.
   `AuditLogger::completeFollowUps()` accepts the key `creationReport` for `mailboxCreation`.
   Reads, including the preview, are not audited.
 - **Rationale**: FR-056, SC-010 and 002's audit conventions.

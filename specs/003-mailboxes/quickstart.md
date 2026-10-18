@@ -47,7 +47,7 @@ T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session -d '{"username":"admin","password":"Passw0rd!dev"}' >/dev/null
 
 # Capabilities and password policy (US2 AS-11, AS-12)
-curl -s $C $B/mailboxes/capabilities | jq '.data | {identityProviderType, authSources, bulkLimit, taggingLimit}'
+curl -s $C $B/capabilities/mailboxes | jq '.data | {identityProviderType, authSources, bulkLimit, taggingLimit}'
 curl -s $C -D - $B/password-policy | grep -i etag; curl -s $C $B/password-policy | jq .data
 
 # Create with normalisation, from a template, and refused cases (US2)
@@ -65,7 +65,7 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailboxes \
 # List, search, sort, filter (US1)
 curl -s $C "$B/mailboxes?q=ANNA&sort=percentUsed&order=desc" | jq '{total: .meta.total, first: .data[0].address}'
 curl -s $C "$B/mailboxes?tag=Sales&status=active&domain=example.org" | jq '.meta'
-curl -s $C "$B/mailboxes/tags?q=sal" | jq '.data'
+curl -s $C "$B/mailbox-tags?q=sal" | jq '.data'
 
 # Change with a version tag (US3); a stale tag gives 412
 ETAG=$(curl -s $C -D - -o /dev/null $B/mailboxes/anna.smith@example.org | awk -F': ' 'tolower($1)=="etag"{print $2}' | tr -d '\r')

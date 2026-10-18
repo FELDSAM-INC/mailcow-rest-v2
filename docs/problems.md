@@ -255,8 +255,9 @@ extension members.
 - **Client action**: Open or edit the existing job instead, or change the remote user or host.
 - **Related sync-job errors** (no type of their own): a job or target mailbox that does not exist
   or lies outside the caller's scope is `404` (`about:blank`). An outdated `If-Match` is `412`
-  (`about:blank`); in a bulk action the item is reported `outdated`. A caller without the
-  sync-jobs permission gets `forbidden`, and a read-only key `insufficient-key-scope`. Invalid input
+  (`about:blank`); in a bulk action the target is reported `outdated`. A caller without the
+  sync-jobs permission gets `permission-flag-required` with `flag: syncjobs`, and a read-only key
+  `insufficient-key-scope`. Invalid input
   is `validation-failed` with the rule codes `invalidFormat` (`format: hostName`), `invalidRegex`,
   `optionNotAllowed` (param `option`), `optionContainsSpace` (param `token`),
   `customParamsNotPermitted`, `notEligible` (param `kind`), `immutable`, `outOfRange` (params `min`
@@ -374,8 +375,9 @@ extension members.
 - **Related mailbox errors**: a mailbox outside the caller's scope, a resource and an unknown
   address are all `404` (`about:blank`). An outdated `If-Match` is `412` (`about:blank`); in a bulk
   action the item is reported `outdated`. A mailbox user gets `forbidden` for every mailbox
-  operation, and a domain administrator gets it for template writes and for protocol bulk actions
-  without the `protocolAccess` flag. A domain administrator choosing a setting their flags do not
+  operation, and a domain administrator gets it for template writes. A protocol bulk action by a
+  domain administrator without the `protocolAccess` flag gets `permission-flag-required` (`flag:
+  protocolAccess`). A domain administrator choosing a setting their flags do not
   allow gets `attribute-not-permitted`, which for mailboxes also carries `requiredFlags` (refused
   member path → `PermissionFlags` name). A shared store, mail store or webmail outage is
   `temporary-failure`, which for mailboxes also carries `dependency` (`sharedStore`, `mailStore` or
@@ -770,12 +772,14 @@ response header `Audit-Recorded: false`.
   - An item, mailbox, domain, alias domain, list entry or bucket that does not exist or lies outside
     the caller's scope is `404` (`about:blank`), and so is a resource addressed as a mailbox. An
     outdated `If-Match` is `412` (`about:blank`); in a bulk action the target is `outdated`.
-  - `permission-flag-required` (403, `requiredFlags`) is also used for mailbox users: `quarantine`
-    (item actions, whole-message download), `quarantineAttachments` (attachment downloads, whole
-    message download), `quarantineNotification`, `quarantineCategory`, `spamScore` and
-    `spamPolicy`; and for domain administrators: `quarantine`, `spamPolicy` and `ratelimit`. A role
-    that may never use an operation (a mailbox user and rate limits, a domain administrator and the
-    quarantine settings) gets `forbidden`.
+  - `permission-flag-required` (403, extension `flag`, the legacy column name) is also used for
+    mailbox users: `quarantine` (item actions, whole-message download), `quarantine_attachments`
+    (attachment downloads, whole-message download), `spam_score` and `spam_policy`; and for domain
+    administrators: `quarantine`, `spam_policy` and `ratelimit`. A mailbox user who would change a
+    notification setting without `quarantine_notification` or `quarantine_category` gets
+    `attribute-not-permitted` (`attributes`, `requiredFlags`). A role or key type that may never use
+    an operation (a mailbox user and rate limits, a domain administrator and the quarantine
+    settings) gets `forbidden`.
   - `temporary-failure` (503) carries, in feature 006, the extension members `dependency`
     (`sharedStore`, `spamFilter` or `mailServer`) and, for item actions, `step` (`delivery` or
     `learning`). A release whose learning fails after the delivery is not an error: the action
@@ -909,32 +913,15 @@ response header `Audit-Recorded: false`.
   (`about:blank`). An outdated `If-Match` is `412` (`about:blank`); in a bulk action the item is
   reported `outdated`. An address that is taken is `address-in-use` (extension members `address`
   and `holder`). A domain administrator creating an alias domain without `aliasDomains` gets
-  `permission-flag-required` (`requiredFlags: [aliasDomains]`); giving an initial rate limit
-  without `ratelimit`, or changing external sender addresses without `extendSenderAcl`, gets
-  `attribute-not-permitted` with `attributes` and the `requiredFlags` map. When mailcow's shared
+  `permission-flag-required` (`flag: aliasDomains`); adding external alias destinations without
+  `aliasExternalGoto`, giving an initial rate limit without `ratelimit`, or changing external
+  sender addresses without `extendSenderAcl` gets `attribute-not-permitted` with `attributes` and
+  the `requiredFlags` map (field → flag). External destinations that the server disables for every
+  role (`ALIAS_DISABLE_EXTERNAL_DOMAINS`) are `validation-failed` with `notEligible`
+  (`kind: externalDestination`). Only destinations that a request adds are checked. When mailcow's shared
   store is down, alias domain creation, deletion and reads answer `temporary-failure`
   (`dependency: sharedStore`). Invalid input is `validation-failed`; the rule codes and formats of
   feature 004 are listed in `ValidationRuleCode`.
-
-## destination-not-permitted
-
-- **Type**: `/api/v2/problems/destination-not-permitted`
-- **Status**: 403
-- **Meaning**: Feature 004. The request adds external destinations to an alias: destinations whose
-  domain is neither an active domain nor an active alias domain of this server. Either the server
-  disables external destinations for every role, administrators included (the legacy setting
-  `ALIAS_DISABLE_EXTERNAL_DOMAINS`), or the caller is a domain administrator without the
-  `aliasExternalGoto` permission. Only destinations that the request adds are checked;
-  destinations already on the alias are kept. The whole request is refused, every refused
-  destination is named, and nothing changed. It is reported after all field errors, so a request
-  that gets it has no other invalid field.
-- **Extension members**: `destinations`, every refused destination as `{field, address}` with its
-  path in the request body (`destinations.2`); `reason`, `serverSetting` or `missingPermission`;
-  `permission`, `aliasExternalGoto` for `missingPermission`, else `null`.
-- **Client action**: Mark the named destinations. For `missingPermission`, explain that an
-  administrator must grant the permission or add the destination; for `serverSetting`, that the
-  server allows only destinations on this server (`GET /api/v2/capabilities/aliases` reports
-  `externalDestinationsDisabled`).
 
 ## alias-domain-already-exists
 
@@ -975,20 +962,6 @@ response header `Audit-Recorded: false`.
   this API. Feature 005.
 - **Client action**: Hide these functions for the account (the self-service capabilities report
   `passwordChangeAvailable: false`) and point the user to the identity provider.
-
-## permission-flag-missing
-
-- **Type**: `/api/v2/problems/permission-flag-missing`
-- **Status**: 403
-- **Meaning**: The change needs a permission flag the caller lacks: a mailbox user's own flag, or
-  for app passwords, push notifications and Sieve filters the domain administrator's own flag. The
-  whole request was refused and nothing changed. Values sent with their current value never need
-  the flag, and reading never needs it. Feature 005.
-- **Extension members**: `flag`, the missing flag as named in `PermissionFlags` (for example
-  `appPasswds`, `spamAlias`, `filters`, `pushover`, `delimiterAction`, `tlsPolicy`, `easReset`,
-  `sogoProfileReset`, `pwReset`).
-- **Client action**: Make the related controls read-only; explain that an administrator grants the
-  permission.
 
 ## password-reset-unavailable
 
@@ -1067,6 +1040,12 @@ response header `Audit-Recorded: false`.
 
 ## Feature 005 use of shared types
 
+- `permission-flag-required` refuses a self-service change that needs a flag the caller lacks: a
+  mailbox user's own `user_acl` flag, or for app passwords, push notifications and Sieve filters the
+  domain administrator's own `da_acl` flag. It carries `flag` (for example `appPasswds`,
+  `spamAlias`, `filters`, `pushover`, `delimiterAction`, `tlsPolicy`, `easReset`,
+  `sogoProfileReset`, `pwReset`) and `requiredFlags` with the same single flag. Values sent with
+  their current value never need the flag, and reading never needs it.
 - `temporary-failure` carries the extension `dependency` (`sharedStore`, `mailStore`, `pushover` or
   `addressGeneration`) in the self-service operations.
 - `second-factor-required` (status 401) is also the answer of `POST /api/v2/password-resets/completion`

@@ -54,7 +54,8 @@ written only through `app/Services/Mailboxes/` and the 002 services it reuses. N
 table and no migration: the feature uses 001's `restv2_audit_events` (with 002's target index) and
 `restv2_preferences`. mailcow's Redis: `PASSWD_POLICY` (read), `RL_VALUE`,
 `RCPT_WANTS_SUBJECT_TAG`, `RCPT_WANTS_SUBFOLDER_TAG` (read and written), `MC_CHANNEL` (published
-in cluster mode), and the API-owned lock keys `restv2:lock:mailbox:*`. See
+in cluster mode). Address uniqueness and per-mailbox operations are serialised with MariaDB named
+locks (`GET_LOCK('restv2_address_<sha1>')`), as `docs/conventions.md` requires. See
 [data-model.md](./data-model.md).
 
 **Testing**: PHPUnit 12 feature and unit tests, written first, on MariaDB with
@@ -96,14 +97,14 @@ stories, no new tables.
 | Principle | Gate | Status |
 |---|---|---|
 | I. Contract-first | The 16 operations are authored in `api/modules/{mailboxes,mailbox-templates,password-policy}/` with `Mailbox*` and `PasswordPolicy` components before any code. `npx @redocly/cli@2.64.1 lint` passes (only 001's four known warnings). Every test request and response is validated (001 R13). | PASS |
-| II. HTTP contract | Plural nouns, nested by ownership where real; the mailbox is addressed by its full address. Non-CRUD actions are sub-resources (`/rename`, `/deletion-preview`, `/bulk-actions`). PATCH takes JSON Merge Patch. `201` with `Location`, `200`, `204`. `{data, meta}` lists with `limit`/`offset`/`sort`/`order`/`q`. RFC 9457 problems. `ETag` and `If-Match` on mailboxes, templates and the policy read. Bytes for quotas, RFC 3339 UTC. Statuses `503` and `504` are justified under Complexity Tracking. | PASS (justified) |
+| II. HTTP contract | Plural nouns; the mailbox is addressed by its full address (flat path justified under Complexity Tracking). Non-CRUD actions are sub-resources (`/rename`, `/deletion-preview`, `/bulk-actions`). PATCH takes JSON Merge Patch. `201` with `Location`, `200`, `204`. `{data, meta}` lists with `limit`/`offset`/`sort`/`order`/`q`. RFC 9457 problems. `ETag` and `If-Match` on mailboxes, templates and the policy read. Bytes for quotas, RFC 3339 UTC. Statuses `503` and `504` are justified under Complexity Tracking. | PASS (justified) |
 | III. Upstream schema | No migration at all. Writes use the exact upstream columns of `init_db.inc.php` at `2026-09a` ([data-model](./data-model.md)). The rename's `SET FOREIGN_KEY_CHECKS = 0` is session-scoped, as legacy does, and alters no schema. | PASS |
 | IV. Parity | Legacy was read (research R2–R19) and every side effect is reproduced and asserted in tests. Deviations are those of the spec's parity table, completed with the plan-level notes below. | PASS |
 | V. Coexistence | Uses mailcow's dockerapi, memcached and Redis as legacy does. No other container is changed. | PASS |
 | VI. Security | Object-level authorisation for admin, domain admin, mailbox user, read-only and read-write keys of each owner role. Out-of-scope mailboxes answer `404`. Domain-admin flags are enforced at creation, change and in bulk actions. Every state change and refusal is audited with one record per object. Passwords are write-only and redacted. | PASS |
 | VII. Test-first | `tasks.md` puts tests before implementation in every phase. MariaDB with the real schema, real Redis; dockerapi and memcached faked with call assertions. | PASS |
 | VIII. Simplicity | No new package. 002's `DomainTagSet` is generalised to a shared tag set on its second use, and 002's groupware, container, rate-limit and shared-store classes are extended rather than duplicated. | PASS |
-| Cross-feature conventions | `404` for out-of-scope objects, `403` only for roles, flags and key scopes. Every bad entry named. Bulk actions per conventions (100, per-item outcome and version). Version tags over stored settings only, on every list entry; the policy tag equals 013's. Legacy PHP settings through 001's `MailcowConfig`. Creation follow-up steps after the atomic save, reported. Synchronous container calls with "outcome unknown" on timeout. Lists default to 25, at most 1,000, with `q`. | PASS |
+| Cross-feature conventions | `404` for out-of-scope objects, `403` only for roles, flags and key scopes. Every bad entry named. Bulk actions per conventions (100, per-item outcome and version). Version tags over stored settings only, on every list entry; the policy tag equals 013's, and no tag has a secret as input. Legacy PHP settings through 001's `MailcowConfig`. Capabilities at `/capabilities/mailboxes`, tags in use at `/mailbox-tags`, history through the generic audit target filters. Refusals by authenticated callers audited through the shared `RefusalAuditor`. Address uniqueness, enforced upstream only in code, guarded with `GET_LOCK()`. Creation follow-up steps after the atomic save, reported. Synchronous container calls with "outcome unknown" on timeout. Lists default to 25, at most 1,000, with `q`. | PASS |
 
 **Post-design re-check (after Phase 1)**: PASS. The decisions that touched gates:
 
@@ -137,8 +138,8 @@ deviation to be stated in the spec):
 |---|---|---|---|
 | GET `/mailboxes` | listMailboxes | admin or domain admin, session or key (ro ok) | US1, FR-001–FR-016 |
 | POST `/mailboxes` | createMailbox | admin or domain admin, session + CSRF or rw key | US2, FR-006, FR-018–FR-028 |
-| GET `/mailboxes/capabilities` | getMailboxCapabilities | admin or domain admin, ro ok | US2, FR-064 |
-| GET `/mailboxes/tags` | listMailboxTags | admin or domain admin, ro ok | US5, FR-066 |
+| GET `/capabilities/mailboxes` | getMailboxCapabilities | admin or domain admin, ro ok | US2, FR-064 |
+| GET `/mailbox-tags` | listMailboxTags | admin or domain admin, ro ok | US5, FR-066 |
 | POST `/mailboxes/bulk-actions` | applyMailboxBulkAction | admin or domain admin, rw | US7, FR-054, FR-055, FR-067 |
 | GET `/mailboxes/{mailbox}` | getMailbox | admin or domain admin, ro ok | US1, FR-017, FR-008–FR-011 |
 | PATCH `/mailboxes/{mailbox}` | updateMailbox | admin or domain admin, rw | US3, US5, FR-029–FR-037 |
@@ -157,8 +158,9 @@ contract by feature 002; this feature adds the target types `mailbox` and `mailb
 problem types are documented in [`docs/problems.md`](../../docs/problems.md): `address-in-use`,
 `mailbox-limit-reached`, `mailbox-not-renamable`, `mailbox-rename-incomplete`, `outcome-unknown`,
 `mailbox-template-name-exists` and `mailbox-template-protected` are new; `attribute-not-permitted`
-and `temporary-failure` (002) and `domain-alias-limit-reached` (004) are reused with additional
-extension members.
+and `temporary-failure` (002), `domain-alias-limit-reached` (004) and `permission-flag-required`
+(009, `docs/conventions.md` "Permission refusals") are reused, some with additional extension
+members.
 
 ## Dependencies on earlier features
 
@@ -177,7 +179,8 @@ Features are implemented one after another. 003 starts when 001 and 002 are merg
   `RESTV2_BULK_LIMIT`, `RESTV2_TAGGING_LIMIT` and `RESTV2_DOCKER_TIMEOUT` settings, and the fakes
   `FakeDockerApiClient` and `FakeMemcachedFlusher`.
 
-Pieces this feature adds for later features: `PasswordPolicyReader` (005, 007, 013),
+Pieces this feature adds for later features: `NamedLock` and `AddressLock` (004, 005, 009),
+`BulkActionRunner` (004 onwards), `PasswordPolicyReader` (005, 007, 013),
 `MailboxPasswordHasher` (005, 007, 012), `TaggedMailHandlingStore` (005), `SogoDirectory::refresh()`
 (004, 005), the mailbox data mover used by rename (005 adds its own API-owned per-mailbox data to
 it), and the shared `TagSet`.
@@ -211,9 +214,9 @@ api/
 ├── modules/mailbox-templates/{_index,mailbox-templates,mailbox-template}.yaml
 ├── modules/password-policy/{_index,password-policy}.yaml
 └── components/
-    ├── schemas/Mailbox*.yaml, PasswordPolicy.yaml # plus appended shared enumerations
-    ├── parameters/Mailbox{Address,Sort,TagSort,TemplateId,TemplateSort}.yaml
-    └── responses/Mailbox*.yaml, PasswordPolicyResponse.yaml
+    ├── schemas/, parameters/, responses/          # the exact list is in contracts/README.md (other
+    │                                              # features share the Mailbox prefix), plus the
+    │                                              # appended shared enumerations
 
 app/
 ├── Clients/DockerApi/{DockerApiClient,HttpDockerApiClient,DockerCallResult}.php   # 002; + broadcast, reachability, per-request circuit breaker
@@ -253,6 +256,8 @@ app/
 │   │   ├── MailboxPermissionGuard.php             # FR-006/FR-035 choices and requiredFlags
 │   │   ├── MailboxValidator.php                   # business rules, all violations collected
 │   │   ├── AddressAvailability.php                # mailbox, resource, alias, temporary alias
+│   │   ├── AddressLock.php                        # GET_LOCK('restv2_address_<sha1>'), shared with 004 and 005
+│   │   ├── MailboxAuditTargetResolver.php         # targets for the shared RefusalAuditor
 │   │   ├── MailboxCreator.php, MailboxCreationReport.php
 │   │   ├── MailboxUpdater.php
 │   │   ├── MailboxDeleter.php
@@ -268,11 +273,13 @@ app/
 │   ├── Passwords/{PasswordPolicyReader,EffectivePasswordPolicy,MailboxPasswordHasher,PasswordPolicyChecker}.php
 │   ├── Config/MailcowConfig.php                   # 001; + showLastLogin(), mailboxDefaultAttributes()
 │   └── Audit/AuditLogger.php                      # 001/002; + mailbox details whitelist
-└── Support/Tags/TagSet.php                        # generalised from 002's DomainTagSet
+├── Support/Tags/TagSet.php                        # generalised from 002's DomainTagSet
+├── Support/Database/NamedLock.php                 # GET_LOCK helper, reused by 005 and 009
+└── Support/Bulk/{BulkActionRunner,BulkOutcome}.php # extracted from 002's DomainBulkActions
 
 config/restv2.php                                  # + mailbox settings (research R22)
 resources/bin/export-mailcow-vars.php              # 001; + SHOW_LAST_LOGIN, MAILBOX_DEFAULT_ATTRIBUTES
-routes/api.php                                     # + the 16 routes, literal paths before {mailbox}
+routes/api.php                                     # + the 16 routes, /mailboxes/bulk-actions before {mailbox}
 deploy/nginx/site.restv2.custom                    # 001; fastcgi_read_timeout for long renames
 
 tests/
@@ -299,4 +306,5 @@ services. Password handling lives in `app/Services/Passwords/` because features 
 |---|---|---|
 | Status `503` (`temporary-failure`) and `504` (`outcome-unknown`), not in constitution II's list | FR-040, FR-048 and FR-058 require distinct, documented answers for "a mailcow service is down, nothing changed, retry" and "the container API did not answer, outcome unknown". RFC 9110 defines `503` with `Retry-After` and `504` for exactly these. Feature 001 already justified `503`; 002 uses it for the same type. | `500` cannot be told apart from a bug, so clients would neither retry a deletion safely nor warn about an unknown rename step. `409` would wrongly blame the request. |
 | The rename is a compensated sequence of steps instead of one transaction (constitution IV and VI expect atomic changes) | The maildir, the IMAP ACLs and SOGo's data live outside MariaDB, and Dovecot needs the renamed `mailbox` row before ACLs can be set for the new address. FR-048 requires "complete or leave as it was". | One transaction cannot cover dockerapi calls. Legacy's order without undo leaves users without mail or shared folders when a step fails. |
+| Mailboxes are addressed as `/mailboxes/{mailbox}` by full address, not nested as `/domains/{domain}/mailboxes` (constitution II's example) | The address already contains its domain and is unique server-wide; the list must span domains with a multi-value domain filter (FR-013); features 004, 005, 006, 007 and 009 address the same mailboxes as `/mailboxes/{mailbox}/…`, so one shape serves every feature. Ownership stays enforced: the domain of the address decides the scope (FR-001). | Nesting would repeat the domain in every path (`/domains/example.org/mailboxes/anna@example.org`) or split the address into two parameters, and a cross-domain list would need a second, un-nested path anyway. |
 | The rename's audit record is written after the last step, in its own transaction, instead of inside the change's transaction (001 R22) | The outcome (`done`, undone, incomplete) is only known after every step. A record written with the database step would claim success for a rename that is undone afterwards. If the final write fails, the steps are undone and the answer is `500`, so the rule "an unaudited change does not succeed" still holds. | Writing it inside the database step and completing it later (002's pending pattern) would need a mutable outcome, which the immutable audit model forbids. Two records would break SC-010 (exactly one per object). |

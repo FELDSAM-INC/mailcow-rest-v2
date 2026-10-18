@@ -29,3 +29,9 @@ surface. Never modify `source_code/`.
   keys use `restv2:`. Problem types are `/api/v2/problems/<name>`, documented in
   `docs/problems.md`.
 - Lint the contract with `npx --yes @redocly/cli@2.64.1 lint api/openapi.yaml`.
+- The compose project is `restv2`; nginx serves `http://127.0.0.1:18080/api/v2/` and MariaDB and
+  Redis publish no host ports. Every test request and response is validated against
+  `build/contract/openapi.json` (`tests/TestCase.php`); test-only routes go under `/api/v2/__testing/`.
+- `tests/feature-registry.json` lists the implemented features, their operations and problem types,
+  and `pendingOperations`. The coverage check and `RoutesMatchContractTest` use it: remove operations
+  from `pendingOperations` when they land, and add a feature when its implementation starts.

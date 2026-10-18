@@ -78,6 +78,15 @@ class StructuredLoggingTest extends TestCase
         $this->assertNull($line['extra']['principal']);
     }
 
+    public function test_forwarded_headers_do_not_change_the_client_address(): void
+    {
+        // nginx-mailcow passes the real address as REMOTE_ADDR; no X-Forwarded-* header is trusted (R23).
+        $this->getJson('/api/v2/__testing/log', ['X-Forwarded-For' => '203.0.113.7', 'X-Real-IP' => '203.0.113.8', 'Forwarded' => 'for=203.0.113.9'])
+            ->assertNoContent();
+
+        $this->assertSame('127.0.0.1', $this->probeLine()['extra']['client_ip']);
+    }
+
     public function test_secrets_are_removed_from_the_context(): void
     {
         $this->getJson('/api/v2/__testing/log')->assertNoContent();

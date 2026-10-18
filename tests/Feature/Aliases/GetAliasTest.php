@@ -34,6 +34,7 @@ class GetAliasTest extends TestCase
             'primaryDomainUnicode' => 'example.org',
             'destinationType' => 'addresses',
             'destinations' => ['anna@example.org', 'bob@example.org'],
+            'destinationsUnicode' => ['anna@example.org', 'bob@example.org'],
             'active' => true,
             'senderAllowed' => false,
             'groupwareVisible' => true,

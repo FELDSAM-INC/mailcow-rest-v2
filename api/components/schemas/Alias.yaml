@@ -14,6 +14,7 @@ required:
   - primaryDomainUnicode
   - destinationType
   - destinations
+  - destinationsUnicode
   - active
   - senderAllowed
   - groupwareVisible
@@ -73,6 +74,15 @@ properties:
       type: string
     examples:
       - [anna@example.org, bob@example.org]
+  destinationsUnicode:
+    type: array
+    description: |
+      `destinations` in the same order with each domain part in readable (Unicode) form (G13).
+      Entries without a domain part are shown as stored.
+    items:
+      type: string
+    examples:
+      - [anna@bücher.example]
   active:
     type: boolean
     description: Whether mail to the address is accepted.

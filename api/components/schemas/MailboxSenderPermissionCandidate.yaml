@@ -4,7 +4,7 @@ description: |
   domain in the caller's scope (`@domain`), `*` for administrators, or the address of an alias or
   mailbox in the caller's scope. The mailbox itself, the aliases that deliver to it, catch-all
   aliases and entries already granted are left out, as in the legacy selection list.
-required: [value, valueUnicode, type]
+required: [value, valueUnicode, type, kind]
 properties:
   value:
     type: string
@@ -14,3 +14,5 @@ properties:
   type:
     type: string
     enum: [address, domain, anyAddress]
+  kind:
+    $ref: './MailboxSenderPermissionKind.yaml'

@@ -532,14 +532,14 @@ legacy.
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T056 [P] [US5] Write `tests/Feature/SenderSettings/GetMailboxSenderSettingsTest.php`
+- [X] T056 [P] [US5] Write `tests/Feature/SenderSettings/GetMailboxSenderSettingsTest.php`
   (`getMailboxSenderSettings`): AS1 Anna receives `sales@` (sending allowed), `info@` (not allowed)
   and a catch-all, holds `@example.com`; the response lists her own address, her alias-domain
   addresses, the three aliases with `senderAllowed` and `catchAll`, the domain permission; a stale
   entry (domain deleted) is `stale`; AS3 for a domain administrator, `@other.example` and `*` are
   `changeable: false`; `senderCheckDisabled` follows `*`; `ETag` equals `etag`; a resource address,
   an alias address, an unknown or a foreign mailbox → `404`.
-- [ ] T057 [P] [US5] Write `tests/Feature/SenderSettings/UpdateMailboxSenderSettingsTest.php`
+- [X] T057 [P] [US5] Write `tests/Feature/SenderSettings/UpdateMailboxSenderSettingsTest.php`
   (`updateMailboxSenderSettings`):
   - AS2: administrator sends `["@example.org", "*"]` → only `*` stored, `senderCheckDisabled: true`;
   - AS3: a domain administrator sends `["info@example.org"]` on a mailbox holding `@other.example`
@@ -558,32 +558,32 @@ legacy.
   - an administrator saving without a stale entry removes it; duplicates stored once; only the sent
     list is replaced; `If-Match` mismatch → `412`; every invalid entry named in one `422`;
   - audit `mailboxSenderSettingsUpdate` with `changes` of both lists.
-- [ ] T058 [P] [US5] Write `tests/Feature/SenderSettings/ListSenderPermissionCandidatesTest.php`
+- [X] T058 [P] [US5] Write `tests/Feature/SenderSettings/ListSenderPermissionCandidatesTest.php`
   (`listSenderPermissionCandidates`, FR-056): `?mailbox=anna@example.org` gives administrators `*`
   first, then `@domain` for every domain and alias domain not held, then addresses of aliases and
   mailboxes; left out: the mailbox itself, aliases delivering to it, its alias-domain addresses,
   catch-all aliases and held entries; a domain administrator gets only their scope and no `*`;
   `type` filter, `q`, `sort`, paging, `meta.total`; a missing, foreign or resource `mailbox` →
   `422 notFound` on `mailbox`.
-- [ ] T059 [P] [US5] Write `tests/Feature/SenderSettings/SenderSettingsAuthorizationTest.php` for the
+- [X] T059 [P] [US5] Write `tests/Feature/SenderSettings/SenderSettingsAuthorizationTest.php` for the
   three operations as every role and key type (read-only key refused on `PATCH`, mailbox user `403`,
   foreign mailbox `404`), each refusal of the `PATCH` audited.
 
 ### Implementation for User Story 5
 
-- [ ] T060 [P] [US5] Complete `app/Services/SenderSettings/SenderSettingsReader.php` (implicit
+- [X] T060 [P] [US5] Complete `app/Services/SenderSettings/SenderSettingsReader.php` (implicit
   addresses, explicit entries with `changeable` and `stale`, external entries; mailbox lookup through
   003's `MailboxScope`) and create `app/Http/Resources/Api/V2/MailboxSenderSettingsResource.php`.
-- [ ] T061 [US5] Create `app/Services/SenderSettings/SenderSettingsUpdater.php` with the replacement
+- [X] T061 [US5] Create `app/Services/SenderSettings/SenderSettingsUpdater.php` with the replacement
   rules, statements and `SogoDirectory::refresh([mailbox])` of R14 / DM in one transaction with the
   audit record.
-- [ ] T062 [P] [US5] Create `app/Services/SenderSettings/PermissionCandidateQuery.php` (R15) and
+- [X] T062 [P] [US5] Create `app/Services/SenderSettings/PermissionCandidateQuery.php` (R15) and
   `app/Http/Resources/Api/V2/SenderPermissionCandidateResource.php`.
-- [ ] T063 [P] [US5] Create `app/Http/Requests/Api/V2/UpdateMailboxSenderSettingsRequest.php`,
+- [X] T063 [P] [US5] Create `app/Http/Requests/Api/V2/UpdateMailboxSenderSettingsRequest.php`,
   `ListSenderPermissionCandidatesRequest.php` (required `mailbox`), `app/Policies/MailboxSenderSettingsPolicy.php`,
   `app/Http/Controllers/Api/V2/MailboxSenderSettingsController.php` (`show`, `update`) and
   `SenderPermissionCandidateController.php` (`index`).
-- [ ] T064 [US5] Register `GET`/`PATCH /mailboxes/{mailbox}/sender-settings` (the `PATCH` with
+- [X] T064 [US5] Register `GET`/`PATCH /mailboxes/{mailbox}/sender-settings` (the `PATCH` with
   `restv2.audit` defaults and target `mailboxSenderSettings`) and `GET /sender-permission-candidates`
   in `routes/api.php`. Makes T056–T059 pass.
 
@@ -878,3 +878,15 @@ what exists map as listed.
   when its representation (which carries the rate limit) cannot be returned. Alias domain creation
   records `removedExternalSenderAddresses` in `values`. Ties of the alias domain and resource lists
   are broken by the name or address ascending, as 002 does for domains.
+- **T060–T063**: `MailboxSenderSettingsPolicy` is not a separate class: `AliasPolicy` gates the
+  sender settings like every operation of the feature, and 003's `MailboxScope` resolves the mailbox
+  (`404` for resources and other addresses). Implicit addresses leave out mailboxes' own rows, also
+  another mailbox's row that forwards to this one (FR-013), and list catch-all aliases (spec
+  deviation). An entry already stored is accepted as sent back, also a stale one or one outside a
+  domain administrator's scope. A stored `*` that a domain administrator cannot change keeps the set
+  at `*` alone, as legacy merges it. The version tag covers the stored values with their letter case.
+- **G12–G14** (`docs/api-gaps.md`) are fixed with FR-069–FR-071: `kind` on explicit permissions
+  (`null` when stale) and candidates, the Unicode forms `Alias.destinationsUnicode`,
+  `AliasCopyOutcome.addressUnicode` and `MailboxSenderSettings.externalSenderAddressesUnicode`, and
+  `kind: localDomain` in `MailboxSenderSettingsPatch`. `destinationsUnicode` and
+  `externalSenderAddressesUnicode` may be sent back in a patch and are ignored.

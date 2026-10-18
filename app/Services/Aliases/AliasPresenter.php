@@ -37,6 +37,7 @@ class AliasPresenter
             'primaryDomainUnicode' => DomainName::toUnicode($primary),
             'destinationType' => $destination->type,
             'destinations' => $destination->addresses,
+            'destinationsUnicode' => array_map(AliasAddress::unicodeOf(...), $destination->addresses),
             'active' => (int) $row->active !== 0,
             'senderAllowed' => (int) $row->sender_allowed !== 0,
             'groupwareVisible' => (int) $row->sogo_visible !== 0,

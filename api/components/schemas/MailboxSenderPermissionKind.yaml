@@ -1,0 +1,6 @@
+type: string
+description: |
+  What a sender permission entry names (G12): a domain (`domain`), an alias domain (`aliasDomain`),
+  the address of an alias (`alias`) or of a mailbox (`mailbox`), or any address (`anyAddress`, the
+  entry `*`). Clients label entries with it; they tolerate values added later.
+enum: [domain, aliasDomain, alias, mailbox, anyAddress]

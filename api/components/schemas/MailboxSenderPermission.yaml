@@ -9,7 +9,7 @@ description: |
     `value` has the form `@domain`.
   - `anyAddress`: the mailbox's sender check is disabled (`value` `*`). Only administrators grant
     it, and it is stored alone.
-required: [value, valueUnicode, type, changeable, stale]
+required: [value, valueUnicode, type, kind, changeable, stale]
 properties:
   value:
     type: string
@@ -21,6 +21,14 @@ properties:
   type:
     type: string
     enum: [address, domain, anyAddress]
+  kind:
+    oneOf:
+      - $ref: './MailboxSenderPermissionKind.yaml'
+      - type: 'null'
+    description: |
+      What the entry names, for labels (G12): `domain` or `aliasDomain` for a domain entry,
+      `mailbox` or `alias` for an address entry, `anyAddress` for `*`. `null` for a stale entry,
+      whose domain or address no longer exists.
   changeable:
     type: boolean
     description: |

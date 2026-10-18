@@ -17,11 +17,12 @@ description: |
   entries (`notFound`, as for entries that do not exist; `*` gives `notEligible`).
 
   `externalSenderAddresses` entries are valid addresses or domain names (`domain` or `@domain`)
-  whose domain is not a domain or alias domain of this server (`notEligible` with `reason`
+  whose domain is not a domain or alias domain of this server (`notEligible` with `kind`
   `localDomain`). Domain administrators need the `extendSenderAcl` permission to change them; the
   list sent back unchanged needs no permission.
 
-  `mailbox`, `mailboxUnicode`, `implicitAddresses`, `senderCheckDisabled` and `etag` are derived
+  `mailbox`, `mailboxUnicode`, `implicitAddresses`, `senderCheckDisabled`,
+  `externalSenderAddressesUnicode` and `etag` are derived
   and ignored when sent, so a client can send back the representation it read. A request with any
   invalid or refused entry is refused as a whole, naming every such entry.
 minProperties: 1
@@ -46,6 +47,8 @@ properties:
     type: array
   senderCheckDisabled:
     type: boolean
+  externalSenderAddressesUnicode:
+    type: array
   etag:
     type: string
 additionalProperties: false

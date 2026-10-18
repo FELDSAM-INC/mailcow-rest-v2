@@ -15,8 +15,8 @@ description: |
     `primaryDomain`, `primaryDomainUnicode`, `createdAt`, `modifiedAt`, `orphaned`) may be sent with
     their current value, so a client can send back the representation it read. `kind` and the
     domain members are compared with the values that follow from the resulting address. A
-    different value is refused with `immutable`. `etag` is ignored; send the version in
-    `If-Match`.
+    different value is refused with `immutable`. `destinationsUnicode` follows from `destinations`
+    and `etag` is ignored; send the version in `If-Match`.
   - A change to an orphaned alias is refused unless it moves the alias to an existing domain.
 minProperties: 1
 properties:
@@ -71,6 +71,8 @@ properties:
       - type: 'null'
   orphaned:
     type: boolean
+  destinationsUnicode:
+    type: array
   etag:
     type: string
 additionalProperties: false

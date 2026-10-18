@@ -9,6 +9,7 @@ required:
   - explicitPermissions
   - senderCheckDisabled
   - externalSenderAddresses
+  - externalSenderAddressesUnicode
   - etag
 properties:
   mailbox:
@@ -42,6 +43,13 @@ properties:
       type: string
     examples:
       - [news@mailer.example, '@partner.example']
+  externalSenderAddressesUnicode:
+    type: array
+    description: |
+      `externalSenderAddresses` in the same order with each domain part in readable (Unicode) form
+      (G13).
+    items:
+      type: string
   etag:
     type: string
     description: |

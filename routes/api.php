@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\LivenessController;
 use App\Http\Controllers\Api\V2\MailboxCapabilitiesController;
 use App\Http\Controllers\Api\V2\MailboxController;
+use App\Http\Controllers\Api\V2\MailboxSenderSettingsController;
 use App\Http\Controllers\Api\V2\MailboxTagController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
@@ -35,6 +36,7 @@ use App\Http\Controllers\Api\V2\PublicConfigLogoController;
 use App\Http\Controllers\Api\V2\ReadinessController;
 use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
+use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
 use App\Http\Controllers\Api\V2\SessionController;
 use Illuminate\Support\Facades\Route;
 
@@ -233,6 +235,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/aliases/{aliasId}', [AliasController::class, 'show'])
             ->where('aliasId', '[1-9][0-9]{0,9}')
             ->name('aliases.show');
+        Route::get('/sender-permission-candidates', [SenderPermissionCandidateController::class, 'index'])->name('sender-permission-candidates.index');
+        Route::get('/mailboxes/{mailbox}/sender-settings', [MailboxSenderSettingsController::class, 'show'])
+            ->where('mailbox', '[^/]+')
+            ->name('mailbox-sender-settings.show');
         Route::get('/alias-domains', [AliasDomainController::class, 'index'])->name('alias-domains.index');
         Route::get('/alias-domains/{aliasDomain}', [AliasDomainController::class, 'show'])
             ->where('aliasDomain', '[^/]+')
@@ -252,6 +258,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('aliasId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'aliasDeletion', 'target' => 'alias'])
             ->name('aliases.destroy');
+        Route::patch('/mailboxes/{mailbox}/sender-settings', [MailboxSenderSettingsController::class, 'update'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'mailboxSenderSettingsUpdate', 'target' => 'mailboxSenderSettings'])
+            ->name('mailbox-sender-settings.update');
         Route::post('/alias-domains', [AliasDomainController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'aliasDomainCreation', 'target' => 'aliasDomain'])
             ->name('alias-domains.store');

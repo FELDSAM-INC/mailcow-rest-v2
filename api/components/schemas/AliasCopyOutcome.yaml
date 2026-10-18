@@ -9,7 +9,7 @@ description: |
     or `destinationNotPermitted` (the alias has external destinations, which the server disables
     or the caller's `aliasExternalGoto` permission does not allow).
   - `failed`: an unexpected failure; `problem` explains it.
-required: [aliasDomain, aliasDomainUnicode, address, outcome, aliasId, reason]
+required: [aliasDomain, aliasDomainUnicode, address, addressUnicode, outcome, aliasId, reason]
 properties:
   aliasDomain:
     type: string
@@ -19,6 +19,9 @@ properties:
   address:
     type: string
     description: Address of the copy in ASCII form.
+  addressUnicode:
+    type: string
+    description: Address of the copy with its domain part in readable (Unicode) form (G13).
   outcome:
     type: string
     enum: [created, skipped, failed]

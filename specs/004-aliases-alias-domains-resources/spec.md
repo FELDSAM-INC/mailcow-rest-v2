@@ -1013,6 +1013,17 @@ log filtered by target.
   configuration and MUST NOT include any secret or connection detail. The read MUST change nothing,
   and read-only keys MAY use it.
 
+#### Gaps found by UI plans (`docs/api-gaps.md`)
+
+- **FR-069** (G12): Every explicit sender permission and every permission candidate MUST say what it
+  names: a domain, an alias domain, an alias, a mailbox or any address (`kind`); a stale explicit
+  permission has no kind.
+- **FR-070** (G13): Alias destinations, the address of each copy over alias domains and the external
+  sender addresses MUST also be given in readable form (domain parts in Unicode), next to the ASCII
+  values, as domains are.
+- **FR-071** (G14): A refused external sender address in a domain of this server MUST name the rule
+  parameter `kind: localDomain`, as `ValidationRuleCode` defines it.
+
 ### Legacy Coverage
 
 Every legacy capability allocated to feature 004 in `docs/roadmap.md` maps to requirements as

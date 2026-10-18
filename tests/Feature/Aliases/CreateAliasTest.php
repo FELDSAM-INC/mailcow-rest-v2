@@ -104,6 +104,7 @@ class CreateAliasTest extends TestCase
         $this->assertSame('Sales@xn--bcher-kva.example', $response->json('data.address'));
         $this->assertSame('Sales@bücher.example', $response->json('data.addressUnicode'));
         $this->assertSame(['Bob@example.org', 'anna@example.org', 'typo@example.org', 'x@xn--bcher-kva.example'], $response->json('data.destinations'));
+        $this->assertSame(['Bob@example.org', 'anna@example.org', 'typo@example.org', 'x@bücher.example'], $response->json('data.destinationsUnicode'));
         $this->assertSame('Bob@example.org,anna@example.org,typo@example.org,x@xn--bcher-kva.example', $this->aliasRow((int) $response->json('data.id'))?->goto);
     }
 

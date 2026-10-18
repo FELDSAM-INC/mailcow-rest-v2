@@ -78,3 +78,7 @@ enum:
   - /api/v2/problems/global-sieve-filter-unavailable
   - /api/v2/problems/mass-mail-already-running
   - /api/v2/problems/mass-mail-recipient-count-changed
+  - /api/v2/problems/domain-alias-limit-reached
+  - /api/v2/problems/destination-not-permitted
+  - /api/v2/problems/alias-domain-already-exists
+  - /api/v2/problems/not-primary-domain-alias

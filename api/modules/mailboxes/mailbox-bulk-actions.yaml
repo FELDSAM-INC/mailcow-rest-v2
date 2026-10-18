@@ -1,0 +1,36 @@
+post:
+  operationId: applyMailboxBulkAction
+  tags: [Mailboxes]
+  summary: Apply an action to several mailboxes
+  description: |
+    Activates, disables login for, deactivates or deletes up to 100 mailboxes, or allows or
+    disallows one protocol for them, as the legacy mass actions do. Each mailbox is processed like
+    the single operation, with the same checks, side effects and audit record (which carries the
+    bulk request ID). A target outside the caller's scope gets `notFound`, an outdated `version`
+    gets `outdated`, and a failed mail-store cleanup or service outage gets `failed`; the other
+    targets proceed. The response has one result per distinct target, in request order.
+
+    Administrators and domain administrators, from a session or a read-write key.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/MailboxBulkActionRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/MailboxForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

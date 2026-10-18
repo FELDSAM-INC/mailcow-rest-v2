@@ -1,0 +1,38 @@
+description: |
+  The request conflicts with the current state. Nothing was changed. Possible types:
+  - `/api/v2/problems/address-in-use`: the address is held by a mailbox, resource, alias or
+    temporary alias (extensions `address`, `holder`);
+  - `/api/v2/problems/mailbox-limit-reached`: the domain's mailbox limit is reached (extensions
+    `domain`, `count`, `limit`);
+  - `/api/v2/problems/mailbox-not-renamable`: only active and login-disabled mailboxes can be
+    renamed;
+  - `/api/v2/problems/domain-alias-limit-reached`: keeping the old address as an alias needs room
+    for one more alias (extensions `domain`, `count`, `limit`).
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/MailboxAddressInUseProblem.yaml'
+        - $ref: '../schemas/MailboxLimitReachedProblem.yaml'
+        - $ref: '../schemas/MailboxAliasLimitReachedProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      addressInUse:
+        value:
+          type: /api/v2/problems/address-in-use
+          title: Address in use
+          status: 409
+          detail: The address anna@example.org is already used by an alias.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          address: anna@example.org
+          holder: alias
+      mailboxLimitReached:
+        value:
+          type: /api/v2/problems/mailbox-limit-reached
+          title: Mailbox limit reached
+          status: 409
+          detail: The domain example.org already has 10 of 10 mailboxes.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          domain: example.org
+          count: 10
+          limit: 10

@@ -1,0 +1,18 @@
+description: |
+  Problem of type `/api/v2/problems/outcome-unknown` (status `504`): mailcow's container API did not
+  answer within its timeout (`DOCKER_TIMEOUT`, 60 seconds), so the outcome of that step is unknown.
+  A deletion then removed no records and is safe to retry. A rename undid every step known to be
+  done; `steps` shows which step is unknown.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [step]
+    properties:
+      step:
+        type: string
+        description: The step whose outcome is unknown, for example `mailStoreCleanup` or a `MailboxRenameStep` name.
+        examples: [mailStoreCleanup]
+      steps:
+        type: array
+        items:
+          $ref: './MailboxRenameStep.yaml'

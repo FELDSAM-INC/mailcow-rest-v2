@@ -1,0 +1,27 @@
+description: |
+  Problem of type `/api/v2/problems/attribute-not-permitted` (status `403`): a domain administrator
+  would choose mailbox settings that their permission flags do not allow. The whole request is
+  refused and nothing changed. A value equal to the current one (change) or to the template's
+  (creation) is not a choice; an unlimited quota is always one unless the mailbox already has it.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [attributes, requiredFlags]
+    properties:
+      attributes:
+        type: array
+        minItems: 1
+        description: The refused members as dot-separated paths in the request body.
+        items:
+          type: string
+        examples:
+          - [protocolAccess.pop3, quota]
+      requiredFlags:
+        type: object
+        description: For each refused member, the permission flag it needs (a `PermissionFlags` name).
+        additionalProperties:
+          type: string
+          enum: [unlimitedQuota, protocolAccess, sogoAccess, ratelimit, syncjobs, quarantine, appPasswds, pushover, spamPolicy]
+        examples:
+          - protocolAccess.pop3: protocolAccess
+            quota: unlimitedQuota

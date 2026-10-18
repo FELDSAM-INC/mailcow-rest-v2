@@ -1,0 +1,24 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. Default `address` with `order=asc`. Ties are broken by address. Mailboxes without a
+  value for the field (an unlimited quota for `percentUsed`, no login, no recorded password change,
+  never modified) come after all others in both directions. `lastMailLogin` is the most recent IMAP,
+  POP3 or SMTP login.
+schema:
+  type: string
+  enum:
+    - address
+    - displayName
+    - domain
+    - status
+    - quota
+    - quotaUsed
+    - percentUsed
+    - messageCount
+    - lastMailLogin
+    - passwordChangedAt
+    - createdAt
+    - modifiedAt
+  default: address

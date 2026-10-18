@@ -1,0 +1,13 @@
+description: Mailbox templates matching the search, each with its version tag.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/MailboxTemplate.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

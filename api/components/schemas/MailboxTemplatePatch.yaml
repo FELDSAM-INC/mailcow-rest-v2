@@ -1,0 +1,46 @@
+type: object
+description: |
+  JSON Merge Patch (RFC 7396) of a mailbox template: only the members sent change, and nested
+  `protocolAccess` and `userPermissions` change only the members they contain. `tags` replaces the
+  whole set and `rateLimit: null` removes the rate limit. Renaming the Default template is refused
+  (`mailbox-template-protected`).
+minProperties: 1
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 255
+  quota:
+    type: integer
+    format: int64
+    minimum: 0
+    multipleOf: 1048576
+  status:
+    $ref: './MailboxStatus.yaml'
+  forcePasswordChange:
+    type: boolean
+  forceSecondFactorSetup:
+    type: boolean
+  webmailRedirect:
+    type: boolean
+  protocolAccess:
+    $ref: './MailboxProtocolAccessInput.yaml'
+  userPermissions:
+    $ref: './MailboxUserPermissionsInput.yaml'
+  tags:
+    $ref: './MailboxTagSet.yaml'
+  taggedMailHandling:
+    $ref: './MailboxTaggedMailHandling.yaml'
+  quarantineNotification:
+    $ref: './MailboxQuarantineNotification.yaml'
+  quarantineCategory:
+    $ref: './MailboxQuarantineCategory.yaml'
+  tlsEnforceInbound:
+    type: boolean
+  tlsEnforceOutbound:
+    type: boolean
+  rateLimit:
+    oneOf:
+      - $ref: './MailboxRateLimit.yaml'
+      - type: 'null'
+additionalProperties: false

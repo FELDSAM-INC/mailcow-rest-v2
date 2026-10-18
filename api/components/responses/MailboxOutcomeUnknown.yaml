@@ -1,0 +1,7 @@
+description: |
+  mailcow's container API did not answer in time, so the outcome of one step is unknown (type
+  `/api/v2/problems/outcome-unknown`, extension `step`).
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/MailboxOutcomeUnknownProblem.yaml'

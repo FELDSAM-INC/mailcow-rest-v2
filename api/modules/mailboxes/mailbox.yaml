@@ -1,0 +1,115 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+get:
+  operationId: getMailbox
+  tags: [Mailboxes]
+  summary: Get a mailbox
+  description: |
+    Returns one mailbox of the caller's scope with its full representation, including the largest
+    quota it may be given, its user permissions and custom attributes, and its version tag.
+    Administrators and domain administrators, from a session or a key (read-only keys included).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MailboxTemporaryFailure.yaml'
+patch:
+  operationId: updateMailbox
+  tags: [Mailboxes]
+  summary: Change a mailbox
+  description: |
+    Changes the values sent (JSON Merge Patch): display name, status, quota, password, forced
+    password change and second-factor setup, webmail redirect, protocol access, authentication
+    source, recovery e-mail, tags, user permissions and custom attributes. A status change gives
+    the mailbox's own alias the same status. Afterwards the groupware directory entry is updated,
+    the groupware cache is flushed (unless the groupware is disabled) and the identity-provider
+    template marker (`attributes.attribute_hash`) is cleared, as legacy does on every edit. Send the
+    version tag in `If-Match`: an edit made meanwhile in the legacy UI then gives `412`. Audited
+    with every changed value, except the password, recorded only as set.
+
+    Administrators and domain administrators (see `MailboxPatch` for the permission flags), from a
+    session or a read-write key.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/MailboxPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/MailboxForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MailboxTemporaryFailure.yaml'
+delete:
+  operationId: deleteMailbox
+  tags: [Mailboxes]
+  summary: Delete a mailbox
+  description: |
+    First asks the mail store to move the mailbox's mail to mailcow's garbage area (every mail node
+    in a replicated cluster), from which mailcow purges it after `MAILDIR_GC_TIME`. If the mail
+    store reports a failure or cannot be reached, the deletion is refused (`503`) and nothing is
+    removed; if it does not answer within `DOCKER_TIMEOUT`, the answer is `504` and no records are
+    removed (a retry is safe). Then, together, it removes everything legacy removes: the mailbox,
+    its usage records, user permissions, tags, sieve filters, app passwords, aliases whose only
+    recipient is the mailbox (its own alias included), the mailbox from other aliases' recipients,
+    sender permissions in both directions, temporary aliases, sync jobs delivering into it, spam
+    settings and allow and block lists, quarantine items, push notification settings, BCC maps with
+    it as local destination, webmail data, OAuth tokens and codes, second factors, passkeys and its
+    rate limit; and also its tagged-mail handling and recent-login records, which legacy leaves
+    behind. The groupware directory entry is removed and the cache flushed. Audited.
+
+    Administrators and domain administrators, from a session or a read-write key.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MailboxTemporaryFailure.yaml'
+    '504':
+      $ref: '../../components/responses/MailboxOutcomeUnknown.yaml'

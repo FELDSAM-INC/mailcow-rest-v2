@@ -1,0 +1,21 @@
+description: The mailbox template was created.
+headers:
+  Location:
+    description: Absolute path of the created template.
+    required: true
+    schema:
+      type: string
+      format: uri-reference
+  ETag:
+    description: Version tag (strong ETag) of the template, equal to `data.etag`.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/MailboxTemplate.yaml'

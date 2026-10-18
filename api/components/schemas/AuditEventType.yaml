@@ -129,3 +129,13 @@ enum:
   - massMailJobCompletion
   - massMailJobCancellation
   - licenseVerification
+  - aliasCreation
+  - aliasUpdate
+  - aliasDeletion
+  - aliasDomainCreation
+  - aliasDomainUpdate
+  - aliasDomainDeletion
+  - resourceCreation
+  - resourceUpdate
+  - resourceDeletion
+  - mailboxSenderSettingsUpdate

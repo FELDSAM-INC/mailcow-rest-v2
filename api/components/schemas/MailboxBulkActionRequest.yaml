@@ -1,0 +1,50 @@
+type: object
+description: |
+  One action applied to several mailboxes, as the legacy mass actions of the mailbox list do. Each
+  target is authorised, version-checked, processed and audited on its own, exactly as the single
+  operation for it (`updateMailbox` with `status` or `protocolAccess`, or `deleteMailbox`); one
+  failure does not stop the others. A target's `id` is the mailbox address, in any letter case and
+  with the domain in ASCII or Unicode form; an address given twice is processed and reported once.
+  At most the server's bulk limit of targets (`MailboxCapabilities.bulkLimit`, 100 by default) may
+  be sent (`tooMany` on `targets`).
+
+  The whole request is refused (`403`) when the caller may never apply the action: a mailbox user,
+  a read-only key, or a domain administrator without the `protocolAccess` flag for
+  `allowProtocol` and `disallowProtocol`.
+required: [action, targets]
+properties:
+  action:
+    type: string
+    enum: [activate, disableLogin, deactivate, delete, allowProtocol, disallowProtocol]
+    description: |
+      `activate`, `disableLogin` and `deactivate` set `status` to `active`, `loginDisabled` and
+      `inactive`. `delete` deletes the mailbox. `allowProtocol` and `disallowProtocol` turn
+      `protocol` on or off.
+  protocol:
+    type: string
+    enum: [imap, pop3, smtp, sieve, activeSync, dav]
+    description: Required for `allowProtocol` and `disallowProtocol`, refused otherwise.
+  targets:
+    type: array
+    minItems: 1
+    maxItems: 100
+    items:
+      $ref: './BulkTarget.yaml'
+additionalProperties: false
+allOf:
+  - if:
+      properties:
+        action:
+          enum: [allowProtocol, disallowProtocol]
+      required: [action]
+    then:
+      properties:
+        protocol:
+          type: string
+      required: [protocol]
+    else:
+      not:
+        properties:
+          protocol:
+            type: string
+        required: [protocol]

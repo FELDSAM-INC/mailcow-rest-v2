@@ -1,0 +1,8 @@
+description: The created mailbox and the outcome of its follow-up steps. Never contains the password or its hash.
+allOf:
+  - $ref: './Mailbox.yaml'
+  - type: object
+    required: [creationReport]
+    properties:
+      creationReport:
+        $ref: './MailboxCreationReport.yaml'

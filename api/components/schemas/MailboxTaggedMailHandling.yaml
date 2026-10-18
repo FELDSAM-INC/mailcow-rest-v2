@@ -1,0 +1,6 @@
+type: string
+description: |
+  What happens to mail sent to `local+tag@domain` (mailcow's Redis hashes `RCPT_WANTS_SUBFOLDER_TAG`
+  and `RCPT_WANTS_SUBJECT_TAG`). `subfolder`: filed into the folder `INBOX/<tag>`. `subject`: the tag
+  is added to the subject. `none`: no special handling.
+enum: [none, subfolder, subject]

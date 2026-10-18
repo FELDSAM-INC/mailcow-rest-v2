@@ -1,0 +1,24 @@
+type: object
+description: |
+  User permissions to set. Only the permissions sent change. A domain administrator may not choose
+  a value for a permission that overlaps with a domain-administrator flag they lack (`syncjobs`,
+  `quarantine`, `appPasswds`, `pushover`, `spamPolicy`), unless it equals the current value
+  (change) or the template's value (creation).
+minProperties: 1
+properties:
+  spamAlias: {type: boolean}
+  tlsPolicy: {type: boolean}
+  spamScore: {type: boolean}
+  spamPolicy: {type: boolean}
+  delimiterAction: {type: boolean}
+  syncjobs: {type: boolean}
+  easReset: {type: boolean}
+  sogoProfileReset: {type: boolean}
+  pushover: {type: boolean}
+  quarantine: {type: boolean}
+  quarantineAttachments: {type: boolean}
+  quarantineNotification: {type: boolean}
+  quarantineCategory: {type: boolean}
+  appPasswds: {type: boolean}
+  pwReset: {type: boolean}
+additionalProperties: false

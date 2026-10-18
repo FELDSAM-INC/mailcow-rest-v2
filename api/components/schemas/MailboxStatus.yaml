@@ -1,0 +1,7 @@
+type: string
+description: |
+  Status of a mailbox (mailcow's `mailbox.active`). `active` (1): receives mail and may sign in.
+  `loginDisabled` (2): receives mail, every sign-in is refused, and it is hidden from the webmail
+  address book. `inactive` (0): receives no mail and may not sign in. The mailbox's own alias always
+  has the same status.
+enum: [active, loginDisabled, inactive]

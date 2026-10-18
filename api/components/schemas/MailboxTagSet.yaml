@@ -1,0 +1,14 @@
+type: array
+description: |
+  Tags of a mailbox (mailcow's `tags_mailbox`). Each tag is trimmed and 1 to 255 characters long.
+  Tags that differ only in letter case are one tag; the first spelling sent is kept. A request may
+  not leave a mailbox with more tags than the server's tagging limit
+  (`MailboxCapabilities.taggingLimit`, 25 by default); a mailbox that already has more (possible
+  through legacy) is shown in full and can only shrink. Sending tags replaces the whole set, so
+  removing a tag means sending the set without it. Representations sort them alphabetically
+  without regard to letter case.
+items:
+  type: string
+  minLength: 1
+  maxLength: 255
+  examples: [Sales]

@@ -1,0 +1,19 @@
+description: |
+  Problem of type `/api/v2/problems/mailbox-rename-incomplete` (status `500`): a rename step failed
+  and undoing the steps already done failed as well, so the mailbox is partly renamed. `steps` lists
+  every step and its outcome; the audit record holds the same. An administrator must complete or
+  revert the remaining steps (see `docs/problems.md`).
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [previousAddress, newAddress, steps]
+    properties:
+      previousAddress:
+        type: string
+      newAddress:
+        type: string
+      steps:
+        type: array
+        minItems: 1
+        items:
+          $ref: './MailboxRenameStep.yaml'

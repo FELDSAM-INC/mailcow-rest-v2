@@ -1,0 +1,15 @@
+type: object
+description: |
+  Protocol settings to set. Only the protocols sent are set; the others keep their current value
+  (change) or take the template's or default value (creation). A domain administrator needs the
+  `protocolAccess` permission flag to choose a value other than the current one (change) or the
+  template's (creation).
+minProperties: 1
+properties:
+  imap: {type: boolean}
+  pop3: {type: boolean}
+  smtp: {type: boolean}
+  sieve: {type: boolean}
+  activeSync: {type: boolean}
+  dav: {type: boolean}
+additionalProperties: false

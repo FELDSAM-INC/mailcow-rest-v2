@@ -1,0 +1,7 @@
+name: mailboxTemplateId
+in: path
+required: true
+description: Identifier of the mailbox template (`templates.id`).
+schema:
+  type: integer
+  minimum: 1

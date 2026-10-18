@@ -1,0 +1,22 @@
+get:
+  operationId: getMailboxCapabilities
+  tags: [Mailboxes]
+  summary: Read the mailbox capabilities
+  description: |
+    Returns the server settings and limits a client needs before it submits a mailbox form: the
+    configured identity provider type and the authentication sources it allows, whether the
+    groupware is enabled and last logins are reported, the bulk, tag, custom-attribute and page
+    limits, and the garbage-area retention. Changes nothing. Administrators and domain
+    administrators, from a session or a key (read-only keys included).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxCapabilitiesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

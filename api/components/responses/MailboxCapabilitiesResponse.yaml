@@ -1,0 +1,9 @@
+description: The mailbox capabilities.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/MailboxCapabilities.yaml'

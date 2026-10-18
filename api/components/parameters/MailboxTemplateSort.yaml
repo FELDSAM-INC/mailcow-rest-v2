@@ -1,0 +1,8 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `name` with `order=asc`. Names are compared without regard to letter case; ties are broken by identifier.
+schema:
+  type: string
+  enum: [name, id, createdAt, modifiedAt]
+  default: name

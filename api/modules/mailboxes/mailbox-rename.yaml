@@ -1,0 +1,57 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+post:
+  operationId: renameMailbox
+  tags: [Mailboxes]
+  summary: Rename a mailbox
+  description: |
+    Changes the local part of an active or login-disabled mailbox. Every check runs before anything
+    changes: status, a different local part, a free new address, room for the optional alias, and
+    reachable mail store and webmail services. Then it does what legacy does (the shared-folder
+    permissions are removed and re-created for the new address in both directions, every row that
+    names the mailbox is updated, the maildir is moved and the SOGo data is renamed) and also
+    carries over what legacy leaves behind (second factors, passkeys, temporary aliases, spam
+    settings, quarantine items, the rate limit, tagged-mail handling and recent logins). OAuth
+    tokens and codes bound to the old address are revoked, and the groupware cache is flushed. The
+    permission flags of a domain-administrator account with the same name are not moved.
+
+    A failing step undoes the steps already done (`503`, extension `steps`). If undoing fails too,
+    the answer is `500` with type `mailbox-rename-incomplete`. A step without an answer within
+    `DOCKER_TIMEOUT` gives `504`. Audited with both addresses and every step's outcome.
+
+    Administrators and domain administrators, from a session or a read-write key.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/MailboxRenameRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxRenamedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/MailboxConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/MailboxRenameFailed.yaml'
+    '503':
+      $ref: '../../components/responses/MailboxTemporaryFailure.yaml'
+    '504':
+      $ref: '../../components/responses/MailboxOutcomeUnknown.yaml'

@@ -1,0 +1,28 @@
+description: |
+  The caller is authenticated but may not perform this request. Possible types:
+  - `/api/v2/problems/attribute-not-permitted`: a domain administrator would choose settings their
+    permission flags do not allow (extensions `attributes`, `requiredFlags`). Nothing changed.
+  - `/api/v2/problems/forbidden`: the caller's role may never use the operation (a mailbox user, or
+    a domain administrator writing templates), or, for a bulk action, a domain administrator
+    without the `protocolAccess` flag toggling a protocol.
+  - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request.
+  - `/api/v2/problems/csrf-token-mismatch`, `/api/v2/problems/pending-action-required`,
+    `/api/v2/problems/api-key-source-not-allowed`: see `Forbidden`.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/MailboxAttributeNotPermittedProblem.yaml'
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      attributeNotPermitted:
+        value:
+          type: /api/v2/problems/attribute-not-permitted
+          title: Attribute not permitted
+          status: 403
+          detail: Your permission flags do not allow these settings.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          attributes: [protocolAccess.pop3]
+          requiredFlags:
+            protocolAccess.pop3: protocolAccess

@@ -1,0 +1,15 @@
+description: One mailbox.
+headers:
+  ETag:
+    description: Version tag (strong ETag) of the mailbox's stored settings, equal to `data.etag`. Send it in `If-Match` when changing, renaming or deleting the mailbox.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/Mailbox.yaml'

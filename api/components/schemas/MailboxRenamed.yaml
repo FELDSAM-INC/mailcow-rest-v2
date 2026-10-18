@@ -1,0 +1,11 @@
+description: The renamed mailbox under its new address.
+allOf:
+  - $ref: './Mailbox.yaml'
+  - type: object
+    required: [previousAddress, oldAddressKeptAsAlias]
+    properties:
+      previousAddress:
+        type: string
+        description: The address before the rename, which now answers "not found" as a mailbox.
+      oldAddressKeptAsAlias:
+        type: boolean

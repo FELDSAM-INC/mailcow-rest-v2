@@ -1,0 +1,13 @@
+type: object
+description: |
+  A distinct tag of the mailboxes in the caller's scope. Tags that differ only in letter case form
+  one entry, shown in the spelling that sorts first in binary order. Tags found only on mailboxes
+  outside the caller's scope are never listed.
+required: [name, mailboxCount]
+properties:
+  name:
+    type: string
+  mailboxCount:
+    type: integer
+    minimum: 1
+    description: Number of mailboxes in the caller's scope that carry the tag.

@@ -1,0 +1,212 @@
+type: object
+description: |
+  A mailbox of mailcow (a `mailbox` row with `kind = ''`). Resources (locations, things and groups)
+  share the table but are never mailboxes. Usage figures and last logins are read on every request
+  and are not part of the version tag. Members marked read-only are managed by other features or
+  computed, and a change request that sends them is refused (`immutable`).
+required:
+  - address
+  - localPart
+  - domain
+  - domainUnicode
+  - displayName
+  - status
+  - authSource
+  - quota
+  - quotaUsed
+  - messageCount
+  - percentUsed
+  - largestAllowedQuota
+  - forcePasswordChange
+  - forceSecondFactorSetup
+  - webmailRedirect
+  - protocolAccess
+  - userPermissions
+  - tags
+  - customAttributes
+  - recoveryEmail
+  - passwordChangedAt
+  - lastLogins
+  - taggedMailHandling
+  - tlsEnforceInbound
+  - tlsEnforceOutbound
+  - quarantineNotification
+  - quarantineCategory
+  - rateLimit
+  - rateLimitSource
+  - relayhostId
+  - activeTemporaryAliases
+  - pushNotificationsActive
+  - domainRelayed
+  - createdAt
+  - modifiedAt
+  - etag
+properties:
+  address:
+    type: string
+    readOnly: true
+    maxLength: 255
+    description: Full address in lower case with the domain in ASCII form (`mailbox.username`). Identifies the mailbox in paths.
+    examples: [anna.smith@example.org]
+  localPart:
+    type: string
+    readOnly: true
+    description: Changes only through `renameMailbox`.
+  domain:
+    type: string
+    readOnly: true
+    description: Domain in ASCII form.
+    examples: [xn--bcher-kva.example]
+  domainUnicode:
+    type: string
+    readOnly: true
+    description: Domain in readable (Unicode) form.
+    examples: [bücher.example]
+  displayName:
+    type: string
+    maxLength: 255
+  status:
+    $ref: './MailboxStatus.yaml'
+  authSource:
+    $ref: './MailboxAuthSource.yaml'
+  quota:
+    type: integer
+    format: int64
+    minimum: 0
+    description: Quota in bytes, a whole multiple of 1 MiB. `0` means unlimited.
+  quotaUsed:
+    type: integer
+    format: int64
+    minimum: 0
+    readOnly: true
+    description: Storage used in bytes, from Dovecot's usage record (`quota2`, or `quota2replica` on a non-master node).
+  messageCount:
+    type: integer
+    format: int64
+    minimum: 0
+    readOnly: true
+  percentUsed:
+    readOnly: true
+    description: Storage used divided by the quota, rounded to a whole percent. `null` for an unlimited quota.
+    oneOf:
+      - type: integer
+        minimum: 0
+      - type: 'null'
+  largestAllowedQuota:
+    type: integer
+    format: int64
+    minimum: 0
+    readOnly: true
+    description: |
+      The largest quota this mailbox may be given, in bytes: the domain quota minus the quotas of
+      the domain's other mailboxes, capped at the domain's maximum mailbox quota and never below
+      zero.
+  forcePasswordChange:
+    type: boolean
+    description: The user must change the password at the next sign-in (`attributes.force_pw_update`). Always `false` for an external authentication source.
+  forceSecondFactorSetup:
+    type: boolean
+    description: The user must set up a second factor at the next sign-in (`attributes.force_tfa`). Always `false` for `genericOidc`.
+  webmailRedirect:
+    type: boolean
+    description: |
+      After signing in to the web UI, the user is sent to webmail (legacy "SOGo access",
+      `attributes.sogo_access`). Has no effect when the groupware is disabled
+      (`MailboxCapabilities.groupwareEnabled`).
+  protocolAccess:
+    $ref: './MailboxProtocolAccess.yaml'
+  userPermissions:
+    $ref: './MailboxUserPermissions.yaml'
+  tags:
+    $ref: './MailboxTagSet.yaml'
+  customAttributes:
+    $ref: './MailboxCustomAttributes.yaml'
+  recoveryEmail:
+    description: Password recovery address set by an administrator (`attributes.recovery_email`). Only for the `mailcow` authentication source.
+    oneOf:
+      - type: string
+        format: email
+        maxLength: 255
+      - type: 'null'
+  passwordChangedAt:
+    readOnly: true
+    description: When the password was last set (`attributes.passwd_update`). `null` when never recorded.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  lastLogins:
+    $ref: './MailboxLastLogins.yaml'
+  taggedMailHandling:
+    allOf:
+      - $ref: './MailboxTaggedMailHandling.yaml'
+    readOnly: true
+    description: Read-only here, changed through feature 005. May be given at creation.
+  tlsEnforceInbound:
+    type: boolean
+    readOnly: true
+    description: Inbound TLS is enforced (`attributes.tls_enforce_in`). Read-only here, changed through feature 005. May be given at creation.
+  tlsEnforceOutbound:
+    type: boolean
+    readOnly: true
+    description: Outbound TLS is enforced (`attributes.tls_enforce_out`). Read-only here, changed through feature 005. May be given at creation.
+  quarantineNotification:
+    allOf:
+      - $ref: './MailboxQuarantineNotification.yaml'
+    readOnly: true
+    description: Read-only here, changed through feature 006. May be given at creation.
+  quarantineCategory:
+    allOf:
+      - $ref: './MailboxQuarantineCategory.yaml'
+    readOnly: true
+    description: Read-only here, changed through feature 006. May be given at creation.
+  rateLimit:
+    readOnly: true
+    description: The effective rate limit, from the mailbox or else from its domain. Read-only here, changed through feature 006. May be given at creation.
+    oneOf:
+      - $ref: './MailboxRateLimit.yaml'
+      - type: 'null'
+  rateLimitSource:
+    type: string
+    readOnly: true
+    enum: [mailbox, domain, none]
+    description: Where `rateLimit` comes from.
+  relayhostId:
+    readOnly: true
+    description: Assigned relayhost (`attributes.relayhost`, `"0"` means none). Read-only here, managed by feature 009. Never set at creation.
+    oneOf:
+      - type: integer
+        minimum: 1
+      - type: 'null'
+  activeTemporaryAliases:
+    type: integer
+    minimum: 0
+    readOnly: true
+    description: Temporary aliases of the mailbox that are permanent or not yet expired (feature 005).
+  pushNotificationsActive:
+    type: boolean
+    readOnly: true
+    description: Whether push notifications are configured and active (feature 005).
+  domainRelayed:
+    type: boolean
+    readOnly: true
+    description: Whether the mailbox's domain is relayed as a backup MX (`domain.backupmx`).
+  createdAt:
+    type: string
+    format: date-time
+    readOnly: true
+  modifiedAt:
+    readOnly: true
+    description: '`null` when never modified.'
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string
+    readOnly: true
+    description: |
+      Version tag of the mailbox's stored settings (the `mailbox` row without usage figures, its
+      `user_acl` row and its tags), equal to the `ETag` header of a single read. It changes
+      whenever a stored setting changes, whichever implementation changed it, and never because
+      of usage figures or last logins. Send it in `If-Match`, or as `version` of a bulk target.

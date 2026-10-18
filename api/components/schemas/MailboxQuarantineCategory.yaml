@@ -1,0 +1,5 @@
+type: string
+description: |
+  Which quarantine items the notifications cover (`attributes.quarantine_category`). `rejected`
+  (`reject`): rejected mail. `junk` (`add_header`): mail moved to the junk folder. `all`: both.
+enum: [rejected, junk, all]

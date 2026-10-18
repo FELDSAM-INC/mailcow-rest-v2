@@ -1,0 +1,14 @@
+description: |
+  A mailcow service the operation needs is unavailable or failed (type
+  `/api/v2/problems/temporary-failure`, extension `dependency`). Nothing was changed. Retry later.
+headers:
+  Retry-After:
+    description: Seconds after which the request may be retried.
+    required: true
+    schema:
+      type: integer
+      minimum: 1
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/MailboxTemporaryFailureProblem.yaml'

@@ -1,0 +1,29 @@
+get:
+  operationId: listMailboxTags
+  tags: [Mailboxes]
+  summary: List the mailbox tags in use
+  description: |
+    Lists the distinct tags of the mailboxes in the caller's scope with the number of mailboxes
+    that carry each, for tag filters and tag suggestions. Tags that differ only in letter case form
+    one entry. `q` is a case-insensitive substring search on the tag. Administrators and domain
+    administrators, from a session or a key (read-only keys included).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/MailboxTagSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxTagListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

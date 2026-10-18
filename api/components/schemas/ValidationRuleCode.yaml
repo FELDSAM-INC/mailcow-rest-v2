@@ -105,11 +105,24 @@ description: |
     `styleImport`, `doctype`, `notWellFormed` or `rootNotSvg`, and `line` when known);
     `insufficientContrast` (params `ratio`, rounded down to two decimals, `minimum` and `surface`);
     `invalidRegexLine` (params `line`, 1-based, and `reason`: `notSlashDelimited`, `tooManyFlags`,
-    `innerSlash` or `doesNotCompile`); `invalidSieveSyntax` (params `line` and `reason`, the legacy
-    parser's message); `unbalancedStructure` (params `line` and `construct`: `unclosedBrace`,
+    `innerSlash` or `doesNotCompile`); feature 005's `sieveSyntax` for global Sieve filters (params
+    `message`, the legacy parser's message, and `line`); `unbalancedStructure` (params `line` and `construct`: `unclosedBrace`,
     `unexpectedBrace`, `unclosedBracket`, `unexpectedBracket` or `unclosedString`);
     `mutuallyExclusive` (param `with`, the other field); `tooFew` (param `min`) for a mass mail
     selection without recipients.
+  - Aliases, alias domains, resources and sender settings (feature 004): `invalidFormat` also uses
+    `format: aliasAddress` (an address or `@domain`), `emailOrDomain` (an external sender address
+    or domain), `senderPermission` (an address, a domain or `*`) and `resourceDescription` (a
+    description that yields 1 to 64 ASCII letters or digits for the derived address), next to
+    `email`, `domainName` and `dkimSelector`; `tooLong` carries `unit: bytes` for comments (`max`
+    160) and `unit: characters` for the joined destination list (`max` 65535); `notEligible` uses
+    `kind` (`resource` for a destination, `relayDomain` or `aliasDomain` for a target or resource
+    domain, `localDomain` for an external sender address in a domain of this server) and
+    `allowedRoles: [admin]` for "any address"; `conflictsWith` (params `field`, `value`) for a
+    destination equal to the alias's own address, an alias domain equal to its target, destinations
+    sent with a special action, and a booking limit sent with a rule other than `limited`;
+    `reserved` for an alias domain named like the server; `immutable` for a read-only member sent
+    back with a different value.
 enum:
   - required
   - invalidType
@@ -152,7 +165,6 @@ enum:
   - unsafeSvgContent
   - insufficientContrast
   - invalidRegexLine
-  - invalidSieveSyntax
   - unbalancedStructure
   - mutuallyExclusive
   - tooFew

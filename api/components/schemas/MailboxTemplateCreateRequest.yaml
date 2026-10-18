@@ -1,0 +1,46 @@
+type: object
+description: |
+  A new mailbox template. Only the name is required; omitted values get the built-in defaults (see
+  `MailboxCreateRequest`), with an unlimited quota as in the legacy Default template. The name must
+  be unique among mailbox templates, compared case-insensitively (`mailbox-template-name-exists`).
+required: [name]
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: Trimmed; must not be empty afterwards.
+  quota:
+    type: integer
+    format: int64
+    minimum: 0
+    multipleOf: 1048576
+  status:
+    $ref: './MailboxStatus.yaml'
+  forcePasswordChange:
+    type: boolean
+  forceSecondFactorSetup:
+    type: boolean
+  webmailRedirect:
+    type: boolean
+  protocolAccess:
+    $ref: './MailboxProtocolAccessInput.yaml'
+  userPermissions:
+    $ref: './MailboxUserPermissionsInput.yaml'
+  tags:
+    $ref: './MailboxTagSet.yaml'
+  taggedMailHandling:
+    $ref: './MailboxTaggedMailHandling.yaml'
+  quarantineNotification:
+    $ref: './MailboxQuarantineNotification.yaml'
+  quarantineCategory:
+    $ref: './MailboxQuarantineCategory.yaml'
+  tlsEnforceInbound:
+    type: boolean
+  tlsEnforceOutbound:
+    type: boolean
+  rateLimit:
+    oneOf:
+      - $ref: './MailboxRateLimit.yaml'
+      - type: 'null'
+additionalProperties: false

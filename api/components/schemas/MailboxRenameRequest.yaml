@@ -1,0 +1,19 @@
+type: object
+description: |
+  A new local part in the same domain. It is trimmed, lower-cased and validated like
+  `MailboxCreateRequest.localPart`, and must differ from the current one (`unchanged`). The new
+  address must not be used by a mailbox, resource, alias or temporary alias (`address-in-use`).
+required: [newLocalPart, keepOldAddressAsAlias]
+properties:
+  newLocalPart:
+    type: string
+    minLength: 1
+    maxLength: 255
+    examples: [anna.smith]
+  keepOldAddressAsAlias:
+    type: boolean
+    description: |
+      Whether to create an active alias from the old address to the new one, visible in the
+      webmail address book, with the private comment "Mailbox was renamed from <old> to <new>".
+      It needs room for one more alias in the domain (`domain-alias-limit-reached`).
+additionalProperties: false

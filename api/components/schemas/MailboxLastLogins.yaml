@@ -1,0 +1,17 @@
+type: object
+description: |
+  The most recent recent-login record (`sasl_log`) of each service. Every member is `null` when the
+  mailbox never signed in to that service, and all are `null` when the server does not report last
+  logins (`MailboxCapabilities.lastLoginsReported` is `false`). Not part of the version tag.
+required: [imap, pop3, smtp, webmailSso]
+properties:
+  imap:
+    oneOf: [{type: string, format: date-time}, {type: 'null'}]
+  pop3:
+    oneOf: [{type: string, format: date-time}, {type: 'null'}]
+  smtp:
+    oneOf: [{type: string, format: date-time}, {type: 'null'}]
+  webmailSso:
+    description: Webmail single sign-on (`sasl_log.service = 'SSO'`).
+    oneOf: [{type: string, format: date-time}, {type: 'null'}]
+additionalProperties: false

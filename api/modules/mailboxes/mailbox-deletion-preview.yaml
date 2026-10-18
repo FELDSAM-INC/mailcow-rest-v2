@@ -1,0 +1,25 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+get:
+  operationId: previewMailboxDeletion
+  tags: [Mailboxes]
+  summary: Preview a mailbox deletion
+  description: |
+    Reports what `deleteMailbox` would remove and move now, whether it could proceed (the only
+    blockers are an unreachable mail store or shared store), the garbage-area retention and the
+    current version tag. Changes nothing and writes no audit record. Administrators and domain
+    administrators, from a session or a key (read-only keys included).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxDeletionPreviewResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

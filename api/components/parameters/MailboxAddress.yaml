@@ -1,0 +1,13 @@
+name: mailbox
+in: path
+required: true
+description: |
+  Full address of the mailbox, in any letter case and with the domain in ASCII or Unicode form
+  (percent-encode non-ASCII characters; `@` may stay literal). A mailbox outside the caller's
+  scope, a resource and an unknown address all answer `404`.
+schema:
+  type: string
+  minLength: 3
+  maxLength: 255
+  pattern: '^[^@/\s]+@[^@/\s]+$'
+  examples: [anna.smith@example.org]

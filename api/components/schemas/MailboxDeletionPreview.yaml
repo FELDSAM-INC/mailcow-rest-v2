@@ -1,0 +1,102 @@
+type: object
+description: |
+  What deleting the mailbox would currently remove and move, and whether it could proceed, computed
+  by the same rules as the deletion. A snapshot: the deletion checks and computes everything again,
+  and refuses an outdated version tag. Reading it changes nothing and writes no audit record.
+required:
+  - address
+  - canProceed
+  - blockers
+  - exclusiveAliases
+  - sharedAliases
+  - counts
+  - present
+  - mail
+  - garbageRetentionMinutes
+  - etag
+properties:
+  address:
+    type: string
+  canProceed:
+    type: boolean
+    description: '`false` when a service the deletion needs is unreachable (see `blockers`).'
+  blockers:
+    type: array
+    items:
+      type: object
+      required: [dependency, detail]
+      properties:
+        dependency:
+          type: string
+          enum: [mailStore, sharedStore]
+          description: '`mailStore`: the container API or the Dovecot container. `sharedStore`: mailcow''s Redis.'
+        detail:
+          type: string
+  exclusiveAliases:
+    allOf:
+      - $ref: './MailboxAddressSample.yaml'
+    description: Aliases whose only recipient is the mailbox, which would be deleted. The mailbox's own alias is not counted.
+  sharedAliases:
+    allOf:
+      - $ref: './MailboxAddressSample.yaml'
+    description: Aliases that would only lose the mailbox as a recipient.
+  counts:
+    type: object
+    description: Numbers of dependent records that would be removed.
+    required:
+      - senderPermissionsHeld
+      - senderPermissionsGranted
+      - temporaryAliases
+      - syncJobs
+      - appPasswords
+      - sieveFilters
+      - spamFilterSettings
+      - quarantineItems
+      - bccMaps
+      - oauthGrants
+      - secondFactors
+      - passkeys
+      - tags
+      - recentLogins
+    properties:
+      senderPermissionsHeld: {type: integer, minimum: 0, description: '`sender_acl` rows where the mailbox may send as others.'}
+      senderPermissionsGranted: {type: integer, minimum: 0, description: '`sender_acl` rows that let others send as the mailbox.'}
+      temporaryAliases: {type: integer, minimum: 0}
+      syncJobs: {type: integer, minimum: 0, description: Sync jobs that deliver into the mailbox.}
+      appPasswords: {type: integer, minimum: 0}
+      sieveFilters: {type: integer, minimum: 0}
+      spamFilterSettings: {type: integer, minimum: 0, description: Spam filter settings and allow and block list entries (`filterconf`).}
+      quarantineItems: {type: integer, minimum: 0}
+      bccMaps: {type: integer, minimum: 0, description: BCC maps whose local destination is the mailbox.}
+      oauthGrants: {type: integer, minimum: 0, description: 'OAuth access tokens, refresh tokens and authorisation codes.'}
+      secondFactors: {type: integer, minimum: 0}
+      passkeys: {type: integer, minimum: 0}
+      tags: {type: integer, minimum: 0}
+      recentLogins: {type: integer, minimum: 0}
+    additionalProperties: false
+  present:
+    type: object
+    description: Whether these settings exist. The shared-store values are `null` while the shared store is unreachable.
+    required: [pushNotificationSettings, webmailData, rateLimit, taggedMailHandling]
+    properties:
+      pushNotificationSettings: {type: boolean}
+      webmailData: {type: boolean, description: 'Profile, folders, contacts, appointments or sharing permissions in the groupware tables.'}
+      rateLimit:
+        oneOf: [{type: boolean}, {type: 'null'}]
+      taggedMailHandling:
+        oneOf: [{type: boolean}, {type: 'null'}]
+    additionalProperties: false
+  mail:
+    type: object
+    description: The mail that would move to the garbage area.
+    required: [storageUsed, messageCount]
+    properties:
+      storageUsed: {type: integer, format: int64, minimum: 0, description: Bytes.}
+      messageCount: {type: integer, format: int64, minimum: 0}
+  garbageRetentionMinutes:
+    type: integer
+    minimum: 0
+    description: How long mailcow keeps the moved mail before purging it (`MAILDIR_GC_TIME`).
+  etag:
+    type: string
+    description: The mailbox's current version tag. Send it in `If-Match` with the deletion.

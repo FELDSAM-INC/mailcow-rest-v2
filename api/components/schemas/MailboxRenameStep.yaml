@@ -1,0 +1,28 @@
+type: object
+description: |
+  One step of a mailbox rename and its outcome. Steps run in this order:
+  `sharedFolderPermissionsRemoval` (the IMAP ACLs the mailbox granted and received, read and
+  removed), `sharedStoreMove` (rate limit and tagged-mail handling moved to the new address),
+  `database` (every row, including the carried-over second factors, passkeys, temporary aliases,
+  spam settings, quarantine items and recent logins, the optional alias and the groupware
+  directory entry), `mailStoreMove` (the maildir), `webmailRename` (SOGo data, skipped when the
+  groupware is disabled) and `sharedFolderPermissionsRecreation`.
+
+  Outcomes: `done`; `undone` (done, then reverted); `notDone` (never started); `failed` (refused or
+  failed, nothing changed by it); `unknown` (no answer within the container API timeout);
+  `undoFailed` (done, and reverting it failed); `skipped`.
+required: [step, outcome]
+properties:
+  step:
+    type: string
+    enum:
+      - sharedFolderPermissionsRemoval
+      - sharedStoreMove
+      - database
+      - mailStoreMove
+      - webmailRename
+      - sharedFolderPermissionsRecreation
+  outcome:
+    type: string
+    enum: [done, undone, notDone, failed, unknown, undoFailed, skipped]
+additionalProperties: false

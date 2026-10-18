@@ -1,0 +1,7 @@
+type: string
+description: |
+  Where the mailbox's password is verified (mailcow's `mailbox.authsource`). `mailcow`: the password
+  hash stored by mailcow. `keycloak`, `genericOidc` (`generic-oidc`) and `ldap`: the external
+  identity provider of that type. Only `mailcow` and the type of the provider currently configured
+  on the server (`MailboxCapabilities.authSources`) may be chosen.
+enum: [mailcow, keycloak, genericOidc, ldap]

@@ -1,0 +1,5 @@
+# Paths of the mailbox-templates module (feature 003): templates that pre-fill new mailboxes.
+/mailbox-templates:
+  $ref: './mailbox-templates.yaml'
+/mailbox-templates/{mailboxTemplateId}:
+  $ref: './mailbox-template.yaml'

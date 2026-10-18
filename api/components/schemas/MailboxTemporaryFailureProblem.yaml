@@ -1,0 +1,20 @@
+description: |
+  Problem of type `/api/v2/problems/temporary-failure` (status `503`): a mailcow service the
+  operation needs is unavailable or reported a failure, and nothing was changed (for a rename: every
+  step already done was undone). Retry after the `Retry-After` header.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    properties:
+      dependency:
+        type: string
+        description: |
+          The unavailable service. Known values: `mailStore` (the container API or the Dovecot
+          container, for maildir moves and shared-folder permissions), `webmail` (the SOGo
+          container), `sharedStore` (mailcow's Redis). Later features may add values.
+        examples: [mailStore]
+      steps:
+        type: array
+        description: For a rename, the outcome of every step.
+        items:
+          $ref: './MailboxRenameStep.yaml'

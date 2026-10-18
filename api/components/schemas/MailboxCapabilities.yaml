@@ -1,0 +1,64 @@
+type: object
+description: |
+  Server settings and limits a client needs before it submits a mailbox form. They reflect the
+  server's current configuration and contain no secret or connection detail.
+required:
+  - identityProviderType
+  - authSources
+  - groupwareEnabled
+  - lastLoginsReported
+  - bulkLimit
+  - taggingLimit
+  - tagMaxLength
+  - customAttributeLimit
+  - customAttributeNameMaxLength
+  - customAttributeValueMaxLength
+  - defaultPageSize
+  - maxPageSize
+  - garbageRetentionMinutes
+properties:
+  identityProviderType:
+    type: string
+    enum: [none, keycloak, genericOidc, ldap]
+    description: The external identity provider configured in mailcow (`identity_provider.authsource`).
+  authSources:
+    type: array
+    description: The authentication sources a mailbox may be given or switched to now (`mailcow` plus the configured provider type).
+    items:
+      $ref: './MailboxAuthSource.yaml'
+  groupwareEnabled:
+    type: boolean
+    description: '`false` when SOGo is disabled (`SKIP_SOGO=y`). `webmailRedirect` then has no effect.'
+  lastLoginsReported:
+    type: boolean
+    description: '`false` when the operator turned off the display of last logins (legacy `SHOW_LAST_LOGIN`). `lastLogins` is then always empty.'
+  bulkLimit:
+    type: integer
+    minimum: 1
+    maximum: 100
+  taggingLimit:
+    type: integer
+    minimum: 0
+  tagMaxLength:
+    type: integer
+    const: 255
+  customAttributeLimit:
+    type: integer
+    minimum: 0
+    maximum: 100
+  customAttributeNameMaxLength:
+    type: integer
+    const: 255
+  customAttributeValueMaxLength:
+    type: integer
+    const: 4096
+  defaultPageSize:
+    type: integer
+    const: 25
+  maxPageSize:
+    type: integer
+    const: 1000
+  garbageRetentionMinutes:
+    type: integer
+    minimum: 0
+    description: How long mailcow keeps the mail of a deleted mailbox before purging it (`MAILDIR_GC_TIME`, 7200 by default).

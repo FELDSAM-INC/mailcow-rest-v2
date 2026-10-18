@@ -1,0 +1,9 @@
+description: |
+  Unexpected failure (type `about:blank`; nothing was changed), or a rename that could neither
+  complete nor be undone (type `/api/v2/problems/mailbox-rename-incomplete`, extension `steps`).
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/MailboxRenameIncompleteProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'

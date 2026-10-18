@@ -1,0 +1,15 @@
+description: |
+  Problem of type `/api/v2/problems/address-in-use` (status `409`): the address is already used by
+  another object, so no mailbox can be created with it or renamed to it. Nothing was changed.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [address, holder]
+    properties:
+      address:
+        type: string
+        description: The normalised address.
+      holder:
+        type: string
+        enum: [mailbox, resource, alias, temporaryAlias]
+        description: The kind of object that holds the address.

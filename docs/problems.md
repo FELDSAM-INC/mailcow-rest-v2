@@ -347,8 +347,9 @@ extension members.
 - **Type**: `/api/v2/problems/dkim-dns-publication-disabled`
 - **Status**: 403
 - **Meaning**: A DKIM record was asked to be published again, but the DKIM DNS publication to an
-  ISPConfig server (a FeldHost setting, off by default) is disabled on this server. The refused
-  attempt is recorded in the audit log.
+  ISPConfig server (a FeldHost setting, off by default) is disabled on this server, or enabled
+  without the ISPConfig remote API address, user and password. The refused attempt is recorded in
+  the audit log.
 - **Client action**: Hide the action when `getMailDnsCapabilities` reports
   `dkim.dnsPublicationEnabled: false`. Publish the record at the DNS provider instead.
 
@@ -816,3 +817,138 @@ response header `Audit-Recorded: false`.
   owner.
 - **Client action**: Point the user to the existing entry. To move a pattern to the other list,
   remove the existing entry first.
+
+## demo-mode
+
+- **Type**: `/api/v2/problems/demo-mode`
+- **Status**: 403
+- **Meaning**: Feature 013. The operator enabled mailcow's demo mode (`DEMO_MODE=y`), which refuses
+  changes to logos, UI texts, login page options, app links, brand colours and the IP check, as the
+  legacy UI refuses its customisation writes. Nothing was changed. `GET /api/v2/settings/capabilities`
+  reports the mode beforehand (`demoMode`).
+- **Client action**: Explain that branding cannot be changed on this server. Do not retry.
+
+## feature-disabled
+
+- **Type**: `/api/v2/problems/feature-disabled`
+- **Status**: 403
+- **Meaning**: Feature 013. The operator disabled the operation on this server with a server
+  setting. Today this is license verification (`RESTV2_LICENSE_VERIFICATION=false`, for example on
+  the FeldHost deployment): reading the license status and verifying the GUID are refused, and the
+  license service is never contacted. `GET /api/v2/settings/capabilities` reports it beforehand
+  (`licenseVerificationEnabled`).
+- **Client action**: State that the feature is not available on this server. Do not retry.
+
+## regex-map-unavailable
+
+- **Type**: `/api/v2/problems/regex-map-unavailable`
+- **Status**: 409
+- **Meaning**: Feature 013. The global regex map is editable by configuration, but its file does
+  not exist in the shared Rspamd map directory of this server, so nothing was written. Legacy
+  silently skips such a map and reports success.
+- **Client action**: Tell the administrator that the deployment does not provide this map. Do not
+  retry.
+
+## global-sieve-filter-unavailable
+
+- **Type**: `/api/v2/problems/global-sieve-filter-unavailable`
+- **Status**: 409
+- **Meaning**: Feature 013. The shared file of the global Sieve pre-filter or post-filter does not
+  exist on this server, so nothing was written and Dovecot was not restarted. Legacy restarts
+  Dovecot anyway and reports success.
+- **Client action**: Tell the administrator that the deployment does not provide the filter file.
+  Do not retry.
+
+## mass-mail-already-running
+
+- **Type**: `/api/v2/problems/mass-mail-already-running`
+- **Status**: 409
+- **Meaning**: Feature 013. Another mass mail job is running, and only one runs at a time. The new
+  job was not created and nothing was sent.
+- **Extension members**: `runningJobId`, the identifier of the running job.
+- **Client action**: Show the running job (`GET /api/v2/mass-mail-jobs/{runningJobId}`). Send again
+  after it has completed or was cancelled.
+
+## mass-mail-recipient-count-changed
+
+- **Type**: `/api/v2/problems/mass-mail-recipient-count-changed`
+- **Status**: 409
+- **Meaning**: Feature 013. The selection of a new mass mail job yields another number of recipients
+  than the confirmed `expectedRecipients`, for example because a mailbox was created or deactivated
+  after the preview. The job was not created and nothing was sent.
+- **Extension members**: `actualRecipients`, the number the selection yields now.
+- **Client action**: Preview the selection again and ask the administrator to confirm the new count.
+- **Related system-settings errors** (feature 013, no type of their own or another feature's type):
+  an outdated `If-Match` is `412` (`about:blank`). Cancelling a completed mass mail job is `409`
+  (`about:blank`). mailcow's shared store or settings map endpoint being unavailable is
+  `temporary-failure`. Sending mass mail, cancelling it and setting the Rspamd web interface password
+  with an API key is `session-required`. A failure of mailcow's container service while setting the
+  Rspamd password is `container-action-failed` with `container: rspamd-mailcow` and without
+  `serviceMessage`; its timeout is `outcome-unknown` with `step: rspamdUiPassword`. Invalid input is
+  `validation-failed` with the rule codes listed under feature 013 in `ValidationRuleCode`.
+
+## domain-alias-limit-reached
+
+- **Type**: `/api/v2/problems/domain-alias-limit-reached`
+- **Status**: 409
+- **Meaning**: Feature 004. Creating, copying or moving aliases would make the aliases in use of a
+  primary domain exceed its alias limit. Aliases in use are counted as feature 002 counts them:
+  the aliases of the domain and of its alias domains, not counting the rows through which
+  mailboxes receive mail at their own address. It applies to alias creation, a copy over alias
+  domains (where the copy is reported as skipped instead), an alias address change into another
+  primary domain, an alias domain whose target changes (all its aliases move), and a mailbox rename
+  that keeps the old address as an alias (feature 003). Of concurrent requests for the last free
+  alias, exactly one succeeds. Nothing was changed.
+- **Extension members**: `domain` (the primary domain, ASCII form), `count` (aliases in use now),
+  `limit` (the domain's alias limit) and `requested` (aliases the request would add).
+- **Client action**: Tell the user the limit; an administrator can raise it (feature 002).
+- **Related alias, alias domain, resource and sender settings errors**: an object outside the
+  caller's scope, a mailbox's own-address row and a mailbox address used as a resource are `404`
+  (`about:blank`). An outdated `If-Match` is `412` (`about:blank`); in a bulk action the item is
+  reported `outdated`. An address that is taken is `address-in-use` (extension members `address`
+  and `holder`). A domain administrator creating an alias domain without `aliasDomains` gets
+  `permission-flag-required` (`requiredFlags: [aliasDomains]`); giving an initial rate limit
+  without `ratelimit`, or changing external sender addresses without `extendSenderAcl`, gets
+  `attribute-not-permitted` with `attributes` and the `requiredFlags` map. When mailcow's shared
+  store is down, alias domain creation, deletion and reads answer `temporary-failure`
+  (`dependency: sharedStore`). Invalid input is `validation-failed`; the rule codes and formats of
+  feature 004 are listed in `ValidationRuleCode`.
+
+## destination-not-permitted
+
+- **Type**: `/api/v2/problems/destination-not-permitted`
+- **Status**: 403
+- **Meaning**: Feature 004. The request adds external destinations to an alias: destinations whose
+  domain is neither an active domain nor an active alias domain of this server. Either the server
+  disables external destinations for every role, administrators included (the legacy setting
+  `ALIAS_DISABLE_EXTERNAL_DOMAINS`), or the caller is a domain administrator without the
+  `aliasExternalGoto` permission. Only destinations that the request adds are checked;
+  destinations already on the alias are kept. The whole request is refused, every refused
+  destination is named, and nothing changed. It is reported after all field errors, so a request
+  that gets it has no other invalid field.
+- **Extension members**: `destinations`, every refused destination as `{field, address}` with its
+  path in the request body (`destinations.2`); `reason`, `serverSetting` or `missingPermission`;
+  `permission`, `aliasExternalGoto` for `missingPermission`, else `null`.
+- **Client action**: Mark the named destinations. For `missingPermission`, explain that an
+  administrator must grant the permission or add the destination; for `serverSetting`, that the
+  server allows only destinations on this server (`getAliasCapabilities` reports
+  `externalDestinationsDisabled`).
+
+## alias-domain-already-exists
+
+- **Type**: `/api/v2/problems/alias-domain-already-exists`
+- **Status**: 409
+- **Meaning**: Feature 004. A new alias domain's name, after normalisation (trimmed, lower-cased,
+  converted to ASCII), already exists as a domain or as an alias domain. Nothing was created.
+- **Extension members**: `name` (the normalised name) and `existingKind` (`domain` or
+  `aliasDomain`).
+- **Client action**: Tell the user that the name is taken. Do not retry.
+
+## not-primary-domain-alias
+
+- **Type**: `/api/v2/problems/not-primary-domain-alias`
+- **Status**: 409
+- **Meaning**: Feature 004. Only an alias of a primary domain can be copied over that domain's
+  alias domains (the legacy action "Expand alias over alias domains"). The alias lives in an alias
+  domain. Nothing was created. In a bulk copy the item is reported `refused` with this problem.
+- **Client action**: Offer the action only for aliases with `inAliasDomain: false`.

@@ -1,0 +1,60 @@
+get:
+  operationId: listMailboxTemplates
+  tags: [Mailbox templates]
+  summary: List mailbox templates
+  description: |
+    Lists the mailbox templates, each with its values and version tag. `q` searches the name.
+    Administrators and domain administrators (who pick a template when creating a mailbox), from a
+    session or a key (read-only keys included).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/MailboxTemplateSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxTemplateListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createMailboxTemplate
+  tags: [Mailbox templates]
+  summary: Create a mailbox template
+  description: |
+    Creates a template. Values not given get the built-in defaults, with an unlimited quota as in
+    the legacy Default template. Audited. Administrators only, from a session or a read-write key.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/MailboxTemplateCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/MailboxTemplateCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/MailboxTemplateConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

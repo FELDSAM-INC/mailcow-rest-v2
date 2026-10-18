@@ -1,0 +1,4 @@
+# Paths of the password-policy module. Feature 003 reads the policy; feature 013 adds the change
+# operation to the same path, with the same version tag.
+/password-policy:
+  $ref: './password-policy.yaml'

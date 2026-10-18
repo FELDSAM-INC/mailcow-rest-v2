@@ -1,0 +1,14 @@
+type: object
+description: |
+  A rate limit: at most `value` messages per `frame` (mailcow's Redis hash `RL_VALUE`, stored as
+  `<value> / 1<s|m|h|d>`).
+required: [value, frame]
+properties:
+  value:
+    type: integer
+    minimum: 1
+    maximum: 2147483647
+  frame:
+    type: string
+    enum: [second, minute, hour, day]
+additionalProperties: false

@@ -1,0 +1,13 @@
+type: object
+description: |
+  Protocol access of a mailbox (`mailbox.attributes.*_access`). A setting missing from an older
+  mailbox's stored data is reported as `true`, which is how mail sign-in treats it.
+required: [imap, pop3, smtp, sieve, activeSync, dav]
+properties:
+  imap: {type: boolean, description: '`imap_access`'}
+  pop3: {type: boolean, description: '`pop3_access`'}
+  smtp: {type: boolean, description: '`smtp_access` (authenticated submission)'}
+  sieve: {type: boolean, description: '`sieve_access` (ManageSieve)'}
+  activeSync: {type: boolean, description: '`eas_access` (Exchange ActiveSync)'}
+  dav: {type: boolean, description: '`dav_access` (CalDAV and CardDAV)'}
+additionalProperties: false

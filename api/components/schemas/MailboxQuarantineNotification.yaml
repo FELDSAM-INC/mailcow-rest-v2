@@ -1,0 +1,3 @@
+type: string
+description: How often the mailbox user is told about new quarantine items (`attributes.quarantine_notification`).
+enum: [never, hourly, daily, weekly]

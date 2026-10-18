@@ -1,0 +1,26 @@
+type: object
+description: |
+  Outcome of each follow-up step of a mailbox creation. The mailbox, its usage records, its own
+  alias, its user permissions and its tags are stored together before these steps run; a failed
+  step never undoes the creation. The same report is stored in the creation's audit record.
+required: [rateLimit, taggedMailHandling, groupwareDirectoryUpdate]
+properties:
+  rateLimit:
+    type: string
+    enum: [applied, notRequested, failed]
+    description: The initial rate limit in mailcow's shared store (`RL_VALUE`).
+  taggedMailHandling:
+    type: string
+    enum: [applied, notRequested, failed]
+    description: The tagged-mail handling in mailcow's shared store. `notRequested` for `none`.
+  groupwareDirectoryUpdate:
+    type: string
+    enum: [done, notRequired, failed, groupwareDisabled]
+    description: |
+      The mailbox's entry in the groupware directory view (`_sogo_static_view`) and the groupware
+      cache flush. `notRequired` for a mailbox that is not active.
+  messages:
+    type: object
+    description: English explanation of each failed step, keyed by step name. Never contains secrets.
+    additionalProperties:
+      type: string

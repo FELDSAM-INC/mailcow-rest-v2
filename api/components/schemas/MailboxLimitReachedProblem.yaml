@@ -1,0 +1,19 @@
+description: |
+  Problem of type `/api/v2/problems/mailbox-limit-reached` (status `409`): the domain already has
+  as many mailboxes as its limit allows. Resources are not counted. Nothing was created.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [domain, count, limit]
+    properties:
+      domain:
+        type: string
+        description: The domain in ASCII form.
+      count:
+        type: integer
+        minimum: 0
+        description: Mailboxes in the domain now.
+      limit:
+        type: integer
+        minimum: 0
+        description: The domain's maximum number of mailboxes.

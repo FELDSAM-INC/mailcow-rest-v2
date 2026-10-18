@@ -1,0 +1,104 @@
+type: object
+description: |
+  A new mailbox. Each value not given is taken, in this order, from the named template, the Default
+  template, and the built-in defaults (server settings with the upstream values: active, no forced
+  password change or second-factor setup, webmail redirect on, all six protocols allowed, no TLS
+  enforcement, no tagged-mail handling, hourly quarantine notifications of rejected mail, no rate
+  limit, every user permission except `syncjobs` and `sogoProfileReset`). Exceptions:
+
+  - `quota` comes from the named template when one is named, and otherwise from the domain's
+    default quota for a new mailbox (feature 002);
+  - `displayName`, when absent or empty, is the local part;
+  - for an external `authSource`, `forcePasswordChange` (and for `genericOidc` also
+    `forceSecondFactorSetup`) is off whatever the template says.
+
+  Domain administrators need the `unlimitedQuota` flag for a quota of `0` (also from a template),
+  `protocolAccess` to choose protocol settings, `sogoAccess` to choose `webmailRedirect`,
+  `ratelimit` to choose `rateLimit`, and the overlapping flags to choose the matching user
+  permissions. Apart from the quota, a value equal to what the template and defaults would give is
+  not a choice. Recovery e-mail, custom attributes, sender permissions and relayhost cannot be set
+  at creation, as in legacy.
+required: [localPart, domain]
+properties:
+  localPart:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: |
+      Trimmed and lower-cased, then 1 to 64 ASCII letters, digits and ``! # $ % & ' * + / = ? ^ _ `
+      { | } ~ - .``, without a leading or trailing dot or two dots in a row (`invalidFormat` with
+      `format: localPart`). The full address must be a valid address of at most 255 characters
+      (`format: email`).
+    examples: [' Anna.Smith ']
+  domain:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: |
+      A primary domain in the caller's scope, in ASCII or Unicode form and any letter case. A
+      domain that does not exist or lies outside the caller's scope gives `notFound`; an alias
+      domain gives `notEligible` with `kind: aliasDomain`. Inactive and backup-MX domains are
+      accepted, as in legacy.
+    examples: [Example.org]
+  password:
+    type: string
+    format: password
+    writeOnly: true
+    minLength: 1
+    maxLength: 255
+    description: |
+      Required for the `mailcow` authentication source, refused for an external one
+      (`conflictsWith`). Checked against the password policy (`GET /password-policy`): each unmet
+      rule is reported (`tooShort` with `min`, `missingCharacterClass` with `characterClass`).
+      Stored in mailcow's configured hash scheme (`MAILCOW_PASS_SCHEME`). A value that starts with
+      a hash-scheme prefix legacy recognises, such as `{BLF-CRYPT}` or `{SSHA512}`, is stored as
+      given without the policy check. Never returned.
+  displayName:
+    type: string
+    maxLength: 255
+    description: Leading `<` and trailing `>` are removed, as in legacy.
+  authSource:
+    $ref: './MailboxAuthSource.yaml'
+  templateId:
+    type: integer
+    minimum: 1
+    description: Mailbox template that pre-fills omitted values. An unknown ID gives `notFound`.
+  quota:
+    type: integer
+    format: int64
+    minimum: 0
+    multipleOf: 1048576
+    description: |
+      Bytes, a whole multiple of 1 MiB (`notMultipleOf` with `factor: 1048576`), `0` for unlimited. It must not exceed the
+      domain's maximum mailbox quota (`outOfRange` with `max` and `limit: maxMailboxQuota`) or the
+      domain quota left (`outOfRange` with `max` and `limit: domainQuotaLeft`).
+  status:
+    $ref: './MailboxStatus.yaml'
+  forcePasswordChange:
+    type: boolean
+  forceSecondFactorSetup:
+    type: boolean
+  webmailRedirect:
+    type: boolean
+  protocolAccess:
+    $ref: './MailboxProtocolAccessInput.yaml'
+  userPermissions:
+    $ref: './MailboxUserPermissionsInput.yaml'
+  tags:
+    $ref: './MailboxTagSet.yaml'
+  taggedMailHandling:
+    $ref: './MailboxTaggedMailHandling.yaml'
+  quarantineNotification:
+    $ref: './MailboxQuarantineNotification.yaml'
+  quarantineCategory:
+    $ref: './MailboxQuarantineCategory.yaml'
+  tlsEnforceInbound:
+    type: boolean
+  tlsEnforceOutbound:
+    type: boolean
+  rateLimit:
+    description: Initial rate limit of the mailbox. `null` means none, overriding the template.
+    oneOf:
+      - $ref: './MailboxRateLimit.yaml'
+      - type: 'null'
+additionalProperties: false

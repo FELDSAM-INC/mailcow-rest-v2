@@ -1,0 +1,89 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxTemplateId.yaml'
+get:
+  operationId: getMailboxTemplate
+  tags: [Mailbox templates]
+  summary: Get a mailbox template
+  description: Administrators and domain administrators, from a session or a key (read-only keys included).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxTemplateResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateMailboxTemplate
+  tags: [Mailbox templates]
+  summary: Change a mailbox template
+  description: |
+    Changes only the values sent. The Default template cannot be renamed
+    (`mailbox-template-protected`). Mailboxes created from the template do not change. Audited.
+    Administrators only, from a session or a read-write key.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/MailboxTemplatePatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxTemplateResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/MailboxTemplateConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteMailboxTemplate
+  tags: [Mailbox templates]
+  summary: Delete a mailbox template
+  description: |
+    Deletes the template. The Default template cannot be deleted (`mailbox-template-protected`).
+    Mailboxes created from the template do not change. Audited. Administrators only, from a session
+    or a read-write key.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/MailboxTemplateConflict.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

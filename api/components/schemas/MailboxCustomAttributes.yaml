@@ -1,0 +1,16 @@
+type: object
+description: |
+  Custom attributes of a mailbox (`mailbox.custom_attributes`): named text values that mailcow's
+  domain footers insert in place of `{= name =}`. Names are 1 to 255 characters without
+  whitespace; values are at most 4,096 characters; a mailbox has at most 100 attributes
+  (`MailboxCapabilities.customAttributeLimit`).
+propertyNames:
+  minLength: 1
+  maxLength: 255
+  pattern: '^\S+$'
+additionalProperties:
+  type: string
+  maxLength: 4096
+examples:
+  - department: Sales
+    phone: '+420 123 456 789'

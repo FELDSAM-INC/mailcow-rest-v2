@@ -1,0 +1,12 @@
+type: object
+description: A count of addresses and up to 100 of them, sorted.
+required: [count, addresses]
+properties:
+  count:
+    type: integer
+    minimum: 0
+  addresses:
+    type: array
+    maxItems: 100
+    items:
+      type: string

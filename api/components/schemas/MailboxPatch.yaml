@@ -1,0 +1,80 @@
+type: object
+description: |
+  JSON Merge Patch (RFC 7396) of a mailbox: only the members sent change. Nested objects merge, so
+  `protocolAccess` and `userPermissions` change only the members they contain, and
+  `customAttributes` adds or replaces the names sent with a text value and removes those sent with
+  `null`. `tags` replaces the whole set. Any other member of the mailbox representation is
+  read-only and refused (`immutable`); the address changes only through `renameMailbox`.
+
+  Domain administrators need the flags listed for `createMailbox` to choose these settings; a value
+  equal to the current one is not a choice. A quota of `0` needs `unlimitedQuota` unless the
+  mailbox is already unlimited. A refused setting refuses the whole request
+  (`attribute-not-permitted`) and nothing changes.
+minProperties: 1
+properties:
+  displayName:
+    type: string
+    maxLength: 255
+    description: An empty value sets the local part. Leading `<` and trailing `>` are removed.
+  status:
+    $ref: './MailboxStatus.yaml'
+  quota:
+    type: integer
+    format: int64
+    minimum: 0
+    multipleOf: 1048576
+    description: |
+      Must not exceed `largestAllowedQuota` (`outOfRange` with `max` and `limit:
+      largestAllowedQuota`). A quota below the storage already used is accepted, as in legacy.
+  password:
+    type: string
+    format: password
+    writeOnly: true
+    minLength: 1
+    maxLength: 255
+    description: |
+      As for `createMailbox`. Updates `passwordChangedAt`; it does not change
+      `forcePasswordChange`, app passwords or sessions. Refused for an external authentication
+      source unless the same request switches `authSource` to `mailcow`, in which case it is
+      applied to the switched mailbox.
+  forcePasswordChange:
+    type: boolean
+    description: Turning it on is refused for an external authentication source (`conflictsWith`).
+  forceSecondFactorSetup:
+    type: boolean
+    description: Turning it on is refused for `genericOidc` (`conflictsWith`).
+  webmailRedirect:
+    type: boolean
+  protocolAccess:
+    $ref: './MailboxProtocolAccessInput.yaml'
+  authSource:
+    allOf:
+      - $ref: './MailboxAuthSource.yaml'
+    description: |
+      Switching to an external source turns off `forcePasswordChange` (and for `genericOidc`
+      `forceSecondFactorSetup`) and keeps the stored password hash, as in legacy. Switching to
+      `mailcow` without `password` is refused (`required` on `password`) when the mailbox has no
+      stored password.
+  recoveryEmail:
+    description: A valid address, or `null` or an empty string to clear it. Only for the `mailcow` authentication source (`conflictsWith`).
+    oneOf:
+      - type: string
+        maxLength: 255
+      - type: 'null'
+  tags:
+    $ref: './MailboxTagSet.yaml'
+  userPermissions:
+    $ref: './MailboxUserPermissionsInput.yaml'
+  customAttributes:
+    type: object
+    description: Names to add or replace (text value) or remove (`null`). Limits as in `MailboxCustomAttributes`.
+    minProperties: 1
+    propertyNames:
+      minLength: 1
+      maxLength: 255
+    additionalProperties:
+      oneOf:
+        - type: string
+          maxLength: 4096
+        - type: 'null'
+additionalProperties: false

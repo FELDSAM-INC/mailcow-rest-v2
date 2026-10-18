@@ -1,0 +1,34 @@
+type: object
+description: |
+  What the mailbox user may do in the web apps (mailcow's `user_acl` row), in camelCase. Five
+  permissions overlap with domain-administrator flags of the same name: `syncjobs`, `quarantine`,
+  `appPasswds`, `pushover` and `spamPolicy`. For a domain administrator who lacks such a flag, the
+  matching permission is omitted from every representation and cannot be changed, as in legacy.
+required:
+  - spamAlias
+  - tlsPolicy
+  - spamScore
+  - delimiterAction
+  - easReset
+  - sogoProfileReset
+  - quarantineAttachments
+  - quarantineNotification
+  - quarantineCategory
+  - pwReset
+properties:
+  spamAlias: {type: boolean, description: 'Temporary aliases (`spam_alias`).'}
+  tlsPolicy: {type: boolean, description: 'TLS policy (`tls_policy`).'}
+  spamScore: {type: boolean, description: 'Spam score (`spam_score`).'}
+  spamPolicy: {type: boolean, description: 'Allow and block lists (`spam_policy`). Overlaps with the domain-administrator flag.'}
+  delimiterAction: {type: boolean, description: 'Tagged-mail handling (`delimiter_action`).'}
+  syncjobs: {type: boolean, description: 'Sync jobs (`syncjobs`). Overlaps with the domain-administrator flag.'}
+  easReset: {type: boolean, description: 'ActiveSync cache reset (`eas_reset`).'}
+  sogoProfileReset: {type: boolean, description: 'SOGo profile reset (`sogo_profile_reset`).'}
+  pushover: {type: boolean, description: 'Push notifications (`pushover`). Overlaps with the domain-administrator flag.'}
+  quarantine: {type: boolean, description: 'Quarantine actions (`quarantine`). Overlaps with the domain-administrator flag.'}
+  quarantineAttachments: {type: boolean, description: 'Quarantine attachments (`quarantine_attachments`).'}
+  quarantineNotification: {type: boolean, description: 'Quarantine notification settings (`quarantine_notification`).'}
+  quarantineCategory: {type: boolean, description: 'Quarantine notification category (`quarantine_category`).'}
+  appPasswds: {type: boolean, description: 'App passwords (`app_passwds`). Overlaps with the domain-administrator flag.'}
+  pwReset: {type: boolean, description: 'Password reset by recovery e-mail (`pw_reset`).'}
+additionalProperties: false

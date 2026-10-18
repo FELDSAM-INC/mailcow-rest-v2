@@ -1,0 +1,126 @@
+get:
+  operationId: listMailboxes
+  tags: [Mailboxes]
+  summary: List mailboxes
+  description: |
+    Lists the mailboxes in the caller's scope: every mailbox for an administrator, the mailboxes of
+    the domains assigned to a domain administrator (active assignments). Resources are never
+    listed. Each entry carries the full representation and its version tag; a page is built
+    without a lookup per mailbox. `q` matches the address, the display name and the tags as
+    case-insensitive substrings. Filters accept several values (repeat the parameter) and match any
+    of them; filters combine with each other and with `q`. A domain outside the caller's scope
+    matches nothing.
+
+    Administrators and domain administrators, from a session or a key (read-only keys included).
+    Mailbox users are refused (`forbidden`).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/MailboxSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: domain
+      in: query
+      required: false
+      description: Only mailboxes of these domains (ASCII or Unicode form, any letter case).
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 100
+        items:
+          type: string
+          maxLength: 255
+    - name: status
+      in: query
+      required: false
+      description: Only mailboxes with one of these statuses.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 3
+        items:
+          $ref: '../../components/schemas/MailboxStatus.yaml'
+    - name: tag
+      in: query
+      required: false
+      description: Only mailboxes carrying one of these tags (whole tag, case-insensitive).
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 100
+        items:
+          type: string
+          maxLength: 255
+    - name: authSource
+      in: query
+      required: false
+      description: Only mailboxes with one of these authentication sources.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 4
+        items:
+          $ref: '../../components/schemas/MailboxAuthSource.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MailboxTemporaryFailure.yaml'
+post:
+  operationId: createMailbox
+  tags: [Mailboxes]
+  summary: Create a mailbox
+  description: |
+    Creates a mailbox in a domain of the caller's scope, exactly as the legacy "Add mailbox" form
+    does: the mailbox row with its settings and password hash, its zeroed usage records (primary
+    and replica), its own alias with the mailbox's status, its user permissions and its tags are
+    stored together. The domain's mailbox limit, maximum mailbox quota and domain quota hold even
+    for concurrent requests. Then the follow-up steps run: the initial rate limit and the
+    tagged-mail handling in mailcow's shared store, and the groupware directory entry with a cache
+    flush (skipped when the groupware is disabled). A failed follow-up step never removes the
+    mailbox; `creationReport` reports each one. Audited, without the password.
+
+    Administrators and domain administrators (see `MailboxCreateRequest` for the permission
+    flags), from a session or a read-write key.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/MailboxCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/MailboxCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/MailboxForbidden.yaml'
+    '409':
+      $ref: '../../components/responses/MailboxConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MailboxTemporaryFailure.yaml'

@@ -1,0 +1,9 @@
+description: What deleting the mailbox would remove and move now.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/MailboxDeletionPreview.yaml'

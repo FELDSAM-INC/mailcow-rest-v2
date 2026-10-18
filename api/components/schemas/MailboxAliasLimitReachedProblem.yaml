@@ -1,0 +1,20 @@
+description: |
+  Problem of type `/api/v2/problems/domain-alias-limit-reached` (status `409`), as for alias
+  creation (feature 004): a rename that keeps the old address as an alias needs room for one more
+  alias in the domain. Nothing was changed.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [domain, count, limit]
+    properties:
+      domain:
+        type: string
+      count:
+        type: integer
+        minimum: 0
+      limit:
+        type: integer
+        minimum: 0
+      requested:
+        type: integer
+        minimum: 1

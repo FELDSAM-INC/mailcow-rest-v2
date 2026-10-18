@@ -1,0 +1,89 @@
+type: object
+description: |
+  A mailbox template (a `templates` row with `type = 'mailbox'`): the values a new mailbox starts
+  with. Templates only pre-fill new mailboxes; changing or deleting one changes no mailbox. The
+  Default template always exists and supplies the values when no template is named. Values a stored
+  template lacks are reported with the built-in defaults (see `MailboxCreateRequest`), with an
+  unlimited quota as in the legacy Default template. User permissions are omitted for a domain
+  administrator who lacks the overlapping flag, as in `Mailbox.userPermissions`.
+required:
+  - id
+  - name
+  - isDefault
+  - quota
+  - status
+  - forcePasswordChange
+  - forceSecondFactorSetup
+  - webmailRedirect
+  - protocolAccess
+  - userPermissions
+  - tags
+  - taggedMailHandling
+  - quarantineNotification
+  - quarantineCategory
+  - tlsEnforceInbound
+  - tlsEnforceOutbound
+  - rateLimit
+  - createdAt
+  - modifiedAt
+  - etag
+properties:
+  id:
+    type: integer
+    minimum: 1
+    readOnly: true
+  name:
+    type: string
+    minLength: 1
+    maxLength: 255
+  isDefault:
+    type: boolean
+    readOnly: true
+    description: The Default template, which cannot be renamed or deleted.
+  quota:
+    type: integer
+    format: int64
+    minimum: 0
+    description: Bytes, a whole multiple of 1 MiB. `0` means unlimited.
+  status:
+    $ref: './MailboxStatus.yaml'
+  forcePasswordChange:
+    type: boolean
+  forceSecondFactorSetup:
+    type: boolean
+  webmailRedirect:
+    type: boolean
+  protocolAccess:
+    $ref: './MailboxProtocolAccess.yaml'
+  userPermissions:
+    $ref: './MailboxUserPermissions.yaml'
+  tags:
+    $ref: './MailboxTagSet.yaml'
+  taggedMailHandling:
+    $ref: './MailboxTaggedMailHandling.yaml'
+  quarantineNotification:
+    $ref: './MailboxQuarantineNotification.yaml'
+  quarantineCategory:
+    $ref: './MailboxQuarantineCategory.yaml'
+  tlsEnforceInbound:
+    type: boolean
+  tlsEnforceOutbound:
+    type: boolean
+  rateLimit:
+    oneOf:
+      - $ref: './MailboxRateLimit.yaml'
+      - type: 'null'
+  createdAt:
+    type: string
+    format: date-time
+    readOnly: true
+  modifiedAt:
+    readOnly: true
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string
+    readOnly: true
+    description: Version tag of the template's name and values, equal to the `ETag` header of a single read.

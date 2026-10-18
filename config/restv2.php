@@ -154,6 +154,8 @@ return [
         'DOCKER_TIMEOUT' => env('RESTV2_DOCKER_TIMEOUT'),
         'SHOW_LAST_LOGIN' => env('RESTV2_SHOW_LAST_LOGIN'),
         'MAILBOX_DEFAULT_ATTRIBUTES' => env('RESTV2_MAILBOX_DEFAULT_ATTRIBUTES'),
+        // Feature 004: external alias destinations disabled for every role (FR-007).
+        'ALIAS_DISABLE_EXTERNAL_DOMAINS' => env('RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS'),
     ],
 
     // Upstream defaults of mailcow-dockerized 2026-09a (data/web/inc/vars.inc.php).
@@ -229,6 +231,7 @@ return [
             'quarantine_category' => 'reject',
             'mailbox_format' => 'maildir:',
         ],
+        'ALIAS_DISABLE_EXTERNAL_DOMAINS' => false,
     ],
 
 ];

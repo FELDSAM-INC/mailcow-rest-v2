@@ -107,6 +107,7 @@ services:
       - RESTV2_DOCKER_TIMEOUT=${RESTV2_DOCKER_TIMEOUT:-}
       - RESTV2_SHOW_LAST_LOGIN=${RESTV2_SHOW_LAST_LOGIN:-}
       - RESTV2_MAILBOX_DEFAULT_ATTRIBUTES=${RESTV2_MAILBOX_DEFAULT_ATTRIBUTES:-}
+      - RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS=${RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS:-}
     volumes:
       # Read-only: legacy's vars.inc.php and vars.local.inc.php (R14).
       - ./data/web/inc:/mailcow/web/inc:ro,z

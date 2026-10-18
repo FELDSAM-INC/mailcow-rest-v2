@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V2\DomainTagController;
 use App\Http\Controllers\Api\V2\DomainTemplateController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\LivenessController;
+use App\Http\Controllers\Api\V2\MailboxController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
 use App\Http\Controllers\Api\V2\PasskeyChallengeController;
@@ -192,6 +193,16 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->whereNumber('templateId')
             ->defaults('restv2.audit', ['event' => 'domainTemplateDeletion', 'target' => 'domainTemplate'])
             ->name('domain-templates.destroy');
+    });
+
+    // Feature 003: mailboxes, mailbox templates and the password policy. Literal paths
+    // (bulk-actions, sub-resources) before /mailboxes/{mailbox}; the capabilities and the tags in use
+    // live at top-level paths.
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/mailboxes', [MailboxController::class, 'index'])->name('mailboxes.index');
+        Route::get('/mailboxes/{mailbox}', [MailboxController::class, 'show'])
+            ->where('mailbox', '[^/]+')
+            ->name('mailboxes.show');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

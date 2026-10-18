@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Http\Controllers\Api\V2;
+
+use App\Http\Controllers\Controller;
+use App\Http\RequestContext;
+use App\Http\Requests\Api\V2\ListMailboxesRequest;
+use App\Http\Resources\Api\V2\MailboxResource;
+use App\Models\Mailcow\Mailbox;
+use App\Services\Mailboxes\MailboxReader;
+use App\Services\Mailboxes\MailboxScope;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+/**
+ * listMailboxes, getMailbox, createMailbox, updateMailbox and deleteMailbox (feature 003). The role
+ * is checked first (`403`), then the scope (`404`, also for resources), then the request.
+ */
+class MailboxController extends Controller
+{
+    public function __construct(
+        private readonly MailboxReader $reader,
+        private readonly MailboxScope $scope,
+    ) {}
+
+    public function index(ListMailboxesRequest $request): JsonResponse
+    {
+        $principal = RequestContext::requirePrincipal($request);
+        $list = $request->listQuery();
+        $page = $this->reader->page($principal, $list, $request->filters());
+
+        return MailboxResource::list($page['data'], $list->meta($page['total']));
+    }
+
+    public function show(Request $request, string $mailbox): JsonResponse
+    {
+        $principal = RequestContext::requirePrincipal($request);
+        Gate::forUser($principal)->authorize('view', Mailbox::class);
+
+        $address = $this->scope->resolve($principal, $mailbox) ?? throw new NotFoundHttpException('The mailbox does not exist.');
+
+        return MailboxResource::response($this->reader->one($principal, $address) ?? throw new NotFoundHttpException('The mailbox does not exist.'));
+    }
+}

@@ -125,12 +125,10 @@
         }
     },
     "pendingOperations": [
-        "listMailboxes",
         "createMailbox",
         "getMailboxCapabilities",
         "listMailboxTags",
         "applyMailboxBulkAction",
-        "getMailbox",
         "updateMailbox",
         "deleteMailbox",
         "previewMailboxDeletion",

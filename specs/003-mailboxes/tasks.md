@@ -280,7 +280,7 @@ filter, search and sort; inspect single mailboxes; compare with the database (sp
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T029 [P] [US1] Write `tests/Feature/Mailboxes/ListMailboxesTest.php` for `listMailboxes`:
+- [X] T029 [P] [US1] Write `tests/Feature/Mailboxes/ListMailboxesTest.php` for `listMailboxes`:
   - AS-1: 30 mailboxes and 2 resources in three domains → first 25 by address, `meta.total` 30,
     no resource; `limit`/`offset` paging; `limit=1001` → `422 outOfRange` on `limit`.
   - AS-2: a domain administrator of `a.example` sees only its mailboxes; `domain=b.example` →
@@ -298,7 +298,7 @@ filter, search and sort; inspect single mailboxes; compare with the database (sp
   - Authorisation: AS-7 mailbox user → `403 forbidden`; read-only and read-write keys of an
     administrator list everything; a domain administrator's key lists its scope; restricted
     session → `403 pending-action-required`; no credentials → `401`.
-- [ ] T030 [P] [US1] Write `tests/Feature/Mailboxes/GetMailboxTest.php` for `getMailbox`:
+- [X] T030 [P] [US1] Write `tests/Feature/Mailboxes/GetMailboxTest.php` for `getMailbox`:
   - every member of `Mailbox` against the seeded rows: `domainUnicode`, `quotaUsed`,
     `messageCount`, `percentUsed` (rounded; `null` for quota 0), `largestAllowedQuota`
     (`min(maxquota, quota − other mailboxes)`, never negative), `passwordChangedAt` from a
@@ -317,24 +317,24 @@ filter, search and sort; inspect single mailboxes; compare with the database (sp
     a resource address or an unknown address → identical `404` bodies apart from `requestId`;
   - the address in mixed case and with a Unicode domain (percent-encoded) resolves;
   - authorisation as in T029.
-- [ ] T031 [P] [US1] Write `tests/Feature/Mailboxes/MailboxListQueryCountTest.php` (FR-016,
+- [X] T031 [P] [US1] Write `tests/Feature/Mailboxes/MailboxListQueryCountTest.php` (FR-016,
   SC-002): with `DB::listen`, the number of SQL statements for a page of 10 and a page of 100
   mailboxes is the same constant, and Redis is called at most three times per page.
 
 ### Implementation for User Story 1
 
-- [ ] T032 [US1] Create `app/Services/Mailboxes/MailboxListQuery.php` (R10: scope, filters, search
+- [X] T032 [US1] Create `app/Services/Mailboxes/MailboxListQuery.php` (R10: scope, filters, search
   with 001's `ListQuery` escaping, the sort expressions with `IS NULL` ordering and the address
   tie-break, the count query) and `app/Http/Requests/Api/V2/ListMailboxesRequest.php` (`limit`
   1–1000 default 25, `offset` ≥ 0, `sort` enum of `MailboxSort`, `order` `asc|desc`, `q` ≤ 255,
   `domain[]` ≤ 100 items ≤ 255 characters, `status[]` ⊂ `active|loginDisabled|inactive`, `tag[]` ≤
   100 items ≤ 255 characters, `authSource[]` ⊂ `mailcow|keycloak|genericOidc|ldap`).
-- [ ] T033 [US1] Create `app/Services/Mailboxes/MailboxReader.php`: `page(Principal, ListMailboxesRequest)`
+- [X] T033 [US1] Create `app/Services/Mailboxes/MailboxReader.php`: `page(Principal, ListMailboxesRequest)`
   and `one(Principal, Mailbox)` with the batch loading of R10 and the representation rules of R2
   (usage table by `MASTER`, domain figures from 002's `DomainUsageCalculator`, Redis `HMGET`s
   through `SharedStore`, last logins honouring `MailcowConfig::showLastLogin()`, permission
   omission for domain administrators, `MailboxVersion` for `etag`).
-- [ ] T034 [US1] Create `app/Http/Resources/Api/V2/MailboxResource.php` (contract `Mailbox`,
+- [X] T034 [US1] Create `app/Http/Resources/Api/V2/MailboxResource.php` (contract `Mailbox`,
   status, auth-source, quarantine-category and frame mappings of research R1) and
   `app/Http/Controllers/Api/V2/MailboxController.php` with `index` and `show` (`ETag` header).
   Add to `routes/api.php`, under `restv2.auth:authenticated` and `restv2.pending:enforce`:

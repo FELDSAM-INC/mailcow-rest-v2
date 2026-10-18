@@ -94,6 +94,33 @@
   (orchestrator decision: features 003 and 004 define bulk actions for the legacy mass actions in
   the same way. Legacy `edit/domain` and `delete/domain` take arrays and continue past failures,
   and the web app needs the mass actions.)
+- Q: How does a client learn the server settings that shape the domain forms before it submits:
+  whether the groupware is enabled, the default DKIM selector and key size, the tagging limit and
+  the other limits? → A: A read-only "domain capabilities" operation for administrators and domain
+  administrators returns them. The DKIM values and the DKIM DNS publication setting are returned to
+  administrators only (FR-064). (orchestrator decision: the UI 002 spec found these gaps. Legacy
+  renders the same settings into its pages: `SKIP_SOGO` hides the Global Address List checkbox of
+  the add form and the restart button, and the forms pre-fill the DKIM values.)
+- Q: Should the usage figures include the number of resources and the largest quota of an existing
+  mailbox? → A: Yes (FR-008). (orchestrator decision: the UI 002 spec found that a client otherwise
+  cannot foresee a deletion refused because of resources, or the "maximum mailbox quota" rule of
+  FR-033.)
+- Q: Can a client see what deleting a domain would remove or what blocks it, before deleting? → A:
+  Yes. A read-only deletion preview for administrators lists the blocking mailboxes and resources,
+  the alias domains, aliases and footer that would be removed, the domain administrator accounts
+  that would be deleted, and whether a DKIM key would be kept. It changes nothing (FR-065).
+  (orchestrator decision: the UI constitution requires destructive actions to show what they
+  affect, and the domain administrator cleanup of FR-038 is otherwise invisible.)
+- Q: Should list entries carry version tags, and can bulk actions use them? → A: Yes. Every list
+  entry carries the domain's version tag. Each item of a bulk action may carry the tag the client
+  read. An item whose tag is outdated is refused as outdated, and the others proceed (FR-015,
+  FR-063). (orchestrator decision: the UI 002 spec needs stale-list detection for bulk actions.
+  Sending tags stays optional, so clients that follow features 003 and 004 are unaffected.)
+- Q: Can a client get the distinct domain tags in its scope, for filter and editor suggestions? →
+  A: Yes. A read-only tag list returns each distinct tag in the caller's scope with the number of
+  domains that carry it, with search and paging (FR-066). (orchestrator decision: the UI 002 spec
+  found the gap. Footer exclusion candidates are not a gap; the web app uses the mailbox and alias
+  lists of features 003 and 004.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -148,6 +175,13 @@ compare every figure with what the legacy UI shows for the same data.
    refused as forbidden.
 7. **Given** a read-only API key owned by a domain administrator, **When** a client lists domains
    with it, **Then** it receives exactly that domain administrator's domains.
+8. **Given** a domain with 2 resources and mailboxes of 1, 2 and 5 GiB quota, **When** it is
+   inspected, **Then** it reports 2 resources and 5 GiB as the largest existing mailbox quota.
+9. **Given** three domains tagged "gold", one of them outside a domain administrator's scope,
+   **When** that domain administrator lists the distinct tags, **Then** "gold" is returned with a
+   count of 2.
+10. **Given** a domain listed by a client, **When** the client compares the version tag of the list
+    entry with the one an inspection returns, **Then** they are equal.
 
 ---
 
@@ -199,6 +233,11 @@ that mail for the new domain is accepted once a mailbox exists.
    so. **Given** the publication disabled, **Then** the report says it is not configured.
 10. **Given** a domain administrator, or a read-only key owned by an administrator, **When** they try
     to create a domain, **Then** the request is refused.
+11. **Given** a server whose groupware is disabled and whose default DKIM selector is `feldhost`,
+    **When** an administrator reads the domain capabilities, **Then** they learn that the groupware
+    is disabled, the selector `feldhost`, the default key size, the allowed key sizes and the
+    tagging limit, so the add form can hide the Global Address List flag and the restart option as
+    legacy does.
 
 ---
 
@@ -279,6 +318,11 @@ still has a mailbox or a resource.
    response is "not found".
 5. **Given** a domain administrator, **When** they try to delete a domain they manage, **Then** the
    request is refused as forbidden.
+6. **Given** a domain with 1 resource, 1 alias domain, 3 aliases, a footer and a domain
+   administrator who manages no other domain, **When** an administrator previews its deletion,
+   **Then** the preview says the deletion is blocked by the resource, and lists the alias domain,
+   the 3 aliases, the footer and that domain administrator account. Nothing changes, and no audit
+   record is written.
 
 ---
 
@@ -340,6 +384,10 @@ records with the same mass action in the legacy UI.
    submit any bulk action, **Then** the whole request is refused.
 5. **Given** a selection of 101 domains, **When** it is submitted, **Then** the request is refused
    with a validation error that states the limit of 100.
+6. **Given** a bulk deactivation whose items carry the version tags from the list, and one domain
+   that was changed in the legacy UI after the list was read, **When** it is submitted, **Then**
+   that domain is reported as refused with the outdated-version error, and the others are
+   deactivated.
 
 ---
 
@@ -441,7 +489,11 @@ and list the audit log filtered by target.
   conflict.
 - **Concurrent edits from the legacy UI**: the legacy UI never sends a version, so a legacy save
   can still overwrite a change made through this API, as before.
-- **Version tag sent with a bulk action**: not supported; bulk actions do not check versions.
+- **Bulk action items without version tags**: processed without a version check. Items with tags
+  are checked one by one.
+- **Deletion preview followed by changes**: the preview is a snapshot. The deletion checks and
+  computes everything again, so a mailbox added in between still blocks it.
+- **Groupware setting changed by the operator**: the capabilities reflect it on the next request.
 - **Bulk action naming the same domain twice**, or naming it in ASCII and Unicode form: it is
   processed once and reported once.
 - **Duplicate tags in one request**, or tags that differ only in letter case: stored once.
@@ -485,6 +537,9 @@ and list the audit log filtered by target.
   | Edit a domain | All editable attributes (FR-031) | Own domains: Global Address List flag and tags; description only with the `domain_desc` permission flag (FR-032) | Forbidden |
   | Delete a domain | Yes | Forbidden | Forbidden |
   | Bulk actions: activate, deactivate, delete (FR-062) | Yes, per domain as the single operation | Forbidden | Forbidden |
+  | Preview a domain deletion (FR-065) | Yes | Forbidden | Forbidden |
+  | Read domain capabilities (FR-064) | All values | Without the DKIM values | Forbidden |
+  | List distinct domain tags (FR-066) | Tags of all domains | Tags of own domains | Forbidden |
   | Domain templates (all operations) | Yes | Forbidden | Forbidden |
   | Read and replace a domain's footer | All domains | Own domains, no permission flag needed | Forbidden |
   | Read the audit log | Yes | Forbidden | Forbidden |
@@ -512,6 +567,10 @@ and list the audit log filtered by target.
   - for administrators only, the usernames of its domain administrators.
 - **FR-008**: Usage figures MUST be computed as legacy computes them:
   - mailboxes in use: the domain's mailboxes, not counting resources;
+  - resources: the domain's resources (locations, things and groups), which block a deletion like
+    mailboxes (FR-035);
+  - largest existing mailbox quota: the largest quota of a mailbox in the domain, not counting
+    resources, which is the floor for the maximum mailbox quota (FR-033);
   - aliases in use: aliases whose address is in the domain or in one of its alias domains, not
     counting aliases whose address is itself a mailbox;
   - alias domains: the number of alias domains that point to the domain;
@@ -543,10 +602,26 @@ and list the audit log filtered by target.
   maximum mailboxes, maximum aliases, default mailbox quota, maximum mailbox quota, domain quota,
   creation time and modification time. The default MUST be by name, ascending. Ties MUST be broken
   by name.
-- **FR-015**: Each list entry MUST carry the full domain representation (FR-007), so that the list
-  screen needs no request per row.
+- **FR-015**: Each list entry MUST carry the full domain representation (FR-007) and the domain's
+  version tag (FR-041), equal to the one an inspection returns, so that the list screen needs no
+  request per row and can detect stale entries.
 - **FR-016**: A client MUST be able to inspect one domain in its scope. The response MUST carry the
   domain's version tag (FR-041).
+
+#### Domain capabilities
+
+- **FR-064**: Administrators and domain administrators MUST be able to read the domain capabilities,
+  the server settings and limits a client needs before it submits:
+  - whether the groupware is enabled (legacy `SKIP_SOGO`). When it is disabled, clients can hide the
+    Global Address List flag in the creation form and the restart option, as legacy does;
+  - the tagging limit (FR-043) and the maximum tag length;
+  - the maximum description length, the footer text limit (FR-054), the bulk limit (FR-062), and the
+    default and maximum page sizes (FR-011);
+  - for administrators only: the default DKIM selector (FR-028), the built-in default DKIM key size,
+    the allowed DKIM key sizes, and whether the DKIM DNS publication is enabled (FR-027).
+
+  The values MUST reflect the server's current configuration and MUST NOT include any secret or
+  connection detail. The read MUST change nothing, and read-only keys MAY use it.
 
 #### Creating a domain
 
@@ -678,6 +753,18 @@ and list the audit log filtered by target.
   MUST be recorded in the audit record of the deletion.
 - **FR-040**: Deleting a domain that does not exist, or is outside the caller's scope, MUST be
   answered "not found". A successful deletion MUST respond with no body.
+- **FR-065**: Administrators MUST be able to preview the deletion of a domain. The preview MUST
+  change nothing and MUST NOT write an audit record. It MUST report, computed by the same rules as
+  the deletion itself (FR-035 to FR-038):
+  - whether the deletion would currently be allowed;
+  - the blocking objects: the number of mailboxes and resources, with up to 100 addresses of each;
+  - what would be removed: the alias domains, the number of aliases (including those of the alias
+    domains) with up to 100 addresses, and whether a footer exists;
+  - the domain administrator accounts that would be deleted because they manage no other domain;
+  - whether a DKIM key exists, which would be kept;
+  - the domain's current version tag, which the client can send with the deletion.
+
+  A preview of a domain that does not exist MUST be answered "not found".
 
 #### Version tags
 
@@ -698,6 +785,11 @@ and list the audit log filtered by target.
 - **FR-044**: Setting a domain's tags MUST replace the whole set. Removing tags, which legacy does
   with `delete/domain/tag`, is done by setting the set without them. Both administrators and the
   domain's domain administrators MAY change tags.
+- **FR-066**: Administrators and domain administrators MUST be able to list the distinct tags of the
+  domains in their scope. Each entry MUST give the tag and the number of domains in scope that
+  carry it. The list MUST support a case-insensitive substring search and pagination as in FR-011,
+  sorted alphabetically without regard to letter case. It MUST NOT reveal tags that appear only on
+  domains outside the caller's scope.
 
 #### Domain templates
 
@@ -792,8 +884,10 @@ and list the audit log filtered by target.
   the same checks, side effects and audit record as a single request for it, and the response MUST
   report one result per distinct domain: done, not found, refused (with the error type), or failed
   (with the error type). A failure on one domain MUST NOT stop or undo the others, as in legacy.
-  Bulk actions MUST NOT check version tags. The groupware directory update and cache flush MAY be
-  made once for the whole request, as legacy does.
+  Each item MAY carry the version tag the client read, for example from the list (FR-015). An item
+  whose tag no longer matches MUST be reported as refused with the outdated-version error and left
+  unchanged. Items without a tag MUST be processed without a version check. The groupware directory
+  update and cache flush MAY be made once for the whole request, as legacy does.
 
 ### Legacy Coverage
 
@@ -809,6 +903,8 @@ follows. Actions are `/api/v1` names; *form* marks legacy UI form handlers.
 | `edit/domain`, *form* Edit domain (administrator and domain administrator) | `mailbox('edit', 'domain')`, `edit/domain.twig` | FR-030 to FR-034, FR-041 to FR-044 |
 | `delete/domain`, single | `mailbox('delete', 'domain')` | FR-035 to FR-040, FR-056 |
 | Domain list mass actions: activate, deactivate, delete (`edit/domain` and `delete/domain` with arrays) | `tab-domains.twig` quick actions | FR-062, FR-063 |
+| Server settings rendered into the domain screens: `skip_sogo` (Global Address List checkbox of the add form, restart button), pre-filled DKIM selector and key size, `TAGGING_LIMIT` | `inc/header.inc.php`, `modals/mailbox.twig`, `vars.inc.php` | FR-064 |
+| Delete confirmation of the domain list | `ConfirmDeleteModal` in `js/build/011-api.js` | FR-065 |
 | `add/domain/template`, *form* add-template modal | `mailbox('add', 'domain_templates')` | FR-045 to FR-047 |
 | `get/domain/template/all`, `get/domain/template/{id}` | `mailbox('get', 'domain_templates')` | FR-045, FR-049 |
 | `edit/domain/template`, *form* Edit template | `mailbox('edit', 'domain_templates')`, `edit/domain-templates.twig` | FR-047, FR-048 |
@@ -884,7 +980,11 @@ in three ways:
 | DKIM key on delete | Kept, shown as an unassigned key on the DKIM screen | Kept (FR-038) |
 | Templates | Name required; uniqueness checked only at creation; renaming Default silently ignored; deleting Default silently ignored but reported as done; bulk delete stops after the first; values not validated; 0 replaced by defaults | Uniqueness also on rename; Default rename and delete refused; values validated like domains; explicit values kept (FR-046 to FR-048). **Deviation** |
 | Footer | Stored per name in `domain_wide_footer` (replaced as a whole). Exclusions must exist anywhere on the server; invalid entries are skipped and the rest saved; no size limit; alias domain names accepted but never applied by the mail pipeline | Same storage; exclusions must belong to the domain; invalid entries refuse the whole request; 1 MiB per text; alias domain names "not found" (FR-051 to FR-055). **Deviation** |
-| Concurrent edits | Last write wins | Version tags (FR-041, FR-042). **Deviation** |
+| Concurrent edits | Last write wins | Version tags on domains, list entries and bulk items (FR-015, FR-041, FR-042, FR-063). **Deviation** |
+| Server settings for the forms | Rendered into the pages: `SKIP_SOGO` hides the Global Address List checkbox of the add form and the restart button; DKIM values pre-filled from the template; the tagging limit is never shown | Readable domain capabilities (FR-064), an addition |
+| Usage figures | No resource count, no largest existing mailbox quota (both computed only inside the delete and edit checks) | Both reported (FR-008), an addition |
+| Delete confirmation | A dialog that names the selected domains only | Read-only deletion preview (FR-065), an addition |
+| Tag suggestions | None | Distinct tag list in scope (FR-066), an addition |
 | Domain mass actions | `edit/domain` and `delete/domain` take a list of domains; processing continues past failures | Bulk action with one result per domain (FR-062, FR-063) |
 | Template mass delete and multi-domain footers | `delete/domain/template` with a list stops after the first template; `edit/domain/footer` applies one footer to a list of domains | One request per template and per footer (FR-062). **Deviation** |
 | UI log entries | Written to the `logs` table | Written to this API's audit log (FR-057), as in feature 001. **Deviation** |
@@ -898,8 +998,9 @@ in three ways:
   limits, quotas, relay options, Global Address List flag, relayhost assignment, creation and
   modification times. It owns tags, aliases, alias domains, mailboxes, resources and a footer. Its
   rate limit and DKIM key are kept in mailcow's shared store.
-- **Domain usage** (computed): mailboxes, aliases and alias domains in use, quota allocated, storage
-  and messages in use, and the quotas available to a new mailbox.
+- **Domain usage** (computed): mailboxes, resources, aliases and alias domains in use, quota
+  allocated, the largest existing mailbox quota, storage and messages in use, and the quotas
+  available to a new mailbox.
 - **Domain tag** (existing mailcow data): a label attached to one domain, used for search and
   filtering.
 - **Domain template** (existing mailcow data, in a table shared with mailbox templates): a named set
@@ -909,7 +1010,14 @@ in three ways:
 - **Domain administrator assignment** (existing mailcow data, managed in feature 007): links a domain
   administrator to a domain, with an active state.
 - **Creation report**: the outcome of each follow-up step of one domain creation.
-- **Bulk action** (transient): one action on up to 100 domains, with one result per domain.
+- **Bulk action** (transient): one action on up to 100 domains, each optionally with a version
+  tag, with one result per domain.
+- **Domain capabilities** (computed from the server configuration): the groupware state, the
+  limits, and for administrators the DKIM defaults and the DNS publication setting.
+- **Deletion preview** (computed): what a deletion of one domain would be blocked by, remove and
+  keep, with the domain's version tag.
+- **Tag summary** (computed): one distinct tag in the caller's scope and the number of domains that
+  carry it.
 - **Audit record** (owned by this API, defined in feature 001): extended with the target type, the
   target identifier, the attribute changes and the follow-up step outcomes.
 
@@ -940,6 +1048,12 @@ in three ways:
   so that the web app can show each error next to its field.
 - **SC-010**: A bulk action on 100 domains completes within 10 seconds (deletions within 60
   seconds) and reports exactly one result per domain.
+- **SC-011**: When nothing changes between a deletion preview and the deletion, the deletion
+  removes exactly what the preview listed, or is refused for exactly the blocking objects it
+  listed, in 100% of test runs.
+- **SC-012**: Each domain capability equals the server's configuration in 100% of test runs. This
+  includes the groupware enabled and disabled, upstream and FeldHost selectors, and a changed
+  tagging limit.
 
 ## Assumptions
 
@@ -958,7 +1072,9 @@ in three ways:
   Only clients of this API are protected against lost updates.
 - These defaults can be changed by the operator: the tagging limit (25), the default DKIM selector
   (`dkim`), the DKIM DNS publication (off), the list page size (25, maximum 1,000) and the bulk
-  limit (100).
+  limit (100). Clients read the current values through the domain capabilities (FR-064).
+- Footer exclusion candidates are not offered by this feature. The web app picks them from the
+  mailbox and alias lists of features 003 and 004.
 - **Out of scope**:
   - mailboxes, aliases, alias domains and resources;
   - relayhost assignment, rate limit changes, DKIM management, MTA-STS, spam policies and quota

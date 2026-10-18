@@ -72,6 +72,20 @@
   The template list's mass delete stops after the first template in legacy, so templates and
   footers stay one request each. This is stated in the coverage and parity tables. All checklist
   items still pass, and every FR reference resolves.
+- Iteration 5 (orchestrator, gaps found by the UI 002 spec): five additive changes, each with an
+  orchestrator-decision clarification, acceptance scenarios, matrix rows, and coverage and parity
+  notes:
+  - domain capabilities, FR-064: the groupware state, the limits, and the DKIM defaults for
+    administrators;
+  - the resource count and the largest existing mailbox quota in the usage figures (FR-008);
+  - a read-only deletion preview (FR-065);
+  - version tags on list entries, and optional per-item version tags in bulk actions (FR-015,
+    FR-063);
+  - a distinct tag list in scope (FR-066).
+
+  SC-011 and SC-012 and three entities were added. Footer exclusion candidates are left to features
+  003 and 004. The spec now has FR-001 to FR-066 and SC-001 to SC-012. All checklist items pass, and
+  every FR reference resolves.
 - The domain-related legacy files of the FeldHost fork were diffed against upstream `2026-09a`. The
   domain logic is identical. The differences are the default DKIM selector and the ISPConfig DKIM DNS
   push, both now explicit (FR-027, FR-028 and the parity table).

@@ -7,7 +7,8 @@ post:
   description: |
     Revokes the key. It is refused from the very next request, stays listed with its revocation
     time and the revoking administrator, and cannot be restored. Audited. Revoking an already
-    revoked key succeeds and changes nothing.
+    revoked key succeeds and changes nothing; this check comes before `If-Match`, so a retried
+    revocation never answers `412`.
 
     Only a signed-in administrator may revoke keys; requests authenticated by a key are refused
     with `session-required`.

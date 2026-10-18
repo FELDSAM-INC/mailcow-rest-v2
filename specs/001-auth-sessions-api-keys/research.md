@@ -205,7 +205,9 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
   - **Sign-in is covered**: `POST /session`, the passkey challenge and assertion, and all
     pending-sign-in operations need the token. That makes login CSRF impossible (FR-011).
   - `DELETE /session` without a live session is a `204` no-op and needs no token. A forged sign-out
-    of a non-existent session cannot do anything (FR-010).
+    of a non-existent session cannot do anything (FR-010). A *live session* is a session record that
+    exists in Redis and has not expired, whether anonymous (it holds only the CSRF token or a
+    challenge) or signed in. With a live session the token is required, and the client has it.
   - As defence in depth, unsafe requests whose `Sec-Fetch-Site` header is `cross-site` are refused
     with the same problem. Same-origin and same-site requests, and requests without the header,
     pass on to the token check.
@@ -228,7 +230,8 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
      context and in the problem `requestId`.
   2. `AuthenticateApiKey`: if `X-API-Key` is non-empty, it resolves the key (R19). An invalid,
      expired or revoked key, or a disallowed address, answers `401` or `403` with its own type and
-     is published to fail2ban. The health routes skip this step.
+     is published to fail2ban. The System routes skip this step: health, the contract, the docs
+     page and the problem pages (route names `system.*`).
   3. `EnforceKeyScope`: a read-only key on any method other than `GET` and `HEAD` answers
      `403 insufficient-key-scope`, before any other authorisation. The access level is a property
      of the key, and no unsafe operation of feature 001 is open to keys, so this is the only place
@@ -322,7 +325,13 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     legacy never updates `signatureCounter`). Synced passkeys report 0 anyway.
   - **Challenges**: single-use, stored in the session with `expiresAt = now + 300 s`, and removed
     on the first verification attempt, successful or not (FR-017, FR-052). The options' `timeout`
-    is 300000 ms.
+    is 300000 ms, where legacy sends 30 s (a parity row in the spec records it).
+  - **JSON shape**: `App\Support\WebAuthn\OptionsJson` normalises lbuchs's argument objects to
+    the contract's WebAuthn Level 3 JSON. It always emits `allowCredentials` (an empty array when
+    there are no IDs, where lbuchs omits the member), adds `residentKey: "required"` next to
+    `requireResidentKey: true` (the legacy copy of lbuchs sets only the latter), drops lbuchs's
+    private `extensions.exts`, and keeps `extensions.appid` for the second-factor challenge. Unit
+    tests pin this mapping against the installed lbuchs version.
 - **Rationale**: The same library guarantees byte-compatible storage and identical verification
   semantics, so credentials work in both UIs in both directions (SC-001, SC-003). MIT is
   compatible with GPL-3.0. The library is small, has no dependencies and supports PHP 8.
@@ -488,6 +497,10 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     script fails or times out, the defaults apply and a warning is logged once per fingerprint.
     Laravel's `session.lifetime` (minutes) is set from `SESSION_LIFETIME` at boot, rounded up.
 
+    The mount is optional. `RESTV2_*` settings are authoritative, and the plan's Complexity
+    Tracking records reading the files as a deviation from "configuration comes from environment
+    variables".
+
     **Relation to `docs/conventions.md`**: the conventions make legacy PHP configuration "API
     server settings with upstream defaults that the operator keeps aligned". This design keeps that
     rule, because every value is a `RESTV2_*` server setting with the upstream default. It also
@@ -553,7 +566,9 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
   - **Normalisation**: The username is trimmed and lower-cased (the triggers do it before
     `check_login`). A username that is neither a valid e-mail address
     (`FILTER_VALIDATE_EMAIL`) nor alphanumeric after removing `_.-` is malformed. It gets the
-    generic failure, counts towards throttling and is published to fail2ban, as in legacy.
+    generic failure, counts towards throttling and is published to fail2ban, as in legacy. A
+    username longer than 255 characters is refused by the contract with `422` before any check: no
+    mailcow account can have one (`VARCHAR(255)`), so nothing is counted or published.
   - **Order without role**: admin (`admin.superadmin = 1 AND active = 1`), then domain admin
     (`superadmin = 0 AND active = 1`), then mailbox user. The first account whose password verifies
     wins. The app-password step of legacy is never part of a UI sign-in (legacy skips it when the
@@ -580,8 +595,10 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     `403 second-factor-unavailable`, audited as `secondFactorUnavailable`. That happens after the
     password verified, so the throttle is reset. The usable methods are ordered `webauthn`, `totp`,
     `yubi_otp`, and by `id` within a type.
-  - **Re-activation (FR-026)**: When the password verifies and no usable second factor is active,
-    `UPDATE tfa SET active = '1' WHERE username = ?` runs in the sign-in transaction.
+  - **Re-activation (FR-026)**: When the password verifies and the account has **no active `tfa`
+    row of any type** (legacy: `get_tfa()` returns no active rows), `UPDATE tfa SET active = '1'
+    WHERE username = ?` runs in the sign-in transaction. An account whose active rows are all
+    `u2f`/`hotp` is not re-activated; it gets `second-factor-unavailable` instead.
   - **Recent login (FR-027)**: `REPLACE INTO sasl_log (username, real_rip, service, app_password)
     VALUES (?, ?, <RESTV2_SASL_LOG_SERVICE>, 0)` runs for a mailbox user whose password verified,
     whether or not a second factor follows (legacy writes it in `check_login`). It also runs after
@@ -611,7 +628,9 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     delay to whole seconds through `sleep()`. The spec's 0.5 s steps are used instead.
   - **Hard limit**: when the key has reached `RESTV2_SIGNIN_MAX_FAILURES` within
     `RESTV2_SIGNIN_FAILURE_WINDOW` (a fixed window from the first failure), the answer is `429` with
-    `Retry-After` = `availableIn()`, without checking credentials, audited as `throttled`.
+    `Retry-After` = `max(1, availableIn())`, without checking credentials, audited as `throttled`.
+    The Redis keys are `restv2:signin:<hash>` and `restv2:passkey:<hash>` (plus Laravel's `:timer`
+    keys).
   - **Reset**: a verified password clears its key (legacy `unset($_SESSION['ldelay'])`), and a
     successful passkey sign-in clears the passkey key.
   - **What counts**: a failed second factor counts on the `signin:` key of the pending username.
@@ -677,6 +696,9 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     `allowedRoles: [admin, domainAdmin]`. `expiresAt` must be later than now (`mustBeInFuture`).
     Each `allowedNetworks` entry must parse with `IpUtils` as an address or prefix (IPv4 0–32, IPv6
     0–128) and is normalised to `address/prefix`, with duplicates removed.
+  - **Revocation and `If-Match`**: an already revoked key answers `200` unchanged **before**
+    `If-Match` is evaluated, so a retried revocation with the tag read before the first one
+    succeeds (FR-036). For a key that is not yet revoked, a mismatching `If-Match` answers `412`.
   - **Version tag**: strong ETag over the stored settings only: `id`, `name`, `owner_username`,
     `access_level`, `allowed_networks`, `expires_at`, `revoked_at` and `revoked_by`. It excludes
     `last_used_*` and the derived `status`, per `docs/conventions.md`. The same value is returned as
@@ -788,15 +810,17 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     `./data/conf/nginx/` there. `deploy/nginx/site.restv2.custom` is copied to
     `data/conf/nginx/site.restv2.custom`. It contains:
     - `location ^~ /api/v2/` with `resolver 127.0.0.11 valid=30s;`,
-      `set $restv2 restv2-mailcow:9000;`, `include /etc/nginx/fastcgi_params;`,
+      `set $restv2_upstream restv2-mailcow:9000;`, `include /etc/nginx/fastcgi_params;`,
       `fastcgi_param SCRIPT_FILENAME /app/public/index.php;`, `fastcgi_param HTTP_PROXY "";`,
-      `client_max_body_size 1m;` and `fastcgi_pass $restv2;`;
+      `client_max_body_size 1m;` and `fastcgi_pass $restv2_upstream;`;
     - `location ^~ /ng/`, which proxies with the same variable technique to `http://ng-mailcow:8080`.
       That is the static image of mailcowui-ng, which the UI repository adds to the same override.
       Until it is deployed, `/ng/` answers `502`.
 
     The `^~` prefix match beats the legacy regex locations, and `/api/v1` is untouched. The
-    variable plus `resolver` makes nginx start even when the API container is absent.
+    variable plus `resolver` makes nginx start even when the API container is absent. The dev
+    stack uses the same file unchanged: its `app` service has the network alias `restv2-mailcow`
+    and the same `/app` path.
   - **Trusted proxy and real client address**: nginx-mailcow is the only hop. Its `real_ip` module
     already resolves `X-Forwarded-For` or the PROXY protocol from mailcow's trusted ranges and
     `TRUSTED_PROXIES`, and `fastcgi_params` passes the result as `REMOTE_ADDR`. Legacy reads the
@@ -855,7 +879,9 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
      `schema` covers every file in `tests/fixtures/schema/` (today `2026-09a`). It runs
      `composer test`: bundle, prepare the database, then PHPUnit with contract validation and the
      coverage check.
-  4. `image`: builds the `production` target and runs the container's `restv2:health --live`.
+  4. `image`: builds the `production` target, runs the container's `restv2:health --live`, and runs
+     `nginx -t` in `nginx:1.28-alpine` on `docker/nginx/dev.conf`, which includes
+     `deploy/nginx/site.restv2.custom`.
 - **Rationale**: This covers the constitution's quality gates: lint, breaking changes,
   contract-validated tests on each supported schema, Pint and static analysis.
 - **Alternatives considered**: Spectral was rejected because Redocly is already the bundler. PHPStan
@@ -869,8 +895,10 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
     `about:blank` problem+json.
   - `304` answers conditional GETs of the public configuration and logos. It is not an error.
 
-  Wrong request content types are not rejected with `415`. A non-JSON body simply fails
-  validation (`422`). See Complexity Tracking in the plan.
+  Wrong request content types are not rejected with `415`. A body sent with a JSON content type
+  that does not parse answers `400` (`about:blank`). A body with a non-JSON content type is not
+  parsed, so its fields are missing and validation answers `422`. See Complexity Tracking in the
+  plan.
 - **Rationale**: `503` with `Retry-After` is the RFC 9110 meaning of a temporary dependency
   failure, and FR-049 requires a distinct type that clients act on. `405` is framework behaviour
   for undefined methods.

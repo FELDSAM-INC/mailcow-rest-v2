@@ -2,7 +2,7 @@ get:
   operationId: getOpenApiDocument
   tags: [System]
   summary: Get this contract
-  description: Returns the bundled OpenAPI document of the running release.
+  description: Returns the bundled OpenAPI document of the running release. Ignores `X-API-Key`.
   security: []
   responses:
     '200':

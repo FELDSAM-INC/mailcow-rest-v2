@@ -267,8 +267,9 @@ outcome and each fail2ban report.
    **Then** the request is refused with an "invalid key" error and the attempt is reported to
    fail2ban.
 8. **Given** a read-write key owned by an administrator, **When** a client uses it to create or
-   revoke a key, **Then** the request is refused as forbidden. Keys are created and revoked only in
-   a signed-in administrator session.
+   revoke a key, **Then** the request is refused as forbidden, with the error that the operation
+   needs a signed-in session. Keys are created and revoked only in a signed-in administrator
+   session.
 9. **Given** a domain administrator or a mailbox user, **When** they try to list, create or revoke
    keys, **Then** the request is refused as forbidden.
 10. **Given** an administrator filling in the key form, **When** they search the possible owners for
@@ -361,7 +362,8 @@ with each filter and confirm exactly the expected entries appear and contain no 
   open or a key is in use**: the next request sees the change. A deactivated account's session
   ends, and changed scope or flags apply immediately.
 - **Second factor deactivated or deleted between the password step and the second-factor step**:
-  the pending sign-in fails, and the client must start again.
+  the pending sign-in fails, and the client must start again. The attempt does not count towards
+  throttling, because no wrong factor was submitted.
 - **Wrong second factor**: one failed second-factor attempt cancels the pending sign-in (legacy
   behaviour), and the client must start again with the password. The failure counts towards
   throttling.
@@ -454,8 +456,10 @@ with each filter and confirm exactly the expected entries appear and contain no 
   second-factor setup while it has neither a second factor nor an active passkey (FR-054), the
   session MUST be restricted. This applies to every sign-in method. In a restricted session, the
   client can read its identity (which lists the pending actions) and sign out. When second-factor
-  setup is pending, it can also register a passkey (FR-052). Every other operation MUST be refused
-  with a documented error that names the pending actions.
+  setup is pending, it can also register a passkey (FR-052). Operations that need no signed-in
+  account stay available: the public configuration, the anti-forgery token, the session state,
+  signing in again and its steps, the documentation and the health checks. Every other operation
+  MUST be refused with a documented error that names the pending actions.
 
 #### Passkey sign-in
 
@@ -536,8 +540,9 @@ with each filter and confirm exactly the expected entries appear and contain no 
   - the username and role (for a key, those of the key's owner);
   - how the client authenticated: with a password, a password plus a second factor, a passkey, or
     an API key. For an API key, it also contains the key's identifier, name and access level;
-  - the scope: all domains for an administrator, the active managed domains for a domain
-    administrator, the mailbox and its domain for a mailbox user;
+  - the scope: all domains for an administrator, the managed domains with an active assignment for
+    a domain administrator (as in legacy, a still-assigned inactive domain stays in scope), the
+    mailbox and its domain for a mailbox user;
   - the effective permission flags: all for an administrator, the domain-administrator flags for a
     domain administrator, the mailbox-user flags for a mailbox user;
   - any pending actions;
@@ -633,7 +638,7 @@ with each filter and confirm exactly the expected entries appear and contain no 
   - whether it is shown on the login page. As in legacy, "hidden" applies only to the login page.
 
   Built-in apps that point to SOGo MUST be left out when SOGo is disabled (`SKIP_SOGO=y`). The
-  label of the apps menu MUST be included when the operator has set one, and is empty otherwise, so
+  label of the apps menu MUST be included when the operator has set one, and is null otherwise, so
   that the client shows its own translated default. Editing app links stays in feature 013.
 
 #### Audit log
@@ -741,7 +746,10 @@ product name (FR-043).
 | Account resolution order | Admin, then domain admin, then mailbox user when no role is given. Each login page fixes the role | Same. Role is optional (FR-002, FR-015) |
 | Hash formats accepted | `verify_hash` list | Same (FR-004) |
 | fail2ban message | `mailcow UI: Invalid password for <user> by <ip>`, and `API_USER` for keys | Same text (FR-006, FR-040) |
-| Progressive delay | Per session: 0 s, then +0.5 s per failure | Same steps, but counted per username and address, plus a hard limit (FR-007). **Deviation**: a session-scoped counter is reset by dropping the cookie |
+| Progressive delay | Per session: 0 s, then +0.5 s per failure, but PHP's `sleep()` truncates the value to whole seconds (0, 0, 1, 1, 2, …) | Exact 0.5 s steps, counted per username and address, plus a hard limit (FR-007). **Deviation**: a session-scoped counter is reset by dropping the cookie |
+| Yubico service unreachable | The verification fails and the pending login is cancelled | Temporary-failure error; the pending sign-in stays open and nothing is counted (edge case). **Deviation** |
+| Passkey sign-in failures | Not throttled | Counted per client address towards the same limit (FR-018). **Deviation** |
+| Ceremony timeout hint | WebAuthn options carry a 30 s `timeout`; the challenge lives until the session ends | Options carry 300 s, and challenges expire after 5 minutes (FR-017, FR-052). **Deviation** |
 | Failed second factor | Cancels the pending login | Same, and also counts towards throttling (FR-024). **Deviation** |
 | TOTP replay | A code may be reused within its window | Rejected (FR-023). **Deviation** (ASVS L2) |
 | U2F | A "u2f" method deletes the U2F keys and grants login without verification | Never accepted (FR-025). **Deviation** (security fix) |

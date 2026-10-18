@@ -2,7 +2,7 @@ get:
   operationId: getApiDocs
   tags: [System]
   summary: Interactive API documentation
-  description: HTML page that renders `GET /openapi.yaml`. All assets are served by the API itself.
+  description: HTML page that renders `GET /openapi.yaml`. All assets are served by the API itself. Ignores `X-API-Key`.
   security: []
   responses:
     '200':

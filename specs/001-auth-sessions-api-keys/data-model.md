@@ -121,8 +121,8 @@ The three operations:
 
 **Validation**:
 
-- `name`: "1 to 255 characters" after trimming. An empty name is refused (`tooShort`, min 1);
-  more than 255 characters is refused (`tooLong`, max 255).
+- `name`: "1 to 255 characters" after trimming. An empty or whitespace-only name is refused with
+  `required`; more than 255 characters is refused with `tooLong` (max 255).
 - `credential`: must match `WebAuthnRegistrationResponse`. Missing members → `required`;
   non-base64url values → `invalidFormat` (`format: base64url`).
 
@@ -150,7 +150,9 @@ The table is read by `SecondFactorService`. The only write is the re-activation 
 | `active` | TINYINT(1) DEFAULT 0 | Only `1` is offered and verified |
 
 The re-activation write is `UPDATE tfa SET active = '1' WHERE username = ?`. It runs when a password
-verifies and no usable second factor is active.
+verifies and the account has no active `tfa` row of any type (legacy `get_tfa()` returns nothing).
+Accounts whose only active rows are `u2f` or `hotp` are not re-activated; they get
+`second-factor-unavailable`.
 
 ### SaslLogEntry (`sasl_log`): recent logins, written by `App\Services\Auth\RecentLoginRecorder` only
 
@@ -208,7 +210,8 @@ Migration `database/migrations/2026_10_18_000001_create_restv2_api_keys_table.ph
 
 **Validation** (`App\Http\Requests\Api\V2\StoreApiKeyRequest`):
 
-- `name`: "required, string, 1 to 255 characters after trimming".
+- `name`: "required, string, 1 to 255 characters after trimming" (empty after trimming →
+  `required`, longer → `tooLong`).
 - `ownerUsername`: "required, string, max 255". It must exist in `admin` (`notFound`). When it
   exists only in `mailbox`, the code is `notEligible` with params `allowedRoles: [admin, domainAdmin]`.
 - `accessLevel`: "required, one of `readOnly`, `readWrite`" (`notInList`).
@@ -219,6 +222,9 @@ Migration `database/migrations/2026_10_18_000001_create_restv2_api_keys_table.ph
   `/0`–`/32`, IPv6 `/0`–`/128`) (`invalidFormat`, `format: ipNetwork`)". Items are normalised to
   `address/prefix` (`/32` or `/128` for single addresses), with duplicates removed and order
   kept.
+
+**Revocation precedence**: an already revoked key answers `200` unchanged before `If-Match` is
+evaluated (FR-036). Otherwise a mismatching `If-Match` answers `412`.
 
 **State transitions**:
 
@@ -279,7 +285,10 @@ Migration `database/migrations/2026_10_18_000002_create_restv2_audit_events_tabl
 **Filters** (`listAuditEvents`):
 
 - `from` → `occurred_at >= ?`; `to` → `occurred_at < ?`.
-- `eventType[]` → `event_type IN (...)`; `outcome` → `outcome = ?`.
+- `eventType` (repeatable, `?eventType=signIn&eventType=signOut`) → `event_type IN (...)`. PHP's
+  query parser keeps only the last of repeated keys without brackets, so `ListAuditEventsRequest`
+  reads every `eventType` value from the raw `QUERY_STRING`.
+- `outcome` → `outcome = ?`.
 - `actor` → `actor_username = ? OR actor_api_key_id = ?`.
 - `clientAddress`: a single address → equality on the canonical form. A prefix → candidate rows
   are pre-filtered in SQL by the textual prefix of the network address, then matched with
@@ -352,8 +361,8 @@ Built-in apps come first, then operator links, each in their own order. The chan
 | Key | Value | TTL | Owner |
 |---|---|---|---|
 | `restv2:session:<id>` (Laravel session) | serialized session array (see below) | `SESSION_LIFETIME`, renewed per request | `StartSessionUnlessApiKey` |
-| `restv2:throttle:signin:<sha256(username\|ip)>` (+ `:timer`) | failure count | `RESTV2_SIGNIN_FAILURE_WINDOW` | `SignInThrottle` |
-| `restv2:throttle:passkey:<sha256(ip)>` (+ `:timer`) | failure count | same | `SignInThrottle` |
+| `restv2:signin:<sha256(username\|ip)>` (+ `:timer`) | failure count | `RESTV2_SIGNIN_FAILURE_WINDOW` | `SignInThrottle` |
+| `restv2:passkey:<sha256(ip)>` (+ `:timer`) | failure count | same | `SignInThrottle` |
 | `restv2:totp:last:<tfa.id>` | last accepted timeslice | 120 s | `SecondFactorService` |
 | `restv2:mailcow-vars:<fingerprint>` | JSON of the exported `vars.inc.php` values; the fingerprint covers path, size, modification time and inode of both files | 1 day (refreshed by any file change, which changes the key) | `MailcowConfig` |
 | `restv2:migrations-lock` | `migrate --isolated` lock | transient | entrypoint |

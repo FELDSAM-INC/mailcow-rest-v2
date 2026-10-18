@@ -1,7 +1,7 @@
 description: The public configuration. Changes saved in the legacy UI are visible on the next request.
 headers:
   ETag:
-    description: Strong entity tag of the returned representation. Send it in `If-Match` when changing the resource.
+    description: Strong entity tag of the representation. Send it in `If-None-Match` to revalidate.
     required: true
     schema:
       type: string

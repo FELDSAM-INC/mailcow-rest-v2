@@ -124,8 +124,8 @@ KEY=$(curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/api-keys \
   -d '{"name":"billing","ownerUsername":"reseller","accessLevel":"readOnly"}' | jq -r .data.secret)
 curl -s $C "$B/api-keys/owner-candidates?q=res" | jq '.data'     # [{"username":"reseller","role":"domainAdmin"}]
 curl -s -H "X-API-Key: $KEY" $B/me | jq '.data | {role, scope, authentication}'
-curl -s -H "X-API-Key: $KEY" $J -X POST $B/api-keys -d '{}' | jq .type          # session-required
-curl -s -H "X-API-Key: $KEY" -H 'X-CSRF-Token: x' -X DELETE $B/session | jq .type # session-required
+curl -s -H "X-API-Key: $KEY" $J -X POST $B/api-keys -d '{}' | jq .type          # insufficient-key-scope (read-only key)
+curl -s -H "X-API-Key: $KEY" $B/session | jq .type                               # session-required
 curl -s -H "X-API-Key: mcv2_0000000000000000000000000000000000000000" $B/me | jq .type  # api-key-invalid
 
 # US6: audit log, filtered.

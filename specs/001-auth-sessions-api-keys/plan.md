@@ -101,7 +101,7 @@ up to about 1 million audit records a year, kept for 365 days. The feature has 3
 | VII. Test-first | `tasks.md` orders tests before implementation in every phase. Tests run on MariaDB with the real schema and on a real Redis. Only the Yubico HTTP service is faked. | PASS |
 | VIII. Simplicity | Three runtime packages, two of them legacy's own (R28). No package for Yubico, `verify_hash`, CBOR or IP matching. Interfaces exist only where a fake or a second adapter is needed (`Fail2BanReporter`, `YubicoOtpVerifier`). | PASS |
 | Cross-feature conventions (`docs/conventions.md`) | Out-of-scope objects answer `404`. Lists default to 25 entries (at most 1,000) and take `q`. Version tags cover stored settings and appear as `etag` on every representation. Keys cannot create or revoke keys. Secrets are shown once. Reads are not audited. Nothing is cached by time. Legacy PHP settings are server settings with upstream defaults (R14, R29). | PASS |
-| Runtime constraints | Stateless php-fpm, non-root, read-only root filesystem. Liveness and readiness endpoints plus a CLI health check. JSON logs with the request ID (`traceparent`). Configuration from environment variables with `mailcow.conf` names (R14, R23, R24). | PASS |
+| Runtime constraints | Stateless php-fpm, non-root, read-only root filesystem. Liveness and readiness endpoints plus a CLI health check. JSON logs with the request ID (`traceparent`). Configuration from environment variables with `mailcow.conf` names, plus the optional mounted legacy `vars` files justified under Complexity Tracking (R14, R23, R24). | PASS (justified) |
 
 **Post-design re-check (after Phase 1)**: PASS. The contract, data model and research introduce
 no new violation. The decisions that touched gates are these:
@@ -125,6 +125,11 @@ rows (constitution IV requires every deviation to be stated in the spec):
    `WebAuthn Library`, may be named at registration, and a duplicate credential ID is refused.
 6. App links honour the signed-in address of built-in apps, which legacy's header ignores because
    of a bug. Possible key owners are a new list, since legacy keys have no owner.
+7. Rows for behaviours the spec already required but the table did not list as deviations: exact
+   0.5 s delay steps (legacy truncates them to whole seconds), a Yubico outage keeping the pending
+   sign-in open, passkey failures being throttled, and the 300 s ceremony timeout instead of 30 s.
+8. FR-014 now names the operations that need no signed-in account and therefore stay available in
+   a restricted session (found by `/speckit-analyze`).
 
 ## Contract Operations
 
@@ -194,6 +199,7 @@ api/                                   # Contract (source of truth), already aut
 
 app/
 ├── Auth/                              # Principal, Role, AuthMethod, PendingAction, PermissionFlag, AccountKind
+├── Audit/AuditEventType.php           # enum of the contract's AuditEventType
 ├── Casts/MailcowDateTime.php
 ├── Clients/
 │   ├── Fail2Ban/{Fail2BanReporter,RedisFail2BanReporter}.php
@@ -205,7 +211,8 @@ app/
 │   │                                  # SecondFactor, PasskeyChallenge, PasskeyAssertion, Identity,
 │   │                                  # Preferences, Passkey, PasskeyRegistrationOptions, ApiKey,
 │   │                                  # ApiKeyRevocation, ApiKeyOwnerCandidate, PublicConfig, PublicConfigLogo,
-│   │                                  # AuditEvent, Health, Docs controllers
+│   │                                  # AuditEvent, Liveness, Readiness, OpenApiDocument,
+│   │                                  # ApiDocs, ProblemType controllers (show only)
 │   ├── Middleware/                    # AssignRequestId, AuthenticateApiKey, StartSessionUnlessApiKey,
 │   │                                  # EnsureSessionIntegrity, VerifyCsrfToken, RequireAuth,
 │   │                                  # EnforceKeyScope, EnforcePendingActions
@@ -233,9 +240,9 @@ app/
 └── Support/
     ├── Clock/{Sleeper,UsleepSleeper}.php   # injectable delay for sign-in throttling (faked in tests)
     ├── Hashing/LegacyPasswordVerifier.php
-    ├── Http/{ProblemType,Problem,ETag,Base64Url}.php
+    ├── Http/{ProblemType,Problem,ETag,Base64Url,ListQuery}.php
     ├── Totp/NoQrCodeProvider.php
-    └── WebAuthn/WebAuthnServerFactory.php
+    └── WebAuthn/{WebAuthnServerFactory,OptionsJson}.php
 
 bootstrap/app.php                      # middleware group api.v2, exception rendering
 config/restv2.php                      # RESTV2_* settings, supported schema versions
@@ -255,7 +262,7 @@ tests/
 │   └── WebAuthn/{VirtualAuthenticator,CborEncoder}.php
 ├── Feature/{Auth,Passkeys,Identity,ApiKeys,PublicConfig,Audit,System,Schema,Security}/
 ├── Unit/{Hashing,Architecture,Support,Services}/
-├── fixtures/{schema/2026-09a.sql,legacy/verify_hash.php}
+├── fixtures/{schema/2026-09a.sql,legacy/verify_hash.php,mailcow-inc/vars{,.local}.inc.php}
 └── bin/{prepare-database.sh,check-contract-coverage.php}
 
 scripts/
@@ -286,4 +293,6 @@ API keys, preferences, audit and branding. Remote and Redis-backed subsystems si
 |---|---|---|
 | Status `503` (not in constitution II's error list) for `temporary-verification-failure` and readiness | FR-049 requires a distinct, retryable error when the Yubico service is unreachable, with the pending sign-in kept open. Readiness must signal "not ready" to monitors. RFC 9110 defines 503 with `Retry-After` for exactly this. | `500` cannot be told apart from a bug, so clients would not retry or offer another method. `401 second-factor-failed` would wrongly cancel the pending sign-in. |
 | Ceremony requests are not audited (constitution VI: "every state-changing request writes an audit record"): `GET /csrf-token`, `POST /session/passkey-challenge`, `POST /session/pending-sign-in/webauthn-challenge`, `POST /me/passkeys/registration-options` and `DELETE /session/pending-sign-in` | These requests change only the caller's own short-lived session data (a challenge or a pending sign-in that expires within 5 minutes). They change no mailcow data, no API-owned table and nothing another caller can see. Most are anonymous. The outcome they lead to is always audited: the sign-in, its failure, or the passkey registration (FR-045). | Auditing them would let anonymous clients write unbounded audit rows (one per challenge), flooding the log that administrators use to investigate attacks, while recording nothing that the subsequent audited event does not already show. |
+| Incidental server state on safe methods (constitution II: "GET is safe and never changes state"): `GET /csrf-token` and `GET /session` start an anonymous session; every session request renews the idle timer, and a request after the idle timeout or with another user agent ends the session; a key's `GET` records its last use at most once a minute | RFC 9110 §9.2.1 defines "safe" as not *requesting* a change and explicitly allows incidental side effects. These effects are session bookkeeping that the client does not ask for, and they are idempotent. Last use is required by FR-035, idle expiry by FR-009 and user-agent pinning by FR-012. | `POST /csrf-token` would still need an exemption from the token check it bootstraps, and it would not remove the other effects, which every session or key request has whatever its method. |
+| Configuration also read from mailcow's mounted `data/web/inc/vars{,.local}.inc.php` (constitution runtime: "configuration comes from environment variables") | Spec 001 assumes that session lifetime, user verification, languages and built-in app links come from the operator's existing configuration, local overrides included. Reading the deployed files keeps both UIs aligned without copying values (R14). The mount is optional, and every value is also a `RESTV2_*` environment setting that wins. | Environment variables only would make the operator maintain every value twice, and the copies drift from `vars.local.inc.php`. |
 | Status `405` (framework) for a known path with an unsupported method | Laravel's router answers it, with an `Allow` header, as RFC 9110 requires. It is rendered as an `about:blank` problem. | Mapping it to `404` would hide the existing resource and break HTTP semantics for generic clients. |

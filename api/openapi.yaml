@@ -34,8 +34,8 @@ info:
     references of the form `/api/v2/problems/{name}`, documented in `docs/problems.md` and served
     as HTML by `GET /problems/{problemType}`. Compare `type` as an exact string. Other problems
     use `about:blank` and are identified by their status (`400` malformed request, `404` unknown
-    resource or path, `405` method not allowed, `412` precondition failed, `500` unexpected
-    failure).
+    resource or path, `405` method not allowed, `409` conflict described in `detail`, `412`
+    precondition failed, `500` unexpected failure).
 
     Errors are never localised: the API ignores `Accept-Language`. `title` and `detail` are
     English and meant for logs and scripts. A validation problem (`422`) carries an `errors` map
@@ -66,6 +66,8 @@ info:
     both a key and a session cookie, the key decides and the cookie is ignored. Any request that
     carries a non-empty `X-API-Key` header is authenticated by that key, and an invalid, expired
     or revoked key, or a key used from a disallowed address, is reported to mailcow's fail2ban.
+    The System operations (health checks, the contract, the documentation and the problem pages)
+    ignore `X-API-Key`.
 
     ## Recommended presentation of sign-in methods
 
@@ -81,9 +83,11 @@ info:
 
     When mailcow forces an account to change its password or to set up a second factor, the
     session is restricted (`state: restricted`, non-empty `pendingActions`). It can read
-    `GET /me` and `GET /session`, sign out and, when only `secondFactorSetup` is pending, register
-    a passkey. Every other operation answers `403` with type
-    `/api/v2/problems/pending-action-required`. Pending actions are re-evaluated from mailcow's
+    `GET /me`, sign out and, when only `secondFactorSetup` is pending, register a passkey.
+    Operations that need no signed-in account stay available: `GET /csrf-token`, `GET /session`,
+    sign-in and its steps, the public configuration, the documentation and the health checks.
+    Every other operation answers `403` with type `/api/v2/problems/pending-action-required`.
+    API keys are never restricted: `Identity.pendingActions` is empty for them. Pending actions are re-evaluated from mailcow's
     data on every request, so a restriction lifts as soon as it is resolved in either UI.
 servers:
   - url: /api/v2

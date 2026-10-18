@@ -19,6 +19,7 @@ properties:
   pendingActions:
     type: array
     uniqueItems: true
+    description: Pending actions of a session. Always empty for an API key, which is never restricted.
     items:
       $ref: './PendingAction.yaml'
   preferences:

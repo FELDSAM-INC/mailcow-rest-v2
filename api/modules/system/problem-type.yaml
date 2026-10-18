@@ -6,7 +6,7 @@ get:
   summary: Problem type documentation
   description: |
     Human-readable documentation of a problem type, so that every documented `type` URI
-    dereferences on each installation. Rendered from `docs/problems.md`.
+    dereferences on each installation. Rendered from `docs/problems.md`. Ignores `X-API-Key`.
   security: []
   responses:
     '200':

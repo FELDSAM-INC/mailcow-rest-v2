@@ -22,7 +22,7 @@ behaviour comes from `git -C ~/Projects/mailhosting diff 2026-09a HEAD` on branc
 
 ### R1. Resources and operations
 
-- **Decision**: 14 operations in three modules.
+- **Decision**: 15 operations in three modules.
 
   | Module | Method and path | operationId |
   |---|---|---|
@@ -30,6 +30,7 @@ behaviour comes from `git -C ~/Projects/mailhosting diff 2026-09a HEAD` on branc
   | `dkim` | POST `/dkim-keys` | generateDkimKey |
   | `dkim` | GET `/dkim-keys/{dkimName}` | getDkimKey |
   | `dkim` | DELETE `/dkim-keys/{dkimName}` | deleteDkimKey |
+  | `dkim` | POST `/dkim-keys/bulk-actions` | applyDkimKeyBulkAction |
   | `dkim` | POST `/dkim-keys/{dkimName}/import` | importDkimKey |
   | `dkim` | POST `/dkim-keys/{dkimName}/copy` | copyDkimKey |
   | `dkim` | GET `/dkim-keys/{dkimName}/private-key` | exportDkimPrivateKey |
@@ -48,7 +49,9 @@ behaviour comes from `git -C ~/Projects/mailhosting diff 2026-09a HEAD` on branc
   - **No literal segment directly under `/dkim-keys/`**: legacy accepts single-label domain names
     (`is_valid_domain_name` allows them), so a path such as `/dkim-keys/capabilities` would collide
     with a domain named `capabilities`. The capabilities read uses the conventions' top-level
-    `/capabilities/{area}` path instead.
+    `/capabilities/{area}` path instead. The one exception is the conventions' POST-only
+    `/dkim-keys/bulk-actions`: object paths never accept POST, so a key named `bulk-actions` stays
+    readable and deletable at `/dkim-keys/bulk-actions` with GET and DELETE.
   - MTA-STS policies are a flat collection keyed by domain, with no `DELETE` (spec FR-037). PATCH
     takes JSON Merge Patch, like 001's preferences.
   - Diagnostics is a safe `GET`: it changes nothing (FR-039), read-only keys may run it, and
@@ -639,6 +642,7 @@ behaviour comes from `git -C ~/Projects/mailhosting diff 2026-09a HEAD` on branc
 | `RESTV2_DKIM_DNS_PUBLICATION` | `n` | FeldHost ISPConfig publication (FR-028; 002 D24) |
 | `RESTV2_ISPCONFIG_URL`, `RESTV2_ISPCONFIG_USERNAME`, `RESTV2_ISPCONFIG_PASSWORD`, `RESTV2_ISPCONFIG_DNS_SERVER_ID`, `RESTV2_ISPCONFIG_VERIFY_TLS` | empty, empty, empty, `1`, `y` | Connection (002 D24, R11); the password is a secret |
 | `RESTV2_ISPCONFIG_TIMEOUT` | `15` | Publication limit in seconds (FR-030) |
+| `RESTV2_DKIM_BULK_PUBLICATION_BUDGET` | `60` | Seconds shared by the record removals of one bulk deletion (R28) |
 | `RESTV2_DNS_LOOKUP_TIMEOUT` | `5` | Seconds reserved per lookup by the run deadline, and the limit of the echo request and the certificate fetch (FR-048); the resolver's own bound is the container's `dns_opt` (009, about 4 s), which must stay below it |
 | `RESTV2_DNS_RUN_TIMEOUT` | `30` | Seconds per run (FR-048) |
 | `RESTV2_DNS_DIAGNOSTICS_PER_MINUTE` | `10` | Runs per caller per minute (FR-049) |
@@ -682,7 +686,7 @@ No PHP extension is added.
     extraction of `dkim('add')`'s key handling, like 001's `verify_hash` extraction), so the stored
     format is compared byte for byte.
   - Every request and response is validated against the contract (001 R13), and the contract
-    coverage check requires all 14 operations.
+    coverage check requires all 15 operations.
 - **Rationale**: Constitution VII: MariaDB and Redis real, external services faked with asserting
   fakes.
 
@@ -707,7 +711,39 @@ No PHP extension is added.
   setting with the upstream default.
 - Creation follow-ups (002, 004) use `generateForNewName`, which reports its outcome and never rolls
   back the domain.
-- **Bulk actions**: the conventions call for bulk actions where legacy offers mass actions, and the
-  legacy DKIM screen has a mass delete. Spec FR-059 governs this feature's behaviour and excludes
-  batch operations (creation in bulk is excluded by the conventions anyway). This plan follows the
-  spec and lists bulk deletion as an owner-level question; adding it later is an additive change.
+- **Bulk actions**: `POST /dkim-keys/bulk-actions` with `{action: "delete", targets: [BulkTarget]}`
+  (orchestrator decision on M1, spec FR-059), see R28. Generation, import and copy stay one object
+  per request (conventions: creation is one object per request).
+
+### R28. Bulk deletion (FR-059)
+
+- **Decision**: `POST /dkim-keys/bulk-actions` (`applyDkimKeyBulkAction`), the conventions' bulk
+  path, with `DkimKeyBulkActionRequest {action: delete, targets: [BulkTarget]}` (1 to 100 targets).
+  - **Whole-request refusals**: a caller who is not an administrator → `403 forbidden`; a read-only
+    key → `403 insufficient-key-scope` (001's pipeline); more than 100 targets → `422 tooMany` on
+    `targets` (`max: 100`). Each is one refusal audit record through `RefusalAuditor` with
+    `details.itemIds` (008's pattern).
+  - **Per target**: the shared `App\Support\Bulk\BulkActionRunner` (003 R19, extracted from 002)
+    deduplicates targets after name resolution (R7: exact stored name first, then the normalised
+    name), compares `version` like `If-Match`, and calls `DkimKeyService::delete()` with the
+    request's `bulkRequestId`. Outcomes: deleted → `done` (no `version`, the key is gone); no key or
+    invalid name → `notFound`; tag mismatch or the script's `outdated` → `outdated` (`412`
+    problem); shared store unavailable → `failed` (`temporary-failure`); unexpected → `failed`.
+    `refused` is not expected for deletions but stays possible for future checks.
+  - **Publication**: each deleted key's record is removed as for a single deletion (R12), one
+    ISPConfig session per key, each bounded to 15 s. When the publication is enabled, the response's
+    `meta.dnsPublication` maps each `done` target to its `DkimDnsPublicationOutcome`, as 004's
+    `AliasBulkResultResponse` adds `meta.copies`; `data` is the shared `BulkResult`.
+  - **Audit**: one `dkimKeyDeletion` record per processed key, with `details.bulkRequestId` and the
+    publication outcome; refused or failed items get their failure record with the shared
+    `AuditFailureReason`.
+  - **Time**: without publication, 100 deletions are 100 short Redis scripts. With publication
+    enabled, the removals share one budget of 60 s per request (`RESTV2_DKIM_BULK_PUBLICATION_BUDGET`):
+    each removal gets `min(15 s, budget left)`, and once the budget is spent the remaining deleted
+    keys report `failed` with reason `timeout` without contacting ISPConfig (FR-030 allows giving up;
+    the deletion stands and the audit record names the outcome). The request therefore stays within
+    009's raised `fastcgi_read_timeout` of 90 s.
+- **Rationale**: Orchestrator decision on analysis finding M1; `docs/conventions.md` bulk rules.
+- **Alternatives considered**: Publishing all removals in one ISPConfig session was rejected for
+  now: it couples the keys' outcomes, and the single-key path already exists.
+

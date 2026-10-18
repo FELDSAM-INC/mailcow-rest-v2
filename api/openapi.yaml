@@ -402,6 +402,8 @@ paths:
     $ref: './modules/password-policy/_index.yaml#/~1password-policy'
   /dkim-keys:
     $ref: './modules/dkim/_index.yaml#/~1dkim-keys'
+  /dkim-keys/bulk-actions:
+    $ref: './modules/dkim/_index.yaml#/~1dkim-keys~1bulk-actions'
   /dkim-keys/{dkimName}:
     $ref: './modules/dkim/_index.yaml#/~1dkim-keys~1{dkimName}'
   /dkim-keys/{dkimName}/import:

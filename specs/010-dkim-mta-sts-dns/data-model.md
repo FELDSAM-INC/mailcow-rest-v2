@@ -147,7 +147,7 @@ those are unused keys reachable by their exact stored name.
 |---|---|---|
 | Generation, import, copy (no key yet) | `create` | refuse when a key exists; `HSET` the three fields |
 | Generation, import, copy with overwrite | `replace` | check the expected internal fingerprint (after the `If-Match` comparison); `HDEL DKIM_PRIV_KEYS <oldSel>.<name>`; `HSET` the three fields |
-| Deletion | `delete` | refuse when no key; check the fingerprint; `HDEL` the three fields |
+| Deletion (single, or per target of a bulk deletion) | `delete` | refuse when no key; check the fingerprint; `HDEL` the three fields |
 | Audit compensation | `restore` | only when the current fingerprint is the one just written: put the previous fields back |
 
 **State transitions of a name's key**:

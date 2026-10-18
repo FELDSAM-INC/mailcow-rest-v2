@@ -1,0 +1,25 @@
+description: |
+  The bulk action was processed. The status is `200` even when some or all targets did not
+  succeed: check each result's `outcome`. The whole request is refused (`403`) only when the
+  caller's role or key scope never allows the action. `data` is the shared `BulkResult`; when the
+  FeldHost DKIM DNS publication is enabled, `meta.dnsPublication` gives, per target with the
+  outcome `done`, the outcome of removing its record from the ISPConfig zone.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/BulkResult.yaml'
+        meta:
+          type: object
+          description: Present only when the DKIM DNS publication is enabled.
+          required: [dnsPublication]
+          properties:
+            dnsPublication:
+              type: object
+              description: Map from the target `id` (as sent) to the removal outcome of its record.
+              additionalProperties:
+                $ref: '../schemas/DkimDnsPublicationOutcome.yaml'
+          additionalProperties: false

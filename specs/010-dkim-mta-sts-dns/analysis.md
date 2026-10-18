@@ -23,13 +23,14 @@ constitution issue remains.
 ## Remaining
 
 - **M1:** legacy's DKIM screen has a mass delete, but FR-059 excluded batch operations.
-  Orchestrator decision: add a bulk delete per the conventions (being applied).
+  Orchestrator decision: add a bulk delete per the conventions. **Applied**: FR-059,
+  `POST /dkim-keys/bulk-actions` (`applyDkimKeyBulkAction`), research R28, tasks T086 and T091.
 - **M2:** 002's research D10 describes three separate `HSET`s for key generation. 010's atomic Lua
   store replaces them (T017/T023, implemented together with 002).
 - **M3:** 010's capabilities also return the DKIM defaults to domain administrators, who may
   generate keys. Accepted.
-- **M4:** the `too-many-requests` problem section must also cover the diagnostics rate limit
-  (being applied).
+- **M4:** the `too-many-requests` problem section must also cover the diagnostics rate limit.
+  **Applied** in `docs/problems.md`.
 - **L1:** the import's name-rule error is keyed by the path parameter `dkimName`.
 - **L2:** SC-002 and SC-011 are checked manually (quickstart Part C).
 - **L3:** response schemas assume that stored data follows the API's rules.

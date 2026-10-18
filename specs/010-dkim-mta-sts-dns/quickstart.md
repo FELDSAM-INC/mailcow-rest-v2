@@ -31,7 +31,7 @@ docker compose run --rm app vendor/bin/phpstan analyse
 **Expected**:
 
 - `contract:lint` reports nothing for `api/modules/{dkim,mta-sts,dns-diagnostics}`.
-- `composer test` is green; `build/contract/coverage.json` lists the 14 operations of this feature
+- `composer test` is green; `build/contract/coverage.json` lists the 15 operations of this feature
   as covered.
 - `DkimSecretLeakTest` (SC-005) finds PEM private key armour only in export responses.
 - `ZoneFileRendererTest` runs `named-checkzone` on every rendered zone file without errors (SC-007).
@@ -69,6 +69,9 @@ docker compose exec redis redis-cli -a devredispass --no-auth-warning HEXISTS DK
 curl -s $C $H $J -X POST $B/dkim-keys/import.example/import -d '{"privateKey":"not a key"}' | jq .errors
 curl -s $C $H $J -X POST $B/dkim-keys/example.org/copy -d '{"target":"example.net"}' | jq .data.state
 curl -s $C $H -X DELETE $B/dkim-keys/old.example -o /dev/null -w '%{http_code}\n'      # -> 204
+curl -s $C $H $J -X POST $B/dkim-keys/bulk-actions \
+  -d '{"action":"delete","targets":[{"id":"example.net"},{"id":"nokey.example"}]}' | jq '.data.summary'
+#   -> done 1, notFound 1
 
 # US6: export is refused while the setting is off.
 curl -s $C $B/dkim-keys/example.org/private-key | jq .type

@@ -2,6 +2,8 @@
 # ISPConfig DNS publication, and the capabilities read of feature 010.
 /dkim-keys:
   $ref: './dkim-keys.yaml'
+/dkim-keys/bulk-actions:
+  $ref: './dkim-keys-bulk-actions.yaml'
 /dkim-keys/{dkimName}:
   $ref: './dkim-key.yaml'
 /dkim-keys/{dkimName}/import:

@@ -295,8 +295,8 @@ Runs when feature 010 is implemented (after 002–009).
   `restv2.auth:authenticated` and `restv2.pending:enforce`, the constraints
   `where('dkimName', '[^/]+')`, `where('policyDomain', '[^/]+')` and
   `where('diagnosticsName', '[^/]+')`, and the rule that the sub-resource routes
-  (`/dkim-keys/{dkimName}/import`, `/copy`, `/private-key`, `/dns-publication`) are declared before
-  `/dkim-keys/{dkimName}`. Each story's controller task registers its own routes there, so no
+  (`/dkim-keys/{dkimName}/import`, `/copy`, `/private-key`, `/dns-publication`) and the POST-only
+  `/dkim-keys/bulk-actions` are declared before `/dkim-keys/{dkimName}`, which never accepts POST. Each story's controller task registers its own routes there, so no
   route exists before its implementation. Every state-changing route and the export route declare
   `->defaults('restv2.audit', ['event' => <event type>, 'target' => 'dkimKey' | 'mtaStsPolicy'])`
   (T032).
@@ -669,7 +669,8 @@ administrator; compare the `mta_sts` row and the text `mta-sts.php` would serve 
 
 ## Phase 8: User Story 5 — Import, copy and delete DKIM keys (Priority: P2)
 
-**Goal**: administrators import private keys, copy keys to one target and delete keys, atomically.
+**Goal**: administrators import private keys, copy keys to one target, and delete keys one at a
+time or up to 100 in one bulk request, atomically per key.
 
 **Independent Test**: import valid and invalid keys with and without overwrite, copy to targets with
 and without keys, delete domain and unused keys, and compare the hashes with legacy.
@@ -718,27 +719,58 @@ and without keys, delete domain and unused keys, and compare the hashes with leg
   - one `dkimKeyDeletion` audit record with the old selector, length and fingerprint and the
     publication outcome (`notConfigured` by default).
 - [ ] T085 [P] [US5] Write `tests/Feature/Dkim/DkimWriteAuthorizationTest.php`: the role and key
-  matrix for `generateDkimKey` (with and without `overwrite`), `importDkimKey`, `copyDkimKey` and
-  `deleteDkimKey` (SC-004).
+  matrix for `generateDkimKey` (with and without `overwrite`), `importDkimKey`, `copyDkimKey`,
+  `deleteDkimKey` and `applyDkimKeyBulkAction` (SC-004).
 
+- [ ] T086 [P] [US5] Write `tests/Feature/Dkim/DkimKeyBulkDeleteTest.php` (FR-059, AS7):
+  - AS7: three unused keys, one changed in Redis after the client read its `etag`, and a name
+    without a key, sent with the tags read → results in request order: `done`, `done`, `outdated`
+    (`412` problem, key kept), `notFound`; `summary` counts match; the done keys' three hash fields
+    are gone; each processed key has exactly one `dkimKeyDeletion` audit record with
+    `details.bulkRequestId` equal to `data.bulkRequestId`;
+  - a name sent twice (also once in upper case or Unicode) is processed and reported once; a legacy
+    key stored as `Example.ORG` is deleted by its exact name; a target without `version` is not
+    version-checked;
+  - 101 targets → `422 tooMany` (`max: 100`) on `targets`; `action: activate` → `422 notInList`;
+    a domain administrator → `403 forbidden` as a whole; a read-only key → `403
+    insufficient-key-scope`; each whole-request refusal writes one refusal audit record with
+    `details.itemIds`;
+  - Redis unavailable → every item `failed` with `temporary-failure`, nothing removed;
+  - publication disabled → no `meta`; enabled → `meta.dnsPublication` maps each `done` target to
+    `removed`, `noRecordToRemove`, `noZone` or `failed` (with its reason code), and the audit
+    records carry the same outcome; with every removal timing out (`FakeClock`), the 60-second
+    budget is spent after four keys and the remaining deleted keys report `failed`/`timeout`
+    without any ISPConfig call (`FakeIspconfigDnsClient` call log).
 ### Implementation for User Story 5
 
-- [ ] T086 [P] [US5] Create `app/Rules/DkimPrivateKey.php` (R6, stops at the first failure) and
+- [ ] T087 [P] [US5] Create `app/Rules/DkimPrivateKey.php` (R6, stops at the first failure) and
   extend `app/Logging/RedactSecrets.php` to drop context keys `privateKey` and `private_key`; add
   `privateKey` to `dontFlash` in `bootstrap/app.php`. T081 passes.
-- [ ] T087 [US5] Create `app/Http/Requests/Api/V2/ImportDkimKeyRequest.php` (`privateKey` "required,
+- [ ] T088 [US5] Create `app/Http/Requests/Api/V2/ImportDkimKeyRequest.php` (`privateKey` "required,
   string, at most 16,384 bytes, one unencrypted RSA private key in PEM form (PKCS #1 or PKCS #8) of
   1,024 to 8,192 bits"; `selector` as T045; `overwrite` boolean; `failedValidation()` without input
   values) and `app/Http/Requests/Api/V2/CopyDkimKeyRequest.php` (`target`
   "required, string, 1 to 255 characters", `overwrite` boolean).
-- [ ] T088 [US5] Implement `import`, `copy` and `delete` in `app/Services/Dkim/DkimKeyService.php`
+- [ ] T089 [US5] Implement `import`, `copy` and `delete` in `app/Services/Dkim/DkimKeyService.php`
   (store modes of the data model, `If-Match`, publication of the target or removal, audit through
   `commitChange`).
-- [ ] T089 [US5] Create `app/Http/Controllers/Api/V2/DkimKeyImportController.php` and
+- [ ] T090 [US5] Create `app/Http/Controllers/Api/V2/DkimKeyImportController.php` and
   `DkimKeyCopyController.php` (`201` with `Location` or `200`, both with `ETag`), implement
   `destroy` in `DkimKeyController.php` (`204`), and register `POST /dkim-keys/{dkimName}/import`,
   `POST /dkim-keys/{dkimName}/copy` and `DELETE /dkim-keys/{dkimName}` in `routes/api.php`.
   T082–T085 pass.
+- [ ] T091 [US5] Create `app/Http/Requests/Api/V2/DkimKeyBulkActionRequest.php` (`action`
+  "required, one of `delete`" (`notInList`); `targets` "required array of 1 to 100 `BulkTarget`
+  objects" (`required`, `tooMany` with `max: 100`), each `id` "required, string, 1 to 255
+  characters" and `version` "optional string"), implement `DkimKeyService::bulkDelete()` on the
+  shared `App\Support\Bulk\BulkActionRunner` (research R28: deduplication after name resolution,
+  version check, outcome mapping, one audit record per key with `bulkRequestId`, the publication
+  budget `RESTV2_DKIM_BULK_PUBLICATION_BUDGET` added to `config/restv2.php` as
+  `dkim.bulk_publication_budget`, default `60`), create
+  `app/Http/Controllers/Api/V2/DkimKeyBulkActionController.php` (`200`, `data` = `BulkResult`,
+  `meta.dnsPublication` only while the publication is enabled), and register the POST-only route
+  `POST /dkim-keys/bulk-actions` (with `restv2.audit` defaults) before `/dkim-keys/{dkimName}` in
+  `routes/api.php`. T086 passes.
 
 **Checkpoint**: US5 works on its own.
 
@@ -753,7 +785,7 @@ audited.
 
 ### Tests for User Story 6
 
-- [ ] T090 [P] [US6] Write `tests/Feature/Dkim/ExportDkimPrivateKeyTest.php`: AS1 setting on →
+- [ ] T092 [P] [US6] Write `tests/Feature/Dkim/ExportDkimPrivateKeyTest.php`: AS1 setting on →
   `200`, `data.privateKey` exactly as stored, `Cache-Control: no-store`, one `dkimPrivateKeyExport`
   audit record without the key; AS2 setting off (default) → `403
   dkim-private-key-export-disabled` and a failure audit record; AS3 domain administrator → `403
@@ -764,11 +796,11 @@ audited.
 
 ### Implementation for User Story 6
 
-- [ ] T091 [US6] Implement `DkimKeyService::export()` (order of checks of R9) in
+- [ ] T093 [US6] Implement `DkimKeyService::export()` (order of checks of R9) in
   `app/Services/Dkim/DkimKeyService.php`, and create
   `app/Http/Resources/Api/V2/DkimPrivateKeyResource.php` and
   `app/Http/Controllers/Api/V2/DkimPrivateKeyController.php` (`Cache-Control: no-store`), and
-  register `GET /dkim-keys/{dkimName}/private-key` in `routes/api.php`. T090 passes.
+  register `GET /dkim-keys/{dkimName}/private-key` in `routes/api.php`. T092 passes.
 
 **Checkpoint**: US6 works on its own.
 
@@ -785,7 +817,7 @@ server fail or time out.
 
 ### Tests for User Story 7
 
-- [ ] T092 [P] [US7] Write `tests/Feature/Dkim/DkimDnsPublicationTest.php` (publication enabled,
+- [ ] T094 [P] [US7] Write `tests/Feature/Dkim/DkimDnsPublicationTest.php` (publication enabled,
   `FakeIspconfigDnsClient`):
   - AS1: generation creates TXT `<selector>._domainkey` with the record value, `ttl 7200`,
     `active Y`, `server_id` from `RESTV2_ISPCONFIG_DNS_SERVER_ID`, client `sys_groupid - 1`;
@@ -807,11 +839,11 @@ server fail or time out.
 
 ### Implementation for User Story 7
 
-- [ ] T093 [US7] Implement `DkimKeyService::publishAgain()` in `app/Services/Dkim/DkimKeyService.php`
+- [ ] T095 [US7] Implement `DkimKeyService::publishAgain()` in `app/Services/Dkim/DkimKeyService.php`
   (enabled check → disabled problem, `If-Match` against the stored fingerprint, publish with the
   current selector, audit) and create `app/Http/Controllers/Api/V2/DkimDnsPublicationController.php`
   (`200` with `DkimKeyChangeResource` and `ETag`), and register
-  `POST /dkim-keys/{dkimName}/dns-publication` in `routes/api.php`. T092 passes.
+  `POST /dkim-keys/{dkimName}/dns-publication` in `routes/api.php`. T094 passes.
 
 **Checkpoint**: US7 works on its own.
 
@@ -827,17 +859,17 @@ target.
 
 ### Tests for User Story 8
 
-- [ ] T094 [P] [US8] Write `tests/Feature/Dkim/DkimAuditTrailTest.php`: AS1 import with overwrite →
+- [ ] T096 [P] [US8] Write `tests/Feature/Dkim/DkimAuditTrailTest.php`: AS1 import with overwrite →
   the record has actor, time, client address, old and new selector and key length, fingerprints,
   `overwriteRequested: true` and the publication outcome, and no private key;
   `GET /audit-events?targetType=dkimKey&targetId=<name>` (002's filters) lists, for one name, the
   generation triggered by domain creation, a generation, an import, a copy onto it, an export
   attempt, a republish and a deletion, newest first; `targetId` given in Unicode or upper case
   finds the same records; refused attempts carry `details.problemType`.
-- [ ] T095 [P] [US8] Write `tests/Feature/MtaSts/MtaStsAuditTrailTest.php`: AS2 a domain
+- [ ] T097 [P] [US8] Write `tests/Feature/MtaSts/MtaStsAuditTrailTest.php`: AS2 a domain
   administrator changes the mode → the record shows old and new `mode` and old and new policy
   identifier; `targetType=mtaStsPolicy&targetId=<domain>` lists creation and changes.
-- [ ] T096 [P] [US8] Write `tests/Feature/Audit/DkimMtaStsAuditCountTest.php` (SC-010): every
+- [ ] T098 [P] [US8] Write `tests/Feature/Audit/DkimMtaStsAuditCountTest.php` (SC-010): every
   state-changing request and every export of the feature by an authenticated caller, successful or
   refused (read-only key and restricted session refusals included), writes exactly one audit record
   (count before and after each request); `401` and CSRF refusals, lists, reads, capabilities and
@@ -845,10 +877,10 @@ target.
 
 ### Implementation for User Story 8
 
-- [ ] T097 [US8] Extend 002's `app/Http/Requests/Api/V2/ListAuditEventsRequest.php` so that
+- [ ] T099 [US8] Extend 002's `app/Http/Requests/Api/V2/ListAuditEventsRequest.php` so that
   `targetId` is normalised (trim, lower-case, UTS #46) for the target types `dkimKey` and
   `mtaStsPolicy` as it is for `domain`, while an exact legacy spelling is also matched for
-  `dkimKey`. T094–T096 pass.
+  `dkimKey`. T096–T098 pass.
 
 **Checkpoint**: all user stories are complete.
 
@@ -856,31 +888,31 @@ target.
 
 ## Phase 12: Polish & cross-cutting concerns
 
-- [ ] T098 [P] Write `tests/Feature/Dkim/DkimSecretLeakTest.php` (SC-005, FR-027): run a scenario
+- [ ] T100 [P] Write `tests/Feature/Dkim/DkimSecretLeakTest.php` (SC-005, FR-027): run a scenario
   through every DKIM operation with logging captured, then scan the captured log, every response
   body of the scenario and every `restv2_audit_events.details` for `PRIVATE KEY` armour and for the
   base64 body lines of the fixture keys; matches are allowed only in export responses.
-- [ ] T099 [P] Write `tests/Feature/Dkim/DkimListPerformanceTest.php` (group `performance`, SC-012):
+- [ ] T101 [P] Write `tests/Feature/Dkim/DkimListPerformanceTest.php` (group `performance`, SC-012):
   seed 5,000 domains, 5,000 alias domains and their 2,048-bit public keys (fixture texts, multi-row
   inserts and pipelined `HSET`), then assert that 20 requests for a page of 25 entries (default
   sort, then `sort=keyLength`) answer within 1 s at p95.
-- [ ] T100 [P] Write `tests/Feature/DnsDiagnostics/DnsDiagnosticsPerformanceTest.php` (group
+- [ ] T102 [P] Write `tests/Feature/DnsDiagnostics/DnsDiagnosticsPerformanceTest.php` (group
   `performance`, SC-006): with `FakeDnsResolver` answering every lookup after 20 ms, 20 runs finish
   within 5 s at p95; with every lookup timing out, each run returns within the 30-second deadline.
-- [ ] T101 [P] Extend `database/seeders/DevelopmentSeeder.php`: alias domain `example.com` →
+- [ ] T103 [P] Extend `database/seeders/DevelopmentSeeder.php`: alias domain `example.com` →
   `example.org`, a 2,048-bit DKIM key for `example.org`, an unused key for `old.example`, as
   quickstart Part B expects.
-- [ ] T102 Run `composer test` and confirm that `build/contract/coverage.json` lists the 14 operations
-  of this feature (`listDkimKeys`, `generateDkimKey`, `getDkimKey`, `deleteDkimKey`,
+- [ ] T104 Run `composer test` and confirm that `build/contract/coverage.json` lists the 15 operations
+  of this feature (`listDkimKeys`, `generateDkimKey`, `getDkimKey`, `deleteDkimKey`, `applyDkimKeyBulkAction`,
   `importDkimKey`, `copyDkimKey`, `exportDkimPrivateKey`, `publishDkimDnsRecord`,
   `getDnsCapabilities`, `listMtaStsPolicies`, `createMtaStsPolicy`, `getMtaStsPolicy`,
   `updateMtaStsPolicy`, `runDnsDiagnostics`) as covered; fix gaps.
-- [ ] T103 [P] Run `npx --yes @redocly/cli@2.64.1 lint api/openapi.yaml`, `vendor/bin/pint --test` and
+- [ ] T105 [P] Run `npx --yes @redocly/cli@2.64.1 lint api/openapi.yaml`, `vendor/bin/pint --test` and
   `vendor/bin/phpstan analyse`; fix every finding in this feature's files.
-- [ ] T104 [P] Update `docs/legacy-inventory.md`: mark the DKIM, MTA-STS and DNS diagnostics rows as
+- [ ] T106 [P] Update `docs/legacy-inventory.md`: mark the DKIM, MTA-STS and DNS diagnostics rows as
   covered by `/api/v2` with links to the operations, and note the deviations of the spec's parity
   table and the plan's parity notes.
-- [ ] T105 Walk through `specs/010-dkim-mta-sts-dns/quickstart.md` Part A and Part B against the dev
+- [ ] T107 Walk through `specs/010-dkim-mta-sts-dns/quickstart.md` Part A and Part B against the dev
   stack and correct the guide where the output differs.
 
 ---
@@ -963,9 +995,9 @@ T065 SpfEvaluator   T067 ZoneFileRenderer
 | Phase 5: US2 (P1) | 5 (T043–T047) |
 | Phase 6: US3 (P1) | 23 (T048–T070) |
 | Phase 7: US4 (P2) | 10 (T071–T080) |
-| Phase 8: US5 (P2) | 9 (T081–T089) |
-| Phase 9: US6 (P3) | 2 (T090–T091) |
-| Phase 10: US7 (P3) | 2 (T092–T093) |
-| Phase 11: US8 (P3) | 4 (T094–T097) |
-| Phase 12: Polish | 8 (T098–T105) |
-| **Total** | **105** |
+| Phase 8: US5 (P2) | 11 (T081–T091) |
+| Phase 9: US6 (P3) | 2 (T092–T093) |
+| Phase 10: US7 (P3) | 2 (T094–T095) |
+| Phase 11: US8 (P3) | 4 (T096–T099) |
+| Phase 12: Polish | 8 (T100–T107) |
+| **Total** | **107** |

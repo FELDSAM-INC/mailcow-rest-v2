@@ -1,0 +1,19 @@
+type: object
+description: |
+  One action applied to several DKIM keys, as the legacy "ARC/DKIM keys" screen's mass remove does.
+  Each target is authorised, version-checked, processed and audited on its own, exactly as
+  `deleteDkimKey` for it; one failure does not stop the others. A target `id` is the name as used
+  in the key's own path (ASCII or Unicode form; for an unused key stored by legacy under another
+  spelling, that exact stored name). A name given twice, also in different forms, is processed and
+  reported once. At most 100 targets may be sent (`tooMany` on `targets`, with `max: 100`).
+required: [action, targets]
+properties:
+  action:
+    type: string
+    enum: [delete]
+  targets:
+    type: array
+    minItems: 1
+    maxItems: 100
+    items:
+      $ref: './BulkTarget.yaml'

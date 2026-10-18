@@ -118,9 +118,13 @@ extension members.
 
 - **Type**: `/api/v2/problems/too-many-requests`
 - **Status**: 429
-- **Meaning**: Sign-in throttling. After 10 failed sign-ins for the same username and client address
-  within 15 minutes, further attempts are refused without checking credentials. For passkeys, the
-  limit counts failures per client address. The operator can configure both values.
+- **Meaning**: A rate limit was reached. Two operations use it:
+  - Sign-in throttling (feature 001). After 10 failed sign-ins for the same username and client
+    address within 15 minutes, further attempts are refused without checking credentials. For
+    passkeys, the limit counts failures per client address. The operator can configure both values.
+  - DNS diagnostics (feature 010). Each caller (a user or an API key) may start 10 runs per minute
+    (configurable). Every diagnostics result and every refusal carry `RateLimit-Limit`,
+    `RateLimit-Remaining` and `RateLimit-Reset`, so clients can see the limit before reaching it.
 - **Extension members**: `retryAfter`, the number of seconds until the next attempt is considered.
   The `Retry-After` header carries the same value.
 - **Client action**: Tell the user when to try again. Do not retry automatically.
@@ -1049,9 +1053,9 @@ response header `Audit-Recorded: false`.
 
 - `permission-flag-required` refuses a self-service change that needs a flag the caller lacks: a
   mailbox user's own `user_acl` flag, or for app passwords, push notifications and Sieve filters the
-  domain administrator's own `da_acl` flag. It carries `flag` (for example `appPasswds`,
-  `spamAlias`, `filters`, `pushover`, `delimiterAction`, `tlsPolicy`, `easReset`,
-  `sogoProfileReset`, `pwReset`) and `requiredFlags` with the same single flag. Values sent with
+  domain administrator's own `da_acl` flag. Its `requiredFlags` holds that one flag (for example
+  `appPasswds`, `spamAlias`, `filters`, `pushover`, `delimiterAction`, `tlsPolicy`, `easReset`,
+  `sogoProfileReset`, `pwReset`). Values sent with
   their current value never need the flag, and reading never needs it.
 - `temporary-failure` carries the extension `dependency` (`sharedStore`, `mailStore`, `pushover` or
   `addressGeneration`) in the self-service operations.

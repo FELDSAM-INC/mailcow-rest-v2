@@ -4,7 +4,7 @@ The contract of this feature is not duplicated here. The OpenAPI 3.1 document in
 [`api/`](../../../api/) directory is the single source of truth (constitution I):
 
 - [`api/modules/dkim/`](../../../api/modules/dkim/): DKIM entries, generation, import, copy,
-  deletion, private key export, publishing a record to ISPConfig again, and the capabilities read
+  deletion, bulk deletion (`/dkim-keys/bulk-actions`), private key export, publishing a record to ISPConfig again, and the capabilities read
   (`/capabilities/dns`).
 - [`api/modules/mta-sts/`](../../../api/modules/mta-sts/): MTA-STS policies.
 - [`api/modules/dns-diagnostics/`](../../../api/modules/dns-diagnostics/): DNS diagnostics.
@@ -16,7 +16,7 @@ The contract of this feature is not duplicated here. The OpenAPI 3.1 document in
   `dkim-dns-publication-disabled` and `mta-sts-policy-exists` in
   [`docs/problems.md`](../../../docs/problems.md).
 
-The 14 operations, with their authentication and the requirements they serve, are listed in
+The 15 operations, with their authentication and the requirements they serve, are listed in
 [plan.md](../plan.md#contract-operations).
 
 Check the contract with:

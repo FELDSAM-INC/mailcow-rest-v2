@@ -136,6 +136,13 @@
 - Q: How does a client learn the DNS publication outcome of a key deletion, which responds without
   a body? → A: From the audit history of the name (FR-024, FR-055). The deletion keeps responding
   `204`, as the constitution requires for deletions. (orchestrator decision: constitution II.)
+- Q: Can an administrator delete several DKIM keys in one request, as the legacy screen's mass
+  remove does? → A: Yes. One bulk request deletes up to 100 keys. Each key is checked, deleted and
+  audited on its own, with an optional version tag per key, and gets its own result; one failure
+  does not stop the others. When the DKIM DNS publication is enabled, the response reports the
+  removal outcome of each key's record. Generation, import and copy stay one name or target per
+  request (FR-059). (orchestrator decision: `docs/conventions.md` requires bulk actions where
+  legacy has mass actions; creating several objects in one request stays excluded.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -348,8 +355,13 @@ entries with the legacy results and send signed messages after each change.
 5. **Given** an unused key, **When** an administrator deletes it, **Then** it disappears from the
    list and the response has no body. **Given** a domain's key, **When** it is deleted, **Then** the
    entry shows "missing" and the domain's mail is no longer signed.
-6. **Given** a domain administrator, **When** they try to import, copy or delete a key, **Then** the
-   request is refused as forbidden.
+6. **Given** a domain administrator, **When** they try to import, copy or delete a key, or to delete
+   keys in bulk, **Then** the request is refused as forbidden.
+7. **Given** three unused keys, one of them changed since the administrator read the list, and a
+   name without a key, **When** the administrator deletes all four in one bulk request with the
+   version tags they read, **Then** the two unchanged keys are deleted ("done"), the changed key is
+   reported as outdated and kept, the name without a key is reported as not found, and each deleted
+   key has its own audit record carrying the bulk request's identifier.
 
 ---
 
@@ -531,7 +543,7 @@ filtered by target.
   | Read the capabilities (FR-012) | All values | Without the private key export setting | Forbidden |
   | Generate a DKIM key for a name without a key | Any domain or alias domain | Own domains and their alias domains | Forbidden |
   | Generate a DKIM key that overwrites an existing key | Yes | Forbidden | Forbidden |
-  | Import, copy or delete a DKIM key | Yes | Forbidden | Forbidden |
+  | Import, copy or delete a DKIM key, delete keys in bulk (FR-059) | Yes | Forbidden | Forbidden |
   | Export a private key | Yes, only while export is enabled (FR-026) | Forbidden | Forbidden |
   | Publish a DKIM record again (FR-031) | Yes | Forbidden | Forbidden |
   | Read, list, create and change MTA-STS policies | All domains | Own domains | Forbidden |
@@ -915,10 +927,17 @@ filtered by target.
   implemented, and its behaviour MUST match the contract.
 - **FR-058**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response
   of this API.
-- **FR-059**: This feature MUST NOT offer batch operations. Each key is generated, imported, copied
-  to one target or deleted with its own request, and clients that act on several names send one
-  request per name. (Creating several objects in one request is excluded by `docs/conventions.md`;
-  a bulk deletion is not offered by this specification.)
+- **FR-059**: Administrators MUST be able to delete up to 100 DKIM keys in one bulk request, as the
+  legacy mass remove does. A request with more than 100 keys MUST be refused with a validation error
+  that states the limit. The request MUST be refused as a whole when the caller's role or key scope
+  does not allow deletion (FR-004, FR-005). Otherwise each distinct name MUST be processed on its
+  own, with the checks, side effects and audit record of a single deletion (FR-024, FR-025, FR-054,
+  with the bulk request's identifier), and MUST get one result: done, not found, outdated (when the
+  version tag sent for it no longer matches; the key is unchanged), refused or failed. A failure on
+  one key MUST NOT stop or undo the others. When the DKIM DNS publication is enabled, the response
+  MUST report each deleted key's DNS publication outcome (FR-030). Generation, import and copy MUST
+  NOT be offered as bulk operations: each names one name or target per request
+  (`docs/conventions.md`: creation is one object per request).
 
 ### Legacy Coverage
 
@@ -927,9 +946,9 @@ follows. Actions are `/api/v1` names; *form* marks legacy UI forms and screens.
 
 | Legacy action or form | Legacy implementation | Requirements |
 |---|---|---|
-| `add/dkim`, *form* "Add ARC/DKIM key" (several domains, selector, key length), "Select domains with missing keys" | `dkim('add')` | FR-013 to FR-016, FR-029, FR-030, FR-053, FR-059 |
+| `add/dkim`, *form* "Add ARC/DKIM key" (several domains, selector, key length), "Select domains with missing keys" | `dkim('add')` | FR-013 to FR-016, FR-029, FR-030, FR-053 (one name per request, FR-059) |
 | `add/dkim_import`, *form* "Import private key" (domain, selector, private key, overwrite) | `dkim('import')` | FR-017 to FR-021, FR-027, FR-029, FR-030 |
-| `add/dkim_duplicate`, *form* "Duplicate DKIM record" (from, to several) | `dkim('duplicate')` | FR-022, FR-023, FR-029, FR-030, FR-059 |
+| `add/dkim_duplicate`, *form* "Duplicate DKIM record" (from, to several) | `dkim('duplicate')` | FR-022, FR-023, FR-029, FR-030 (one target per request, FR-059) |
 | `get/dkim/{domain}` | `dkim('details')` | FR-007, FR-011 |
 | *form* System › ARC/DKIM keys: valid, unused and missing keys with filters | `admin/system.php`, `dkim('details')`, `dkim('blind')`, `tab-config-dkim.twig` | FR-007 to FR-010 |
 | `delete/dkim`, *form* mass remove | `dkim('delete')` | FR-024, FR-025, FR-029, FR-030, FR-059 |
@@ -995,6 +1014,7 @@ certificate service are identical. The fork differs in four ways:
 | Private key in logs | `api_log` writes the whole import request, including the private key, to `API_LOG`; only fields matching "pass" are masked | Never logged or audited (FR-027). **Deviation** (security fix) |
 | Name normalisation for DKIM | `dkim('add')` and `dkim('import')` validate but store the name as typed, so an upper-case or Unicode name gets a key that Rspamd never uses | Normalised to lower-case ASCII; legacy leftovers listed as unused (FR-006). **Deviation** |
 | Several domains per generation, several copy targets | One request with a list | One name or target per request (FR-059). **Deviation** |
+| Mass remove of keys | `delete/dkim` with a list; continues past failures; a name without a key is reported as removed | Bulk deletion of up to 100 keys with one result per key, optional version tags, per-key audit records and publication outcomes (FR-059) |
 | Existing key at generation | Refused with the generic "domain or selector invalid" message | Refused as a conflict, unless an administrator asks to overwrite, which replaces the key atomically (FR-013, FR-014). **Deviation** (addition: rotation without an unsigned gap) |
 | Server values for the forms | Rendered into the pages: the selector pre-filled from the fork's hard-coded value, the key sizes 1024 to 4096; the host name never shown on the MTA-STS tab | Capabilities read with the host name, DKIM, MTA-STS and diagnostics limits (FR-012), an addition |
 | Selector rule | Letters, digits, `-`, `_`, `.`; empty refused | Same, at most 255 characters (FR-014) |
@@ -1124,7 +1144,7 @@ certificate service are identical. The fork differs in four ways:
   - changing operator settings through the API;
   - deleting MTA-STS policies;
   - checking DNSSEC or DMARC policy content;
-  - batch operations;
+  - bulk generation, import and copy;
   - taking over the MTA-STS publication endpoint (feature 014).
 - **Dependencies**:
   - the upstream mailcow database schema of the supported release (table `mta_sts`);

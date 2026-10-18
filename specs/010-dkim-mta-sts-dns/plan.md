@@ -21,7 +21,7 @@ legacy "System › ARC/DKIM keys" screen, the MTA-STS tab and the DNS button:
 
 The technical approach:
 
-- The OpenAPI 3.1 contract was authored first: 14 operations in the modules `dkim`, `mta-sts` and
+- The OpenAPI 3.1 contract was authored first: 15 operations in the modules `dkim`, `mta-sts` and
   `dns-diagnostics`; they lint clean.
 - DKIM keys stay in mailcow's Redis hashes `DKIM_PUB_KEYS`, `DKIM_SELECTORS` and `DKIM_PRIV_KEYS`,
   which Rspamd reads for DKIM signing and ARC sealing. Every change is one atomic Lua script with a
@@ -84,7 +84,7 @@ feature adds the port variables of `mailcow.conf` to the API service.
 - Outbound lookups are bounded per lookup, per run and per caller.
 - All dependencies are GPL-3.0-compatible.
 
-**Scale/Scope**: Up to about 10,000 domains and alias domains and their keys; 14 operations in 3
+**Scale/Scope**: Up to about 10,000 domains and alias domains and their keys; 15 operations in 3
 modules; 8 user stories; no API-owned table.
 
 ## Constitution Check
@@ -93,7 +93,7 @@ modules; 8 user stories; no API-owned table.
 
 | Principle | Gate | Status |
 |---|---|---|
-| I. Contract-first | All 14 operations are in `api/modules/{dkim,mta-sts,dns-diagnostics}/` with resource-named components, before any code. `npx @redocly/cli@2.64.1 lint` reports nothing for these modules. Every test request and response is validated; the coverage check includes the 14 operations. Schemas describe the real `mta_sts` columns and `DKIM_*` hashes. | PASS |
+| I. Contract-first | All 15 operations are in `api/modules/{dkim,mta-sts,dns-diagnostics}/` with resource-named components, before any code. `npx @redocly/cli@2.64.1 lint` reports nothing for these modules. Every test request and response is validated; the coverage check includes the 15 operations. Schemas describe the real `mta_sts` columns and `DKIM_*` hashes. | PASS |
 | II. HTTP contract | Plural nouns; actions are sub-resources (`/import`, `/copy`, `/private-key`, `/dns-publication`); `201` with `Location` for generation, import, copy and policy creation; `200` for overwrite, republish and patch; `204` for deletion. `{data, meta}` lists, `{data}` resources. RFC 9457 problems with documented types. `ETag` and `If-Match` on keys and policies; every list entry carries `etag`. PATCH is JSON Merge Patch. `503` (temporary failure) and `429` with `RateLimit-*` headers are justified in Complexity Tracking. | PASS (justified) |
 | III. Upstream schema | No migration. `mta_sts` and the `DKIM_*` hashes are written in exactly legacy's format (data model). | PASS |
 | IV. Parity | Legacy `functions.dkim.inc.php`, the fork's `dkim_update_in_dns()` and `inc/lib/ispconfig.php`, `mailbox()` `mta_sts` cases, `mta-sts.php`, `dns_diagnostics.php`, `spf.inc.php`, `generate_tlsa_digest()` and Rspamd's `dkim_signing.conf`/`arc.conf` were read. Every write goes through `DkimKeyService` or `MtaStsPolicyService` and reproduces the side effects (Redis hashes that Rspamd reads, the row that `mta-sts.php` and acme read, the ISPConfig record). Deviations are those of the spec's parity table plus the plan-level notes below. | PASS |
@@ -101,7 +101,7 @@ modules; 8 user stories; no API-owned table.
 | VI. Security | Object-level authorisation for admin, domain admin and mailbox user, and for read-only and read-write keys of each, on every operation. Out-of-scope names answer `404`. Private keys are write-only except the gated, audited export with `Cache-Control: no-store`; the import never echoes key text; version tags carry the private key only as an HMAC keyed with the app key; the ISPConfig password is never returned, logged or cached. Outbound lookups are rate-limited and time-bounded (OWASP API4). Every state change, every export and every refusal of an authenticated caller is audited. | PASS |
 | VII. Test-first | `tasks.md` puts tests before implementation in every phase. MariaDB and Redis are real; ISPConfig, DNS, SMTP probe and echo service are faked with asserting fakes. | PASS |
 | VIII. Simplicity | One runtime package, replacing an SPF evaluator that would otherwise be hand-written. The ISPConfig client and settings (002) and the DNS and SMTP clients (009) are reused and extended, not duplicated. Interfaces exist only for faked external services (`IspconfigDnsClient`, `DnsResolver`, `SmtpProbe`); the echo service uses Laravel's HTTP client directly. | PASS |
-| Cross-feature conventions | `404` for scope, `403` for roles; keys act as their owner; lists 25/1,000 with `q`; capabilities at `/capabilities/dns` (`getDnsCapabilities`); history through the generic `targetType`/`targetId` filters (no own filter parameter); refusal auditing through `RefusalAuditor` with the shared `AuditFailureReason` values; strong ETags over stored values with secrets only as HMAC; secrets write-only; legacy settings through 001's reader with `RESTV2_*` precedence; FeldHost behaviour as settings with upstream defaults; creation follow-ups for 002/004 report outcomes; one audit record per affected object. Bulk deletion is not offered because spec FR-059 excludes it (owner question below). | PASS (owner question) |
+| Cross-feature conventions | `404` for scope, `403` for roles; keys act as their owner; lists 25/1,000 with `q`; capabilities at `/capabilities/dns` (`getDnsCapabilities`); history through the generic `targetType`/`targetId` filters (no own filter parameter); refusal auditing through `RefusalAuditor` with the shared `AuditFailureReason` values; strong ETags over stored values with secrets only as HMAC; secrets write-only; legacy settings through 001's reader with `RESTV2_*` precedence; FeldHost behaviour as settings with upstream defaults; creation follow-ups for 002/004 report outcomes; one audit record per affected object; bulk deletion at the POST-only `/dkim-keys/bulk-actions` with `targets`, the shared `BulkTarget` and `BulkResult`, per-item version tags and outcomes. | PASS |
 
 **Post-design re-check (after Phase 1)**: PASS. The contract, data model and research add no new
 violation. Decisions that touched gates:
@@ -137,6 +137,7 @@ clarification.
 | POST `/dkim-keys` | generateDkimKey | admin or domain admin (overwrite: admin), session + CSRF or read-write key | US2, FR-013–FR-016, FR-029, FR-030, FR-053 |
 | GET `/dkim-keys/{dkimName}` | getDkimKey | admin or domain admin, session or key | US1, FR-007, FR-011 |
 | DELETE `/dkim-keys/{dkimName}` | deleteDkimKey | admin, session + CSRF or read-write key | US5, FR-024, FR-025, FR-029, FR-030 |
+| POST `/dkim-keys/bulk-actions` | applyDkimKeyBulkAction | admin, session + CSRF or read-write key | US5, FR-059 |
 | POST `/dkim-keys/{dkimName}/import` | importDkimKey | admin, session + CSRF or read-write key | US5, FR-017–FR-021, FR-027 |
 | POST `/dkim-keys/{dkimName}/copy` | copyDkimKey | admin, session + CSRF or read-write key | US5, FR-022, FR-023 |
 | GET `/dkim-keys/{dkimName}/private-key` | exportDkimPrivateKey | admin, session or key (read-only too), setting on | US6, FR-026, FR-027 |
@@ -174,14 +175,15 @@ Only the files this feature adds or extends; everything else is 001's layout.
 
 ```text
 api/
-├── modules/dkim/{_index,dkim-keys,dkim-key,dkim-key-import,dkim-key-copy,
+├── modules/dkim/{_index,dkim-keys,dkim-keys-bulk-actions,dkim-key,dkim-key-import,dkim-key-copy,
 │                 dkim-key-private-key,dkim-key-dns-publication,dns-capabilities}.yaml
 ├── modules/mta-sts/{_index,mta-sts-policies,mta-sts-policy}.yaml
 ├── modules/dns-diagnostics/{_index,dns-diagnostics}.yaml
 └── components/
     ├── parameters/{DkimName,DkimKeySort,MtaStsPolicyDomain,MtaStsPolicySort,DnsDiagnosticsName}.yaml
     ├── schemas/{DkimKey,DkimKeyDetails,DkimKeyState,DkimKeyKind,DkimDnsRecord,DkimKeyGenerateRequest,
-    │            DkimKeyImportRequest,DkimKeyCopyRequest,DkimKeyChangeResult,DkimDnsPublicationOutcome,
+    │            DkimKeyImportRequest,DkimKeyCopyRequest,DkimKeyBulkActionRequest,DkimKeyChangeResult,
+    │            DkimDnsPublicationOutcome,
     │            DkimDnsPublicationStatus,DkimDnsPublicationReasonCode,DkimPrivateKey,DnsCapabilities,
     │            MtaStsPolicy,MtaStsMode,MtaStsDnsRecord,MtaStsPolicyCreateRequest,MtaStsPolicyPatch,
     │            DnsDiagnosticsResult,DnsCheck,DnsCheckStatus,DnsCheckMessage,DnsCheckMessageCode}.yaml
@@ -189,7 +191,7 @@ api/
                    DkimPrivateKeyResponse,DkimKeyConflict,DkimTemporaryFailure,DkimPrivateKeyExportForbidden,
                    DkimDnsPublicationForbidden,DnsCapabilitiesResponse,MtaStsPolicyListResponse,
                    MtaStsPolicyResponse,MtaStsPolicyCreatedResponse,MtaStsPolicyConflict,
-                   DnsDiagnosticsResponse,DnsDiagnosticsTooManyRequests}.yaml
+                   DnsDiagnosticsResponse,DnsDiagnosticsTooManyRequests,DkimKeyBulkResultResponse}.yaml
 
 app/
 ├── Clients/
@@ -201,12 +203,12 @@ app/
 │   └── Smtp/{SmtpProbeRequest,SmtpProbeResult,StreamSmtpProbe}.php   # 009's, extended (TLS-only mode)
 ├── Http/
 │   ├── Controllers/Api/V2/{DkimKeyController,DkimKeyImportController,DkimKeyCopyController,
-│   │                        DkimPrivateKeyController,DkimDnsPublicationController,
+│   │                        DkimKeyBulkActionController,DkimPrivateKeyController,DkimDnsPublicationController,
 │   │                        DnsCapabilitiesController,MtaStsPolicyController,
 │   │                        DnsDiagnosticsController}.php
 │   ├── Requests/Api/V2/{ListDkimKeysRequest,GenerateDkimKeyRequest,ImportDkimKeyRequest,
 │   │                     CopyDkimKeyRequest,ListMtaStsPoliciesRequest,StoreMtaStsPolicyRequest,
-│   │                     UpdateMtaStsPolicyRequest}.php
+│   │                     UpdateMtaStsPolicyRequest,DkimKeyBulkActionRequest}.php
 │   └── Resources/Api/V2/{DkimKeyResource,DkimKeyChangeResource,DkimPrivateKeyResource,
 │                          DnsCapabilitiesResource,MtaStsPolicyResource,DnsDiagnosticsResource}.php
 ├── Models/Mailcow/{MtaStsPolicy,AliasDomain}.php
@@ -238,7 +240,7 @@ tests/
 │            FakeClock},Smtp/FakeSmtpProbe (009, extended)}
 ├── Feature/Dkim/{ListDkimKeysTest,GetDkimKeyTest,DnsCapabilitiesTest,DkimReadAuthorizationTest,
 │                 GenerateDkimKeyTest,DkimConcurrencyTest,DkimCreationStepTest,ImportDkimKeyTest,
-│                 CopyDkimKeyTest,DeleteDkimKeyTest,DkimWriteAuthorizationTest,
+│                 CopyDkimKeyTest,DeleteDkimKeyTest,DkimKeyBulkDeleteTest,DkimWriteAuthorizationTest,
 │                 ExportDkimPrivateKeyTest,DkimDnsPublicationTest,DkimAuditTrailTest,
 │                 DkimSecretLeakTest,DkimListPerformanceTest}.php
 ├── Feature/MtaSts/{CreateMtaStsPolicyTest,UpdateMtaStsPolicyTest,ListMtaStsPoliciesTest,
@@ -285,13 +287,9 @@ sub-resource.
 
 ## Owner-level questions (defaults applied)
 
-1. **Bulk deletion of DKIM keys**: `docs/conventions.md` calls for bulk actions where legacy has
-   mass actions (the legacy DKIM screen can remove several keys at once), but spec FR-059 excludes
-   batch operations and the UI 010 spec is built on one request per name. Default: no bulk
-   operation; it can be added later as an additive change.
-2. **ISPConfig endpoint**: the fork configures a SOAP endpoint in `inc/ispconfig.inc.php`; this
-   API (with feature 002) uses ISPConfig's JSON remote API with the same remote user and functions,
-   configured through `RESTV2_ISPCONFIG_*`. Default: JSON, with the operator copying the values.
+None open. Decided by the orchestrator on 2026-10-18: bulk deletion of DKIM keys is offered
+(spec FR-059, research R28); domain administrators see the DKIM defaults they need in the
+capabilities (spec FR-012); ISPConfig is reached through its JSON remote API (research R11).
 
 ## Complexity Tracking
 

@@ -1,7 +1,8 @@
 description: |
   Problem of type `/api/v2/problems/validation-failed` (status `422`). `errors` maps each invalid
   field to its violations. Body fields use their dot-separated path in the request body
-  (`allowedNetworks.2`); query parameters use their name (`limit`).
+  (`allowedNetworks.2`); query parameters use their name (`limit`); the key `body` stands for the
+  request body as a whole (for example an empty merge patch).
 allOf:
   - $ref: './Problem.yaml'
   - type: object

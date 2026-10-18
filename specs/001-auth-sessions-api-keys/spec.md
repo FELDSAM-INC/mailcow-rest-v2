@@ -325,7 +325,8 @@ with each filter and confirm exactly the expected entries appear and contain no 
   The failure is the same generic error as a wrong password.
 - **Resource mailboxes** (location, thing, group) can never sign in.
 - **App passwords** never establish a session, whichever role is named.
-- **Mailbox that authenticates against an external identity provider** (LDAP or Keycloak): its
+- **Mailbox that authenticates against an external identity provider** (LDAP, Keycloak or generic
+  OIDC): its
   password cannot be checked in this feature. Sign-in fails with the generic error. The attempt is
   not reported to fail2ban, because no password was found to be wrong, and the audit entry records
   the reason. Support arrives with the identity-provider feature (012).
@@ -394,8 +395,8 @@ with each filter and confirm exactly the expected entries appear and contain no 
   administrator, mailbox user.
 - **FR-003**: Only active accounts MAY sign in. For mailbox users, the mailbox and its domain MUST
   both be active and the mailbox MUST NOT be a resource. App passwords MUST NOT establish a session.
-  A mailbox whose authentication source is an external identity provider (LDAP or Keycloak) MUST
-  NOT sign in with a password in this feature. It gets the generic failure (FR-005), which is not
+  A mailbox whose authentication source is an external identity provider (LDAP, Keycloak or generic
+  OIDC) MUST NOT sign in with a password in this feature. It gets the generic failure (FR-005), which is not
   reported to fail2ban. Passkey sign-in works for such mailboxes as for any other account, because
   mailcow holds the passkey.
 - **FR-004**: Password verification MUST accept every stored hash format that legacy accepts
@@ -678,6 +679,12 @@ product name (FR-043).
 | UI log entries | Written to the `logs` table | Written to this API's own audit log, not to `logs` (constitution V). **Deviation**: sign-ins through the new API do not show up in the legacy UI's log viewer |
 | Language and theme | Browser cookie and browser storage, never stored per account | Stored per account by this API (FR-030). Not shared with the legacy UI |
 | API keys | One rw and one ro key, both acting as unscoped admin, IP list or skip flag | Many named keys, each acting as its admin or domain-admin owner, with scope, expiry and networks (FR-032 to FR-040). `/api/v1` keys unchanged |
+| External identity sources | `ldap` and `keycloak` mailboxes are checked against the provider. A `generic-oidc` mailbox fails like a wrong password and is reported to fail2ban | All three are refused with the generic error and not reported (FR-003). **Deviation** (added by the plan) |
+| Forced actions | Evaluated once at login and kept in the session | Re-evaluated on every request, so a restriction applies or lifts with the next request (FR-014, FR-029). **Deviation** (added by the plan) |
+| fail2ban message content | The username is inserted as typed. A newline in it could inject a second line that bans another address | Control characters are replaced by `?`. The text is unchanged for every valid username (FR-006). **Deviation** (added by the plan, security fix) |
+| Failures after the throttling limit | No hard limit, and every failure is published to fail2ban | Throttled password attempts are refused without checking the password, and are still published, so fail2ban counts every attempt (FR-006, FR-007, SC-004) |
+| Passkey sign-in with a named role | A mailbox-user FIDO2 login fails when the username also exists as an administrator or domain administrator | Only the named account type is tried (FR-002, FR-015). **Deviation** |
+| Passkey registration details | Relying-party name `WebAuthn Library`. No name at registration. A credential ID already stored would be stored again if an authenticator ignored the exclusion list | The relying-party name is the product name. A name may be given at registration. An already stored credential ID is refused (FR-052). **Deviation** (added by the plan) |
 
 ### Key Entities *(include if feature involves data)*
 

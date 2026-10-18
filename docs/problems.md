@@ -33,7 +33,8 @@ extension members.
 - **Meaning**: The request body or query parameters are invalid. Nothing was changed.
 - **Extension members**: `errors`, an object that maps each invalid field to a non-empty list of
   violations. Body fields use their dot-separated path in the request body (`allowedNetworks.2`).
-  Query parameters use their name (`limit`). Each violation has:
+  Query parameters use their name (`limit`). The key `body` stands for the request body as a whole,
+  for example an empty merge patch. Each violation has:
   - `code`: a stable rule code, one of `required`, `invalidType`, `tooShort`, `tooLong`,
     `tooMany`, `outOfRange`, `notInList`, `invalidFormat`, `mustBeInFuture`, `notFound`,
     `notEligible`. Later features may add codes. Treat unknown codes as a generic invalid value.

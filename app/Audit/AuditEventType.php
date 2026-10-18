@@ -74,6 +74,11 @@ enum AuditEventType: string
     case Fail2banBanAllowlisting = 'fail2banBanAllowlisting';
     case Fail2banBanDenylisting = 'fail2banBanDenylisting';
     case Fail2banBanListIdRotation = 'fail2banBanListIdRotation';
+    // Feature 008: sync jobs.
+    case SyncJobCreation = 'syncJobCreation';
+    case SyncJobUpdate = 'syncJobUpdate';
+    case SyncJobReschedule = 'syncJobReschedule';
+    case SyncJobDeletion = 'syncJobDeletion';
 
     /**
      * Keys of refusal records written by App\Services\Audit\RefusalAuditor (docs/conventions.md
@@ -143,6 +148,10 @@ enum AuditEventType: string
             self::Fail2banBanAllowlisting => ['network', 'allowlistAdded', 'denylistRemoved', ...self::REFUSAL],
             self::Fail2banBanDenylisting => ['network', 'denylistAdded', 'allowlistRemoved', ...self::REFUSAL],
             self::Fail2banBanListIdRotation => self::REFUSAL,
+            self::SyncJobCreation => ['mailbox', 'values', ...self::REFUSAL],
+            self::SyncJobUpdate => ['mailbox', 'changes', ...self::BULK, ...self::REFUSAL],
+            self::SyncJobReschedule => ['mailbox', 'cleared', 'previous', ...self::BULK, ...self::REFUSAL],
+            self::SyncJobDeletion => ['mailbox', 'remoteHost', 'remoteUser', ...self::BULK, ...self::REFUSAL],
         };
     }
 }

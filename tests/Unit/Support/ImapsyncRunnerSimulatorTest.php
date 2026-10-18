@@ -37,18 +37,18 @@ class ImapsyncRunnerSimulatorTest extends TestCase
         $id = $this->mailcow()->syncJob('alice@example.org', ['mins_interval' => 20]);
 
         $this->runner->startRun($id);
-        $row = DB::table('imapsync')->where('id', $id)->first();
-        $this->assertSame(1, (int) $row?->is_running);
-        $this->assertNull($row?->success);
+        $row = (array) DB::table('imapsync')->where('id', $id)->first();
+        $this->assertSame(1, (int) $row['is_running']);
+        $this->assertNull($row['success']);
         $this->assertNotContains($id, $this->runner->selectableIds());
 
         $this->assertSame(1, $this->runner->finishRun($id, 'Exiting with return value 0', 1, 'EX_OK'));
-        $row = DB::table('imapsync')->where('id', $id)->first();
-        $this->assertSame(0, (int) $row?->is_running);
-        $this->assertSame(1, (int) $row?->success);
-        $this->assertSame('EX_OK', $row?->exit_status);
-        $this->assertSame('Exiting with return value 0', $row?->returned_text);
-        $this->assertNotNull($row?->last_run);
+        $row = (array) DB::table('imapsync')->where('id', $id)->first();
+        $this->assertSame(0, (int) $row['is_running']);
+        $this->assertSame(1, (int) $row['success']);
+        $this->assertSame('EX_OK', $row['exit_status']);
+        $this->assertSame('Exiting with return value 0', $row['returned_text']);
+        $this->assertNotNull($row['last_run']);
         $this->assertNotContains($id, $this->runner->selectableIds());
 
         DB::table('imapsync')->where('id', $id)->update(['last_run' => DB::raw('NOW() - INTERVAL 21 MINUTE')]);

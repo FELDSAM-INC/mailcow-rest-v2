@@ -108,13 +108,13 @@ the representation, the audit wiring, the configuration reader extension and the
 
 ### Tests for the foundation (write first, observe failing) ⚠️
 
-- [ ] T005 [P] Write `tests/Feature/Schema/ImapsyncColumnsTest.php`. It asserts that `SHOW COLUMNS
+- [X] T005 [P] Write `tests/Feature/Schema/ImapsyncColumnsTest.php`. It asserts that `SHOW COLUMNS
   FROM imapsync` in the loaded fixture equals exactly the 34 columns of data-model.md, with their
   types (for example `maxbytespersecond` "VARCHAR(50) NOT NULL DEFAULT '0'", `enc1`
   "ENUM('TLS','SSL','PLAIN') DEFAULT 'TLS'", `last_run` "TIMESTAMP NULL DEFAULT NULL"). It also
   asserts that the only index is `PRIMARY (id)`. The test fails when an upstream release changes the
   table, so that the model and contract get updated deliberately (constitution III).
-- [ ] T006 [P] Create `tests/Support/SyncJobs/ImapsyncRunnerSimulator.php` (R20). It runs the
+- [X] T006 [P] Create `tests/Support/SyncJobs/ImapsyncRunnerSimulator.php` (R20). It runs the
   runner's SQL, copied from `data/Dockerfiles/dovecot/imapsync_runner.pl` at `2026-09a` with a
   comment naming the source:
   - `selectableIds(): list<int>` runs `SELECT id FROM imapsync WHERE active = 1 AND is_running = 0
@@ -134,18 +134,18 @@ the representation, the audit wiring, the configuration reader extension and the
   `alias` and `alias_domain` as legacy writes them). Write
   `tests/Unit/Support/ImapsyncRunnerSimulatorTest.php` covering never run, run, finish, interval not
   elapsed, inactive and running.
-- [ ] T007 [P] Write `tests/Unit/Services/MailcowConfigImapsyncOptionsTest.php` (R7, R18):
+- [X] T007 [P] Write `tests/Unit/Services/MailcowConfigImapsyncOptionsTest.php` (R7, R18):
   - with 001's `tests/fixtures/mailcow-inc`, `imapsyncOptions()['whitelist']` equals upstream
     `2026-09a`'s 114 entries in order, and `blacklist` its 8 entries;
   - with `tests/fixtures/mailcow-inc-imapsync`, the local override applies;
   - `RESTV2_IMAPSYNC_OPTIONS='{"whitelist":["maxsize"],"blacklist":[]}'` beats the files;
   - with the directory missing, the built-in upstream default applies;
   - malformed `RESTV2_IMAPSYNC_OPTIONS` JSON falls back to the files and logs one warning.
-- [ ] T008 [P] Write `tests/Unit/SyncJobs/SyncJobEncryptionTest.php` and
+- [X] T008 [P] Write `tests/Unit/SyncJobs/SyncJobEncryptionTest.php` and
   `tests/Unit/SyncJobs/SyncJobLastResultTest.php`:
   - `SSL` ↔ `ssl`, `TLS` ↔ `starttls`, `PLAIN` ↔ `plain`, and `fromApi('tls')` throws;
   - `success` 1 → `succeeded`, 0 → `failed`, NULL → `unknown`.
-- [ ] T009 [P] Write `tests/Unit/SyncJobs/SyncJobVersionTest.php` (R4, FR-020):
+- [X] T009 [P] Write `tests/Unit/SyncJobs/SyncJobVersionTest.php` (R4, FR-020):
   - the tag is a quoted strong ETag;
   - changing any one of the 23 input columns changes it, including `password1` and `user2`;
   - changing `is_running`, `last_run`, `success`, `exit_status`, `returned_text`, `modified`,
@@ -154,7 +154,7 @@ the representation, the audit wiring, the configuration reader extension and the
   - the password's plain SHA-256 never appears in the tag input (the HMAC with `config('app.key')`
     does);
   - two different application keys give different tags for the same row.
-- [ ] T010 [P] Write `tests/Feature/SyncJobs/SyncJobScopeTest.php` (R2, FR-002). Seed jobs on
+- [X] T010 [P] Write `tests/Feature/SyncJobs/SyncJobScopeTest.php` (R2, FR-002). Seed jobs on
   mailboxes of `example.org`, `example.net` and `example.com`, a job whose `user2` has no `mailbox`
   row (orphan), and a job on a resource mailbox. Using `SyncJobScope` directly:
   - an admin sees every job except the orphan;
@@ -162,14 +162,14 @@ the representation, the audit wiring, the configuration reader extension and the
     sees only `example.org`;
   - a mailbox user sees only jobs with `user2` equal to their username;
   - a domain admin without domains sees nothing.
-- [ ] T011 [P] Write `tests/Feature/SyncJobs/SyncJobPolicyTest.php` (FR-001):
+- [X] T011 [P] Write `tests/Feature/SyncJobs/SyncJobPolicyTest.php` (FR-001):
   - an admin always passes;
   - a domain admin passes with `da_acl.syncjobs = 1` and fails with 0;
   - a domain admin without a `da_acl` row fails (001 R20);
   - a mailbox user passes with `user_acl.syncjobs = 1` and fails with 0 or without a row;
   - a key principal is evaluated through its owner;
   - a flag change in the database takes effect on the next request (no caching).
-- [ ] T012 [P] Write `tests/Feature/SyncJobs/SyncJobResourceTest.php` (R3, FR-007, FR-008, FR-010). A seeded
+- [X] T012 [P] Write `tests/Feature/SyncJobs/SyncJobResourceTest.php` (R3, FR-007, FR-008, FR-010). A seeded
   row is rendered as `SyncJob`, with each field per data-model.md:
   - `authMechanism` is `plain`;
   - `remotePasswordSet` is false for `password1 = ''`;
@@ -182,7 +182,7 @@ the representation, the audit wiring, the configuration reader extension and the
 
 ### Implementation of the foundation
 
-- [ ] T013 Extend 001's configuration reader (R7):
+- [X] T013 Extend 001's configuration reader (R7):
   - `resources/bin/export-mailcow-vars.php` also exports `IMAPSYNC_OPTIONS`;
   - `app/Services/Config/MailcowConfig.php` gets `imapsyncOptions(): array{whitelist: list<string>,
     blacklist: list<string>}` with the precedence `RESTV2_IMAPSYNC_OPTIONS` → files → built-in
@@ -192,14 +192,14 @@ the representation, the audit wiring, the configuration reader extension and the
     source.
 
   This makes T007 pass.
-- [ ] T014 [P] (FR-027) Add the case `SyncJobExists` (`/api/v2/problems/sync-job-exists`, 409, "Sync job
+- [X] T014 [P] (FR-027) Add the case `SyncJobExists` (`/api/v2/problems/sync-job-exists`, 409, "Sync job
   already exists") to `app/Support/Http/ProblemType.php`. Add `SyncJobCreation`, `SyncJobUpdate`,
   `SyncJobReschedule` and `SyncJobDeletion` to the PHP `AuditEventType` enum (001), and
   `PermissionDenied` and `NotFound` to its failure-reason enum, if 001 keeps one. Reuse the
   `PermissionFlagRequired` case (`/api/v2/problems/permission-flag-required`, 403, extension
   `requiredFlags`) that an earlier feature added; add it only if it is missing. 001's
   `ProblemTypeConsistencyTest` must stay green.
-- [ ] T015 [P] Create the enums in `app/Services/SyncJobs/` and make T008 pass:
+- [X] T015 [P] Create the enums in `app/Services/SyncJobs/` and make T008 pass:
   - `SyncJobEncryption.php`: string-backed `Ssl = 'SSL'`, `Starttls = 'TLS'`, `Plain = 'PLAIN'`,
     with `fromApi()` and `toApi()`;
   - `SyncJobLastResult.php`: `fromStored(?int)`;
@@ -212,7 +212,7 @@ the representation, the audit wiring, the configuration reader extension and the
   - `SyncJobLimits.php`: the ranges "port 1–65535, interval 1–43800, age 0–32000, speed
     0–125000000, timeouts 1–32000" and the lengths "host, user, password and subfolder 255,
     exclude 500, customParameters 512".
-- [ ] T016 Create `app/Models/Mailcow/SyncJob.php` (data-model.md):
+- [X] T016 Create `app/Models/Mailcow/SyncJob.php` (data-model.md):
   - `$connection = 'mysql'`, `$table = 'imapsync'`, `$primaryKey = 'id'`;
   - `$timestamps = false`, `$guarded = ['*']`;
   - `$hidden = ['password1', 'returned_text']`;
@@ -222,21 +222,21 @@ the representation, the audit wiring, the configuration reader extension and the
   - the relation `mailbox()` → `belongsTo(Mailbox::class, 'user2', 'username')`.
 
   Create `app/Services/SyncJobs/SyncJobVersion.php` (R4), which makes T009 pass.
-- [ ] T017 Create `app/Services/SyncJobs/SyncJobScope.php` (R2): `apply(Builder $query, Principal
+- [X] T017 Create `app/Services/SyncJobs/SyncJobScope.php` (R2): `apply(Builder $query, Principal
   $p): Builder`. It joins `mailbox m ON m.username = imapsync.user2`, adds no condition for an
   admin, adds `m.domain IN (SELECT domain FROM domain_admins WHERE username = ? AND active = '1')`
   for a domain admin and `imapsync.user2 = ?` for a mailbox user. Also create
   `findInScope(int $id, Principal $p): ?SyncJob` and `findInScopeForUpdate()` (`lockForUpdate`).
   This makes T010 pass.
-- [ ] T018 Create `app/Policies/SyncJobPolicy.php` with `use(Principal): bool`, true when
+- [X] T018 Create `app/Policies/SyncJobPolicy.php` with `use(Principal): bool`, true when
   `IdentityService` reports `PermissionFlag::Syncjobs`. Register it in
   `app/Providers/AppServiceProvider.php` as the gate `syncJobs.use`. A failing gate throws
   `ProblemException(ProblemType::PermissionFlagRequired, ['requiredFlags' => ['syncjobs']])`. This makes T011
   pass.
-- [ ] T019 Create `app/Http/Resources/Api/V2/SyncJobResource.php` (R3). It renders the contract
+- [X] T019 Create `app/Http/Resources/Api/V2/SyncJobResource.php` (R3). It renders the contract
   `SyncJob` from a model plus an optional `logAvailable` value and the tag from `SyncJobVersion`,
   and never touches `password1` beyond `remotePasswordSet`. This makes T012 pass.
-- [ ] T020 Create `app/Services/SyncJobs/SyncJobAuditDetails.php` (R16):
+- [X] T020 Create `app/Services/SyncJobs/SyncJobAuditDetails.php` (R16):
   - `attributes(SyncJob)` and `changes(array $before, array $after, bool $passwordReplaced)`, in
     contract member names, with `remotePassword: "changed"` only;
   - `refusal(ProblemType|int $status, array $errors)`, which keeps rule codes per member and drops
@@ -246,7 +246,7 @@ the representation, the audit wiring, the configuration reader extension and the
   `app/Services/Audit/AuditLogger.php`. Write
   `tests/Unit/SyncJobs/SyncJobAuditDetailsTest.php` asserting that no output contains a password
   value, whatever the input.
-- [ ] T021 Create the refusal recording of R16 (reuse 002's hook if T001 found one, and add only
+- [X] T021 Create the refusal recording of R16 (reuse 002's hook if T001 found one, and add only
   the resolver):
   - `app/Services/Audit/RefusalAuditor.php`: `record(Request, Problem): void` writes one failure
     record in its own transaction. It runs only when the matched route has the default
@@ -992,8 +992,12 @@ Checked on `main` at `e21f5ee`:
 - **003**: `App\Support\Database\NamedLock` (named locks), `App\Services\Mailboxes\MailboxScope`
   and `App\Services\Domains\DomainScope` (domain scope), `MailcowRows::syncJob(string $user2)`
   (extended here with overrides, see T006). The mailbox rename and deletion stories, which move and
-  remove `imapsync` rows, are still in `wt/003`; this feature does not duplicate them, and none of
-  its tasks depends on them.
+  remove `imapsync` rows, were still in `wt/003` at the start; they reached `main` with `1351d9e`
+  (`MailboxDeleter`, `MailboxDataMover`), onto which this branch was rebased. This feature does not
+  duplicate them.
+- **002 after the rebase**: `BulkActionRunner` resolves and deduplicates every target before it
+  applies any, and `RefusalAuditor::bulkRefusal()` builds the record of a bulk request refused as a
+  whole; both are used.
 - **001**: `MailcowConfig` (extended with `imapsyncOptions()`), `ListQuery`, `ETag`,
   `ApiFormRequest`, `FieldViolations`, `StrictBoolean`, `QueryBoolean`, `MailcowDateTime`,
   `IdentityService::permissions()` and `scope()`.
@@ -1009,3 +1013,28 @@ Checked on `main` at `e21f5ee`:
 - **T004**: the override fixtures are written at test time into a copy of 001's
   `tests/fixtures/mailcow-inc` (as 003 T003 and 004 T002 did), instead of committing a second copy
   of upstream's `vars.inc.php`.
+- **T006**: 003's `MailcowRows::syncJob(string $user2)` was extended to `syncJob(string $user2, array
+  $overrides = [])` with legacy's insert column list and the form's defaults; its callers are
+  unchanged. The simulator's self-test is `tests/Unit/Support/ImapsyncRunnerSimulatorTest.php`.
+- **T011**: a domain administrator without a `da_acl` row **holds** the flag: 001 FR-028 applies the
+  row legacy inserts (`da_acl.syncjobs` defaults to 1), and legacy `acl('to_session')` keeps the
+  `user_acl` flag `syncjobs` on as well. The task's "fails" predates that decision.
+- **T013**: `resources/bin/export-mailcow-vars.php` exports every variable listed in
+  `config/restv2.php`, so adding `IMAPSYNC_OPTIONS` to `vars_overrides` and `vars_defaults` was
+  enough (as 003 T003 and 004 T002 found).
+- **T014**: there is no PHP failure-reason enum; `RefusalAuditor` maps the reasons, and
+  `permissionDenied` and `notFound` already exist there. `permission-flag-required` existed (002).
+- **T017**: `findInScopeForUpdate()` locks only the job's `imapsync` row (by primary key) and then
+  checks the scope, so that a change never locks the target mailbox's row.
+- **T018**: the gate `syncJobs.use` is `SyncJobPolicy::use()`; `SyncJobPolicy::authorize()` throws
+  002's `PermissionFlagRequiredException` (`requiredFlags: [syncjobs]`, `requiredFlagsMatch: all`).
+- **T019**: `SyncJobResource::present()` builds the representation (the model with its casts), and
+  `response()`/`list()` the envelopes, like 004's `AliasResource`.
+- **T020**: creation records carry the stored configuration in `values` (not `attributes`), as the
+  creation records of 002, 003 and 004 do, plus `remotePasswordSet`. No `refusal()` builder was
+  needed: `RefusalAuditor` already keeps rule codes per member and drops values. The detail
+  whitelists are in `AuditEventType::detailKeys()`, documented in `docs/audit-events.md` (G3).
+- **T021**: 002's `RefusalAuditor` is reused unchanged; the resolver is
+  `App\Services\SyncJobs\SyncJobAuditTargets` (named like 002's, 003's and 004's), and its test is
+  `tests/Feature/Audit/SyncJobRefusalAuditTest.php`. 002's `RefusalAuditorTest` already covers the
+  generic cases (every mapped reason, CSRF, `401`, undeclared routes).

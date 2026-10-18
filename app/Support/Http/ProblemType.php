@@ -69,6 +69,9 @@ enum ProblemType: string
     case BanRulesNotRestored = 'ban-rules-not-restored';
     case IpCheckDisabled = 'ip-check-disabled';
 
+    // Feature 008.
+    case SyncJobExists = 'sync-job-exists';
+
     public function uri(): string
     {
         return '/api/v2/problems/'.$this->value;
@@ -92,6 +95,7 @@ enum ProblemType: string
             self::ContainerProtected, self::ContainerNotRunning, self::MailServiceNotRunning, self::IpCheckDisabled => 409,
             self::ContainerActionFailed, self::QueueActionFailed => 502,
             self::BanRulesNotRestored => 504,
+            self::SyncJobExists => 409,
             self::MailboxRenameIncomplete => 500,
             self::OutcomeUnknown => 504,
             self::AttributeNotPermitted, self::PermissionFlagRequired, self::DkimPrivateKeyExportDisabled,
@@ -153,6 +157,7 @@ enum ProblemType: string
             self::QueueActionFailed => 'Queue action failed',
             self::BanRulesNotRestored => 'Ban rules not restored',
             self::IpCheckDisabled => 'IP check disabled',
+            self::SyncJobExists => 'Sync job already exists',
         };
     }
 
@@ -210,6 +215,7 @@ enum ProblemType: string
             self::QueueActionFailed => 'Postfix reported a failure.',
             self::BanRulesNotRestored => 'The ban service did not store mailcow\'s default rules within 10 seconds of its restart; it stores them with the next log line it receives.',
             self::IpCheckDisabled => 'The IP check is disabled in the customisation settings; no outbound request was made.',
+            self::SyncJobExists => 'A sync job for this mailbox, remote user and remote host already exists.',
         };
     }
 

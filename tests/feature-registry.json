@@ -210,7 +210,33 @@
                 "ban-rules-not-restored",
                 "ip-check-disabled"
             ]
+        },
+        "008-sync-jobs": {
+            "operations": [
+                "listSyncJobs",
+                "createSyncJob",
+                "getSyncJobsCapabilities",
+                "applySyncJobBulkAction",
+                "getSyncJob",
+                "updateSyncJob",
+                "deleteSyncJob",
+                "getSyncJobLog",
+                "rescheduleSyncJob"
+            ],
+            "problemTypes": [
+                "sync-job-exists"
+            ]
         }
     },
-    "pendingOperations": []
+    "pendingOperations": [
+        "listSyncJobs",
+        "createSyncJob",
+        "getSyncJobsCapabilities",
+        "applySyncJobBulkAction",
+        "getSyncJob",
+        "updateSyncJob",
+        "deleteSyncJob",
+        "getSyncJobLog",
+        "rescheduleSyncJob"
+    ]
 }

@@ -782,3 +782,72 @@ ID is recorded.
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
+
+## syncJobCreation
+
+Feature 008. Written for every creation of a sync job (`POST /sync-jobs`), in the transaction that
+stores it, and for every refused creation. The target is the sync job (`type: syncJob`, `id` its
+identifier, `name` its target mailbox); a refused creation has no identifier and names the mailbox
+as sent (or the mailbox user's own address). The remote password never appears.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `mailbox` | string | The target mailbox: the stored address on success, the address as sent (at most 255 characters) on failure. | on success; on failure when a mailbox was sent or the caller is a mailbox user |
+| `values` | object | The stored configuration in contract names: `mailbox`, `remoteHost`, `remotePort`, `encryption`, `remoteUser`, `exclude`, `destinationSubfolder`, `intervalMinutes`, `maxAgeDays`, `maxBytesPerSecond`, `remoteTimeoutSeconds`, `localTimeoutSeconds`, `deleteFromSource`, `deleteFromDestination`, `deleteDuplicatesOnDestination`, `automap`, `skipCrossDuplicates`, `subscribeAll`, `dryRun`, `customParameters`, `active`, and `remotePasswordSet` (never the password). | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## syncJobUpdate
+
+Feature 008. Written for every change of a sync job (`PATCH /sync-jobs/{syncJobId}`, activation and
+deactivation included), for every job of the bulk actions `activate` and `deactivate`, and for every
+refusal of them. A change whose values equal the stored ones is recorded too, with empty `changes`.
+The target is the sync job with its target mailbox.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `mailbox` | string | The job's target mailbox. | on success; on failure when the job exists |
+| `changes` | object | Each changed member as `{old, new}`, keyed by its contract name (the members of `syncJobCreation`'s `values` but `remotePasswordSet`); a replaced remote password only as `remotePassword: "changed"`, never a value. Empty when nothing changed. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## syncJobReschedule
+
+Feature 008. Written for every reschedule of a sync job (`POST /sync-jobs/{syncJobId}/schedule-reset`
+and the bulk action `reschedule`), which clears the last run time and the last result, and for
+every refusal. The target is the sync job with its target mailbox.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `mailbox` | string | The job's target mailbox. | on success; on failure when the job exists |
+| `cleared` | array of strings | The cleared run-status members: always `["lastRunAt", "lastResult"]`. | on success |
+| `previous` | object | Their values before the reschedule: `lastRunAt` (RFC 3339 UTC or `null`) and `lastResult` (`succeeded`, `failed` or `unknown`). | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## syncJobDeletion
+
+Feature 008. Written for every deletion of a sync job (`DELETE /sync-jobs/{syncJobId}` and the bulk
+action `delete`), in the transaction that deletes it, and for every refusal. The target is the
+deleted sync job with its target mailbox.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `mailbox` | string | The job's target mailbox. | on success; on failure when the job exists |
+| `remoteHost` | string | The deleted job's remote host. | on success |
+| `remoteUser` | string | The deleted job's remote user. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |

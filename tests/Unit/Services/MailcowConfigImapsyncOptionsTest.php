@@ -102,9 +102,9 @@ class MailcowConfigImapsyncOptionsTest extends TestCase
         $this->localOverride();
         config(['restv2.vars_overrides.IMAPSYNC_OPTIONS' => '{"whitelist": [maxsize']);
         $config = $this->config();
-        Log::spy();
+        $log = Log::spy();
 
         $this->assertSame(['maxsize', 'minage', 'showpasswords', 'MixedCase'], $config->imapsyncOptions()['whitelist']);
-        Log::shouldHaveReceived('warning')->once()->withArgs(fn (string $message): bool => str_contains($message, 'RESTV2_IMAPSYNC_OPTIONS'));
+        $log->shouldHaveReceived('warning')->once()->withArgs(fn (string $message): bool => str_contains($message, 'RESTV2_IMAPSYNC_OPTIONS'));
     }
 }

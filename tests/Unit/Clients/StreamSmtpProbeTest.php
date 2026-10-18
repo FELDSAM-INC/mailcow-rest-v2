@@ -161,6 +161,29 @@ class StreamSmtpProbeTest extends TestCase
         $this->assertNotContains('AUTH', array_map(fn (mixed $l): string => is_string($l) ? substr($l, 0, 4) : '', $this->server?->received() ?? []));
     }
 
+    /**
+     * The probe may extend a finite time limit for its dialogue (php-fpm), but it restores the
+     * previous limit afterwards and leaves an unlimited one alone, so that a long-running process
+     * (the console, the test suite) is not killed later.
+     */
+    public function test_the_process_time_limit_is_left_as_it_was(): void
+    {
+        $previous = (int) ini_get('max_execution_time');
+
+        try {
+            set_time_limit(0);
+            $this->probe($this->serve([...self::greeting(['AUTH PLAIN']), ...self::rest()]), username: null);
+            $this->assertSame('0', ini_get('max_execution_time'));
+            $this->server?->stop();
+
+            set_time_limit(30);
+            $this->probe($this->serve([...self::greeting(['AUTH PLAIN']), ...self::rest()]), username: null);
+            $this->assertSame('30', ini_get('max_execution_time'));
+        } finally {
+            set_time_limit($previous);
+        }
+    }
+
     public function test_login_not_offered_and_mechanism_not_supported(): void
     {
         $port = $this->serve(self::greeting(['SIZE 1000']));

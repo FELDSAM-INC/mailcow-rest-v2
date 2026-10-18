@@ -1184,3 +1184,7 @@ what exists map as listed.
 - **Settings after main's empty-environment fix**: the four `RESTV2_ROUTING_TEST_*` settings are
   read through `App\Support\Config\Env::get` (an empty value means unset, docs/conventions.md
   "Configuration") and are listed in `tests/Unit/Config/EmptyEnvironmentSettingsTest.php`.
+- **Time limit of the connection test (R13)**: `StreamSmtpProbe` raises only a finite time limit
+  (php-fpm) to 90 s and restores it after the dialogue; an unlimited one (console, tests) stays
+  unlimited. Its unconditional `set_time_limit(90)` used to stay in force for the rest of the test
+  process and killed a later CPU-heavy test (012's identity provider matrix) after 90 s.

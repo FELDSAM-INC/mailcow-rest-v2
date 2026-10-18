@@ -33,9 +33,30 @@ class StreamSmtpProbe implements SmtpProbe
 
     private string $login = 'notReached';
 
+    /**
+     * A finite time limit (php-fpm) is raised to 90 s for the dialogue (research R13) and restored
+     * afterwards; an unlimited one (the console, the test suite) is left alone, because
+     * set_time_limit() applies to the rest of the process.
+     */
     public function probe(SmtpProbeRequest $request): SmtpProbeResult
     {
-        @set_time_limit(90);
+        $previousLimit = (int) ini_get('max_execution_time');
+
+        if ($previousLimit > 0) {
+            @set_time_limit(90);
+        }
+
+        try {
+            return $this->dialogue($request);
+        } finally {
+            if ($previousLimit > 0) {
+                @set_time_limit($previousLimit);
+            }
+        }
+    }
+
+    private function dialogue(SmtpProbeRequest $request): SmtpProbeResult
+    {
         $this->transcript = new SmtpTranscript;
         $this->deadline = microtime(true) + max(0.1, $request->totalTimeout);
         $this->stepTimeout = max(0.1, $request->stepTimeout);

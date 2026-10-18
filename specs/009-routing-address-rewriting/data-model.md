@@ -294,22 +294,24 @@ None. Audit records go to 001's `restv2_audit_events` through `App\Services\Audi
 
 | `eventType` | `target.type`, `target.id` | `details` keys |
 |---|---|---|
-| `relayhostCreation` | `relayhost`, id | `host`, `username`, `password` (`set`), `active` |
+| `relayhostCreation` | `relayhost`, id | `values` (`host`, `username`, `password` (`set` or `null`), `active`) |
 | `relayhostUpdate` | `relayhost`, id | `changes` (`{field: {old, new}}`; `password`: `set`, `changed`, `removed`) |
 | `relayhostDeletion` | `relayhost`, id | `host`, `clearedDomains`, `clearedMailboxes` |
 | `relayhostTest` | `relayhost`, id | `sender`, `recipient`, `accepted`, `step`, `failureReason` |
 | `relayhostAssignmentUpdate` | `domainRelayhostAssignment` (domain) or `mailboxRelayhostAssignment` (address) | `changes.relayhostId` |
-| `transportCreation` | `transport`, id | `destination`, `nextHop`, `mxBased`, `active`, `username`, `password`, `affectedTransportIds` |
+| `transportCreation` | `transport`, id | `values` (`destination`, `nextHop`, `mxBased`, `active`, `username`, `password`), `affectedTransportIds` |
 | `transportUpdate` | `transport`, id | `changes`, `affectedTransportIds` |
 | `transportDeletion` | `transport`, id | `destination`, `nextHop` |
 | `transportTest` | `transport`, id | as `relayhostTest` |
-| `bccMapCreation` / `bccMapUpdate` / `bccMapDeletion` | `bccMap`, id | `localDestination`, `type`, `bccDestination`, `active` / `changes` / `localDestination` |
-| `recipientMapCreation` / `…Update` / `…Deletion` | `recipientMap`, id | the destinations and `active` / `changes` / `originalDestination` |
-| `tlsPolicyMapCreation` / `…Update` / `…Deletion` | `tlsPolicyMap`, id | `destination`, `policy`, `parameters`, `active` / `changes` / `destination` |
+| `bccMapCreation` / `bccMapUpdate` / `bccMapDeletion` | `bccMap`, id | `values` (`localDestination`, `type`, `bccDestination`, `domain`, `active`) / `changes` / `localDestination`, `type` |
+| `recipientMapCreation` / `…Update` / `…Deletion` | `recipientMap`, id | `values` (the destinations and `active`) / `changes` / `originalDestination` |
+| `tlsPolicyMapCreation` / `…Update` / `…Deletion` | `tlsPolicyMap`, id | `values` (`destination`, `policy`, `parameters`, `active`) / `changes` / `destination` |
 | `forwardingHostCreation` | `forwardingHost`, the source | `entries` (`[{address, outcome}]`), `spamFilter` |
 | `forwardingHostUpdate` / `forwardingHostDeletion` | `forwardingHost`, address | `changes.spamFilter` / `source` |
 
-Every event may also carry `bulkRequestId`. Failures are written by 008's `RefusalAuditor` (or the
+Creation records carry the stored attributes in `values`, as the creation records of features 002
+to 004 do (implementation decision, `tasks.md`). `docs/audit-events.md` is the reference for every
+key. Every event may also carry `bulkRequestId`. Failures are written by 008's `RefusalAuditor` (or the
 bulk item handlers) with `failureReason` and the details `problemType`, `status`, `errors` (member →
 rule codes, never values) and, for `permission-flag-required`, `requiredFlags`. `target.name` is the host, destination, local destination or address,
 for 001's `q` search; for `forwardingHostCreation` it is the stored addresses joined by spaces (cut to

@@ -1,7 +1,8 @@
 description: |
   A dependency is temporarily unavailable (type `/api/v2/problems/temporary-failure`): mailcow's
-  Redis (forwarding hosts), DNS (resolving a forwarding host name), or a write lock held too long by
-  a concurrent request. `detail` names it. Nothing was changed. Retry after `Retry-After`.
+  Redis (forwarding hosts, `dependency: sharedStore`), DNS (resolving a forwarding host name,
+  `dependency: dns`), or a write lock held too long by a concurrent request
+  (`dependency: database`). `detail` names it. Nothing was changed. Retry after `Retry-After`.
 headers:
   Retry-After:
     description: Seconds after which the request may be retried.

@@ -901,34 +901,34 @@ audit log filtered by target type and identifier.
 
 ## Phase 12: Polish and cross-cutting concerns
 
-- [ ] T098 [P] Write `tests/Feature/Routing/Security/RoutingAuthorizationMatrixTest.php`
+- [X] T098 [P] Write `tests/Feature/Routing/Security/RoutingAuthorizationMatrixTest.php`
   (constitution VI, quality gate 5, SC-004): a data provider over **all 46 operations** × anonymous,
   restricted session, administrator session, domain administrator session (no flags, each flag,
   all flags), mailbox session, administrator read-write and read-only keys, and domain
   administrator read-write and read-only keys, with the expected status and problem `type` from a
   table derived from plan.md ("Contract Operations") and FR-005. Object-level cases: a foreign BCC
   map, domain and mailbox → `404`.
-- [ ] T099 [P] Write `tests/Feature/Routing/Security/RoutingSecretLeakScanTest.php` (SC-003,
+- [X] T099 [P] Write `tests/Feature/Routing/Security/RoutingSecretLeakScanTest.php` (SC-003,
   FR-012): run every relayhost, transport and connection test flow with known passwords (`S3cret-Rh!`,
   `pa:ss`, `x\:y`), capture the `stderr_json` log, and assert that no password, no prefix of 3 or more
   characters of one, and no base64 form of one appears in any response body, audit row or log line.
-- [ ] T100 [P] Write `tests/Feature/Routing/LegacyCoexistenceTest.php` (FR-089, FR-092, SC-001,
+- [X] T100 [P] Write `tests/Feature/Routing/LegacyCoexistenceTest.php` (FR-089, FR-092, SC-001,
   SC-005): a parity set of rows and hash fields written exactly as the legacy UI writes them (one per
   collection and per legacy variant of T007) is returned with the attributes the legacy screens show
   (mapping of data-model.md), passwords only as `passwordSet`; rows and hash fields changed directly
   appear in the next response with a new `etag`; no operation of this feature calls dockerapi, memcached or a service reload
   (002's fakes record nothing over the whole feature suite).
-- [ ] T101 [P] Write `tests/Feature/Routing/Performance/RoutingListLatencyTest.php` (SC-006, group
+- [X] T101 [P] Write `tests/Feature/Routing/Performance/RoutingListLatencyTest.php` (SC-006, group
   `performance`): seed 10,000 rows per collection, 10,000 forwarding hosts in Redis and 10,000
   mailboxes assigned across relayhosts; over 20 requests per list, the 95th percentile of a page of
   25 with the default sort, a search and a count-based sort stays under 1 s.
-- [ ] T102 [P] Update `README.md` (the four `RESTV2_ROUTING_*` settings, the `dns` entry and the nginx
+- [X] T102 [P] Update `README.md` (the four `RESTV2_ROUTING_*` settings, the `dns` entry and the nginx
   timeout) and `CHANGELOG.md` ("contract: the 46 operations of feature 009", with the new problem
   types and rule codes) for mailcowui-ng to pin.
-- [ ] T103 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
+- [X] T103 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
   `composer contract:lint` in the dev container, and fix every finding until all are green and
   `build/contract/coverage.json` lists all 46 operations of this feature.
-- [ ] T104 Run quickstart.md Part A and Part B against the dev stack, with the `routing` profile,
+- [X] T104 Run quickstart.md Part A and Part B against the dev stack, with the `routing` profile,
   and confirm every expected output. Correct quickstart.md where commands drifted from the
   implementation.
 
@@ -1160,4 +1160,24 @@ what exists map as listed.
   (services) and of the refusal records (`RoutingAuditTargets`) already match 002's `targetType`
   and `targetId` filters, so no code changed. The audit-count check covers one scenario per
   collection (success and refusal) and a bulk request instead of a helper over every other test.
+- **T098**: 46 operations × 13 callers (600 cases with the coverage check), plus the foreign
+  objects of a domain administrator holding every flag.
+- **T099**: the connection test of the scan runs the real `StreamSmtpProbe` against the scripted
+  server (`AUTH LOGIN`), so that the base64 forms are checked end to end; three-character prefixes
+  of the longer passwords are scanned too.
+- **T101**: runs in the `performance` group, which `composer test` now excludes (`composer
+  test:performance` runs it alone). The forwarding host list computes each entry's sort key once
+  and presents only the page; it took about 2 s for 10,000 entries before that. On 2026-10-18 every
+  list stayed under 1 s at p95 with 10,000 rows (and 10,000 mailboxes and 1,000 domains assigned
+  across the relayhosts).
+- **T103**: gates green on 2026-10-18 (see the commit that marks this task): `composer test`,
+  `vendor/bin/pint --test`, `vendor/bin/phpstan analyse`, the contract lint. The Dockerfile is
+  unchanged, so no production image build was needed.
+- **T104**: Part A and Part B ran on 2026-10-18 (quickstart.md records how: API keys, `php artisan
+  serve` and mailpit by container name, because a parallel worktree publishes no host ports);
+  quickstart.md was corrected (the timing tests' command, the coverage check, `tls: false` with
+  mailpit, the choices with usernames). Part C (a mailcow host) is open.
+- **docs**: `temporary-failure` documents the `dependency` values `dns` and `database`
+  (docs/problems.md, `RoutingTemporaryFailure`); data-model.md's audit table names the `values`
+  member of creation records.
 

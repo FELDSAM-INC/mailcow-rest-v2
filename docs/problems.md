@@ -328,8 +328,10 @@ extension members.
   since feature 003 on every such answer), and for mailboxes (feature 003) also `mailStore` (the
   container API or the Dovecot container), `webmail` (the SOGo container) and `database` (the
   database step of a mailbox rename). A mailbox rename adds `steps`, as in
-  `mailbox-rename-incomplete`. Later features may add values. The `Retry-After` header gives the
-  seconds after which a retry makes sense.
+  `mailbox-rename-incomplete`. Feature 009 adds `dns` (a forwarding host name could not be resolved
+  because DNS failed temporarily) and `database` (another request held a routing table's write lock
+  too long). Later features may add values. The `Retry-After` header gives the seconds after which a
+  retry makes sense.
 - **Client action**: Retry later. Tell the user if it persists.
 
 ## dkim-key-exists

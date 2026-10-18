@@ -22,7 +22,7 @@ does not repeat it.
 docker compose run --rm app composer contract:lint
 docker compose run --rm app composer test                     # whole suite, contract-validated
 docker compose run --rm app vendor/bin/phpunit --filter Routing   # only this feature
-docker compose run --rm app vendor/bin/phpunit --group performance --filter Routing
+docker compose run --rm app composer test:performance     # timing tests, alone on an idle machine
 docker compose run --rm app vendor/bin/pint --test
 docker compose run --rm app vendor/bin/phpstan analyse
 ```
@@ -30,8 +30,11 @@ docker compose run --rm app vendor/bin/phpstan analyse
 **Expected**:
 
 - The lint reports no new problem.
-- `composer test` is green, and `build/contract/coverage.json` lists all 46 operations of this
-  feature (`listRelayhosts` … `getRoutingCapabilities`).
+- `composer test` is green (it excludes the `performance` group), and the contract coverage check
+  at its end reports every operation of this feature covered (`listRelayhosts` …
+  `getRoutingCapabilities`).
+- `tests/Feature/Routing/Security/RoutingAuthorizationMatrixTest.php` passes for all 46 operations
+  and every kind of caller.
 - `tests/Unit/Clients/StreamSmtpProbeTest.php` passes against the scripted SMTP server, including
   the STARTTLS cases.
 - `tests/Feature/Routing/Security/RoutingSecretLeakScanTest.php` finds none of the test passwords in
@@ -49,7 +52,12 @@ docker compose --profile routing up -d mailpit     # SMTP on mailpit:1025, UI on
 docker compose run --rm app scripts/dev/reset-dev-database.sh
 ```
 
-Sign in as `admin` as in 001's quickstart Part B, so that `$C`, `$J`, `$T` and `$B` are set.
+Sign in as `admin` as in 001's quickstart Part B, so that `$C`, `$J`, `$T` and `$B` are set. (Any
+command also works with an API key instead of the session: replace `$C … -H "X-CSRF-Token: $T"` by
+`-H "X-API-Key: <key>"`. In a parallel worktree without host ports, start mailpit with
+`docker compose run -d --no-deps --name <project>-mailpit mailpit`, serve the API with
+`php artisan serve` in another `run` container, and use `[<project>-mailpit]:1025` as the host:
+containers started with `run` are reachable by their container name only.)
 
 ```bash
 # US1: create a relayhost with credentials; the password is never returned.
@@ -75,10 +83,13 @@ curl -s $C "$B/relayhosts/$RH/usage" | jq '.data'                   # [{"kind":"
 # US4: test the relayhost against mailpit. The transcript redacts the login.
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/relayhosts/$RH/connection-test \
   -d '{"recipient":"someone@example.com"}' | jq '.data | {accepted, step, login, tls, transcript}'
-#   -> accepted true, step "message"; "AUTH PLAIN [redacted]" appears in the transcript
+#   -> accepted true, step "message", login "succeeded", tls false (mailpit offers no STARTTLS);
+#      "AUTH PLAIN [redacted]" appears in the transcript, the password nowhere
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/relayhosts/$RH/connection-test \
   -d '{"sender":"not-an-address"}' | jq '.errors.sender[0].code'    # "invalidFormat"
 curl -s $C $B/capabilities/routing | jq '.data.administration.connectionTest'
+#   -> {"defaultSender":"relay@example.org","defaultRecipient":"null@hosted.mailcow.de","stepTimeoutSeconds":15,"totalTimeoutSeconds":60}
+curl -s $C $B/relayhost-choices | jq '.data[0]'                     # {"id":1,"host":"[mailpit]:1025","username":"acct","active":true}
 
 # US3: transports and shared next-hop credentials.
 A=$(curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/transports \
@@ -96,6 +107,7 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/transports \
 
 # US5: BCC maps as the domain administrator (sign in as reseller first).
 curl -s $C "$B/bcc-destination-choices?q=example" | jq '.data[] | {kind, value}'
+#   -> domains @example.net and @example.org, mailboxes alice@ and bob@example.org
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/bcc-maps \
   -d '{"localDestination":"example.org","type":"recipient","bccDestination":"archive@backup.net"}' \
   | jq '.data | {localDestination, domain, active}'                 # "@example.org", "example.org", true
@@ -153,3 +165,10 @@ no service restarted.
 7. **Connection test from the API container**: test a relayhost of a real provider. The result
    arrives within 60 s, the provider's MX is used when the host has no brackets, and the audit record
    holds the sender, recipient, outcome and step, without the transcript.
+
+**Run on 2026-10-18** (Part B, worktree `wt/009`, compose project `restv2-009` without host ports,
+API keys of `admin` and `reseller`, `php artisan serve`, mailpit `v1.27.10` addressed by its
+container name): every command printed the value in its comment; the connection test was accepted
+by mailpit with `AUTH PLAIN [redacted]`, `s3cret` appeared in no response, audit record or log line,
+and `HGETALL WHITELISTED_FWD_HOST` listed `192.0.2.0/24 -> 192.0.2.5/24`. Part C is open.
+

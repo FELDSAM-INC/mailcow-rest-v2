@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V2\ContainerStopController;
 use App\Http\Controllers\Api\V2\CsrfTokenController;
 use App\Http\Controllers\Api\V2\DkimKeyController;
 use App\Http\Controllers\Api\V2\DnsCapabilitiesController;
+use App\Http\Controllers\Api\V2\DnsDiagnosticsController;
 use App\Http\Controllers\Api\V2\DomainBulkActionController;
 use App\Http\Controllers\Api\V2\DomainCapabilitiesController;
 use App\Http\Controllers\Api\V2\DomainController;
@@ -758,6 +759,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/dkim-keys/{dkimName}', [DkimKeyController::class, 'show'])
             ->where('dkimName', '[^/]+')
             ->name('dkim-keys.show');
+        Route::get('/dns-diagnostics/{diagnosticsName}', [DnsDiagnosticsController::class, 'show'])
+            ->where('diagnosticsName', '[^/]+')
+            ->name('dns-diagnostics.show');
     });
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
         Route::post('/dkim-keys', [DkimKeyController::class, 'store'])

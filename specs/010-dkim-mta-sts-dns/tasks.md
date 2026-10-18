@@ -469,12 +469,12 @@ codes and the zone file.
 
 ### Tests for User Story 3
 
-- [ ] T048 [P] [US3] Extend 009's `tests/Support/Dns/FakeDnsResolver.php` with CNAME, SRV (target
+- [X] T048 [P] [US3] Extend 009's `tests/Support/Dns/FakeDnsResolver.php` with CNAME, SRV (target
   `.` included), PTR and TLSA answers, a per-lookup delay on `FakeClock`, `DnsTemporaryFailure` on
   demand and a lookup log; extend 009's `tests/Support/Smtp/FakeSmtpProbe.php` with the TLS-only
   request (returns a certificate PEM or a failing step: `connect`, `timeout`, no `STARTTLS`, `tls`,
   no certificate). Both stay bound in `tests/TestCase.php`.
-- [ ] T049 [P] [US3] Write `tests/Unit/DnsDiagnostics/RecordComparatorTest.php` (FR-043): host names
+- [X] T049 [P] [US3] Write `tests/Unit/DnsDiagnostics/RecordComparatorTest.php` (FR-043): host names
   case-insensitive without trailing dot; IPv6 compared as addresses and shown expanded; TLSA data
   case-insensitive; MX matches when any exchange is the host; A/AAAA of the host with a CNAME →
   `mismatch`/`hostIsAlias`; CNAME match; address-record fallback with IPv4 equal and IPv6 equal or
@@ -482,7 +482,7 @@ codes and the zone file.
   joined; DKIM `p=` equality whatever the tag order and spaces, otherwise `dkimPublicKeyDiffers`;
   MTA-STS `v` and `id` tags with spaces around separators; DMARC and TLS reporting →
   `informational` or `missing`.
-- [ ] T050 [P] [US3] Write `tests/Unit/DnsDiagnostics/SpfEvaluatorTest.php` with `FakeDnsResolver`:
+- [X] T050 [P] [US3] Write `tests/Unit/DnsDiagnostics/SpfEvaluatorTest.php` with `FakeDnsResolver`:
   `ip4` and `ip6` ranges, `a`, `mx`, `include`, `redirect` → `match` when both public addresses pass;
   `-all`/`~all`/`?all` → `spfNotPass` with `result`; two SPF records → `spfMultipleRecords`
   (`count: 2`); eleven lookups → `spfTooManyLookups` (`limit: 10`); three void lookups →
@@ -490,7 +490,7 @@ codes and the zone file.
   evaluation → `lookupFailed`; no public IPv4 → `expectedUnknown`/`publicAddressUnknown`; no IPv6
   → only IPv4 evaluated; guidance always has `spfAuthorizeAddresses` and `spfSyntaxReference`, and
   `spfSuggestedRecord` only when `RESTV2_SUGGESTED_SPF_RECORD` is set.
-- [ ] T051 [P] [US3] Write `tests/Unit/DnsDiagnostics/ExpectedRecordSetTest.php` (FR-040–FR-042):
+- [X] T051 [P] [US3] Write `tests/Unit/DnsDiagnostics/ExpectedRecordSetTest.php` (FR-040–FR-042):
   the check order and identifiers of legacy (server checks first for administrators: `a`,
   `ptr:ipv4`, `aaaa`, `ptr:ipv6`, `tlsa:25`; then `mx`, `autodiscover`, `srv:autodiscover`,
   `autoconfig`, `mta-sts`, `mta-sts-record`, `tls-rpt`, `spf`, `dmarc`, `dkim:<selector>`, then the
@@ -501,28 +501,28 @@ codes and the zone file.
   `_pop3s._tcp` becomes the expected value with `nullServiceRecord`; no AAAA and IPv6 PTR checks and
   the note `noPublicIpv6` without IPv6; PTR names `in-addr.arpa` and nibble `ip6.arpa`; domain
   administrators get no server checks and the note `serverChecksOmitted`.
-- [ ] T052 [P] [US3] Write `tests/Unit/DnsDiagnostics/ZoneFileRendererTest.php` (FR-047, SC-007):
+- [X] T052 [P] [US3] Write `tests/Unit/DnsDiagnostics/ZoneFileRendererTest.php` (FR-047, SC-007):
   `$ORIGIN <name>.`, absolute owners, MX `10 <host>.`, SRV `0 1 <port> <target>.`, null SRV, TXT
   quoted with escapes and split at 255 characters, a commented placeholder for SPF, DMARC and TLS
   reporting without values, no server-wide records; every rendering of the test matrix passes
   `named-checkzone <name> <file>` (run through `Symfony\Component\Process\Process`).
-- [ ] T053 [P] [US3] Extend 009's `tests/Unit/Clients/NativeDnsResolverTest.php` for the new
+- [X] T053 [P] [US3] Extend 009's `tests/Unit/Clients/NativeDnsResolverTest.php` for the new
   methods `cname()`, `srv()`, `ptr()` and `tlsa()`: record shapes (SRV `target`/`port`, a null
   record as `.`), TLSA raw data decoded to `<usage> <selector> <matching type> <hex>` as legacy
   does, `[]` for no records, `DnsTemporaryFailure` for a resolver warning (captured, never logged
   as a PHP warning), using 009's technique for driving `dns_get_record()` in tests.
-- [ ] T054 [P] [US3] Extend 009's `tests/Unit/Clients/StreamSmtpProbeTest.php` with the TLS-only
+- [X] T054 [P] [US3] Extend 009's `tests/Unit/Clients/StreamSmtpProbeTest.php` with the TLS-only
   request against 009's `tests/Support/Smtp/ScriptedSmtpServer.php` (self-signed certificate):
   `220` → `EHLO` → `STARTTLS` → handshake → peer certificate returned and `QUIT`, no `MAIL FROM`;
   closed port, no `STARTTLS`, failed handshake and a silent server (deadline 5 s) give the matching
   failing step. Write `tests/Unit/DnsDiagnostics/TlsaDigestTest.php`: `3 1 1 <sha256 of the DER
   SPKI>` equals the digest computed with OpenSSL from the script's certificate.
-- [ ] T055 [P] [US3] Write `tests/Unit/DnsDiagnostics/PublicAddressDetectorTest.php` with
+- [X] T055 [P] [US3] Write `tests/Unit/DnsDiagnostics/PublicAddressDetectorTest.php` with
   `Http::fake()`: IPv4 and IPv6 echo answers (forced address family), invalid bodies → unknown,
   no IPv6 answer → no IPv6; `RESTV2_PUBLIC_IPV4`/`RESTV2_PUBLIC_IPV6` override without a request,
   `RESTV2_PUBLIC_IPV6=none`; results cached in `restv2:dns-facts:addresses` for
   `RESTV2_DNS_FACTS_TTL`, failures not cached.
-- [ ] T056 [P] [US3] Write `tests/Feature/DnsDiagnostics/RunDnsDiagnosticsTest.php`: the full result
+- [X] T056 [P] [US3] Write `tests/Feature/DnsDiagnostics/RunDnsDiagnosticsTest.php`: the full result
   shape as an administrator (`name`, `displayName`, `aliasDomain`, `targetDomain`,
   `serverHostname`, `publicIpv4`, `publicIpv6`, `suggestedSpfRecord`, `checkedAt`,
   `serverChecksIncluded`, `summary` counts equal to the checks, `checks` with `id`, `scope`,
@@ -532,13 +532,13 @@ codes and the zone file.
   `mta-sts-record` expects the target's identifier; AS9 identifiers and codes present; an inactive
   domain is diagnosed like an active one; the result's `zoneFile` passes `named-checkzone` (AS7);
   `Cache-Control: no-store`; no audit record and no change to MariaDB or the `DKIM_*` hashes.
-- [ ] T057 [P] [US3] Write `tests/Feature/DnsDiagnostics/DnsDiagnosticsStatusesTest.php` (SC-006): a
+- [X] T057 [P] [US3] Write `tests/Feature/DnsDiagnostics/DnsDiagnosticsStatusesTest.php` (SC-006): a
   fake zone that yields every status and every reason and note code of `DnsCheckMessageCode`
   (`lookupError` for a resolver failure such as a DNSSEC validation failure, `hostIsAlias`, `matchedByAddressRecords`
   including the IPv4-only case, `nullServiceRecord`, `publicAddressUnknown`,
   `certificateUnavailable` with each cause and the found TLSA records still listed,
   `dkimKeyUnavailable`, each SPF code, DMARC `informational`), each with its parameters.
-- [ ] T058 [P] [US3] Write `tests/Feature/DnsDiagnostics/DnsDiagnosticsTimeoutTest.php` (AS4,
+- [X] T058 [P] [US3] Write `tests/Feature/DnsDiagnostics/DnsDiagnosticsTimeoutTest.php` (AS4,
   FR-048): with `FakeClock`, every lookup of the domain takes 4 s and then throws
   `DnsTemporaryFailure` (the container's resolver bound) → each affected check
   `lookupFailed`/`lookupTimeout`; a lookup is started only while at least 5 s of the 30-second
@@ -546,46 +546,46 @@ codes and the zone file.
   the run returns `200` with all checks and its total fake time stays at or below 30 s; a fast
   `DnsTemporaryFailure` gives `lookupError`; the echo service and the certificate fetch each give
   up after 5 s.
-- [ ] T059 [P] [US3] Write `tests/Feature/DnsDiagnostics/DnsDiagnosticsRateLimitTest.php` (AS8,
+- [X] T059 [P] [US3] Write `tests/Feature/DnsDiagnostics/DnsDiagnosticsRateLimitTest.php` (AS8,
   FR-049): runs 1–10 answer `200` with `RateLimit-Limit: 10`, `RateLimit-Remaining` from 9 to 0 and
   `RateLimit-Reset` ≤ 60; run 11 → `429 too-many-requests` with `Retry-After`, `retryAfter` and
   `RateLimit-Remaining: 0`, before any lookup (resolver log empty); a `404` name does not count; a
   session and an API key of the same owner count separately; after the window (fake time) runs are
   allowed again; the counter key is `restv2:dns-diagnostics:<sha256>`.
-- [ ] T060 [P] [US3] Write `tests/Feature/DnsDiagnostics/DnsDiagnosticsAuthorizationTest.php`: the
+- [X] T060 [P] [US3] Write `tests/Feature/DnsDiagnostics/DnsDiagnosticsAuthorizationTest.php`: the
   role and key matrix (read-only keys allowed); AS5 a domain administrator's own domain and alias
   domain → checks without server-wide checks; a foreign name → `404`; mailbox user → `403`.
 
 ### Implementation for User Story 3
 
-- [ ] T061 [P] [US3] Extend 009's `app/Clients/Dns/DnsResolver.php` and `NativeDnsResolver.php`
+- [X] T061 [P] [US3] Extend 009's `app/Clients/Dns/DnsResolver.php` and `NativeDnsResolver.php`
   with `cname()`, `srv()`, `ptr()` and `tlsa()` (R16; `dns_get_record()` with `DNS_CNAME`,
   `DNS_SRV`, `DNS_PTR`, and type 52 in raw mode), keeping 009's `DnsTemporaryFailure` handling.
   T053 passes.
-- [ ] T062 [P] [US3] Extend 009's `app/Clients/Smtp/SmtpProbeRequest.php` (`stopAfterTls`,
+- [X] T062 [P] [US3] Extend 009's `app/Clients/Smtp/SmtpProbeRequest.php` (`stopAfterTls`,
   `capturePeerCertificate`, per-request deadline), `SmtpProbeResult.php` (peer certificate PEM) and
   `StreamSmtpProbe.php` (`capture_peer_cert` on the `STARTTLS` upgrade, `QUIT` after the handshake
   in TLS-only mode), and create `app/Services/DnsDiagnostics/TlsaDigest.php` (R19). T054 passes.
-- [ ] T063 [P] [US3] Create `app/Clients/Dns/PublicAddressDetector.php` and
+- [X] T063 [P] [US3] Create `app/Clients/Dns/PublicAddressDetector.php` and
   `app/Services/DnsDiagnostics/ServerFactsCache.php` (`restv2:dns-facts:addresses`,
   `restv2:dns-facts:tlsa:<host>`, TTL `RESTV2_DNS_FACTS_TTL`, failures not cached). T055 passes.
-- [ ] T064 [P] [US3] Create `app/Services/DnsDiagnostics/RecordComparator.php`,
+- [X] T064 [P] [US3] Create `app/Services/DnsDiagnostics/RecordComparator.php`,
   `DnsCheckResult.php`, `DnsCheckMessage.php` (code, params, English message). T049 passes.
-- [ ] T065 [P] [US3] Create `app/Services/DnsDiagnostics/Spf/SpfResolverAdapter.php` (implements
+- [X] T065 [P] [US3] Create `app/Services/DnsDiagnostics/Spf/SpfResolverAdapter.php` (implements
   `SPFLib\DNS\Resolver` on `DnsResolver` and the run deadline) and
   `app/Services/DnsDiagnostics/Spf/SpfEvaluator.php` (R18). T050 passes.
-- [ ] T066 [US3] Create `app/Services/DnsDiagnostics/ExpectedRecordSet.php` (R17, using
+- [X] T066 [US3] Create `app/Services/DnsDiagnostics/ExpectedRecordSet.php` (R17, using
   `AutodiscoverConfig`, `DkimKeyStore`, `MtaStsPolicy` and `ServerFactsCache`). T051 passes.
-- [ ] T067 [P] [US3] Create `app/Services/DnsDiagnostics/ZoneFileRenderer.php` (R21). T052 passes.
-- [ ] T068 [US3] Create `app/Services/DnsDiagnostics/DnsDiagnosticsService.php` (one `Deadline` per
+- [X] T067 [P] [US3] Create `app/Services/DnsDiagnostics/ZoneFileRenderer.php` (R21). T052 passes.
+- [X] T068 [US3] Create `app/Services/DnsDiagnostics/DnsDiagnosticsService.php` (one `Deadline` per
   run, checks in order, a lookup started only while `RESTV2_DNS_LOOKUP_TIMEOUT` remains,
   `runTimeout` for the rest, `lookupTimeout` or `lookupError` from the duration of a failed lookup,
   summary, notes) and
   `app/Services/DnsDiagnostics/DnsDiagnosticsReport.php`.
-- [ ] T069 [US3] Create `app/Services/DnsDiagnostics/DiagnosticsRateLimiter.php` (R20: key
+- [X] T069 [US3] Create `app/Services/DnsDiagnostics/DiagnosticsRateLimiter.php` (R20: key
   `dns-diagnostics:<sha256(user:<username>|apiKey:<id>)>` on the `restv2` store, limit and window
   from config, `check()` before resolution, `hit()` after, header values).
-- [ ] T070 [US3] Create `app/Http/Resources/Api/V2/DnsDiagnosticsResource.php` (contract
+- [X] T070 [US3] Create `app/Http/Resources/Api/V2/DnsDiagnosticsResource.php` (contract
   `DnsDiagnosticsResult`) and `app/Http/Controllers/Api/V2/DnsDiagnosticsController.php` (policy,
   limiter check → `429` with `Retry-After` and `RateLimit-*`, name resolution through
   `DkimNameResolver` restricted to domains and alias domains → `404`, hit, run, `200` with

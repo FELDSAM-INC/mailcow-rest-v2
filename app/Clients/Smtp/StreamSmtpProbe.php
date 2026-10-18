@@ -13,6 +13,10 @@ use Carbon\CarbonImmutable;
  * and a short test message with legacy's content. Every connect and read waits at most the step
  * timeout and never past the overall deadline. Secrets are redacted as lines are recorded
  * (SmtpTranscript), so they never enter the result.
+ *
+ * A TLS-only request (feature 010 research R19, the TLSA check) stops after the STARTTLS handshake:
+ * the server must offer STARTTLS (`starttlsNotOffered` otherwise), the peer certificate is captured
+ * during the handshake, and the dialogue ends with `QUIT`.
  */
 class StreamSmtpProbe implements SmtpProbe
 {
@@ -32,6 +36,8 @@ class StreamSmtpProbe implements SmtpProbe
     private bool $tls = false;
 
     private string $login = 'notReached';
+
+    private ?string $peerCertificate = null;
 
     /**
      * A finite time limit (php-fpm) is raised to 90 s for the dialogue (research R13) and restored
@@ -63,6 +69,7 @@ class StreamSmtpProbe implements SmtpProbe
         $this->lastCode = null;
         $this->lastText = null;
         $this->tls = false;
+        $this->peerCertificate = null;
         $this->login = $request->username === null || $request->username === '' ? 'notConfigured' : 'notReached';
         $step = 'connect';
 
@@ -72,6 +79,26 @@ class StreamSmtpProbe implements SmtpProbe
             $step = 'greeting';
             $this->expect([220]);
             $capabilities = $this->hello($request->heloName);
+
+            if ($request->stopAfterTls) {
+                $step = 'tls';
+
+                if (! self::offers($capabilities, 'STARTTLS')) {
+                    throw new SmtpStepFailure('starttlsNotOffered', 'The server does not offer STARTTLS.');
+                }
+
+                $this->command('STARTTLS');
+                $this->expect([220]);
+                $this->startTls($request->host, $request->capturePeerCertificate);
+
+                if ($request->capturePeerCertificate && $this->peerCertificate === null) {
+                    throw new SmtpStepFailure('noCertificate', 'The server presented no certificate.');
+                }
+
+                $this->quit();
+
+                return $this->result(true, 'tls', null, null);
+            }
 
             if (self::offers($capabilities, 'STARTTLS')) {
                 $step = 'tls';
@@ -184,11 +211,16 @@ class StreamSmtpProbe implements SmtpProbe
         throw new SmtpStepFailure('rejected', "The server answered {$code} to EHLO.");
     }
 
-    private function startTls(string $host): void
+    private function startTls(string $host, bool $capturePeerCertificate = false): void
     {
         $stream = $this->open();
         stream_set_blocking($stream, true);
         stream_set_timeout($stream, (int) ceil($this->timeout()));
+
+        if ($capturePeerCertificate) {
+            stream_context_set_option($stream, 'ssl', 'capture_peer_cert', true);
+        }
+
         $result = @stream_socket_enable_crypto($stream, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
 
         if ($result !== true) {
@@ -197,6 +229,11 @@ class StreamSmtpProbe implements SmtpProbe
 
         $this->tls = true;
         $this->transcript->info('TLS started (the certificate is not verified).');
+
+        if ($capturePeerCertificate) {
+            $certificate = stream_context_get_params($stream)['options']['ssl']['peer_certificate'] ?? null;
+            $this->peerCertificate = $certificate !== null && openssl_x509_export($certificate, $pem) ? (string) $pem : null;
+        }
     }
 
     /**
@@ -429,6 +466,7 @@ class StreamSmtpProbe implements SmtpProbe
             lastReplyCode: $this->lastCode,
             lastReplyText: $this->lastText,
             transcript: $this->transcript->lines(),
+            peerCertificate: $this->peerCertificate,
         );
     }
 }

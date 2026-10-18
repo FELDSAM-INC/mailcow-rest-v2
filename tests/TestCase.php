@@ -100,7 +100,7 @@ abstract class TestCase extends BaseTestCase
         $this->app->instance(RspamdController::class, $this->rspamd = new FakeRspamdController);
         $this->app->instance(ReleaseSource::class, $this->releases = new FakeReleaseSource);
         $this->app->instance(PublicAddressLookup::class, $this->publicAddresses = new FakePublicAddressLookup);
-        $this->app->instance(DnsResolver::class, new FakeDnsResolver);
+        $this->app->instance(DnsResolver::class, new FakeDnsResolver($this->clock));
         $this->app->instance(SmtpProbe::class, new FakeSmtpProbe);
         DkimDnsPublisher::resetWarnings();
     }

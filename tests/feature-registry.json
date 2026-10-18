@@ -349,7 +349,6 @@
         "listMtaStsPolicies",
         "createMtaStsPolicy",
         "getMtaStsPolicy",
-        "updateMtaStsPolicy",
-        "runDnsDiagnostics"
+        "updateMtaStsPolicy"
     ]
 }

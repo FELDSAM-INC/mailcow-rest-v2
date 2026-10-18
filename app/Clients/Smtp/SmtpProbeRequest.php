@@ -6,6 +6,10 @@ namespace App\Clients\Smtp;
  * One connection test (feature 009 research R13): the host and its resolved addresses (tried in
  * order), the port, the `EHLO` name, the credentials (no login without a username), the envelope
  * addresses and the deadlines in seconds (per network step, and for the whole dialogue).
+ *
+ * Feature 010 (research R19) adds the TLS-only request of the TLSA check: `stopAfterTls` ends the
+ * dialogue after the STARTTLS handshake (no login, no `MAIL FROM`) with `QUIT`, and
+ * `capturePeerCertificate` returns the server's certificate in the result.
  */
 final readonly class SmtpProbeRequest
 {
@@ -23,6 +27,8 @@ final readonly class SmtpProbeRequest
         public string $recipient,
         public float $stepTimeout,
         public float $totalTimeout,
+        public bool $stopAfterTls = false,
+        public bool $capturePeerCertificate = false,
     ) {}
 
     /**
@@ -32,6 +38,6 @@ final readonly class SmtpProbeRequest
      */
     public function __debugInfo(): array
     {
-        return ['host' => $this->host, 'addresses' => $this->addresses, 'port' => $this->port, 'heloName' => $this->heloName, 'username' => $this->username, 'sender' => $this->sender, 'recipient' => $this->recipient];
+        return ['host' => $this->host, 'addresses' => $this->addresses, 'port' => $this->port, 'heloName' => $this->heloName, 'username' => $this->username, 'sender' => $this->sender, 'recipient' => $this->recipient, 'stopAfterTls' => $this->stopAfterTls];
     }
 }

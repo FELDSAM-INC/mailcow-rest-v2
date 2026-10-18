@@ -8,7 +8,8 @@ use JsonSerializable;
  * The outcome of a connection test (contract `RoutingConnectionTestResult` without the parts the
  * caller knows): whether the message was accepted, the step reached or failed, the failure reason
  * and its English message, whether TLS was used, the login state, the last server reply and the
- * transcript with login data already redacted.
+ * transcript with login data already redacted. A TLS-only request (feature 010) is accepted when
+ * the handshake completed, and carries the peer certificate (PEM).
  */
 final readonly class SmtpProbeResult implements JsonSerializable
 {
@@ -25,6 +26,7 @@ final readonly class SmtpProbeResult implements JsonSerializable
         public ?int $lastReplyCode,
         public ?string $lastReplyText,
         public array $transcript,
+        public ?string $peerCertificate = null,
     ) {}
 
     /**
@@ -32,6 +34,12 @@ final readonly class SmtpProbeResult implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        return get_object_vars($this);
+        $values = get_object_vars($this);
+
+        if ($this->peerCertificate === null) {
+            unset($values['peerCertificate']);
+        }
+
+        return $values;
     }
 }

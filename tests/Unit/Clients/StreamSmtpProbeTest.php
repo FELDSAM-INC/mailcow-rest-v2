@@ -335,4 +335,75 @@ class StreamSmtpProbeTest extends TestCase
         $this->assertContains('From: Mailer <.dot@example.org>', $data);
         $this->assertNotContains('.', $data);
     }
+
+    /**
+     * Feature 010 T054 (research R19): the TLS-only request of the TLSA check.
+     */
+    private function probeTls(int $port, float $total = 5): SmtpProbeResult
+    {
+        return (new StreamSmtpProbe)->probe(new SmtpProbeRequest(
+            host: 'mx.test.example',
+            addresses: ['127.0.0.1'],
+            port: $port,
+            heloName: 'mail.example.org',
+            username: null,
+            password: null,
+            sender: '',
+            recipient: '',
+            stepTimeout: $total,
+            totalTimeout: $total,
+            stopAfterTls: true,
+            capturePeerCertificate: true,
+        ));
+    }
+
+    public function test_a_tls_only_request_returns_the_peer_certificate_and_sends_no_mail(): void
+    {
+        $port = $this->serve([
+            ...self::greeting(['PIPELINING', 'STARTTLS']),
+            ['expect' => 'STARTTLS'], ['send' => '220 2.0.0 Ready to start TLS'], ['starttls' => true],
+            ['expect' => 'QUIT'], ['send' => '221 2.0.0 Bye'],
+        ], tls: true);
+
+        $result = $this->probeTls($port);
+        $received = $this->server?->received() ?? [];
+
+        $this->assertTrue($result->accepted);
+        $this->assertSame('tls', $result->step);
+        $this->assertTrue($result->tls);
+        $this->assertNotNull($result->peerCertificate);
+        $this->assertStringStartsWith('-----BEGIN CERTIFICATE-----', (string) $result->peerCertificate);
+        $this->assertSame(openssl_x509_fingerprint((string) $this->server?->certificatePem(), 'sha256'), openssl_x509_fingerprint((string) $result->peerCertificate, 'sha256'));
+        $this->assertSame(['EHLO mail.example.org', 'STARTTLS', 'QUIT'], $received);
+    }
+
+    public function test_tls_only_failures_name_their_step(): void
+    {
+        // A closed port: the scripted server is stopped before the probe connects.
+        $closed = $this->serve([]);
+        $this->server?->stop();
+        $result = $this->probeTls($closed);
+        $this->assertSame(['connect', false], [$result->step, $result->accepted]);
+
+        $noStarttls = $this->serve([...self::greeting(['PIPELINING']), ['expect' => 'QUIT'], ['send' => '221 Bye']]);
+        $result = $this->probeTls($noStarttls);
+        $this->assertSame(['tls', 'starttlsNotOffered', false], [$result->step, $result->failureReason, $result->accepted]);
+        $this->assertNotContains('STARTTLS', $this->server?->received() ?? []);
+
+        $badHandshake = $this->serve([...self::greeting(['STARTTLS']), ['expect' => 'STARTTLS'], ['send' => '220 Go ahead'], ['garbage' => true]]);
+        $result = $this->probeTls($badHandshake);
+        $this->assertSame(['tls', 'tlsFailed'], [$result->step, $result->failureReason]);
+        $this->assertNull($result->peerCertificate);
+    }
+
+    public function test_a_silent_server_hits_the_deadline(): void
+    {
+        $port = $this->serve([['sleep' => 3]]);
+        $started = microtime(true);
+
+        $result = $this->probeTls($port, 1);
+
+        $this->assertSame('timeout', $result->failureReason);
+        $this->assertLessThan(2.5, microtime(true) - $started);
+    }
 }

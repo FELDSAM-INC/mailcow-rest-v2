@@ -18,6 +18,8 @@ final class ScriptedSmtpServer
 
     private int $port = 0;
 
+    private ?string $certificatePem = null;
+
     /**
      * @param  list<array<string, mixed>>  $script
      */
@@ -60,6 +62,15 @@ final class ScriptedSmtpServer
     public function port(): int
     {
         return $this->port;
+    }
+
+    /**
+     * The PEM of the self-signed certificate the server presents after STARTTLS (feature 010:
+     * the TLSA digest), or null without TLS.
+     */
+    public function certificatePem(): ?string
+    {
+        return $this->certificatePem;
     }
 
     /**
@@ -112,6 +123,7 @@ final class ScriptedSmtpServer
 
         openssl_x509_export($certificate, $pem);
         openssl_pkey_export($key, $keyPem);
+        $this->certificatePem = $pem;
         $path = $this->directory.'/cert.pem';
         file_put_contents($path, $pem.$keyPem);
 

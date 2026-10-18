@@ -3,9 +3,10 @@
 namespace App\Clients\Dns;
 
 /**
- * DNS lookups of feature 009 (research R15), shared with later features (010 builds on it): an
- * empty list means the name has no such records (NXDOMAIN or NODATA); a temporary failure throws
- * DnsTemporaryFailure. Faked in tests (Tests\Support\Dns\FakeDnsResolver).
+ * DNS lookups of feature 009 (research R15), shared with later features: an empty list means the
+ * name has no such records (NXDOMAIN or NODATA); a temporary failure throws DnsTemporaryFailure.
+ * Feature 010 (research R16) adds CNAME, SRV, PTR and TLSA for DNS diagnostics. Faked in tests
+ * (Tests\Support\Dns\FakeDnsResolver).
  */
 interface DnsResolver
 {
@@ -41,4 +42,42 @@ interface DnsResolver
      * @throws DnsTemporaryFailure
      */
     public function aaaa(string $name): array;
+
+    /**
+     * CNAME targets, lower-cased without the trailing dot (feature 010).
+     *
+     * @return list<string>
+     *
+     * @throws DnsTemporaryFailure
+     */
+    public function cname(string $name): array;
+
+    /**
+     * SRV records, targets lower-cased without the trailing dot; a null record (the root) has the
+     * target `.` (feature 010).
+     *
+     * @return list<array{target: string, port: int, priority: int, weight: int}>
+     *
+     * @throws DnsTemporaryFailure
+     */
+    public function srv(string $name): array;
+
+    /**
+     * PTR targets, lower-cased without the trailing dot (feature 010).
+     *
+     * @return list<string>
+     *
+     * @throws DnsTemporaryFailure
+     */
+    public function ptr(string $name): array;
+
+    /**
+     * TLSA records as `<usage> <selector> <matching type> <hex data>` (feature 010, legacy
+     * dns_diagnostics.php's decoding of the raw record).
+     *
+     * @return list<string>
+     *
+     * @throws DnsTemporaryFailure
+     */
+    public function tlsa(string $name): array;
 }

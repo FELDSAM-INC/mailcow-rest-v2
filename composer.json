@@ -17,9 +17,11 @@
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "lbuchs/webauthn": "^2.2",
+        "league/oauth2-client": "^2.8",
         "robthree/twofactorauth": "^3.0"
     },
     "require-dev": {
+        "bshaffer/oauth2-server-php": "^1.11",
         "fakerphp/faker": "^1.23",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.27",

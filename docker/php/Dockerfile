@@ -16,14 +16,16 @@ FROM ${PHP_IMAGE} AS base
 
 ARG PHPREDIS_VERSION=6.2.0
 
+# ldap (feature 012, research R2): the LDAP identity provider. libldap and the CA bundle stay at
+# runtime; openldap-dev is only needed to compile the extension.
 RUN set -eux; \
-    apk add --no-cache icu-libs; \
+    apk add --no-cache icu-libs libldap ca-certificates; \
     # Feature 011 (research R20, R29): ban rules must compile in the ban service's dialect,
     # Python `re`, which only Python decides reliably (PSF-2.0, GPL-compatible).
     apk add --no-cache python3; \
     python3 -c "import re, json"; \
-    apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev linux-headers; \
-    docker-php-ext-install -j"$(nproc)" pdo_mysql intl; \
+    apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev linux-headers openldap-dev; \
+    docker-php-ext-install -j"$(nproc)" pdo_mysql intl ldap; \
     # OPcache is compiled into the official PHP 8.4 images; install it only where it is not.
     if ! php -m | grep -qi '^Zend OPcache$'; then docker-php-ext-install opcache; fi; \
     pecl install "redis-${PHPREDIS_VERSION}"; \

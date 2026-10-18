@@ -1,0 +1,265 @@
+{
+  "description": "Hand-written CRON_LOG sample of the Keycloak synchronisation job (feature 012 research R12), newest first, as the legacy jobs push it (lPush of JSON {time, priority, task, message}). Sync interval 15 minutes. Run 1 completes at 10:00:08, run 2 runs at 10:16:00 and completes at 10:16:03, run 3 fails at 10:32:00 with Received HTTP 401, run 4 starts at 10:33:00 and never completes. LDAP Sync entries are interleaved and must be ignored. Times are 2026-10-18 UTC.",
+  "syncInterval": 15,
+  "task": "Keycloak Sync",
+  "entries": [
+    {
+      "time": 1792319610,
+      "priority": "info",
+      "task": "Keycloak Sync",
+      "message": "Syncing attributes for user ben@example.org"
+    },
+    {
+      "time": 1792319582,
+      "priority": "info",
+      "task": "Keycloak Sync",
+      "message": "Creating user dana@example.org"
+    },
+    {
+      "time": 1792319520,
+      "priority": "err",
+      "task": "Keycloak Sync",
+      "message": "Received HTTP 401"
+    },
+    {
+      "time": 1792319460,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (14.95min / 15min)"
+    },
+    {
+      "time": 1792319400,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (13.95min / 15min)"
+    },
+    {
+      "time": 1792319340,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (12.95min / 15min)"
+    },
+    {
+      "time": 1792319280,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (11.95min / 15min)"
+    },
+    {
+      "time": 1792319220,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (10.95min / 15min)"
+    },
+    {
+      "time": 1792319160,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (9.95min / 15min)"
+    },
+    {
+      "time": 1792319100,
+      "priority": "err",
+      "task": "LDAP Sync",
+      "message": "Received HTTP 500"
+    },
+    {
+      "time": 1792319100,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (8.95min / 15min)"
+    },
+    {
+      "time": 1792319040,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (7.95min / 15min)"
+    },
+    {
+      "time": 1792318980,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (6.95min / 15min)"
+    },
+    {
+      "time": 1792318920,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (5.95min / 15min)"
+    },
+    {
+      "time": 1792318860,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (4.95min / 15min)"
+    },
+    {
+      "time": 1792318801,
+      "priority": "info",
+      "task": "LDAP Sync",
+      "message": "DONE!"
+    },
+    {
+      "time": 1792318800,
+      "priority": "info",
+      "task": "LDAP Sync",
+      "message": "Creating user dana@example.org"
+    },
+    {
+      "time": 1792318800,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (3.95min / 15min)"
+    },
+    {
+      "time": 1792318740,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (2.95min / 15min)"
+    },
+    {
+      "time": 1792318680,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (1.95min / 15min)"
+    },
+    {
+      "time": 1792318620,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (0.95min / 15min)"
+    },
+    {
+      "time": 1792318563,
+      "priority": "info",
+      "task": "Keycloak Sync",
+      "message": "DONE!"
+    },
+    {
+      "time": 1792318561,
+      "priority": "info",
+      "task": "Keycloak Sync",
+      "message": "Syncing attributes for user ben@example.org"
+    },
+    {
+      "time": 1792318560,
+      "priority": "info",
+      "task": "Keycloak Sync",
+      "message": "Skipping user anna@example.org"
+    },
+    {
+      "time": 1792318500,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (14.87min / 15min)"
+    },
+    {
+      "time": 1792318440,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (13.87min / 15min)"
+    },
+    {
+      "time": 1792318380,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (12.87min / 15min)"
+    },
+    {
+      "time": 1792318320,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (11.87min / 15min)"
+    },
+    {
+      "time": 1792318260,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (10.87min / 15min)"
+    },
+    {
+      "time": 1792318200,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (9.87min / 15min)"
+    },
+    {
+      "time": 1792318140,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (8.87min / 15min)"
+    },
+    {
+      "time": 1792318080,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (7.87min / 15min)"
+    },
+    {
+      "time": 1792318020,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (6.87min / 15min)"
+    },
+    {
+      "time": 1792317960,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (5.87min / 15min)"
+    },
+    {
+      "time": 1792317900,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (4.87min / 15min)"
+    },
+    {
+      "time": 1792317840,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (3.87min / 15min)"
+    },
+    {
+      "time": 1792317780,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (2.87min / 15min)"
+    },
+    {
+      "time": 1792317720,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (1.87min / 15min)"
+    },
+    {
+      "time": 1792317660,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Sync not ready (0.87min / 15min)"
+    },
+    {
+      "time": 1792317608,
+      "priority": "info",
+      "task": "Keycloak Sync",
+      "message": "DONE!"
+    },
+    {
+      "time": 1792317607,
+      "priority": "warning",
+      "task": "Keycloak Sync",
+      "message": "Using default template for user carl@example.org"
+    },
+    {
+      "time": 1792317606,
+      "priority": "info",
+      "task": "Keycloak Sync",
+      "message": "Syncing attributes for user ben@example.org"
+    },
+    {
+      "time": 1792317605,
+      "priority": "info",
+      "task": "Keycloak Sync",
+      "message": "Creating user anna@example.org"
+    }
+  ]
+}

@@ -53,14 +53,14 @@ each in spec priority order (US1–US3 P1, US4 P2, US5 P3), Phase 8 polish.
 
 **Purpose**: Extension, packages, settings, dev services. No business logic.
 
-- [ ] T001 Add the `ldap` extension to `docker/php/Dockerfile` (R2): in the `base` stage install
+- [X] T001 Add the `ldap` extension to `docker/php/Dockerfile` (R2): in the `base` stage install
   `openldap-dev` as a build dependency, run `docker-php-ext-install ldap`, keep `libldap` (and
   `ca-certificates`) at runtime and remove the build dependency in the same layer. Rebuild the `dev`
   and `production` targets and check `php -m | grep ldap` in both.
-- [ ] T002 Add the packages (R18): `composer require league/oauth2-client:^2.8` and
+- [X] T002 Add the packages (R18): `composer require league/oauth2-client:^2.8` and
   `composer require --dev bshaffer/oauth2-server-php:^1.11`, updating `composer.json` and
   `composer.lock`. Confirm both licences are MIT in `composer licenses`.
-- [ ] T003 [P] Add the settings of R17 to `config/restv2.php` under the key `identity_provider`:
+- [X] T003 [P] Add the settings of R17 to `config/restv2.php` under the key `identity_provider`:
   `timeout` (`RESTV2_IDP_TIMEOUT`, 7), `retry_after` (`RESTV2_IDP_RETRY_AFTER`, 30),
   `sso_pending_ttl` (`RESTV2_SSO_PENDING_TTL`, 600), `sso_renewal_interval`
   (`RESTV2_SSO_RENEWAL_INTERVAL`, 300), `sso_return_path` (`RESTV2_SSO_RETURN_PATH`,
@@ -70,7 +70,7 @@ each in spec priority order (US1–US3 P1, US4 P2, US5 P3), Phase 8 polish.
   `ADDITIONAL_SERVER_NAMES=webmail.example.org,mail.example.net` to `.env.testing`. Pass
   `ADDITIONAL_SERVER_NAMES` and the optional `RESTV2_IDP_*`/`RESTV2_SSO_*` variables through in
   `deploy/docker-compose.override.yml`.
-- [ ] T004 [P] Add the `idp` profile to `compose.yaml`: service `openldap`
+- [X] T004 [P] Add the `idp` profile to `compose.yaml`: service `openldap`
   (`osixia/openldap:1.5.0`, `LDAP_ORGANISATION=Example`, `LDAP_DOMAIN=example.org`,
   `LDAP_ADMIN_PASSWORD=ldap-secret`, `LDAP_TLS=true` with its self-signed certificate, seeded from
   `tests/fixtures/ldap/bootstrap.ldif`) and service `keycloak` (`quay.io/keycloak/keycloak:26.0.7`,
@@ -81,7 +81,7 @@ each in spec priority order (US1–US3 P1, US4 P2, US5 P3), Phase 8 polish.
 - [ ] T005 [P] Configure test groups: in `phpunit.xml` add the suite `Integration`
   (`tests/Integration`) and exclude the group `idp` by default. In `.github/workflows/ci.yml` add an
   `osixia/openldap:1.5.0` service to the `tests` job and a step `vendor/bin/phpunit --group idp`.
-- [ ] T006 [P] Create `scripts/legacy/extract-sync-log-texts.sh <tag>`, which reads
+- [X] T006 [P] Create `scripts/legacy/extract-sync-log-texts.sh <tag>`, which reads
   `data/conf/phpfpm/crons/keycloak-sync.php` and `ldap-sync.php` of the tag with `git -C
   "$MAILCOW_REPO" show`, extracts every `logMsg(priority, message)` call with its priority and
   literal prefix, and writes `tests/fixtures/cron-log/<tag>-messages.json`. Run it for `2026-09a`

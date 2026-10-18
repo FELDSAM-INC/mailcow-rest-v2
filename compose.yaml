@@ -96,6 +96,38 @@ services:
     environment:
       TZ: Europe/Prague
 
+  # Feature 012, profile `idp` (`docker compose --profile idp up -d`): identity providers for the
+  # LDAP integration tests (`vendor/bin/phpunit --group idp`) and the manual single sign-on checks
+  # of quickstart Part B. Not started by default.
+  #
+  # OpenLDAP: dc=example,dc=org, administrator cn=admin,dc=example,dc=org / ldap-secret, LDAPS on
+  # 636 and StartTLS with a self-signed certificate, the people of tests/fixtures/ldap/bootstrap.ldif.
+  # Reached by the app container as `openldap`; no host port.
+  openldap:
+    image: osixia/openldap:1.5.0
+    profiles: [idp]
+    command: --copy-service
+    environment:
+      LDAP_ORGANISATION: Example
+      LDAP_DOMAIN: example.org
+      LDAP_ADMIN_PASSWORD: ldap-secret
+      LDAP_TLS: "true"
+      LDAP_TLS_VERIFY_CLIENT: never
+    volumes:
+      - ./tests/fixtures/ldap/bootstrap.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/50-bootstrap.ldif:ro
+
+  # Keycloak, for the browser checks of single sign-on only (admin admin / admin). Its realm is set
+  # up by hand (quickstart Part B); the browser reaches it on the published port.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    profiles: [idp]
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "127.0.0.1:${RESTV2_KEYCLOAK_PORT:-8081}:8080"
+
 volumes:
   dev-home:
   mariadb-data:

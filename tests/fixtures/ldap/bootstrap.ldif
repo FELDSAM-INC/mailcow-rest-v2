@@ -1,0 +1,39 @@
+# Directory of the dev stack's `idp` profile (feature 012, quickstart Part B) and of the LDAP
+# integration tests (tests/Integration/Ldap). osixia/openldap creates dc=example,dc=org with the
+# administrator cn=admin,dc=example,dc=org (password ldap-secret); this file adds the people.
+# Every user's password is Passw0rd!dev. Test data only.
+
+dn: ou=people,dc=example,dc=org
+objectClass: organizationalUnit
+ou: people
+
+dn: uid=carl,ou=people,dc=example,dc=org
+objectClass: inetOrgPerson
+uid: carl
+cn: Carl Example
+sn: Example
+givenName: Carl
+displayName: Carl Example
+mail: carl@example.org
+title: staff
+userPassword: Passw0rd!dev
+
+dn: uid=dana,ou=people,dc=example,dc=org
+objectClass: inetOrgPerson
+uid: dana
+cn: Dana Example
+sn: Example
+givenName: Dana
+displayName: Dana Example
+mail: dana@example.org
+userPassword: Passw0rd!dev
+
+# A username with characters that have a meaning in a search filter: it must match literally.
+dn: uid=astarb,ou=people,dc=example,dc=org
+objectClass: inetOrgPerson
+uid: astarb
+cn: Asterisk Example
+sn: Example
+displayName: Asterisk Example
+mail: a*b@example.org
+userPassword: Passw0rd!dev

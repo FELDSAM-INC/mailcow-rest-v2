@@ -148,6 +148,29 @@ return [
         'bulk_limit' => max(1, min(100, (int) Env::get('RESTV2_SYNC_JOBS_BULK_LIMIT', 100))),
     ],
 
+    /*
+    |----------------------------------------------------------------------
+    | Identity providers and single sign-on (feature 012 research R17)
+    |----------------------------------------------------------------------
+    |
+    | The host names of the new web app's sign-in return addresses are MAILCOW_HOSTNAME and the
+    | mailcow.conf setting ADDITIONAL_SERVER_NAMES (`additional_server_names` above).
+    */
+    'identity_provider' => [
+        // Seconds per call to the provider (FR-056).
+        'timeout' => max(1, (int) env('RESTV2_IDP_TIMEOUT', 7)),
+        // Retry-After of `identity-provider-unavailable`.
+        'retry_after' => max(1, (int) env('RESTV2_IDP_RETRY_AFTER', 30)),
+        // Lifetime of a started single sign-on, in seconds.
+        'sso_pending_ttl' => max(1, (int) env('RESTV2_SSO_PENDING_TTL', 600)),
+        // Seconds after which a single sign-on session is renewed with the provider.
+        'sso_renewal_interval' => max(1, (int) env('RESTV2_SSO_RENEWAL_INTERVAL', 300)),
+        // Path of the new web app's sign-in return address (a mailcowui-ng route).
+        'sso_return_path' => (string) env('RESTV2_SSO_RETURN_PATH', '/ng/sso/return'),
+        // Scheme of the return address; `http` is for development only.
+        'sso_return_scheme' => env('RESTV2_SSO_RETURN_SCHEME', 'https') === 'http' ? 'http' : 'https',
+    ],
+
     // Development only (APP_ENV=local): binds the dockerapi, memcached and ISPConfig fakes, because
     // the dev stack runs none of these services. Ignored in every other environment. Feature 011
     // adds its stand-ins (Rspamd, release source, IP check) and recorded monitoring payloads.

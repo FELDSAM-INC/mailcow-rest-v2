@@ -96,6 +96,7 @@ this document next to the constitution.
 
 ## Lists
 
-- `limit` defaults to 25 and its maximum is 100. `offset` starts at 0. A spec may set other limits
-  for a specific list. Lists accept `sort`, `order`, documented filters and a substring search
-  (`q`).
+- `limit` defaults to 25 and its maximum is 1,000, the same for every list, so that automation
+  clients need few round trips. `offset` starts at 0. Lists accept `sort`, `order`, documented
+  filters and a substring search (`q`). Clients such as the web app offer smaller page sizes (25,
+  50, 100).

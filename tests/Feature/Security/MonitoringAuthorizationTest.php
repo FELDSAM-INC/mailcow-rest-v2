@@ -4,6 +4,7 @@ namespace Tests\Feature\Security;
 
 use App\Auth\Role;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Response;
@@ -41,6 +42,7 @@ class MonitoringAuthorizationTest extends TestCase
         $this->dockerApi()->withQueue(MonitoringFixtures::text('postqueue-j.txt'));
         $this->dockerApi()->onRestart('netfilter-mailcow', fn () => MailcowLogs::f2bRegex(MailcowLogs::defaultRules()));
         MailcowLogs::activeBan('203.0.113.0/24', time() + 3600);
+        Redis::connection('mailcow')->command('set', ['IP_CHECK', '1']);
         $this->sleeper()->advancing($this->clock());
         $this->keys = [
             'adminKey' => $this->apiKey('admin', 'readWrite')['secret'],
@@ -104,6 +106,10 @@ class MonitoringAuthorizationTest extends TestCase
             // US6 (T094).
             'listRspamdHistory' => ['GET', '/api/v2/rspamd/history', null, null, null],
             'getRspamdStatistics' => ['GET', '/api/v2/rspamd/statistics', null, null, null],
+            // US7 (T101).
+            'getInstallationVersion' => ['GET', '/api/v2/installation', null, null, null],
+            'getUpdateStatus' => ['GET', '/api/v2/installation/update-status', null, null, null],
+            'getPublicAddresses' => ['GET', '/api/v2/host/public-addresses', null, null, null],
             // US2 (T041).
             'startContainer' => ['POST', '/api/v2/containers/sogo-mailcow/start', null, 'containerStart', 'container'],
             'stopContainer' => ['POST', '/api/v2/containers/clamd-mailcow/stop', null, 'containerStop', 'container'],

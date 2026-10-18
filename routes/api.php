@@ -36,6 +36,7 @@ use App\Http\Controllers\Api\V2\Fail2BanRulesResetController;
 use App\Http\Controllers\Api\V2\Fail2BanSettingsController;
 use App\Http\Controllers\Api\V2\HostOverviewController;
 use App\Http\Controllers\Api\V2\IdentityController;
+use App\Http\Controllers\Api\V2\InstallationController;
 use App\Http\Controllers\Api\V2\LivenessController;
 use App\Http\Controllers\Api\V2\LogEntryController;
 use App\Http\Controllers\Api\V2\MailboxBulkActionController;
@@ -63,6 +64,7 @@ use App\Http\Controllers\Api\V2\PasswordPolicyController;
 use App\Http\Controllers\Api\V2\PendingSignInController;
 use App\Http\Controllers\Api\V2\PreferencesController;
 use App\Http\Controllers\Api\V2\ProblemTypeController;
+use App\Http\Controllers\Api\V2\PublicAddressesController;
 use App\Http\Controllers\Api\V2\PublicConfigController;
 use App\Http\Controllers\Api\V2\PublicConfigLogoController;
 use App\Http\Controllers\Api\V2\ReadinessController;
@@ -74,6 +76,7 @@ use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
 use App\Http\Controllers\Api\V2\SessionController;
+use App\Http\Controllers\Api\V2\UpdateStatusController;
 use App\Http\Middleware\AuthorizeMonitoring;
 use App\Rules\MailQueueId;
 use App\Services\Logs\LogType;
@@ -390,6 +393,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/host', [HostOverviewController::class, 'show'])->name('host.show');
         Route::get('/host/mail-storage', [MailStorageUsageController::class, 'show'])->name('host-mail-storage.show');
         Route::get('/capabilities/monitoring', [MonitoringCapabilitiesController::class, 'show'])->name('monitoring-capabilities.show');
+        Route::get('/host/public-addresses', [PublicAddressesController::class, 'show'])->name('host-public-addresses.show');
+        Route::get('/installation', [InstallationController::class, 'show'])->name('installation.show');
+        Route::get('/installation/update-status', [UpdateStatusController::class, 'show'])->name('installation-update-status.show');
         Route::get('/containers', [ContainerController::class, 'index'])->name('containers.index');
         Route::get('/containers/{containerName}', [ContainerController::class, 'show'])
             ->where('containerName', ContainerRegistry::NAME_PATTERN)

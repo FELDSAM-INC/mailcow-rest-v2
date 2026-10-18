@@ -212,9 +212,5 @@
             ]
         }
     },
-    "pendingOperations": [
-        "getPublicAddresses",
-        "getInstallationVersion",
-        "getUpdateStatus"
-    ]
+    "pendingOperations": []
 }

@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Clients\Development\NullDockerApiClient;
 use App\Clients\Development\NullIspconfigDnsClient;
 use App\Clients\Development\NullMemcachedFlusher;
+use App\Clients\Development\NullPublicAddressLookup;
+use App\Clients\Development\NullReleaseSource;
+use App\Clients\Development\NullRspamdController;
 use App\Clients\DockerApi\DockerApiClient;
 use App\Clients\DockerApi\HttpDockerApiClient;
 use App\Clients\Fail2Ban\Fail2BanReporter;
@@ -13,6 +16,10 @@ use App\Clients\Ispconfig\IspconfigDnsClient;
 use App\Clients\Ispconfig\JsonIspconfigDnsClient;
 use App\Clients\Memcached\MemcachedFlusher;
 use App\Clients\Memcached\SocketMemcachedFlusher;
+use App\Clients\PublicAddress\HttpPublicAddressLookup;
+use App\Clients\PublicAddress\PublicAddressLookup;
+use App\Clients\Releases\GitHubReleaseSource;
+use App\Clients\Releases\ReleaseSource;
 use App\Clients\Rspamd\RspamdController;
 use App\Clients\Rspamd\UnixSocketRspamdController;
 use App\Clients\Yubico\HttpYubicoOtpVerifier;
@@ -36,11 +43,13 @@ use App\Services\Groupware\GroupwareCacheFlush;
 use App\Services\Mailboxes\MailboxAuditTargets;
 use App\Services\Monitoring\MonitoringAuditTargetResolver;
 use App\Services\Monitoring\SharedSnapshotCache;
+use App\Services\Monitoring\UpdateCheckService;
 use App\Support\Clock\Clock;
 use App\Support\Clock\Sleeper;
 use App\Support\Clock\SystemClock;
 use App\Support\Clock\UsleepSleeper;
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
+use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -66,12 +75,18 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MemcachedFlusher::class, SocketMemcachedFlusher::class);
         $this->app->bind(IspconfigDnsClient::class, JsonIspconfigDnsClient::class);
         $this->app->bind(RspamdController::class, UnixSocketRspamdController::class);
+        $this->app->bind(ReleaseSource::class, GitHubReleaseSource::class);
+        $this->app->bind(PublicAddressLookup::class, HttpPublicAddressLookup::class);
+        $this->app->when(UpdateCheckService::class)->needs(Repository::class)->give(fn ($app) => $app->make(CacheFactory::class)->store('restv2'));
 
         if (config('restv2.fake_outbound')) {
             if ($this->app->environment('local')) {
                 $this->app->bind(DockerApiClient::class, NullDockerApiClient::class);
                 $this->app->bind(MemcachedFlusher::class, NullMemcachedFlusher::class);
                 $this->app->bind(IspconfigDnsClient::class, NullIspconfigDnsClient::class);
+                $this->app->bind(RspamdController::class, NullRspamdController::class);
+                $this->app->bind(ReleaseSource::class, NullReleaseSource::class);
+                $this->app->bind(PublicAddressLookup::class, NullPublicAddressLookup::class);
             } else {
                 // Refused outside development: the real services are always used.
                 error_log('RESTV2_FAKE_OUTBOUND is ignored outside APP_ENV=local.');

@@ -765,10 +765,10 @@ gated by `IP_CHECK`.
 
 ### Tests for User Story 7 (write first, observe failing) ⚠️
 
-- [ ] T097 [P] [US7] Write `tests/Feature/Monitoring/InstallationVersionTest.php` (FR-018):
+- [X] T097 [P] [US7] Write `tests/Feature/Monitoring/InstallationVersionTest.php` (FR-018):
   `GET /installation` returns tag, branch, commit and commit date from `MailcowConfig`; `null`
   values when unknown; no dockerapi call.
-- [ ] T098 [P] [US7] Write `tests/Feature/Monitoring/UpdateStatusTest.php` (AS-1, AS-2, AS-3,
+- [X] T098 [P] [US7] Write `tests/Feature/Monitoring/UpdateStatusTest.php` (AS-1, AS-2, AS-3,
   FR-019, FR-020, R10): a newer release (later `created_at`) → `updateAvailable` with tag, `url`,
   `publishedAt`, `notes` and `installedReleaseNotes`; same or older → `upToDate`; source failure →
   `checkFailed`, and a second request within 5 minutes makes no source call while one after 5
@@ -776,26 +776,26 @@ gated by `IP_CHECK`.
   branch `nightly` → `disabled`; no installed tag → `disabled`; the source URL defaults to
   `https://api.github.com/repos/mailcow/mailcow-dockerized`; a changed version uses a new cache key;
   Redis unavailable → `503` and no source call.
-- [ ] T099 [P] [US7] Write `tests/Unit/Clients/GitHubReleaseSourceTest.php` with `Http::fake()`:
+- [X] T099 [P] [US7] Write `tests/Unit/Clients/GitHubReleaseSourceTest.php` with `Http::fake()`:
   `User-Agent: mailcow-update-check`, `Accept: application/vnd.github+json`, 10 s timeout, non-200
   → failure.
-- [ ] T100 [P] [US7] Write `tests/Feature/Monitoring/PublicAddressesTest.php` (AS-4, FR-021, R11):
+- [X] T100 [P] [US7] Write `tests/Feature/Monitoring/PublicAddressesTest.php` (AS-4, FR-021, R11):
   `IP_CHECK` unset or `0` → `409 ip-check-disabled` and zero lookups; `1` → both addresses; an
   invalid IPv6 answer → `ipv6: null`; one family failing → that address `null`; and
   `tests/Unit/Clients/HttpPublicAddressLookupTest.php` with `Http::fake()` asserting both requests,
   10 s connect and 15 s total timeouts.
-- [ ] T101 [US7] Add `GET /installation`, `/installation/update-status` and
+- [X] T101 [US7] Add `GET /installation`, `/installation/update-status` and
   `/host/public-addresses` to the provider of `MonitoringAuthorizationTest`.
 
 ### Implementation for User Story 7
 
-- [ ] T102 [P] [US7] Create `app/Clients/Releases/ReleaseSource.php` and `GitHubReleaseSource.php`,
+- [X] T102 [P] [US7] Create `app/Clients/Releases/ReleaseSource.php` and `GitHubReleaseSource.php`,
   and `app/Services/Monitoring/UpdateCheckService.php` (R10, cache with single-flight lock), with
   `InstallationVersionResource.php` and `InstallationUpdateStatusResource.php`.
-- [ ] T103 [P] [US7] Create `app/Clients/PublicAddress/PublicAddressLookup.php` and
+- [X] T103 [P] [US7] Create `app/Clients/PublicAddress/PublicAddressLookup.php` and
   `HttpPublicAddressLookup.php` (`Http::pool()`), and `app/Services/Monitoring/PublicAddressService.php`
   with `PublicAddressesResource.php`.
-- [ ] T104 [US7] Create the controllers `InstallationController`, `UpdateStatusController` and
+- [X] T104 [US7] Create the controllers `InstallationController`, `UpdateStatusController` and
   `PublicAddressesController` (`show`) and register the three routes. This makes T097–T101 pass.
 
 **Checkpoint**: US7 green.
@@ -1012,3 +1012,9 @@ Deviations and decisions made while implementing, with the reason:
   `dependency: spamFilter` (006's convention) and `Retry-After: 5`. A history `user` of `unknown`
   (what Rspamd records without authentication) is reported as `null`. The reads use 5 s to connect
   and 10 s in total; feature 006's learning calls will use its own `RESTV2_RSPAMD_TIMEOUT`.
+- **T102–T104** (US7): the update check's cache is the `restv2` store (contextual binding of
+  `UpdateCheckService`), and its tests assert the Redis TTLs (3,600 s, 300 s), because Laravel's
+  `travel()` moves PHP's clock, not Redis expiry. The development stand-ins of the Rspamd
+  controller, the release source and the IP check service are `App\Clients\Development\Null*`
+  classes (002's pattern), which answer the recorded payloads of `tests/fixtures/monitoring`; test
+  fakes are not bound outside tests.

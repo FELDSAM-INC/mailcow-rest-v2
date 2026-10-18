@@ -52,7 +52,7 @@ class ListRspamdHistoryRequest extends ApiFormRequest
      */
     public function actions(): array
     {
-        return array_values(array_map('strval', $this->repeatedQuery('action')));
+        return $this->repeatedQuery('action');
     }
 
     public function score(string $name): ?float

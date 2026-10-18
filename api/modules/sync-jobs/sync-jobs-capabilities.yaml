@@ -1,5 +1,5 @@
 get:
-  operationId: getSyncJobCapabilities
+  operationId: getSyncJobsCapabilities
   tags: [Sync jobs]
   summary: Get sync-job capabilities
   description: |

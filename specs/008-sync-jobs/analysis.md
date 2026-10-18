@@ -30,8 +30,10 @@ recorded the results here, because the harness would not let the subagent write 
   T001 resolves them as reuse-or-create tasks.
 - **M2:** Resolved by an orchestrator decision. History uses 001's generic `targetType` and
   `targetId` audit filters, and no `targetMailbox` filter is added.
-- **M3:** Resolved by an orchestrator decision. Capabilities reads use the path
-  `/{collection}/capabilities` project-wide (see `docs/conventions.md`).
+- **M3:** Resolved by an orchestrator decision. Capabilities reads use the project-wide path
+  `/capabilities/{area}`; sync jobs use `/capabilities/sync-jobs` (`getSyncJobsCapabilities`, see
+  `docs/conventions.md`). With the `targetMailbox` task dropped, tasks.md has 70 tasks: Setup 4,
+  Foundational 17, US1 9, US2 16, US3 8, US4 2, US5 4, US6 2, Polish 8.
 - **M4:** Resolved. `AuditFailureReason` is a shared, append-only enum.
 - **LOW (7):**
   - the bulk limit counts items as sent, duplicates included;

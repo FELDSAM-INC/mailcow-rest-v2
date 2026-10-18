@@ -84,7 +84,7 @@ curl -s $C "$B/sync-jobs/2/log" | jq -r .data.log | head -5  # imapsync output, 
 curl -s $C -o /dev/null -w '%{http_code}\n' "$B/sync-jobs/3" # 404 (carol's job)
 
 # US2: capabilities, then create with only the required members (defaults apply).
-curl -s $C "$B/sync-jobs/capabilities" | jq '.data | {customParameters: .customParameters.allowed, bulkLimit, defaults}'
+curl -s $C "$B/capabilities/sync-jobs" | jq '.data | {customParameters: .customParameters.allowed, bulkLimit, defaults}'
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST "$B/sync-jobs" -i \
   -d '{"remoteHost":"IMAP.Example.COM","remotePort":993,"remoteUser":"alice","remotePassword":"s3cret"}' \
   | grep -i -E '^(HTTP|location|etag)'                       # 201, Location /api/v2/sync-jobs/<id>
@@ -118,10 +118,10 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X POST "$B/sync-jobs/bulk-actions" \
 # US1 AS-6/7: callers without the permission are forbidden.
 signin bob@example.org; curl -s $C "$B/sync-jobs" | jq .type   # ".../forbidden"
 
-# US6: an administrator lists the audit records of a job and of a mailbox.
+# US6: an administrator lists the history of a job with the generic target filters.
 signin admin
 curl -s $C "$B/audit-events?targetType=syncJob&targetId=1" | jq '.data[] | {eventType, outcome, details}'
-curl -s $C "$B/audit-events?targetMailbox=alice@example.org&limit=50" | jq '[.data[].eventType]'
+curl -s $C "$B/audit-events?actor=bob@example.org&outcome=failure" | jq '[.data[] | {eventType, failureReason, target}]'
 curl -s $C "$B/audit-events?targetType=syncJob" | grep -c s3cret   # 0
 ```
 
@@ -157,6 +157,6 @@ log contains a remote password: `docker compose logs app | grep -c s3cret` print
    once, the run finishes, and no row reappears.
 7. **Hardening**: with `RESTV2_SYNC_JOBS_CUSTOM_PARAMS_ADMIN_ONLY=y` in `mailcow.conf` (followed by
    `docker compose up -d restv2-mailcow`):
-   - a mailbox user's `GET /sync-jobs/capabilities` shows `customParameters.allowed: false`;
+   - a mailbox user's `GET /capabilities/sync-jobs` shows `customParameters.allowed: false`;
    - a mailbox user creating a job with `--maxsize=1000` gets `customParamsNotPermitted`;
    - an administrator creating the same job succeeds.

@@ -5,7 +5,7 @@
 Feature 008 stores nothing new in mailcow's schema and creates no table. It reads and writes the
 upstream `imapsync` table through `App\Services\SyncJobs\SyncJobService` only (constitution III
 and IV). It reads `mailbox`, `domain_admins`, `alias`, `alias_domain`, `user_acl` and `da_acl`. Its
-audit records go into 001's `restv2_audit_events`, which gets one index. Column definitions are
+audit records go into 001's `restv2_audit_events`, without any schema change. Column definitions are
 quoted from upstream `2026-09a` `init_db.inc.php` (`db_version 18082026_1200`), the source of the
 schema fixture. The JSON shapes are defined in the contract (`api/components/schemas/SyncJob*.yaml`);
 this document maps them to storage.
@@ -125,11 +125,7 @@ administrators). Features 003 and 007 edit these columns. This feature never wri
 
 ### Audit records (`restv2_audit_events`, from 001)
 
-No new table. One migration adds an index for the mailbox filter:
-
-`database/migrations/2026_10_18_080001_add_target_name_index_to_restv2_audit_events_table.php`:
-`Schema::table('restv2_audit_events', fn ($t) => $t->index(['target_type', 'target_name'],
-'restv2_audit_events_target_name_index'))`. It passes 001's `MigrationPrefixTest`.
+No new table and no migration.
 
 Records written by this feature (`AuditLogger` whitelists the `details` keys per event type):
 
@@ -153,8 +149,8 @@ Records written by this feature (`AuditLogger` whitelists the `details` keys per
   `restv2.audit`, for every authenticated caller, except CSRF failures. `401` requests have no
   principal and are not recorded (research R16).
 
-**Filter `targetMailbox`** (added to `listAuditEvents` in US6): `target_type = 'syncJob' AND
-target_name = ?`. The `targetType` and `targetId` filters come from feature 002.
+**History**: clients filter with the generic `targetType=syncJob` and `targetId=<id>` parameters of
+`GET /audit-events` (`docs/conventions.md`). This feature adds no audit filter.
 
 ### Redis
 

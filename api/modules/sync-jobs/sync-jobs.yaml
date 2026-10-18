@@ -75,7 +75,7 @@ post:
     Creates a sync job that pulls mail from a remote IMAP account into a local mailbox.
     Administrators and domain administrators name the target `mailbox`; a mailbox user's job always
     syncs into their own mailbox. Omitted options take the legacy form's defaults (see
-    `SyncJobCreateRequest` and `GET /sync-jobs/capabilities`). The remote password is stored for
+    `SyncJobCreateRequest` and `GET /capabilities/sync-jobs`). The remote password is stored for
     the runner and never returned. Audited without the password.
 
     This API never starts a run. An active job runs on the imapsync runner's own schedule: every

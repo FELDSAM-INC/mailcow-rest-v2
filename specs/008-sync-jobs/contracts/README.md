@@ -4,11 +4,12 @@ The contract of this feature is not duplicated here. The OpenAPI 3.1 document in
 [`api/`](../../../api/) directory is the single source of truth (constitution I).
 
 - [`api/openapi.yaml`](../../../api/openapi.yaml): the tag `Sync jobs` and the six path
-  references `/sync-jobs…`.
+  references (`/sync-jobs…` and `/capabilities/sync-jobs`).
 - [`api/modules/sync-jobs/`](../../../api/modules/sync-jobs/): one kebab-case file per path, and
   the module's `_index.yaml`:
   - `sync-jobs.yaml`: `GET /sync-jobs` (listSyncJobs) and `POST /sync-jobs` (createSyncJob);
-  - `sync-jobs-capabilities.yaml`: `GET /sync-jobs/capabilities` (getSyncJobCapabilities);
+  - `sync-jobs-capabilities.yaml`: `GET /capabilities/sync-jobs` (getSyncJobsCapabilities), the
+    project-wide `/capabilities/{area}` pattern of `docs/conventions.md`;
   - `sync-jobs-bulk-actions.yaml`: `POST /sync-jobs/bulk-actions` (applySyncJobBulkAction);
   - `sync-job.yaml`: `GET`, `PATCH` and `DELETE /sync-jobs/{syncJobId}` (getSyncJob,
     updateSyncJob, deleteSyncJob);
@@ -37,9 +38,8 @@ The contract of this feature is not duplicated here. The OpenAPI 3.1 document in
 - [`docs/problems.md`](../../../docs/problems.md#sync-job-exists): the `sync-job-exists` problem
   type and how the other sync-job errors map.
 
-One addition is still pending, as the first task of US6 in [tasks.md](../tasks.md): the
-`targetMailbox` filter on 001's `GET /audit-events`
-(`api/modules/audit/audit-events.yaml`), required by FR-026. See the plan's Complexity Tracking.
+History (FR-026) uses the generic `targetType` and `targetId` filters of `GET /audit-events`; this
+feature adds no audit filter (`docs/conventions.md`).
 
 The operations, with their authentication and the requirements they serve, are listed in
 [plan.md](../plan.md#contract-operations).

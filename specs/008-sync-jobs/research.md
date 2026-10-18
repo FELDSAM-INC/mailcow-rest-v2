@@ -27,7 +27,7 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
   |---|---|
   | GET `/sync-jobs` | listSyncJobs |
   | POST `/sync-jobs` | createSyncJob |
-  | GET `/sync-jobs/capabilities` | getSyncJobCapabilities |
+  | GET `/capabilities/sync-jobs` | getSyncJobsCapabilities |
   | POST `/sync-jobs/bulk-actions` | applySyncJobBulkAction |
   | GET `/sync-jobs/{syncJobId}` | getSyncJob |
   | PATCH `/sync-jobs/{syncJobId}` | updateSyncJob |
@@ -48,12 +48,14 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
   - `DELETE /sync-jobs/{id}/last-run` would describe the reset well, but FR-016 requires the
     updated job in the response, and constitution II reserves `204` for deletes.
   - The bulk path follows the shape feature 002 uses (`/domains/bulk-actions`).
-  - `syncJobId` is an integer, so `capabilities` and `bulk-actions` can never collide with it.
+  - The capabilities read follows the project-wide pattern `/capabilities/{area}`
+    (`docs/conventions.md`, "Capabilities, history and refusals"), with the operation ID
+    `getSyncJobsCapabilities`.
 - **Alternatives considered**:
   - Nesting under `/mailboxes/{mailbox}/sync-jobs` was rejected. It needs a second list route for
     the global view, and it couples this contract to 003's mailbox addressing.
-  - A top-level `/sync-job-capabilities`, like 002's `/domain-capabilities`, was rejected. 002 needs
-    it only because a domain name could be `capabilities`; an integer identifier cannot.
+  - `/sync-jobs/capabilities` was the first design. It was replaced by the project-wide
+    `/capabilities/sync-jobs` (owner decision in `docs/conventions.md`).
   - `POST /sync-jobs/{id}/reschedule` was rejected: it is a verb. 001 uses nouns
     (`/revocation`).
 
@@ -509,13 +511,11 @@ fork (`feldhost-202609a`) was diffed for every sync-job file (`functions.mailbox
       them would let that site write audit rows in the victim's name at will. 001 does not audit
       them either.
     - Reads are not audited.
-  - **Filtering by mailbox (FR-026)**: 002 adds the `targetType` and `targetId` filters of
-    `listAuditEvents` (002 FR-058). This feature adds `targetMailbox`, implemented as
-    `target_type = 'syncJob' AND target_name = ?`, plus the index migration
-    `2026_10_18_080001_add_target_name_index_to_restv2_audit_events_table.php` on `(target_type,
-    target_name)`. The parameter goes into 001's `api/modules/audit/audit-events.yaml`. The
-    concurrent-planning rules do not let this plan edit another feature's module, so it is the
-    first task of US6, before its tests (plan, Complexity Tracking).
+  - **History (FR-026)**: clients filter `GET /audit-events` with the generic `targetType=syncJob`
+    and `targetId=<id>` parameters, which already exist (`docs/conventions.md`, "Capabilities,
+    history and refusals"). This feature adds no audit filter of its own and no migration. The
+    history of a mailbox's sync jobs is read per job, or through the mailbox's own history. The
+    mailbox stays visible in `target.name` and `details.mailbox`, and searchable with `q`.
 - **Rationale**: This is FR-025 ("every request … that changes state, or tries to") and FR-026,
   with the password only as "changed" (SC-007). A read-only key trying to delete a job is exactly
   what an administrator investigating misuse needs to see. That is why the pipeline refusals with a
@@ -650,7 +650,7 @@ Features are implemented in number order, so the following already exist when 00
     keys);
   - the `Mailbox`, `Domain` and `DomainAdminAssignment` models.
 - **002**:
-  - the `targetType` and `targetId` filters of `listAuditEvents` (002 FR-058), which US6 needs;
+  - the generic `targetType` and `targetId` filters of `listAuditEvents`, which US6 uses;
   - the port of `is_valid_domain_name()` (R6);
   - the bulk-result plumbing (R15);
   - the shared `AuditFailureReason` values `versionOutdated`, `validationFailed` and `conflict`.

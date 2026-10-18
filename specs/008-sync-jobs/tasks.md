@@ -28,7 +28,7 @@ already exist when this list starts.
   - `MailcowFactory`, `OpenApiContract`, `ContractCoverageExtension` and `TestCase` (`signInAs`,
     key helpers).
 - **002**:
-  - the `targetType` and `targetId` filters of `listAuditEvents` (002 FR-058);
+  - the generic `targetType` and `targetId` filters of `listAuditEvents`, which US6 uses;
   - its port of legacy `is_valid_domain_name()`;
   - its bulk-result plumbing;
   - the audit failure reasons `versionOutdated`, `validationFailed` and `conflict`.
@@ -63,7 +63,8 @@ first. Create a new one only when none exists (`docs/conventions.md`: implemente
   - 002's bulk-result plumbing (a class building `BulkResult`);
   - the 004 models `App\Models\Mailcow\Alias` and `App\Models\Mailcow\AliasDomain`;
   - the `MailcowFactory` helpers `alias()` and `aliasDomain()`;
-  - the `targetType` and `targetId` parameters in `api/modules/audit/audit-events.yaml`.
+  - the generic `targetType` and `targetId` parameters in `api/modules/audit/audit-events.yaml`
+    (they must exist; this feature adds no audit filter).
 
   Also search for a refusal-audit hook 002 may have built (a class recording audit records for
   refused requests from the problem rendering in `bootstrap/app.php`). Record the names you find in
@@ -368,8 +369,8 @@ values for the same rows (spec US1, Independent Test).
   - `GET sync-jobs/{syncJob}` → `show`, `whereNumber('syncJob')`;
   - `GET sync-jobs/{syncJob}/log`.
 
-  Leave room above for the specific routes `sync-jobs/capabilities` and `sync-jobs/bulk-actions`
-  (T045, T060). T022–T025 must pass.
+  Leave room above for the specific route `sync-jobs/bulk-actions`
+  (T060). T022–T025 must pass.
 
 **Checkpoint**: US1 works on its own. Run quickstart Part B's US1 commands.
 
@@ -560,7 +561,8 @@ parameters, a duplicate and out-of-range values. Compare the stored rows with le
   `app/Http/Controllers/Api/V2/SyncJobCapabilitiesController.php`. Add `store` to
   `SyncJobController` (`201`, `Location`, `ETag`). Register in `routes/api.php`, **above**
   `sync-jobs/{syncJob}`:
-  - `GET sync-jobs/capabilities` with `restv2.auth:authenticated`;
+  - `GET capabilities/sync-jobs` with `restv2.auth:authenticated` (top-level path,
+    `docs/conventions.md`);
   - `POST sync-jobs` with `restv2.auth:authenticated`, `restv2.csrf` and
     `->defaults('restv2.audit', ['event' => AuditEventType::SyncJobCreation, 'target' => 'syncJob'])`.
 - [ ] T046 [US2] Create `tests/bin/create-sync-job-once.php`. It boots the application with
@@ -788,32 +790,24 @@ deleted just before processing, and stale and missing version tags (spec US5).
 
 ## Phase 8: User Story 6: Trace sync-job changes (P3)
 
-**Goal**: Administrators filter the audit log by sync job and by target mailbox, and see every
-change and refusal without the password.
+**Goal**: Administrators list a sync job's history with the generic `targetType` and `targetId`
+filters of `GET /audit-events`, and see every change and refusal without the password. This
+feature adds no audit filter of its own (`docs/conventions.md`, "Capabilities, history and
+refusals").
 
 **Independent test**: Make each kind of change, including refused ones, then list the audit log by
-target and by mailbox (spec US6).
-
-- [ ] T061 [US6] **Contract first** (plan, Complexity Tracking). Add the query parameter
-  `targetMailbox` to `api/modules/audit/audit-events.yaml`: string, `maxLength: 255`, "Only records
-  whose target belongs to this mailbox (exact address); sync-job records match their target
-  mailbox." Place it after the `targetType` and `targetId` parameters that feature 002 added. If
-  002 did not add them, add them too, as 002 FR-058 specifies (`targetType` with
-  `AuditTarget.type` values, `targetId` a string ≤ 255). Run `composer contract:lint` and
-  `composer contract:bundle`.
+target type and identifier (spec US6).
 
 ### Tests for User Story 6 (write first, observe failing) ⚠️
 
-- [ ] T062 [P] [US6] Write `tests/Feature/Audit/SyncJobAuditTest.php` (FR-025, FR-026, AS-1 to AS-3,
+- [ ] T061 [P] [US6] Write `tests/Feature/Audit/SyncJobAuditTest.php` (FR-025, FR-026, AS-1 to AS-3,
   SC-007):
   - **Change record** (AS-1): after an admin changes a job's interval and password, another admin
     lists `?targetType=syncJob&targetId=<id>`. The entry shows actor, `occurredAt`,
     `clientAddress`, `changes.intervalMinutes {old, new}` and `changes.remotePassword: "changed"`.
-  - **Refusal record** (AS-2): after a user's refused `PATCH` (no flag), `?targetMailbox=<mailbox>`
-    and `?actor=<user>` both list the refusal, with `outcome failure` and `failureReason
-    permissionDenied`.
-  - **Exact filter**: `targetMailbox=bob@example.org` does not return records of
-    `jimbob@example.org`.
+  - **Refusal record** (AS-2): after a user's refused `PATCH` of a job (no flag), both
+    `?targetType=syncJob&targetId=<id>` and `?actor=<user>` list the refusal, with `outcome
+    failure`, `failureReason permissionDenied` and the job's mailbox in `target.name`.
   - **Access** (AS-3): domain admins and mailbox users → `403 forbidden`.
   - **Coverage**: every event type of R16 appears once per affected job, and a bulk action's
     records share `details.bulkRequestId`.
@@ -822,12 +816,10 @@ target and by mailbox (spec US6).
 
 ### Implementation for User Story 6
 
-- [ ] T063 [US6] Create
-  `database/migrations/2026_10_18_080001_add_target_name_index_to_restv2_audit_events_table.php`
-  (index `restv2_audit_events_target_name_index` on `target_type, target_name`). Extend 001's audit
-  list request and query (`app/Http/Requests/Api/V2/ListAuditEventsRequest.php` and the audit query
-  in `app/Services/Audit/`) with `targetMailbox` → `target_type = 'syncJob' AND target_name = ?`.
-  T062 must pass, along with 001's `MigrationPrefixTest`.
+- [ ] T062 [US6] Make the generic history filter accept sync jobs. If the `targetType` validation
+  of the audit list (`app/Http/Requests/Api/V2/ListAuditEventsRequest.php`) uses a PHP list of
+  target types rather than the contract's `AuditTarget.type`, add `syncJob` to that list. No new
+  parameter and no migration. T061 must pass.
 
 **Checkpoint**: all six stories work.
 
@@ -835,7 +827,7 @@ target and by mailbox (spec US6).
 
 ## Phase 9: Polish and cross-cutting concerns
 
-- [ ] T064 [P] Write `tests/Feature/Security/SyncJobAuthorizationMatrixTest.php` (constitution VI,
+- [ ] T063 [P] Write `tests/Feature/Security/SyncJobAuthorizationMatrixTest.php` (constitution VI,
   quality gate 5, FR-005, SC-003). It is a data provider over the 9 operations × 13 callers:
   - anonymous;
   - a restricted session (`force_pw_update`);
@@ -848,12 +840,12 @@ target and by mailbox (spec US6).
   It asserts the status and problem `type` from a table derived from FR-005 and the contract's
   security. Object-level cases: a foreign-domain job → `404` for a domain admin; another mailbox's
   job → `404` for a mailbox user; a foreign target mailbox at creation → `404`.
-- [ ] T065 [P] Write `tests/Feature/Security/SyncJobSecretLeakTest.php` (FR-018, SC-001, SC-007). It
+- [ ] T064 [P] Write `tests/Feature/Security/SyncJobSecretLeakTest.php` (FR-018, SC-001, SC-007). It
   runs every operation with the password `Remote-S3cret!`, including validation failures that echo
   members and a forced `500`. The password must not appear in any response body or header, in the
   `stderr_json` log output (captured through a test log handler), in `restv2_audit_events` or in an
   exception render. `ETag` values must not equal `SHA-256(password)` in any encoding.
-- [ ] T066 [P] Write `tests/Feature/Performance/SyncJobListLatencyTest.php` (group `performance`,
+- [ ] T065 [P] Write `tests/Feature/Performance/SyncJobListLatencyTest.php` (group `performance`,
   SC-006):
   - seed 100,000 mailboxes over 200 domains and 5,000 jobs, with `INSERT … SELECT` from MariaDB's
     `seq_1_to_100000`, and 1 MB `returned_text` on 500 jobs;
@@ -863,25 +855,24 @@ target and by mailbox (spec US6).
 
   Write `tests/Feature/Performance/SyncJobBulkLatencyTest.php` (SC-009): a bulk `deactivate` of
   100 jobs finishes in under 10 s, with exactly 100 results and 100 audit records.
-- [ ] T067 [P] Extend `database/seeders/DevelopmentSeeder.php` with the quickstart Part B data:
+- [ ] T066 [P] Extend `database/seeders/DevelopmentSeeder.php` with the quickstart Part B data:
   - `user_acl.syncjobs = 1` for `alice@example.org` and 0 for `bob@example.org`;
   - jobs #1 (never run) and #2 (failed, `EXIT_AUTHENTICATION_FAILURE_USER1`, with a log) for alice;
   - `carol@example.net` with job #3;
   - `reseller` with `da_acl.syncjobs = 1`.
-- [ ] T068 [P] Update `README.md`: the configuration variables `RESTV2_IMAPSYNC_OPTIONS`,
+- [ ] T067 [P] Update `README.md`: the configuration variables `RESTV2_IMAPSYNC_OPTIONS`,
   `RESTV2_SYNC_JOBS_CUSTOM_PARAMS_ADMIN_ONLY` and `RESTV2_SYNC_JOBS_BULK_LIMIT`. Update
-  `CHANGELOG.md`: "contract: the 9 sync-job operations (feature 008) and the `targetMailbox` audit
-  filter", for mailcowui-ng to pin.
-- [ ] T069 Review `routes/api.php`:
-  - `sync-jobs/capabilities` and `sync-jobs/bulk-actions` are registered before
-    `sync-jobs/{syncJob}`;
+  `CHANGELOG.md`: "contract: the 9 sync-job operations (feature 008)", for mailcowui-ng to pin.
+- [ ] T068 Review `routes/api.php`:
+  - `sync-jobs/bulk-actions` is registered before `sync-jobs/{syncJob}`, and the capabilities read
+    is at `capabilities/sync-jobs`;
   - every unsafe route has `restv2.csrf` and a `restv2.audit` default;
   - every route uses `restv2.auth:authenticated` with the default pending-action enforcement.
-- [ ] T070 (FR-029) Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
+- [ ] T069 (FR-029) Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
   `composer contract:lint` in the dev container. Fix every finding until all are green and
   `build/contract/coverage.json` lists all 9 sync-job operations, alongside the earlier features'.
   Run the `concurrency` and `performance` groups.
-- [ ] T071 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
+- [ ] T070 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
   output. Correct quickstart.md where commands drifted, keeping it a validation guide.
 
 ---
@@ -905,8 +896,9 @@ target and by mailbox (spec US6).
   - US3 (Phase 5) reuses US2's validators (T040–T042) and `SyncJobDuplicateGuard` (T043).
   - US4 (Phase 6) depends on Foundational only, plus `SyncJobService` from T044.
   - US5 (Phase 7) needs `update`, `reschedule` and `delete` from T052 and T056.
-  - US6 (Phase 8) needs records from US2–US5 and 002's audit filters. T061 must precede T062.
-- **Polish (Phase 9)** depends on every story. T064 and T070 need all 9 operations.
+  - US6 (Phase 8) needs records from US2–US5 and the generic `targetType` and `targetId` audit
+    filters. T061 precedes T062.
+- **Polish (Phase 9)** depends on every story. T063 and T069 need all 9 operations.
 
 ### Within each story
 

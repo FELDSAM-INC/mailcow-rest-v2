@@ -476,8 +476,8 @@ paths:
     $ref: './modules/host/_index.yaml#/~1installation'
   /installation/update-status:
     $ref: './modules/host/_index.yaml#/~1installation~1update-status'
-  /monitoring/capabilities:
-    $ref: './modules/host/_index.yaml#/~1monitoring~1capabilities'
+  /capabilities/monitoring:
+    $ref: './modules/host/_index.yaml#/~1capabilities~1monitoring'
   /containers:
     $ref: './modules/containers/_index.yaml#/~1containers'
   /containers/{containerName}:
@@ -654,8 +654,8 @@ paths:
     $ref: './modules/rate-limits/_index.yaml#/~1mailboxes~1{mailbox}~1rate-limit'
   /rate-limit-buckets/{bucketId}:
     $ref: './modules/rate-limits/_index.yaml#/~1rate-limit-buckets~1{bucketId}'
-  /settings/capabilities:
-    $ref: './modules/settings-server/_index.yaml#/~1settings~1capabilities'
+  /capabilities/settings:
+    $ref: './modules/settings-server/_index.yaml#/~1capabilities~1settings'
   /settings/legacy-api-cors:
     $ref: './modules/settings-server/_index.yaml#/~1settings~1legacy-api-cors'
   /settings/logos/{variant}:
@@ -708,8 +708,8 @@ paths:
     $ref: './modules/license/_index.yaml#/~1license'
   /license/verification:
     $ref: './modules/license/_index.yaml#/~1license~1verification'
-  /self-service/capabilities:
-    $ref: './modules/self-service/_index.yaml#/~1self-service~1capabilities'
+  /capabilities/self-service:
+    $ref: './modules/self-service/_index.yaml#/~1capabilities~1self-service'
   /me/password:
     $ref: './modules/self-service/_index.yaml#/~1me~1password'
   /me/password-policy:

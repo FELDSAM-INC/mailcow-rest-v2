@@ -38,8 +38,7 @@ The technical approach:
   enforces only in code.
 - Every change and refusal is audited through 001's `AuditLogger`. The password appears only as
   "changed".
-- The feature adds no API-owned table, no Redis key and no dependency, and one index on 001's
-  audit table.
+- The feature adds no API-owned table, no migration, no Redis key and no dependency.
 - Tests come first and run on MariaDB with the `2026-09a` schema fixture. A runner simulator
   executes the runner's own SQL, and legacy oracles are extracted from the upstream tag to prove
   validation parity.
@@ -57,8 +56,8 @@ The technical approach:
 - `imapsync` is read and written through `SyncJobService` only;
 - `mailbox`, `domain_admins`, `alias`, `alias_domain`, `user_acl` and `da_acl` are read.
 
-001's `restv2_audit_events` receives the audit records, and gets one index migration (prefix
-`restv2_`). The feature uses no Redis key.
+001's `restv2_audit_events` receives the audit records. The feature adds no migration and uses no
+Redis key.
 
 **Testing**: PHPUnit 12 feature and unit tests, written first, on MariaDB with
 `tests/fixtures/schema/2026-09a.sql` and a real Redis, every request and response validated against
@@ -100,9 +99,9 @@ operations in one module, 6 user stories and 0 new tables.
 
 | Principle | Gate | Status |
 |---|---|---|
-| I. Contract-first | All 9 operations are in `api/modules/sync-jobs/`, with `SyncJob*` components, before any code. `npx @redocly/cli@2.64.1 lint api/openapi.yaml` passes, and the only warnings are 001's four system ones. Tests validate every request and response, and the 9 operations join the coverage check. FR-026 needs one parameter on 001's `listAuditEvents`; it is the first task of US6, before its tests (Complexity Tracking). | PASS (justified) |
-| II. HTTP contract | Plural noun `/sync-jobs`; sub-resources `log`, `schedule-reset`, `capabilities`, `bulk-actions`; JSON Merge Patch. 201 with `Location` and `ETag`, 200, 204. `{data, meta}` list with `limit`, `offset`, `sort`, `order`, `q` and filters. Problem+json with `errors` on 422. `ETag` and optional `If-Match` (412). camelCase, booleans, explicit units (`intervalMinutes`, `maxAgeDays`, `maxBytesPerSecond`, `…TimeoutSeconds`), RFC 3339 UTC. Status codes are all in the constitution's list (409 for duplicates). | PASS |
-| III. Upstream schema | No migration touches an upstream table. Uniqueness uses a named lock instead of a unique index (R9). The only migration is an index on API-owned `restv2_audit_events` (`MigrationPrefixTest`). `ImapsyncColumnsTest` fails if a release changes `imapsync`'s columns. | PASS |
+| I. Contract-first | All 9 operations are in `api/modules/sync-jobs/`, with `SyncJob*` components, before any code. `npx @redocly/cli@2.64.1 lint api/openapi.yaml` passes. Tests validate every request and response, and the 9 operations join the coverage check. History uses the existing generic audit filters. | PASS |
+| II. HTTP contract | Plural noun `/sync-jobs`; sub-resources `log`, `schedule-reset`, `bulk-actions`, and the capabilities read `/capabilities/sync-jobs`; JSON Merge Patch. 201 with `Location` and `ETag`, 200, 204. `{data, meta}` list with `limit`, `offset`, `sort`, `order`, `q` and filters. Problem+json with `errors` on 422. `ETag` and optional `If-Match` (412). camelCase, booleans, explicit units (`intervalMinutes`, `maxAgeDays`, `maxBytesPerSecond`, `…TimeoutSeconds`), RFC 3339 UTC. Status codes are all in the constitution's list (409 for duplicates). | PASS |
+| III. Upstream schema | No migration touches an upstream table. Uniqueness uses a named lock instead of a unique index (R9). The feature adds no migration. `ImapsyncColumnsTest` fails if a release changes `imapsync`'s columns. | PASS |
 | IV. Parity | The legacy add, edit, delete and get code, the forms, the JS tables, `vars.inc.php` and `imapsync_runner.pl` were read (research R1–R16). Every write goes through `SyncJobService` with legacy's column list and no extra side effect (legacy has none for sync jobs). Validation parity is proven against extracted legacy oracles. Deviations are the spec's, completed by the plan-level parity notes below, which were added to the spec's table. | PASS |
 | V. Coexistence | Same container and routing as 001. The runner, php-fpm, the legacy UI and `/api/v1` are untouched and keep editing the same rows. Legacy writes stay unserialised, as before. | PASS |
 | VI. Security | The permission flag is evaluated per request from mailcow data. Object-level scope means a foreign job is `404`. Keys act as their owner, and read-only keys are refused on writes. The password is write-only, hidden in the model, an HMAC in the tag, and "changed" in the audit. `showpasswords` is refused. Every change is audited in the change's transaction. The log is declared operator-authored plain text. Every refusal by an authenticated caller is audited too, read-only-key and restricted-session refusals included; CSRF failures and `401`s are not, to avoid forgeable and anonymous log flooding (R16). | PASS |
@@ -110,8 +109,7 @@ operations in one module, 6 user stories and 0 new tables.
 | VIII. Simplicity | No new dependency or table. Shared pieces from 001 and 002–004 are reused (configuration reader, host rule, bulk plumbing, alias models) before anything new is created. | PASS |
 | Cross-feature conventions | Out-of-scope objects answer 404, and missing flags 403. All bad entries are named at once, nothing is clamped. Bulk follows the rules: at most 100, per-item outcomes, per-item version tags, dedupe. Tags cover stored settings only. The secret is write-only. `IMAPSYNC_OPTIONS` uses 001's configuration reader with `RESTV2_IMAPSYNC_OPTIONS` winning. One audit record per affected job, with the bulk request ID. Reads are not audited. Nothing is cached. Lists default to 25, at most 1,000, and take `q`. | PASS |
 
-**Post-design re-check (after Phase 1)**: PASS. The design adds no violation beyond the one
-justified below. The decisions that touched gates:
+**Post-design re-check (after Phase 1)**: PASS. The design adds no violation. The decisions that touched gates:
 
 - R4, the HMAC of the password in the version tag: VI.
 - R5, `412` before `422` and "unchanged means accepted": IV, recorded in the spec.
@@ -144,7 +142,7 @@ note" (notes 3 and 4 share a row):
 |---|---|---|---|
 | GET `/sync-jobs` | listSyncJobs | session or key (read-only too), `syncjobs` flag | US1, FR-001–FR-003, FR-007, FR-008, FR-011–FR-015 |
 | POST `/sync-jobs` | createSyncJob | session + CSRF, or read-write key; flag | US2, FR-005, FR-006, FR-016–FR-019, FR-025 |
-| GET `/sync-jobs/capabilities` | getSyncJobCapabilities | session or key (read-only too); flag | US2 AS-11, FR-006, FR-030 |
+| GET `/capabilities/sync-jobs` | getSyncJobsCapabilities | session or key (read-only too); flag | US2 AS-11, FR-006, FR-030 |
 | POST `/sync-jobs/bulk-actions` | applySyncJobBulkAction | session + CSRF, or read-write key; flag | US5, FR-023, FR-024, FR-025 |
 | GET `/sync-jobs/{syncJobId}` | getSyncJob | session or key; flag | US1, FR-007, FR-008, FR-020 |
 | PATCH `/sync-jobs/{syncJobId}` | updateSyncJob | session + CSRF, or read-write key; flag | US3, FR-016–FR-021, FR-025 |
@@ -152,8 +150,8 @@ note" (notes 3 and 4 share a row):
 | GET `/sync-jobs/{syncJobId}/log` | getSyncJobLog | session or key; flag | US1, FR-009 |
 | POST `/sync-jobs/{syncJobId}/schedule-reset` | rescheduleSyncJob | session + CSRF, or read-write key; flag | US3, FR-016, FR-021, FR-022, FR-025 |
 
-Also needed (first task of US6): the `targetMailbox` filter on 001's `GET /audit-events`
-(FR-026), next to 002's `targetType` and `targetId`.
+History (FR-026) uses the generic `targetType` and `targetId` filters of `GET /audit-events`. This
+feature adds no audit filter (`docs/conventions.md`).
 
 The contract files are listed in [contracts/README.md](./contracts/README.md). The problem type
 `sync-job-exists` is documented in [`docs/problems.md`](../../docs/problems.md#sync-job-exists).
@@ -184,7 +182,6 @@ api/                                         # Contract (source of truth), alrea
 ├── openapi.yaml                             # + tag "Sync jobs", + 6 path refs
 ├── modules/sync-jobs/{_index,sync-jobs,sync-jobs-capabilities,sync-jobs-bulk-actions,
 │                      sync-job,sync-job-log,sync-job-schedule-reset}.yaml
-├── modules/audit/audit-events.yaml          # + targetMailbox filter (task in US6; 001's module)
 └── components/
     ├── parameters/{SyncJobId,SyncJobSort}.yaml
     ├── responses/SyncJob{Response,CreatedResponse,ListResponse,LogResponse,
@@ -232,7 +229,6 @@ app/
 
 config/restv2.php                                 # + sync_jobs.{custom_params_admin_only,bulk_limit}, vars_overrides IMAPSYNC_OPTIONS
 resources/bin/export-mailcow-vars.php             # + IMAPSYNC_OPTIONS
-database/migrations/2026_10_18_080001_add_target_name_index_to_restv2_audit_events_table.php
 database/factories/MailcowRows.php                # + syncJob(), alias()/aliasDomain() if 004 left none
 database/seeders/DevelopmentSeeder.php            # + sync jobs for the quickstart
 routes/api.php                                    # sync-job routes, specific before {syncJobId}
@@ -273,7 +269,7 @@ Features are implemented in number order, so 008 builds on code that already exi
   (extended here), `AuditLogger`, `IdentityService`, `ListQuery`, `ETag`, the middleware, the test
   toolkit and the `Mailbox`, `Domain` and `DomainAdminAssignment` models.
 - **002**:
-  - the `listAuditEvents` filters `targetType` and `targetId` (002 FR-058);
+  - the generic `listAuditEvents` filters `targetType` and `targetId`;
   - the port of `is_valid_domain_name()`;
   - the bulk-result plumbing;
   - the audit failure reasons `versionOutdated`, `validationFailed` and `conflict`.
@@ -284,17 +280,17 @@ Features are implemented in number order, so 008 builds on code that already exi
 If 002–004 named a shared piece differently, the tasks say to search for the ported legacy function
 before creating anything ("implemented once and reused").
 
-## Owner-level questions (defaults applied)
+## Owner decisions applied
 
-1. **Audit filter edit**: `targetMailbox` must be added to 001's `api/modules/audit/audit-events.yaml`.
-   *Default*: tasks.md does it as the first US6 task, after 002's `targetType` and `targetId`.
+The decisions are recorded in `docs/conventions.md`, "Capabilities, history and refusals":
 
-The page size was an open point too: the spec's assumptions called it operator-changeable, but the
-shared `Limit` parameter fixes it. It was aligned with `docs/conventions.md` in the spec during
-analysis.
+- capabilities live at `/capabilities/sync-jobs` (`getSyncJobsCapabilities`);
+- history uses the generic `targetType` and `targetId` audit filters, and this feature adds no
+  filter of its own;
+- `AuditFailureReason` is a shared, append-only enum.
+
+The page size is fixed project-wide, so the spec's assumption was aligned with the conventions.
 
 ## Complexity Tracking
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|---|---|---|
-| One contract change (the `targetMailbox` parameter on 001's `listAuditEvents`) is made by a task (first task of US6, before its tests), not during this design phase (constitution I asks for the contract before code) | FR-026 requires filtering the audit log by target mailbox. The concurrent-planning rules let this plan edit only its own modules and the shared enumerations, and features 002–013 extend the same operation. The change is additive, and the task still precedes every test and implementation task that uses it, so the order of constitution I is kept. | Using 001's existing `q` search over `target.name` (which holds the mailbox) was rejected: it is a substring match (`bob@` also matches `jimbob@`), not the exact filter FR-026 requires. Editing 001's module now would race with the other features' agents. |
+No violations. The design needs no change to another feature's operation.

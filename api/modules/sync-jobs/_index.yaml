@@ -1,7 +1,7 @@
 # Paths of the sync-jobs module: imapsync jobs that pull mail from remote IMAP accounts (feature 008).
 /sync-jobs:
   $ref: './sync-jobs.yaml'
-/sync-jobs/capabilities:
+/capabilities/sync-jobs:
   $ref: './sync-jobs-capabilities.yaml'
 /sync-jobs/bulk-actions:
   $ref: './sync-jobs-bulk-actions.yaml'

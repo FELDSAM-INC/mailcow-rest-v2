@@ -351,15 +351,15 @@ results, stored rows and audit records with the same mass action in the legacy U
 
 ### User Story 6 - Trace sync-job changes (Priority: P3)
 
-An administrator investigating a migration lists the audit log filtered by a sync job or a mailbox
-and sees every change: who created, edited, activated, deactivated, rescheduled or deleted a job,
+An administrator investigating a migration lists the audit log filtered by a sync job (its target
+type and identifier) and sees every change: who created, edited, activated, deactivated, rescheduled or deleted a job,
 when, from where, and what changed. No audit record ever contains the remote password.
 
 **Why this priority**: The constitution requires an audit record for every change, but sync jobs
 can be managed without reading the log.
 
 **Independent Test**: Make each kind of sync-job change, including refused ones, then list the
-audit log filtered by target and by mailbox, and confirm each change appears once with its actor,
+audit log filtered by target type and identifier, and confirm each change appears once with its actor,
 time, source address and changed attributes, and that no record contains the remote password.
 
 **Acceptance Scenarios**:
@@ -367,9 +367,9 @@ time, source address and changed attributes, and that no record contains the rem
 1. **Given** a job whose interval an administrator changed, **When** another administrator lists
    audit records for that job, **Then** the entry shows the actor, time, source address and the old
    and new interval, and the password is shown only as "changed" when it was changed.
-2. **Given** a mailbox user whose edit was refused because it lacked the permission, **When** an
-   administrator lists audit records for that mailbox, **Then** the refusal is listed with its
-   reason.
+2. **Given** a mailbox user whose edit of a job was refused because it lacked the permission,
+   **When** an administrator lists audit records for that job (or that user as actor), **Then** the
+   refusal is listed with its reason.
 3. **Given** a domain administrator or a mailbox user, **When** they request the audit log, **Then**
    the request is refused as forbidden (the audit log is administrators-only, as in feature 001).
 
@@ -646,9 +646,12 @@ time, source address and changed attributes, and that no record contains the rem
     MUST be recorded only as "changed", never as a value;
   - for a reschedule, that the schedule and last result were cleared;
   - for bulk actions, the identifier of the bulk request.
-- **FR-026**: Administrators MUST be able to filter the audit log by target type, target identifier
-  and target mailbox, in addition to the filters of feature 001 (FR-047 there). Domain
-  administrators and mailbox users MUST be refused the audit log.
+- **FR-026**: Administrators MUST be able to filter the audit log by target type and target
+  identifier, with the generic filters of `GET /audit-events` (`docs/conventions.md`, "Capabilities,
+  history and refusals"), in addition to the filters of feature 001 (FR-047 there). This feature adds
+  no audit filter of its own; the history of a mailbox's sync jobs is read per job
+  (`targetType=syncJob`) or through the mailbox's own history. Domain administrators and mailbox
+  users MUST be refused the audit log.
 - **FR-027**: Errors MUST follow feature 001's conventions (FR-049 and FR-055 there). This feature
   MUST document at least these error types: sync job not found, sync job already exists (duplicate),
   outdated version, forbidden (permission not held), and validation failed with field-level rule

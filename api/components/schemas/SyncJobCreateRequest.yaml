@@ -1,7 +1,7 @@
 type: object
 description: |
   A new sync job. Omitted members take the defaults of the legacy "Add sync job" form, which the
-  capabilities read (`GET /sync-jobs/capabilities`, `defaults`) also lists. The remote host, port,
+  capabilities read (`GET /capabilities/sync-jobs`, `defaults`) also lists. The remote host, port,
   user and password are always required. Unknown members are ignored.
 
   Every invalid member is reported at once in a `422` problem, with these rule codes besides the

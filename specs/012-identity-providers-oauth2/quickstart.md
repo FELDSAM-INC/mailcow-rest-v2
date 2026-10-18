@@ -71,21 +71,15 @@ skips a realm that already exists: after changing the JSON, recreate the contain
 their service names (`openldap`, `http://keycloak:8080`).
 
 The session cookie is always Secure, so the API is called over the HTTPS listener (`-k`, see 001's
-quickstart). The mailbox template "Staff" is created with `POST /mailbox-templates` (feature 003);
-while that operation is still pending, insert it directly:
-
-```bash
-docker compose exec mariadb mariadb -u mailcow -pmailcow mailcow -e "INSERT INTO templates (template, type, attributes)
-  VALUES ('Staff', 'mailbox', '{\"quota\":2147483648,\"tags\":[\"staff\"],\"active\":1,\"force_pw_update\":0,\"force_tfa\":0,
-  \"sogo_access\":1,\"imap_access\":1,\"pop3_access\":1,\"smtp_access\":1,\"sieve_access\":1,\"eas_access\":1,\"dav_access\":1,
-  \"tls_enforce_in\":0,\"tls_enforce_out\":0,\"quarantine_notification\":\"hourly\",\"quarantine_category\":\"reject\",
-  \"rl_value\":\"\",\"rl_frame\":\"s\"}')"
-```
+quickstart).
 
 ```bash
 B=https://127.0.0.1:18443/api/v2; J='-H Content-Type:application/json'; C='-k -c jar -b jar'; C2='-k -c jar2 -b jar2'
 T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session -d '{"username":"admin","password":"Passw0rd!dev"}' >/dev/null
+# The mailbox template "Staff" of the attribute mapping (feature 003): 2 GiB quota, tag "staff".
+curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailbox-templates \
+  -d '{"name":"Staff","quota":2147483648,"tags":["staff"]}' | jq .data.name
 
 # US1: no configuration yet; the capabilities already list the return addresses to register.
 curl -s $C $B/identity-provider | jq .type             # ".../identity-provider-not-configured"

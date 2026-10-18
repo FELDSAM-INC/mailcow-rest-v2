@@ -872,3 +872,69 @@ Each story ends with its checkpoint green and contract coverage growing towards 
   `MailboxProvisioner` through 003's mailbox service (`mailbox` and related rows), and 001's
   `RecentLoginRecorder` and `PasswordSignInService` (`sasl_log`, `tfa`). Controllers never write.
 - Commit after each task or logical group, with short imperative subjects and no AI attribution.
+
+---
+
+## Implementation notes (2026-10-18)
+
+Deviations and decisions made while implementing, with the reason. Names in tasks that differ from
+what exists map as listed.
+
+- **Names**: 003's mailbox services are `App\Services\Mailboxes\MailboxCreator::create()` and
+  `MailboxUpdater::update()` (this file's `MailboxService::create()`/`update()`). Both gained one
+  trailing, optional `$options` array, added in 003's own files and covered by 003's
+  `UpdateMailboxTest`: `templateMarker` (recorded in `attributes.attribute_hash` instead of `''`; an
+  update whose values are unchanged writes only the marker, without an audit record), `auditActor`
+  and `auditDetails`. Callers without options behave exactly as before.
+- **T013, T022**: no `App\Support\Http\BulkResult`: 002's `App\Support\Bulk\BulkActionRunner` builds
+  the contract's `BulkResult` (unit test `tests/Unit/Support/BulkActionRunnerTest.php`). Its `$apply`
+  callback may now return an array of members to add to the item result (G42's shown-once
+  `clientSecret`); a string is still the new `version`. The duplicate-target fix made in US5 was
+  superseded on rebase by main's resolve-every-target-first loop (003, G39), which covers the same
+  case (a second spelling of a client that an earlier item deleted).
+- **T017**: `IdentityProviderType` is an enum in `App\Auth` (beside `AuthMethod` and the new
+  `PasswordSource`); 003 has no helper of its own for it.
+- **T022**: the rules are separate files (`app/Rules/HttpUrl.php` and so on); `CodedRule` gained a
+  protected `remember()`, and `PrecomputedViolation` (implicit rule) reports violations that a
+  service found before validation (secret retention).
+- **Phase 2/US1**: `tests/Support/Contract/OpenApiContract.php` sets opis' `allowDefaults` to `false`:
+  with defaults applied, `unevaluatedProperties` refused members declared in `allOf` branches with a
+  `default` (the identity provider schemas). The whole suite passes with it.
+- **T045, T084**: the refusal target resolvers follow 002's pattern
+  (`IdentityProviderAuditTargetResolver`, `Oauth2ClientAuditTargetResolver`, registered on 001's
+  `RefusalAuditor`); a refused whole bulk request records 002's keys `targetIds` and `bulkAction`
+  (the plan's `itemIds`).
+- **T050, T068**: fail2ban checks use 001's `ChannelSpy::fail2ban()`
+  (`assertPublished()`, `assertNothingPublished()`).
+- **T063**: no `SingleSignOnStartResource`: `SingleSignOnController::store()` returns the two members
+  (`authorizationUrl`, `expiresAt`) directly, as 001's small controllers do.
+- **T002**: `bshaffer/oauth2-server-php` (dev only) is pinned to `1.11.1` (not `^1.11`), the version legacy
+  ships; 1.14 expects PKCE columns that mailcow's `oauth_authorization_codes` does not have.
+- **T025**: the Keycloak admin lookup asks `GET /users?email=<address>&exact=true`, as the tests
+  require; legacy omits `exact`, so Keycloak matches substrings and legacy takes the first user.
+- **T059 (deviation)**: a sign-in update from the mapped template applies the mailbox values that
+  003's `MailboxPatch` carries, the rate limit and the tagged-mail handling; the template's TLS
+  enforcement and quarantine notification values are applied on creation only, because their
+  change belongs to feature 005, which has no service yet. Legacy applies them on update too.
+- **T061**: a single sign-on session whose Redis link is missing (expired or flushed) continues
+  without renewal, like a session without a refresh token; the next configuration, authsource or
+  mailbox check still ends it.
+- **T089**: the authorization address returned by `POST /session/single-sign-on` carries the state
+  by design (the provider must send it back); the secret scan strips it from that one response and
+  checks every other output for it.
+- **T090**: written early, with the foundation (the LDAP adapter's integration test, group `idp`).
+- **T088**: a passkey sign-in under `force_sso` is not tested separately; the matrix covers the
+  password and single sign-on paths.
+- **G42** (added task T095): `renewSecret` in `POST /oauth2-clients/bulk-actions`; the owner decided
+  that stored client secrets are shown only once, at creation or renewal (also by `renewSecret`),
+  and never in lists or reads.
+- **G21**: Keycloak 26.0.7 in the `idp` profile imports `docker/keycloak/example-realm.json` (realm
+  `example`, client `mailcow`, user `anna@example.org`); the import skips an existing realm.
+- **T094**: Part B was run by hand against the dev stack (inside a compose project without host
+  ports, from the `app` container) with the real OpenLDAP and Keycloak: every expected result held,
+  including single sign-on with creation from "Staff", renewal after 5 minutes against Keycloak, the
+  session end after disabling the user, the provider error report, the mailpassword flow and `503`
+  with `Retry-After: 30` while Keycloak was stopped. Drift fixed in quickstart.md: HTTPS listener,
+  no OpenLDAP host port, the imported realm instead of manual Keycloak setup, `POST
+  /mailbox-templates` for "Staff", and the single sign-on steps run from the `app` container
+  (`keycloak` resolves only there; Keycloak's cookies are sent by hand). Part C is not run.

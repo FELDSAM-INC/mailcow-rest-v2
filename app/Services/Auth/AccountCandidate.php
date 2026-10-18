@@ -16,6 +16,9 @@ final readonly class AccountCandidate
         public Role $role,
         public string $passwordHash,
         public CandidateStatus $status,
+        // Feature 012: mailcow's authentication source of a mailbox (`mailcow`, `ldap`, `keycloak`,
+        // `generic-oidc`); null for administrators.
+        public ?string $authsource = null,
     ) {}
 
     public function accountKind(): AccountKind

@@ -64,7 +64,7 @@ class AccountResolver
                     ($mailbox->authsource ?? 'mailcow') !== 'mailcow' => CandidateStatus::ExternalIdentitySource,
                     (int) $mailbox->active !== 1 || (int) $mailbox->d_active !== 1 => CandidateStatus::Inactive,
                     default => CandidateStatus::Usable,
-                });
+                }, (string) ($mailbox->authsource ?? 'mailcow'));
             }
         }
 

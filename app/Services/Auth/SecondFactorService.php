@@ -194,12 +194,15 @@ class SecondFactorService
                 break;
         }
 
+        $source = $pending['passwordSource'];
         $principal = new Principal(
             username: $username,
             role: $pending['role'],
             accountKind: $pending['accountKind'],
-            authMethod: AuthMethod::PasswordAndSecondFactor,
+            authMethod: $source->method(true),
             signedInAt: CarbonImmutable::now('UTC'),
+            identityProvider: $source->identityProvider(),
+            passwordSource: $source,
         );
 
         // The account may have been deactivated since the password step.
@@ -210,11 +213,17 @@ class SecondFactorService
             throw new ProblemException(ProblemType::SignInFailed);
         }
 
-        DB::transaction(fn () => $this->audit->success($principal, [
+        $audit = [
             'requestedRole' => $details['requestedRole'],
             'secondFactorType' => $type,
             'restricted' => $this->pendingActions->evaluate($principal) !== [],
-        ]));
+        ];
+
+        if ($source->identityProvider() !== null) {
+            $audit['identityProvider'] = $source->identityProvider()->value;
+        }
+
+        DB::transaction(fn () => $this->audit->success($principal, $audit));
 
         $this->sessions->promote($session, $principal, $request->userAgent());
         $this->throttle->clear($key);

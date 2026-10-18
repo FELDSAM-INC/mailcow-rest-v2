@@ -96,7 +96,7 @@ class SessionManager
     /**
      * The pending sign-in, unless it is missing or expired.
      *
-     * @return array{username: string, role: Role, accountKind: AccountKind, methodIds: list<int>, expiresAt: CarbonImmutable, requestedRole: Role|null}|null
+     * @return array{username: string, role: Role, accountKind: AccountKind, methodIds: list<int>, expiresAt: CarbonImmutable, requestedRole: Role|null, passwordSource: PasswordSource}|null
      */
     public function pending(Session $session): ?array
     {
@@ -120,6 +120,7 @@ class SessionManager
             'methodIds' => array_values(array_map('intval', (array) ($data['methodIds'] ?? []))),
             'expiresAt' => CarbonImmutable::createFromTimestampUTC((int) $data['expiresAt']),
             'requestedRole' => Role::tryFrom((string) ($data['requestedRole'] ?? '')),
+            'passwordSource' => PasswordSource::tryFrom((string) ($data['passwordSource'] ?? '')) ?? PasswordSource::Mailcow,
         ];
     }
 
@@ -129,8 +130,9 @@ class SessionManager
      *
      * @param  list<int>  $methodIds  the usable second factors, in presentation order
      * @param  Role|null  $requestedRole  the role the sign-in named, kept for the audit record
+     * @param  PasswordSource  $passwordSource  who verified the password (feature 012)
      */
-    public function beginPending(Session $session, string $username, Role $role, AccountKind $kind, array $methodIds, ?string $userAgent, ?Role $requestedRole = null): CarbonImmutable
+    public function beginPending(Session $session, string $username, Role $role, AccountKind $kind, array $methodIds, ?string $userAgent, ?Role $requestedRole = null, PasswordSource $passwordSource = PasswordSource::Mailcow): CarbonImmutable
     {
         $expiresAt = CarbonImmutable::now('UTC')->addSeconds($this->challengeTtl());
 
@@ -144,6 +146,8 @@ class SessionManager
             'expiresAt' => $expiresAt->getTimestamp(),
             'userAgentHash' => self::userAgentHash($userAgent),
             'requestedRole' => $requestedRole?->value,
+            // Feature 012: who verified the password (the method of the session after the second factor).
+            'passwordSource' => $passwordSource->value,
         ]);
         $this->touch($session);
 

@@ -546,12 +546,12 @@ work against the dev Keycloak.
 
 ### Tests for User Story 3 (write first, observe failing) ⚠️
 
-- [ ] T065 [P] [US3] Write `tests/Feature/IdentityProvider/KeycloakServiceTokenCacheTest.php` (R3):
+- [X] T065 [P] [US3] Write `tests/Feature/IdentityProvider/KeycloakServiceTokenCacheTest.php` (R3):
   an active cached `access_token` is introspected and reused; an inactive or empty one leads to a
   client credentials request and the new token is stored in the `access_token` row; a refused
   request → unavailable; every call carries the 7 s timeout and the `verify` option of
   `ignoreTlsErrors` (FR-056); the configuration's version tag is unchanged by the token write.
-- [ ] T066 [P] [US3] Write `tests/Feature/Auth/LdapPasswordSignInTest.php` (FR-029 to FR-031):
+- [X] T066 [P] [US3] Write `tests/Feature/Auth/LdapPasswordSignInTest.php` (FR-029 to FR-031):
   AS-1 an LDAP mailbox with the directory password → `201`, `authMethod: directoryPassword`,
   `sasl_log` row; with a TOTP entry → `pendingSecondFactor`, then after the code `active` with
   `directoryPasswordAndSecondFactor`; `FakeLdapDirectory` searched
@@ -561,13 +561,13 @@ work against the dev Keycloak.
   first; a malformed username → `sign-in-failed` before any directory call; the template update
   (T053's checks) happens before the second-factor step; the connection settings carry port 636 for
   SSL on 389.
-- [ ] T067 [P] [US3] Write `tests/Feature/Auth/KeycloakPasswordSignInTest.php` (FR-029, AS-5): the
+- [X] T067 [P] [US3] Write `tests/Feature/Auth/KeycloakPasswordSignInTest.php` (FR-029, AS-5): the
   users lookup `GET /admin/realms/example/users?email=anna%40example.org&exact=true` with the bearer
   token; `mailcow_password` in `{BLF-CRYPT}` and `{SSHA512}` verified through 001's
   `LegacyPasswordVerifier` → `201 providerPassword`; a `401` from the admin API is retried once with
   a new token; the mailpassword flow off → `sign-in-failed` without fail2ban
   (`externalIdentitySource`); display name for creation from `firstName` and `lastName`.
-- [ ] T068 [P] [US3] Write `tests/Feature/Auth/ProviderPasswordFailuresTest.php` (FR-033, SC-008):
+- [X] T068 [P] [US3] Write `tests/Feature/Auth/ProviderPasswordFailuresTest.php` (FR-033, SC-008):
   wrong directory password and unknown directory user → `401 sign-in-failed`, the exact fail2ban
   message `mailcow UI: Invalid password for <user> by <ip>` (`ChannelSpy`), a throttle count and an
   audit `invalidCredentials` (AS-2); directory unreachable, timeout, refused service bind, Keycloak
@@ -578,7 +578,7 @@ work against the dev Keycloak.
   incomplete configuration → 001's `externalIdentitySource` handling; a throttled username and
   address → `429` and `FakeLdapDirectory::assertNotContacted()` / `Http::assertNothingSent()`; ten
   wrong passwords give the same number of fail2ban messages as legacy would.
-- [ ] T069 [P] [US3] Write `tests/Feature/Auth/ProviderPasswordProvisioningTest.php` (FR-032, FR-034 to
+- [X] T069 [P] [US3] Write `tests/Feature/Auth/ProviderPasswordProvisioningTest.php` (FR-032, FR-034 to
   FR-039): AS-3 `carl@example.org` without a mailbox, LDAP verifies → mailbox created from "Staff"
   (`attributeField` `title`), name `Carl Example`, stored rows as in T051's SC-001 comparison, then
   `201`; creation off → `sign-in-failed`
@@ -590,15 +590,15 @@ work against the dev Keycloak.
 
 ### Implementation for User Story 3
 
-- [ ] T070 [US3] Create `app/Services/IdentityProvider/KeycloakServiceTokenCache.php` (`token(config):
+- [X] T070 [US3] Create `app/Services/IdentityProvider/KeycloakServiceTokenCache.php` (`token(config):
   string` with introspection, fetch and the `access_token` upsert of the data model; `invalidate()`)
   (R3). This makes T065 pass.
-- [ ] T071 [US3] Create `app/Services/IdentityProvider/ProviderVerification.php` and
+- [X] T071 [US3] Create `app/Services/IdentityProvider/ProviderVerification.php` and
   `ProviderPasswordVerifier.php` (`verify(IdentityProviderConfig, string $username, string $password):
   ProviderVerification` with `verifyLdap()` through `LdapDirectory::findAndBind()` and
   `verifyKeycloak()` through the token cache, `KeycloakAdminClient::findUsersByEmail()` and
   `LegacyPasswordVerifier`, R2 and R3).
-- [ ] T072 [US3] Extend feature 001's `app/Services/Auth/AccountResolver.php` (mailbox candidates carry
+- [X] T072 [US3] Extend feature 001's `app/Services/Auth/AccountResolver.php` (mailbox candidates carry
   `authsource`) and `app/Services/Auth/PasswordSignInService.php` with the provider branch and the
   outcome table of R8, with every provider call made before 001's sign-in transaction opens so that no
   database transaction waits on the provider: verification for `ldap`/`keycloak` candidates, the no-account path (FR-032)

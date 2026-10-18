@@ -96,8 +96,10 @@ lists the map change with its sizes.
 
 1. **Install the extensions of the deployment** (research R26): merge the new volumes, environment
    variables and ofelia labels of `deploy/docker-compose.override.yml`, copy the updated
-   `deploy/nginx/site.restv2.custom`, then `docker compose up -d restv2-mailcow` and
-   `docker compose restart nginx-mailcow ofelia-mailcow`. For the FeldHost deployment add
+   `deploy/nginx/site.restv2.custom`, then `docker compose up -d --no-deps restv2-mailcow`,
+   reload nginx only after the test passes
+   (`docker exec <nginx container> nginx -t && docker exec <nginx container> nginx -s reload`), and
+   run `docker compose restart ofelia-mailcow` so that the new ofelia labels are read. For the FeldHost deployment add
    `RESTV2_LICENSE_VERIFICATION=false`. If `$LOGO_LIMITS['max_size']` was raised above 15 MiB, raise
    the logo location's `client_max_body_size` as well.
 2. **Permissions**: `docker compose exec restv2-mailcow id -u` prints `82`;

@@ -1,0 +1,13 @@
+description: |
+  One queued message of a queue action, extending `BulkTarget`. The ID consists of hexadecimal
+  characters only, as legacy accepts. Queued messages carry no version tag, so `version` must not
+  be sent.
+allOf:
+  - $ref: './BulkTarget.yaml'
+  - type: object
+    properties:
+      id:
+        type: string
+        pattern: '^[0-9A-Fa-f]{1,32}$'
+        description: Postfix queue ID.
+      version: false

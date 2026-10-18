@@ -1,0 +1,7 @@
+description: |
+  mailcow's container service reported a failure (type `/api/v2/problems/container-action-failed`).
+  `serviceMessage` carries its message. Read the container again to see its state.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ContainerProblem.yaml'

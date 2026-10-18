@@ -1,0 +1,32 @@
+post:
+  operationId: flushMailQueue
+  tags: [Mail queue]
+  summary: Flush the queue
+  description: |
+    Asks Postfix to attempt delivery of every queued message that is not on hold (`postqueue -f`,
+    legacy "Flush queue"). The response comes once Postfix has accepted the request; delivery
+    continues in the background and shows in later listings. Held messages stay on hold. A stopped
+    Postfix container answers `mail-service-not-running`. Needs an administrator session or a
+    read-write key owned by an administrator. Audited; when the audit log cannot be written before
+    the action, it is refused with `temporary-failure`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailQueueActionResultResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/MailQueueConflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '502':
+      $ref: '../../components/responses/MailQueueActionFailed.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'
+    '504':
+      $ref: '../../components/responses/MonitoringOutcomeUnknown.yaml'

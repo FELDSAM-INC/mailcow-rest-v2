@@ -1,0 +1,27 @@
+get:
+  operationId: getPublicAddresses
+  tags: [Host and installation]
+  summary: Look up the server's public addresses
+  description: |
+    Asks mailcow's external check service for the server's public IPv4 and IPv6 addresses, as
+    seen from outside. Only when the IP check of the legacy customisation settings is enabled
+    (`MonitoringCapabilities.ipCheckEnabled`); otherwise the request is refused with
+    `ip-check-disabled` and no outbound request is made. An address is `null` when the service does
+    not answer with a valid address of that family (10 seconds to connect, 15 seconds in total).
+    Not cached. Administrators only, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/PublicAddressesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/PublicAddressesIpCheckDisabled.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

@@ -1,0 +1,10 @@
+name: network
+in: path
+required: true
+description: |
+  The banned network in prefix notation, exactly as listed in `Fail2BanActiveBan.network`, with
+  the `/` percent-encoded: `203.0.113.0%2F24`, `2001%3Adb8%3A%3A%2F64`.
+schema:
+  type: string
+  minLength: 3
+  maxLength: 49

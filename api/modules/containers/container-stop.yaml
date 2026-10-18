@@ -1,0 +1,44 @@
+parameters:
+  - $ref: '../../components/parameters/ContainerName.yaml'
+post:
+  operationId: stopContainer
+  tags: [Containers]
+  summary: Stop a container
+  description: |
+    **Destructive**: the container's service is interrupted until it is started again. Clients
+    must ask for confirmation and name the container; the API needs no confirmation token.
+
+    Stops a running container, retrying up to 4 attempts 1.5 seconds apart, as legacy does. A
+    container that is not running is reported with `outcome: alreadyInState` and nothing changes.
+    Protected containers (by default the container service, the database, the key-value store, the
+    reverse proxy and this API's own container) are refused with `container-protected`. Needs an
+    administrator session or a read-write key owned by an administrator.
+
+    The response comes when the outcome is known, or after the container-service timeout (60
+    seconds by default): a timeout answers `outcome-unknown`. Exactly one audit record is
+    written, also for refusals. When the audit log cannot be written before the action, the request
+    is refused with `temporary-failure` and nothing is done.
+  x-destructive: true
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/ContainerActionResultResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/ContainerConflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '502':
+      $ref: '../../components/responses/ContainerActionFailed.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'
+    '504':
+      $ref: '../../components/responses/MonitoringOutcomeUnknown.yaml'

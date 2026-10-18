@@ -1,0 +1,25 @@
+# Paths of the logs module: every log mailcow keeps (feature 011). Unknown log types answer 404.
+/logs/postfix:
+  $ref: './logs-postfix.yaml'
+/logs/dovecot:
+  $ref: './logs-dovecot.yaml'
+/logs/sogo:
+  $ref: './logs-sogo.yaml'
+/logs/netfilter:
+  $ref: './logs-netfilter.yaml'
+/logs/autodiscover:
+  $ref: './logs-autodiscover.yaml'
+/logs/watchdog:
+  $ref: './logs-watchdog.yaml'
+/logs/acme:
+  $ref: './logs-acme.yaml'
+/logs/cron:
+  $ref: './logs-cron.yaml'
+/logs/rate-limits:
+  $ref: './logs-rate-limits.yaml'
+/logs/legacy-api-requests:
+  $ref: './logs-legacy-api-requests.yaml'
+/logs/legacy-ui-activity:
+  $ref: './logs-legacy-ui-activity.yaml'
+/logs/logins:
+  $ref: './logs-logins.yaml'

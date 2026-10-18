@@ -1,0 +1,31 @@
+parameters:
+  - $ref: '../../components/parameters/MailQueueId.yaml'
+get:
+  operationId: getMailQueueMessageContent
+  tags: [Mail queue]
+  summary: View a queued message
+  description: |
+    The complete content of one queued message as Postfix shows it (`postcat -q`): envelope
+    records, headers and body. Queued mail contains personal data: **every view is audited** with
+    the queue ID, never the content, including views of a message that already left the queue
+    (`404`). Administrators only; a read-only key owned by an administrator may view content too.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailQueueMessageContentResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/MailQueueConflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '502':
+      $ref: '../../components/responses/MailQueueActionFailed.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

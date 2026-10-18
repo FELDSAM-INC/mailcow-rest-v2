@@ -1,0 +1,12 @@
+type: object
+required: [name, score, options]
+properties:
+  name:
+    type: string
+  score:
+    type: number
+  options:
+    type: array
+    items:
+      type: string
+additionalProperties: false

@@ -1,0 +1,89 @@
+type: object
+description: |
+  Settings of mailcow's ban service (legacy "Fail2ban"; Redis `F2B_OPTIONS`, `F2B_WHITELIST`,
+  `F2B_BLACKLIST`). When the ban service has never stored settings, its defaults are reported and
+  `stored` is `false`; saving then stores a complete set.
+
+  Values are shown as stored, even when they are outside the rules that edits enforce (for example
+  values written by legacy). The ban service applies the parameters at its next ban decision and at
+  least every 10 seconds, and the allowlist and denylist within 60 seconds, without a restart; host
+  names are resolved each time. A denylisted address or network is banned permanently; the denylist
+  wins over an overlapping allowlist entry.
+
+  `etag` covers the parameter values, both lists (as sets) and the ban list ID. It changes when a
+  value changes, whoever changed it, and not when the ban service stores the same values again or
+  when bans come and go.
+required:
+  - banTime
+  - maxBanTime
+  - banTimeIncrement
+  - maxAttempts
+  - retryWindow
+  - ipv4PrefixLength
+  - ipv6PrefixLength
+  - externallyEnforced
+  - allowlist
+  - denylist
+  - banListId
+  - banListUrl
+  - stored
+  - banServiceRunning
+  - etag
+properties:
+  banTime:
+    type: integer
+    description: Ban time in seconds (default 1,800).
+  maxBanTime:
+    type: integer
+    description: Maximum ban time in seconds when the ban time grows (default 10,000).
+  banTimeIncrement:
+    type: boolean
+    description: Whether the ban time doubles with each repeated ban of a network, up to `maxBanTime` (default `true`).
+  maxAttempts:
+    type: integer
+    description: Failed attempts within `retryWindow` that trigger a ban (default 10).
+  retryWindow:
+    type: integer
+    description: Window in seconds within which failed attempts count (default 600).
+  ipv4PrefixLength:
+    type: integer
+    description: Prefix length of the IPv4 network a ban covers (default 32).
+  ipv6PrefixLength:
+    type: integer
+    description: Prefix length of the IPv6 network a ban covers (default 128).
+  externallyEnforced:
+    type: boolean
+    description: When `true`, the ban service only maintains the ban list and an external firewall enforces it (legacy `manage_external`, default `false`).
+  allowlist:
+    type: array
+    description: Addresses, networks in prefix notation and host names that are never banned, sorted naturally.
+    items:
+      type: string
+  denylist:
+    type: array
+    description: Addresses and networks that are banned permanently, sorted naturally. Removing an entry lifts its permanent ban.
+    items:
+      type: string
+  banListId:
+    description: Identifier in the public ban list address, `null` before the ban service generated one.
+    oneOf:
+      - type: string
+      - type: 'null'
+  banListUrl:
+    description: Public ban list address (`https://<MAILCOW_HOSTNAME>/f2b-banlist?id=<banListId>`), served by the legacy stack.
+    oneOf:
+      - type: string
+        format: uri
+      - type: 'null'
+  stored:
+    type: boolean
+    description: '`false` when nothing is stored and the ban service defaults are reported.'
+  banServiceRunning:
+    description: Whether the ban service container is running, `null` when the container service cannot tell. When it is not running, changes are saved and take effect once it runs.
+    oneOf:
+      - type: boolean
+      - type: 'null'
+  etag:
+    type: string
+    description: Version tag, equal to the `ETag` header.
+additionalProperties: false

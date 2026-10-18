@@ -1,0 +1,25 @@
+get:
+  operationId: getRspamdStatistics
+  tags: [Rspamd]
+  summary: Get Rspamd's statistics
+  description: |
+    Scanned and learned messages, spam and ham counts, the count per action as Rspamd names the
+    actions, connections, control connections, the Bayes statistics files and the fuzzy hashes per
+    storage, read from the Rspamd controller at request time. Fields Rspamd reports beyond these are
+    not passed through. The merged action chart of the legacy dashboard is feature 006's. An
+    unreachable controller answers `temporary-failure`. Administrators only, read-only keys
+    included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/RspamdStatisticsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

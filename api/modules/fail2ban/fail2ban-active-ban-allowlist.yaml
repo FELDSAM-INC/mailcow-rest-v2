@@ -1,0 +1,32 @@
+parameters:
+  - $ref: '../../components/parameters/Fail2BanNetwork.yaml'
+post:
+  operationId: allowlistFail2BanBan
+  tags: [Fail2ban]
+  summary: Lift an active ban and allowlist its network
+  description: |
+    Adds the network to the allowlist, removes it from the denylist and queues the ban for lifting
+    (legacy "Whitelist"), in one atomic change. The ban service lifts the ban within about 10 seconds
+    and applies the allowlist within 60 seconds.
+
+    Only for an active ban: a network that is not actively banned (including a ban that expired
+    meanwhile) answers `404`. No version tag is needed, because the action adds or removes single
+    entries. Needs an administrator session or a read-write key owned by an administrator. Audited
+    with the network and the list changes.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/Fail2BanBanActionResultResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

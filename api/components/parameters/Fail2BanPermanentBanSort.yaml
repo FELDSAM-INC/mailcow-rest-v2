@@ -1,0 +1,8 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `startedAt` with `order=desc` (newest first). `network` sorts by address, then prefix length. Ties are broken by network.
+schema:
+  type: string
+  enum: [startedAt, network]
+  default: startedAt

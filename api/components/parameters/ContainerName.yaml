@@ -1,0 +1,7 @@
+name: containerName
+in: path
+required: true
+description: Compose service name of the container, for example `postfix-mailcow`.
+schema:
+  type: string
+  pattern: '^[a-z0-9][a-z0-9_.-]{0,62}$'

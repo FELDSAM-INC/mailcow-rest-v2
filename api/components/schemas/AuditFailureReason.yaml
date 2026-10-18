@@ -44,6 +44,16 @@ description: |
     `serviceFailure` and `outcomeUnknown` (container service), plus `demoMode` (customisation
     refused in demo mode), `featureDisabled` (license verification disabled) and `fileUnavailable`
     (the shared map or filter file does not exist).
+  - Account self-service (feature 005) uses `externalIdentitySource` (password managed
+    externally), `permissionDenied` (a missing permission flag, `details.flag`), `versionOutdated`,
+    `validationFailed`, `temporaryFailure`, `notFound`, `throttled`, `challengeExpired` (enrolment
+    expired), `registrationFailed` (enrolment rejected), `secondFactorFailed`,
+    `secondFactorUnavailable`, `verificationUnavailable` and `featureDisabled` (groupware disabled,
+    password reset unavailable), plus `currentPasswordIncorrect`, `lastSecondFactor`,
+    `secondFactorRequiredByPolicy`, `notConfigured` (no Pushover credentials stored),
+    `invalidResetToken`, and for reset requests `unknownAccount`, `accountNotEligible` (inactive,
+    resource or external-source mailbox), `noRecoveryEmail`, `tokenLimitReached` and
+    `messageNotSent`.
 enum:
   - invalidCredentials
   - accountInactive
@@ -84,3 +94,13 @@ enum:
   - demoMode
   - featureDisabled
   - fileUnavailable
+  - currentPasswordIncorrect
+  - unknownAccount
+  - accountNotEligible
+  - noRecoveryEmail
+  - tokenLimitReached
+  - messageNotSent
+  - invalidResetToken
+  - lastSecondFactor
+  - secondFactorRequiredByPolicy
+  - notConfigured

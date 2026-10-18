@@ -1,0 +1,26 @@
+parameters:
+  - $ref: '../../components/parameters/ContainerName.yaml'
+get:
+  operationId: getContainer
+  tags: [Containers]
+  summary: Get a container
+  description: |
+    One container by its service name. A container of another project, a hidden optional container
+    or an unknown name answers `404`. States are at most 5 seconds old. Administrators only,
+    read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/ContainerResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

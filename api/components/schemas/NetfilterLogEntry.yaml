@@ -1,0 +1,21 @@
+type: object
+description: One entry of the ban service log (Redis list `NETFILTER_LOG`).
+required: [id, time, priority, severity, message]
+properties:
+  id:
+    type: string
+    maxLength: 64
+    description: Opaque cursor of the entry (see `before`).
+  time:
+    type: string
+    format: date-time
+  priority:
+    type: string
+    description: Priority as stored (`crit`, `warn`, `info`).
+  severity:
+    oneOf:
+      - $ref: './LogSeverity.yaml'
+      - type: 'null'
+  message:
+    type: string
+additionalProperties: false

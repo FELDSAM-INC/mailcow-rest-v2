@@ -1,0 +1,116 @@
+type: object
+description: |
+  Server settings and limits a client needs before it polls, pages or acts. The values reflect the
+  current configuration and contain no secret or connection detail. Reading them needs no
+  container service.
+required: [ipCheckEnabled, pollIntervalSeconds, maxAgeSeconds, logRetention, clientAddress, limits]
+properties:
+  ipCheckEnabled:
+    type: boolean
+    description: |
+      Whether the IP check of the legacy customisation settings is enabled (Redis `IP_CHECK`). When
+      it is off, `GET /host/public-addresses` answers `ip-check-disabled`. Editing it belongs to
+      feature 013.
+  pollIntervalSeconds:
+    type: integer
+    minimum: 1
+    description: Recommended polling interval for the overview and resource usage while visible (5).
+  maxAgeSeconds:
+    type: object
+    description: Maximum age of each kind of live data when it is returned.
+    required: [containerStates, hostStatistics, containerResourceUsage, mailStorage]
+    properties:
+      containerStates:
+        type: integer
+        description: Container states (5).
+      hostStatistics:
+        type: integer
+        description: Host figures of the system overview (10).
+      containerResourceUsage:
+        type: integer
+        description: Newest container resource sample while a client polls at the recommended interval (15).
+      mailStorage:
+        type: integer
+        description: Mail storage usage (60).
+    additionalProperties: false
+  logRetention:
+    type: object
+    description: Retention of each log type, keyed like the paths under `/logs`.
+    required:
+      - postfix
+      - dovecot
+      - sogo
+      - netfilter
+      - autodiscover
+      - watchdog
+      - acme
+      - cron
+      - rateLimits
+      - legacyApiRequests
+      - legacyUiActivity
+      - logins
+    properties:
+      postfix:
+        $ref: './MonitoringLogRetention.yaml'
+      dovecot:
+        $ref: './MonitoringLogRetention.yaml'
+      sogo:
+        $ref: './MonitoringLogRetention.yaml'
+      netfilter:
+        $ref: './MonitoringLogRetention.yaml'
+      autodiscover:
+        $ref: './MonitoringLogRetention.yaml'
+      watchdog:
+        $ref: './MonitoringLogRetention.yaml'
+      acme:
+        $ref: './MonitoringLogRetention.yaml'
+      cron:
+        $ref: './MonitoringLogRetention.yaml'
+      rateLimits:
+        $ref: './MonitoringLogRetention.yaml'
+      legacyApiRequests:
+        $ref: './MonitoringLogRetention.yaml'
+      legacyUiActivity:
+        $ref: './MonitoringLogRetention.yaml'
+      logins:
+        $ref: './MonitoringLogRetention.yaml'
+    additionalProperties: false
+  clientAddress:
+    type: string
+    description: |
+      The caller's own address as this API sees it, after mailcow's trusted proxies. Clients warn
+      before an administrator adds a denylist entry that covers it.
+  limits:
+    type: object
+    required:
+      - defaultPageSize
+      - maxPageSize
+      - mailQueueBulkMaxIds
+      - mailQueueListingMax
+      - fail2banRulesMax
+      - fail2banRuleMaxLength
+      - fail2banListMaxEntries
+    properties:
+      defaultPageSize:
+        type: integer
+        description: Default `limit` of every list (25).
+      maxPageSize:
+        type: integer
+        description: Maximum `limit` of every list (1,000).
+      mailQueueBulkMaxIds:
+        type: integer
+        description: Maximum number of queue IDs in one queue action (1,000).
+      mailQueueListingMax:
+        type: integer
+        description: Maximum number of queued messages a listing covers (10,000).
+      fail2banRulesMax:
+        type: integer
+        description: Maximum number of ban rules (100). At least one rule is required.
+      fail2banRuleMaxLength:
+        type: integer
+        description: Maximum length of one ban rule in characters (1,000).
+      fail2banListMaxEntries:
+        type: integer
+        description: Maximum number of entries in the allowlist and in the denylist (10,000 each).
+    additionalProperties: false
+additionalProperties: false

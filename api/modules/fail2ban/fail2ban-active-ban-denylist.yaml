@@ -1,0 +1,35 @@
+parameters:
+  - $ref: '../../components/parameters/Fail2BanNetwork.yaml'
+post:
+  operationId: denylistFail2BanBan
+  tags: [Fail2ban]
+  summary: Denylist the network of an active ban
+  description: |
+    Adds the network to the denylist and removes it from the allowlist (legacy "Blacklist"), in one
+    atomic change, with the denylist rules of `PATCH /fail2ban/settings` (`reservedNetwork` on the key
+    `network`). The ban service enforces the denylist entry as a permanent ban within 60 seconds,
+    without a restart. Clients should warn when the network covers the caller's own address.
+
+    Only for an active ban: a network that is not actively banned (including a ban that expired
+    meanwhile) answers `404`. No version tag is needed, because the action adds or removes single
+    entries. Needs an administrator session or a read-write key owned by an administrator. Audited
+    with the network and the list changes.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/Fail2BanBanActionResultResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

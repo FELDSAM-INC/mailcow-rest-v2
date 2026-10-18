@@ -1,0 +1,38 @@
+type: object
+description: |
+  One entry of the health check log (Redis list `WATCHDOG_LOG`). A health entry carries `service`
+  and the health figures, converted from text to numbers; a message entry carries only `message`.
+required: [id, time, service, healthLevelPercent, healthPointsNow, healthPointsTotal, healthPointsChange, message]
+properties:
+  id:
+    type: string
+    maxLength: 64
+    description: Opaque cursor of the entry (see `before`).
+  time:
+    type: string
+    format: date-time
+  service:
+    oneOf:
+      - type: string
+      - type: 'null'
+  healthLevelPercent:
+    oneOf:
+      - type: integer
+      - type: 'null'
+  healthPointsNow:
+    oneOf:
+      - type: integer
+      - type: 'null'
+  healthPointsTotal:
+    oneOf:
+      - type: integer
+      - type: 'null'
+  healthPointsChange:
+    oneOf:
+      - type: integer
+      - type: 'null'
+  message:
+    oneOf:
+      - type: string
+      - type: 'null'
+additionalProperties: false

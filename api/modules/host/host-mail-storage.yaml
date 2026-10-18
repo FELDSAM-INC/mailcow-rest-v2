@@ -1,0 +1,25 @@
+get:
+  operationId: getMailStorageUsage
+  tags: [Host and installation]
+  summary: Get the mail storage usage
+  description: |
+    Device, total, used and available space and used percentage of the disk holding the mail
+    storage, measured with `df -H` in the Dovecot container through mailcow's container service.
+    Values converted from rounded figures are marked `approximate`. When the measurement fails,
+    `measured` is `false` instead of zeros. Administrators only, read-only keys included.
+
+    **Freshness**: at most 60 seconds old (`collectedAt`), collected once for all clients.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailStorageUsageResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

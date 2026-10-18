@@ -1,0 +1,21 @@
+type: object
+description: |
+  The patterns that recognise failed logins in mailcow's logs (Redis `F2B_REGEX`). The ban service
+  stores mailcow's default rules when nothing is stored, at the next log line it receives; until
+  then `rules` is empty and `stored` is `false`. `etag` covers the ordered patterns; it does not
+  change when the ban service stores the same rules again.
+required: [rules, stored, banServiceRunning, etag]
+properties:
+  rules:
+    type: array
+    items:
+      $ref: './Fail2BanRule.yaml'
+  stored:
+    type: boolean
+  banServiceRunning:
+    oneOf:
+      - type: boolean
+      - type: 'null'
+  etag:
+    type: string
+additionalProperties: false

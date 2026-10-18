@@ -1,0 +1,61 @@
+type: object
+description: |
+  Whether a newer mailcow release exists (legacy `inc/ajax/update_check.php`). The check runs only
+  when the server setting enables it (on by default, off in the FeldHost deployment) and the
+  installed branch is the configured stable branch (`master` by default). It compares the creation
+  time of the newest release with that of the installed version's release, as legacy does.
+
+  - `upToDate`: no newer release.
+  - `updateAvailable`: `latestRelease` describes the newest release.
+  - `checkFailed`: the release source could not be reached, rate-limited the request, or has no
+    release for the installed version (for example a nightly build).
+  - `disabled`: the check is turned off, or the installation follows another branch. No outbound
+    request is made.
+
+  Results are cached per installed version: successful checks for 1 hour, failed checks for
+  5 minutes. Release notes are externally authored Markdown: clients must render them safely
+  (no raw HTML, no scripts, links opened without referrer).
+required: [status, installedVersion, latestRelease, installedReleaseNotes, collectedAt]
+properties:
+  status:
+    type: string
+    enum: [upToDate, updateAvailable, checkFailed, disabled]
+  installedVersion:
+    description: The installed version tag.
+    oneOf:
+      - type: string
+      - type: 'null'
+  latestRelease:
+    description: The newest release, present when `status` is `updateAvailable`.
+    oneOf:
+      - type: object
+        required: [tag, url, publishedAt, notes]
+        properties:
+          tag:
+            type: string
+          url:
+            type: string
+            format: uri
+            description: Address of the release page.
+          publishedAt:
+            oneOf:
+              - type: string
+                format: date-time
+              - type: 'null'
+          notes:
+            description: Release notes (externally authored Markdown).
+            oneOf:
+              - type: string
+              - type: 'null'
+        additionalProperties: false
+      - type: 'null'
+  installedReleaseNotes:
+    description: Release notes of the installed version (externally authored Markdown), when available.
+    oneOf:
+      - type: string
+      - type: 'null'
+  collectedAt:
+    type: string
+    format: date-time
+    description: When the result was produced (the time of the cached check, or now when disabled).
+additionalProperties: false

@@ -1,0 +1,80 @@
+type: object
+description: |
+  Rspamd's statistics (controller `/stat`). Only the documented fields are passed through. The
+  action counts are returned as Rspamd reports them; the merged view of the dashboard chart
+  (`rspamd/actions`) belongs to feature 006.
+required:
+  - scanned
+  - learned
+  - spamCount
+  - hamCount
+  - actions
+  - connections
+  - controlConnections
+  - statfiles
+  - fuzzyHashes
+  - collectedAt
+properties:
+  scanned:
+    type: integer
+    minimum: 0
+    description: Messages scanned since Rspamd started.
+  learned:
+    type: integer
+    minimum: 0
+    description: Messages learned.
+  spamCount:
+    type: integer
+    minimum: 0
+    description: Messages classified as spam.
+  hamCount:
+    type: integer
+    minimum: 0
+    description: Messages classified as ham.
+  actions:
+    type: object
+    description: Number of messages per action, keyed by Rspamd's action name.
+    additionalProperties:
+      type: integer
+      minimum: 0
+  connections:
+    type: integer
+    minimum: 0
+    description: Scanner connections.
+  controlConnections:
+    type: integer
+    minimum: 0
+    description: Controller connections.
+  statfiles:
+    type: array
+    description: Statistics files of the Bayes classifier.
+    items:
+      type: object
+      required: [symbol, type, revision, users]
+      properties:
+        symbol:
+          type: string
+          description: Classifier symbol, for example `BAYES_SPAM`.
+        type:
+          type: string
+          description: Backend, for example `redis`.
+        revision:
+          type: integer
+          minimum: 0
+          description: Number of learns.
+        users:
+          type: integer
+          minimum: 0
+          description: Number of users the file holds statistics for.
+      additionalProperties: false
+  fuzzyHashes:
+    type: object
+    description: Number of fuzzy hashes per fuzzy storage.
+    additionalProperties:
+      type: integer
+      minimum: 0
+  collectedAt:
+    type: string
+    format: date-time
+    description: When the statistics were read, in UTC.
+additionalProperties: false

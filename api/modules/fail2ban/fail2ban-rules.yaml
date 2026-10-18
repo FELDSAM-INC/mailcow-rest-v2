@@ -1,0 +1,61 @@
+get:
+  operationId: getFail2BanRules
+  tags: [Fail2ban]
+  summary: Get the ban rules
+  description: |
+    The ordered patterns that recognise failed logins in mailcow's logs, numbered from 1, and their
+    version tag. Administrators only, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/Fail2BanRulesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'
+put:
+  operationId: replaceFail2BanRules
+  tags: [Fail2ban]
+  summary: Replace the ban rules
+  description: |
+    Replaces the rules as a whole with 1 to 100 rules, numbered from 1 in the order given. Each rule
+    must compile in the ban service's regular-expression dialect (Python `re`) and contain a capture
+    group whose first group captures the client address. An invalid rule refuses the request with
+    `422`, naming it, and the stored rules stay unchanged. The ban service uses the new rules from
+    the next log line, without a restart. `If-Match` is optional. Needs an administrator session or
+    a read-write key owned by an administrator. Audited with the old and new rules.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/Fail2BanRulesReplaceRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/Fail2BanRulesResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

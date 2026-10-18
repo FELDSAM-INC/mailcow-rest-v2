@@ -1,0 +1,5 @@
+# Paths of the rspamd-stats module: Rspamd's scan history and statistics (feature 011).
+/rspamd/history:
+  $ref: './rspamd-history.yaml'
+/rspamd/statistics:
+  $ref: './rspamd-statistics.yaml'

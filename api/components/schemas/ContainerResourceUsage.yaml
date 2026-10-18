@@ -1,0 +1,84 @@
+type: object
+description: |
+  Resource usage of a running container (legacy `get/status/container/{id}`). The container
+  service samples a polled container for a few seconds; while a client polls every 5 seconds, the
+  newest sample is at most 15 seconds old. The first request after a pause answers within
+  5 seconds with one sample, so the rates are `null`; they appear once two samples at least one
+  second apart exist. Rates are computed between the two newest samples. Collection is shared
+  between clients.
+required: [containerName, sampledAt, previousSampledAt, cpuPercent, memory, disk, network]
+properties:
+  containerName:
+    type: string
+  sampledAt:
+    type: string
+    format: date-time
+    description: Time of the newest sample, in UTC.
+  previousSampledAt:
+    description: Time of the sample the rates are computed against, `null` when only one sample exists.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  cpuPercent:
+    description: Processor usage of the container in percent of one core times the number of cores, as `docker stats` shows it. `null` when it cannot be computed from one sample.
+    oneOf:
+      - type: number
+        minimum: 0
+      - type: 'null'
+  memory:
+    type: object
+    required: [usedBytes, limitBytes]
+    properties:
+      usedBytes:
+        type: integer
+        minimum: 0
+      limitBytes:
+        type: integer
+        minimum: 0
+    additionalProperties: false
+  disk:
+    type: object
+    required: [readBytes, writtenBytes, readBytesPerSecond, writeBytesPerSecond]
+    properties:
+      readBytes:
+        type: integer
+        minimum: 0
+        description: Cumulative bytes read.
+      writtenBytes:
+        type: integer
+        minimum: 0
+        description: Cumulative bytes written.
+      readBytesPerSecond:
+        oneOf:
+          - type: number
+            minimum: 0
+          - type: 'null'
+      writeBytesPerSecond:
+        oneOf:
+          - type: number
+            minimum: 0
+          - type: 'null'
+    additionalProperties: false
+  network:
+    type: object
+    required: [receivedBytes, sentBytes, receiveBytesPerSecond, sendBytesPerSecond]
+    properties:
+      receivedBytes:
+        type: integer
+        minimum: 0
+      sentBytes:
+        type: integer
+        minimum: 0
+      receiveBytesPerSecond:
+        oneOf:
+          - type: number
+            minimum: 0
+          - type: 'null'
+      sendBytesPerSecond:
+        oneOf:
+          - type: number
+            minimum: 0
+          - type: 'null'
+    additionalProperties: false
+additionalProperties: false

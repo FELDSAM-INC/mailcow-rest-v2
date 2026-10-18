@@ -1,0 +1,9 @@
+description: 'Usage of the disk holding the mail storage, or `measured: false` when the measurement failed.'
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/MailStorageUsage.yaml'

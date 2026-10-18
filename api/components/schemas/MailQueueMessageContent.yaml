@@ -1,0 +1,12 @@
+type: object
+description: |
+  The complete content of a queued message as Postfix shows it (`postcat -q`): its envelope
+  records, headers and body. Every view is audited with the queue ID, never the content.
+required: [id, content]
+properties:
+  id:
+    type: string
+    pattern: '^[0-9A-Fa-f]{1,32}$'
+  content:
+    type: string
+additionalProperties: false

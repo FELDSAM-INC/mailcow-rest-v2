@@ -1,0 +1,12 @@
+name: severity
+in: query
+required: false
+description: Only entries of these severity classes. Repeat the parameter for several.
+style: form
+explode: true
+schema:
+  type: array
+  maxItems: 3
+  uniqueItems: true
+  items:
+    $ref: '../schemas/LogSeverity.yaml'

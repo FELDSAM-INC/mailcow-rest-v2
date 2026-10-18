@@ -1,0 +1,40 @@
+get:
+  operationId: listContainers
+  tags: [Containers]
+  summary: List the containers
+  description: |
+    Lists the containers of this mailcow installation, including stopped ones, with their image,
+    state, health, start time, protected flag, role and available actions. Containers of other
+    projects on the same host are never listed. The antivirus scanner and the OLE scanner are hidden
+    when the configuration disables them, as in legacy. `q` searches the service name and the image.
+    Administrators only, read-only keys included.
+
+    **Freshness**: states are at most 5 seconds old (`collectedAt`), collected once for all clients.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/ContainerSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: running
+      in: query
+      required: false
+      description: Only running (`true`) or only not running (`false`) containers.
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/ContainerListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

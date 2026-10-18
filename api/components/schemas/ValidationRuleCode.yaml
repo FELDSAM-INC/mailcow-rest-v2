@@ -123,6 +123,17 @@ description: |
     sent with a special action, and a booking limit sent with a rule other than `limited`;
     `reserved` for an alias domain named like the server; `immutable` for a read-only member sent
     back with a different value.
+  - Account self-service (feature 005): password rules use feature 003's codes (`tooShort` with the
+    policy's `min`, `missingCharacterClass`); `preHashedPassword` (a new password that starts with
+    a hash-scheme prefix such as `{SSHA512}`, param `scheme`); `sieveSyntax` (a Sieve script the
+    legacy parser rejects, params `message`, the parser's message, and `line` when known);
+    `invalidFormat` also uses `format: email`, `pushoverCredential` (30 letters or digits),
+    `soundName` and `digits`; `invalidRegex` for a sender pattern that does not compile;
+    `secretRequired` (param `reason: noStoredSecret`) for a Pushover token or user key missing while
+    none is stored; `notInList` (param `allowed`) for a temporary-alias domain; `tooLong` with `unit:
+    bytes` for scripts and with `stored: true` for names whose HTML-encoded form exceeds 255;
+    `mutuallyExclusive` (param `with`) for `password` with `generatePassword`; `tooMany` (param `max`,
+    the bulk limit) for bulk targets.
 enum:
   - required
   - invalidType
@@ -168,3 +179,5 @@ enum:
   - unbalancedStructure
   - mutuallyExclusive
   - tooFew
+  - preHashedPassword
+  - sieveSyntax

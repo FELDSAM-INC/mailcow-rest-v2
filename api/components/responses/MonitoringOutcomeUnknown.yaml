@@ -1,0 +1,17 @@
+description: |
+  mailcow's container service did not answer within its timeout (60 seconds by default,
+  `DOCKER_TIMEOUT`) (type `/api/v2/problems/outcome-unknown`, extension `step` naming the action:
+  `start`, `stop`, `restart`, `deliver`, `hold`, `release`, `delete`, `flush`, `purge` or
+  `rulesReset`). The operation may or may not have been carried out: read the container, the queue
+  or the rules again. The audit record says the same.
+headers:
+  Audit-Recorded:
+    description: Sent with the value `false` only when the audit record could not be written.
+    required: false
+    schema:
+      type: string
+      enum: ["false"]
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

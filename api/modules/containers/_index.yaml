@@ -1,0 +1,14 @@
+# Paths of the containers module: mailcow's service containers, their resource usage and control
+# (feature 011).
+/containers:
+  $ref: './containers.yaml'
+/containers/{containerName}:
+  $ref: './container.yaml'
+/containers/{containerName}/resource-usage:
+  $ref: './container-resource-usage.yaml'
+/containers/{containerName}/start:
+  $ref: './container-start.yaml'
+/containers/{containerName}/stop:
+  $ref: './container-stop.yaml'
+/containers/{containerName}/restart:
+  $ref: './container-restart.yaml'

@@ -1,0 +1,20 @@
+get:
+  operationId: getInstallationVersion
+  tags: [Host and installation]
+  summary: Get the installed mailcow version
+  description: |
+    Version tag, branch, and commit identifier and date when known, as the legacy UI shows them
+    (legacy `get/status/version`). Needs no container service. Administrators only, read-only keys
+    included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/InstallationVersionResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

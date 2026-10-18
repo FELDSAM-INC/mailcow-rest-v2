@@ -1,0 +1,13 @@
+description: Queued messages matching the filters, with the queue counts.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/MailQueueMessage.yaml'
+        meta:
+          $ref: '../schemas/MailQueueListMeta.yaml'

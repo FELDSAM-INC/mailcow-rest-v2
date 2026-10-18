@@ -1,0 +1,36 @@
+get:
+  operationId: listFail2BanActiveBans
+  tags: [Fail2ban]
+  summary: List the active bans
+  description: |
+    The networks the ban service banned after failed logins, with the first address, the end of the
+    ban, the remaining seconds and whether the ban is queued for lifting. Read at request time. `q`
+    searches the network. Administrators only, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/Fail2BanActiveBanSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: queuedForLifting
+      in: query
+      required: false
+      description: Only bans that are (`true`) or are not (`false`) queued for lifting.
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/Fail2BanActiveBanListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

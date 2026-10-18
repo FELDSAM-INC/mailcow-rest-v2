@@ -1,0 +1,9 @@
+description: The action was applied; `ban` is the ban afterwards.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/Fail2BanBanActionResult.yaml'

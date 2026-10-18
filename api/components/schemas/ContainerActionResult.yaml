@@ -1,0 +1,15 @@
+type: object
+description: |
+  Outcome of a container action. `done`: the action was carried out. `alreadyInState`: a start of
+  a running container or a stop of a stopped container, which changes nothing. `container` is the
+  container's state after the action, read again from the container service.
+required: [action, outcome, container]
+properties:
+  action:
+    $ref: './ContainerAction.yaml'
+  outcome:
+    type: string
+    enum: [done, alreadyInState]
+  container:
+    $ref: './Container.yaml'
+additionalProperties: false

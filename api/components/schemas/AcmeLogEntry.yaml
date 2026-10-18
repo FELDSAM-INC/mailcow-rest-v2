@@ -1,0 +1,15 @@
+type: object
+description: One entry of the certificate renewal log (Redis list `ACME_LOG`).
+required: [id, time, message]
+properties:
+  id:
+    type: string
+    maxLength: 64
+    description: Opaque cursor of the entry (see `before`).
+  time:
+    type: string
+    format: date-time
+  message:
+    type: string
+    description: The message, decoded when stored with a `base64,` prefix, or without the prefix when it does not decode.
+additionalProperties: false

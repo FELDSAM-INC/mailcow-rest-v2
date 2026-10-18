@@ -1,0 +1,7 @@
+description: |
+  The IP check is disabled in the legacy customisation settings (type
+  `/api/v2/problems/ip-check-disabled`). No outbound request was made.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

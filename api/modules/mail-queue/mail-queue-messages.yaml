@@ -1,0 +1,79 @@
+get:
+  operationId: listMailQueueMessages
+  tags: [Mail queue]
+  summary: List the queued messages
+  description: |
+    The messages in Postfix's queues, read at request time (`postqueue -j` through mailcow's
+    container service): queue ID, queue, arrival time, size, sender, recipients with their deferral
+    reasons, and the forced-expiry mark when Postfix reports it. The listing covers at most the first
+    10,000 messages Postfix reports, as legacy does; `meta.truncated` says when it reported more, and
+    `meta.queueCounts` counts every message per queue, independent of filters and paging. `q`
+    searches the queue ID, sender, recipients and deferral reasons. `from` and `to` filter the
+    arrival time, inclusive. A stopped Postfix container answers `mail-service-not-running`.
+    Administrators only, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/MailQueueMessageSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - $ref: '../../components/parameters/LogFrom.yaml'
+    - $ref: '../../components/parameters/LogTo.yaml'
+    - name: queue
+      in: query
+      required: false
+      description: Only messages in these queues. Repeat the parameter for several.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 5
+        uniqueItems: true
+        items:
+          $ref: '../../components/schemas/MailQueueName.yaml'
+    - name: sender
+      in: query
+      required: false
+      description: Only messages whose sender contains one of these values (case-insensitive).
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          minLength: 1
+          maxLength: 255
+    - name: recipient
+      in: query
+      required: false
+      description: Only messages with a recipient address that contains one of these values (case-insensitive).
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          minLength: 1
+          maxLength: 255
+  responses:
+    '200':
+      $ref: '../../components/responses/MailQueueMessageListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/MailQueueConflict.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '502':
+      $ref: '../../components/responses/MailQueueActionFailed.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

@@ -1,0 +1,5 @@
+type: string
+description: |
+  Severity class of a log priority, as the legacy dashboard groups them: `error` (emerg, alert,
+  crit, err), `warning` (warning, warn), `info` (notice, info, debug).
+enum: [error, warning, info]

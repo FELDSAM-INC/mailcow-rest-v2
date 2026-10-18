@@ -1,0 +1,13 @@
+name: before
+in: query
+required: false
+description: |
+  Only entries older than the entry with this `id`, in the list's time order. To load older
+  entries while new ones arrive, pass the `id` of the oldest entry the client holds and keep
+  `offset` at 0: the next page then has no duplicates, whatever arrived meanwhile. When that entry
+  was trimmed by mailcow's retention, nothing older is retained and the page is empty. A malformed
+  cursor is refused (`invalidFormat`, `format: logCursor`).
+schema:
+  type: string
+  minLength: 1
+  maxLength: 512

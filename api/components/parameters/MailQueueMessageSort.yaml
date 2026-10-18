@@ -1,0 +1,8 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `arrivalTime` with `order=asc` (oldest first). Ties are broken by queue ID.
+schema:
+  type: string
+  enum: [arrivalTime, size, sender, queue, id]
+  default: arrivalTime

@@ -1,0 +1,14 @@
+# Paths of the host module: system overview, mail storage, public addresses, installed version,
+# update status and monitoring capabilities (feature 011).
+/host:
+  $ref: './host.yaml'
+/host/mail-storage:
+  $ref: './host-mail-storage.yaml'
+/host/public-addresses:
+  $ref: './host-public-addresses.yaml'
+/installation:
+  $ref: './installation.yaml'
+/installation/update-status:
+  $ref: './installation-update-status.yaml'
+/monitoring/capabilities:
+  $ref: './monitoring-capabilities.yaml'

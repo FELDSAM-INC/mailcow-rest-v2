@@ -1,0 +1,15 @@
+description: |
+  Problem about one container: `container-protected`, `container-not-running`,
+  `container-action-failed` and `mail-service-not-running`. `container` names the container;
+  `serviceMessage` carries the container service's message for `container-action-failed`.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [container]
+    properties:
+      container:
+        type: string
+        description: Service name of the container.
+      serviceMessage:
+        type: string
+        description: Message reported by mailcow's container service. Never contains secrets.

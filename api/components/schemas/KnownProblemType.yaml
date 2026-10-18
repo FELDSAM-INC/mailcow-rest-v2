@@ -82,3 +82,14 @@ enum:
   - /api/v2/problems/destination-not-permitted
   - /api/v2/problems/alias-domain-already-exists
   - /api/v2/problems/not-primary-domain-alias
+  - /api/v2/problems/current-password-incorrect
+  - /api/v2/problems/password-managed-externally
+  - /api/v2/problems/permission-flag-missing
+  - /api/v2/problems/password-reset-unavailable
+  - /api/v2/problems/invalid-reset-token
+  - /api/v2/problems/second-factor-enrolment-expired
+  - /api/v2/problems/second-factor-enrolment-failed
+  - /api/v2/problems/last-second-factor
+  - /api/v2/problems/second-factor-required-by-policy
+  - /api/v2/problems/push-notifications-not-configured
+  - /api/v2/problems/groupware-disabled

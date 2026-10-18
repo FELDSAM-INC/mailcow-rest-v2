@@ -1,0 +1,3 @@
+type: string
+description: Container state as mailcow's container service (Docker) reports it.
+enum: [running, restarting, paused, exited, created, dead, removing]

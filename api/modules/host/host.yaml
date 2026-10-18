@@ -1,0 +1,25 @@
+get:
+  operationId: getHostOverview
+  tags: [Host and installation]
+  summary: Get the system overview
+  description: |
+    Host name, time zone, architecture, installed version, current time, uptime, processor,
+    memory and swap of the mailcow host. Administrators only, read-only keys included.
+
+    **Freshness**: the host figures are at most 10 seconds old (`collectedAt`). Collection is shared
+    between clients, so more administrators polling do not measure the host more often. Poll every
+    5 seconds while the view is visible; there is no push channel.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/HostOverviewResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

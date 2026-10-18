@@ -1,0 +1,15 @@
+description: The ban service settings.
+headers:
+  ETag:
+    description: Version tag of the settings, equal to `data.etag`. Send it in `If-Match` when changing the settings or rotating the ban list ID.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/Fail2BanSettings.yaml'

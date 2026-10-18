@@ -139,3 +139,26 @@ enum:
   - resourceUpdate
   - resourceDeletion
   - mailboxSenderSettingsUpdate
+  - ownPasswordChange
+  - ownSecondFactorEnrolment
+  - ownSecondFactorRemoval
+  - ownRecoveryEmailChange
+  - passwordResetRequest
+  - passwordResetCompletion
+  - appPasswordCreation
+  - appPasswordUpdate
+  - appPasswordDeletion
+  - temporaryAliasCreation
+  - temporaryAliasUpdate
+  - temporaryAliasDeletion
+  - sieveFilterCreation
+  - sieveFilterUpdate
+  - sieveFilterDeletion
+  - pushNotificationSettingsUpdate
+  - pushNotificationSettingsDeletion
+  - pushNotificationVerification
+  - mailSettingsUpdate
+  - recentLoginsClear
+  - activeSyncCacheReset
+  - groupwareProfileReset
+  - webmailHandOff

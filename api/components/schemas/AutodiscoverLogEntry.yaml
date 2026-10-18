@@ -1,0 +1,28 @@
+type: object
+description: One client auto-configuration request (Redis list `AUTODISCOVER_LOG`, which keeps 101 entries).
+required: [id, time, userAgent, user, clientAddress, service]
+properties:
+  id:
+    type: string
+    maxLength: 64
+    description: Opaque cursor of the entry (see `before`).
+  time:
+    type: string
+    format: date-time
+  userAgent:
+    oneOf:
+      - type: string
+      - type: 'null'
+  user:
+    description: The requesting user as recorded (`none` when the request carried none), `null` when absent.
+    oneOf:
+      - type: string
+      - type: 'null'
+  clientAddress:
+    oneOf:
+      - type: string
+      - type: 'null'
+  service:
+    type: string
+    description: Configured service (`activesync`, `imap`) or the recorded error text.
+additionalProperties: false

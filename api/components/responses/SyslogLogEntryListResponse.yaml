@@ -1,0 +1,13 @@
+description: Log entries matching the filters.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/SyslogLogEntry.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

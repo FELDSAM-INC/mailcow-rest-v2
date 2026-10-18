@@ -1,0 +1,9 @@
+description: The system overview.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/HostOverview.yaml'

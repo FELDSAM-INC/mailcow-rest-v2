@@ -1,0 +1,40 @@
+parameters:
+  - $ref: '../../components/parameters/ContainerName.yaml'
+post:
+  operationId: startContainer
+  tags: [Containers]
+  summary: Start a container
+  description: |
+    Starts a container that is not running, retrying up to 4 attempts 1.5 seconds apart until it
+    runs, as legacy does. A running container is reported with `outcome: alreadyInState` and nothing
+    changes. Protected containers may be started. Needs an administrator session or a read-write
+    key owned by an administrator.
+
+    The response comes when the outcome is known, or after the container-service timeout (60
+    seconds by default): a timeout answers `outcome-unknown`, and the client reads the
+    container again. Exactly one audit record names the actor, the container, the action, the
+    outcome and the state before and after. When the audit log cannot be written before the action,
+    the request is refused with `temporary-failure` and nothing is done.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/ContainerActionResultResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/ContainerConflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '502':
+      $ref: '../../components/responses/ContainerActionFailed.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'
+    '504':
+      $ref: '../../components/responses/MonitoringOutcomeUnknown.yaml'

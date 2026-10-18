@@ -100,6 +100,26 @@
   back the same values or when bans come and go. Sending it is optional, as in feature 002. (agent
   decision: the ban service re-stores its settings on every ban and every 10 seconds, which would
   make a byte-based tag useless; constitution II.)
+- Q: What does a client need to know before it polls, pages or acts, without hard-coding server
+  values? → A: An administrator-only monitoring capabilities read, which read-only keys may use, on
+  the pattern of feature 002's capabilities read (FR-064 there). It reports whether the IP check is
+  enabled, the recommended polling interval and the maximum age of each kind of live data, the
+  configured length of each in-memory log, the caller's own client address as the server sees it,
+  and the bulk and list limits (FR-069). (orchestrator decision: the UI 011 spec found these gaps.
+  The client address lets the web app warn before an administrator denylists their own address,
+  which the edge cases leave to the client.)
+- Q: Does the queue listing say how many messages each queue holds? → A: Yes. Every queue listing
+  reports the number of messages in the active, deferred, hold and incoming queues and the total,
+  counted over everything Postfix reported, independent of filters and paging (FR-037).
+  (orchestrator decision: the UI 011 spec shows per-queue counts in the Queue Manager header, as an
+  operator triages a spam outbreak or a stuck partner.)
+- Q: Can a client tell what a container does without knowing mailcow's service names? → A: Yes.
+  Each container carries a stable role next to its protected flag, for example proxy, database,
+  key-value store, mail transfer, IMAP, webmail, API or scheduler, and `other` for containers the
+  server does not know (FR-008). (orchestrator decision: the UI 011 spec groups and labels container
+  cards by role and must not depend on service names, which operators can change.) Acting on all
+  messages that match a filter is not added: the 1,000-ID bulk limit together with flush and delete
+  all cover the legacy Queue Manager. The installed version stays administrator-only.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -455,7 +475,7 @@ and each queued message view, then list the audit log filtered by target type an
   allowlisted network containing a denylisted address, are allowed; the denylist wins, as the ban
   service documents.
 - **Denylist entry that covers the administrator's own address**: accepted, as in legacy. The contract
-  recommends that clients warn.
+  recommends that clients warn, using the client address reported by the capabilities read (FR-069).
 - **Allowlisted host name that does not resolve**: accepted, as in legacy; the ban service ignores it
   until it resolves.
 - **Ban expires between listing and lifting**: "not found".
@@ -495,7 +515,7 @@ and each queued message view, then list the audit log filtered by target type an
 
   | Operation | Administrator (session or read-write key) | Administrator read-only key | Domain administrator, mailbox user |
   |---|---|---|---|
-  | System overview, mail storage usage, version, update status, public addresses | Yes | Yes | Forbidden |
+  | System overview, mail storage usage, version, update status, public addresses, monitoring capabilities | Yes | Yes | Forbidden |
   | List and inspect containers, read resource usage | Yes | Yes | Forbidden |
   | Start, stop, restart a container | Yes, within FR-015 | Insufficient key scope | Forbidden |
   | Read logs, Rspamd history and statistics | Yes | Yes | Forbidden |
@@ -536,6 +556,9 @@ and each queued message view, then list the audit log filtered by target type an
   - its last start time;
   - its health status, when the container reports one;
   - whether it is protected (FR-015);
+  - its role: a stable value that says what the container does (for example proxy, database,
+    key-value store, mail transfer, IMAP, webmail, API or scheduler), derived by the server from the
+    service name, with `other` for unknown services;
   - the actions currently available for it.
 
   Containers of other projects on the same host MUST NOT be listed or reachable. The antivirus
@@ -695,7 +718,9 @@ and each queued message view, then list the audit log filtered by target type an
   bytes, the sender, each recipient with the reason delivery to it was deferred when there is one,
   and whether Postfix has marked the message for forced expiry, when it reports that. The list MUST
   contain at most the first 10,000 messages Postfix reports, as in legacy, and MUST say when Postfix
-  reported more.
+  reported more. Every listing MUST also report the number of messages in the active, deferred,
+  hold and incoming queues and the total number of queued messages, counted over every message
+  Postfix reported, independent of filters, paging and the 10,000 limit.
 - **FR-038**: The queue list MUST support pagination (default 25, maximum 1,000), sorting by arrival
   time (the default, oldest first), size, sender, queue or queue ID with ties broken by queue ID, and
   filters by queue, arrival time range, sender, recipient, and a case-insensitive search over the
@@ -864,6 +889,21 @@ and each queued message view, then list the audit log filtered by target type an
   the next response of this API, within the freshness limits of FR-006, FR-007, FR-010 and FR-011.
 - **FR-068**: The system MUST NOT write to legacy logs. Its own operations appear in feature 001's audit
   log and in its operational log (constitution V).
+- **FR-069**: Administrators MUST be able to read the monitoring capabilities, the server settings and
+  limits a client needs before it polls, pages or acts:
+  - whether the IP check of FR-021 is enabled;
+  - the recommended polling interval and the maximum age of container states, host figures,
+    container resource samples and mail storage usage (FR-006, FR-007, FR-010, FR-011, FR-012);
+  - the configured retention of each log type of FR-022: the number of entries kept for in-memory
+    logs, and whether a log is unbounded or cleaned by age (FR-027);
+  - the caller's own client address as this API sees it, after mailcow's trusted proxies, so that
+    clients can warn before a denylist entry covers it;
+  - the bulk limit of FR-040, the rule limits of FR-050, the default and maximum page sizes, and the
+    10,000-message listing limit of FR-037.
+
+  The values MUST reflect the server's current configuration and MUST NOT include any secret or
+  connection detail. The read MUST change nothing, MUST NOT need the container service, and
+  read-only keys MAY use it.
 
 ### Legacy Coverage
 
@@ -979,6 +1019,8 @@ container service and the ban service. The fork differs in three ways:
 - **Installed version and update status**: the installed version tag, branch and commit, and the
   cached result of the last update check.
 - **Public addresses**: the IPv4 and IPv6 addresses an external service sees.
+- **Monitoring capabilities**: the IP check switch, polling interval and freshness limits, log
+  retention, the caller's client address and the limits a client needs (FR-069).
 - **Log entry** (existing mailcow data): one entry of one log type, with its time and type-specific
   fields. In-memory logs live in mailcow's shared store; the legacy UI activity and login logs live
   in the database.

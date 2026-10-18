@@ -1,0 +1,39 @@
+type: object
+description: |
+  The installed mailcow version, as the legacy UI shows it in its dashboard and footer. Read from
+  mailcow's generated `app_info.inc.php` (`MAILCOW_GIT_VERSION`, `MAILCOW_BRANCH`,
+  `MAILCOW_GIT_COMMIT`, `MAILCOW_GIT_COMMIT_DATE`, `MAILCOW_GIT_URL`). Values that mailcow does not
+  record are `null`.
+required: [tag, branch, commit, commitDate, projectUrl]
+properties:
+  tag:
+    description: Version tag, for example `2026-09a`.
+    oneOf:
+      - type: string
+        maxLength: 255
+      - type: 'null'
+  branch:
+    description: Branch the installation follows, for example `master`, `nightly` or `legacy`.
+    oneOf:
+      - type: string
+        maxLength: 255
+      - type: 'null'
+  commit:
+    description: Commit identifier, recorded for nightly and legacy builds.
+    oneOf:
+      - type: string
+        maxLength: 64
+      - type: 'null'
+  commitDate:
+    description: Commit date, converted to UTC.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  projectUrl:
+    description: Address of the project the installation was built from.
+    oneOf:
+      - type: string
+        format: uri
+      - type: 'null'
+additionalProperties: false

@@ -1,0 +1,9 @@
+description: The installed mailcow version.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/InstallationVersion.yaml'

@@ -1,0 +1,39 @@
+post:
+  operationId: resetFail2BanRules
+  tags: [Fail2ban]
+  summary: Reset the ban rules to mailcow's defaults
+  description: |
+    **Destructive**: the custom rules are discarded and the ban service is restarted, which briefly
+    interrupts banning. Clients must ask for confirmation; the API needs no confirmation token.
+
+    Removes the stored rules, restarts the ban service through mailcow's container service, and
+    waits up to 10 seconds after the restart for the ban service to store mailcow's default rules,
+    which it then returns. If they have not appeared in time, the request fails with
+    `ban-rules-not-restored`: the ban service stores them with the next log line it receives.
+    `If-Match` takes the rules' version tag and is optional. Needs an administrator session or a
+    read-write key owned by an administrator. Audited with the old and new rules; when the audit log
+    cannot be written before the reset, it is refused with `temporary-failure` and nothing is done.
+  x-destructive: true
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/Fail2BanRulesResetResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '502':
+      $ref: '../../components/responses/ContainerActionFailed.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'
+    '504':
+      $ref: '../../components/responses/Fail2BanRulesNotRestored.yaml'

@@ -1,0 +1,11 @@
+type: object
+required: [number, pattern]
+properties:
+  number:
+    type: integer
+    minimum: 1
+    description: Position of the rule, numbered from 1.
+  pattern:
+    type: string
+    description: Regular expression (Python `re` dialect, as the ban service uses) whose first capture group captures the client address.
+additionalProperties: false

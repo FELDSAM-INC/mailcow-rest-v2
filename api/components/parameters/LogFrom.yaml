@@ -1,0 +1,7 @@
+name: from
+in: query
+required: false
+description: Only entries at or after this time (inclusive).
+schema:
+  type: string
+  format: date-time

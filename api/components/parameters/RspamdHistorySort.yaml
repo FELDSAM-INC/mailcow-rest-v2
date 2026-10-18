@@ -1,0 +1,8 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `time` with `order=desc`. Ties keep Rspamd's order (newest first).
+schema:
+  type: string
+  enum: [time, score, size, scanTime]
+  default: time

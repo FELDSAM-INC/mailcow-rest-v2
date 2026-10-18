@@ -1,0 +1,24 @@
+get:
+  operationId: getMonitoringCapabilities
+  tags: [Host and installation]
+  summary: Get the monitoring capabilities
+  description: |
+    Server settings and limits a client needs before it polls, pages or acts: whether the IP check
+    is enabled, the recommended polling interval and the maximum age of each kind of live data, the
+    retention of each log, the caller's own client address as this API sees it, and the bulk, rule
+    and list limits. Reflects the current configuration, contains no secret, changes nothing and
+    needs no container service. Administrators only, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MonitoringCapabilitiesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

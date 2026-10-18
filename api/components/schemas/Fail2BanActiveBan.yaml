@@ -1,0 +1,21 @@
+type: object
+description: |
+  An active ban (Redis `F2B_ACTIVE_BANS`). A ban queued for lifting (`F2B_QUEUE_UNBAN`) is removed
+  by the ban service within about 10 seconds while it runs.
+required: [network, address, endsAt, remainingSeconds, queuedForLifting]
+properties:
+  network:
+    type: string
+    description: Banned network in prefix notation, for example `203.0.113.0/24`.
+  address:
+    type: string
+    description: First address of the network.
+  endsAt:
+    type: string
+    format: date-time
+  remainingSeconds:
+    type: integer
+    minimum: 0
+  queuedForLifting:
+    type: boolean
+additionalProperties: false

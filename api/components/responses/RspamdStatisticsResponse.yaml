@@ -1,0 +1,9 @@
+description: Rspamd's statistics.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/RspamdStatistics.yaml'

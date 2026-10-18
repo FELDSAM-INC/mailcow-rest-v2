@@ -1,0 +1,82 @@
+type: object
+description: |
+  One message scanned by Rspamd, from the scan history Rspamd keeps (1,000 entries by default).
+  `symbols` are ordered as the legacy dashboard shows them: positive scores from largest to
+  smallest, then negative scores from most negative, then zero scores.
+required:
+  - time
+  - clientAddress
+  - envelopeSender
+  - headerSender
+  - envelopeRecipients
+  - headerRecipients
+  - subject
+  - action
+  - score
+  - requiredScore
+  - symbols
+  - sizeBytes
+  - scanTimeRealSeconds
+  - scanTimeVirtualSeconds
+  - messageId
+  - user
+properties:
+  time:
+    type: string
+    format: date-time
+  clientAddress:
+    oneOf:
+      - type: string
+      - type: 'null'
+  envelopeSender:
+    oneOf:
+      - type: string
+      - type: 'null'
+  headerSender:
+    oneOf:
+      - type: string
+      - type: 'null'
+  envelopeRecipients:
+    type: array
+    items:
+      type: string
+  headerRecipients:
+    type: array
+    items:
+      type: string
+  subject:
+    oneOf:
+      - type: string
+      - type: 'null'
+  action:
+    type: string
+    description: Rspamd action as Rspamd names it, for example `no action`, `add header`, `rewrite subject`, `greylist`, `soft reject` or `reject`.
+  score:
+    type: number
+  requiredScore:
+    type: number
+  symbols:
+    type: array
+    items:
+      $ref: './RspamdHistorySymbol.yaml'
+  sizeBytes:
+    type: integer
+    minimum: 0
+  scanTimeRealSeconds:
+    type: number
+    minimum: 0
+  scanTimeVirtualSeconds:
+    oneOf:
+      - type: number
+        minimum: 0
+      - type: 'null'
+  messageId:
+    oneOf:
+      - type: string
+      - type: 'null'
+  user:
+    description: Authenticated user, `null` for none.
+    oneOf:
+      - type: string
+      - type: 'null'
+additionalProperties: false

@@ -258,6 +258,21 @@ tags:
     description: Recipient previews and background mass mail jobs delivered into the mailboxes (feature 013).
   - name: License
     description: The server's GUID and its verification against mailcow's license service (feature 013).
+  - name: Self-service
+    description: Server settings and limits for the self-service operations, partly readable before sign-in (feature 005).
+  - name: Own account
+    description: |
+      The signed-in account's own password (including a forced change), second factors (including
+      a forced setup) and, for mailbox users, recovery address, mailbox overview, webmail hand-off,
+      Apple connection profile and client configuration (feature 005). Sessions only.
+  - name: Password reset
+    description: Forgotten-password reset through the mailbox's recovery address, shared with the legacy reset page (feature 005).
+  - name: Mailbox self-service
+    description: |
+      App passwords, temporary aliases, push notifications, mail settings, recent logins and
+      groupware resets of the mailboxes in the caller's scope (feature 005).
+  - name: Sieve filters
+    description: Administrator-managed prefilters and postfilters of mailboxes, and the user's active Sieve script (feature 005).
 paths:
   /csrf-token:
     $ref: './modules/auth/_index.yaml#/~1csrf-token'
@@ -693,6 +708,74 @@ paths:
     $ref: './modules/license/_index.yaml#/~1license'
   /license/verification:
     $ref: './modules/license/_index.yaml#/~1license~1verification'
+  /self-service/capabilities:
+    $ref: './modules/self-service/_index.yaml#/~1self-service~1capabilities'
+  /me/password:
+    $ref: './modules/self-service/_index.yaml#/~1me~1password'
+  /me/password-policy:
+    $ref: './modules/self-service/_index.yaml#/~1me~1password-policy'
+  /me/second-factors:
+    $ref: './modules/self-service/_index.yaml#/~1me~1second-factors'
+  /me/second-factors/totp-enrolment:
+    $ref: './modules/self-service/_index.yaml#/~1me~1second-factors~1totp-enrolment'
+  /me/second-factors/webauthn-registration-options:
+    $ref: './modules/self-service/_index.yaml#/~1me~1second-factors~1webauthn-registration-options'
+  /me/second-factors/removal:
+    $ref: './modules/self-service/_index.yaml#/~1me~1second-factors~1removal'
+  /me/second-factors/{secondFactorId}:
+    $ref: './modules/self-service/_index.yaml#/~1me~1second-factors~1{secondFactorId}'
+  /me/recovery-email:
+    $ref: './modules/self-service/_index.yaml#/~1me~1recovery-email'
+  /me/mailbox:
+    $ref: './modules/self-service/_index.yaml#/~1me~1mailbox'
+  /me/mailbox/client-configuration:
+    $ref: './modules/self-service/_index.yaml#/~1me~1mailbox~1client-configuration'
+  /me/mailbox/apple-profile:
+    $ref: './modules/self-service/_index.yaml#/~1me~1mailbox~1apple-profile'
+  /me/webmail-handoff:
+    $ref: './modules/self-service/_index.yaml#/~1me~1webmail-handoff'
+  /password-resets:
+    $ref: './modules/self-service/_index.yaml#/~1password-resets'
+  /password-resets/token-check:
+    $ref: './modules/self-service/_index.yaml#/~1password-resets~1token-check'
+  /password-resets/webauthn-challenge:
+    $ref: './modules/self-service/_index.yaml#/~1password-resets~1webauthn-challenge'
+  /password-resets/completion:
+    $ref: './modules/self-service/_index.yaml#/~1password-resets~1completion'
+  /mailboxes/tls-enforcement:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1tls-enforcement'
+  /mailboxes/{mailbox}/app-passwords:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1app-passwords'
+  /mailboxes/{mailbox}/app-passwords/{appPasswordId}:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1app-passwords~1{appPasswordId}'
+  /mailboxes/{mailbox}/temporary-aliases:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1temporary-aliases'
+  /mailboxes/{mailbox}/temporary-aliases/{temporaryAlias}:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1temporary-aliases~1{temporaryAlias}'
+  /mailboxes/{mailbox}/temporary-alias-domains:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1temporary-alias-domains'
+  /mailboxes/{mailbox}/push-notifications:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1push-notifications'
+  /mailboxes/{mailbox}/push-notifications/verification:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1push-notifications~1verification'
+  /mailboxes/{mailbox}/mail-settings:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1mail-settings'
+  /mailboxes/{mailbox}/recent-logins:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1recent-logins'
+  /mailboxes/{mailbox}/activesync-cache:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1activesync-cache'
+  /mailboxes/{mailbox}/groupware-profile:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1groupware-profile'
+  /mailboxes/{mailbox}/sieve-filters:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1sieve-filters'
+  /mailboxes/{mailbox}/sieve-filters/{sieveFilterId}:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1sieve-filters~1{sieveFilterId}'
+  /mailboxes/{mailbox}/active-sieve-script:
+    $ref: './modules/self-service/_index.yaml#/~1mailboxes~1{mailbox}~1active-sieve-script'
+  /sieve-filters:
+    $ref: './modules/self-service/_index.yaml#/~1sieve-filters'
+  /sieve-filters/validation:
+    $ref: './modules/self-service/_index.yaml#/~1sieve-filters~1validation'
 components:
   securitySchemes:
     sessionCookie:

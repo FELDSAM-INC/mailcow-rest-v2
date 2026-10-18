@@ -1,0 +1,18 @@
+description: |
+  Possible types:
+  - `/api/v2/problems/ban-rules-not-restored`: the stored rules were removed and the ban service was
+    restarted, but it did not store mailcow's default rules within 10 seconds. It stores them with
+    the next log line it receives; read the rules again later and do not repeat the reset.
+  - `/api/v2/problems/outcome-unknown`: the container service did not answer the restart
+    within its timeout. The stored rules were removed; read the rules again.
+headers:
+  Audit-Recorded:
+    description: Sent with the value `false` only when the reset was carried out but its audit record could not be written.
+    required: false
+    schema:
+      type: string
+      enum: ["false"]
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

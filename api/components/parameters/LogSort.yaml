@@ -1,0 +1,10 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. Logs are sorted by time only, newest first by default (`order=desc`) or oldest first
+  (`order=asc`). Entries with the same time keep the order in which mailcow stored them.
+schema:
+  type: string
+  enum: [time]
+  default: time

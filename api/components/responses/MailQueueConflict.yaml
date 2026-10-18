@@ -1,0 +1,7 @@
+description: |
+  The Postfix container is not running (type `/api/v2/problems/mail-service-not-running`).
+  `container` names it. Nothing was changed.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ContainerProblem.yaml'

@@ -1,0 +1,9 @@
+description: Resource usage of the container.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/ContainerResourceUsage.yaml'

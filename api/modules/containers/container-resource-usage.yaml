@@ -1,0 +1,33 @@
+parameters:
+  - $ref: '../../components/parameters/ContainerName.yaml'
+get:
+  operationId: getContainerResourceUsage
+  tags: [Containers]
+  summary: Get a container's resource usage
+  description: |
+    Processor, memory, cumulative disk and network counters of a running container, and the disk
+    and network rates in bytes per second between the two newest samples. A container that is not
+    running is refused at once with `container-not-running`. Administrators only, read-only keys
+    included.
+
+    **Freshness**: poll every 5 seconds while the view is visible; the newest sample is then at most
+    15 seconds old. The first request after a pause answers within 5 seconds with one sample and
+    `null` rates; rates appear on the next request. Collection is shared between clients.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/ContainerResourceUsageResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/ContainerConflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

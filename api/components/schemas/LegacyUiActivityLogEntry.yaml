@@ -1,0 +1,41 @@
+type: object
+description: |
+  One action recorded by the legacy UI and `/api/v1` (table `logs`, never trimmed). Actions made
+  through this API are not here; they are in this API's audit log (`GET /audit-events`). `call` is
+  the recorded function call as a list, masked like `LegacyApiRequestLogEntry.requestData`.
+required: [id, time, type, task, user, role, clientAddress, messageKey, messageParameters, call]
+properties:
+  id:
+    type: string
+    maxLength: 64
+    description: Opaque cursor of the entry (see `before`).
+  time:
+    type: string
+    format: date-time
+  type:
+    type: string
+    description: Outcome class as stored (`success`, `danger`, `warning`, `info`).
+  task:
+    type: string
+    description: Identifier that groups the entries of one legacy request.
+  user:
+    type: string
+    description: Acting user; `admin => alice@example.org` for a legacy login-as session.
+  role:
+    type: string
+  clientAddress:
+    type: string
+  messageKey:
+    description: Legacy message key (a translation key such as `object_modified`) or text, `null` when none was stored.
+    oneOf:
+      - type: string
+      - type: 'null'
+  messageParameters:
+    type: array
+    description: Parameters of the message key.
+    items: {}
+  call:
+    type: array
+    description: The recorded call, for example `["mailbox", "edit", {...}]`, masked.
+    items: {}
+additionalProperties: false

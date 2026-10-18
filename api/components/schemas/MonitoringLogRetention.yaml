@@ -1,0 +1,20 @@
+type: object
+description: |
+  How mailcow retains one log type. This API never trims, deletes or adds legacy log entries.
+
+  - `entries`: mailcow keeps the newest `maxEntries` entries. In-memory logs are trimmed every
+    minute to the configured length (`LOG_LINES` + 1, 10,000 by default); the autodiscover log keeps
+    101 entries.
+  - `unbounded`: never trimmed (the legacy UI activity log).
+  - `cleanedDaily`: mailcow removes old entries once a day (the login log).
+required: [policy, maxEntries]
+properties:
+  policy:
+    type: string
+    enum: [entries, unbounded, cleanedDaily]
+  maxEntries:
+    oneOf:
+      - type: integer
+        minimum: 1
+      - type: 'null'
+additionalProperties: false

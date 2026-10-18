@@ -1,0 +1,13 @@
+description: Legacy UI activity entries matching the filters, masked.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/LegacyUiActivityLogEntry.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

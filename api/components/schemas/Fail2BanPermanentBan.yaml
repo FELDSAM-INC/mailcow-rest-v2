@@ -1,0 +1,14 @@
+type: object
+description: |
+  A permanent ban the ban service applies for a denylist entry (Redis `F2B_PERM_BANS`). It is
+  lifted by removing the entry from the denylist (`PATCH /fail2ban/settings`).
+required: [network, address, startedAt]
+properties:
+  network:
+    type: string
+  address:
+    type: string
+  startedAt:
+    type: string
+    format: date-time
+additionalProperties: false

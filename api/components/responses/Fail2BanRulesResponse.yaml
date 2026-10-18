@@ -1,0 +1,15 @@
+description: The ban rules.
+headers:
+  ETag:
+    description: Version tag of the rules, equal to `data.etag`. Send it in `If-Match` when replacing or resetting the rules.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/Fail2BanRules.yaml'

@@ -1,0 +1,18 @@
+description: |
+  The container's state or protection does not allow the request. Possible types:
+  - `/api/v2/problems/container-protected`: stopping a protected container, or stopping or
+    restarting this API's own container. Nothing was done.
+  - `/api/v2/problems/container-not-running`: resource usage of a container that is not running.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ContainerProblem.yaml'
+    examples:
+      protected:
+        value:
+          type: /api/v2/problems/container-protected
+          title: Container protected
+          status: 409
+          detail: The container mysql-mailcow is protected and cannot be stopped.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          container: mysql-mailcow

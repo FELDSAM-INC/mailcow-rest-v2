@@ -1,0 +1,19 @@
+description: The action completed (or changed nothing); `container` is the container's state afterwards.
+headers:
+  Audit-Recorded:
+    description: |
+      Sent with the value `false` only when the operation was carried out but its audit record
+      could not be written within the container-service timeout (for example because the operation
+      restarted the database). The failure is in the service log. Absent otherwise.
+    required: false
+    schema:
+      type: string
+      enum: ["false"]
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/ContainerActionResult.yaml'

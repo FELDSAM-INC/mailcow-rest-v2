@@ -1,0 +1,19 @@
+# Paths of the fail2ban module: mailcow's ban service settings, rules and bans (feature 011).
+/fail2ban/settings:
+  $ref: './fail2ban-settings.yaml'
+/fail2ban/ban-list-rotation:
+  $ref: './fail2ban-ban-list-rotation.yaml'
+/fail2ban/rules:
+  $ref: './fail2ban-rules.yaml'
+/fail2ban/rules/reset:
+  $ref: './fail2ban-rules-reset.yaml'
+/fail2ban/active-bans:
+  $ref: './fail2ban-active-bans.yaml'
+/fail2ban/active-bans/{network}/lift:
+  $ref: './fail2ban-active-ban-lift.yaml'
+/fail2ban/active-bans/{network}/allowlist:
+  $ref: './fail2ban-active-ban-allowlist.yaml'
+/fail2ban/active-bans/{network}/denylist:
+  $ref: './fail2ban-active-ban-denylist.yaml'
+/fail2ban/permanent-bans:
+  $ref: './fail2ban-permanent-bans.yaml'

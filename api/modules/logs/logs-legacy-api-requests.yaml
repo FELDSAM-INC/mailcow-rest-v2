@@ -1,0 +1,69 @@
+get:
+  operationId: listLegacyApiRequestLog
+  tags: [Logs]
+  summary: List the legacy API request log
+  description: |
+    Requests to the legacy `/api/v1` (Redis `API_LOG`): URI, method, client address and the recorded
+    request data. **Secrets are masked**: the value of every field whose name contains `pass`,
+    `secret`, `private` or `token` (case-insensitive), or whose name is `key`, is replaced with `*`
+    at any depth of the request data. `q` and the filters operate on the masked entries only, so they
+    cannot reveal a masked value.
+
+    Administrators only, read-only keys included. Reads are not audited. Entries are returned as
+    mailcow retains them (see `MonitoringCapabilities.logRetention`); entries that cannot be parsed
+    are left out of the list and the total. Sorted by time, newest first by default; entries with
+    the same time keep the order in which mailcow stored them. `from` and `to` are inclusive. Text
+    filters match case-insensitively as substrings, and several values of one filter match entries
+    with any of them. To load older entries while new ones arrive, pass the `id` of the oldest entry
+    held as `before`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/LogSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - $ref: '../../components/parameters/LogFrom.yaml'
+    - $ref: '../../components/parameters/LogTo.yaml'
+    - $ref: '../../components/parameters/LogBefore.yaml'
+    - name: method
+      in: query
+      required: false
+      description: Only entries whose method contains one of these values.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          minLength: 1
+          maxLength: 255
+    - name: clientAddress
+      in: query
+      required: false
+      description: Only entries whose client address contains one of these values.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          minLength: 1
+          maxLength: 255
+  responses:
+    '200':
+      $ref: '../../components/responses/LegacyApiRequestLogEntryListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

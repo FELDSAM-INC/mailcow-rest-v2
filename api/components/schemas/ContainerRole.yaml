@@ -1,0 +1,34 @@
+type: string
+description: |
+  Stable role of a container, derived by the server from its service name, so that clients can
+  group and label containers without knowing mailcow's service names. Later releases may add
+  values; clients must treat unknown values like `other`.
+
+  `dnsResolver` (unbound), `database` (MariaDB), `keyValueStore` (Redis), `antivirus` (ClamAV),
+  `spamFilter` (Rspamd), `legacyWebApp` (php-fpm, the legacy UI and `/api/v1`), `webmail` (SOGo),
+  `imap` (Dovecot), `mailTransfer` (Postfix), `tlsPolicy` (Postfix TLS policy service), `cache`
+  (memcached), `proxy` (nginx), `certificates` (ACME), `banService` (netfilter), `healthMonitor`
+  (watchdog), `containerService` (dockerapi), `macroScanner` (olefy), `scheduler` (ofelia), `api`
+  (this API), `webApp` (the mailcowui-ng web app), `other`.
+enum:
+  - dnsResolver
+  - database
+  - keyValueStore
+  - antivirus
+  - spamFilter
+  - legacyWebApp
+  - webmail
+  - imap
+  - mailTransfer
+  - tlsPolicy
+  - cache
+  - proxy
+  - certificates
+  - banService
+  - healthMonitor
+  - containerService
+  - macroScanner
+  - scheduler
+  - api
+  - webApp
+  - other

@@ -1,0 +1,62 @@
+get:
+  operationId: listRspamdHistory
+  tags: [Rspamd]
+  summary: List Rspamd's scan history
+  description: |
+    The scan history Rspamd keeps (1,000 entries by default), read from the Rspamd controller at
+    request time: time, client address, senders, recipients, subject, action, score and required
+    score, symbols with their scores and options (largest positive scores first, then negative from
+    most negative, then zero), size, real and virtual scan time, message ID and authenticated user.
+    `q` searches the envelope and header senders and recipients, the subject, the client address,
+    the authenticated user and the message ID. `from`, `to`, `minScore` and `maxScore` are
+    inclusive. An unreachable controller answers `temporary-failure`. Administrators only,
+    read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/RspamdHistorySort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - $ref: '../../components/parameters/LogFrom.yaml'
+    - $ref: '../../components/parameters/LogTo.yaml'
+    - name: action
+      in: query
+      required: false
+      description: Only entries with one of these actions (exact Rspamd action names, case-insensitive).
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          minLength: 1
+          maxLength: 64
+    - name: minScore
+      in: query
+      required: false
+      description: Only entries with at least this score.
+      schema:
+        type: number
+    - name: maxScore
+      in: query
+      required: false
+      description: Only entries with at most this score.
+      schema:
+        type: number
+  responses:
+    '200':
+      $ref: '../../components/responses/RspamdHistoryListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

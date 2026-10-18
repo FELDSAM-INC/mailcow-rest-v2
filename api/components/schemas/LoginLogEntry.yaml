@@ -1,0 +1,25 @@
+type: object
+description: |
+  One recent login of a mailbox per service and client address (table `sasl_log`, cleaned daily
+  by mailcow). Logins to the legacy web UI are reported with the service label configured in
+  feature 001 (`MAILCOWUI` upstream, `WEBUI` in the FeldHost deployment, which also reports older
+  `MAILCOWUI` entries as `WEBUI`).
+required: [id, time, username, service, clientAddress, appPasswordUsed]
+properties:
+  id:
+    type: string
+    maxLength: 512
+    description: Opaque cursor of the entry (see `before`).
+  time:
+    type: string
+    format: date-time
+  username:
+    type: string
+  service:
+    type: string
+    description: Service as recorded, for example `imap`, `smtp`, `sogo` or the web UI label.
+  clientAddress:
+    type: string
+  appPasswordUsed:
+    type: boolean
+additionalProperties: false

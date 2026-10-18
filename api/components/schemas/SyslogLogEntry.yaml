@@ -1,0 +1,28 @@
+type: object
+description: |
+  One entry of the Postfix, Dovecot or SOGo log (Redis lists `POSTFIX_MAILLOG`, `DOVECOT_MAILLOG`,
+  `SOGO_LOG`, written by syslog-ng in those containers).
+required: [id, time, priority, severity, program, message]
+properties:
+  id:
+    type: string
+    maxLength: 64
+    description: Opaque cursor of the entry. Pass it as `before` to load older entries without duplicates.
+  time:
+    type: string
+    format: date-time
+  priority:
+    type: string
+    description: Syslog priority as stored, for example `err` or `info`.
+  severity:
+    description: Severity class of `priority`, `null` for an unknown priority.
+    oneOf:
+      - $ref: './LogSeverity.yaml'
+      - type: 'null'
+  program:
+    type: string
+    description: Program that logged the entry, for example `postfix/smtpd`.
+  message:
+    type: string
+    description: The message. A message stored with a `base64,` prefix is returned decoded, or without the prefix when it does not decode.
+additionalProperties: false

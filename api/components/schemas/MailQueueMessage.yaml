@@ -1,0 +1,31 @@
+type: object
+description: |
+  One queued message as Postfix reports it (`postqueue -j` in the Postfix container). Queued
+  messages are transient and carry no version tag.
+required: [id, queue, arrivalTime, sizeBytes, sender, recipients, forcedExpiry]
+properties:
+  id:
+    type: string
+    pattern: '^[0-9A-Fa-f]{1,32}$'
+    description: Postfix queue ID (short hexadecimal format, as mailcow uses).
+  queue:
+    $ref: './MailQueueName.yaml'
+  arrivalTime:
+    type: string
+    format: date-time
+  sizeBytes:
+    type: integer
+    minimum: 0
+  sender:
+    type: string
+    description: Envelope sender; empty for bounces.
+  recipients:
+    type: array
+    items:
+      $ref: './MailQueueRecipient.yaml'
+  forcedExpiry:
+    description: Whether Postfix marked the message for forced expiry, `null` when Postfix does not report it.
+    oneOf:
+      - type: boolean
+      - type: 'null'
+additionalProperties: false

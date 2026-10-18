@@ -1,0 +1,67 @@
+get:
+  operationId: listCronLog
+  tags: [Logs]
+  summary: List the cron log
+  description: |
+    Identity-provider sync tasks (Redis `CRON_LOG`): task, priority, severity class and message. `q`
+    searches the task, priority and message.
+
+    Administrators only, read-only keys included. Reads are not audited. Entries are returned as
+    mailcow retains them (see `MonitoringCapabilities.logRetention`); entries that cannot be parsed
+    are left out of the list and the total. Sorted by time, newest first by default; entries with
+    the same time keep the order in which mailcow stored them. `from` and `to` are inclusive. Text
+    filters match case-insensitively as substrings, and several values of one filter match entries
+    with any of them. To load older entries while new ones arrive, pass the `id` of the oldest entry
+    held as `before`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/LogSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - $ref: '../../components/parameters/LogFrom.yaml'
+    - $ref: '../../components/parameters/LogTo.yaml'
+    - $ref: '../../components/parameters/LogBefore.yaml'
+    - $ref: '../../components/parameters/LogSeverityFilter.yaml'
+    - name: task
+      in: query
+      required: false
+      description: Only entries whose task contains one of these values.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          minLength: 1
+          maxLength: 255
+    - name: priority
+      in: query
+      required: false
+      description: Only entries whose priority contains one of these values.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          minLength: 1
+          maxLength: 255
+  responses:
+    '200':
+      $ref: '../../components/responses/CronLogEntryListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

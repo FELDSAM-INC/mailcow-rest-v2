@@ -1,0 +1,72 @@
+get:
+  operationId: getFail2BanSettings
+  tags: [Fail2ban]
+  summary: Get the ban service settings
+  description: |
+    Ban time and maximum ban time, growing ban time, maximum attempts and retry window, IPv4 and
+    IPv6 prefix lengths, external enforcement, the allowlist and denylist, the ban list ID and its
+    public address, and the version tag. When the ban service never stored settings, its defaults
+    are reported (`stored: false`). Administrators only, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/Fail2BanSettingsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'
+patch:
+  operationId: updateFail2BanSettings
+  tags: [Fail2ban]
+  summary: Change the ban service settings
+  description: |
+    JSON Merge Patch: send only what changes. Omitted values keep their value, and a list that is
+    sent replaces the whole list. Out-of-range values and invalid list entries refuse the whole
+    request with `422`, naming each field or entry and its rule; nothing is corrected and nothing
+    changes. The parameters and both lists are stored together or not at all.
+
+    **When changes take effect**: the ban service applies the parameters at its next ban decision
+    and at least every 10 seconds, and the allowlist and denylist within 60 seconds, without a
+    restart; host names are resolved each time. A permanent ban is lifted by removing its entry from
+    the denylist. When the ban service is not running, the change is saved and takes effect once it
+    runs (`banServiceRunning: false`).
+
+    `If-Match` is optional; interactive clients should always send the version tag they read, which
+    ignores the ban service's own rewrites of unchanged values. Needs an administrator session or a
+    read-write key owned by an administrator. Audited with each changed parameter (old and new) and
+    the list entries added and removed.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/Fail2BanSettingsPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/Fail2BanSettingsResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

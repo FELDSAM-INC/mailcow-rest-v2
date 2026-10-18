@@ -1,0 +1,57 @@
+type: object
+description: |
+  Usage of the disk that holds the mail storage (`/var/vmail` in the Dovecot container), as
+  `df -H` reports it through mailcow's container service (legacy `get/status/vmail`). At most 60
+  seconds old when returned, collected once for all clients.
+
+  `df -H` rounds to SI units (for example `107G`), so the byte values are converted and
+  `approximate` is `true`. When the measurement fails (for example because the Dovecot container is
+  stopped), `measured` is `false` and every figure is `null`; legacy shows zeros instead.
+required:
+  - measured
+  - device
+  - totalBytes
+  - usedBytes
+  - availableBytes
+  - usedPercent
+  - approximate
+  - collectedAt
+properties:
+  measured:
+    type: boolean
+    description: Whether the measurement succeeded.
+  device:
+    description: Device or file system name, `null` when unknown.
+    oneOf:
+      - type: string
+      - type: 'null'
+  totalBytes:
+    oneOf:
+      - type: integer
+        minimum: 0
+      - type: 'null'
+  usedBytes:
+    oneOf:
+      - type: integer
+        minimum: 0
+      - type: 'null'
+  availableBytes:
+    oneOf:
+      - type: integer
+        minimum: 0
+      - type: 'null'
+  usedPercent:
+    description: Used space in percent, as `df` reports it.
+    oneOf:
+      - type: integer
+        minimum: 0
+        maximum: 100
+      - type: 'null'
+  approximate:
+    type: boolean
+    description: '`true` when the byte values were converted from rounded figures.'
+  collectedAt:
+    type: string
+    format: date-time
+    description: When the measurement was taken (or attempted), in UTC.
+additionalProperties: false

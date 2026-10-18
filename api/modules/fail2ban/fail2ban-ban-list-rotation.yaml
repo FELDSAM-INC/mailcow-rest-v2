@@ -1,0 +1,32 @@
+post:
+  operationId: rotateFail2BanBanListId
+  tags: [Fail2ban]
+  summary: Rotate the ban list ID
+  description: |
+    **Destructive**: external firewalls that use the old public ban list address stop receiving the
+    ban list immediately. Clients must ask for confirmation; the API needs no confirmation token.
+
+    Stores a new random ban list ID (UUID) and returns the settings with the new ID and address
+    (legacy `edit/fail2ban/banlist`). The public ban list endpoint itself stays in the legacy stack.
+    `If-Match` takes the settings' version tag and is optional. Needs an administrator session or a
+    read-write key owned by an administrator. Audited without either ID.
+  x-destructive: true
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/Fail2BanSettingsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

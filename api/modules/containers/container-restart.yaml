@@ -1,0 +1,45 @@
+parameters:
+  - $ref: '../../components/parameters/ContainerName.yaml'
+post:
+  operationId: restartContainer
+  tags: [Containers]
+  summary: Restart a container
+  description: |
+    **Destructive**: the container's service is interrupted while it restarts, and a graceful
+    restart can take a while. Clients must ask for confirmation and name the container; the API
+    needs no confirmation token.
+
+    Restarts the container whatever its state, which also starts a stopped container. Protected
+    containers may be restarted, except this API's own container (`container-protected`). Needs an
+    administrator session or a read-write key owned by an administrator.
+
+    The response comes after the restart completed, with the container's new start time, or after
+    the container-service timeout (60 seconds by default) with `outcome-unknown`.
+    Restarting the reverse proxy can drop the connection before the response arrives; read the
+    container again. Restarting the database or the key-value store delays the audit record until
+    it is reachable again; if it still cannot be written within the timeout, the response carries
+    `Audit-Recorded: false`. Exactly one audit record is written, also for refusals.
+  x-destructive: true
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/ContainerActionResultResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/ContainerConflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '502':
+      $ref: '../../components/responses/ContainerActionFailed.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'
+    '504':
+      $ref: '../../components/responses/MonitoringOutcomeUnknown.yaml'

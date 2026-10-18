@@ -1,0 +1,7 @@
+description: |
+  Postfix reported a failure (type `/api/v2/problems/queue-action-failed`). `serviceMessage`
+  carries its message. List the queue again to see its state.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/MailQueueProblem.yaml'

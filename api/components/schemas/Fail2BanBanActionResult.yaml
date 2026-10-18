@@ -1,0 +1,17 @@
+type: object
+description: |
+  Result of an action on an active ban. `ban` is the ban after the action. A lift is queued and the
+  ban service removes the ban within about 10 seconds while it runs; a denylist entry is enforced
+  within 60 seconds.
+required: [action, ban, banServiceRunning]
+properties:
+  action:
+    type: string
+    enum: [lift, allowlist, denylist]
+  ban:
+    $ref: './Fail2BanActiveBan.yaml'
+  banServiceRunning:
+    oneOf:
+      - type: boolean
+      - type: 'null'
+additionalProperties: false

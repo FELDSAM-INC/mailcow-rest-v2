@@ -1,0 +1,71 @@
+type: object
+description: |
+  One message that hit a rate limit (Redis list `RL_LOG`, written by Rspamd's metadata exporter).
+  `rateLimitHash` identifies the limit, so that a client can reset it with feature 006; it is
+  `null` when legacy recorded `err` (the limit could not be identified).
+required:
+  - id
+  - time
+  - rateLimitName
+  - rateLimitHash
+  - sender
+  - recipients
+  - user
+  - messageId
+  - headerFrom
+  - subject
+  - scannerQueueId
+  - clientAddress
+properties:
+  id:
+    type: string
+    maxLength: 64
+    description: Opaque cursor of the entry (see `before`).
+  time:
+    type: string
+    format: date-time
+  rateLimitName:
+    oneOf:
+      - type: string
+      - type: 'null'
+  rateLimitHash:
+    oneOf:
+      - type: string
+      - type: 'null'
+  sender:
+    description: Envelope sender.
+    oneOf:
+      - type: string
+      - type: 'null'
+  recipients:
+    type: array
+    description: Envelope recipients.
+    items:
+      type: string
+  user:
+    description: Authenticated user, `null` for none.
+    oneOf:
+      - type: string
+      - type: 'null'
+  messageId:
+    oneOf:
+      - type: string
+      - type: 'null'
+  headerFrom:
+    oneOf:
+      - type: string
+      - type: 'null'
+  subject:
+    oneOf:
+      - type: string
+      - type: 'null'
+  scannerQueueId:
+    description: Queue ID of the message in the scanner.
+    oneOf:
+      - type: string
+      - type: 'null'
+  clientAddress:
+    oneOf:
+      - type: string
+      - type: 'null'
+additionalProperties: false

@@ -1,0 +1,35 @@
+post:
+  operationId: purgeMailQueue
+  tags: [Mail queue]
+  summary: Delete all queued messages
+  description: |
+    **Destructive and irreversible**: every queued message in every queue, including the hold queue,
+    is deleted and never delivered (`postsuper -d ALL`, legacy "Delete all"). Clients must ask for
+    confirmation and should name the number of queued messages (`meta.queueCounts.total` of the
+    listing); the API needs no confirmation token.
+
+    Completes before the response. A stopped Postfix container answers `mail-service-not-running`.
+    Needs an administrator session or a read-write key owned by an administrator. Audited; when the
+    audit log cannot be written before the action, it is refused with `temporary-failure`.
+  x-destructive: true
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailQueueActionResultResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../../components/responses/MailQueueConflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '502':
+      $ref: '../../components/responses/MailQueueActionFailed.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'
+    '504':
+      $ref: '../../components/responses/MonitoringOutcomeUnknown.yaml'

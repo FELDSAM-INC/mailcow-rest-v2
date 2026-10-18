@@ -1,0 +1,9 @@
+description: Problem of type `queue-action-failed`. `serviceMessage` carries Postfix's message.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [serviceMessage]
+    properties:
+      serviceMessage:
+        type: string
+        description: Message reported by Postfix or the container service. Never contains message content.

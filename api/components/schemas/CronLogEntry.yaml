@@ -1,0 +1,23 @@
+type: object
+description: One entry of the identity-provider sync task log (Redis list `CRON_LOG`).
+required: [id, time, task, priority, severity, message]
+properties:
+  id:
+    type: string
+    maxLength: 64
+    description: Opaque cursor of the entry (see `before`).
+  time:
+    type: string
+    format: date-time
+  task:
+    type: string
+    description: Task name, for example `Keycloak Sync` or `LDAP Sync`.
+  priority:
+    type: string
+  severity:
+    oneOf:
+      - $ref: './LogSeverity.yaml'
+      - type: 'null'
+  message:
+    type: string
+additionalProperties: false

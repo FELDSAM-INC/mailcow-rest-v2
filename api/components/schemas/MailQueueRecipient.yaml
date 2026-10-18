@@ -1,0 +1,11 @@
+type: object
+required: [address, deferralReason]
+properties:
+  address:
+    type: string
+  deferralReason:
+    description: Why delivery to this recipient was deferred, as Postfix reports it, else `null`.
+    oneOf:
+      - type: string
+      - type: 'null'
+additionalProperties: false

@@ -1,0 +1,9 @@
+description: The server's public addresses.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/PublicAddresses.yaml'

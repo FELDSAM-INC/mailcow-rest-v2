@@ -1,0 +1,13 @@
+type: object
+description: Outcome of a whole-queue action.
+required: [action, completedAt]
+properties:
+  action:
+    type: string
+    enum: [flush, purge]
+    description: '`flush`: Postfix accepted the request to attempt delivery of every message not on hold. `purge`: every queued message was deleted, including the hold queue.'
+  completedAt:
+    type: string
+    format: date-time
+    description: When Postfix accepted (flush) or completed (purge) the action.
+additionalProperties: false

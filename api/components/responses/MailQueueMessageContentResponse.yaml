@@ -1,0 +1,9 @@
+description: The message content as Postfix shows it.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/MailQueueMessageContent.yaml'

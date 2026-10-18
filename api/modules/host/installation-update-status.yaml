@@ -1,0 +1,24 @@
+get:
+  operationId: getUpdateStatus
+  tags: [Host and installation]
+  summary: Get the update status
+  description: |
+    Whether a newer mailcow release exists, with its tag, release page, publication time and release
+    notes, and the release notes of the installed version. The check is a server setting (on by
+    default, off in the FeldHost deployment) with a configurable release source and stable branch;
+    a disabled check, or an installation on another branch, reports `disabled` without any outbound
+    request. Successful checks are cached for 1 hour and failed checks for 5 minutes, per installed
+    version. Release notes are externally authored Markdown that clients must render safely.
+    Administrators only, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/InstallationUpdateStatusResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

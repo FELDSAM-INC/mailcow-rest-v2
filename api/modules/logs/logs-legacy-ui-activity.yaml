@@ -1,0 +1,82 @@
+get:
+  operationId: listLegacyUiActivityLog
+  tags: [Logs]
+  summary: List the legacy UI activity log
+  description: |
+    Actions recorded by the legacy UI and `/api/v1` (table `logs`, never trimmed): type, task, user,
+    role, client address, message key and parameters, and the recorded call. Actions made through this
+    API are in `GET /audit-events` instead. **Secrets are masked** in the call and the message
+    parameters with the patterns of the legacy API request log (`pass`, `secret`, `private`, `token`,
+    or the name `key`). `q` and the filters operate on the masked entries only.
+
+    Administrators only, read-only keys included. Reads are not audited. Entries are returned as
+    mailcow retains them (see `MonitoringCapabilities.logRetention`); entries that cannot be parsed
+    are left out of the list and the total. Sorted by time, newest first by default; entries with
+    the same time keep the order in which mailcow stored them. `from` and `to` are inclusive. Text
+    filters match case-insensitively as substrings, and several values of one filter match entries
+    with any of them. To load older entries while new ones arrive, pass the `id` of the oldest entry
+    held as `before`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/LogSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - $ref: '../../components/parameters/LogFrom.yaml'
+    - $ref: '../../components/parameters/LogTo.yaml'
+    - $ref: '../../components/parameters/LogBefore.yaml'
+    - name: type
+      in: query
+      required: false
+      description: Only entries whose type contains one of these values.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          minLength: 1
+          maxLength: 255
+    - name: user
+      in: query
+      required: false
+      description: Only entries whose user contains one of these values.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          minLength: 1
+          maxLength: 255
+    - name: role
+      in: query
+      required: false
+      description: Only entries whose role contains one of these values.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          type: string
+          minLength: 1
+          maxLength: 255
+  responses:
+    '200':
+      $ref: '../../components/responses/LegacyUiActivityLogEntryListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

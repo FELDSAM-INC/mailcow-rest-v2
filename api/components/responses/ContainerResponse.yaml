@@ -1,0 +1,9 @@
+description: One container.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/Container.yaml'

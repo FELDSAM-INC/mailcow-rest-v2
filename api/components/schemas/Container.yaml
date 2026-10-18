@@ -1,0 +1,63 @@
+type: object
+description: |
+  A service container of this mailcow installation (the containers of the configured compose
+  project, `COMPOSE_PROJECT_NAME`), including stopped ones. The antivirus scanner and the OLE
+  scanner are hidden when the configuration disables them (`SKIP_CLAMD`, `SKIP_OLEFY`), as in
+  legacy. States are at most 5 seconds old when returned. Containers carry no version tag.
+required:
+  - name
+  - image
+  - state
+  - running
+  - startedAt
+  - health
+  - protected
+  - role
+  - availableActions
+  - collectedAt
+properties:
+  name:
+    type: string
+    description: Compose service name, for example `postfix-mailcow`. Identifies the container in every operation.
+    examples: [postfix-mailcow]
+  image:
+    type: string
+    description: Image reference, for example `ghcr.io/mailcow/postfix:1.80`.
+  state:
+    $ref: './ContainerState.yaml'
+  running:
+    type: boolean
+    description: The container service's running flag. Start and stop decide by it, as legacy does.
+  startedAt:
+    description: Last start time, `null` when the container never started.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  health:
+    description: Health status when the container defines a health check, else `null`.
+    oneOf:
+      - type: string
+        enum: [starting, healthy, unhealthy]
+      - type: 'null'
+  protected:
+    type: boolean
+    description: |
+      Whether the container is protected (server setting; by default the container service, the
+      database, the key-value store, the reverse proxy and this API's own container). Protected
+      containers cannot be stopped. This API's own container can be neither stopped nor restarted.
+  role:
+    $ref: './ContainerRole.yaml'
+  availableActions:
+    type: array
+    description: |
+      Actions that would change something now: `start` when not running, `stop` when running and
+      not protected, `restart` unless this is the API's own container.
+    uniqueItems: true
+    items:
+      $ref: './ContainerAction.yaml'
+  collectedAt:
+    type: string
+    format: date-time
+    description: When the container states were collected, in UTC.
+additionalProperties: false

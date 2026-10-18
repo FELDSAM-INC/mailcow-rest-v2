@@ -1,0 +1,31 @@
+get:
+  operationId: listFail2BanPermanentBans
+  tags: [Fail2ban]
+  summary: List the permanent bans
+  description: |
+    The bans the ban service applies for denylist entries, with the first address and the time the
+    ban started. A permanent ban is lifted by removing its entry from the denylist
+    (`PATCH /fail2ban/settings`). `q` searches the network. Administrators only, read-only keys
+    included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/Fail2BanPermanentBanSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/Fail2BanPermanentBanListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

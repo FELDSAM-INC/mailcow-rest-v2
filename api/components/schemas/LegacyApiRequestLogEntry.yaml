@@ -1,0 +1,28 @@
+type: object
+description: |
+  One request to the legacy `/api/v1` (Redis list `API_LOG`). `requestData` is the recorded form
+  data (`attr`, `items`) as structured JSON, with secrets masked: the value of every field whose
+  name contains `pass`, `secret`, `private` or `token` (case-insensitive), or whose name is `key`,
+  is replaced with `*`, at any depth. Searches and filters see only the masked data. When the
+  recorded data cannot be parsed, `requestData` is `null` and nothing of it is returned.
+required: [id, time, uri, method, clientAddress, requestData]
+properties:
+  id:
+    type: string
+    maxLength: 64
+    description: Opaque cursor of the entry (see `before`).
+  time:
+    type: string
+    format: date-time
+  uri:
+    type: string
+  method:
+    type: string
+  clientAddress:
+    type: string
+  requestData:
+    oneOf:
+      - type: object
+        additionalProperties: true
+      - type: 'null'
+additionalProperties: false

@@ -1,0 +1,23 @@
+type: object
+description: |
+  The server's public addresses as mailcow's external check service sees them (legacy
+  `get/status/host/ip`, `ipv4.mailcow.email` and `ipv6.mailcow.email`). An address is `null` when
+  the service did not answer with a valid address of that family within the timeouts (10 seconds
+  to connect, 15 seconds in total).
+required: [ipv4, ipv6, checkedAt]
+properties:
+  ipv4:
+    oneOf:
+      - type: string
+        format: ipv4
+      - type: 'null'
+  ipv6:
+    oneOf:
+      - type: string
+        format: ipv6
+      - type: 'null'
+  checkedAt:
+    type: string
+    format: date-time
+    description: When the external service was asked, in UTC.
+additionalProperties: false

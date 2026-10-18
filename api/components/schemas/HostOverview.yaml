@@ -1,0 +1,84 @@
+type: object
+description: |
+  System overview of the mailcow host (legacy `get/status/host` and the dashboard's "System"
+  card). The host figures come from mailcow's container service and are at most 10 seconds old when
+  returned. Collection is shared between all clients, so polling by more administrators does not
+  measure the host more often. Clients should poll every 5 seconds while the view is visible; the
+  API offers no push channel.
+required:
+  - hostName
+  - timeZone
+  - architecture
+  - version
+  - currentTime
+  - uptimeSeconds
+  - cpu
+  - memory
+  - swap
+  - collectedAt
+properties:
+  hostName:
+    type: string
+    description: mailcow's host name (`MAILCOW_HOSTNAME`).
+  timeZone:
+    type: string
+    description: Configured time zone (`TZ`), for example `Europe/Prague`.
+  architecture:
+    type: string
+    description: Processor architecture of the host, for example `x86_64` or `aarch64`.
+  version:
+    $ref: './InstallationVersion.yaml'
+  currentTime:
+    type: string
+    format: date-time
+    description: The host's current time when the response was produced, in UTC.
+  uptimeSeconds:
+    type: integer
+    minimum: 0
+    description: Host uptime at `collectedAt`, in seconds.
+  cpu:
+    type: object
+    required: [cores, usagePercent]
+    properties:
+      cores:
+        type: integer
+        minimum: 1
+        description: Number of logical processor cores.
+      usagePercent:
+        type: number
+        minimum: 0
+        maximum: 100
+        description: Processor usage of the whole host, in percent.
+    additionalProperties: false
+  memory:
+    type: object
+    required: [totalBytes, usagePercent]
+    properties:
+      totalBytes:
+        type: integer
+        minimum: 0
+      usagePercent:
+        type: number
+        minimum: 0
+        maximum: 100
+    additionalProperties: false
+  swap:
+    type: object
+    required: [totalBytes, usedBytes, usagePercent]
+    properties:
+      totalBytes:
+        type: integer
+        minimum: 0
+      usedBytes:
+        type: integer
+        minimum: 0
+      usagePercent:
+        type: number
+        minimum: 0
+        maximum: 100
+    additionalProperties: false
+  collectedAt:
+    type: string
+    format: date-time
+    description: When the container service measured the figures, in UTC.
+additionalProperties: false

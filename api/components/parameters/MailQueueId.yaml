@@ -1,0 +1,7 @@
+name: queueId
+in: path
+required: true
+description: Postfix queue ID (hexadecimal).
+schema:
+  type: string
+  pattern: '^[0-9A-Fa-f]{1,32}$'

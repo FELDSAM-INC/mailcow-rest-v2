@@ -170,9 +170,12 @@ class MailboxTemplateService
         }));
     }
 
-    public function delete(Principal $principal, int $id, ?string $ifMatch): void
+    /**
+     * Deletes a template; a bulk deletion passes its request ID for the audit record (G39).
+     */
+    public function delete(Principal $principal, int $id, ?string $ifMatch, ?string $bulkRequestId = null): void
     {
-        DB::transaction(function () use ($principal, $id, $ifMatch): void {
+        DB::transaction(function () use ($principal, $id, $ifMatch, $bulkRequestId): void {
             $row = DB::table('templates')->where('type', 'mailbox')->where('id', $id)->lockForUpdate()->first();
 
             if (! $row instanceof stdClass) {
@@ -189,7 +192,7 @@ class MailboxTemplateService
 
             $values = $this->defaults->templateValues($row->attributes);
             DB::table('templates')->where('id', $id)->delete();
-            $this->audit->record(AuditEventType::MailboxTemplateDeletion, true, $principal, self::target($id, (string) $row->template), null, null, ['values' => $values]);
+            $this->audit->record(AuditEventType::MailboxTemplateDeletion, true, $principal, self::target($id, (string) $row->template), null, null, ['values' => $values] + ($bulkRequestId === null ? [] : ['bulkRequestId' => $bulkRequestId]));
         });
     }
 
@@ -273,7 +276,7 @@ class MailboxTemplateService
     /**
      * @return array{type: string, id: string, name: string}
      */
-    private static function target(int $id, string $name): array
+    public static function target(int $id, string $name): array
     {
         return ['type' => 'mailboxTemplate', 'id' => (string) $id, 'name' => $name];
     }

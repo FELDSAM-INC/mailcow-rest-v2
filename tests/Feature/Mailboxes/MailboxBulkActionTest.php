@@ -190,6 +190,17 @@ class MailboxBulkActionTest extends TestCase
         $this->assertSame(['success', 'failure'], array_map(fn (object $r): string => $r->outcome, $this->auditOf('mailboxUpdate')), 'One record per distinct target.');
     }
 
+    public function test_an_address_deleted_under_two_spellings_is_deleted_and_reported_once(): void
+    {
+        $this->mailcow()->legacyMailbox('anna@a.example');
+        $this->asAdmin();
+
+        $data = $this->bulk('delete', ['anna@a.example', 'ANNA@A.example'])->assertOk()->json('data');
+
+        $this->assertSame([['anna@a.example', 'done']], array_map(fn (array $r): array => [$r['id'], $r['outcome']], $data['results']));
+        $this->assertSame(['success'], array_map(fn (object $r): string => $r->outcome, $this->auditOf('mailboxDeletion')));
+    }
+
     public function test_after_a_mail_store_timeout_the_remaining_deletions_fail_at_once(): void
     {
         foreach (['one', 'two', 'three'] as $local) {

@@ -129,6 +129,32 @@ class RefusalAuditor
     }
 
     /**
+     * The resolver answer for a bulk request refused as a whole (a target resolver's
+     * `fromBulkAction` case): one record with a null target, the requested `targetIds` (at most
+     * 100, each cut to 255 characters) and the action.
+     *
+     * @return array{target: null, details: array<string, mixed>, event: AuditEventType}
+     */
+    public static function bulkRefusal(Request $request, AuditEventType $event): array
+    {
+        $action = $request->input('action');
+        $targets = $request->input('targets');
+        $ids = [];
+
+        foreach (is_array($targets) ? array_slice($targets, 0, 100) : [] as $target) {
+            if (is_array($target) && is_scalar($target['id'] ?? null)) {
+                $ids[] = mb_substr((string) $target['id'], 0, 255);
+            }
+        }
+
+        return [
+            'event' => $event,
+            'target' => null,
+            'details' => ['targetIds' => $ids, 'bulkAction' => is_string($action) ? mb_substr($action, 0, 32) : null],
+        ];
+    }
+
+    /**
      * Writes one failure record, in its own transaction (the refused change was rolled back).
      *
      * @param  array{type: string, id?: string|null, name?: string|null}|null  $target

@@ -26,8 +26,8 @@ docker compose run --rm app vendor/bin/pint --test
 docker compose run --rm app vendor/bin/phpstan analyse
 ```
 
-**Expected**: everything green. `build/contract/coverage.json` lists the 16 operations of this
-feature as covered. The concurrency group makes 1,000 creation attempts from 20 parallel processes
+**Expected**: everything green. `build/contract/coverage.json` lists the 17 operations of this
+feature (and 002's `applyDomainTemplateBulkAction`, added with it) as covered. The concurrency group makes 1,000 creation attempts from 20 parallel processes
 against a domain with room for 10: exactly 10 mailboxes are created, the others are refused
 (`mailbox-limit-reached`, or `422` for the domain quota left, which is checked first), and the
 domain quota is never exceeded. The performance group (10,000 mailboxes in 500 domains) reports
@@ -93,11 +93,14 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailboxes/bulk-actions \
   -d '{"action":"disallowProtocol","protocol":"pop3","targets":[{"id":"anna@example.org"},{"id":"nobody@example.org"}]}' \
   | jq '.data.summary'                   # done 1, notFound 1
 
-# Templates (US6)
+# Templates (US6, G39; /domain-templates/bulk-actions works the same way, G40)
 curl -s $C $B/mailbox-templates | jq '.data[] | {id, name, isDefault}'
 DEF=$(curl -s $C "$B/mailbox-templates?q=Default" | jq '.data[0].id')
 curl -s $C -H 'Content-Type: application/merge-patch+json' -H "X-CSRF-Token: $T" -X PATCH \
   $B/mailbox-templates/$DEF -d '{"name":"Other"}' | jq .type        # mailbox-template-protected
+NEW=$(curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailbox-templates -d '{"name":"Bulk one"}' | jq '.data.id')
+curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/mailbox-templates/bulk-actions \
+  -d "{\"action\":\"delete\",\"targets\":[{\"id\":\"$NEW\"},{\"id\":\"$DEF\"}]}" | jq -c '[.data.results[].outcome]'   # ["done","refused"] (G39)
 
 # Domain administrator: scope and flags
 #   Sign in as "reseller" (no protocol_access flag), as above, and take a new token.

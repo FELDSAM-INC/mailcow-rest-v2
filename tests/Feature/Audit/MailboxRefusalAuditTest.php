@@ -74,6 +74,7 @@ class MailboxRefusalAuditTest extends TestCase
             ['POST', '/api/v2/mailbox-templates', ['name' => 'New'], 'mailboxTemplateCreation', null, null],
             ['PATCH', '/api/v2/mailbox-templates/'.$this->templateId, ['quota' => 0], 'mailboxTemplateUpdate', 'mailboxTemplate', (string) $this->templateId],
             ['DELETE', '/api/v2/mailbox-templates/'.$this->templateId, null, 'mailboxTemplateDeletion', 'mailboxTemplate', (string) $this->templateId],
+            ['POST', '/api/v2/mailbox-templates/bulk-actions', ['action' => 'delete', 'targets' => [['id' => (string) $this->templateId]]], 'mailboxTemplateDeletion', null, null],
         ];
 
         foreach ($operations as [$method, $path, $body, $event, $targetType, $targetId]) {

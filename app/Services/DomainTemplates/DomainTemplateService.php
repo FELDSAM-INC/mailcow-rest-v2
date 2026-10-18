@@ -176,9 +176,12 @@ class DomainTemplateService
         });
     }
 
-    public function delete(Principal $principal, int $id, ?string $ifMatch): void
+    /**
+     * Deletes a template; a bulk deletion passes its request ID for the audit record (G40).
+     */
+    public function delete(Principal $principal, int $id, ?string $ifMatch, ?string $bulkRequestId = null): void
     {
-        DB::transaction(function () use ($principal, $id, $ifMatch): void {
+        DB::transaction(function () use ($principal, $id, $ifMatch, $bulkRequestId): void {
             $row = DB::table('templates')->where('type', 'domain')->where('id', $id)->lockForUpdate()->first() ?? throw new NotFoundHttpException('The domain template does not exist.');
 
             if (ETag::preconditionFails($ifMatch, $this->version->forTemplate($row))) {
@@ -190,7 +193,7 @@ class DomainTemplateService
             }
 
             DB::table('templates')->where('id', $id)->where('type', 'domain')->delete();
-            $this->audit->record(AuditEventType::DomainTemplateDeletion, true, $principal, self::target($id, (string) $row->template), null, null, ['values' => $this->codec->decode($row->attributes)]);
+            $this->audit->record(AuditEventType::DomainTemplateDeletion, true, $principal, self::target($id, (string) $row->template), null, null, ['values' => $this->codec->decode($row->attributes)] + ($bulkRequestId === null ? [] : ['bulkRequestId' => $bulkRequestId]));
         });
     }
 
@@ -227,7 +230,7 @@ class DomainTemplateService
     /**
      * @return array{type: string, id: string, name: string}
      */
-    private static function target(int $id, string $name): array
+    public static function target(int $id, string $name): array
     {
         return ['type' => 'domainTemplate', 'id' => (string) $id, 'name' => $name];
     }

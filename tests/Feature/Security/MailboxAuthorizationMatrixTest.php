@@ -35,7 +35,7 @@ class MailboxAuthorizationMatrixTest extends TestCase
     ];
 
     /** Operations domain administrators may not use (FR-005): template writes. */
-    private const ADMIN_ONLY = ['createMailboxTemplate', 'updateMailboxTemplate', 'deleteMailboxTemplate'];
+    private const ADMIN_ONLY = ['createMailboxTemplate', 'updateMailboxTemplate', 'deleteMailboxTemplate', 'applyMailboxTemplateBulkAction'];
 
     private int $templateId = 0;
 
@@ -89,6 +89,7 @@ class MailboxAuthorizationMatrixTest extends TestCase
             'getMailboxTemplate' => ['GET', '/api/v2/mailbox-templates/{template}', null, 200],
             'updateMailboxTemplate' => ['PATCH', '/api/v2/mailbox-templates/{template}', ['quota' => 2147483648], 200],
             'deleteMailboxTemplate' => ['DELETE', '/api/v2/mailbox-templates/{template}', null, 204],
+            'applyMailboxTemplateBulkAction' => ['POST', '/api/v2/mailbox-templates/bulk-actions', ['action' => 'delete', 'targets' => [['id' => '{template}']]], 200],
             'getPasswordPolicy' => ['GET', '/api/v2/password-policy', null, 200],
         ];
     }
@@ -165,6 +166,7 @@ class MailboxAuthorizationMatrixTest extends TestCase
         [$method, $path, $body] = self::requests()[$operation];
         [$status, $type] = self::expected($operation, $caller);
 
+        $body = $body === null ? null : (array) json_decode(str_replace('{template}', (string) $this->templateId, (string) json_encode($body)), true);
         $response = $this->send($caller, $method, str_replace('{template}', (string) $this->templateId, $path), $body);
 
         $response->assertStatus($status);

@@ -31,21 +31,7 @@ final class MailboxAuditTargets
     public static function mailbox(Request $request, array $config): array
     {
         if (($config['event'] ?? null) === 'fromBulkAction') {
-            $action = $request->input('action');
-            $targets = $request->input('targets');
-            $ids = [];
-
-            foreach (is_array($targets) ? array_slice($targets, 0, 100) : [] as $target) {
-                if (is_array($target) && is_string($target['id'] ?? null)) {
-                    $ids[] = mb_substr($target['id'], 0, 255);
-                }
-            }
-
-            return [
-                'event' => $action === 'delete' ? AuditEventType::MailboxDeletion : AuditEventType::MailboxUpdate,
-                'target' => null,
-                'details' => ['targetIds' => $ids, 'bulkAction' => is_string($action) ? mb_substr($action, 0, 32) : null],
-            ];
+            return RefusalAuditor::bulkRefusal($request, $request->input('action') === 'delete' ? AuditEventType::MailboxDeletion : AuditEventType::MailboxUpdate);
         }
 
         $raw = $request->route('mailbox');
@@ -86,10 +72,14 @@ final class MailboxAuditTargets
 
     /**
      * @param  array<string, mixed>  $config
-     * @return array{target: array{type: string, id: string|null, name: string|null}|null}
+     * @return array{target: array{type: string, id: string|null, name: string|null}|null, details?: array<string, mixed>, event?: AuditEventType}
      */
     public static function template(Request $request, array $config): array
     {
+        if (($config['event'] ?? null) === 'fromBulkAction') {
+            return RefusalAuditor::bulkRefusal($request, AuditEventType::MailboxTemplateDeletion);
+        }
+
         $id = $request->route('mailboxTemplateId');
 
         if (is_string($id) && $id !== '') {

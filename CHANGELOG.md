@@ -76,14 +76,14 @@ Contract changes made while implementing feature 002:
 
 Release checks of feature 002 (quickstart Part C: SC-001, SC-002, SC-003, SC-008): not run yet.
 
-Contract: the 16 operations of feature 003 (mailboxes, mailbox templates and the password policy
-read):
+Contract: the 17 operations of feature 003 (mailboxes, mailbox templates and the password policy
+read), and 002's `applyDomainTemplateBulkAction`:
 
 - Mailboxes: `listMailboxes`, `createMailbox`, `getMailboxCapabilities`, `listMailboxTags`,
   `applyMailboxBulkAction`, `getMailbox`, `updateMailbox`, `deleteMailbox`,
   `previewMailboxDeletion`, `renameMailbox`.
 - Mailbox templates: `listMailboxTemplates`, `createMailboxTemplate`, `getMailboxTemplate`,
-  `updateMailboxTemplate`, `deleteMailboxTemplate`.
+  `updateMailboxTemplate`, `deleteMailboxTemplate`, `applyMailboxTemplateBulkAction`.
 - Password policy: `getPasswordPolicy` (feature 013 adds the change operation with the same tag).
 - `listAuditEvents`: `targetType=mailbox|mailboxTemplate` with `targetId`.
 
@@ -96,6 +96,12 @@ Contract changes made while implementing feature 003:
   `MailboxOutcomeUnknownProblem` extends it.
 - Every `503 temporary-failure` now carries `dependency` (`sharedStore` for mailcow's Redis; for
   mailboxes also `mailStore`, `webmail` and `database`), additively.
+- `applyMailboxTemplateBulkAction` (`POST /mailbox-templates/bulk-actions`) and
+  `applyDomainTemplateBulkAction` (`POST /domain-templates/bulk-actions`) delete up to 100 templates
+  at once, as legacy's `delete_selected` does (G39, G40). Legacy's mass deletion of domain templates
+  stops after the first template; the API deletes every target.
+- Bulk actions resolve and deduplicate every target before applying any, so an object named twice
+  in different spellings is deleted and reported once.
 
 Release checks of feature 003 (quickstart Part C: SC-001, SC-003, SC-007, SC-008): not run yet.
 

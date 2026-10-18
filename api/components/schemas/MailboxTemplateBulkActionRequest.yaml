@@ -1,0 +1,21 @@
+type: object
+description: |
+  One action applied to several mailbox templates, as the legacy mass deletion of the mailbox
+  template list does (`delete_selected`). Each target is version-checked, deleted and audited on
+  its own, exactly as `deleteMailboxTemplate`; one failure does not stop the others. A target's `id`
+  is the template ID as in the template's own path; an unknown ID, a domain template's ID or a value
+  that is not an ID gets `notFound`, and an ID given twice is processed and reported once. At most
+  100 targets may be sent (`tooMany` on `targets`, with `max: 100`).
+required: [action, targets]
+properties:
+  action:
+    type: string
+    enum: [delete]
+    description: '`delete` deletes the template. The Default template is refused (`mailbox-template-protected`).'
+  targets:
+    type: array
+    minItems: 1
+    maxItems: 100
+    items:
+      $ref: './BulkTarget.yaml'
+additionalProperties: false

@@ -1,5 +1,8 @@
-# Paths of the domain-templates module: named values that pre-fill new domains.
+# Paths of the domain-templates module: named values that pre-fill new domains, and their bulk
+# deletion.
 /domain-templates:
   $ref: './domain-templates.yaml'
+/domain-templates/bulk-actions:
+  $ref: './domain-template-bulk-actions.yaml'
 /domain-templates/{templateId}:
   $ref: './domain-template.yaml'

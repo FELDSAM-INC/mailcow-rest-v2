@@ -81,7 +81,8 @@
                 "createDomainTemplate",
                 "getDomainTemplate",
                 "updateDomainTemplate",
-                "deleteDomainTemplate"
+                "deleteDomainTemplate",
+                "applyDomainTemplateBulkAction"
             ],
             "problemTypes": [
                 "domain-exists",
@@ -110,6 +111,7 @@
                 "getMailboxTemplate",
                 "updateMailboxTemplate",
                 "deleteMailboxTemplate",
+                "applyMailboxTemplateBulkAction",
                 "getPasswordPolicy"
             ],
             "problemTypes": [

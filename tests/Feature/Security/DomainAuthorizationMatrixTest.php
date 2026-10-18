@@ -89,6 +89,7 @@ class DomainAuthorizationMatrixTest extends TestCase
             'getDomainTemplate' => ['GET', '/api/v2/domain-templates/{template}', null, 200],
             'updateDomainTemplate' => ['PATCH', '/api/v2/domain-templates/{template}', ['maxMailboxes' => 3], 200],
             'deleteDomainTemplate' => ['DELETE', '/api/v2/domain-templates/{template}', null, 204],
+            'applyDomainTemplateBulkAction' => ['POST', '/api/v2/domain-templates/bulk-actions', ['action' => 'delete', 'targets' => [['id' => '{template}']]], 200],
         ];
     }
 
@@ -175,6 +176,7 @@ class DomainAuthorizationMatrixTest extends TestCase
         [$method, $path, $body] = self::requests()[$operation];
         [$status, $type] = self::expected($operation, $caller);
 
+        $body = $body === null ? null : (array) json_decode(str_replace('{template}', (string) $this->templateId, (string) json_encode($body)), true);
         $response = $this->send($caller, $method, str_replace('{template}', (string) $this->templateId, $path), $body);
 
         $response->assertStatus($status);

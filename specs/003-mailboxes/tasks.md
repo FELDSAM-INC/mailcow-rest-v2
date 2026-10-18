@@ -862,6 +862,32 @@ inject a failure into each step (spec US8).
 
 ---
 
+## Phase 12: Additions from the 1:1 review of the legacy forms (G39, G40)
+
+**Purpose**: legacy deletes several mailbox templates and several domain templates at once
+(`delete_selected` on `tab-templates-mbox.twig` and `tab-templates-domains.twig`). Added to 003's
+scope by the orchestrator on 2026-10-18; G40 is 002's area and reuses 002's domain template
+deletion.
+
+- [X] T093 [P] Contract: `POST /mailbox-templates/bulk-actions` (`applyMailboxTemplateBulkAction`,
+  `MailboxTemplateBulkActionRequest`) and `POST /domain-templates/bulk-actions`
+  (`applyDomainTemplateBulkAction`, `DomainTemplateBulkActionRequest`), action `delete`, up to 100
+  `BulkTarget`s, `BulkResultResponse`; register both in `tests/feature-registry.json` (003 and 002).
+- [X] T094 [P] Write `tests/Feature/MailboxTemplates/MailboxTemplateBulkActionTest.php` and
+  `tests/Feature/DomainTemplates/DomainTemplateBulkActionTest.php` (deleted with one record each and
+  the bulk request ID, Default refused, unknown and other-type IDs `notFound`, repeated IDs once,
+  outdated versions per item, whole-request refusals recorded once with `targetIds`), add both
+  operations to the two authorization matrices and the read-only key row of
+  `MailboxRefusalAuditTest`, and a deletion under two spellings to `MailboxBulkActionTest`.
+- [X] T095 Implement `MailboxTemplateBulkActions` and `DomainTemplateBulkActions` on the shared
+  `BulkActionRunner` through the services' single deletions (which take the bulk request ID), the
+  requests, controllers and routes (`fromBulkAction` refusal auditing), and the bulk detail keys of
+  `mailboxTemplateDeletion` and `domainTemplateDeletion`.
+- [X] T096 [P] Mark G39 and G40 done in `docs/api-gaps.md`; document the detail keys in
+  `docs/audit-events.md` and the operations in `CHANGELOG.md`.
+
+---
+
 ## Dependencies and execution order
 
 ### Phase dependencies
@@ -1045,3 +1071,15 @@ what exists map as listed.
   (the template example creates `carol`), template ids are looked up by name, and the audit records
   of the renamed mailbox are found under its address at the time (`anna.smith@example.org`). Part C
   stays the release checklist for a mailcow host and was not run.
+- **T093–T096 (G39, G40)**: the template IDs of `BulkTarget` stay strings without a pattern, as the
+  other bulk actions' targets: a value that is not an ID, an unknown ID and the ID of the other
+  template type are `notFound`. The limit is the fixed 100 of the conventions, not
+  `restv2.bulk_limit` (which bounds the mail-store calls of mailbox deletions). Legacy's domain
+  template loop returns after the first ID (a bug); the API deletes every target. Unknown members are
+  `immutable`, as in the mailbox bulk action. The resolver code for a bulk request refused as a whole
+  moved to `RefusalAuditor::bulkRefusal()`, used by the domain, mailbox and both template resolvers.
+  Writing the repeated-ID tests showed that `BulkActionRunner` resolved each target only when it
+  reached it, so a second spelling of an object deleted by an earlier item (`anna@…` and `ANNA@…`,
+  `87` and `087`) was reported `notFound` with a second record; the runner now resolves and
+  deduplicates all targets before applying any (this also fixes 002's domain and 003's mailbox bulk
+  deletions).

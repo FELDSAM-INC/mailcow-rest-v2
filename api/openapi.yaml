@@ -114,7 +114,7 @@ tags:
   - name: Domains
     description: Mail domains, their limits, quotas, relay options, tags, footer and bulk actions.
   - name: Domain templates
-    description: Named values that pre-fill new domains.
+    description: Named values that pre-fill new domains, and their bulk deletion.
   - name: Aliases
     description: |
       Aliases and catch-all aliases, copies over alias domains, bulk actions, and the capabilities
@@ -128,7 +128,7 @@ tags:
   - name: Mailboxes
     description: Mailboxes of the caller's domains, their settings, rename, deletion and bulk actions.
   - name: Mailbox templates
-    description: Templates whose values pre-fill new mailboxes.
+    description: Templates whose values pre-fill new mailboxes, and their bulk deletion.
   - name: Password policy
     description: The password rules applied whenever a password is set.
   - name: DKIM
@@ -354,6 +354,8 @@ paths:
     $ref: './modules/domains/_index.yaml#/~1domain-tags'
   /domain-templates:
     $ref: './modules/domain-templates/_index.yaml#/~1domain-templates'
+  /domain-templates/bulk-actions:
+    $ref: './modules/domain-templates/_index.yaml#/~1domain-templates~1bulk-actions'
   /domain-templates/{templateId}:
     $ref: './modules/domain-templates/_index.yaml#/~1domain-templates~1{templateId}'
   /aliases:
@@ -398,6 +400,8 @@ paths:
     $ref: './modules/mailboxes/_index.yaml#/~1mailboxes~1{mailbox}~1rename'
   /mailbox-templates:
     $ref: './modules/mailbox-templates/_index.yaml#/~1mailbox-templates'
+  /mailbox-templates/bulk-actions:
+    $ref: './modules/mailbox-templates/_index.yaml#/~1mailbox-templates~1bulk-actions'
   /mailbox-templates/{mailboxTemplateId}:
     $ref: './modules/mailbox-templates/_index.yaml#/~1mailbox-templates~1{mailboxTemplateId}'
   /password-policy:

@@ -14,10 +14,10 @@ use Throwable;
 
 /**
  * The per-target loop of every bulk action (docs/conventions.md "Bulk actions"; created with
- * feature 002, reused by features 003 to 013): targets are resolved and deduplicated in request
- * order (the first spelling stays the result's `id`), each item's optional `version` is passed on
- * as its `If-Match` (with or without the quotes of the ETag header, G33), and each item is applied
- * on its own: one failure never stops the others.
+ * feature 002, reused by features 003 to 013): all targets are resolved and deduplicated in request
+ * order before any is applied (the first spelling stays the result's `id`), each item's optional
+ * `version` is passed on as its `If-Match` (with or without the quotes of the ETag header, G33),
+ * and each item is applied on its own: one failure never stops the others.
  *
  * An item's exception is rendered as the problem the single operation would answer and mapped to
  * its outcome (`404` notFound, `412` outdated, other `4xx` refused, else failed); its refusal is
@@ -43,16 +43,22 @@ class BulkActionRunner
         $seen = [];
         $summary = ['total' => 0, 'done' => 0, 'notFound' => 0, 'refused' => 0, 'outdated' => 0, 'failed' => 0];
 
+        // Every target is resolved before any is applied, so that a second spelling of an object
+        // deleted by an earlier item still counts as the same object (feature 003, G39).
+        $items = [];
+
         foreach ($targets as $target) {
             $id = $target['id'];
             $key = $resolve($id);
             $dedupe = $key ?? "\0".$id;
 
-            if (isset($seen[$dedupe])) {
-                continue;
+            if (! isset($seen[$dedupe])) {
+                $seen[$dedupe] = true;
+                $items[] = [$target, $id, $key];
             }
+        }
 
-            $seen[$dedupe] = true;
+        foreach ($items as [$target, $id, $key]) {
             $result = ['id' => $id];
 
             try {

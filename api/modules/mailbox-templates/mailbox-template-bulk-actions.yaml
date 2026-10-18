@@ -1,0 +1,43 @@
+post:
+  operationId: applyMailboxTemplateBulkAction
+  tags: [Mailbox templates]
+  summary: Apply an action to several mailbox templates
+  description: |
+    Deletes up to 100 mailbox templates in one request, as the legacy mass deletion does.
+    Administrators only, from a session or a read-write key; any other caller is refused as a whole
+    (`403`). More than 100 targets are refused as a whole (`422`, `tooMany` on `targets`, with
+    `max: 100`).
+
+    Otherwise each distinct template is processed like the single deletion, with its checks and
+    audit record (which carries the bulk request ID), and gets one result in request order:
+    - `done`: deleted;
+    - `notFound`: no mailbox template has this ID;
+    - `refused`: the Default template (`mailbox-template-protected`);
+    - `outdated`: the target's `version` no longer matches (`412` problem); the template is kept;
+    - `failed`: an unexpected failure.
+
+    Targets without `version` are not version-checked. Mailboxes created from a deleted template
+    keep their values.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/MailboxTemplateBulkActionRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

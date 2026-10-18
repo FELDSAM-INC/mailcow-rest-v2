@@ -199,11 +199,15 @@ also when nothing changes, and every refusal. The target carries the name after 
 ## domainTemplateDeletion
 
 Feature 002. Written for every deletion of a domain template
-(`DELETE /domain-templates/{templateId}`) and every refusal. The target is the deleted template.
+(`DELETE /domain-templates/{templateId}` and, since feature 003, bulk deletion through
+`POST /domain-templates/bulk-actions`) and every refusal. The target is the deleted template.
 
 | Key | Type | Meaning | Present |
 |---|---|---|---|
 | `values` | object | The values the template had, as in `domainTemplateCreation`. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
@@ -334,12 +338,15 @@ change.
 ## mailboxTemplateDeletion
 
 Feature 003. Written for every deletion of a mailbox template
-(`DELETE /mailbox-templates/{mailboxTemplateId}`) and every refusal. The target is the deleted
-template.
+(`DELETE /mailbox-templates/{mailboxTemplateId}` and bulk deletion through
+`POST /mailbox-templates/bulk-actions`) and every refusal. The target is the deleted template.
 
 | Key | Type | Meaning | Present |
 |---|---|---|---|
 | `values` | object | The values the template had, as in `mailboxTemplateCreation`. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |

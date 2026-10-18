@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V2\DomainController;
 use App\Http\Controllers\Api\V2\DomainDeletionPreviewController;
 use App\Http\Controllers\Api\V2\DomainFooterController;
 use App\Http\Controllers\Api\V2\DomainTagController;
+use App\Http\Controllers\Api\V2\DomainTemplateBulkActionController;
 use App\Http\Controllers\Api\V2\DomainTemplateController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\LivenessController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\Api\V2\MailboxDeletionPreviewController;
 use App\Http\Controllers\Api\V2\MailboxRenameController;
 use App\Http\Controllers\Api\V2\MailboxSenderSettingsController;
 use App\Http\Controllers\Api\V2\MailboxTagController;
+use App\Http\Controllers\Api\V2\MailboxTemplateBulkActionController;
 use App\Http\Controllers\Api\V2\MailboxTemplateController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
@@ -199,6 +201,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('domain', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'domainFooterUpdate', 'target' => 'domainFooter'])
             ->name('domain-footer.update');
+        Route::post('/domain-templates/bulk-actions', [DomainTemplateBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'domainTemplate'])
+            ->name('domain-template-bulk-actions.store');
         Route::post('/domain-templates', [DomainTemplateController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'domainTemplateCreation', 'target' => 'domainTemplate'])
             ->name('domain-templates.store');
@@ -253,6 +258,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'mailboxDeletion', 'target' => 'mailbox'])
             ->name('mailboxes.destroy');
+        Route::post('/mailbox-templates/bulk-actions', [MailboxTemplateBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'mailboxTemplate'])
+            ->name('mailbox-template-bulk-actions.store');
         Route::post('/mailbox-templates', [MailboxTemplateController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'mailboxTemplateCreation', 'target' => 'mailboxTemplate'])
             ->name('mailbox-templates.store');

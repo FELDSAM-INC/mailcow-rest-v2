@@ -156,7 +156,6 @@
         }
     },
     "pendingOperations": [
-        "applyMailboxBulkAction",
         "renameMailbox"
     ]
 }

@@ -714,7 +714,7 @@ results, rows and audit records (spec US7).
 
 ### Tests for User Story 7 (write first, observe failing) ⚠️
 
-- [ ] T076 [P] [US7] Write `tests/Feature/Mailboxes/MailboxBulkActionTest.php` for
+- [X] T076 [P] [US7] Write `tests/Feature/Mailboxes/MailboxBulkActionTest.php` for
   `applyMailboxBulkAction`:
   - AS-1 50 active mailboxes deactivated → 50 `done` results with new `version`s, `summary.done`
     50, all inactive (and their aliases), 50 audit records carrying the same `bulkRequestId`;
@@ -741,7 +741,7 @@ results, rows and audit records (spec US7).
 
 ### Implementation for User Story 7
 
-- [ ] T077 [US7] Extract the per-target loop of 002's `app/Services/Domains/DomainBulkActions.php`
+- [X] T077 [US7] Extract the per-target loop of 002's `app/Services/Domains/DomainBulkActions.php`
   into `app/Support/Bulk/BulkActionRunner.php` and `BulkOutcome.php` (research R19, second use;
   002's bulk tests must stay green), then create `app/Services/Mailboxes/MailboxBulkActions.php` on
   it (research R19: whole-request
@@ -749,7 +749,7 @@ results, rows and audit records (spec US7).
   `version` as `If-Match` and the request ID as `bulkRequestId`, the outcome mapping, one memcached
   flush) and `app/Http/Requests/Api/V2/MailboxBulkActionRequest.php` (`action` enum, `protocol`
   conditional, `targets` 1–`min(config('restv2.bulk_limit'), 100)` of `{id, version?}`).
-- [ ] T078 [US7] Create `app/Http/Controllers/Api/V2/MailboxBulkActionController.php` (`store`,
+- [X] T078 [US7] Create `app/Http/Controllers/Api/V2/MailboxBulkActionController.php` (`store`,
   `200` with 001's bulk result shape; `ignore_user_abort(true)`, `set_time_limit(0)`); route
   `POST /mailboxes/bulk-actions` before `/mailboxes/{mailbox}`, with `restv2.csrf` and
   `restv2.audit` (`'event' => 'fromBulkAction'`). This makes T076 pass.
@@ -1009,3 +1009,7 @@ what exists map as listed.
   it. The groupware entry of the deleted address is refreshed (removed); the other recipients of
   rewritten aliases keep identical rows, so they are not refreshed. The rewrite removes every exact
   occurrence of the address from a destination list.
+- **T076–T078**: every distinct target gets one audit record, also a `notFound` one (002's
+  `BulkActionRunner` records each refused item); a protocol action of a domain administrator without
+  `protocolAccess` is refused as a whole before any item and recorded once with a `null` target.
+  A `protocol` sent with another action is `conflictsWith` (`field: action`).

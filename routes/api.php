@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V2\DomainTagController;
 use App\Http\Controllers\Api\V2\DomainTemplateController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\LivenessController;
+use App\Http\Controllers\Api\V2\MailboxBulkActionController;
 use App\Http\Controllers\Api\V2\MailboxCapabilitiesController;
 use App\Http\Controllers\Api\V2\MailboxController;
 use App\Http\Controllers\Api\V2\MailboxDeletionPreviewController;
@@ -232,6 +233,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
 
     // State-changing mailbox routes: refusals of authenticated callers are audited (`restv2.audit`).
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        // POST-only: object paths never accept POST, so a mailbox named "bulk-actions" stays addressable.
+        Route::post('/mailboxes/bulk-actions', [MailboxBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'mailbox'])
+            ->name('mailbox-bulk-actions.store');
         Route::post('/mailboxes', [MailboxController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'mailboxCreation', 'target' => 'mailbox'])
             ->name('mailboxes.store');

@@ -56,6 +56,8 @@ RUN set -eux; \
     # Feature 010 (research R21, R25): named-checkzone for the zone-file test (BIND, MPL-2.0,
     # development only; the production stage does not contain it).
     apk add --no-cache bind-tools; \
+    # cgi-fcgi: the harness that runs legacy sogo-auth.php in the tests (feature 005, R3).
+    apk add --no-cache fcgi; \
     # Writable home for whichever uid runs the container (compose maps the host user).
     mkdir -p /home/dev; \
     chmod 1777 /home/dev

@@ -258,6 +258,54 @@ return [
         'spf_lookup_limit' => 10,
     ],
 
+    /*
+    |----------------------------------------------------------------------
+    | Account self-service (feature 005 research R23)
+    |----------------------------------------------------------------------
+    */
+
+    // Path of the password reset page in the reset message's link; `{token}` is replaced by the
+    // token. The web app's page by default; `/reset-password?token={token}` keeps the legacy page.
+    'pw_reset_page' => (string) (env('RESTV2_PW_RESET_PAGE') ?: '/ng/reset-password?token={token}'),
+
+    // Reset requests, token checks and completions per client address and window (seconds).
+    'pw_reset_max_attempts' => max(1, (int) env('RESTV2_PW_RESET_MAX_ATTEMPTS', 10)),
+    'pw_reset_window' => max(1, (int) env('RESTV2_PW_RESET_WINDOW', 900)),
+
+    // Mount point of mailcow's data/assets/templates (read-only): the default reset message
+    // bodies, used when none is saved in mailcow's shared store. Relative paths are resolved
+    // against the application base path.
+    'mailcow_tpls_dir' => (string) env('RESTV2_MAILCOW_TPLS_DIR', '/mailcow/tpls'),
+
+    // mailcow's mail server, which sends the reset messages without authentication (legacy
+    // PHPMailer settings of send_mail()).
+    'smtp_host' => (string) env('RESTV2_SMTP_HOST', 'postfix-mailcow'),
+    'smtp_port' => (int) env('RESTV2_SMTP_PORT', 25),
+
+    // TOTP enrolment: lifetime in seconds and wrong codes before it is cancelled.
+    'totp_enrolment_ttl' => max(1, (int) env('RESTV2_TOTP_ENROLMENT_TTL', 600)),
+    'totp_enrolment_max_attempts' => max(1, (int) env('RESTV2_TOTP_ENROLMENT_MAX_ATTEMPTS', 5)),
+
+    // Countries of recent-login addresses not in mailcow's cache: looked up with legacy's service
+    // (on by default, as legacy), within a time budget per page.
+    'country_lookup' => filter_var(env('RESTV2_COUNTRY_LOOKUP', true), FILTER_VALIDATE_BOOL),
+    'country_lookup_url' => (string) env('RESTV2_COUNTRY_LOOKUP_URL', 'https://dfdata.bella.network/country/'),
+    'country_lookup_budget_ms' => max(1, (int) env('RESTV2_COUNTRY_LOOKUP_BUDGET_MS', 1500)),
+
+    // Pushover's credential validation endpoint.
+    'pushover_validate_url' => (string) env('RESTV2_PUSHOVER_VALIDATE_URL', 'https://api.pushover.net/1/users/validate.json'),
+
+    // mailcow.conf mail ports, which legacy's autodiscover settings read (an `ip:port` value keeps
+    // the port).
+    'ports' => [
+        'IMAP_PORT' => (string) env('IMAP_PORT', '143'),
+        'IMAPS_PORT' => (string) env('IMAPS_PORT', '993'),
+        'POP_PORT' => (string) env('POP_PORT', '110'),
+        'POPS_PORT' => (string) env('POPS_PORT', '995'),
+        'SMTPS_PORT' => (string) env('SMTPS_PORT', '465'),
+        'SUBMISSION_PORT' => (string) env('SUBMISSION_PORT', '587'),
+    ],
+
     // Development only (APP_ENV=local): binds the dockerapi, memcached and ISPConfig fakes, because
     // the dev stack runs none of these services. Ignored in every other environment. Feature 011
     // adds its stand-ins (Rspamd, release source, IP check) and recorded monitoring payloads.
@@ -377,6 +425,13 @@ return [
         // {"imap": {"server", "port", "tlsport"}, "pop3": ..., "smtp": ..., "sieve": ...} (R17).
         'SHOW_DKIM_PRIV_KEYS' => Env::get('RESTV2_SHOW_DKIM_PRIV_KEYS'),
         'autodiscover_config' => Env::get('RESTV2_AUTODISCOVER_CONFIG'),
+        // Feature 005: password reset tokens, WebAuthn second-factor registration, the legacy
+        // session of the webmail hand-off and the autodiscover settings (research R23).
+        'PW_RESET_TOKEN_LIFETIME' => env('RESTV2_PW_RESET_TOKEN_LIFETIME'),
+        'PW_RESET_TOKEN_LIMIT' => env('RESTV2_PW_RESET_TOKEN_LIMIT'),
+        'WEBAUTHN_UV_FLAG_REGISTER' => env('RESTV2_WEBAUTHN_UV_FLAG_REGISTER'),
+        'SESSION_NAME' => env('RESTV2_SESSION_NAME'),
+        'SESSION_SAMESITE_POLICY' => env('RESTV2_SESSION_SAMESITE_POLICY'),
     ],
 
     // Upstream defaults of mailcow-dockerized 2026-09a (data/web/inc/vars.inc.php).
@@ -498,6 +553,11 @@ return [
                 'pipemess', 'regextrans2', 'maxlinelengthcmd',
             ],
         ],
+        'PW_RESET_TOKEN_LIFETIME' => 15,
+        'PW_RESET_TOKEN_LIMIT' => 3,
+        'WEBAUTHN_UV_FLAG_REGISTER' => false,
+        'SESSION_NAME' => 'MCSESSID',
+        'SESSION_SAMESITE_POLICY' => 'Lax',
     ],
 
 ];

@@ -48,29 +48,29 @@ marked "(extends 001)".
 
 **Purpose**: dependency, legacy reference files, configuration and deployment. No business logic.
 
-- [ ] T001 Add the Alpine package `fcgi` (provides `cgi-fcgi`) to the `dev` stage of
+- [X] T001 Add the Alpine package `fcgi` (provides `cgi-fcgi`) to the `dev` stage of
   `docker/php/Dockerfile` (R3, test harness only; the `production` stage is unchanged).
-- [ ] T002 Run `composer require bacon/bacon-qr-code` in the version range accepted by
+- [X] T002 Run `composer require bacon/bacon-qr-code` in the version range accepted by
   `robthree/twofactorauth`'s `BaconQrCodeProvider` (R7, R24), and add `"classmap":
   ["resources/legacy/sieve/"]` to `composer.json` `autoload` (R13).
-- [ ] T003 [P] Create `scripts/legacy/extract-sieve-parser.sh <tag>` (refuses non-tags, reads
+- [X] T003 [P] Create `scripts/legacy/extract-sieve-parser.sh <tag>` (refuses non-tags, reads
   `data/web/inc/lib/sieve/` with `git -C "${MAILCOW_REPO:-./source_code}" show <tag>:<path>`, writes
   the files unmodified to `resources/legacy/sieve/` plus `resources/legacy/sieve/ORIGIN` with the tag,
   the SHA-256 of each file and a note that the files are distributed in mailcow-dockerized under
   GPL-3.0). Run it for `2026-09a` and commit the output (R13).
-- [ ] T004 [P] Create `scripts/legacy/extract-sogo-auth.sh <tag>`, which copies `data/web/sogo-auth.php`,
+- [X] T004 [P] Create `scripts/legacy/extract-sogo-auth.sh <tag>`, which copies `data/web/sogo-auth.php`,
   `data/web/inc/vars.inc.php` and `data/web/inc/sessions.inc.php` of the tag to
   `tests/fixtures/legacy/sogo-auth/<tag>/` (keeping the `inc/` sub-directory) with an `ORIGIN` file
   (tag, hashes). Run it for `2026-09a` (R3).
-- [ ] T005 [P] Create `scripts/legacy/check-handoff-assumptions.sh <tag>` (R3): fail unless the tag's
+- [X] T005 [P] Create `scripts/legacy/check-handoff-assumptions.sh <tag>` (R3): fail unless the tag's
   `data/web/json_api.php` refuses `add`, `edit` and `delete` on `$_SESSION['mailcow_cc_api_access']
   == 'ro'`, `data/web/inc/functions.inc.php`'s `protect_route()` requires `mailcow_cc_role`, and
   `data/web/sogo-auth.php` grants on `mailcow_cc_username` ∈ `sogo-sso-user-allowed` without a role
   check; print `ok` otherwise. Add a step running it for every tag in `tests/fixtures/schema/` to the
   `contract` job of `.github/workflows/ci.yml`.
-- [ ] T006 [P] Copy `data/assets/templates/pw_reset_html.tpl` and `pw_reset_text.tpl` of `2026-09a`
+- [X] T006 [P] Copy `data/assets/templates/pw_reset_html.tpl` and `pw_reset_text.tpl` of `2026-09a`
   into `tests/fixtures/mailcow-tpls/` (the test value of `RESTV2_MAILCOW_TPLS_DIR`).
-- [ ] T007 Add the settings of R23 to `config/restv2.php` (`pw_reset_page` default
+- [X] T007 Add the settings of R23 to `config/restv2.php` (`pw_reset_page` default
   `/ng/reset-password?token={token}`, `pw_reset_max_attempts` 10, `pw_reset_window` 900,
   `mailcow_tpls_dir` `/mailcow/tpls`, `smtp_host` `postfix-mailcow`, `smtp_port` 25,
   `totp_enrolment_ttl` 600, `totp_enrolment_max_attempts` 5, `country_lookup` true,
@@ -83,7 +83,7 @@ marked "(extends 001)".
   `RESTV2_MAILCOW_TPLS_DIR=tests/fixtures/mailcow-tpls`, `RESTV2_COUNTRY_LOOKUP=true`,
   `IMAPS_PORT=993`, `IMAP_PORT=143`, `POPS_PORT=995`, `POP_PORT=110`, `SMTPS_PORT=465`,
   `SUBMISSION_PORT=587`).
-- [ ] T008 [P] Extend `deploy/docker-compose.override.yml`: volume
+- [X] T008 [P] Extend `deploy/docker-compose.override.yml`: volume
   `./data/assets/templates:/mailcow/tpls:ro,z`, the R23 variables, and the ofelia labels
   `ofelia.job-exec.restv2_webmail_handoff_sweep.schedule: "@every 1m"` and `.command: php
   /app/artisan restv2:webmail-handoffs:sweep` (R3, R23).

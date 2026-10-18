@@ -177,17 +177,49 @@ services:
       - RESTV2_SYNC_JOBS_BULK_LIMIT=${RESTV2_SYNC_JOBS_BULK_LIMIT:-100}
       - RESTV2_ACCESS_TOKEN_LIFETIME=${RESTV2_ACCESS_TOKEN_LIFETIME:-}
       - RESTV2_REFRESH_TOKEN_LIFETIME=${RESTV2_REFRESH_TOKEN_LIFETIME:-}
+      # Feature 005 (account self-service): the mail ports of mailcow.conf, which legacy's
+      # autodiscover settings read, the legacy variables of the reset, second-factor enrolment and
+      # webmail hand-off, and the settings new to this API (research R23).
+      - IMAP_PORT=${IMAP_PORT:-143}
+      - IMAPS_PORT=${IMAPS_PORT:-993}
+      - POP_PORT=${POP_PORT:-110}
+      - POPS_PORT=${POPS_PORT:-995}
+      - SMTPS_PORT=${SMTPS_PORT:-465}
+      - SUBMISSION_PORT=${SUBMISSION_PORT:-587}
+      - RESTV2_PW_RESET_TOKEN_LIFETIME=${RESTV2_PW_RESET_TOKEN_LIFETIME:-}
+      - RESTV2_PW_RESET_TOKEN_LIMIT=${RESTV2_PW_RESET_TOKEN_LIMIT:-}
+      - RESTV2_WEBAUTHN_UV_FLAG_REGISTER=${RESTV2_WEBAUTHN_UV_FLAG_REGISTER:-}
+      - RESTV2_SESSION_NAME=${RESTV2_SESSION_NAME:-}
+      - RESTV2_SESSION_SAMESITE_POLICY=${RESTV2_SESSION_SAMESITE_POLICY:-}
+      - RESTV2_AUTODISCOVER_CONFIG=${RESTV2_AUTODISCOVER_CONFIG:-}
+      - RESTV2_PW_RESET_PAGE=${RESTV2_PW_RESET_PAGE:-}
+      - RESTV2_PW_RESET_MAX_ATTEMPTS=${RESTV2_PW_RESET_MAX_ATTEMPTS:-10}
+      - RESTV2_PW_RESET_WINDOW=${RESTV2_PW_RESET_WINDOW:-900}
+      - RESTV2_MAILCOW_TPLS_DIR=${RESTV2_MAILCOW_TPLS_DIR:-/mailcow/tpls}
+      - RESTV2_SMTP_HOST=${RESTV2_SMTP_HOST:-postfix-mailcow}
+      - RESTV2_SMTP_PORT=${RESTV2_SMTP_PORT:-25}
+      - RESTV2_TOTP_ENROLMENT_TTL=${RESTV2_TOTP_ENROLMENT_TTL:-600}
+      - RESTV2_TOTP_ENROLMENT_MAX_ATTEMPTS=${RESTV2_TOTP_ENROLMENT_MAX_ATTEMPTS:-5}
+      - RESTV2_COUNTRY_LOOKUP=${RESTV2_COUNTRY_LOOKUP:-true}
+      - RESTV2_COUNTRY_LOOKUP_URL=${RESTV2_COUNTRY_LOOKUP_URL:-https://dfdata.bella.network/country/}
+      - RESTV2_COUNTRY_LOOKUP_BUDGET_MS=${RESTV2_COUNTRY_LOOKUP_BUDGET_MS:-1500}
+      - RESTV2_PUSHOVER_VALIDATE_URL=${RESTV2_PUSHOVER_VALIDATE_URL:-https://api.pushover.net/1/users/validate.json}
     volumes:
       # Read-only: legacy's vars.inc.php and vars.local.inc.php (R14).
       - ./data/web/inc:/mailcow/web/inc:ro,z
       # Read-only: Rspamd's controller socket (features 006 and 011). Connecting to the socket
       # works on a read-only mount; Rspamd's data cannot be changed.
       - rspamd-vol-1:/var/lib/rspamd:ro
+      # Read-only: the default password reset message templates (feature 005, R6).
+      - ./data/assets/templates:/mailcow/tpls:ro,z
     labels:
       # mailcow's ofelia runs the audit retention purge daily (R22).
       ofelia.enabled: "true"
       ofelia.job-exec.restv2_audit_purge.schedule: "@daily"
       ofelia.job-exec.restv2_audit_purge.command: "php /app/artisan restv2:audit-purge"
+      # Ends the webmail hand-offs of expired API sessions within a minute (feature 005, R3).
+      ofelia.job-exec.restv2_webmail_handoff_sweep.schedule: "@every 1m"
+      ofelia.job-exec.restv2_webmail_handoff_sweep.command: "php /app/artisan restv2:webmail-handoffs:sweep"
     healthcheck:
       test: ["CMD", "php", "/app/artisan", "restv2:health", "--ready"]
       interval: 30s

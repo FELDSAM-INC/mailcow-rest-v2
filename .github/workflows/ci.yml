@@ -46,6 +46,12 @@ jobs:
           npx --yes "$REDOCLY_CLI" bundle "$RUNNER_TEMP/base/api/openapi.yaml" --output build/contract/base.yaml
           docker run --rm -v "$PWD/build/contract:/specs:ro" "$OASDIFF_IMAGE" \
             breaking /specs/base.yaml /specs/openapi.yaml --fail-on ERR
+      - name: Webmail hand-off assumptions of every supported release (feature 005, R3)
+        run: |
+          git clone --quiet --bare --filter=blob:none https://github.com/mailcow/mailcow-dockerized.git "$RUNNER_TEMP/mailcow"
+          for fixture in tests/fixtures/schema/*.sql; do
+            MAILCOW_REPO="$RUNNER_TEMP/mailcow" scripts/legacy/check-handoff-assumptions.sh "$(basename "$fixture" .sql)"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: contract

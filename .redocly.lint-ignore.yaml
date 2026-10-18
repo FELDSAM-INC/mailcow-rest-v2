@@ -12,3 +12,8 @@ api/modules/system/openapi-document.yaml:
 api/modules/system/docs.yaml:
   operation-4xx-response:
     - '#/get/responses'
+api/modules/system/api-root.yaml:
+  operation-2xx-response:
+    - '#/get/responses'
+  operation-4xx-response:
+    - '#/get/responses'

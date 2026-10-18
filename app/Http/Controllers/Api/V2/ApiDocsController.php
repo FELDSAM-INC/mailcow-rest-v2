@@ -38,6 +38,15 @@ class ApiDocsController extends Controller
     }
 
     /**
+     * getApiRoot: the base path redirects here. The `Location` is relative, so it keeps the
+     * scheme and host the client used behind mailcow's nginx.
+     */
+    public function root(): Response
+    {
+        return response('', 302, ['Location' => '/api/v2/docs']);
+    }
+
+    /**
      * An inlined asset, made safe to embed in its element; null when it is not installed.
      */
     private static function asset(string $name): ?string

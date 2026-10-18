@@ -9,7 +9,8 @@ use Tests\TestCase;
 /**
  * T103 (constitution I and II, R27): the running release serves its bundled contract, an
  * interactive documentation page with only same-origin assets, and an HTML page for every
- * documented problem type. All three ignore `X-API-Key`.
+ * documented problem type. The base path redirects to the documentation page. All of them
+ * ignore `X-API-Key`.
  */
 class DocsTest extends TestCase
 {
@@ -33,6 +34,14 @@ class DocsTest extends TestCase
         $markup = (string) preg_replace('#<(script|style)>.*?</\1>#is', '<$1></$1>', $html);
         $this->assertDoesNotMatchRegularExpression('#<(script|link|img|iframe)\b[^>]*\b(src|href)\s*=#i', $markup, 'no asset is loaded from a URL');
         $this->assertDoesNotMatchRegularExpression('#(src|href)\s*=\s*["\']?(https?:)?//#i', $markup, 'no asset is loaded from another origin');
+    }
+
+    public function test_the_base_path_redirects_to_the_documentation_page(): void
+    {
+        $response = $this->get('/api/v2/')->assertFound();
+
+        // Relative, so the redirect keeps the scheme and host the client used behind mailcow's nginx.
+        $this->assertSame('/api/v2/docs', $response->headers->get('Location'));
     }
 
     public function test_every_problem_type_has_its_page(): void
@@ -66,6 +75,7 @@ class DocsTest extends TestCase
 
         $this->get('/api/v2/openapi.yaml', ['X-API-Key' => 'bogus'])->assertOk();
         $this->get('/api/v2/docs', ['X-API-Key' => 'bogus'])->assertOk();
+        $this->get('/api/v2/', ['X-API-Key' => 'bogus'])->assertFound();
         $this->get('/api/v2/problems/sign-in-failed', ['X-API-Key' => 'bogus'])->assertOk();
 
         $channel->assertNothingPublished();

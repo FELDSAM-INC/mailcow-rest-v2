@@ -314,6 +314,8 @@ paths:
     $ref: './modules/public-config/_index.yaml#/~1public-config~1logos~1{variant}'
   /audit-events:
     $ref: './modules/audit/_index.yaml#/~1audit-events'
+  /:
+    $ref: './modules/system/_index.yaml#/~1'
   /health/live:
     $ref: './modules/system/_index.yaml#/~1health~1live'
   /health/ready:

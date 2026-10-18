@@ -34,6 +34,8 @@ Contract changes made while implementing feature 001:
   `no-cache, public`) instead of being exactly `no-cache`.
 - The texts of `createSession` and `verifySecondFactor` describe the separate second-factor
   throttling.
+- `getApiRoot` (owner request, 2026-10-18): `GET /api/v2/` answers `302` with the relative
+  `Location: /api/v2/docs`, so a browser opening the base path lands on the documentation.
 
 Release checks (quickstart Part C: SC-002, SC-003, SC-004, SC-006) ran on 2026-10-18 on the
 FeldHost fork (upstream `2026-09a` baseline) with the image of 3a35973:

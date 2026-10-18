@@ -1,0 +1,20 @@
+get:
+  operationId: getApiRoot
+  tags: [System]
+  summary: Redirect the base path to the API documentation
+  description: |
+    Redirects `/api/v2/` to `GET /docs`, the interactive documentation, so that a browser opening
+    the base path lands on a page. The `Location` is relative, keeping the scheme and host the
+    client used. Ignores `X-API-Key`.
+  security: []
+  responses:
+    '302':
+      description: Found. The documentation page is at the `Location` address.
+      headers:
+        Location:
+          description: Always `/api/v2/docs`.
+          schema:
+            type: string
+            const: /api/v2/docs
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

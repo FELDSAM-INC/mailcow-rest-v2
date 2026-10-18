@@ -92,6 +92,7 @@ class AuthorizationMatrixTest extends TestCase
             'getReadiness' => ['GET', '/api/v2/health/ready', null],
             'getOpenApiDocument' => ['GET', '/api/v2/openapi.yaml', null],
             'getApiDocs' => ['GET', '/api/v2/docs', null],
+            'getApiRoot' => ['GET', '/api/v2/', null],
             'getProblemTypeDocumentation' => ['GET', '/api/v2/problems/sign-in-failed', null],
         ];
     }
@@ -120,9 +121,9 @@ class AuthorizationMatrixTest extends TestCase
             return self::BROWSER[$operation][$caller] ?? self::BROWSER[$operation]['*'];
         }
 
-        // Public and system routes: everyone.
+        // Public and system routes: everyone. The base path redirects to the documentation.
         if (in_array($operation, self::PUBLIC, true)) {
-            return [200, null];
+            return [$operation === 'getApiRoot' ? 302 : 200, null];
         }
 
         if ($caller === 'anonymous') {
@@ -174,7 +175,7 @@ class AuthorizationMatrixTest extends TestCase
     /** Operations open to everyone, keys included (the system ones ignore keys). */
     private const PUBLIC = [
         'getPublicConfig', 'getPublicConfigLogo', 'getLiveness', 'getReadiness', 'getOpenApiDocument',
-        'getApiDocs', 'getProblemTypeDocumentation',
+        'getApiDocs', 'getApiRoot', 'getProblemTypeDocumentation',
     ];
 
     /**

@@ -38,6 +38,7 @@
                 "getReadiness",
                 "getOpenApiDocument",
                 "getApiDocs",
+                "getApiRoot",
                 "getProblemTypeDocumentation"
             ],
             "problemTypes": [

@@ -1,4 +1,7 @@
-# Paths of the system module: health checks, the contract and problem type documentation.
+# Paths of the system module: the base path redirect, health checks, the contract and problem type
+# documentation.
+/:
+  $ref: './api-root.yaml'
 /health/live:
   $ref: './health-live.yaml'
 /health/ready:

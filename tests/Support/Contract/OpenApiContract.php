@@ -305,6 +305,12 @@ final class OpenApiContract
      */
     private function matchPath(string $path): array
     {
+        // The base path itself is the `/` operation: Laravel's router and test client drop the
+        // trailing slash of `/api/v2/`.
+        if ($path === self::BASE_PATH) {
+            $path = self::BASE_PATH.'/';
+        }
+
         if (! str_starts_with($path, self::BASE_PATH.'/')) {
             return [];
         }

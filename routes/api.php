@@ -205,6 +205,7 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/health/ready', [ReadinessController::class, 'show'])->name('system.readiness');
         Route::get('/openapi.yaml', [OpenApiDocumentController::class, 'show'])->name('system.openapi');
         Route::get('/docs', [ApiDocsController::class, 'show'])->name('system.docs');
+        Route::get('/', [ApiDocsController::class, 'root'])->name('system.root');
         Route::get('/problems/{problemType}', [ProblemTypeController::class, 'show'])
             ->where('problemType', '[a-z0-9-]+')
             ->name('system.problem');

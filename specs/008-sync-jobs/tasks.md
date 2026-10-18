@@ -874,11 +874,11 @@ target type and identifier (spec US6).
     is at `capabilities/sync-jobs`;
   - every unsafe route has `restv2.csrf` and a `restv2.audit` default;
   - every route uses `restv2.auth:authenticated` with the default pending-action enforcement.
-- [ ] T069 (FR-029) Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
+- [X] T069 (FR-029) Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
   `composer contract:lint` in the dev container. Fix every finding until all are green and
   `build/contract/coverage.json` lists all 9 sync-job operations, alongside the earlier features'.
   Run the `concurrency` and `performance` groups.
-- [ ] T070 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
+- [X] T070 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
   output. Correct quickstart.md where commands drifted, keeping it a validation guide.
 
 ---
@@ -1107,4 +1107,14 @@ Checked on `main` at `e21f5ee`:
   domains, and a refused write by dave for the actor history (reads are never audited, so the
   refused read the guide listed could not appear). Part A's regeneration of the legacy oracles
   gives no diff for `2026-09a`. Part C (a real mailcow host with the runner) stays open.
+- **Rebases**: the branch was rebased onto `1351d9e` (003 complete, 002's runner resolving every
+  target first and `RefusalAuditor::bulkRefusal()`) during Phase 2, and onto `80d0c4b` (feature 011
+  and the separate timing tests) at the end. Shared files kept both sides (the enumerations, the
+  provider, the configuration, the routes, `docs/audit-events.md`, `README.md`, `CHANGELOG.md`, the
+  registry and G3).
+- **T069**: the timing tests (`#[Group('performance')]`) are left out of `composer test` since
+  `80d0c4b` and run with `composer test:performance`; the concurrency test still runs in
+  `composer test`. `tests/bin/check-contract-coverage.php` reports the 9 sync-job operations covered.  Gates on `80d0c4b` + this branch: `composer test` 3,945 tests green (contract coverage 140 of 140
+  operations, none pending), Pint, PHPStan and the contract lint clean; the two sync-job timing
+  tests pass alone.
 

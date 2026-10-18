@@ -1,0 +1,21 @@
+# Claude Code machine-local settings (keep .claude/skills tracked)
+.claude/settings.local.json
+
+# Dependencies / build output
+node_modules/
+dist/
+coverage/
+
+# Local env
+.env
+.env.*
+!.env.example
+
+# Laravel
+/vendor/
+/storage/*.key
+/public/hot
+.phpunit.result.cache
+
+# Untracked legacy reference (mailcow-dockerized checkout, read-only)
+/source_code

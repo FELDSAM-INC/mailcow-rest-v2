@@ -304,6 +304,49 @@ class MailcowConfig
     }
 
     /**
+     * Whether administrators may export DKIM private keys (legacy `$SHOW_DKIM_PRIV_KEYS`, feature
+     * 010 FR-026). Off by default.
+     *
+     * @phpstan-impure
+     */
+    public function showDkimPrivateKeys(): bool
+    {
+        return $this->value('SHOW_DKIM_PRIV_KEYS') === true;
+    }
+
+    /**
+     * The service entries of legacy's `$autodiscover_config` (feature 010 research R17): `imap`,
+     * `pop3`, `smtp` and `sieve`, each with whichever of `server`, `port` and `tlsport` is set.
+     * Empty when neither a server setting nor the mounted files give it; upstream's vars.inc.php
+     * defines no `sieve` entry. App\Services\Mailcow\AutodiscoverConfig fills the gaps.
+     *
+     * @return array<string, array{server?: string, port?: int, tlsport?: int}>
+     *
+     * @phpstan-impure
+     */
+    public function autodiscoverConfig(): array
+    {
+        $value = $this->value('autodiscover_config');
+        $entries = [];
+
+        foreach (['imap', 'pop3', 'smtp', 'sieve'] as $service) {
+            $entry = is_array($value) ? ($value[$service] ?? null) : null;
+
+            if (! is_array($entry)) {
+                continue;
+            }
+
+            $entries[$service] = array_filter([
+                'server' => is_string($entry['server'] ?? null) ? $entry['server'] : null,
+                'port' => is_numeric($entry['port'] ?? null) ? (int) $entry['port'] : null,
+                'tlsport' => is_numeric($entry['tlsport'] ?? null) ? (int) $entry['tlsport'] : null,
+            ], fn (mixed $v): bool => $v !== null);
+        }
+
+        return $entries;
+    }
+
+    /**
      * The effective value of a legacy variable listed in config/restv2.php. An empty or blank
      * server setting is unset. `true` and `false` arrive as booleans (Laravel's env conversion)
      * and are settings like any other text.

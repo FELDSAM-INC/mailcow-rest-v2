@@ -53,6 +53,9 @@ RUN set -eux; \
     apk del .build-deps; \
     rm -rf /tmp/pear ~/.pearrc; \
     apk add --no-cache bash git unzip nodejs npm mariadb-client redis; \
+    # Feature 010 (research R21, R25): named-checkzone for the zone-file test (BIND, MPL-2.0,
+    # development only; the production stage does not contain it).
+    apk add --no-cache bind-tools; \
     # Writable home for whichever uid runs the container (compose maps the host user).
     mkdir -p /home/dev; \
     chmod 1777 /home/dev

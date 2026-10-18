@@ -279,4 +279,9 @@ The project follows Spec Kit (`specs/NNN-*/`) and the constitution in
 ## Licence
 
 GPL-3.0-only, the same as mailcow. See [`LICENSE`](LICENSE). The documentation page bundles
-Swagger UI (`swagger-ui-dist`, Apache-2.0), and the WebAuthn and TOTP libraries are MIT.
+Swagger UI (`swagger-ui-dist`, Apache-2.0), and the WebAuthn and TOTP libraries are MIT. DNS
+diagnostics (feature 010) evaluates SPF with `mlocati/spf-lib` (MIT), which brings `mlocati/ip-lib`
+and `mlocati/idna` (both MIT): RFC 7208 evaluation with the lookup limits and an injectable resolver,
+instead of a hand-written evaluator (feature 010 research R25). The development image adds BIND's
+`named-checkzone` (`bind-tools`, MPL-2.0) for the zone-file test; it is not part of the production
+image.

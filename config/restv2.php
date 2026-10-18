@@ -2,6 +2,16 @@
 
 use App\Support\Config\Env;
 
+// The port of a mailcow.conf port variable: its last `:`-separated part (`127.0.0.1:993` gives
+// 993), as legacy's $autodiscover_config derives it; the mailcow default when unset or not a port.
+$mailcowPort = function (string $name, int $default): int {
+    $value = Env::get($name);
+    $parts = explode(':', trim((string) $value));
+    $port = (int) filter_var(end($parts), FILTER_SANITIZE_NUMBER_INT);
+
+    return $port >= 1 && $port <= 65535 ? $port : $default;
+};
+
 /*
 |--------------------------------------------------------------------------
 | mailcow REST API v2 settings (research R14)
@@ -91,9 +101,64 @@ return [
         'default_selector' => (string) Env::get('RESTV2_DEFAULT_DKIM_SELECTOR', 'dkim'),
         'default_key_size' => 2048,
         'allowed_key_sizes' => [1024, 2048, 3072, 4096],
+        // Feature 010 (FR-019): limits of an imported private key, not settings.
+        'private_key_max_bytes' => 16384,
+        'import_bits' => [1024, 8192],
         // FeldHost ISPConfig DNS publication of DKIM records (002 FR-027, 010 FR-028). Off by default;
         // enabled only together with the ISPConfig URL, user and password.
         'dns_publication' => Env::get('RESTV2_DKIM_DNS_PUBLICATION', 'n') === 'y',
+        // Seconds shared by the record removals of one bulk deletion (010 research R28).
+        'bulk_publication_budget' => max(1, (int) Env::get('RESTV2_DKIM_BULK_PUBLICATION_BUDGET', 60)),
+        // Targets per DKIM bulk deletion (010 FR-059, G4); fixed.
+        'bulk_limit' => 100,
+    ],
+
+    /*
+    |----------------------------------------------------------------------
+    | Feature 010: MTA-STS and DNS diagnostics (010 research R24)
+    |----------------------------------------------------------------------
+    */
+
+    'mta_sts' => [
+        // RFC 8461's maximum, at creation and when changed (FR-033); fixed.
+        'max_age_max' => 31557600,
+        // Width of mailcow's `mta_sts.mx` column (FR-033); fixed.
+        'mx_max_length' => 255,
+    ],
+
+    'dns' => [
+        // Seconds reserved per lookup by the run deadline, and the limit of the address echo and
+        // the certificate fetch (FR-048). The resolver's own bound is the container's dns_opt
+        // (about 4 s), which must stay below it.
+        'lookup_timeout' => max(1, (int) Env::get('RESTV2_DNS_LOOKUP_TIMEOUT', 5)),
+        // Seconds per run (FR-048).
+        'run_timeout' => max(1, (int) Env::get('RESTV2_DNS_RUN_TIMEOUT', 30)),
+        // Runs per caller per minute (FR-049).
+        'runs_per_minute' => max(1, (int) Env::get('RESTV2_DNS_DIAGNOSTICS_PER_MINUTE', 10)),
+        // Seconds the public addresses and the certificate digest are reused (FR-049).
+        'facts_ttl' => max(1, (int) Env::get('RESTV2_DNS_FACTS_TTL', 600)),
+        // The server's public addresses; empty: asked from the echo service. `none` for IPv6
+        // declares no public IPv6 address without asking.
+        'public_ipv4' => trim((string) Env::get('RESTV2_PUBLIC_IPV4', '')),
+        'public_ipv6' => trim((string) Env::get('RESTV2_PUBLIC_IPV6', '')),
+        // mailcow's address echo service (legacy dns_diagnostics.php).
+        'echo_url_ipv4' => (string) Env::get('RESTV2_IP_ECHO_URL_IPV4', 'http://ip4.mailcow.email'),
+        'echo_url_ipv6' => (string) Env::get('RESTV2_IP_ECHO_URL_IPV6', 'http://ip6.mailcow.email'),
+        // The SPF record suggested in the SPF guidance (FR-050). Upstream: none. FeldHost:
+        // v=spf1 mx a ~all.
+        'suggested_spf_record' => trim((string) Env::get('RESTV2_SUGGESTED_SPF_RECORD', '')),
+    ],
+
+    // mailcow.conf port variables (last `:`-separated part), from which legacy's
+    // $autodiscover_config derives the service ports (010 research R17).
+    'mailcow_ports' => [
+        'IMAP_PORT' => $mailcowPort('IMAP_PORT', 143),
+        'IMAPS_PORT' => $mailcowPort('IMAPS_PORT', 993),
+        'POP_PORT' => $mailcowPort('POP_PORT', 110),
+        'POPS_PORT' => $mailcowPort('POPS_PORT', 995),
+        'SMTPS_PORT' => $mailcowPort('SMTPS_PORT', 465),
+        'SUBMISSION_PORT' => $mailcowPort('SUBMISSION_PORT', 587),
+        'SIEVE_PORT' => $mailcowPort('SIEVE_PORT', 4190),
     ],
 
     // ISPConfig JSON remote API (…/remote/json.php) for the DKIM DNS publication. The password is a
@@ -308,6 +373,10 @@ return [
         'IMAPSYNC_OPTIONS' => Env::get('RESTV2_IMAPSYNC_OPTIONS'),
         'ACCESS_TOKEN_LIFETIME' => Env::get('RESTV2_ACCESS_TOKEN_LIFETIME'),
         'REFRESH_TOKEN_LIFETIME' => Env::get('RESTV2_REFRESH_TOKEN_LIFETIME'),
+        // Feature 010: private key export (FR-026) and the service ports of DNS diagnostics, JSON
+        // {"imap": {"server", "port", "tlsport"}, "pop3": ..., "smtp": ..., "sieve": ...} (R17).
+        'SHOW_DKIM_PRIV_KEYS' => Env::get('RESTV2_SHOW_DKIM_PRIV_KEYS'),
+        'autodiscover_config' => Env::get('RESTV2_AUTODISCOVER_CONFIG'),
     ],
 
     // Upstream defaults of mailcow-dockerized 2026-09a (data/web/inc/vars.inc.php).
@@ -387,6 +456,10 @@ return [
             'mailbox_format' => 'maildir:',
         ],
         'ALIAS_DISABLE_EXTERNAL_DOMAINS' => false,
+        // Feature 010: private keys are never shown (FR-026). $autodiscover_config has no fixed
+        // default: App\Services\Mailcow\AutodiscoverConfig derives it from the port variables.
+        'SHOW_DKIM_PRIV_KEYS' => false,
+        'autodiscover_config' => [],
         // Feature 011: unknown unless app_info.inc.php or a server setting gives them.
         'MAILCOW_GIT_VERSION' => null,
         'MAILCOW_GIT_OWNER' => null,

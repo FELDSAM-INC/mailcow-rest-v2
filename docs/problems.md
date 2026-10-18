@@ -597,9 +597,15 @@ extension members.
   whether an object outside the caller's scope exists. Nothing changed. A bulk action that needs the
   flag is refused as a whole. Other features may use this type for the same meaning; an edit whose
   individual attributes are not permitted uses `attribute-not-permitted` instead.
-- **Extension members**: `requiredFlags`, a non-empty list of flag names as in `PermissionFlags`
-  (for example `["domainRelayhost"]`; for the relayhost choices `["domainRelayhost",
-  "mailboxRelayhost"]`, either of which suffices).
+- **Extension members**:
+  - `requiredFlags`: a non-empty list of flag names as in `PermissionFlags` (camelCase), for example
+    `["domainRelayhost"]`.
+  - `requiredFlagsMatch`: either `all` (the default when the member is absent: every listed flag
+    must be granted, for example `["quarantine", "quarantineAttachments"]` for a mailbox user's
+    whole-message download) or `any` (any one listed flag suffices, for example
+    `["domainRelayhost", "mailboxRelayhost"]` for the relayhost choices).
+
+  With `all`, the list names only the flags the caller lacks.
 - **Client action**: Hide or disable the action for this account, and tell the user which permission
   an administrator must grant.
 

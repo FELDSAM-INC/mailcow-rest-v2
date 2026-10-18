@@ -37,6 +37,8 @@ use App\Http\Controllers\Api\V2\ProblemTypeController;
 use App\Http\Controllers\Api\V2\PublicConfigController;
 use App\Http\Controllers\Api\V2\PublicConfigLogoController;
 use App\Http\Controllers\Api\V2\ReadinessController;
+use App\Http\Controllers\Api\V2\ResourceBulkActionController;
+use App\Http\Controllers\Api\V2\ResourceController;
 use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
@@ -239,6 +241,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('aliasId', '[1-9][0-9]{0,9}')
             ->name('aliases.show');
         Route::get('/sender-permission-candidates', [SenderPermissionCandidateController::class, 'index'])->name('sender-permission-candidates.index');
+        Route::get('/resources', [ResourceController::class, 'index'])->name('resources.index');
+        Route::get('/resources/{resourceAddress}', [ResourceController::class, 'show'])
+            ->where('resourceAddress', '[^/]+')
+            ->name('resources.show');
         Route::get('/mailboxes/{mailbox}/sender-settings', [MailboxSenderSettingsController::class, 'show'])
             ->where('mailbox', '[^/]+')
             ->name('mailbox-sender-settings.show');
@@ -257,6 +263,20 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::post('/alias-domains/bulk-actions', [AliasDomainBulkActionController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'aliasDomain'])
             ->name('alias-domain-bulk-actions.store');
+        Route::post('/resources/bulk-actions', [ResourceBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'resource'])
+            ->name('resource-bulk-actions.store');
+        Route::post('/resources', [ResourceController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'resourceCreation', 'target' => 'resource'])
+            ->name('resources.store');
+        Route::patch('/resources/{resourceAddress}', [ResourceController::class, 'update'])
+            ->where('resourceAddress', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'resourceUpdate', 'target' => 'resource'])
+            ->name('resources.update');
+        Route::delete('/resources/{resourceAddress}', [ResourceController::class, 'destroy'])
+            ->where('resourceAddress', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'resourceDeletion', 'target' => 'resource'])
+            ->name('resources.destroy');
         Route::post('/aliases/{aliasId}/alias-domain-copies', [AliasCopyController::class, 'store'])
             ->where('aliasId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'aliasCreation', 'target' => 'alias'])

@@ -626,7 +626,7 @@ records.
   groupware rebuild per request; a shared-store failure on one target → `failed` with
   `temporary-failure`, that target unchanged, the others done; versions per target; foreign →
   `notFound`.
-- [ ] T068 [P] [US6] Write `tests/Feature/Resources/ResourceBulkActionTest.php`
+- [X] T068 [P] [US6] Write `tests/Feature/Resources/ResourceBulkActionTest.php`
   (`applyResourceBulkAction`): AS5 deactivating resources removes their view rows; activate and
   delete; versions; foreign → `notFound`; 101 targets → `422`.
 
@@ -635,13 +635,13 @@ records.
 - [X] T069 [US6] Create `app/Services/Aliases/AliasCopier.php` and `AliasCopyOutcome.php` (R17),
   reusing `AliasCreator` per alias domain and mapping its refusals to `skipped` reasons;
   `app/Http/Resources/Api/V2/AliasCopyReportResource.php`; `app/Http/Controllers/Api/V2/AliasCopyController.php`.
-- [ ] T070 [P] [US6] Create `app/Http/Requests/Api/V2/AliasBulkActionRequest.php`,
+- [X] T070 [P] [US6] Create `app/Http/Requests/Api/V2/AliasBulkActionRequest.php`,
   `AliasDomainBulkActionRequest.php` and `ResourceBulkActionRequest.php` (`targets` 1–100, `tooMany`
   `{max: 100}`), and the controllers `AliasBulkActionController.php` (with `meta.copies` for
   `copyOverAliasDomains`), `AliasDomainBulkActionController.php` and
   `ResourceBulkActionController.php`, each driving `BulkActionRunner` with the single operation's
   service method.
-- [ ] T071 [US6] Register `POST /aliases/{aliasId}/alias-domain-copies`, `POST /aliases/bulk-actions`,
+- [X] T071 [US6] Register `POST /aliases/{aliasId}/alias-domain-copies`, `POST /aliases/bulk-actions`,
   `POST /alias-domains/bulk-actions` and `POST /resources/bulk-actions` in `routes/api.php` (the
   bulk paths before the parameterised ones; `restv2.audit` defaults). Makes T065–T067 pass (T068
   after Phase 9).
@@ -659,7 +659,7 @@ records.
 
 ### Tests for User Story 7 (write first, observe failing) ⚠️
 
-- [ ] T072 [P] [US7] Write `tests/Feature/Resources/CreateResourceTest.php` (`createResource`): AS1
+- [X] T072 [P] [US7] Write `tests/Feature/Resources/CreateResourceTest.php` (`createResource`): AS1
   "Meeting Room 1" location → `201`, `Location: /api/v2/resources/MeetingRoom1@example.org`, row with
   `password = 'RESOURCE'`, `quota = 0`, `local_part`, `kind`, `multiple_bookings = -1`; view row
   refreshed with `kind` and `multiple_bookings`; AS2 "Meeting-Room 1" → `409 address-in-use`
@@ -669,31 +669,31 @@ records.
   description → `required` / `tooLong {max: 255}`; an unknown or foreign domain → `notFound`;
   `limited` without `bookingLimit` → `required`; `bookingLimit` with `unlimited` → `conflictsWith`;
   `bookingLimit: 0` → `outOfRange`; audit `resourceCreation`.
-- [ ] T073 [P] [US7] Write `tests/Feature/Resources/ListResourcesTest.php` and `GetResourceTest.php`:
+- [X] T073 [P] [US7] Write `tests/Feature/Resources/ListResourcesTest.php` and `GetResourceTest.php`:
   filters `domain`, `kind`, `active`, `q` on description and address (including a partial Unicode
   label), every sort value, default by address; booking rule mapping (`0`, `-1`, `-5`, `2`); a
   mailbox address → `404`; domain administrator scope.
-- [ ] T074 [P] [US7] Write `tests/Feature/Resources/UpdateResourceTest.php` and
+- [X] T074 [P] [US7] Write `tests/Feature/Resources/UpdateResourceTest.php` and
   `DeleteResourceTest.php`: a description change keeps the address; AS4 `limited`/2 stored as `2`;
   AS5 deactivation removes the view row; a whitespace-only description → `required`; a different
   `address` → `immutable`; `If-Match`; AS8 deletion removes the `mailbox` row and the resource's
   `sogo_user_profile`, `sogo_cache_folder`, `sogo_acl`, `sogo_store`, `sogo_quick_contact`,
   `sogo_quick_appointment` and `sogo_folder_info` rows (seeded), `204`; a mailbox address can never
   be deleted (`404`); audit records.
-- [ ] T075 [P] [US7] Write `tests/Feature/Resources/ResourceAuthorizationTest.php` for the five
+- [X] T075 [P] [US7] Write `tests/Feature/Resources/ResourceAuthorizationTest.php` for the five
   operations as every role and key type, each write refusal audited.
 
 ### Implementation for User Story 7
 
-- [ ] T076 [P] [US7] Create `app/Services/Resources/ResourceQuery.php` (search with `UnicodeSearch`)
+- [X] T076 [P] [US7] Create `app/Services/Resources/ResourceQuery.php` (search with `UnicodeSearch`)
   and `app/Http/Resources/Api/V2/GroupwareResourceResource.php` (contract `Resource`).
-- [ ] T077 [US7] Create `app/Services/Resources/ResourceCreator.php` (`AddressLock`, derivation,
+- [X] T077 [US7] Create `app/Services/Resources/ResourceCreator.php` (`AddressLock`, derivation,
   `AliasAddressAvailability`, legacy's `INSERT`, refresh), `ResourceUpdater.php` and
   `ResourceDeleter.php` (the `sogo_*` statements of R13), each with its audit record.
-- [ ] T078 [P] [US7] Create `app/Http/Requests/Api/V2/ListResourcesRequest.php`,
+- [X] T078 [P] [US7] Create `app/Http/Requests/Api/V2/ListResourcesRequest.php`,
   `StoreResourceRequest.php`, `UpdateResourceRequest.php`, `app/Policies/ResourcePolicy.php` and
   `app/Http/Controllers/Api/V2/ResourceController.php`.
-- [ ] T079 [US7] Register the resource routes in `routes/api.php` (writes with `restv2.audit`
+- [X] T079 [US7] Register the resource routes in `routes/api.php` (writes with `restv2.audit`
   defaults and target `resource`). Makes T068 and T072–T075 pass.
 
 **Checkpoint**: All objects of the feature are managed.
@@ -895,3 +895,10 @@ what exists map as listed.
   address in use before it tries a creation, as legacy computes the missing addresses first; a
   copy refused for another reason is audited as a refused `aliasCreation` with `copiedFromAliasId`.
   `AliasCopyReportResource` is not needed: the report is returned as built.
+- **T076–T078**: `GroupwareResourceResource` is not needed: `ResourcePresenter` builds the
+  contract `Resource` and the shared `AliasResource` wraps every single and list response of the
+  feature. `ResourceRules` holds the description and booking rules of creation and change. A
+  resource change that sends `limited` alone keeps a stored limit; a resource of an inactive domain
+  stays manageable (legacy). Resource deletion records the removed groupware rows in
+  `removed` (`groupwareProfiles`, `groupwareFolders`, `groupwareItems`,
+  `groupwareSharingPermissions`, `groupwareCacheEntries`).

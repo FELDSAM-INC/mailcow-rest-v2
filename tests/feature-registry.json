@@ -164,12 +164,6 @@
         "createMailboxTemplate",
         "getMailboxTemplate",
         "updateMailboxTemplate",
-        "deleteMailboxTemplate",
-        "listResources",
-        "createResource",
-        "applyResourceBulkAction",
-        "getResource",
-        "updateResource",
-        "deleteResource"
+        "deleteMailboxTemplate"
     ]
 }

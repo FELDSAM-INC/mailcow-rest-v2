@@ -95,12 +95,15 @@
   the remote password never appears. The log is treated as operator-authored text that clients
   render safely. (agent decision: legacy exposes the log to anyone with object access; parity, with
   the `showpasswords` hardening above.)
-- Q: Legacy activates, deactivates, resets the schedule of and deletes several selected jobs at
-  once, passing a list of identifiers. Does the API offer batch operations? → A: No. Each sync job
-  is created, changed, activated, deactivated, rescheduled and deleted with its own request, each
-  authorised, version-checked and audited on its own. (agent decision: feature 002's convention;
-  per-item requests give each job its own outcome and audit record. A batch operation can be added
-  later without breaking clients.)
+- Q: Legacy activates, deactivates, reschedules ("Schedule next") and deletes several selected sync
+  jobs at once. Should these mass actions be one bulk request, and what happens when some jobs
+  fail? → A: One request applies one action (activate, deactivate, reschedule or delete) to up to
+  100 sync jobs. Each job is checked, processed and audited on its own, failures do not stop the
+  others, and the response reports one result per job (FR-023, FR-024). Bulk actions do not check
+  version tags. Creation and other edits stay single-job requests. (orchestrator decision:
+  cross-feature consistency with features 003 and 004. Legacy `edit/syncjob` and `delete/syncjob`
+  take arrays and continue past per-job access failures, both legacy sync-job tabs offer these mass
+  actions, and the web app needs them. 100 covers a large page.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -272,7 +275,42 @@ that a job outside the caller's scope is answered "not found".
 
 ---
 
-### User Story 5 - Trace sync-job changes (Priority: P3)
+### User Story 5 - Apply an action to many sync jobs at once (Priority: P2)
+
+An administrator, a domain administrator or a mailbox user selects sync jobs in the list and
+activates, deactivates, reschedules or deletes them, as the legacy mass actions do. They get one
+result per sync job.
+
+**Why this priority**: Operators pause, restart and clear many migrations at once during a
+cut-over. One request per job would be slow and error-prone for the web app.
+
+**Independent Test**: Apply each action to a selection that mixes jobs inside and outside a domain
+administrator's scope, with one job that disappears before it is processed, and compare the per-job
+results, stored rows and audit records with the same mass action in the legacy UI.
+
+**Acceptance Scenarios**:
+
+1. **Given** 50 active sync jobs, **When** an administrator deactivates them in one request,
+   **Then** all 50 are inactive, the response has 50 successful results, and the audit log has 50
+   records.
+2. **Given** a domain administrator with the sync-jobs permission and a selection with three jobs of
+   their mailboxes and two of another domain, **When** they reschedule the selection, **Then** the
+   three jobs have their last run and last result cleared, the other two are reported "not found",
+   and nothing else changes.
+3. **Given** a domain administrator without the sync-jobs permission, or a read-only API key,
+   **When** they submit any bulk action, **Then** the whole request is refused (forbidden, or
+   insufficient key scope for the key).
+4. **Given** a selection of 101 sync jobs, **When** it is submitted, **Then** the request is refused
+   with a validation error that states the limit of 100.
+5. **Given** a bulk deletion of five jobs, one of which another client deleted a moment earlier,
+   **When** it is processed, **Then** that job is reported "not found", the other four are deleted,
+   and the response has five results.
+6. **Given** a mailbox user with the sync-jobs permission, **When** they activate a selection of
+   their own jobs, **Then** each is activated and reported on its own.
+
+---
+
+### User Story 6 - Trace sync-job changes (Priority: P3)
 
 An administrator investigating a migration lists the audit log filtered by a sync job or a mailbox
 and sees every change: who created, edited, activated, deactivated, rescheduled or deleted a job,
@@ -331,6 +369,8 @@ time, source address and changed attributes, and that no record contains the rem
   can still overwrite a change made through this API, as before. Only clients of this API are
   protected against lost updates.
 - **Concurrent creation of the same job**: exactly one succeeds; the other is refused as a conflict.
+- **Version tag sent with a bulk action**: not supported; bulk actions do not check versions.
+- **Bulk action naming the same sync job twice**: it is processed once and reported once.
 - **Mailbox renamed or deleted** (feature 003): feature 003 moves this job's target to the new
   address on a rename and removes the job on a mailbox deletion. This feature does not duplicate
   that behaviour.
@@ -367,6 +407,7 @@ time, source address and changed attributes, and that no record contains the rem
   | Create a sync job | Any mailbox | Mailboxes in their domains | Own mailbox only | Forbidden |
   | Edit, activate, deactivate, reschedule a sync job | All jobs | Jobs of mailboxes in their domains | Jobs targeting their own mailbox | Forbidden |
   | Delete a sync job | All jobs | Jobs of mailboxes in their domains | Jobs targeting their own mailbox | Forbidden |
+  | Bulk actions: activate, deactivate, reschedule, delete (FR-023, FR-024) | All jobs | Jobs of mailboxes in their domains | Jobs targeting their own mailbox | Forbidden |
   | Read the audit log | Yes | Forbidden | Forbidden | Forbidden |
 
   A mailbox user MUST NOT be able to change their own `syncjobs` permission (feature 003 owns the
@@ -447,8 +488,8 @@ time, source address and changed attributes, and that no record contains the rem
 
   A successful create MUST respond as "created" with the address of the new job. A successful edit,
   activate, deactivate or reschedule MUST respond with the updated job and its version tag. A
-  successful delete MUST respond with no body. Each operation MUST act on exactly one sync job
-  (FR-023).
+  successful delete MUST respond with no body. Activating, deactivating, rescheduling and deleting
+  many jobs at once are covered by the bulk actions (FR-023, FR-024).
 - **FR-017**: The attributes MUST meet these rules, at creation and on every edit:
   - target mailbox: an existing, in-scope mailbox (`kind` empty). A resource, alias, alias domain or
     domain MUST be refused with a validation error. A mailbox user MUST NOT be able to target any
@@ -516,30 +557,41 @@ time, source address and changed attributes, and that no record contains the rem
   run has elapsed), that this API never starts a run directly, and that rescheduling only makes the
   job eligible on the runner's next cycle.
 
+#### Bulk actions
+
+- **FR-023**: Callers holding the sync-jobs permission MUST be able to apply one of these actions to
+  up to 100 sync jobs in one request, as the legacy mass actions do: activate, deactivate,
+  reschedule or delete. A request with more than 100 sync jobs MUST be refused with a validation
+  error that states the limit. Creation and other edits MUST NOT be offered as bulk actions.
+- **FR-024**: A bulk action MUST be refused as a whole when the caller's role, key scope or
+  permission flag (FR-001, FR-004) does not allow the action. Otherwise each named sync job MUST be
+  processed on its own, with the same checks, side effects and audit record as a single request for
+  it, and the response MUST report one result per distinct sync job: done, not found, refused (with
+  the error type), or failed (with the error type). A failure on one sync job MUST NOT stop or undo
+  the others, as in legacy. Bulk actions do not check version tags.
+
 #### Reliability and cross-cutting
 
-- **FR-023**: This feature MUST NOT offer batch operations. Each sync job is created, changed,
-  activated, deactivated, rescheduled and deleted with its own request, each authorised, version-
-  checked and audited on its own.
-- **FR-024**: Every request of this feature that changes state, or tries to, MUST write exactly one
-  audit record into feature 001's audit log, with the fields of FR-046 there and:
+- **FR-025**: Every request of this feature that changes state, or tries to, MUST write one audit
+  record per affected sync job into feature 001's audit log, with the fields of FR-046 there and:
   - the target type (sync job) and the target identifier, and the target mailbox;
   - the outcome, including refusals and their reason;
   - for successful changes, each changed attribute with its old and new value. The remote password
     MUST be recorded only as "changed", never as a value;
-  - for a reschedule, that the schedule and last result were cleared.
-- **FR-025**: Administrators MUST be able to filter the audit log by target type, target identifier
+  - for a reschedule, that the schedule and last result were cleared;
+  - for bulk actions, the identifier of the bulk request.
+- **FR-026**: Administrators MUST be able to filter the audit log by target type, target identifier
   and target mailbox, in addition to the filters of feature 001 (FR-047 there). Domain
   administrators and mailbox users MUST be refused the audit log.
-- **FR-026**: Errors MUST follow feature 001's conventions (FR-049 and FR-055 there). This feature
+- **FR-027**: Errors MUST follow feature 001's conventions (FR-049 and FR-055 there). This feature
   MUST document at least these error types: sync job not found, sync job already exists (duplicate),
   invalid custom parameter, invalid exclude pattern, outdated version, forbidden (permission not
   held), and validation failed with field-level rule codes and parameters (including each numeric
-  range and the offending custom option).
-- **FR-027**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response of
+  range, the offending custom option and the bulk limit).
+- **FR-028**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response of
   this API. The remote password changed through the legacy UI MUST remain usable by the runner and
   MUST stay hidden from this API's responses.
-- **FR-028**: Every operation MUST be described in the published API contract before it is
+- **FR-029**: Every operation MUST be described in the published API contract before it is
   implemented, and its behaviour MUST match the contract.
 
 ### Legacy Coverage
@@ -549,11 +601,12 @@ follows. Actions are `/api/v1` names; *form* marks legacy UI form handlers.
 
 | Legacy action or form | Legacy implementation | Requirements |
 |---|---|---|
-| `add/syncjob`, *form* "Add sync job" (admin/domain-admin modal with mailbox select, and user modal for own mailbox) | `mailbox('add', 'syncjob')` | FR-001 to FR-006, FR-016 to FR-019, FR-023, FR-024 |
+| `add/syncjob`, *form* "Add sync job" (admin/domain-admin modal with mailbox select, and user modal for own mailbox) | `mailbox('add', 'syncjob')` | FR-001 to FR-006, FR-016 to FR-019, FR-025 |
 | `get/syncjobs/{mailbox}`, `get/syncjobs/all`, with the `no_log` and (internal) `with_password` variants | `mailbox('get', 'syncjobs')` + `mailbox('get', 'syncjob_details')`, `json_api.php` syncjobs case | FR-007 to FR-015, FR-018 |
 | `get/syncjob_details` log field, *form* `inc/ajax/syncjob_logs.php` log viewer | `syncjob_details` `returned_text` → `log` | FR-008, FR-009 |
-| `edit/syncjob`, *form* edit page, mass activate/deactivate, "Schedule next" (last-run reset) | `mailbox('edit', 'syncjob')`, `templates/edit/syncjob.twig`, `tab-syncjobs.twig`, `user/Syncjobs.twig` | FR-016 to FR-021, FR-023, FR-024 |
-| `delete/syncjob`, single and mass | `mailbox('delete', 'syncjob')` | FR-016, FR-023, FR-024 |
+| `edit/syncjob`, *form* edit page, mass activate/deactivate, "Schedule next" (last-run reset) | `mailbox('edit', 'syncjob')`, `templates/edit/syncjob.twig`, `tab-syncjobs.twig`, `user/Syncjobs.twig` | FR-016 to FR-021, FR-023 to FR-025 |
+| `delete/syncjob`, single and mass | `mailbox('delete', 'syncjob')` | FR-016, FR-023 to FR-025 |
+| Sync-job table mass actions: activate, deactivate and delete (administrator, domain-administrator and user tabs), "Schedule next" (administrator and domain-administrator tab) | Multi-select `edit_selected` / `delete_selected` in `tab-syncjobs.twig` and `user/Syncjobs.twig`, `js/site/mailbox.js`, `js/site/user.js` | FR-023, FR-024 |
 | `user_acl.syncjobs`, `da_acl.syncjobs` permission gate | `acl('to_session')`, `$_SESSION['acl']['syncjobs']` check in every syncjob case | FR-001, FR-005 |
 | Custom-parameter allow-list | `IMAPSYNC_OPTIONS.whitelist` in `vars.inc.php` | FR-019 |
 | Run status columns and log maintained by the runner | `imapsync_runner.pl`, `imapsync` columns `is_running`, `last_run`, `success`, `exit_status`, `returned_text` | FR-008, FR-009, FR-022 |
@@ -600,12 +653,12 @@ fork-only sync-job capabilities to make configurable.
 | Duplicate job | `(user2, user1, host1)` must be unique → `object_exists` on create | Same, as a conflict, on create and on an edit that would duplicate (FR-017) |
 | Run status and log | Read from `is_running`, `last_run`, `success`, `exit_status`, `returned_text`; `returned_text` surfaced as `log` | Same, read-only (FR-008, FR-009) |
 | Last-run reset ("Schedule next") | `edit/syncjob` with `last_run` and `success` set to empty → stored as NULL | A dedicated reschedule that clears both and does not change the version tag (FR-016) |
-| Activate / deactivate | `edit/syncjob` with `active` 1/0, often as a mass action | An ordinary per-job edit of the active flag (FR-016, FR-023) |
+| Activate / deactivate | `edit/syncjob` with `active` 1/0, often as a mass action | An ordinary per-job edit of the active flag, or a bulk action (FR-016, FR-023) |
 | Runner | Every minute on the master, selects `active = 1 AND is_running = 0` whose interval elapsed, runs imapsync, writes status and log | Unchanged; this API only manages rows and reads status (FR-022) |
 | List | Both tables load every row and page client-side | Server-side pagination, sorting, filters and search (FR-011 to FR-015). **Deviation** (enhancement) |
 | Concurrent edits | Last write wins | Version tags (FR-020, FR-021). **Deviation** |
-| Mass actions | One request with a list of identifiers | One request per job (FR-023). **Deviation** |
-| UI log entries | Written to the `logs` table | Written to this API's audit log (FR-024), as in feature 001. **Deviation** |
+| Mass actions | `edit/syncjob` and `delete/syncjob` with arrays; processing continues past per-job access failures, but a custom-parameter validation failure on one job stops the jobs after it | Bulk action with one result per job; no failure stops the others (FR-023, FR-024). **Deviation** for the stop on a validation failure |
+| UI log entries | Written to the `logs` table | Written to this API's audit log (FR-025), as in feature 001. **Deviation** |
 | SOGo / memcached side effects | None for sync jobs (the closing `update_sogo_static_view` block skips the `syncjob` type) | None (FR-022) |
 
 ### Key Entities *(include if feature involves data)*
@@ -624,6 +677,8 @@ fork-only sync-job capabilities to make configurable.
   capability.
 - **Mailbox** (existing mailcow data, feature 003): the sync job's target; this feature reads it to
   resolve the target and the caller's scope.
+- **Bulk action** (transient): one action (activate, deactivate, reschedule or delete), up to 100
+  sync jobs and one result per sync job.
 - **Audit record** (owned by this API, defined in feature 001): extended with the sync-job target
   type, the target identifier, the target mailbox and the attribute changes, with the remote
   password recorded only as "changed".
@@ -650,11 +705,13 @@ fork-only sync-job capabilities to make configurable.
   fails on a version check.
 - **SC-006**: In 95% of requests, a page of 25 sync jobs with run status is returned within 1 second
   on a server with 5,000 sync jobs across 100,000 mailboxes.
-- **SC-007**: Every request in FR-024 produces exactly one audit record, and no audit record
-  contains the remote password.
+- **SC-007**: Every request in FR-025 produces exactly one audit record per affected sync job, and no
+  audit record contains the remote password.
 - **SC-008**: A mailbox user with the sync-jobs permission can create a sync job in the new web app
   in under 1 minute, and the imapsync runner begins the job within one runner cycle of it becoming
   active.
+- **SC-009**: A bulk action on 100 sync jobs completes within 10 seconds and reports exactly one
+  result per sync job.
 
 ## Assumptions
 
@@ -668,9 +725,9 @@ fork-only sync-job capabilities to make configurable.
   which move or remove a job's target, are handled in feature 003.
 - The remote password is stored in plain text because imapsync requires it; this is an inherent
   property of sync jobs, not a choice of this feature. The API keeps it hidden from every response.
-- These defaults can be changed by the operator: the list page size (25, maximum 1,000) and whether
-  custom imapsync parameters are restricted to administrators (default: not restricted, as in
-  legacy).
+- These defaults can be changed by the operator: the list page size (25, maximum 1,000), the bulk
+  limit (100) and whether custom imapsync parameters are restricted to administrators (default: not
+  restricted, as in legacy).
 - Creating a sync job has no effect on Postfix, Dovecot delivery, SOGo, Redis or memcached beyond
   the runner eventually connecting to the remote server; the legacy code performs no such side
   effect for sync jobs.
@@ -680,7 +737,7 @@ fork-only sync-job capabilities to make configurable.
   - sync-job permission management (features 003 and 007);
   - mailbox creation, rename and deletion (feature 003);
   - outbound relay and address rewriting (feature 009);
-  - batch operations.
+  - bulk creation and bulk edits other than activate, deactivate, reschedule and delete.
 - **Dependencies**:
   - the upstream mailcow database schema of the supported release (the `imapsync`, `mailbox`,
     `user_acl` and `da_acl` tables);

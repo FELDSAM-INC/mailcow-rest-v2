@@ -240,7 +240,7 @@ for the same input, and scan every response for passwords.
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T028 [P] [US1] Write `tests/Feature/Routing/Relayhosts/RelayhostListTest.php` for
+- [X] T028 [P] [US1] Write `tests/Feature/Routing/Relayhosts/RelayhostListTest.php` for
   `listRelayhosts` and `getRelayhost` (FR-007, FR-012, FR-015 to FR-017):
   - each entry has `id`, `host`, `username` (`null` for `''`), `passwordSet`, `active`, `usage` and
     `etag`, and the `etag` equals the `ETag` header of `getRelayhost`;
@@ -255,7 +255,7 @@ for the same input, and scan every response for passwords.
     (FR-008, FR-089);
   - `getRelayhost` of an unknown id → `404`; the query count of a page does not grow with the page
     size (FR-007).
-- [ ] T029 [P] [US1] Write `tests/Feature/Routing/Relayhosts/RelayhostWriteTest.php` for
+- [X] T029 [P] [US1] Write `tests/Feature/Routing/Relayhosts/RelayhostWriteTest.php` for
   `createRelayhost`, `updateRelayhost` and `deleteRelayhost` (FR-009, FR-013, FR-014, FR-018 to
   FR-021):
   - AS-1: `{"host": "[smtp.example.net]:587", "username": "acct", "password": "s3cret"}` → `201`,
@@ -278,7 +278,7 @@ for the same input, and scan every response for passwords.
   - a change sent with an outdated `If-Match` never overwrites the newer row (SC-009);
   - every successful write writes one audit record with the right event type and `password: set |
     changed | removed`; no dockerapi or memcached call is made (002's fakes record nothing, FR-092).
-- [ ] T030 [P] [US1] Write `tests/Feature/Routing/Relayhosts/RelayhostChoicesAndUsageTest.php` for
+- [X] T030 [P] [US1] Write `tests/Feature/Routing/Relayhosts/RelayhostChoicesAndUsageTest.php` for
   `listRelayhostChoices` and `listRelayhostUsage` (FR-022, FR-023):
   - an administrator and a domain administrator with `domain_relayhost`, or with only
     `mailbox_relayhost`, get `id`, `host` and `active` for every relayhost, sorted by `id` or
@@ -287,7 +287,7 @@ for the same input, and scan every response for passwords.
     `requiredFlags: ["domainRelayhost", "mailboxRelayhost"]`; `listRelayhosts` → `403 forbidden`;
   - usage: the 3 names of AS-3, `kind` filter, `q` on the name, default order domains first then by
     name, `sort=name`; an unknown relayhost → `404`.
-- [ ] T031 [P] [US1] Write `tests/Feature/Routing/Relayhosts/RelayhostBulkActionTest.php` for
+- [X] T031 [P] [US1] Write `tests/Feature/Routing/Relayhosts/RelayhostBulkActionTest.php` for
   `applyRelayhostBulkAction` (FR-090, FR-091):
   - AS-9: three relayhosts and id `999` deactivated → three `done` with new `version`, one
     `notFound`; four audit records carrying the same `bulkRequestId`; one target with an outdated
@@ -297,7 +297,7 @@ for the same input, and scan every response for passwords.
     `Invalid`); an unknown action → `notInList`;
   - a domain administrator → `403 forbidden` as a whole; an administrator's read-only key →
     `403 insufficient-key-scope`.
-- [ ] T032 [P] [US1] Write `tests/Feature/Routing/Relayhosts/RelayhostAuthorizationTest.php`: the
+- [X] T032 [P] [US1] Write `tests/Feature/Routing/Relayhosts/RelayhostAuthorizationTest.php`: the
   nine relayhost operations × anonymous (`401`), mailbox user (`403 forbidden`), domain
   administrator session and read-write key (`403 forbidden`, except choices per T030), restricted
   session (`403 pending-action-required`), session without CSRF token on writes (`403
@@ -307,24 +307,24 @@ for the same input, and scan every response for passwords.
 
 ### Implementation for User Story 1
 
-- [ ] T033 [US1] Extend 002's `app/Models/Mailcow/Relayhost.php`: `$hidden = ['password']`, cast
+- [X] T033 [US1] Extend 002's `app/Models/Mailcow/Relayhost.php`: `$hidden = ['password']`, cast
   `active` to bool, no timestamps. Create `app/Services/Routing/RelayhostQuery.php` (R10): the list
   with the two derived count tables joined once and grouped by `r.id`, `q`, filters, sorts and
   paging through 001's `ListQuery`; the usage `UNION ALL`; the choices.
-- [ ] T034 [US1] Create `app/Services/Routing/RelayhostService.php`: `create`, `update` (R4 credential
+- [X] T034 [US1] Create `app/Services/Routing/RelayhostService.php`: `create`, `update` (R4 credential
   rules, `NextHop` normalisation, only changed columns written), `delete` (R12, one transaction with
   the cleared names), the version tag (`ETag::strong()` over `id|hostname|username|fingerprint|active`)
   and the bulk item handlers `activate`, `deactivate`, `delete`; every path records through
   `RoutingAudit` in the same transaction.
-- [ ] T035 [P] [US1] Create the Form Requests `app/Http/Requests/Api/V2/ListRelayhostsRequest.php`,
+- [X] T035 [P] [US1] Create the Form Requests `app/Http/Requests/Api/V2/ListRelayhostsRequest.php`,
   `ListRelayhostChoicesRequest.php`, `ListRelayhostUsageRequest.php`, `StoreRelayhostRequest.php`
   and `UpdateRelayhostRequest.php`: `host` via `NextHopRule` ("trimmed, at most 255 characters"),
   `username` via `SmtpUsername` ("trimmed, at most 255, no colon"), `password` ("trimmed, at most
   255"; `""` removes), `active` boolean, `id`/`usage` `immutable` checks, `required` on `body` for an
   empty patch, the password-without-username rule.
-- [ ] T036 [P] [US1] Create `app/Http/Resources/Api/V2/RelayhostResource.php`,
+- [X] T036 [P] [US1] Create `app/Http/Resources/Api/V2/RelayhostResource.php`,
   `RelayhostChoiceResource.php` and `RelayhostUsageEntryResource.php` (contract shapes, `etag`).
-- [ ] T037 [US1] Create `app/Http/Controllers/Api/V2/RelayhostController.php` (`index`, `show`,
+- [X] T037 [US1] Create `app/Http/Controllers/Api/V2/RelayhostController.php` (`index`, `show`,
   `store`, `update`, `destroy`), `RelayhostChoiceController.php`, `RelayhostUsageController.php` and
   `RelayhostBulkActionController.php`, and register in `routes/api.php`: the top-level helper
   `GET /relayhost-choices`; `POST /relayhosts/bulk-actions` before `/relayhosts/{relayhostId}`;
@@ -1064,4 +1064,27 @@ what exists map as listed.
   records are unchanged). The 21 event types are documented in `docs/audit-events.md` (G3).
 - **T027**: the per-collection item handlers implement `App\Services\Routing\RoutingBulkHandler`;
   `RoutingBulkActions` runs them on the shared runner.
+- **T029**: the atomicity of a deletion is shown with a failing audit insert (the last statement of
+  its transaction), because a failure of the mailbox update cannot be provoked without changing an
+  upstream table.
+- **T030, G41**: relayhost choices carry `username` (`null` without one) for every caller who may
+  read them, because the legacy selectors show `ID n: host (username)` to the domain
+  administrators holding the matching flag; FR-023, the US1 scenario 8 and the parity table say so
+  now. Password states and usage stay hidden.
+- **T032**: the relayhost connection test joins the caller matrix with US4 (T059) and in T098.
+- **T033**: usage counts compare `domain.relayhost` and `attributes.relayhost` numerically
+  (`CAST(… AS UNSIGNED)`) in derived tables grouped by that number, so that `03` counts for
+  relayhost 3 once. Writes that clear assignments first select the matching names and then update
+  by primary key, because a numeric comparison in an `UPDATE … WHERE` would fail in strict mode on
+  non-numeric legacy values.
+- **T035**: the Form Requests report the credential rule and the read-only members through 003's
+  `ApiFormRequest::memberViolations()`, so that every invalid field is named together (SC-011);
+  the service checks again under its row lock. Besides `id` and `usage`, the representation's
+  `passwordSet` and `etag` are accepted unchanged (so that a client can send back what it read),
+  and any other unknown member is `immutable` (FR-009: a sent value is never ignored);
+  `RelayhostPatch` documents both (G37).
+- **T036, T037**: one response helper, `App\Http\Resources\Api\V2\RoutingResource`, wraps the
+  representations the routing queries build (004's presenter pattern); one
+  `RoutingBulkActionController` serves the bulk path of every collection, picking the item handler
+  from the route's `restv2.audit` target. Entry IDs match `[1-9][0-9]{0,9}`, as 004's alias IDs.
 

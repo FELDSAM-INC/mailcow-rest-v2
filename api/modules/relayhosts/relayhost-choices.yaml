@@ -3,10 +3,12 @@ get:
   tags: [Relayhosts]
   summary: List relayhost choices
   description: |
-    Lists every relayhost with only its identifier, host and active state, for the relayhost
-    selectors of the domain and mailbox screens. Administrators, and domain administrators who hold
-    the `domainRelayhost` or the `mailboxRelayhost` permission flag (otherwise
-    `403 permission-flag-required`). Read-only keys may use it. `q` searches the host.
+    Lists every relayhost with only its identifier, host, username and active state, for the
+    relayhost selectors of the domain and mailbox screens, which legacy labels
+    `ID n: host (username)`. Administrators, and domain administrators who hold the
+    `domainRelayhost` or the `mailboxRelayhost` permission flag (otherwise
+    `403 permission-flag-required`). Passwords, password states and usage are never included.
+    Read-only keys may use it. `q` searches the host.
   security:
     - sessionCookie: []
     - apiKeyAuth: []

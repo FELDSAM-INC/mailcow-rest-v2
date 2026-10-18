@@ -184,7 +184,8 @@ input (allowing for the stated deviations), and scan every response for password
    any more, and the audit record names both.
 8. **Given** a domain administrator, **When** they request the full relayhost list, **Then** the
    request is refused as forbidden. **When** they hold the `domain_relayhost` flag and request the
-   relayhost choices, **Then** they receive identifiers, hosts and active states, without usernames.
+   relayhost choices, **Then** they receive identifiers, hosts, usernames and active states, as the
+   legacy selectors show them, without password states or usage (G41).
 9. **Given** three relayhosts and an identifier that does not exist, **When** an administrator
    deactivates all four in one request, **Then** the three are inactive, the fourth is reported "not
    found", and the audit log has one record per relayhost. **When** one of the named relayhosts
@@ -697,8 +698,11 @@ audit log filtered by target.
   and name (default) or by name.
 - **FR-023**: Administrators, and domain administrators who hold the `domain_relayhost` or the
   `mailbox_relayhost` flag, MUST be able to list the relayhost choices: every relayhost with only its
-  identifier, host and active state, with pagination, a search on the host and sorting by identifier
-  (default) or host. Domain administrators MUST NOT see usernames, password states or usage.
+  identifier, host, username and active state, with pagination, a search on the host and sorting by
+  identifier (default) or host. Domain administrators MUST NOT see password states or usage. The
+  username is shown because the legacy selectors of the domain and mailbox edit pages show it to the
+  same domain administrators (`ID n: host (username)`, gap G41, which supersedes the clarification's
+  "without usernames").
 
 #### Relayhost assignment
 
@@ -1112,7 +1116,7 @@ name. There is no fork-only routing capability to make configurable.
 | Behaviour | Legacy | This feature |
 |---|---|---|
 | Who may manage relayhosts, transports, recipient maps, TLS policy maps, forwarding hosts and tests | Administrators only | Same (FR-005) |
-| Relayhost list for domain administrators | Every domain administrator reads all relayhosts with usernames (`relayhost('get')`) | Only with a relayhost flag, without usernames (FR-023). **Deviation** |
+| Relayhost list for domain administrators | Every domain administrator reads all relayhosts with usernames (`relayhost('get')`); the selectors show `ID n: host (username)` to holders of the matching flag | Only with a relayhost flag, with usernames as the selectors show them, without password states or usage (FR-023, G41). **Deviation** for the flag requirement |
 | Relayhost and transport passwords in responses | Returned in clear text by `get/relayhost`, `get/transport` and shown in the edit forms; `password_short` shows the first 3 characters | Never returned; "password set" instead (FR-012). **Deviation** (constitution VI) |
 | Credential storage | Clear text in `relayhosts` and `transports`. `:` escaped as `\:` on creation (twice for relayhost passwords, never on edit), which the mail server does not unescape | Clear text, verbatim; usernames with `:` refused (FR-013). **Deviation** (bug fix) |
 | Credential use | Postfix `smtp_sasl_password_maps` (`mysql_sasl_passwd_maps_sender_dependent.cf`, `CONCAT_WS(':', username, password)`, only when `username != ''`) and the `smtp_via_transport_maps` service (`mysql_sasl_passwd_maps_transport_maps.cf`, by next hop) | Same storage, same effect (FR-013, FR-027, FR-038) |

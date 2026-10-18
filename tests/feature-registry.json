@@ -315,14 +315,6 @@
         }
     },
     "pendingOperations": [
-        "listRelayhosts",
-        "createRelayhost",
-        "listRelayhostChoices",
-        "applyRelayhostBulkAction",
-        "getRelayhost",
-        "updateRelayhost",
-        "deleteRelayhost",
-        "listRelayhostUsage",
         "testRelayhostConnection",
         "getDomainRelayhostAssignment",
         "replaceDomainRelayhostAssignment",

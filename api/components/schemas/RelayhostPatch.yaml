@@ -2,9 +2,10 @@ type: object
 description: |
   JSON Merge Patch of a relayhost. Omitted members stay unchanged. An omitted `password` is kept;
   `""` removes it. Setting `username` to `""` without a password also removes the password. A
-  password together with an empty resulting username is refused. `id` and `usage` are read-only:
-  they are accepted with their current value and refused (`readOnly`) otherwise, so that a client
-  can send back the representation it read.
+  password together with an empty resulting username is refused. `id`, `usage`, `passwordSet` and
+  `etag` are read-only: they are accepted with their current value and refused (`immutable`)
+  otherwise, so that a client can send back the representation it read. Any other member is
+  refused (`immutable`).
 minProperties: 1
 properties:
   host:
@@ -27,4 +28,10 @@ properties:
     description: Read-only.
   usage:
     type: object
+    description: Read-only.
+  passwordSet:
+    type: boolean
+    description: Read-only.
+  etag:
+    type: string
     description: Read-only.

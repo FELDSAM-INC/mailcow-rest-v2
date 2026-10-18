@@ -76,10 +76,14 @@ use App\Http\Controllers\Api\V2\PublicAddressesController;
 use App\Http\Controllers\Api\V2\PublicConfigController;
 use App\Http\Controllers\Api\V2\PublicConfigLogoController;
 use App\Http\Controllers\Api\V2\ReadinessController;
+use App\Http\Controllers\Api\V2\RelayhostChoiceController;
+use App\Http\Controllers\Api\V2\RelayhostController;
+use App\Http\Controllers\Api\V2\RelayhostUsageController;
 use App\Http\Controllers\Api\V2\ResourceBulkActionController;
 use App\Http\Controllers\Api\V2\ResourceController;
 use App\Http\Controllers\Api\V2\RspamdHistoryController;
 use App\Http\Controllers\Api\V2\RspamdStatisticsController;
+use App\Http\Controllers\Api\V2\RoutingBulkActionController;
 use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
@@ -585,6 +589,38 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('oauth2ClientId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'oauth2ClientTokenRevocation', 'target' => 'oauth2Client'])
             ->name('oauth2-client-token-revocation.store');
+    });
+
+    // Feature 009: routing and address rewriting. Literal paths (bulk-actions, the helper lists,
+    // the capabilities) come before the parameterised ones; entry IDs are digits only.
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/relayhosts', [RelayhostController::class, 'index'])->name('relayhosts.index');
+        Route::get('/relayhost-choices', [RelayhostChoiceController::class, 'index'])->name('relayhost-choices.index');
+        Route::get('/relayhosts/{relayhostId}', [RelayhostController::class, 'show'])
+            ->where('relayhostId', '[1-9][0-9]{0,9}')
+            ->name('relayhosts.show');
+        Route::get('/relayhosts/{relayhostId}/usage', [RelayhostUsageController::class, 'index'])
+            ->where('relayhostId', '[1-9][0-9]{0,9}')
+            ->name('relayhost-usage.index');
+    });
+
+    // State-changing routes of feature 009: refusals of authenticated callers are audited.
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        // POST-only bulk paths: object paths never accept POST.
+        Route::post('/relayhosts/bulk-actions', [RoutingBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'relayhost'])
+            ->name('relayhost-bulk-actions.store');
+        Route::post('/relayhosts', [RelayhostController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'relayhostCreation', 'target' => 'relayhost'])
+            ->name('relayhosts.store');
+        Route::patch('/relayhosts/{relayhostId}', [RelayhostController::class, 'update'])
+            ->where('relayhostId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'relayhostUpdate', 'target' => 'relayhost'])
+            ->name('relayhosts.update');
+        Route::delete('/relayhosts/{relayhostId}', [RelayhostController::class, 'destroy'])
+            ->where('relayhostId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'relayhostDeletion', 'target' => 'relayhost'])
+            ->name('relayhosts.destroy');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

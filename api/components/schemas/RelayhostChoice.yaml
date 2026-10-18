@@ -1,13 +1,19 @@
 type: object
 description: |
-  A relayhost reduced to what a selector needs. Domain administrators see no usernames, password
-  states or usage.
-required: [id, host, active]
+  A relayhost reduced to what a selector needs: its identifier, host, username and active state, as
+  the relayhost selectors of the legacy domain and mailbox edit pages show them
+  (`ID n: host (username)`). Never the password, whether one is set, or the usage.
+required: [id, host, username, active]
 properties:
   id:
     type: integer
     minimum: 1
   host:
     type: string
+  username:
+    description: SMTP username, or `null` when the relayhost sends without logging in.
+    oneOf:
+      - type: string
+      - type: 'null'
   active:
     type: boolean

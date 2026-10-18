@@ -172,3 +172,29 @@ Contract changes made while implementing feature 011:
   names as `step`; `Fail2BanRulesNotRestored` answers it or `ban-rules-not-restored` (G11).
 
 Release checks of feature 011 (quickstart Part C): not run yet.
+
+Contract: the 9 operations of feature 008 (sync jobs):
+
+- Sync jobs: `listSyncJobs`, `createSyncJob`, `getSyncJob`, `updateSyncJob` (activation and
+  deactivation included), `deleteSyncJob`, `getSyncJobLog`, `rescheduleSyncJob`,
+  `applySyncJobBulkAction` (activate, deactivate, reschedule, delete) and
+  `getSyncJobsCapabilities`.
+- Problem type: `sync-job-exists`; the shared `permission-flag-required` (`requiredFlags:
+  [syncjobs]`) is reused.
+- Values appended to shared enumerations: `AuditEventType` (`syncJobCreation`, `syncJobUpdate`,
+  `syncJobReschedule`, `syncJobDeletion`), `AuditTarget` (`syncJob`), `AuditFailureReason`
+  (`permissionDenied`, `notFound`), `KnownProblemType` (`sync-job-exists`) and
+  `ValidationRuleCode` (`optionNotAllowed`, `optionContainsSpace`, `customParamsNotPermitted`,
+  `invalidRegex`, `immutable`, `format: hostName`, the `notEligible` kinds `resource`, `alias` and
+  `aliasDomainAddress`).
+- `listAuditEvents`: `targetType=syncJob` with `targetId`.
+- Server settings `RESTV2_IMAPSYNC_OPTIONS`, `RESTV2_SYNC_JOBS_CUSTOM_PARAMS_ADMIN_ONLY` and
+  `RESTV2_SYNC_JOBS_BULK_LIMIT`.
+
+Contract changes made while implementing feature 008:
+
+- `applySyncJobBulkAction`: a `done` item's `version` is the job's new tag quoted, exactly as its
+  `ETag` header shows it, like every other bulk action (the first text said unquoted).
+
+Release checks of feature 008 (quickstart Part C): not run yet.
+

@@ -125,6 +125,11 @@ services:
       - RESTV2_SHOW_LAST_LOGIN=${RESTV2_SHOW_LAST_LOGIN:-}
       - RESTV2_MAILBOX_DEFAULT_ATTRIBUTES=${RESTV2_MAILBOX_DEFAULT_ATTRIBUTES:-}
       - RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS=${RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS:-}
+      # Feature 008 (sync jobs): the custom imapsync parameter allow-list (empty: mailcow's vars
+      # files), the restriction of custom parameters to administrators and the bulk limit.
+      - RESTV2_IMAPSYNC_OPTIONS=${RESTV2_IMAPSYNC_OPTIONS:-}
+      - RESTV2_SYNC_JOBS_CUSTOM_PARAMS_ADMIN_ONLY=${RESTV2_SYNC_JOBS_CUSTOM_PARAMS_ADMIN_ONLY:-n}
+      - RESTV2_SYNC_JOBS_BULK_LIMIT=${RESTV2_SYNC_JOBS_BULK_LIMIT:-100}
     volumes:
       # Read-only: legacy's vars.inc.php and vars.local.inc.php (R14).
       - ./data/web/inc:/mailcow/web/inc:ro,z

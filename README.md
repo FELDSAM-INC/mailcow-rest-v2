@@ -175,6 +175,17 @@ Container and queue actions and the ban rule reset are synchronous and bounded b
 `fastcgi_read_timeout` at least `DOCKER_TIMEOUT + 30` and any php-fpm `request_terminate_timeout`
 at least `DOCKER_TIMEOUT + 40` (the image sets none).
 
+Sync jobs (feature 008) use these settings:
+
+| Variable | Default | Meaning | FeldHost |
+|---|---|---|---|
+| `RESTV2_IMAPSYNC_OPTIONS` | (empty: mailcow's vars files, else upstream's list) | Legacy `$IMAPSYNC_OPTIONS` as JSON, `{"whitelist": [...], "blacklist": [...]}`: the imapsync options custom parameters may use. `showpasswords` is never accepted, whatever the list says | |
+| `RESTV2_SYNC_JOBS_CUSTOM_PARAMS_ADMIN_ONLY` | `n` | `y` lets only administrators set custom imapsync parameters (legacy: anyone with the `syncjobs` permission) | |
+| `RESTV2_SYNC_JOBS_BULK_LIMIT` | `100` | Targets per sync-job bulk action (1 to 100) | |
+
+The imapsync runner in mailcow's dovecot container is unchanged: it runs active jobs on its own
+schedule, and the API never starts a run.
+
 ## Development
 
 The host needs only Docker with Compose v2; every PHP, Composer and Node command runs in the dev

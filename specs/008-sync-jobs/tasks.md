@@ -833,7 +833,7 @@ target type and identifier (spec US6).
 
 ## Phase 9: Polish and cross-cutting concerns
 
-- [ ] T063 [P] Write `tests/Feature/Security/SyncJobAuthorizationMatrixTest.php` (constitution VI,
+- [X] T063 [P] Write `tests/Feature/Security/SyncJobAuthorizationMatrixTest.php` (constitution VI,
   quality gate 5, FR-005, SC-003). It is a data provider over the 9 operations × 13 callers:
   - anonymous;
   - a restricted session (`force_pw_update`);
@@ -846,12 +846,12 @@ target type and identifier (spec US6).
   It asserts the status and problem `type` from a table derived from FR-005 and the contract's
   security. Object-level cases: a foreign-domain job → `404` for a domain admin; another mailbox's
   job → `404` for a mailbox user; a foreign target mailbox at creation → `404`.
-- [ ] T064 [P] Write `tests/Feature/Security/SyncJobSecretLeakTest.php` (FR-018, SC-001, SC-007). It
+- [X] T064 [P] Write `tests/Feature/Security/SyncJobSecretLeakTest.php` (FR-018, SC-001, SC-007). It
   runs every operation with the password `Remote-S3cret!`, including validation failures that echo
   members and a forced `500`. The password must not appear in any response body or header, in the
   `stderr_json` log output (captured through a test log handler), in `restv2_audit_events` or in an
   exception render. `ETag` values must not equal `SHA-256(password)` in any encoding.
-- [ ] T065 [P] Write `tests/Feature/Performance/SyncJobListLatencyTest.php` (group `performance`,
+- [X] T065 [P] Write `tests/Feature/Performance/SyncJobListLatencyTest.php` (group `performance`,
   SC-006):
   - seed 100,000 mailboxes over 200 domains and 5,000 jobs, with `INSERT … SELECT` from MariaDB's
     `seq_1_to_100000`, and 1 MB `returned_text` on 500 jobs;
@@ -861,15 +861,15 @@ target type and identifier (spec US6).
 
   Write `tests/Feature/Performance/SyncJobBulkLatencyTest.php` (SC-009): a bulk `deactivate` of
   100 jobs finishes in under 10 s, with exactly 100 results and 100 audit records.
-- [ ] T066 [P] Extend `database/seeders/DevelopmentSeeder.php` with the quickstart Part B data:
+- [X] T066 [P] Extend `database/seeders/DevelopmentSeeder.php` with the quickstart Part B data:
   - `user_acl.syncjobs = 1` for `alice@example.org` and 0 for `bob@example.org`;
   - jobs #1 (never run) and #2 (failed, `EXIT_AUTHENTICATION_FAILURE_USER1`, with a log) for alice;
   - `carol@example.net` with job #3;
   - `reseller` with `da_acl.syncjobs = 1`.
-- [ ] T067 [P] Update `README.md`: the configuration variables `RESTV2_IMAPSYNC_OPTIONS`,
+- [X] T067 [P] Update `README.md`: the configuration variables `RESTV2_IMAPSYNC_OPTIONS`,
   `RESTV2_SYNC_JOBS_CUSTOM_PARAMS_ADMIN_ONLY` and `RESTV2_SYNC_JOBS_BULK_LIMIT`. Update
   `CHANGELOG.md`: "contract: the 9 sync-job operations (feature 008)", for mailcowui-ng to pin.
-- [ ] T068 Review `routes/api.php`:
+- [X] T068 Review `routes/api.php`:
   - `sync-jobs/bulk-actions` is registered before `sync-jobs/{syncJob}`, and the capabilities read
     is at `capabilities/sync-jobs`;
   - every unsafe route has `restv2.csrf` and a `restv2.audit` default;
@@ -1086,4 +1086,17 @@ Checked on `main` at `e21f5ee`:
 - **T061, T062**: `ListAuditEventsRequest` accepts any `targetType` string (002 T087), so the
   generic filters serve sync jobs without code; T061 was written after the stories whose records
   it reads and passed on its first run (as 004's T080 did).
+- **T063, T064**: written after the stories they verify; both passed on their first run. The
+  matrix has the 13 callers of the task (CSRF failures are covered by `SyncJobRefusalAuditTest` and
+  `CreateSyncJobTest`).
+- **T065**: the 500 large logs are 256 KiB each, not 1 MiB: InnoDB stores values of this size off
+  the row page, so a larger value does not change a query that never reads the column, and the
+  shared database is spared half a gigabyte of writes. Rows are committed and removed in
+  `tearDown()`, as in 004's performance test. Measured on the loaded shared machine: every case
+  within budget.
+- **T066**: the quickstart's user without the flag is the new `dave@example.org`: 001's
+  `bob@example.org` must change his password, so his session is restricted and would answer
+  `pending-action-required` instead of `permission-flag-required`. `reseller` manages
+  `example.org` and `example.net` (001's seeder), so carol's job #3 is in his scope.
+- **T067**: the three settings are also passed through `deploy/docker-compose.override.yml`.
 

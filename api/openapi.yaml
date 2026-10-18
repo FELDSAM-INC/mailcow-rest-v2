@@ -800,3 +800,6 @@ components:
       description: |
         Secret of an API key created by an administrator. The key acts with its owner's role,
         scope and permission flags, limited by its access level.
+  schemas:
+    KnownProblemType:
+      $ref: './components/schemas/KnownProblemType.yaml'

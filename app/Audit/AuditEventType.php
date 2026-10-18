@@ -35,6 +35,15 @@ enum AuditEventType: string
     case MtaStsPolicyCreation = 'mtaStsPolicyCreation';
     case MtaStsPolicyUpdate = 'mtaStsPolicyUpdate';
 
+    // Feature 003: mailboxes and mailbox templates.
+    case MailboxCreation = 'mailboxCreation';
+    case MailboxUpdate = 'mailboxUpdate';
+    case MailboxDeletion = 'mailboxDeletion';
+    case MailboxRename = 'mailboxRename';
+    case MailboxTemplateCreation = 'mailboxTemplateCreation';
+    case MailboxTemplateUpdate = 'mailboxTemplateUpdate';
+    case MailboxTemplateDeletion = 'mailboxTemplateDeletion';
+
     /**
      * Keys of refusal records written by App\Services\Audit\RefusalAuditor (docs/conventions.md
      * "Refusal auditing"): the problem type, the status and, for `422`, the field errors (rule codes
@@ -73,6 +82,12 @@ enum AuditEventType: string
             self::DkimDnsPublication => ['selector', 'dnsPublication', ...self::REFUSAL],
             self::MtaStsPolicyCreation => ['version', 'mode', 'mxHosts', 'maxAge', 'active', 'policyId', ...self::REFUSAL],
             self::MtaStsPolicyUpdate => ['changes', 'oldPolicyId', 'newPolicyId', ...self::REFUSAL],
+            self::MailboxCreation => ['values', 'templateId', 'passwordSet', 'preHashed', 'creationReport', ...self::REFUSAL],
+            self::MailboxUpdate => ['changes', ...self::BULK, ...self::REFUSAL],
+            self::MailboxDeletion => ['removed', 'mailStoreCleanup', ...self::BULK, ...self::REFUSAL],
+            self::MailboxRename => ['previousAddress', 'newAddress', 'keepOldAddressAsAlias', 'steps', ...self::REFUSAL],
+            self::MailboxTemplateCreation, self::MailboxTemplateDeletion => ['values', ...self::REFUSAL],
+            self::MailboxTemplateUpdate => ['changes', ...self::REFUSAL],
         };
     }
 }

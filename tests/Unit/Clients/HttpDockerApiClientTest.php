@@ -46,7 +46,7 @@ class HttpDockerApiClientTest extends TestCase
     }
 
     /**
-     * @param  array<string, mixed>|\Closure  $action
+     * @param  array<mixed>|\Closure  $action
      */
     private function fake(array|\Closure $action): void
     {

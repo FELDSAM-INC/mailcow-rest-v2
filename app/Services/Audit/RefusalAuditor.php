@@ -4,6 +4,7 @@ namespace App\Services\Audit;
 
 use App\Audit\AuditEventType;
 use App\Auth\Principal;
+use App\Exceptions\CarriesAuditDetails;
 use App\Http\RequestContext;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
@@ -28,6 +29,11 @@ use Throwable;
  *
  * Bulk actions record their per-item refusals through record(). A service that writes its own
  * refusal record marks the request (markRecorded()) so that no second record is written.
+ *
+ * Feature 003: an exception that carries audit details (App\Exceptions\CarriesAuditDetails, for
+ * example a rename's steps) adds them to the record, and such an exception is recorded also when it
+ * ends in a `5xx` answer (`outcome-unknown`, `mailbox-rename-incomplete`, an unexpected failure
+ * after the mail was moved).
  */
 class RefusalAuditor
 {
@@ -47,6 +53,8 @@ class RefusalAuditor
         '/api/v2/problems/temporary-failure' => 'temporaryFailure',
         '/api/v2/problems/dkim-private-key-export-disabled' => 'featureDisabled',
         '/api/v2/problems/dkim-dns-publication-disabled' => 'featureDisabled',
+        '/api/v2/problems/outcome-unknown' => 'outcomeUnknown',
+        '/api/v2/problems/mailbox-rename-incomplete' => 'partiallyCompleted',
     ];
 
     public function __construct(private readonly AuditLogger $logger) {}
@@ -76,7 +84,7 @@ class RefusalAuditor
      * The hook of the problem renderer (bootstrap/app.php): records the refusal that the response
      * carries, when the route declares `restv2.audit`. Never throws.
      */
-    public function recordResponse(Request $request, Response $response): void
+    public function recordResponse(Request $request, Response $response, ?Throwable $exception = null): void
     {
         try {
             $route = $request->route();
@@ -91,7 +99,9 @@ class RefusalAuditor
             $body = json_decode((string) $response->getContent(), true);
             $type = is_array($body) && is_string($body['type'] ?? null) ? $body['type'] : 'about:blank';
 
-            if (! $this->isRecordedRefusal($status, $type)) {
+            $carried = $exception instanceof CarriesAuditDetails ? $exception->auditDetails() : [];
+
+            if (! $this->isRecordedRefusal($status, $type) && ! ($exception instanceof CarriesAuditDetails && $status >= 500)) {
                 return;
             }
 
@@ -110,7 +120,7 @@ class RefusalAuditor
                 $status,
                 $type,
                 is_array($body) && is_array($body['errors'] ?? null) ? $body['errors'] : null,
-                $resolved['details'] ?? [],
+                $carried + ($resolved['details'] ?? []),
             );
             self::markRecorded($request);
         } catch (Throwable $e) {

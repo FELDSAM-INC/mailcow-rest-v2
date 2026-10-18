@@ -229,3 +229,117 @@ the name, `name` its readable form). No private key material and no ISPConfig pa
 | `problemType` | string | See "Refusal records". | on failure (feature 010) |
 | `status` | integer | See "Refusal records". | on failure (feature 010) |
 | `errors` | object | See "Refusal records". | on `422` failures (feature 010) |
+
+<!-- Feature 003: mailboxes and mailbox templates. -->
+
+## mailboxCreation
+
+Feature 003. Written for every creation of a mailbox (`POST /mailboxes`), in the transaction that
+stores it, and for every refused creation. The target is the mailbox (`id` its address, `name` its
+display name; a refused creation names the address as sent, normalised when possible, and no name).
+The record is written with `creationReport: "pending"` and completed once after the follow-up steps
+have run. The password and its hash never appear.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The stored values in contract names: `displayName`, `status`, `authSource`, `quota` (bytes), `forcePasswordChange`, `forceSecondFactorSetup`, `webmailRedirect`, `protocolAccess`, `userPermissions`, `tags`, `taggedMailHandling`, `quarantineNotification`, `quarantineCategory`, `tlsEnforceInbound`, `tlsEnforceOutbound` and the initial `rateLimit` (`{value, frame}` or `null`). | on success |
+| `templateId` | integer or null | The mailbox template named in the request; `null` when none was named (the Default template and the built-in defaults applied). | on success |
+| `passwordSet` | boolean | Whether a password was stored (`false` for an external authentication source). | on success |
+| `preHashed` | boolean | Whether the password was given pre-hashed and stored as given. | on success, when `passwordSet` is `true` |
+| `creationReport` | object | The creation report of the response (`MailboxCreationReport`): `rateLimit`, `taggedMailHandling`, `groupwareDirectoryUpdate` and, when a step failed, `messages`. `"pending"` only until the follow-up steps complete. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailboxUpdate
+
+Feature 003. Written for every change of a mailbox (`PATCH /mailboxes/{mailbox}`) that changes at
+least one stored value, for every such change of a bulk action (status or protocol), and for every
+refusal of them. A request whose values equal the stored ones changes nothing and writes no record.
+The target is the mailbox.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed value as `{old, new}`, keyed by its contract path: `displayName`, `status`, `quota` (bytes), `forcePasswordChange`, `forceSecondFactorSetup`, `webmailRedirect`, `authSource`, `recoveryEmail`, `tags` (sorted lists), `protocolAccess.<protocol>`, `userPermissions.<permission>` and `customAttributes.<name>` (`null` for an added or removed attribute). A new password appears only as `password: {passwordSet: true, preHashed}`, never its value or hash. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailboxDeletion
+
+Feature 003. Written for every deletion of a mailbox (`DELETE /mailboxes/{mailbox}` and bulk
+deletions), in the transaction that deletes it, and for every refusal. The target is the deleted
+mailbox. A deletion refused because the mail store failed, did not answer or was not asked records
+`mailStoreCleanup`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `removed` | object | Counts of what was removed with the mailbox: `exclusiveAliases` (aliases whose only recipient it was, its own alias not counted), `sharedAliases` (aliases that lost it as a recipient), and `senderPermissionsHeld`, `senderPermissionsGranted`, `temporaryAliases`, `syncJobs`, `appPasswords`, `sieveFilters`, `spamFilterSettings`, `quarantineItems`, `bccMaps`, `oauthGrants`, `secondFactors`, `passkeys`, `tags` and `recentLogins`. | on success |
+| `mailStoreCleanup` | string | The move of the mail to the garbage area: `done`, `failed` (the mail store reported a failure or could not be reached), `unknown` (no answer within `DOCKER_TIMEOUT`) or `notAttempted` (a bulk deletion skipped the call after an earlier mailbox's mail store call timed out or found it unreachable). `done` on a failure record means the mail was moved but the records were kept. | on success; on failures after the preflight |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailboxRename
+
+Feature 003. Written once per rename (`POST /mailboxes/{mailbox}/rename`) after its last step: for a
+completed rename, for a rename that was undone (`503`, `failureReason: temporaryFailure`), for one
+whose step did not answer (`504`, `outcomeUnknown`), for one that could neither complete nor be
+undone (`500`, `partiallyCompleted`), and for every refusal before the first step. The target is the
+mailbox under its previous address.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `previousAddress` | string | The address before the rename. | when the rename passed its checks |
+| `newAddress` | string | The requested new address. | when the rename passed its checks |
+| `keepOldAddressAsAlias` | boolean | Whether the old address was to be kept as an alias. | when the rename passed its checks |
+| `steps` | array of objects | Every step in order with its outcome, as in `MailboxRenameStep` (`{step, outcome}`). | when the rename passed its checks |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailboxTemplateCreation
+
+Feature 003. Written for every creation of a mailbox template (`POST /mailbox-templates`) and every
+refusal. The target is the template (`type: mailboxTemplate`, `id` its ID, `name` its name; a refused
+creation has no ID).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The template's values in contract names: `quota` (bytes), `status`, `forcePasswordChange`, `forceSecondFactorSetup`, `webmailRedirect`, `protocolAccess`, `userPermissions`, `tags`, `taggedMailHandling`, `quarantineNotification`, `quarantineCategory`, `tlsEnforceInbound`, `tlsEnforceOutbound` and `rateLimit` (`{value, frame}` or `null`). | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailboxTemplateUpdate
+
+Feature 003. Written for every change of a mailbox template
+(`PATCH /mailbox-templates/{mailboxTemplateId}`) that changes at least one stored value, and every
+refusal. A request that changes nothing writes no record. The target carries the name after the
+change.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed member (`name` and the values of `mailboxTemplateCreation`, nested members as dot paths such as `protocolAccess.pop3`) as `{old, new}`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailboxTemplateDeletion
+
+Feature 003. Written for every deletion of a mailbox template
+(`DELETE /mailbox-templates/{mailboxTemplateId}`) and every refusal. The target is the deleted
+template.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `values` | object | The values the template had, as in `mailboxTemplateCreation`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |

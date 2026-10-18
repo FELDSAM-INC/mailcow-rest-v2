@@ -40,6 +40,18 @@ class ValidationRuleCodeTest extends TestCase
 
             throw new \LogicException('unreachable');
         });
+        Route::middleware('api.v2')->post('/api/v2/__testing/mailbox-violations', function (): never {
+            $violations = new FieldViolations;
+            $violations->add('password', 'tooShort', ['min' => 10]);
+            $violations->add('password', 'missingCharacterClass', ['characterClass' => 'digit']);
+            $violations->add('authSource', 'conflictsWith', ['field' => 'password', 'value' => 'ldap']);
+            $violations->add('newLocalPart', 'unchanged');
+            $violations->add('quota', 'outOfRange', ['min' => 0, 'max' => 5368709120, 'limit' => 'domainQuotaLeft']);
+            $violations->add('domain', 'notEligible', ['kind' => 'aliasDomain']);
+            $violations->throwIfAny();
+
+            throw new \LogicException('unreachable');
+        });
         Route::middleware('api.v2')->get('/api/v2/__testing/problem/{type}', function (string $type): never {
             throw new ProblemException(ProblemType::from($type));
         });
@@ -262,6 +274,38 @@ class ValidationRuleCodeTest extends TestCase
         $this->assertViolation($errors, 'createdAt', 'immutable');
         $this->assertViolation($errors, 'templateId', 'notFound');
         $this->assertViolation($errors, 'html', 'tooLong', ['max' => 1048576, 'unit' => 'bytes']);
+    }
+
+    public function test_the_rule_codes_of_feature_003(): void
+    {
+        $errors = $this->errors([], '/api/v2/__testing/mailbox-violations');
+
+        $this->assertViolation($errors, 'password', 'tooShort', ['min' => 10]);
+        $this->assertSame('missingCharacterClass', $errors['password'][1]['code']);
+        $this->assertSame(['characterClass' => 'digit'], $errors['password'][1]['params']);
+        $this->assertSame('The password must contain a digit.', $errors['password'][1]['message']);
+        $this->assertViolation($errors, 'authSource', 'conflictsWith', ['field' => 'password', 'value' => 'ldap']);
+        $this->assertViolation($errors, 'newLocalPart', 'unchanged');
+        $this->assertViolation($errors, 'quota', 'outOfRange', ['min' => 0, 'max' => 5368709120, 'limit' => 'domainQuotaLeft']);
+        $this->assertViolation($errors, 'domain', 'notEligible', ['kind' => 'aliasDomain']);
+    }
+
+    public function test_the_problem_types_of_feature_003(): void
+    {
+        $expected = [
+            'address-in-use' => 409,
+            'mailbox-limit-reached' => 409,
+            'mailbox-not-renamable' => 409,
+            'mailbox-rename-incomplete' => 500,
+            'outcome-unknown' => 504,
+            'mailbox-template-name-exists' => 409,
+            'mailbox-template-protected' => 409,
+            'domain-alias-limit-reached' => 409,
+        ];
+
+        foreach ($expected as $name => $status) {
+            $this->assertSame($status, ProblemType::from($name)->status(), $name);
+        }
     }
 
     public function test_the_problem_types_of_feature_002(): void

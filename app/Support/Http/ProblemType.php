@@ -45,6 +45,17 @@ enum ProblemType: string
     case DkimDnsPublicationDisabled = 'dkim-dns-publication-disabled';
     case MtaStsPolicyExists = 'mta-sts-policy-exists';
 
+    // Feature 003 (outcome-unknown and address-in-use are shared with later features;
+    // domain-alias-limit-reached is feature 004's type, used first by the mailbox rename).
+    case AddressInUse = 'address-in-use';
+    case MailboxLimitReached = 'mailbox-limit-reached';
+    case MailboxNotRenamable = 'mailbox-not-renamable';
+    case MailboxRenameIncomplete = 'mailbox-rename-incomplete';
+    case OutcomeUnknown = 'outcome-unknown';
+    case MailboxTemplateNameExists = 'mailbox-template-name-exists';
+    case MailboxTemplateProtected = 'mailbox-template-protected';
+    case DomainAliasLimitReached = 'domain-alias-limit-reached';
+
     public function uri(): string
     {
         return '/api/v2/problems/'.$this->value;
@@ -62,7 +73,11 @@ enum ProblemType: string
             self::PasskeyRegistrationFailed => 400,
             self::TemporaryVerificationFailure, self::ServiceUnavailable, self::TemporaryFailure => 503,
             self::DomainExists, self::DomainNotEmpty, self::DomainTemplateNameExists, self::DomainTemplateProtected,
-            self::DkimKeyExists, self::MtaStsPolicyExists => 409,
+            self::DkimKeyExists, self::MtaStsPolicyExists, self::AddressInUse, self::MailboxLimitReached,
+            self::MailboxNotRenamable, self::MailboxTemplateNameExists, self::MailboxTemplateProtected,
+            self::DomainAliasLimitReached => 409,
+            self::MailboxRenameIncomplete => 500,
+            self::OutcomeUnknown => 504,
             self::AttributeNotPermitted, self::PermissionFlagRequired, self::DkimPrivateKeyExportDisabled,
             self::DkimDnsPublicationDisabled => 403,
         };
@@ -105,6 +120,14 @@ enum ProblemType: string
             self::DkimPrivateKeyExportDisabled => 'DKIM private key export disabled',
             self::DkimDnsPublicationDisabled => 'DKIM DNS publication disabled',
             self::MtaStsPolicyExists => 'MTA-STS policy exists',
+            self::AddressInUse => 'Address in use',
+            self::MailboxLimitReached => 'Mailbox limit reached',
+            self::MailboxNotRenamable => 'Mailbox not renamable',
+            self::MailboxRenameIncomplete => 'Mailbox rename incomplete',
+            self::OutcomeUnknown => 'Outcome unknown',
+            self::MailboxTemplateNameExists => 'Mailbox template name exists',
+            self::MailboxTemplateProtected => 'Mailbox template protected',
+            self::DomainAliasLimitReached => 'Domain alias limit reached',
         };
     }
 
@@ -145,6 +168,14 @@ enum ProblemType: string
             self::DkimPrivateKeyExportDisabled => 'The export of DKIM private keys is disabled on this server.',
             self::DkimDnsPublicationDisabled => 'The DKIM DNS publication is disabled on this server.',
             self::MtaStsPolicyExists => 'The domain already has an MTA-STS policy.',
+            self::AddressInUse => 'The address is already used by another object.',
+            self::MailboxLimitReached => 'The domain already has as many mailboxes as its limit allows.',
+            self::MailboxNotRenamable => 'Only active and login-disabled mailboxes can be renamed.',
+            self::MailboxRenameIncomplete => 'A rename step failed and undoing the steps already done failed as well.',
+            self::OutcomeUnknown => 'mailcow\'s container service did not answer in time; the outcome of a step is unknown.',
+            self::MailboxTemplateNameExists => 'Another mailbox template already has this name.',
+            self::MailboxTemplateProtected => 'The Default mailbox template cannot be renamed or deleted.',
+            self::DomainAliasLimitReached => 'The domain has no room for more aliases.',
         };
     }
 

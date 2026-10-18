@@ -4,6 +4,7 @@ namespace App\Support\Bulk;
 
 use App\Audit\AuditEventType;
 use App\Auth\Principal;
+use App\Exceptions\CarriesAuditDetails;
 use App\Exceptions\ProblemRenderer;
 use App\Http\RequestContext;
 use App\Services\Audit\RefusalAuditor;
@@ -20,8 +21,9 @@ use Throwable;
  *
  * An item's exception is rendered as the problem the single operation would answer and mapped to
  * its outcome (`404` notFound, `412` outdated, other `4xx` refused, else failed); its refusal is
- * audited through RefusalAuditor with the request's `bulkRequestId`. Success records are the
- * services' own. The result is the contract's `BulkResult`.
+ * audited through RefusalAuditor with the request's `bulkRequestId` and the details an exception
+ * carries (App\Exceptions\CarriesAuditDetails). Success records are the services' own. The result
+ * is the contract's `BulkResult`.
  */
 class BulkActionRunner
 {
@@ -85,7 +87,7 @@ class BulkActionRunner
                     $response->getStatusCode(),
                     (string) ($problem['type'] ?? 'about:blank'),
                     is_array($problem['errors'] ?? null) ? $problem['errors'] : null,
-                    ['bulkRequestId' => $bulkRequestId],
+                    ['bulkRequestId' => $bulkRequestId] + ($e instanceof CarriesAuditDetails ? $e->auditDetails() : []),
                 );
             }
 

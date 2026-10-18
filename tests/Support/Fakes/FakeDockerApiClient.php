@@ -30,7 +30,7 @@ final class FakeDockerApiClient implements DockerApiClient
     /** @var array<string, list<DockerCallResult>> */
     private array $scripts = [];
 
-    /** @var list<array<string, mixed>> */
+    /** @var list<array<mixed>> */
     private array $acl = [];
 
     /** @var array<string, bool> */
@@ -60,7 +60,7 @@ final class FakeDockerApiClient implements DockerApiClient
     /**
      * The ACL entries `doveadm get_acl` answers: `{user, id, mailbox, rights}`.
      *
-     * @param  list<array<string, mixed>>  $entries
+     * @param  list<array<mixed>>  $entries
      */
     public function aclList(array $entries): void
     {

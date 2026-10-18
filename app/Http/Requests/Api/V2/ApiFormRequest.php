@@ -212,6 +212,8 @@ abstract class ApiFormRequest extends FormRequest
                 'domainName' => 'Not a valid domain name.',
                 'dkimSelector' => 'Only letters, digits, ".", "-" and "_" are allowed.',
                 'email' => 'Not a valid e-mail address.',
+                'localPart' => 'Not a valid local part of an e-mail address.',
+                'attributeName' => 'Must be 1 to 255 characters without whitespace.',
                 default => 'Invalid format.',
             },
             'notMultipleOf' => 'Must be a whole multiple of '.($params['factor'] ?? 'the unit').'.',
@@ -222,6 +224,15 @@ abstract class ApiFormRequest extends FormRequest
             'mustBeInFuture' => 'Must be in the future.',
             'notFound' => 'The referenced object does not exist.',
             'notEligible' => 'The referenced object cannot be used here.',
+            'missingCharacterClass' => match ($params['characterClass'] ?? null) {
+                'letter' => 'The password must contain a letter.',
+                'digit' => 'The password must contain a digit.',
+                'special' => 'The password must contain a special character.',
+                'lowerAndUpper' => 'The password must contain a lower-case and an upper-case letter.',
+                default => 'The password lacks a required character class.',
+            },
+            'conflictsWith' => 'Not allowed together with '.($params['field'] ?? 'another field').(isset($params['value']) && is_scalar($params['value']) ? ' = '.$params['value'] : '').'.',
+            'unchanged' => 'Must differ from the current value.',
             default => 'Invalid value.',
         };
 

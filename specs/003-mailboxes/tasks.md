@@ -95,14 +95,14 @@ is complete.**
 
 ### Tests for the foundation (write first, observe failing) ⚠️
 
-- [ ] T006 [P] Write `tests/Unit/Passwords/MailboxPasswordHasherTest.php` (FR-024, R3): for
+- [X] T006 [P] Write `tests/Unit/Passwords/MailboxPasswordHasherTest.php` (FR-024, R3): for
   `MAILCOW_PASS_SCHEME` `BLF-CRYPT` (`{BLF-CRYPT}$2y$10$…`), `SSHA`, `SSHA256`, `SSHA512` (salt of
   16 hex characters inside the base64) and an unknown value (falls back to BLF-CRYPT), the hash
   verifies with `App\Support\Hashing\LegacyPasswordVerifier` and with the legacy
   `legacy_verify_hash()` fixture; every prefix of legacy's pre-hash pattern, in any case, is
   returned unchanged with `preHashed = true`; `{PBKDF2-SHA512}…` is **not** recognised (legacy
   pattern), so it is hashed.
-- [ ] T007 [P] Write `tests/Feature/PasswordPolicy/PasswordPolicyReaderTest.php` (FR-063, R4) on
+- [X] T007 [P] Write `tests/Feature/PasswordPolicy/PasswordPolicyReaderTest.php` (FR-063, R4) on
   real Redis: no `PASSWD_POLICY` → 6/false×4; stored `length=10, numbers=1` → those values; a
   non-numeric length → 6; `chars=2` → false; the tag equals `ETag::strong('length=10;chars=0;
   special_chars=0;lowerupper=0;numbers=1')` and changes when a field changes; a closed Redis port
@@ -110,7 +110,7 @@ is complete.**
   "short" against length 10 + digits → `tooShort {min: 10}` and `missingCharacterClass
   {characterClass: digit}`; byte length (`"ääääa"` is 9 bytes); each class rule; all rules met →
   no violation.
-- [ ] T008 [P] Write `tests/Unit/Mailboxes/MailboxAddressTest.php` (FR-007, FR-019, R7):
+- [X] T008 [P] Write `tests/Unit/Mailboxes/MailboxAddressTest.php` (FR-007, FR-019, R7):
   `" Anna.Smith@Example.org "` → `anna.smith@example.org`; `bücher.example` domains in Unicode and
   ASCII give the same address and `domainUnicode`; local parts with every allowed special
   character pass; leading, trailing and double dots, spaces, 65 characters, non-ASCII local parts
@@ -119,17 +119,17 @@ is complete.**
   the codes and params this feature adds: `missingCharacterClass {characterClass}`,
   `conflictsWith {field, value}`, `unchanged`, `outOfRange` with `limit`, `notEligible` with
   `kind`.
-- [ ] T009 [P] Write `tests/Feature/Mailboxes/MailboxScopeTest.php` (FR-001–FR-003): an
+- [X] T009 [P] Write `tests/Feature/Mailboxes/MailboxScopeTest.php` (FR-001–FR-003): an
   administrator resolves every mailbox; a domain administrator resolves mailboxes of actively
   assigned domains only (inactive assignment → `null`, inactive domain still in scope); a resource
   (`kind = 'location'`) and an unknown address resolve to `null` for everyone; an address with an
   alias domain resolves to `null`; changing the assignment between two calls is seen at once.
-- [ ] T010 [P] Write `tests/Feature/Mailboxes/MailboxVersionTest.php` (FR-038, R11): the tag is
+- [X] T010 [P] Write `tests/Feature/Mailboxes/MailboxVersionTest.php` (FR-038, R11): the tag is
   stable for unchanged rows; it changes when the legacy UI's statements change `name`, `quota`,
   `active`, an `attributes` key, `custom_attributes`, a `user_acl` column or a tag; it does not
   change when `quota2.bytes`, `sasl_log`, `RL_VALUE` or `mailbox.modified` change. Template tags
   change with `template` or `attributes`.
-- [ ] T011 [P] Write `tests/Feature/Groupware/SogoDirectoryRefreshTest.php` (R14): `refresh([a])`
+- [X] T011 [P] Write `tests/Feature/Groupware/SogoDirectoryRefreshTest.php` (R14): `refresh([a])`
   inserts an active mailbox's row with legacy's columns (aliases from `grouped_mail_aliases`, a
   `{SSHA256}` `c_password` that differs between calls), updates it after a name change, deletes
   the row of a mailbox that became inactive or was deleted, removes orphans, and touches nothing
@@ -142,11 +142,11 @@ is complete.**
   `tests/Feature/Clients/DockerApiBroadcastTest.php` with 001's `ChannelSpy` on `MC_CHANNEL`:
   `broadcast('dovecot-mailcow', {cmd: maildir, task: cleanup, maildir: 'd/l'})` publishes exactly
   `{"api_call":"container_post","container_name":"dovecot-mailcow","post_action":"exec","request":{…}}`.
-- [ ] T013 [P] Write `tests/Unit/Support/TagSetTest.php` (FR-036, R20): trim, empty → `required`
+- [X] T013 [P] Write `tests/Unit/Support/TagSetTest.php` (FR-036, R20): trim, empty → `required`
   on `tags.<i>`, 256 characters → `tooLong`, "Sales"/"sales" → one tag keeping "Sales", 26 tags →
   `tooMany {max: 25}`, a current set of 30 may shrink to 28 but not grow, and 002's existing
   `DomainTagSet` tests still pass unchanged.
-- [ ] T014 [P] Write `tests/Unit/Mailboxes/MailboxPermissionGuardTest.php` (FR-006, FR-035, R8),
+- [X] T014 [P] Write `tests/Unit/Mailboxes/MailboxPermissionGuardTest.php` (FR-006, FR-035, R8),
   with a domain administrator lacking each flag in turn: a value equal to the baseline is
   accepted; a different `protocolAccess.pop3` → `protocolAccess`; `webmailRedirect` → `sogoAccess`;
   `rateLimit` at creation → `ratelimit`; `userPermissions.syncjobs` → `syncjobs` (and the other four
@@ -154,7 +154,7 @@ is complete.**
   comes from the template; several refusals are reported together with `attributes` and
   `requiredFlags`; an administrator is never refused.
 
-- [ ] T015 [P] Write `tests/Feature/Database/AddressLockTest.php` (R7): `AddressLock::for($address)`
+- [X] T015 [P] Write `tests/Feature/Database/AddressLockTest.php` (R7): `AddressLock::for($address)`
   uses the name `restv2_address_<first 40 hex of sha1(normalised address)>`; a second database
   connection holding the lock makes `GET_LOCK(name, 5)` time out and the caller answer `500`; the
   lock is released in `finally` when the guarded code throws; two different addresses do not block
@@ -177,7 +177,7 @@ is complete.**
 
 ### Implementation of the foundation
 
-- [ ] T017 [P] Extend `app/Models/Mailcow/Mailbox.php` (001) with every column of data-model.md,
+- [X] T017 [P] Extend `app/Models/Mailcow/Mailbox.php` (001) with every column of data-model.md,
   `$keyType = 'string'`, casts (`attributes` and `custom_attributes` → array, `created`/`modified`
   → `MailcowDateTime`), and the scopes `mailboxesOnly()` (`kind = ''`) and `inScope(Principal)`.
   Create read-only models in `app/Models/Mailcow/`: `MailboxTemplate.php` (table `templates`,
@@ -185,29 +185,29 @@ is complete.**
   (`quota2`), `QuotaReplicaUsage.php` (`quota2replica`), `SpamAlias.php` (`spamalias`),
   `SenderAcl.php` (`sender_acl`) and `Pushover.php` (`pushover`), each with explicit `$table`,
   `$primaryKey`, `$timestamps = false`, `$guarded = ['*']`.
-- [ ] T018 [P] Create `app/Services/Mailboxes/MailboxAddress.php` (value object of data-model.md,
+- [X] T018 [P] Create `app/Services/Mailboxes/MailboxAddress.php` (value object of data-model.md,
   using 002's `App\Support\Domain\DomainName`), `app/Rules/MailboxLocalPart.php` and
   `app/Rules/CustomAttributeName.php` (`^\S{1,255}$`), each reporting its rule code. This makes
   T008 pass.
-- [ ] T019 Create `app/Services/Mailboxes/MailboxScope.php` (`resolve(Principal, string $raw):
+- [X] T019 Create `app/Services/Mailboxes/MailboxScope.php` (`resolve(Principal, string $raw):
   ?Mailbox` and `domainInScope(Principal, string $domain): bool`, reusing 002's `DomainScope`),
   `app/Policies/MailboxPolicy.php` (`viewAny`, `view`, `create`, `update`, `delete`, `rename`,
   `bulk`, `previewDeletion`, `viewCapabilities`, `viewTags`, `viewPasswordPolicy`: admin or domain
   admin) and `app/Policies/MailboxTemplatePolicy.php` (`viewAny`, `view`: admin or domain admin;
   `create`, `update`, `delete`: admin), registered in `app/Providers/AppServiceProvider.php`; a
   refusal renders `403 forbidden`, a `null` scope result `404 about:blank`. This makes T009 pass.
-- [ ] T020 Create `app/Services/Passwords/MailboxPasswordHasher.php` (`hash(string): HashedPassword`
+- [X] T020 Create `app/Services/Passwords/MailboxPasswordHasher.php` (`hash(string): HashedPassword`
   with `value` and `preHashed`), `PasswordPolicyReader.php` (`effective(): EffectivePasswordPolicy`,
   on 002's `SharedStore` connection), `EffectivePasswordPolicy.php` (with `etag()` over the
   canonical string of R4) and `PasswordPolicyChecker.php` (`violations(string, EffectivePasswordPolicy):
   array`). This makes T006 and T007 pass.
-- [ ] T021 [P] Create `app/Services/Mailboxes/MailboxVersion.php` (`forMailbox(row, userAcl, tags)`,
+- [X] T021 [P] Create `app/Services/Mailboxes/MailboxVersion.php` (`forMailbox(row, userAcl, tags)`,
   `forTemplate(row)`, through `App\Support\Http\ETag`; canonical JSON with recursively sorted
   keys). This makes T010 pass.
-- [ ] T022 Extend `app/Services/Groupware/SogoDirectory.php` (002) with `refresh(array $usernames):
+- [X] T022 Extend `app/Services/Groupware/SogoDirectory.php` (002) with `refresh(array $usernames):
   string` (`done`, `failed`, `groupwareDisabled`) as in R14, reusing the statement text of
   `rebuild()` with the `AND mailbox.username = ?` condition. This makes T011 pass.
-- [ ] T023 Extend `app/Clients/DockerApi/DockerApiClient.php`, `HttpDockerApiClient.php` and
+- [X] T023 Extend `app/Clients/DockerApi/DockerApiClient.php`, `HttpDockerApiClient.php` and
   `DockerCallResult.php` (002) with `reachable()`, `broadcast()` (on the `mailcow` Redis
   connection), the `unreachable` flag and the per-request circuit breaker (R16). Create
   `app/Services/Mailboxes/MailStoreCommands.php` with `cleanupMaildir(domain, localPart)`,
@@ -215,24 +215,24 @@ is complete.**
   `setAcl(user, mailbox, id, rights)` and `renameWebmailUser(old, new)`, building exactly the
   commands of data-model.md and, when `config('restv2.cluster_mode') === 'replication'`, adding the
   broadcast after a successful local maildir command. This makes T012 pass.
-- [ ] T024 [P] Generalise `app/Services/Domains/DomainTagSet.php` (002) into
+- [X] T024 [P] Generalise `app/Services/Domains/DomainTagSet.php` (002) into
   `app/Support/Tags/TagSet.php` (`normalise(array $tags, array $current, int $limit,
   string $field = 'tags')`), and make `DomainTagSet` delegate to it. This makes T013 pass.
-- [ ] T025 Create `app/Services/Mailboxes/MailboxDefaults.php` and
+- [X] T025 Create `app/Services/Mailboxes/MailboxDefaults.php` and
   `app/Services/Mailboxes/ResolvedMailboxValues.php` (R5): the built-in defaults from
   `MailcowConfig::mailboxDefaultAttributes()` and the `user_acl` column defaults, template decoding
   (legacy keys of data-model.md, tolerant of missing keys and integer or string flags), the chain
   request → named template → Default template → built-in with the source of each value, the quota
   rule (named template, else 002's default quota for a new mailbox, with the exhausted-quota
   refusal), the display-name rule and the external-source overrides.
-- [ ] T026 Create `app/Services/Mailboxes/MailboxPermissionGuard.php` (`check(Principal, array
+- [X] T026 Create `app/Services/Mailboxes/MailboxPermissionGuard.php` (`check(Principal, array
   $requestMembers, array $baseline, ?int $currentQuota): void`, throwing the
   `attribute-not-permitted` problem with `attributes` and `requiredFlags`). This makes T014 pass.
-- [ ] T027 [P] Create `app/Support/Database/NamedLock.php` (`run(string $name, int $timeout,
+- [X] T027 [P] Create `app/Support/Database/NamedLock.php` (`run(string $name, int $timeout,
   callable $fn)` and `acquire()`/`release()` with `GET_LOCK`/`RELEASE_LOCK` on the `mysql`
   connection, timeout → `500`; reused by 005 and 009) and `app/Services/Mailboxes/AddressLock.php`
   (`for(string $normalisedAddress)`, name of research R7). This makes T015 pass.
-- [ ] T028 Extend the shared vocabulary:
+- [X] T028 Extend the shared vocabulary:
   - `app/Support/Http/ProblemType.php` (001): cases `AddressInUse`, `MailboxLimitReached`,
     `MailboxNotRenamable`, `MailboxRenameIncomplete`, `OutcomeUnknown` (status 504),
     `MailboxTemplateNameExists`, `MailboxTemplateProtected`, and `DomainAliasLimitReached`
@@ -925,3 +925,54 @@ T044 MailboxCapabilitiesTest    T045 GetPasswordPolicyTest
   controllers never write.
 - Passwords and hashes never reach responses, logs or audit records.
 - Commit after each task or logical group with a short imperative subject.
+
+## Implementation notes (2026-10-18)
+
+Deviations and decisions made while implementing, with the reason. Names in tasks that differ from
+what exists map as listed.
+
+- **Reused from 002** instead of creating parallel copies: `App\Support\Bulk\{BulkActionRunner,
+  BulkOutcome}` (T077's extraction was already done by 002), `App\Services\Audit\RefusalAuditor`
+  with the route default `restv2.audit` (T028), `DomainScope`, `DomainName`, `SogoDirectory`,
+  `MemcachedFlusher`, `SharedStore`, `RateLimitStore`, `FieldViolations`, `WholeMebibytes`,
+  `ETag::preconditionFails()` and the fakes. 001's `ETag::of()` (HMAC) is what tasks call
+  `ETag::strong()`.
+- **T001**: the contract scope is 001's `tests/feature-registry.json` (feature `003-mailboxes`,
+  operation IDs), so no `tests/contract-scope.php` and no change to the coverage script were
+  needed. `RESTV2_BULK_LIMIT` did not exist (002 uses a constant of 100); it is added as
+  `restv2.bulk_limit` (1–100) for mailboxes. `MASTER` is a boolean `restv2.master`.
+- **T003**: `resources/bin/export-mailcow-vars.php` exports every variable listed in
+  `config/restv2.php`, so adding `SHOW_LAST_LOGIN` and `MAILBOX_DEFAULT_ATTRIBUTES` to
+  `vars_overrides`/`vars_defaults` was enough. The tests append overrides to a copy of the fixture
+  files, as 002's tests do, instead of adding new fixture files.
+- **T004**: 001's `MailcowRows::mailbox()` is used by many existing tests and writes no usage rows
+  or own alias, so the exact legacy creation is a new writer, `legacyMailbox()`.
+  `syncJob()`, `quarantineItem()`, `temporaryAlias()` (with validity and permanence),
+  `recipientMap()`, `sieveFilter()`, `appPassword()`, `sogoData()`, `oauthTokens()`, `saslLog()`,
+  `usage()`, `mailboxTag()`, `mailboxTemplate()` and `defaultMailboxTemplate()` were added;
+  `alias()`, `spamalias()`, `senderAcl()`, `filterconf()`, `bccMap()`, `pushover()` (now with
+  `active`) and `identityProvider()` already existed.
+- **T005, T012, T023**: `DockerApiClient` gained `query()` (for `doveadm get_acl`, which answers a
+  JSON list instead of dockerapi's `{type, msg}`), `reachable()` and `broadcast()` (legacy
+  docker('broadcast') through `SharedStore::run()`); `DockerCallResult` gained `unreachable()` and
+  `data`. The per-request circuit breaker is not in `HttpDockerApiClient`: it would also cut off
+  the undo calls of a rename after a timeout. `MailboxBulkActions` stops calling the mail store for
+  the remaining deletions of a request after a timeout or an unreachable mail store instead
+  (T076), which is the case the breaker was meant for.
+- **T016** (refusal audit per operation) needs the routes of every story; it is written with the
+  polish phase. The plumbing is in Phase 2: `MailboxAuditTargets` is registered with the
+  `RefusalAuditor`, and exceptions that implement the new `App\Exceptions\CarriesAuditDetails`
+  (every `ProblemException` with `auditDetails`, `MailboxDependencyUnavailable`, `OutcomeUnknown`,
+  `AuditedFailure`) add their details to the failure record and are recorded also for `5xx`
+  answers, by `RefusalAuditor` and by `BulkActionRunner`. Services therefore never write failure
+  records themselves (002's rule), also not for `503`, `504` and `500` outcomes.
+- **T018**: the local-part rule lives in `MailboxAddress::fromParts()` (all violations are business
+  rules reported together); no separate `MailboxLocalPart` rule class was needed.
+- **T020**: the policy tag is the plain SHA-256 the contract documents (`PasswordPolicy.etag`),
+  computed by `EffectivePasswordPolicy::etag()`; the policy holds no secret.
+- **T022**: `SogoDirectory::refresh()` returns 002's `GroupwareOutcome` and throws database errors,
+  so that it can run inside a transaction; it never flushes memcached (callers flush after the
+  commit).
+- **T028**: `SharedStoreUnavailable` now renders `dependency: sharedStore` on every `503`
+  (additive; `docs/problems.md` updated). `AddressAvailability` (T046) was moved into Phase 2,
+  because features 004 and 005 need it with `AddressLock`.

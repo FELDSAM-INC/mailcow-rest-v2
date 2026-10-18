@@ -324,8 +324,12 @@ extension members.
 - **Meaning**: A dependency that the change needs, such as mailcow's shared store (Redis), is
   temporarily unavailable. The request left no partial change. In bulk actions, the item gets the
   outcome `failed` with this problem.
-- **Extension members**: none. The `Retry-After` header gives the seconds after which a retry makes
-  sense.
+- **Extension members**: `dependency`, the unavailable service: `sharedStore` (mailcow's Redis,
+  since feature 003 on every such answer), and for mailboxes (feature 003) also `mailStore` (the
+  container API or the Dovecot container), `webmail` (the SOGo container) and `database` (the
+  database step of a mailbox rename). A mailbox rename adds `steps`, as in
+  `mailbox-rename-incomplete`. Later features may add values. The `Retry-After` header gives the
+  seconds after which a retry makes sense.
 - **Client action**: Retry later. Tell the user if it persists.
 
 ## dkim-key-exists

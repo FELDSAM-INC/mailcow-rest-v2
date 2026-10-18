@@ -112,7 +112,16 @@
                 "deleteMailboxTemplate",
                 "getPasswordPolicy"
             ],
-            "problemTypes": []
+            "problemTypes": [
+                "address-in-use",
+                "mailbox-limit-reached",
+                "mailbox-not-renamable",
+                "mailbox-rename-incomplete",
+                "outcome-unknown",
+                "mailbox-template-name-exists",
+                "mailbox-template-protected",
+                "domain-alias-limit-reached"
+            ]
         }
     },
     "pendingOperations": [

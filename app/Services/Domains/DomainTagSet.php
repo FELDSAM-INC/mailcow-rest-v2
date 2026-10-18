@@ -3,16 +3,15 @@
 namespace App\Services\Domains;
 
 use App\Support\Http\FieldViolations;
+use App\Support\Tags\TagSet;
 
 /**
- * A domain's tags as a set (FR-043, FR-044, research D12): trimmed, 1 to 255 characters, merged
- * without regard to letter case keeping the first spelling, and at most the tagging limit, unless
- * the new set equals the current one or is smaller (a legacy domain over the limit can only
- * shrink). Feature 003 generalises it for mailbox tags.
+ * A domain's tags as a set (FR-043, FR-044, research D12), the shared App\Support\Tags\TagSet rules
+ * (feature 003 generalised them for mailbox tags).
  */
 final class DomainTagSet
 {
-    public const MAX_LENGTH = 255;
+    public const MAX_LENGTH = TagSet::MAX_LENGTH;
 
     /**
      * @param  array<int, mixed>  $tags
@@ -21,71 +20,24 @@ final class DomainTagSet
      */
     public static function normalize(array $tags, array $current, int $limit, FieldViolations $violations, string $field = 'tags'): array
     {
-        $result = [];
-        $seen = [];
-
-        foreach (array_values($tags) as $index => $tag) {
-            $tag = trim((string) (is_scalar($tag) ? $tag : ''));
-
-            if ($tag === '') {
-                $violations->add("{$field}.{$index}", 'required');
-
-                continue;
-            }
-
-            if (mb_strlen($tag) > self::MAX_LENGTH) {
-                $violations->add("{$field}.{$index}", 'tooLong', ['max' => self::MAX_LENGTH]);
-
-                continue;
-            }
-
-            $key = mb_strtolower($tag);
-
-            if (! isset($seen[$key])) {
-                $seen[$key] = true;
-                $result[] = $tag;
-            }
-        }
-
-        if (count($result) > $limit && ! self::shrinksOrEquals($result, $current)) {
-            $violations->add($field, 'tooMany', ['max' => $limit]);
-        }
-
-        return $result;
+        return TagSet::normalise($tags, $current, $limit, $violations, $field);
     }
 
     /**
-     * Sorted alphabetically without regard to letter case, ties by the original string.
-     *
      * @param  list<string>  $tags
      * @return list<string>
      */
     public static function sort(array $tags): array
     {
-        usort($tags, fn (string $a, string $b): int => strcmp(mb_strtolower($a), mb_strtolower($b)) ?: strcmp($a, $b));
-
-        return $tags;
+        return TagSet::sort($tags);
     }
 
     /**
-     * Whether two tag sets are equal without regard to letter case.
-     *
      * @param  list<string>  $a
      * @param  list<string>  $b
      */
     public static function equal(array $a, array $b): bool
     {
-        $lower = fn (array $tags): array => self::sort(array_values(array_unique(array_map('mb_strtolower', $tags))));
-
-        return $lower($a) === $lower($b);
-    }
-
-    /**
-     * @param  list<string>  $new
-     * @param  list<string>  $current
-     */
-    private static function shrinksOrEquals(array $new, array $current): bool
-    {
-        return self::equal($new, $current) || count($new) < count(array_unique(array_map('mb_strtolower', $current)));
+        return TagSet::equal($a, $b);
     }
 }

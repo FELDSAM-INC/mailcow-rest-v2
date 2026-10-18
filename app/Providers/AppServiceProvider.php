@@ -17,11 +17,16 @@ use App\Clients\Yubico\HttpYubicoOtpVerifier;
 use App\Clients\Yubico\YubicoOtpVerifier;
 use App\Models\Mailcow\Domain;
 use App\Models\Mailcow\DomainTemplate;
+use App\Models\Mailcow\Mailbox;
+use App\Models\Mailcow\MailboxTemplate;
 use App\Policies\DomainPolicy;
 use App\Policies\DomainTemplatePolicy;
+use App\Policies\MailboxPolicy;
+use App\Policies\MailboxTemplatePolicy;
 use App\Services\Audit\RefusalAuditor;
 use App\Services\Config\MailcowConfig;
 use App\Services\Domains\DomainAuditTargets;
+use App\Services\Mailboxes\MailboxAuditTargets;
 use App\Support\Clock\Clock;
 use App\Support\Clock\Sleeper;
 use App\Support\Clock\SystemClock;
@@ -69,9 +74,12 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(Domain::class, DomainPolicy::class);
         Gate::policy(DomainTemplate::class, DomainTemplatePolicy::class);
+        Gate::policy(Mailbox::class, MailboxPolicy::class);
+        Gate::policy(MailboxTemplate::class, MailboxTemplatePolicy::class);
 
         // Refusal auditing: target resolvers of the features whose routes declare `restv2.audit`.
         DomainAuditTargets::register($this->app->make(RefusalAuditor::class));
+        MailboxAuditTargets::register($this->app->make(RefusalAuditor::class));
 
         // mailcow's SESSION_LIFETIME (seconds) is the idle lifetime of browser sessions (R6).
         try {

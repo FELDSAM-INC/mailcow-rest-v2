@@ -70,7 +70,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // `restv2.audit` are audited (docs/conventions.md "Refusal auditing").
         $exceptions->render(function (Throwable $e, Request $request) {
             $response = ProblemRenderer::render($e, $request);
-            app(RefusalAuditor::class)->recordResponse($request, $response);
+            app(RefusalAuditor::class)->recordResponse($request, $response, $e);
 
             return $response;
         });

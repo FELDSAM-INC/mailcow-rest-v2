@@ -158,6 +158,19 @@ domain is recorded here, not in a record of its own.
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
 
+## domainFooterUpdate
+
+Feature 002. Written for every replacement of a domain's footer
+(`PUT /domains/{domain}/footer`) and every refusal. The target is the footer (`type: domainFooter`,
+`id` the domain's ASCII name, `name` its readable name). The texts never appear, only their sizes.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `html` and `plain` as `{changed, oldSize, newSize}` (sizes in bytes, always present); `skipReplies`, `excludedAddresses` and `excludedAliasDomains` as `{old, new}` when they changed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
 ## domainTemplateCreation
 
 Feature 002. Written for every creation of a domain template (`POST /domain-templates`) and every

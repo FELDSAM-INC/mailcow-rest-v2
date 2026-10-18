@@ -730,7 +730,7 @@ confirm the stored row is the one legacy writes.
 
 ### Tests for User Story 7 (write first, observe failing) ⚠️
 
-- [ ] T084 [P] [US7] Write `tests/Feature/Domains/DomainFooterTest.php` for `getDomainFooter` and
+- [X] T084 [P] [US7] Write `tests/Feature/Domains/DomainFooterTest.php` for `getDomainFooter` and
   `replaceDomainFooter` (FR-051–FR-055):
   - AS-1: no footer → empty texts, `skipReplies false`, no exclusions, an `ETag`;
   - AS-2: a domain administrator without any flag saves HTML and plain text excluding one of the
@@ -749,13 +749,13 @@ confirm the stored row is the one legacy writes.
   - a text of 1,048,577 bytes (multi-byte characters under the character limit) → `tooLong {max:
     1048576, unit: bytes}`; empty texts without exclusions are saved; a stored exclusion that no
     longer belongs to the domain is shown on read and refused on the next save until removed.
-- [ ] T085 [P] [US7] Write `tests/Feature/Domains/DomainFooterAuditTest.php` (FR-057, SC-007): one
+- [X] T085 [P] [US7] Write `tests/Feature/Domains/DomainFooterAuditTest.php` (FR-057, SC-007): one
   `domainFooterUpdate` record per save, with `html` and `plain` as `{changed, oldSize, newSize}` and
   never their text; `skipReplies` and exclusions with old and new values; refusals audited.
 
 ### Implementation for User Story 7
 
-- [ ] T086 [US7] Create `app/Services/Domains/DomainFooterService.php` (D21),
+- [X] T086 [US7] Create `app/Services/Domains/DomainFooterService.php` (D21),
   `app/Http/Requests/Api/V2/ReplaceDomainFooterRequest.php` (`html`, `plain` "required, string";
   `skipReplies` "required, boolean"; `excludedAddresses`, `excludedAliasDomains` "array of strings,
   max 255 each"), `app/Http/Resources/Api/V2/DomainFooterResource.php` and

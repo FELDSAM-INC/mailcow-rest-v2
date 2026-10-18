@@ -93,8 +93,5 @@
             ]
         }
     },
-    "pendingOperations": [
-        "getDomainFooter",
-        "replaceDomainFooter"
-    ]
+    "pendingOperations": []
 }

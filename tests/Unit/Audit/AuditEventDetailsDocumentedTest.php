@@ -19,7 +19,6 @@ class AuditEventDetailsDocumentedTest extends TestCase
      * @var list<string>
      */
     private static array $notYetDocumented = [
-        'domainFooterUpdate',
         // Feature 010: only the DKIM core is implemented (with feature 002); its operations follow.
         'dkimKeyImport', 'dkimKeyCopy', 'dkimKeyDeletion', 'dkimPrivateKeyExport',
         'dkimDnsPublication', 'mtaStsPolicyCreation', 'mtaStsPolicyUpdate',

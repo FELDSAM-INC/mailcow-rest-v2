@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V2\DomainBulkActionController;
 use App\Http\Controllers\Api\V2\DomainCapabilitiesController;
 use App\Http\Controllers\Api\V2\DomainController;
 use App\Http\Controllers\Api\V2\DomainDeletionPreviewController;
+use App\Http\Controllers\Api\V2\DomainFooterController;
 use App\Http\Controllers\Api\V2\DomainTagController;
 use App\Http\Controllers\Api\V2\DomainTemplateController;
 use App\Http\Controllers\Api\V2\IdentityController;
@@ -148,6 +149,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/domain-templates/{templateId}', [DomainTemplateController::class, 'show'])
             ->whereNumber('templateId')
             ->name('domain-templates.show');
+        Route::get('/domains/{domain}/footer', [DomainFooterController::class, 'show'])
+            ->where('domain', '[^/]+')
+            ->name('domain-footer.show');
         Route::get('/domains/{domain}/deletion-preview', [DomainDeletionPreviewController::class, 'show'])
             ->where('domain', '[^/]+')
             ->name('domain-deletion-preview.show');
@@ -173,6 +177,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('domain', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'domainDeletion', 'target' => 'domain'])
             ->name('domains.destroy');
+        Route::put('/domains/{domain}/footer', [DomainFooterController::class, 'update'])
+            ->where('domain', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'domainFooterUpdate', 'target' => 'domainFooter'])
+            ->name('domain-footer.update');
         Route::post('/domain-templates', [DomainTemplateController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'domainTemplateCreation', 'target' => 'domainTemplate'])
             ->name('domain-templates.store');

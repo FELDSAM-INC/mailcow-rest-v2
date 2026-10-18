@@ -1,0 +1,9 @@
+description: A TOTP enrolment was started. The secret is shown only in this response.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/OwnTotpEnrolment.yaml'

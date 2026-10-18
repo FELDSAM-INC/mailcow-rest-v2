@@ -1,0 +1,33 @@
+post:
+  operationId: createWebmailHandOff
+  tags: [Own account]
+  summary: Open my webmail without signing in again
+  description: |
+    Signs the requesting browser in to webmail as the signed-in mailbox user, through mailcow's
+    existing webmail single sign-on, without changing any mailcow container. The response sets
+    mailcow's legacy session cookie for a session that grants webmail only: the legacy UI still
+    shows its sign-in page in this browser (an existing legacy UI sign-in of this browser is
+    replaced), and `/api/v1` accepts no change through it. Open `data.url` in the same browser.
+
+    The hand-off ends when this API's session ends: at sign-out, when a password change or reset
+    ends the session, within a minute after the session expires, and at the latest after mailcow's
+    idle lifetime. A new request replaces the session's previous hand-off. A recent-login entry
+    `SSO` is recorded and the hand-off is audited.
+
+    Mailbox users with a full session only (`forbidden` for other roles, `pending-action-required`
+    in a restricted session); `groupware-disabled` when the server runs without webmail. Not
+    available to API keys.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '200':
+      $ref: '../../components/responses/WebmailHandOffResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SelfServiceTemporaryFailure.yaml'

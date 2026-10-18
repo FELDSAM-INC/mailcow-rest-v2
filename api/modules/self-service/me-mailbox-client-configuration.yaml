@@ -1,0 +1,22 @@
+get:
+  operationId: getOwnClientConfiguration
+  tags: [Own account]
+  summary: Read the client configuration of my mailbox
+  description: |
+    Returns what the legacy client setup help shows for setting up a mail client by hand: host names,
+    TLS and STARTTLS ports for IMAP, POP3 and SMTP, CalDAV, CardDAV and ActiveSync when the groupware
+    is enabled, the authentication method and the mailcow documentation link with legacy's
+    parameters. Values come from the server's autodiscover settings. Autodiscover and autoconfig
+    themselves stay with the legacy endpoints. Mailbox users only; not available to API keys or
+    restricted sessions.
+  security:
+    - sessionCookie: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxClientConfigurationResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

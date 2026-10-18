@@ -1,0 +1,9 @@
+description: |
+  The request conflicts with the current state. Nothing changed. Possible types:
+  - `/api/v2/problems/last-second-factor`: the entry is the account's only active second factor.
+  - `/api/v2/problems/push-notifications-not-configured`: the mailbox has no stored Pushover
+    credentials to verify.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

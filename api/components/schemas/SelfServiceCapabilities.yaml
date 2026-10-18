@@ -1,0 +1,125 @@
+type: object
+description: |
+  Server settings and limits that clients of the self-service operations need before they submit,
+  computed from the server's current configuration on every request. Contains no secret.
+  `passwordReset` is always present, also for signed-out callers. The other members are present
+  for authenticated callers (a session or an API key), and `account` only for a signed-in session.
+required: [passwordReset]
+properties:
+  passwordReset:
+    type: object
+    required: [available, tokenLifetimeMinutes]
+    properties:
+      available:
+        type: boolean
+        description: |
+          `false` when the operator's reset message has no sender or no subject, in which case every
+          reset request answers `password-reset-unavailable`. Offer "Forgot password" only when
+          `true`.
+      tokenLifetimeMinutes:
+        type: integer
+        minimum: 1
+        description: Validity of a reset link (legacy `PW_RESET_TOKEN_LIFETIME`, 15 by default).
+  groupware:
+    type: object
+    required: [enabled, webmailUrl]
+    properties:
+      enabled:
+        type: boolean
+        description: '`false` when mailcow runs without the groupware (`SKIP_SOGO=y`): no webmail, no groupware resets.'
+      webmailUrl:
+        type: string
+        format: uri-reference
+        description: Address of the webmail on this host.
+        examples: [/SOGo/so/]
+  temporaryAliases:
+    type: object
+    required: [minLifetimeHours, maxLifetimeHours, defaultLifetimeHours]
+    properties:
+      minLifetimeHours: {type: integer, const: 1}
+      maxLifetimeHours: {type: integer, const: 87600}
+      defaultLifetimeHours: {type: integer, const: 8760}
+  recentLogins:
+    type: object
+    required: [minDays, maxDays, defaultDays, countryLookup]
+    properties:
+      minDays: {type: integer, const: 1}
+      maxDays: {type: integer, const: 31}
+      defaultDays: {type: integer, const: 7}
+      countryLookup:
+        type: boolean
+        description: Whether countries of uncached public addresses are looked up with the external service.
+  bulkLimit:
+    type: integer
+    minimum: 1
+    description: Maximum number of mailboxes in one bulk TLS change (100 by default).
+  pageSize:
+    type: object
+    required: [default, maximum]
+    properties:
+      default: {type: integer, minimum: 1, examples: [25]}
+      maximum: {type: integer, minimum: 1, examples: [1000]}
+  limits:
+    type: object
+    description: Size limits of this feature's values.
+    required:
+      - nameMaxLength
+      - descriptionMaxLength
+      - sieveScriptMaxBytes
+      - pushTitleMaxLength
+      - pushTextMaxLength
+      - pushSendersMax
+      - pushSenderPatternMaxLength
+      - pushSoundMaxLength
+    properties:
+      nameMaxLength:
+        type: integer
+        description: Second-factor and app password names (stored form), 255.
+      descriptionMaxLength:
+        type: integer
+        description: Temporary alias and Sieve filter descriptions, 255.
+      sieveScriptMaxBytes:
+        type: integer
+        description: Sieve filter scripts, 65,535 bytes.
+      pushTitleMaxLength: {type: integer, description: '250.'}
+      pushTextMaxLength: {type: integer, description: '1,024.'}
+      pushSendersMax: {type: integer, description: '100.'}
+      pushSenderPatternMaxLength: {type: integer, description: '1,024.'}
+      pushSoundMaxLength: {type: integer, description: '20.'}
+  pushoverSounds:
+    type: array
+    description: Pushover's built-in notification sounds, in legacy order. Other sound names are accepted too.
+    items:
+      type: string
+    examples:
+      - [pushover, bike, bugle, cashregister, classical, cosmic, falling, gamelan, incoming, intermission, magic, mechanical, pianobar, siren, spacealarm, tugboat, alien, climb, persistent, echo, updown, vibrate, none]
+  secondFactors:
+    type: object
+    required: [totpIssuer, totpEnrolmentLifetimeSeconds, totpEnrolmentMaxAttempts, webauthnOptionsLifetimeSeconds]
+    properties:
+      totpIssuer:
+        type: string
+        description: Issuer name shown by authenticator apps (legacy `OTP_LABEL`).
+        examples: [mailcow UI]
+      totpEnrolmentLifetimeSeconds: {type: integer, examples: [600]}
+      totpEnrolmentMaxAttempts: {type: integer, examples: [5]}
+      webauthnOptionsLifetimeSeconds: {type: integer, examples: [300]}
+  account:
+    description: The signed-in account. Present only for sessions.
+    type: object
+    required: [role, secondFactorRequired, passwordChangeAvailable, secondFactorManagementAvailable]
+    properties:
+      role:
+        $ref: './Role.yaml'
+      secondFactorRequired:
+        type: boolean
+        description: |
+          The account must keep at least one second factor (legacy `force_tfa`). Removing an entry
+          or all entries is then refused with `second-factor-required-by-policy`; warn before
+          offering it.
+      passwordChangeAvailable:
+        type: boolean
+        description: '`false` for a mailbox whose password lives in an external identity provider.'
+      secondFactorManagementAvailable:
+        type: boolean
+        description: '`false` for a mailbox whose password lives in an external identity provider.'

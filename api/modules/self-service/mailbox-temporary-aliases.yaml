@@ -1,0 +1,73 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+get:
+  operationId: listTemporaryAliases
+  tags: [Mailbox self-service]
+  summary: List the temporary aliases of a mailbox
+  description: |
+    Lists the mailbox's permanent and not yet expired temporary aliases. `q` searches the address
+    and the description. Same callers as `listAppPasswords`; reading needs no permission flag.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/TemporaryAliasSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: permanent
+      in: query
+      required: false
+      description: Only permanent (`true`) or expiring (`false`) aliases.
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/TemporaryAliasListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createTemporaryAlias
+  tags: [Mailbox self-service]
+  summary: Create a temporary alias
+  description: |
+    Creates a temporary alias with a random, readable address in the mailbox's domain or one of
+    its alias domains, valid for `lifetimeHours` (one year by default) or permanently. Mail sent to
+    it is delivered to the mailbox. Needs `spamAlias` (domain administrators always hold it).
+    Session or read-write key. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/TemporaryAliasCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/TemporaryAliasCreated.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SelfServiceTemporaryFailure.yaml'

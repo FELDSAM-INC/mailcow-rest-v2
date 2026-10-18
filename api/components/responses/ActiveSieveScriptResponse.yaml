@@ -1,0 +1,9 @@
+description: The active Sieve script of the mailbox, or none.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/ActiveSieveScript.yaml'

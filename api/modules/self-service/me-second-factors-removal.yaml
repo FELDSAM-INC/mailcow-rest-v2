@@ -1,0 +1,33 @@
+post:
+  operationId: removeAllOwnSecondFactors
+  tags: [Own account]
+  summary: Remove all my second factors
+  description: |
+    Removes every second-factor entry of the signed-in account after checking the current password
+    (legacy "Disable two-factor authentication"). Passkeys are not affected. Refused with
+    `second-factor-required-by-policy` when the account must keep a second factor. A wrong current
+    password is throttled like a failed sign-in. Not available to API keys. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/OwnSecondFactorRemovalRequest.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '429':
+      $ref: '../../components/responses/TooManyRequests.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

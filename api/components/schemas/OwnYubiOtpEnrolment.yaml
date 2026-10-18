@@ -1,0 +1,35 @@
+type: object
+description: |
+  A YubiKey in Yubico OTP mode with the Yubico API credentials it is verified with. The OTP is
+  checked with the Yubico service using these credentials. An existing entry of the account with
+  the same key (the first 12 characters of the OTP) is replaced.
+required: [type, name, clientId, secretKey, otp]
+properties:
+  type:
+    type: string
+    const: yubiOtp
+  name:
+    type: string
+    minLength: 1
+    maxLength: 255
+  clientId:
+    type: string
+    pattern: '^[0-9]{1,32}$'
+    description: Yubico API client identifier (digits only).
+  secretKey:
+    type: string
+    minLength: 1
+    maxLength: 128
+    writeOnly: true
+    description: Yubico API secret key (base64).
+  otp:
+    type: string
+    pattern: '^[A-Za-z0-9]{44}$'
+    writeOnly: true
+  currentPassword:
+    type: string
+    minLength: 1
+    maxLength: 4096
+    writeOnly: true
+    description: Required unless the session is restricted by `secondFactorSetup`.
+additionalProperties: false

@@ -1,0 +1,87 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+get:
+  operationId: getPushNotificationSettings
+  tags: [Mailbox self-service]
+  summary: Read the push notification settings of a mailbox
+  description: |
+    Returns the mailbox's Pushover settings. The application token and the user key are never
+    returned; `tokenSet` and `userKeySet` say whether they are stored. Without stored settings
+    `configured` is `false`. Same callers as `listAppPasswords`; reading needs no permission flag.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/PushNotificationSettingsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+put:
+  operationId: replacePushNotificationSettings
+  tags: [Mailbox self-service]
+  summary: Replace the push notification settings of a mailbox
+  description: |
+    Replaces the settings as a whole, stored where legacy stores them, so mailcow's notification
+    pipeline uses them unchanged. Token and user key are 30 letters or digits each; both are
+    required while none are stored and keep their stored values when omitted. Needs `pushover`:
+    the mailbox user's own flag, or the domain administrator's own `pushover` flag. Session or
+    read-write key. Audited, with the credentials only as "set" or "changed".
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/PushNotificationSettingsReplacement.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/PushNotificationSettingsResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deletePushNotificationSettings
+  tags: [Mailbox self-service]
+  summary: Remove the push notification settings of a mailbox
+  description: Removes the settings; no further notification is sent. Needs `pushover`. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

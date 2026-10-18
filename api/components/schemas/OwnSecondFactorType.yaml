@@ -1,0 +1,6 @@
+type: string
+description: |
+  Type of a stored second-factor entry (mailcow `tfa.authmech`). `totp` authenticator apps,
+  `webauthn` security keys, `yubiOtp` Yubico OTP keys. `u2f` and `hotp` are deprecated entries that
+  this API lists but never accepts; only an administrator can reset them.
+enum: [totp, webauthn, yubiOtp, u2f, hotp]

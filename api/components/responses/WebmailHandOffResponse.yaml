@@ -1,0 +1,29 @@
+description: |
+  The browser that sent the request is signed in to webmail. Open `data.url` in the same browser.
+  The cookie replaces a legacy UI sign-in of this browser, so the legacy UI asks for a sign-in
+  again. The hand-off grants webmail only and ends when this API's session ends (sign-out, password
+  change ending other sessions, reset), within a minute after it expires, and at the latest after
+  the legacy idle lifetime (3 hours by default).
+headers:
+  Set-Cookie:
+    description: |
+      mailcow's legacy session cookie for the webmail-only session, for example
+      `MCSESSID=<id>; Path=/; Secure; HttpOnly; SameSite=Lax`. The name and the SameSite policy
+      follow mailcow's `SESSION_NAME` and `SESSION_SAMESITE_POLICY`.
+    required: true
+    schema:
+      type: string
+  Cache-Control:
+    description: Always `no-store`.
+    required: true
+    schema:
+      type: string
+      const: no-store
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/WebmailHandOff.yaml'

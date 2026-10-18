@@ -1,0 +1,20 @@
+description: |
+  The unsigned Apple connection profile, as legacy `mobileconfig.php` builds it. Install it on iOS,
+  iPadOS or macOS; the device asks for the account's password unless an app password is embedded.
+headers:
+  Content-Disposition:
+    description: '`attachment; filename="<product name>.mobileconfig"`.'
+    required: true
+    schema:
+      type: string
+  Cache-Control:
+    description: Always `no-store`.
+    required: true
+    schema:
+      type: string
+      const: no-store
+content:
+  application/x-apple-aspen-config:
+    schema:
+      type: string
+      description: XML property list (`plist`).

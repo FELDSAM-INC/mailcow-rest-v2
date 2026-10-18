@@ -1,0 +1,9 @@
+description: Registration options for a WebAuthn second factor.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/OwnSecondFactorWebAuthnOptions.yaml'

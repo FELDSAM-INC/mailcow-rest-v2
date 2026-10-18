@@ -1,0 +1,13 @@
+description: |
+  Enrols a second factor for the signed-in account, stored where legacy mailcow stores it (table
+  `tfa`, active), so it completes the second-factor step of both UIs.
+oneOf:
+  - $ref: './OwnTotpEnrolmentConfirmation.yaml'
+  - $ref: './OwnWebAuthnSecondFactorEnrolment.yaml'
+  - $ref: './OwnYubiOtpEnrolment.yaml'
+discriminator:
+  propertyName: type
+  mapping:
+    totp: './OwnTotpEnrolmentConfirmation.yaml'
+    webauthn: './OwnWebAuthnSecondFactorEnrolment.yaml'
+    yubiOtp: './OwnYubiOtpEnrolment.yaml'

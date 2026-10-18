@@ -1,0 +1,37 @@
+post:
+  operationId: applyMailboxMailSettingsBulkAction
+  tags: [Mailbox self-service]
+  summary: Apply a mail-settings action to several mailboxes
+  description: |
+    Applies `setTlsEnforcement` (inbound and/or outbound TLS enforcement) to up to 100 mailboxes, as
+    the legacy mailbox list's TLS mass actions do. Each mailbox is processed like `updateMailboxMailSettings`, with
+    the same checks and one audit record carrying the bulk request ID. A mailbox outside the
+    caller's scope gets `notFound`, an outdated `version` (the mailbox's mail-settings version tag)
+    gets `outdated`, and an outage gets `failed`; the others proceed. One result per distinct
+    mailbox, in request order.
+
+    Administrators and domain administrators, from a session or a read-write key; mailbox users get
+    `forbidden`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/MailboxMailSettingsBulkActionRequest.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/BulkResultResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

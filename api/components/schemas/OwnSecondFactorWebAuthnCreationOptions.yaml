@@ -1,0 +1,68 @@
+type: object
+description: |
+  `PublicKeyCredentialCreationOptionsJSON` (WebAuthn Level 3) for a security key used as a second
+  factor. Unlike passkeys, the credential need not be discoverable. Pass it to
+  `PublicKeyCredential.parseCreationOptionsFromJSON()` and `navigator.credentials.create()`.
+required: [rp, user, challenge, pubKeyCredParams, timeout, excludeCredentials, authenticatorSelection, attestation]
+properties:
+  rp:
+    type: object
+    required: [id, name]
+    properties:
+      id:
+        type: string
+        examples: [mail.example.org]
+      name:
+        type: string
+  user:
+    type: object
+    required: [id, name, displayName]
+    properties:
+      id:
+        $ref: './Base64Url.yaml'
+      name:
+        type: string
+      displayName:
+        type: string
+  challenge:
+    $ref: './Base64Url.yaml'
+  pubKeyCredParams:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required: [type, alg]
+      properties:
+        type:
+          type: string
+          const: public-key
+        alg:
+          type: integer
+  timeout:
+    type: integer
+    minimum: 1
+    description: Milliseconds.
+  excludeCredentials:
+    type: array
+    description: The account's existing WebAuthn second factors.
+    items:
+      $ref: './WebAuthnCredentialDescriptor.yaml'
+  authenticatorSelection:
+    type: object
+    required: [userVerification]
+    properties:
+      residentKey:
+        type: string
+        enum: [discouraged, preferred, required]
+      requireResidentKey:
+        type: boolean
+      userVerification:
+        type: string
+        enum: [required, preferred, discouraged]
+        description: Follows mailcow's `WEBAUTHN_UV_FLAG_REGISTER` (not required by default).
+  attestation:
+    type: string
+    enum: [none, indirect, direct, enterprise]
+  extensions:
+    type: object
+    additionalProperties: true

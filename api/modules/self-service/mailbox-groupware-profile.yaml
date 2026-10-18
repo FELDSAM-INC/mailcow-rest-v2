@@ -1,0 +1,27 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+delete:
+  operationId: resetGroupwareProfile
+  tags: [Mailbox self-service]
+  summary: Reset the groupware profile of a mailbox
+  description: |
+    Removes, as legacy does and **irreversibly**, the mailbox's groupware settings, cached device
+    state, sharing permissions on and by the mailbox, and its folders with their contacts and
+    events. Webmail may ask for a new sign-in. Needs `sogoProfileReset` (off by default for mailbox
+    users; domain administrators hold it). `groupware-disabled` when the server runs without the
+    groupware. Session or read-write key. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

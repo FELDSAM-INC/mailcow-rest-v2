@@ -1,0 +1,5 @@
+type: string
+description: |
+  `prefilter` runs before the user's own Sieve rules, `postfilter` after them (`sieve_filters.filter_type`).
+  At most one filter of each kind is active per mailbox.
+enum: [prefilter, postfilter]

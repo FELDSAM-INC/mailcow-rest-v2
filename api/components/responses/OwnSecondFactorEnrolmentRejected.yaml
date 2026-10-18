@@ -1,0 +1,23 @@
+description: |
+  The enrolment was rejected and nothing was stored. Possible types:
+  - `/api/v2/problems/second-factor-enrolment-expired`: the session has no TOTP enrolment or
+    WebAuthn options, or they expired, were used up or were started in another session. Start again.
+  - `/api/v2/problems/second-factor-enrolment-failed`: the TOTP code was wrong (extension
+    `attemptsRemaining`; the enrolment stays open while attempts remain), the WebAuthn response did
+    not verify (the options are used up), or the Yubico service rejected the OTP.
+  - `about:blank`: malformed JSON.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/SecondFactorEnrolmentFailedProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      wrongCode:
+        value:
+          type: /api/v2/problems/second-factor-enrolment-failed
+          title: Second-factor enrolment failed
+          status: 400
+          detail: The code does not match the enrolment's secret.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          attemptsRemaining: 3

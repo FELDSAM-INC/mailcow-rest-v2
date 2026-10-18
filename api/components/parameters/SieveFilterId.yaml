@@ -1,0 +1,7 @@
+name: sieveFilterId
+in: path
+required: true
+description: Identifier of the Sieve filter (mailcow `sieve_filters.id`). A filter of another mailbox answers `404`.
+schema:
+  type: integer
+  minimum: 1

@@ -1,0 +1,13 @@
+type: object
+description: |
+  JSON Merge Patch of the mail settings. Changing `taggedMailHandling` needs `delimiterAction`;
+  changing a TLS value needs `tlsPolicy`. A value sent equal to its current value is not a change.
+  At least one member is required.
+properties:
+  taggedMailHandling:
+    $ref: './MailboxTaggedMailHandling.yaml'
+  tlsEnforceInbound:
+    type: boolean
+  tlsEnforceOutbound:
+    type: boolean
+additionalProperties: false

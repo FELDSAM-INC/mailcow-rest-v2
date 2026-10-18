@@ -1,0 +1,48 @@
+type: object
+description: |
+  Replaces the settings as a whole; members not sent take their defaults, except `token` and
+  `userKey`, which keep the stored values when omitted and are required while none are stored.
+properties:
+  token:
+    type: string
+    pattern: '^[A-Za-z0-9]{30}$'
+    writeOnly: true
+    description: Pushover application token.
+  userKey:
+    type: string
+    pattern: '^[A-Za-z0-9]{30}$'
+    writeOnly: true
+    description: Pushover user key.
+  title:
+    type: string
+    maxLength: 250
+    default: ''
+  text:
+    type: string
+    maxLength: 1024
+    default: ''
+  senders:
+    type: array
+    maxItems: 100
+    items:
+      type: string
+      maxLength: 255
+    default: []
+  senderPattern:
+    type: string
+    maxLength: 1024
+    default: ''
+  sound:
+    type: string
+    pattern: '^[A-Za-z0-9_-]{1,20}$'
+    default: pushover
+  active:
+    type: boolean
+    default: true
+  evaluatePriority:
+    type: boolean
+    default: false
+  onlyHighPriority:
+    type: boolean
+    default: false
+additionalProperties: false

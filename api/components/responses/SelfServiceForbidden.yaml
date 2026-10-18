@@ -1,0 +1,38 @@
+description: |
+  The caller is authenticated but may not perform this request. Nothing changed. Possible types:
+  - `/api/v2/problems/forbidden`: the caller's role may never use the operation (for example an
+    administrator reading a mailbox overview, a mailbox user changing a Sieve filter, a domain
+    administrator reading the audit log).
+  - `/api/v2/problems/permission-flag-required`: the change needs a permission flag the caller
+    lacks (extensions `flag` and `requiredFlags`). Values sent with their current value never need
+    it.
+  - `/api/v2/problems/current-password-incorrect`: the current password is wrong. Audited; repeated
+    failures are delayed and then refused with `429`.
+  - `/api/v2/problems/password-managed-externally`: the mailbox's password lives in an external
+    identity provider (LDAP, Keycloak, generic OIDC), so its password, recovery address and second
+    factors are not managed here.
+  - `/api/v2/problems/second-factor-required-by-policy`: the account must keep a second factor
+    (legacy `force_tfa`).
+  - `/api/v2/problems/groupware-disabled`: the server runs without the groupware.
+  - `/api/v2/problems/session-required`: the operation is not available to API keys.
+  - `/api/v2/problems/pending-action-required`: the session is restricted (extension
+    `pendingActions`).
+  - `/api/v2/problems/insufficient-key-scope`, `/api/v2/problems/csrf-token-mismatch`,
+    `/api/v2/problems/api-key-source-not-allowed`: see `Forbidden`.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/SelfServicePermissionFlagProblem.yaml'
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      flagMissing:
+        value:
+          type: /api/v2/problems/permission-flag-required
+          title: Permission flag required
+          status: 403
+          detail: Changing app passwords needs the appPasswds permission.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          flag: appPasswds
+          requiredFlags: [appPasswds]

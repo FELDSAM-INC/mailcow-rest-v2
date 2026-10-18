@@ -1,0 +1,44 @@
+parameters:
+  - $ref: '../../components/parameters/OwnSecondFactorId.yaml'
+get:
+  operationId: getOwnSecondFactor
+  tags: [Own account]
+  summary: Get one of my second factors
+  security:
+    - sessionCookie: []
+  responses:
+    '200':
+      $ref: '../../components/responses/OwnSecondFactorResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteOwnSecondFactor
+  tags: [Own account]
+  summary: Remove one of my second factors
+  description: |
+    Removes one entry, without the password, as legacy does. Refused with
+    `second-factor-required-by-policy` when the account must keep a second factor, and with
+    `last-second-factor` when the entry is the account's only active entry. Not available to API
+    keys or restricted sessions. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/SelfServiceConflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

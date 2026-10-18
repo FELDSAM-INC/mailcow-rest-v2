@@ -1,0 +1,28 @@
+type: object
+description: |
+  One mail-settings action applied to several mailboxes, as the legacy mailbox list's TLS mass
+  actions do. `setTlsEnforcement` sets inbound and/or outbound TLS enforcement (at least one of
+  the two). Each target is authorised, version-checked (against its mail-settings version tag),
+  changed and audited on its own, exactly as `updateMailboxMailSettings`; one failure does not stop
+  the others. A target's `id` is the mailbox address, in any letter case and with the domain in
+  ASCII or Unicode form; an address given twice is processed and reported once. At most the bulk
+  limit of targets (`tooMany` on `targets`).
+required: [action, targets]
+properties:
+  action:
+    type: string
+    enum: [setTlsEnforcement]
+  tlsEnforceInbound:
+    type: boolean
+  tlsEnforceOutbound:
+    type: boolean
+  targets:
+    type: array
+    minItems: 1
+    maxItems: 100
+    items:
+      $ref: './BulkTarget.yaml'
+anyOf:
+  - required: [tlsEnforceInbound]
+  - required: [tlsEnforceOutbound]
+additionalProperties: false

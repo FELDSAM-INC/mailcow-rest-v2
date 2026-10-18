@@ -1,0 +1,26 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+delete:
+  operationId: resetActiveSyncCache
+  tags: [Mailbox self-service]
+  summary: Reset the ActiveSync cache of a mailbox
+  description: |
+    Removes the groupware's cached ActiveSync device state of the mailbox, as legacy does; phones
+    download everything again at their next sync. Needs `easReset` (domain administrators hold it).
+    `groupware-disabled` when the server runs without the groupware. Session or read-write key.
+    Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

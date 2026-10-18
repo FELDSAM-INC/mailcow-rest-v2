@@ -1,0 +1,40 @@
+type: object
+description: |
+  The latest login of one group of a mailbox's logins, grouped by client address, service and app
+  password, as legacy groups them (mailcow `sasl_log`).
+required: [service, clientAddress, internal, country, appPassword, lastSeenAt]
+properties:
+  service:
+    type: string
+    description: |
+      The service as stored, upper-cased: for example `IMAP`, `POP3`, `SMTP`, `SIEVE`, `EAS`, `DAV`,
+      `SSO` (webmail single sign-on), `SOGO`. Web UI sign-ins are always `WEBUI`, whether mailcow
+      stored `MAILCOWUI` (upstream) or `WEBUI` (FeldHost fork).
+    examples: [IMAP]
+  clientAddress:
+    type: string
+    examples: [203.0.113.7]
+  internal:
+    type: boolean
+    description: A private, reserved or internal address (web UI, ActiveSync and internal services); never has a country.
+  country:
+    oneOf:
+      - type: string
+        pattern: '^[A-Z]{2}$'
+      - type: 'null'
+    description: ISO 3166-1 alpha-2 country of a public address, when known in time.
+  appPassword:
+    oneOf:
+      - type: object
+        required: [id, name]
+        properties:
+          id: {type: integer, minimum: 1}
+          name:
+            oneOf:
+              - type: string
+              - type: 'null'
+            description: '`null` when the app password was deleted since.'
+      - type: 'null'
+  lastSeenAt:
+    type: string
+    format: date-time

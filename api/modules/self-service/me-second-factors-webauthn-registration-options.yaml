@@ -1,0 +1,22 @@
+post:
+  operationId: createOwnSecondFactorWebAuthnOptions
+  tags: [Own account]
+  summary: Get WebAuthn second-factor registration options
+  description: |
+    Issues single-use registration options bound to this session for a security key used as a
+    second factor: bound to this host name, excluding the account's existing WebAuthn second
+    factors, with user verification and attestation formats following mailcow's settings. They
+    expire after 5 minutes or at the first enrolment attempt; a new request replaces them. Same
+    access rules as `enrolOwnSecondFactor`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '200':
+      $ref: '../../components/responses/OwnSecondFactorWebAuthnOptionsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

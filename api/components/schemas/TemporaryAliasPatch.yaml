@@ -1,0 +1,19 @@
+description: |
+  JSON Merge Patch of a temporary alias: either a new lifetime counted from now, or permanence.
+  Nothing else can change.
+oneOf:
+  - type: object
+    required: [lifetimeHours]
+    properties:
+      lifetimeHours:
+        type: integer
+        minimum: 1
+        maximum: 87600
+    additionalProperties: false
+  - type: object
+    required: [permanent]
+    properties:
+      permanent:
+        type: boolean
+        const: true
+    additionalProperties: false

@@ -1,0 +1,35 @@
+type: object
+description: |
+  A started TOTP enrolment, bound to the session. The secret, the provisioning address and the QR
+  code are returned only here, once. Confirm with `POST /me/second-factors` (`type: totp`) within
+  `expiresAt`; a new start replaces this enrolment.
+required: [secret, provisioningUri, qrCode, issuer, digits, period, algorithm, expiresAt]
+properties:
+  secret:
+    type: string
+    pattern: '^[A-Z2-7]{32}$'
+    description: Random 160-bit secret in base32, for manual entry.
+  provisioningUri:
+    type: string
+    format: uri
+    description: '`otpauth://totp/` address naming the account and the issuer.'
+    examples: ['otpauth://totp/anna%40example.org?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&issuer=mailcow%20UI&period=30&algorithm=SHA1&digits=6']
+  qrCode:
+    type: string
+    description: QR code of `provisioningUri` as a data URI (`data:image/svg+xml;base64,…`).
+  issuer:
+    type: string
+    examples: [mailcow UI]
+  digits:
+    type: integer
+    const: 6
+  period:
+    type: integer
+    const: 30
+  algorithm:
+    type: string
+    const: SHA1
+  expiresAt:
+    type: string
+    format: date-time
+    description: Ten minutes after the start.

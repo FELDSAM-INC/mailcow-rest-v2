@@ -1,0 +1,16 @@
+description: |
+  Problem of type `/api/v2/problems/temporary-failure` (status `503`): a service the operation needs
+  is unavailable or did not answer in time, and nothing was changed. Retry after the `Retry-After`
+  header.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    properties:
+      dependency:
+        type: string
+        description: |
+          The unavailable service. Known values: `sharedStore` (mailcow's Redis), `mailStore` (the
+          container API or the Dovecot container), `pushover` (the Pushover service),
+          `addressGeneration` (no free temporary alias address was found). Later features may add
+          values.
+        examples: [mailStore]

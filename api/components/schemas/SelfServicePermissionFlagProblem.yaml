@@ -1,0 +1,21 @@
+description: |
+  Problem of type `/api/v2/problems/permission-flag-required` (status `403`): the change needs a
+  permission flag that the caller lacks, a mailbox user's own `user_acl` flag or, for app passwords,
+  push notifications and Sieve filters, the domain administrator's own `da_acl` flag. Nothing
+  changed. Values sent with their current value never need the flag, and reading never needs it.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [flag, requiredFlags]
+    properties:
+      flag:
+        type: string
+        description: The missing flag, named as in `PermissionFlags` (camelCase).
+        enum: [appPasswds, spamAlias, filters, pushover, delimiterAction, tlsPolicy, easReset, sogoProfileReset, pwReset]
+      requiredFlags:
+        type: array
+        minItems: 1
+        maxItems: 1
+        description: The same flag as a one-element list, as other features report missing flags.
+        items:
+          type: string

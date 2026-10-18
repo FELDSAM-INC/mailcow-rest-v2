@@ -1,0 +1,16 @@
+type: object
+description: Options of an Apple connection profile that embeds a newly generated app password.
+properties:
+  variant:
+    type: string
+    enum: [email, emailAndDav]
+    default: emailAndDav
+    description: As the `variant` parameter of `GET /me/mailbox/apple-profile`.
+  appPasswordName:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: |
+      Name of the new app password. Default: `iPad`, `iPhone` or `Mac` after the request's user
+      agent, otherwise the user agent (cut to 255 characters), as legacy names it.
+additionalProperties: false

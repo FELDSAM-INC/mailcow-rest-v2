@@ -1,0 +1,62 @@
+type: object
+description: |
+  Pushover notifications of a mailbox (mailcow `pushover`): mailcow sends one for each clean message
+  delivered to the mailbox or its aliases, optionally only for listed senders. The application token
+  and the user key are never returned. `title` and `text` may use the placeholders `{SUBJECT}`,
+  `{SENDER}`, `{SENDER_ADDRESS}`, `{SENDER_NAME}`, `{TO_NAME}`, `{TO_ADDRESS}` and `{MSG_ID}`; an
+  empty title means `Mail`, an empty text `You've got mail 📧`. Without stored settings,
+  `configured` is `false` and the other members show the defaults.
+required:
+  - configured
+  - active
+  - tokenSet
+  - userKeySet
+  - title
+  - text
+  - senders
+  - senderPattern
+  - sound
+  - evaluatePriority
+  - onlyHighPriority
+  - etag
+properties:
+  configured:
+    type: boolean
+  active:
+    type: boolean
+  tokenSet:
+    type: boolean
+    description: An application token is stored.
+  userKeySet:
+    type: boolean
+    description: A user key is stored.
+  title:
+    type: string
+    maxLength: 250
+  text:
+    type: string
+    maxLength: 1024
+  senders:
+    type: array
+    description: |
+      Only mail from these addresses notifies (empty: every sender, unless `senderPattern` is set).
+      Dots in the local part of `@gmail.com` addresses are removed, as legacy stores them.
+    maxItems: 100
+    items:
+      type: string
+  senderPattern:
+    type: string
+    maxLength: 1024
+    description: A delimited PCRE pattern (for example `/@example\.org$/i`) matched against the sender, or empty.
+  sound:
+    type: string
+    description: Pushover sound name; see `SelfServiceCapabilities.pushoverSounds`.
+    examples: [pushover]
+  evaluatePriority:
+    type: boolean
+    description: Messages flagged high priority notify with Pushover priority 2.
+  onlyHighPriority:
+    type: boolean
+    description: Only messages flagged high priority notify.
+  etag:
+    type: string

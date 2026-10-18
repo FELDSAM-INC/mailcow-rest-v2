@@ -1,0 +1,18 @@
+type: object
+description: |
+  JSON Merge Patch of a filter. Only the members sent change, with the rules of creation; the
+  mailbox never changes. Changing the kind of an active filter deactivates the mailbox's active
+  filter of the new kind. At least one member is required.
+properties:
+  description:
+    type: string
+    minLength: 1
+    maxLength: 255
+  kind:
+    $ref: './SieveFilterKind.yaml'
+  script:
+    type: string
+    minLength: 1
+  active:
+    type: boolean
+additionalProperties: false

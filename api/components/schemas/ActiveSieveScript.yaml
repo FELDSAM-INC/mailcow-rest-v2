@@ -1,0 +1,16 @@
+type: object
+description: |
+  The Sieve script the user manages in webmail and that the mail server runs for the mailbox, as
+  the mail server reports it. `name` and `script` are `null` when no script is active.
+required: [mailbox, name, script]
+properties:
+  mailbox:
+    type: string
+  name:
+    oneOf:
+      - type: string
+      - type: 'null'
+  script:
+    oneOf:
+      - type: string
+      - type: 'null'

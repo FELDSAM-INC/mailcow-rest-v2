@@ -1,0 +1,19 @@
+type: object
+description: |
+  A new filter for the mailbox of the path. The script must pass the Sieve validation legacy mailcow
+  applies (`sieveSyntax` with the parser's `message`) and fit 65,535 bytes.
+required: [description, kind, script]
+properties:
+  description:
+    type: string
+    minLength: 1
+    maxLength: 255
+  kind:
+    $ref: './SieveFilterKind.yaml'
+  script:
+    type: string
+    minLength: 1
+  active:
+    type: boolean
+    default: true
+additionalProperties: false

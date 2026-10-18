@@ -1,0 +1,31 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+post:
+  operationId: verifyPushNotificationSettings
+  tags: [Mailbox self-service]
+  summary: Verify the stored Pushover credentials
+  description: |
+    Asks Pushover's validation service whether the stored token and user key are valid, without
+    sending a notification, and returns its verdict. `push-notifications-not-configured` when no
+    credentials are stored; `503` when Pushover cannot be reached. It acts on an external service for
+    the mailbox, so it counts as a change: needs `pushover`, a session or a read-write key, and is
+    audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/PushNotificationVerificationResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/SelfServiceConflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SelfServiceTemporaryFailure.yaml'

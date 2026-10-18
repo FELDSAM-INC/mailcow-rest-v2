@@ -1,0 +1,83 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+  - $ref: '../../components/parameters/SieveFilterId.yaml'
+get:
+  operationId: getSieveFilter
+  tags: [Sieve filters]
+  summary: Get a Sieve filter
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/SieveFilterResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateSieveFilter
+  tags: [Sieve filters]
+  summary: Change a Sieve filter
+  description: |
+    Changes only the members sent, with the rules of `createSieveFilter`; the mailbox never changes.
+    Activating the filter, or changing the kind of an active filter, deactivates the mailbox's
+    other active filter of that kind in the same change. Same callers as `createSieveFilter`.
+    Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/SieveFilterPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/SieveFilterResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteSieveFilter
+  tags: [Sieve filters]
+  summary: Delete a Sieve filter
+  description: Removes the filter at once. Same callers as `createSieveFilter`. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -1,0 +1,26 @@
+type: object
+description: |
+  Confirms the session's TOTP enrolment (`POST /me/second-factors/totp-enrolment`) with a current
+  code from the authenticator app. A wrong code keeps the enrolment open until five wrong codes or
+  ten minutes; the confirming code is not accepted again for sign-in.
+required: [type, name, code]
+properties:
+  type:
+    type: string
+    const: totp
+  name:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: Trimmed; 1 to 255 characters.
+  code:
+    type: string
+    pattern: '^[0-9]{6}$'
+    writeOnly: true
+  currentPassword:
+    type: string
+    minLength: 1
+    maxLength: 4096
+    writeOnly: true
+    description: Required unless the session is restricted by `secondFactorSetup`.
+additionalProperties: false

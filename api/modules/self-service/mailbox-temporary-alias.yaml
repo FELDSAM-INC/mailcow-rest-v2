@@ -1,0 +1,81 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+  - $ref: '../../components/parameters/TemporaryAliasAddress.yaml'
+get:
+  operationId: getTemporaryAlias
+  tags: [Mailbox self-service]
+  summary: Get a temporary alias
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/TemporaryAliasResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateTemporaryAlias
+  tags: [Mailbox self-service]
+  summary: Change a temporary alias's lifetime
+  description: |
+    Sets a new lifetime of 1 to 87,600 hours counted from now, or makes the alias permanent.
+    Nothing else can change. Needs `spamAlias`. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/TemporaryAliasPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/TemporaryAliasResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteTemporaryAlias
+  tags: [Mailbox self-service]
+  summary: Delete a temporary alias
+  description: Removes the alias at once; mail to it is refused from then on. Needs `spamAlias`. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

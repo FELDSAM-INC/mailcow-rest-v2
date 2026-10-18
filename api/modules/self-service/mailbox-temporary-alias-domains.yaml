@@ -1,0 +1,30 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+get:
+  operationId: listTemporaryAliasDomains
+  tags: [Mailbox self-service]
+  summary: List the domains for a mailbox's temporary aliases
+  description: |
+    Lists the domains in which temporary aliases of the mailbox may be created: the mailbox's
+    domain first, then its alias domains by name. The order is fixed. `q` searches the domain
+    names. Same callers as `listTemporaryAliases`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/TemporaryAliasDomainListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

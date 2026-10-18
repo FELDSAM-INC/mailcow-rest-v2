@@ -115,8 +115,9 @@ description: |
     description that yields 1 to 64 ASCII letters or digits for the derived address), next to
     `email`, `domainName` and `dkimSelector`; `tooLong` carries `unit: bytes` for comments (`max`
     160) and `unit: characters` for the joined destination list (`max` 65535); `notEligible` uses
-    `kind` (`resource` for a destination, `relayDomain` or `aliasDomain` for a target or resource
-    domain, `localDomain` for an external sender address in a domain of this server) and
+    `kind` (`resource` for a destination, `externalDestination` for an added external destination
+    while the server disables them for every role, `relayDomain` or `aliasDomain` for a target or
+    resource domain, `localDomain` for an external sender address in a domain of this server) and
     `allowedRoles: [admin]` for "any address"; `conflictsWith` (params `field`, `value`) for a
     destination equal to the alias's own address, an alias domain equal to its target, destinations
     sent with a special action, and a booking limit sent with a rule other than `limited`;

@@ -1,0 +1,33 @@
+type: object
+description: |
+  A generated address that delivers to the mailbox until it expires, or permanently (mailcow
+  `spamalias`). Expired aliases are not listed and answer `404`; mail to them is refused, and
+  mailcow's daily clean-up removes them.
+required: [address, mailbox, description, permanent, expiresAt, createdAt, modifiedAt, etag]
+properties:
+  address:
+    type: string
+    examples: [bavoki.rumesa@example.org]
+  mailbox:
+    type: string
+  description:
+    type: string
+    description: Possibly empty.
+  permanent:
+    type: boolean
+  expiresAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+    description: '`null` for a permanent alias.'
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string

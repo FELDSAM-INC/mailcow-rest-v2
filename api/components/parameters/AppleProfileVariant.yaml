@@ -1,0 +1,11 @@
+name: variant
+in: query
+required: false
+description: |
+  `email`: the IMAP account with its SMTP server only (legacy `?only_email`). `emailAndDav`
+  (default): also a CalDAV and a CardDAV account, refused with `groupware-disabled` when the
+  groupware is disabled.
+schema:
+  type: string
+  enum: [email, emailAndDav]
+  default: emailAndDav

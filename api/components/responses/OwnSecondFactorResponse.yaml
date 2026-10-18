@@ -1,0 +1,9 @@
+description: One of the signed-in account's second factors.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/OwnSecondFactor.yaml'

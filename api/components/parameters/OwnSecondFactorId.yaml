@@ -1,0 +1,7 @@
+name: secondFactorId
+in: path
+required: true
+description: Identifier of one of the signed-in account's second factors (mailcow `tfa.id`).
+schema:
+  type: integer
+  minimum: 1

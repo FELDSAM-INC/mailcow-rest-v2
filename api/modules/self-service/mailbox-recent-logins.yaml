@@ -1,0 +1,68 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+get:
+  operationId: listRecentLogins
+  tags: [Mailbox self-service]
+  summary: List the recent logins of a mailbox
+  description: |
+    Lists where the mailbox was used during the last `days` days (7 by default, at most 31), grouped
+    by client address, service and app password with the latest time of each group, as legacy groups
+    them. Private and internal addresses are marked and never have a country. Countries come from
+    mailcow's shared cache; uncached public addresses of the page are looked up with the external
+    service legacy uses (when enabled), within a bounded time, and reported without a country when
+    the lookup does not finish. `q` searches the client address. Same callers as `listAppPasswords`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/RecentLoginDays.yaml'
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/RecentLoginSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: service
+      in: query
+      required: false
+      description: Only this service (any letter case), for example `IMAP` or `WEBUI`.
+      schema:
+        type: string
+        maxLength: 32
+  responses:
+    '200':
+      $ref: '../../components/responses/RecentLoginListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SelfServiceTemporaryFailure.yaml'
+delete:
+  operationId: clearRecentLogins
+  tags: [Mailbox self-service]
+  summary: Clear the recent logins of a mailbox
+  description: |
+    Removes all recent-login records of the mailbox and, when the caller is an administrator or the
+    mailbox user, also the legacy UI's records of the mailbox's successful sign-ins, as legacy does.
+    Both UIs then show an empty list. Session or read-write key. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

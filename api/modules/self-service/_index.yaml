@@ -1,0 +1,72 @@
+# Paths of the self-service module (feature 005): own password, second factors, recovery address,
+# mailbox overview, webmail hand-off, Apple profile and client configuration; password reset;
+# app passwords, temporary aliases, push notifications, mail settings, recent logins, groupware
+# resets and Sieve filters of the mailboxes in the caller's scope; self-service capabilities.
+/capabilities/self-service:
+  $ref: './capabilities-self-service.yaml'
+/me/password:
+  $ref: './me-password.yaml'
+/me/password-policy:
+  $ref: './me-password-policy.yaml'
+/me/second-factors:
+  $ref: './me-second-factors.yaml'
+/me/second-factors/totp-enrolment:
+  $ref: './me-second-factors-totp-enrolment.yaml'
+/me/second-factors/webauthn-registration-options:
+  $ref: './me-second-factors-webauthn-registration-options.yaml'
+/me/second-factors/removal:
+  $ref: './me-second-factors-removal.yaml'
+/me/second-factors/{secondFactorId}:
+  $ref: './me-second-factor.yaml'
+/me/recovery-email:
+  $ref: './me-recovery-email.yaml'
+/me/mailbox:
+  $ref: './me-mailbox.yaml'
+/me/mailbox/client-configuration:
+  $ref: './me-mailbox-client-configuration.yaml'
+/me/mailbox/apple-profile:
+  $ref: './me-mailbox-apple-profile.yaml'
+/me/webmail-handoff:
+  $ref: './me-webmail-handoff.yaml'
+/password-resets:
+  $ref: './password-resets.yaml'
+/password-resets/token-check:
+  $ref: './password-resets-token-check.yaml'
+/password-resets/webauthn-challenge:
+  $ref: './password-resets-webauthn-challenge.yaml'
+/password-resets/completion:
+  $ref: './password-resets-completion.yaml'
+/mailboxes/mail-settings/bulk-actions:
+  $ref: './mailbox-mail-settings-bulk-actions.yaml'
+/mailboxes/{mailbox}/app-passwords:
+  $ref: './mailbox-app-passwords.yaml'
+/mailboxes/{mailbox}/app-passwords/{appPasswordId}:
+  $ref: './mailbox-app-password.yaml'
+/mailboxes/{mailbox}/temporary-aliases:
+  $ref: './mailbox-temporary-aliases.yaml'
+/mailboxes/{mailbox}/temporary-aliases/{temporaryAlias}:
+  $ref: './mailbox-temporary-alias.yaml'
+/mailboxes/{mailbox}/temporary-alias-domains:
+  $ref: './mailbox-temporary-alias-domains.yaml'
+/mailboxes/{mailbox}/push-notifications:
+  $ref: './mailbox-push-notifications.yaml'
+/mailboxes/{mailbox}/push-notifications/verification:
+  $ref: './mailbox-push-notifications-verification.yaml'
+/mailboxes/{mailbox}/mail-settings:
+  $ref: './mailbox-mail-settings.yaml'
+/mailboxes/{mailbox}/recent-logins:
+  $ref: './mailbox-recent-logins.yaml'
+/mailboxes/{mailbox}/activesync-cache:
+  $ref: './mailbox-activesync-cache.yaml'
+/mailboxes/{mailbox}/groupware-profile:
+  $ref: './mailbox-groupware-profile.yaml'
+/mailboxes/{mailbox}/sieve-filters:
+  $ref: './mailbox-sieve-filters.yaml'
+/mailboxes/{mailbox}/sieve-filters/{sieveFilterId}:
+  $ref: './mailbox-sieve-filter.yaml'
+/mailboxes/{mailbox}/active-sieve-script:
+  $ref: './mailbox-active-sieve-script.yaml'
+/sieve-filters:
+  $ref: './sieve-filters.yaml'
+/sieve-filters/validation:
+  $ref: './sieve-filters-validation.yaml'

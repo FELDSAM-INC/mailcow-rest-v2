@@ -1,0 +1,57 @@
+get:
+  operationId: getOwnAppleProfile
+  tags: [Own account]
+  summary: Download an Apple connection profile
+  description: |
+    Returns an unsigned Apple connection profile (`.mobileconfig`) for the signed-in mailbox, with
+    the payloads, keys and identifiers of legacy `mobileconfig.php`: the IMAP account with its SMTP
+    server and, for `emailAndDav`, a CalDAV and a CardDAV account. No password is embedded; the
+    device asks for it. Mailbox users only; not available to API keys or restricted sessions.
+    Changes nothing.
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../../components/parameters/AppleProfileVariant.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/AppleProfileFile.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createOwnAppleProfileWithAppPassword
+  tags: [Own account]
+  summary: Download an Apple connection profile with a new app password
+  description: |
+    Creates a new app password for the signed-in mailbox (IMAP and SMTP, plus CalDAV/CardDAV for
+    `emailAndDav`; active; a generated password) and returns the profile with that password
+    embedded (legacy `?app_password`). The password appears only in the file. Needs the
+    `appPasswds` permission (`permission-flag-required`). Audited as an app password creation. Same
+    access rules as `getOwnAppleProfile`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/AppleProfileRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/AppleProfileCreated.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

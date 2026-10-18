@@ -1,0 +1,11 @@
+type: object
+description: Pushover's verdict on the stored credentials. No notification is sent.
+required: [accepted, reason]
+properties:
+  accepted:
+    type: boolean
+  reason:
+    oneOf:
+      - type: string
+      - type: 'null'
+    description: Pushover's explanation when it did not accept the credentials.

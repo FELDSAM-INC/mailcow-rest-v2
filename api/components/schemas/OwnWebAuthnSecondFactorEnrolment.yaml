@@ -1,0 +1,22 @@
+type: object
+description: |
+  The authenticator's response to the options from
+  `POST /me/second-factors/webauthn-registration-options`. The options are consumed by this request.
+required: [type, name, credential]
+properties:
+  type:
+    type: string
+    const: webauthn
+  name:
+    type: string
+    minLength: 1
+    maxLength: 255
+  credential:
+    $ref: './WebAuthnRegistrationResponse.yaml'
+  currentPassword:
+    type: string
+    minLength: 1
+    maxLength: 4096
+    writeOnly: true
+    description: Required unless the session is restricted by `secondFactorSetup`.
+additionalProperties: false

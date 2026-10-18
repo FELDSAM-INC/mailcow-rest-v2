@@ -1,0 +1,30 @@
+type: object
+description: A Sieve filter that an administrator keeps for a mailbox (mailcow `sieve_filters`).
+required: [id, mailbox, description, kind, script, active, createdAt, modifiedAt, etag]
+properties:
+  id:
+    type: integer
+    minimum: 1
+  mailbox:
+    type: string
+  description:
+    type: string
+    maxLength: 255
+  kind:
+    $ref: './SieveFilterKind.yaml'
+  script:
+    type: string
+    description: The Sieve script (at most 65,535 bytes).
+  active:
+    type: boolean
+    description: Activating a filter deactivates the mailbox's other active filter of the same kind.
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string

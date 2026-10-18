@@ -1,0 +1,12 @@
+description: |
+  Problem of type `/api/v2/problems/second-factor-enrolment-failed` (status `400`): the TOTP code was
+  wrong, the WebAuthn response did not verify, or the Yubico service rejected the OTP. Nothing was
+  stored.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    properties:
+      attemptsRemaining:
+        type: integer
+        minimum: 0
+        description: For TOTP, wrong codes left before the enrolment is cancelled.

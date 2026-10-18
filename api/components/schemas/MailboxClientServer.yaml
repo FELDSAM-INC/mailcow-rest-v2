@@ -1,0 +1,24 @@
+type: object
+description: |
+  One mail service as mail clients reach it. `tlsPort` uses TLS from the first byte (implicit TLS),
+  `starttlsPort` starts in plain text and upgrades with STARTTLS. A port the server does not
+  publish is `null`.
+required: [host, tlsPort, starttlsPort]
+properties:
+  host:
+    type: string
+    examples: [mail.example.org]
+  tlsPort:
+    oneOf:
+      - type: integer
+        minimum: 1
+        maximum: 65535
+      - type: 'null'
+    examples: [993]
+  starttlsPort:
+    oneOf:
+      - type: integer
+        minimum: 1
+        maximum: 65535
+      - type: 'null'
+    examples: [143]

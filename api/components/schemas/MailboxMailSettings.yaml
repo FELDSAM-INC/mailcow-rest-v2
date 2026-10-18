@@ -1,0 +1,22 @@
+type: object
+description: |
+  How mail of a mailbox is handled. `taggedMailHandling` decides what happens to
+  `local+tag@domain` (mailcow's shared store). `tlsEnforceInbound` refuses mail delivered to the
+  mailbox over a connection without TLS; `tlsEnforceOutbound` refuses to send its mail to servers
+  without TLS. TLS enforcement also covers the mailbox's alias-domain addresses and aliases whose
+  only target is the mailbox; mail that cannot meet it is bounced.
+required: [mailbox, taggedMailHandling, tlsEnforceInbound, tlsEnforceOutbound, etag]
+properties:
+  mailbox:
+    type: string
+  taggedMailHandling:
+    $ref: './MailboxTaggedMailHandling.yaml'
+  tlsEnforceInbound:
+    type: boolean
+    description: '`mailbox.attributes.tls_enforce_in`.'
+  tlsEnforceOutbound:
+    type: boolean
+    description: '`mailbox.attributes.tls_enforce_out`.'
+  etag:
+    type: string
+    description: Version tag over these three settings only.

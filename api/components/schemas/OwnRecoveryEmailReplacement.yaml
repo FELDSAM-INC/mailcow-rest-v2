@@ -1,0 +1,19 @@
+type: object
+description: |
+  Sets, changes or removes the recovery address. Needs the current password, and the `pwReset`
+  permission unless the address stays the same.
+required: [address, currentPassword]
+properties:
+  address:
+    oneOf:
+      - type: string
+        maxLength: 255
+        description: A valid e-mail address, or the empty string to remove it.
+      - type: 'null'
+    description: '`null` or `""` removes the recovery address.'
+  currentPassword:
+    type: string
+    minLength: 1
+    maxLength: 4096
+    writeOnly: true
+additionalProperties: false

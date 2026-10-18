@@ -1,0 +1,22 @@
+get:
+  operationId: getOwnMailboxOverview
+  tags: [Own account]
+  summary: Read my mailbox overview
+  description: |
+    Returns the signed-in mailbox user's mailbox at a glance, as the legacy user page shows it:
+    storage and messages against the quota, protocol access, webmail settings, the password-changed
+    time, the recovery address, the addresses that deliver to the mailbox, the addresses it may send
+    as, the domains for temporary aliases and counts of active app passwords and temporary aliases.
+    Mailbox users only; administrators and domain administrators get `forbidden`. Not available to
+    API keys or restricted sessions.
+  security:
+    - sessionCookie: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxOverviewResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

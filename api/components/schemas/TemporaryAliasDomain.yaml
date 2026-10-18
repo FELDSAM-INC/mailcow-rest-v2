@@ -1,0 +1,12 @@
+type: object
+description: A domain in which temporary aliases of the mailbox may be created.
+required: [domain, domainUnicode, kind]
+properties:
+  domain:
+    type: string
+    description: ASCII form.
+  domainUnicode:
+    type: string
+  kind:
+    type: string
+    enum: [mailboxDomain, aliasDomain]

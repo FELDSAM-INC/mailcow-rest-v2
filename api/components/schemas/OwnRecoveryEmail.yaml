@@ -1,0 +1,17 @@
+type: object
+description: |
+  The mailbox's password recovery address (mailcow `mailbox.attributes.recovery_email`), where
+  password reset messages are sent. Shared with the legacy UI, where an administrator can also set
+  it (feature 003).
+required: [address, etag]
+properties:
+  address:
+    oneOf:
+      - type: string
+        format: email
+        maxLength: 255
+      - type: 'null'
+    description: '`null` when none is set.'
+  etag:
+    type: string
+    description: Version tag of the stored address, equal to the `ETag` header.

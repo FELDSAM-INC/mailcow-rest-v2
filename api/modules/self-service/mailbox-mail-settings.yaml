@@ -1,0 +1,68 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+get:
+  operationId: getMailboxMailSettings
+  tags: [Mailbox self-service]
+  summary: Read the mail settings of a mailbox
+  description: |
+    Returns the tagged-mail handling and the inbound and outbound TLS enforcement of the mailbox.
+    Same callers as `listAppPasswords`; reading needs no permission flag. `503` when mailcow's
+    shared store is unavailable.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxMailSettingsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SelfServiceTemporaryFailure.yaml'
+patch:
+  operationId: updateMailboxMailSettings
+  tags: [Mailbox self-service]
+  summary: Change the mail settings of a mailbox
+  description: |
+    Changes the values sent; the others keep their current value. Tagged-mail handling is stored in
+    mailcow's shared store and TLS enforcement in the mailbox, where legacy stores them, so the mail
+    filter and the mail server apply them to the next message. Changing the tagged-mail handling
+    needs `delimiterAction`, changing TLS enforcement needs `tlsPolicy` (domain administrators hold
+    both); values sent equal to their current value need no flag. Session or read-write key.
+    Audited. `503` leaves no partial change.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/MailboxMailSettingsPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/MailboxMailSettingsResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SelfServiceTemporaryFailure.yaml'

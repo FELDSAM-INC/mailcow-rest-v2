@@ -1,0 +1,16 @@
+description: The second factor was enrolled and is active.
+headers:
+  Location:
+    description: Absolute path of the created resource.
+    required: true
+    schema:
+      type: string
+      format: uri-reference
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/OwnSecondFactor.yaml'

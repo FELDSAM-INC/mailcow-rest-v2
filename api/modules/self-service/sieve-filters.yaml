@@ -1,0 +1,47 @@
+get:
+  operationId: listSieveFilters
+  tags: [Sieve filters]
+  summary: List the Sieve filters of all mailboxes in scope
+  description: |
+    Lists the Sieve filters of every mailbox in the caller's scope, with pagination instead of
+    legacy's per-domain loop. Sorted by mailbox and then description by default. `q` searches the
+    description and the mailbox. Administrators and domain administrators, from a session or a key;
+    reading needs no permission flag. Mailbox users list their own filters with
+    `listMailboxSieveFilters`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/SieveFilterSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: mailbox
+      in: query
+      required: false
+      description: Only filters of this mailbox (any letter case, domain in ASCII or Unicode form).
+      schema:
+        type: string
+        maxLength: 255
+    - name: kind
+      in: query
+      required: false
+      schema:
+        $ref: '../../components/schemas/SieveFilterKind.yaml'
+    - name: active
+      in: query
+      required: false
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/SieveFilterListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

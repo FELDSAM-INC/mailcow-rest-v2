@@ -1,0 +1,71 @@
+get:
+  operationId: listOwnSecondFactors
+  tags: [Own account]
+  summary: List my second factors
+  description: |
+    Lists every second-factor entry of the signed-in account (TOTP, WebAuthn security keys, Yubico
+    OTP and deprecated U2F or HOTP entries), wherever it was enrolled, active or not, without any
+    secret material. The entry that completed the current sign-in is marked. Passkeys are listed by
+    `GET /me/passkeys`. `q` searches the name. Available in a session restricted by a forced
+    second-factor setup. Not available to API keys.
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/OwnSecondFactorSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/OwnSecondFactorListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: enrolOwnSecondFactor
+  tags: [Own account]
+  summary: Enrol a second factor
+  description: |
+    Enrols a TOTP authenticator app (after `POST /me/second-factors/totp-enrolment`), a WebAuthn
+    security key (after `POST /me/second-factors/webauthn-registration-options`) or a YubiKey in
+    Yubico OTP mode, stored where legacy mailcow stores second factors and active at once, so it
+    completes the second-factor step of both UIs from the next sign-in. An account may have several
+    entries of each type.
+
+    The current password is required, except in a session restricted by a forced second-factor
+    setup, which this enrolment resolves at once. Administrators, domain administrators and
+    mailboxes with the mailcow source only (`password-managed-externally` otherwise). A Yubico OTP
+    is verified with the Yubico service using the given credentials (`503` when it cannot be
+    reached; nothing is stored). Not available to API keys. Audited, without secrets.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/OwnSecondFactorEnrolmentRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/OwnSecondFactorCreated.yaml'
+    '400':
+      $ref: '../../components/responses/OwnSecondFactorEnrolmentRejected.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '429':
+      $ref: '../../components/responses/TooManyRequests.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SelfServiceTemporaryFailure.yaml'

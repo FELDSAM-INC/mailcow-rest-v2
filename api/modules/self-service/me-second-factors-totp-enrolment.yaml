@@ -1,0 +1,22 @@
+post:
+  operationId: startOwnTotpEnrolment
+  tags: [Own account]
+  summary: Start a TOTP enrolment
+  description: |
+    Starts a TOTP enrolment bound to this session and returns, exactly once, a new random 160-bit
+    secret, its `otpauth://` provisioning address with the account's username and the server's
+    issuer name, and a QR code of that address. Codes have 6 digits, 30-second steps and SHA-1. The
+    enrolment expires after 10 minutes or five wrong codes; a new start replaces it. Same access
+    rules as `enrolOwnSecondFactor`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '200':
+      $ref: '../../components/responses/OwnTotpEnrolmentResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

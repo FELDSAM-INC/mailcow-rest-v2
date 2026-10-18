@@ -1,0 +1,24 @@
+get:
+  operationId: getSelfServiceCapabilities
+  tags: [Self-service]
+  summary: Read the self-service capabilities
+  description: |
+    Returns the server settings and limits that clients of the self-service operations need before
+    they submit, read from the server's current configuration. Signed-out callers get only
+    `passwordReset`, so the sign-in page offers "Forgot password" only when it works.
+    Authenticated callers (a session, also a restricted one, or any API key, read-only included)
+    get every member; sessions also get `account`, which says for example whether the account must
+    keep a second factor. Changes nothing.
+  security:
+    - {}
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/SelfServiceCapabilitiesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

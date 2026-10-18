@@ -1,0 +1,79 @@
+type: object
+description: |
+  How to set up a mail client by hand for the signed-in mailbox, from the server's autodiscover
+  settings (the values the legacy client setup help passes to the mailcow documentation). Mail
+  clients authenticate with the address and the account's password, or with an app password.
+  CalDAV, CardDAV and ActiveSync are `null` when the groupware is disabled.
+required:
+  - address
+  - displayName
+  - imap
+  - pop3
+  - smtp
+  - caldav
+  - carddav
+  - activeSync
+  - authentication
+  - autodiscoverType
+  - outlookUsesActiveSync
+  - documentationUrl
+properties:
+  address:
+    type: string
+  displayName:
+    type: string
+  imap:
+    $ref: './MailboxClientServer.yaml'
+  pop3:
+    $ref: './MailboxClientServer.yaml'
+  smtp:
+    $ref: './MailboxClientServer.yaml'
+    description: '`tlsPort` is SMTPS, `starttlsPort` the submission port.'
+  caldav:
+    oneOf:
+      - $ref: '#/$defs/DavServer'
+      - type: 'null'
+  carddav:
+    oneOf:
+      - $ref: '#/$defs/DavServer'
+      - type: 'null'
+  activeSync:
+    oneOf:
+      - type: object
+        required: [url]
+        properties:
+          url:
+            type: string
+            format: uri
+            examples: [https://mail.example.org/Microsoft-Server-ActiveSync]
+      - type: 'null'
+  authentication:
+    type: string
+    const: password
+    description: Normal password authentication, with the account's password or an app password.
+  autodiscoverType:
+    type: string
+    enum: [activesync, imap]
+    description: The server's general autodiscover service type.
+  outlookUsesActiveSync:
+    type: boolean
+    description: Whether autodiscover sets Outlook up with ActiveSync (`useEASforOutlook`).
+  documentationUrl:
+    type: string
+    format: uri
+    description: The mailcow client documentation page with the parameters legacy appends.
+$defs:
+  DavServer:
+    type: object
+    required: [host, port, principalPath]
+    properties:
+      host:
+        type: string
+      port:
+        type: integer
+        minimum: 1
+        maximum: 65535
+        description: HTTPS port, TLS from the first byte.
+      principalPath:
+        type: string
+        examples: [/SOGo/dav/anna@example.org/]

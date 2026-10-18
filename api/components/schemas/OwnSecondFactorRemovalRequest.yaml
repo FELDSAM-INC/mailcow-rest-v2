@@ -1,0 +1,10 @@
+type: object
+description: Confirms the removal of all second factors with the current password.
+required: [currentPassword]
+properties:
+  currentPassword:
+    type: string
+    minLength: 1
+    maxLength: 4096
+    writeOnly: true
+additionalProperties: false

@@ -1,0 +1,10 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. Default `createdAt`; with the default sort the default order is `desc` (newest
+  first). Permanent aliases sort after every expiring one for `expiresAt`.
+schema:
+  type: string
+  enum: [address, expiresAt, createdAt]
+  default: createdAt

@@ -1,0 +1,33 @@
+type: object
+description: |
+  One second-factor entry of the signed-in account, wherever it was enrolled. Never contains a
+  secret, key handle, public key, certificate or Yubico credential.
+required: [id, type, name, active, usable, yubicoPublicId, usedForCurrentSignIn]
+properties:
+  id:
+    type: integer
+    minimum: 1
+    description: mailcow `tfa.id`.
+  type:
+    $ref: './OwnSecondFactorType.yaml'
+  name:
+    type: string
+    description: Name given at enrolment (`tfa.key_id`).
+    examples: [Phone]
+  active:
+    type: boolean
+    description: |
+      Inactive entries were disabled by an administrator; they become active again at the next
+      sign-in that finds no active second factor.
+  usable:
+    type: boolean
+    description: Whether this API accepts the entry at sign-in (`false` for `u2f` and `hotp`).
+  yubicoPublicId:
+    oneOf:
+      - type: string
+        pattern: '^[a-z]{12}$'
+      - type: 'null'
+    description: Public identifier of a Yubico OTP key (the first 12 characters of its OTPs), `null` for other types.
+  usedForCurrentSignIn:
+    type: boolean
+    description: Whether this entry completed the current session's sign-in.

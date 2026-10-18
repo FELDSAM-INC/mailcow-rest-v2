@@ -1,0 +1,26 @@
+description: |
+  A new app password was created and is embedded in the returned profile. Its password appears only
+  in this file and is never shown again. `Location` points to the new app password.
+headers:
+  Location:
+    description: Absolute path of the new app password.
+    required: true
+    schema:
+      type: string
+      format: uri-reference
+  Content-Disposition:
+    description: '`attachment; filename="<product name>.mobileconfig"`.'
+    required: true
+    schema:
+      type: string
+  Cache-Control:
+    description: Always `no-store`.
+    required: true
+    schema:
+      type: string
+      const: no-store
+content:
+  application/x-apple-aspen-config:
+    schema:
+      type: string
+      description: XML property list (`plist`) with the app password in `IncomingPassword`, `CalDAVPassword` and `CardDAVPassword`.

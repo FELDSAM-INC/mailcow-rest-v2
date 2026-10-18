@@ -1,0 +1,78 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+get:
+  operationId: listMailboxSieveFilters
+  tags: [Sieve filters]
+  summary: List the Sieve filters of a mailbox
+  description: |
+    Lists the mailbox's prefilters and postfilters. `q` searches the description. Administrators,
+    domain administrators (mailboxes of their domains) and mailbox users (their own mailbox), from a
+    session or a key.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/SieveFilterSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: kind
+      in: query
+      required: false
+      schema:
+        $ref: '../../components/schemas/SieveFilterKind.yaml'
+    - name: active
+      in: query
+      required: false
+      schema:
+        type: boolean
+  responses:
+    '200':
+      $ref: '../../components/responses/SieveFilterListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createSieveFilter
+  tags: [Sieve filters]
+  summary: Create a Sieve filter
+  description: |
+    Creates a prefilter or postfilter for the mailbox, active by default, stored where legacy
+    stores filters so the mail server applies it to the next delivered message. Activating it
+    deactivates the mailbox's other active filter of the same kind. The script must pass legacy's
+    Sieve validation (`sieveSyntax` with the parser's message) and fit 65,535 bytes. Administrators
+    and domain administrators with the `filters` flag (`permission-flag-required`); mailbox users get
+    `forbidden`. Session or read-write key. Audited, with the script only as its size.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/SieveFilterCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/SieveFilterCreated.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

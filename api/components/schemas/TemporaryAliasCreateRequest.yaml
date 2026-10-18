@@ -1,0 +1,27 @@
+type: object
+description: |
+  Creates a temporary alias with a random, readable address: two dot-separated parts of 6 to 8
+  letters alternating consonants and vowels, never equal to an existing address.
+required: [domain]
+properties:
+  domain:
+    type: string
+    maxLength: 255
+    description: |
+      The mailbox's domain or one of its alias domains (`GET
+      /mailboxes/{mailbox}/temporary-alias-domains`), in ASCII or Unicode form. Other domains are
+      refused (`notInList` with `allowed`).
+  description:
+    type: string
+    maxLength: 255
+    default: ''
+  lifetimeHours:
+    type: integer
+    minimum: 1
+    maximum: 87600
+    default: 8760
+  permanent:
+    type: boolean
+    default: false
+    description: A permanent alias never expires.
+additionalProperties: false

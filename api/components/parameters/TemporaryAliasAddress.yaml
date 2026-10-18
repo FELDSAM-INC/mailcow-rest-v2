@@ -1,0 +1,12 @@
+name: temporaryAlias
+in: path
+required: true
+description: |
+  Address of the temporary alias, in any letter case (percent-encode non-ASCII characters; `@` may
+  stay literal). An expired temporary alias, or one of another mailbox, answers `404`.
+schema:
+  type: string
+  minLength: 3
+  maxLength: 255
+  pattern: '^[^@/\s]+@[^@/\s]+$'
+  examples: [bavoki.rumesa@example.org]

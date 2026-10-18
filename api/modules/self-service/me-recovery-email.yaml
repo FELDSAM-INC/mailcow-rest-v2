@@ -1,0 +1,57 @@
+get:
+  operationId: getOwnRecoveryEmail
+  tags: [Own account]
+  summary: Read my recovery address
+  description: |
+    Returns the signed-in mailbox user's password recovery address, shared with the legacy UI.
+    Mailbox users with the mailcow source only; administrators and domain administrators get
+    `forbidden`, external-source mailboxes `password-managed-externally`. Not available to API
+    keys.
+  security:
+    - sessionCookie: []
+  responses:
+    '200':
+      $ref: '../../components/responses/OwnRecoveryEmailResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+put:
+  operationId: replaceOwnRecoveryEmail
+  tags: [Own account]
+  summary: Set, change or remove my recovery address
+  description: |
+    Sets the recovery address (a valid e-mail address of at most 255 characters) or removes it
+    (`null` or `""`), stored where legacy stores it. Needs the current password, and the `pwReset`
+    permission unless the address stays the same. Same access rules as `getOwnRecoveryEmail`.
+    Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/OwnRecoveryEmailReplacement.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/OwnRecoveryEmailResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '429':
+      $ref: '../../components/responses/TooManyRequests.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

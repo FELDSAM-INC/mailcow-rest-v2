@@ -122,6 +122,31 @@
   reset is available (FR-080). (agent decision: the cross-feature conventions ask each feature to
   expose such settings through its own capabilities read, as features 002 and 004 do; legacy renders
   them into its pages.)
+- Q: Can a client tell, before it offers a removal, that the account must keep a second factor? →
+  A: Yes. For a signed-in session, the self-service capabilities also describe the account: whether
+  it is required to keep at least one second factor (legacy `force_tfa`), whether it may change its
+  password here and whether it may manage second factors here (FR-080). (orchestrator decision: the
+  UI 005 spec found the gap; clients warn before a removal that FR-034 or FR-035 would refuse.)
+- Q: Can administrators and domain administrators learn the domains available for a mailbox's
+  temporary aliases? → A: Yes. Every caller who may manage a mailbox's temporary aliases can read the
+  domains available for them: the mailbox's domain and its alias domains (FR-081). (orchestrator
+  decision: the UI 005 spec found that only the user's own overview listed them, while
+  administrators create temporary aliases for mailboxes in their scope.)
+- Q: Are the Apple connection profile and the client configuration guide part of this feature? →
+  A: Yes. A mailbox user can download an Apple connection profile for their own mailbox as legacy
+  `mobileconfig.php` builds it (e-mail only, or e-mail with calendars and contacts), optionally with
+  a newly generated app password embedded, which appears only in the file, is audited and needs the
+  app-password permission. Legacy does not sign the profile, so neither does this API. A mailbox user
+  can also read the client configuration data that the legacy client setup help shows: host names,
+  ports, encryption and authentication per protocol (FR-082, FR-083). Autodiscover and autoconfig
+  stay in php-fpm. (orchestrator decision: the owner wants every legacy feature; the roadmap
+  allocation was updated.)
+- Q: Which error refuses a change that needs a permission flag, and how are bulk TLS changes
+  addressed? → A: The shared "permission flag required" error, which names the flag (FR-006,
+  FR-075), and the bulk TLS change is a `setTlsEnforcement` action sent with `targets` to the mail
+  settings' bulk-action path (FR-060). (orchestrator decision: cross-feature conventions on
+  permission refusals and bulk paths; this feature no longer defines its own "permission flag
+  missing" type.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -553,6 +578,40 @@ target and scan every record for secrets.
 
 ---
 
+### User Story 12 - Set up mail clients (Priority: P3)
+
+A user with a new iPhone downloads an Apple connection profile from the new web app, chooses the
+variant with calendars and contacts and asks for a new app password to be embedded, so that the
+phone is configured without typing anything. Another user sets up a desktop mail client by hand and
+reads the server names, ports and encryption for IMAP, SMTP and CalDAV from the client setup help.
+
+**Why this priority**: Autodiscover covers most clients, and the legacy UI still offers both, but
+users of the new web app should not need the legacy UI for it.
+
+**Independent Test**: Download both profile variants with and without an embedded app password,
+install them on iOS and macOS, and compare them with legacy `mobileconfig.php`. Read the client
+configuration with the groupware enabled and disabled and compare it with the legacy help link.
+
+**Acceptance Scenarios**:
+
+1. **Given** a mailbox user, **When** they download the e-mail-only profile, **Then** the file
+   contains the IMAP and SMTP payloads with the server's host name and TLS-wrapped ports, the
+   identifiers legacy writes, and no password, and no app password is created.
+2. **Given** a user with the app-password permission, **When** they download the full profile with
+   an embedded app password, **Then** an app password for IMAP, SMTP and CalDAV/CardDAV is created,
+   its password appears only in the file, and the creation is audited. **Given** a user without the
+   permission, **Then** the request is refused with the "permission flag required" error.
+3. **Given** a server with the groupware disabled, **When** the full profile is requested, **Then** it
+   is refused with "groupware disabled", and the client configuration lists no CalDAV, CardDAV or
+   ActiveSync entries.
+4. **Given** a server whose IMAP port is mapped to 10993, **When** the user reads the client
+   configuration, **Then** IMAP is reported on port 10993 with TLS, and the STARTTLS port as
+   configured.
+5. **Given** an administrator, **When** they request a profile or the client configuration for
+   themselves, **Then** the request is refused as forbidden.
+
+---
+
 ### Edge Cases
 
 - **Username is a mailbox and an administrator at the same time**: self-service acts on the account
@@ -632,6 +691,10 @@ target and scan every record for secrets.
   change (feature 001, FR-029 there).
 - **Audit record cannot be written**: the change it would record does not succeed (feature 001
   convention).
+- **Embedded app password named after a long user agent**: the name is cut to the 255 characters
+  that the storage allows.
+- **Profile requested through a non-standard HTTPS port**: the CalDAV and CardDAV ports follow the
+  port of the request, as legacy's auto-detection does, unless the operator configured them.
 
 ## Requirements *(mandatory)*
 
@@ -641,9 +704,10 @@ target and scan every record for secrets.
 
 - **FR-001**: Every signed-in account MUST be able to use the own-account functions of this feature
   for itself only: password, forced actions and second factors for every role; recovery address,
-  mailbox overview and webmail hand-off for mailbox users. For the mailbox objects of this feature
-  (app passwords, temporary aliases, Sieve filters, active Sieve script, push notification
-  settings, mailbox settings, recent logins and groupware data), administrators MUST reach every
+  mailbox overview, webmail hand-off, Apple connection profile and client configuration for mailbox
+  users. For the mailbox objects of this feature (app passwords, temporary aliases and their
+  domains, Sieve filters, active Sieve script, push notification settings, mailbox settings, recent
+  logins and groupware data), administrators MUST reach every
   mailbox, domain administrators MUST reach exactly the mailboxes of the domains assigned to them
   through an active assignment, and mailbox users MUST reach only their own mailbox. Resources
   (location, thing and group) are not mailboxes for any operation of this feature.
@@ -657,8 +721,9 @@ target and scan every record for secrets.
   flags, and a read-only key MUST be refused on every operation that changes state (feature 001,
   FR-033 and FR-039 there). Validating a Sieve script and reading the active Sieve script count as
   reads. Verifying push notification settings counts as a change, because it acts on an external
-  service for the mailbox. Own-account functions (own password, own second factors, webmail
-  hand-off) MUST NOT be usable with any API key and MUST be refused as forbidden. A restricted
+  service for the mailbox. Own-account functions (own password, own second factors, recovery
+  address, mailbox overview, webmail hand-off, Apple connection profile and client configuration)
+  MUST NOT be usable with any API key and MUST be refused as forbidden. A restricted
   session (feature 001, FR-014 there) MUST be refused, except as FR-017 allows.
 - **FR-005**: The operations MUST be authorised as follows. "Own domains" means the mailboxes of the
   domain administrator's domains; a flag in brackets is needed for changes only (FR-006).
@@ -672,8 +737,10 @@ target and scan every record for secrets.
   | Own recovery address | Forbidden | Forbidden | Mailcow source (`pw_reset`) |
   | Password reset through the recovery address | Not applicable | Not applicable | Signed out, mailcow-source mailboxes |
   | Own mailbox overview, webmail hand-off | Forbidden | Forbidden | Own mailbox |
+  | Apple connection profile, client configuration (FR-082, FR-083) | Forbidden | Forbidden | Own mailbox; an embedded app password needs `app_passwds` |
   | App passwords | Any mailbox | Own domains (`app_passwds` of the domain administrator) | Own (`app_passwds`) |
   | Temporary aliases | Any mailbox | Own domains | Own (`spam_alias`) |
+  | Domains available for temporary aliases (FR-081) | Any mailbox | Own domains | Own |
   | List and inspect Sieve filters | Any mailbox | Own domains | Own |
   | Create, change, delete Sieve filters | Any mailbox | Own domains (`filters` of the domain administrator) | Forbidden |
   | Validate a Sieve script | Yes | Yes | Forbidden |
@@ -695,7 +762,7 @@ target and scan every record for secrets.
   - an administrator acts with every flag set.
 
   Reads MUST NOT need the flag. A change that needs a flag the caller lacks MUST be refused as a
-  whole with the "permission flag missing" error, which names the flag, and nothing MUST change. A
+  whole with the "permission flag required" error, which names the flag, and nothing MUST change. A
   value sent equal to its current value MUST NOT count as a change.
 - **FR-007**: A mailbox MUST be addressed by its full address and normalised as in feature 003
   (FR-007 there).
@@ -1040,8 +1107,9 @@ target and scan every record for secrets.
   - work only in the browser that requested it;
   - replace an existing legacy UI sign-in of that browser, which the contract MUST state;
   - end when the session of this API that created it ends, whether by sign-out, expiry or FR-011 and
-    FR-025, and at the latest after the legacy session lifetime of inactivity (3 hours by default);
-  - be reusable for webmail on behalf of a user (feature 007, FR-053 and FR-054 there).
+    FR-025 (at once, except after an expiry, which no request reveals: then within one minute), and
+    at the latest after the legacy session lifetime of inactivity (3 hours by default);
+  - be reusable for webmail on behalf of a user (feature 007, FR-054 to FR-056 there).
 - **FR-069**: A mailbox user MUST be able to read an overview of their own mailbox:
   - address, display name, domain and authentication source;
   - quota, storage used, message count and percentage used, as feature 003 computes them;
@@ -1068,12 +1136,46 @@ target and scan every record for secrets.
   - the temporary alias lifetime range and default, the recent-login period range and default, the
     bulk limit, and the default and maximum page sizes;
   - the size limits of this feature (names, descriptions, scripts, notification texts, sender
-    lists) and Pushover's built-in sounds.
+    lists) and Pushover's built-in sounds;
+  - for a signed-in session, the account itself: whether it is required to keep at least one second
+    factor (legacy `force_tfa`), so that clients can warn before a removal that FR-034 or FR-035
+    would refuse; whether it may change its password here (FR-013); and whether it may manage second
+    factors here (FR-028).
 
   Signed-out clients MUST be able to read whether password reset is available and the token
   lifetime, so that the sign-in page offers "Forgot password" only when it works. The values MUST
   reflect the server's current configuration, MUST NOT include any secret, and the read MUST change
   nothing. Read-only keys MAY use it.
+
+#### Temporary-alias domains, Apple connection profile and client configuration
+
+- **FR-081**: Every caller who may manage the temporary aliases of a mailbox (FR-005) MUST be able
+  to read the domains available for that mailbox's temporary aliases: the mailbox's domain first,
+  then its alias domains, as FR-043 accepts them. The list MUST be the same as the overview's
+  (FR-069) for the mailbox user.
+- **FR-082**: A mailbox user with a full session MUST be able to download an Apple connection
+  profile (`.mobileconfig`) for their own mailbox, with the payloads, keys and identifiers that legacy
+  `mobileconfig.php` writes: an IMAP account with its SMTP server on the TLS-wrapped ports of the
+  server's autodiscover settings and, unless the e-mail-only variant is chosen, a CalDAV and a
+  CardDAV account (`/SOGo/dav/<address>`). The file name MUST be the product name followed by
+  `.mobileconfig`. The profile MUST NOT be signed, as in legacy. All values MUST be escaped for XML.
+  - The client MAY ask for a new app password to be embedded. It MUST be created as in FR-038, with
+    a generated password, the protocols IMAP and SMTP (plus CalDAV/CardDAV for the full variant),
+    active, and named as legacy names it (`iPad`, `iPhone` or `Mac` after the client's user agent,
+    otherwise the user agent) unless the client gives a name. It MUST need the app-password
+    permission (FR-006), MUST be audited as an app password creation, and its password MUST appear
+    only in that file.
+  - When the groupware is disabled, the variant with calendars and contacts MUST be refused with
+    the "groupware disabled" error.
+- **FR-083**: A mailbox user with a full session MUST be able to read the client configuration of
+  their own mailbox that the legacy client setup help shows: the address and display name; for
+  IMAP, POP3 and SMTP the host name, the TLS-wrapped port and the STARTTLS port; for CalDAV and
+  CardDAV the host name, port and principal path, and the ActiveSync address, only when the
+  groupware is enabled; the authentication method (the account's password or an app password); the
+  general autodiscover type and whether Outlook is set up with ActiveSync; and the address of the
+  client documentation page with the parameters legacy appends to it. The values MUST come from the
+  server's autodiscover settings, including the operator's local overrides and the ports configured
+  in `mailcow.conf`.
 
 #### Version tags
 
@@ -1113,11 +1215,12 @@ target and scan every record for secrets.
 
 - **FR-075**: Errors MUST follow feature 001's conventions (FR-049 and FR-055 there). This feature
   MUST document at least these error types: current password incorrect, password managed externally,
-  permission flag missing (with the flag), password reset not available, invalid reset token,
+  password reset not available, invalid reset token,
   enrolment expired, last second factor, second factor required by policy, push notifications not
   configured, groupware disabled, outdated version and temporary failure (with the unavailable
   service), and reuse feature 001's second factor required, second factor failed, too many requests
-  and pending action required. Validation errors MUST carry stable rule codes with their parameters,
+  and pending action required, and the shared "permission flag required" error, which names the flag
+  (`docs/conventions.md`). Validation errors MUST carry stable rule codes with their parameters,
   including each unmet password rule, the lifetime range, the period range, the size limits and the
   parser message.
 - **FR-076**: Passwords, current passwords, second-factor secrets after the enrolment start, Yubico
@@ -1169,13 +1272,18 @@ follows. Actions are `/api/v1` names; *form* marks legacy UI form handlers and h
 | `delete/sogo_profile` | `mailbox('delete', 'sogo_profile')` | FR-065, FR-066 |
 | Webmail SSO ("Webmail" button, `sogo-auth.php`, session flag `sogo-sso-user-allowed`) | `set_user_loggedin_session()`, `sogo-auth.php` | FR-067, FR-068 |
 | User page "Overview" and "Mailbox details" | `mailbox('get', 'mailbox_details')`, `user_get_alias_details()` | FR-069 |
+| Domain select of the temporary-alias form (mailbox domain and alias domains) | `user_get_alias_details()['alias_domains']`, `mailbox('add', 'time_limited_alias')` | FR-081 |
+| *form* Apple connection profile links on the user page (`mobileconfig.php`, `?only_email`, `?app_password`) | `mobileconfig.php`, `password_generate()`, `app_passwd('add')` | FR-082 |
+| *form* client configuration help link on the user page | `user.php` (`clientconfigstr`), `$autodiscover_config` | FR-083 |
 
 Parts of the legacy user page and related screens that belong to other features: quarantine
 notification frequency and category (006), the spam filter tab (006), sync jobs (008), passkeys
 (001), the global prefilter and postfilter on the "Filters" tab and the Sieve presets (013), the
 reset message template (013), the password policy (003 read, 013 edit), and webmail on behalf of a
-user (007). The Apple connection profile download and the client configuration help are internal
-endpoints that stay in php-fpm (feature 014); they remain available in the legacy UI.
+user (007). The autodiscover and autoconfig endpoints that mail clients call (`autodiscover.php`,
+`autoconfig.php`) are internal endpoints that stay in php-fpm (feature 014). The Apple connection
+profile and the client configuration help, which earlier drafts left unallocated, belong to this
+feature (FR-082, FR-083), as `docs/roadmap.md` now allocates them.
 
 ### Legacy Parity and Deliberate Deviations
 
@@ -1189,9 +1297,10 @@ Parity reference: `source_code/data/web/inc/functions.inc.php` (`edit_user_accou
 `sogo_profile`), `functions.pushover.inc.php`, `functions.admin.inc.php` and
 `functions.domain_admin.inc.php` (`edit`), `functions.acl.inc.php` (`to_session`),
 `functions.auth.inc.php` (`apppass_login`), `triggers.user.inc.php`, `triggers.global.inc.php`,
-`sessions.inc.php`, `sogo-auth.php`, `reset-password.php`, `json_api.php`, `vars.inc.php`
-(`PW_RESET_TOKEN_LIMIT`, `PW_RESET_TOKEN_LIFETIME`, `OTP_LABEL`, `WEBAUTHN_UV_FLAG_REGISTER`,
-`FIDO2_FORMATS`, `SESSION_LIFETIME`), `init_db.inc.php` (tables `mailbox`, `admin`, `tfa`,
+`sessions.inc.php`, `sogo-auth.php`, `reset-password.php`, `json_api.php`, `mobileconfig.php`,
+`user.php` (`clientconfigstr`), `vars.inc.php` (`PW_RESET_TOKEN_LIMIT`, `PW_RESET_TOKEN_LIFETIME`,
+`OTP_LABEL`, `WEBAUTHN_UV_FLAG_REGISTER`, `FIDO2_FORMATS`, `SESSION_LIFETIME`,
+`$autodiscover_config`), `init_db.inc.php` (tables `mailbox`, `admin`, `tfa`,
 `app_passwd`, `spamalias`, `sieve_filters` and the views `sieve_before`/`sieve_after`, `pushover`,
 `sasl_log`, `reset_password`, `user_acl`, `da_acl`, `sogo_*`, `logs`), the templates `user.twig`,
 `user/*.twig`, `domainadmin.twig`, `admin/tab-config-admins.twig`, `modals/user.twig`,
@@ -1268,11 +1377,18 @@ this feature:
 | Webmail single sign-on | The legacy session gets `sogo-sso-user-allowed` at sign-in; nginx asks `sogo-auth.php`, which reads the session from the shared store; blocked while actions are pending; `sasl_log` entry `SSO` | Webmail-only hand-off for the requesting browser, with the same entry and blocks (FR-067, FR-068). **Deviation**: a link between the two implementations' sessions, which constitution V allows when a spec states it |
 | Overview | `mailbox_details` and `user_get_alias_details`, comments HTML-encoded | Same content, plain text (FR-069) |
 | Server settings for the screens | Rendered into the pages: `SKIP_SOGO` hides webmail and the groupware resets; the "Forgot password" link is always shown | Readable self-service capabilities, also signed out for the reset availability (FR-080), an addition |
+| Apple connection profile | IMAP/SMTP and CalDAV/CardDAV payloads, `only_email` variant, unsigned; `app_password` generates a password of at least 16 characters named after the device (`iPad`, `iPhone`, `Mac` or the user agent) for IMAP, SMTP and DAV without checking `app_passwds`; values partly inserted into the XML unescaped; DAV payloads offered even with `SKIP_SOGO=y` | Same payloads, keys and identifiers, unsigned; the embedded app password follows FR-038 (32 characters) and needs `app_passwds`; every value XML-escaped; the DAV variant refused when the groupware is disabled (FR-082). **Deviation** |
+| Client configuration help | A link to the mailcow client documentation with `host`, `email`, `name`, `ui`, `port` and `outlookEAS` in the fragment | Structured data per protocol from the same autodiscover settings, plus the same documentation link (FR-083), an addition |
+| Temporary-alias domains | Shown only in the user's own form | Also readable by administrators and domain administrators for a mailbox in scope (FR-081), an addition |
 | Out-of-scope objects | `access_denied` or an empty result | "Not found" (FR-003) |
 | Permission flags | Loaded into the legacy session at sign-in | Evaluated on every request (FR-002) |
 | Mass actions on temporary aliases, app passwords and filters | One request with a list of items | One request per item (FR-079). **Deviation** |
 | Concurrent edits | Last write wins | Version tags (FR-070, FR-071). **Deviation** |
 | Change log | Entries in the `logs` table | This API's audit log (FR-073), as in feature 001. **Deviation** |
+| Removing one second factor while exactly one entry is active (added by the plan) | Refused for any entry, also an inactive one | Refused only when the entry itself is the only active one (FR-034). **Deviation** |
+| `force_tfa` check on removal (added by the plan) | Compares the JSON-encoded value with `'1'`, which never matches the stored string `"1"`, so removals are never blocked | The flag blocks removals (FR-034, FR-035). **Deviation** (bug fix) |
+| Webmail hand-off after this API's session expires (added by the plan) | Not applicable (legacy sessions carry the SSO flag themselves) | Ended by a background sweep within one minute of the expiry; at once for sign-out, invalidation, FR-011 and FR-025 (FR-068) |
+| Small presentation differences (added by the plan) | TOTP QR code as PNG; WebAuthn registration timeout hint 30 s; reset link with the request's scheme; Apple profile payload UUIDs from an MD5-based GUID; Thunderbird connector version in the client help link; Pushover verification without a timeout | QR code as SVG; timeout hint 300 s, matching the 5-minute validity; reset link always `https`; random v4 UUIDs; no connector version (the file lives outside the API container); 10-second timeout. **Deviation** (no effect on stored data) |
 
 ### Key Entities *(include if feature involves data)*
 
@@ -1304,7 +1420,11 @@ this feature:
   sign-in of one browser for one mailbox, tied to the session of this API that created it.
 - **Mailbox overview** (computed): the read-only view of FR-069.
 - **Self-service capabilities** (computed from the server configuration): the settings and limits
-  of FR-080.
+  of FR-080, and for a session the account's own second-factor and password rules.
+- **Apple connection profile** (computed, FR-082): an unsigned `.mobileconfig` file for one mailbox,
+  optionally carrying a newly created app password.
+- **Client configuration** (computed, FR-083): host names, ports, encryption and authentication per
+  protocol, from the server's autodiscover settings.
 - **Audit record** (owned by this API, defined in feature 001): extended with the target types of
   FR-073.
 
@@ -1386,7 +1506,7 @@ this feature:
   - sync jobs (008);
   - identity-provider sign-in and password changes for external sources (012);
   - the password policy, the reset message template, global Sieve filters and Sieve presets (013);
-  - the Apple connection profile and client configuration help (internal endpoints, 014);
+  - the autodiscover and autoconfig endpoints that mail clients call (internal endpoints, 014);
   - batch operations other than the bulk TLS change.
 - **Dependencies**:
   - the upstream mailcow database schema of the supported release;

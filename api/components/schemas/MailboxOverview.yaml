@@ -1,0 +1,151 @@
+type: object
+description: |
+  The signed-in mailbox user's own mailbox at a glance, as the legacy user page shows it. Every
+  text is plain text.
+required:
+  - address
+  - localPart
+  - domain
+  - domainUnicode
+  - displayName
+  - authSource
+  - quota
+  - protocolAccess
+  - webmail
+  - passwordChangedAt
+  - recoveryEmail
+  - directAliases
+  - sharedAliases
+  - aliasDomainAddresses
+  - sendAs
+  - catchAllAddresses
+  - temporaryAliasDomains
+  - activeAppPasswords
+  - activeTemporaryAliases
+  - pushNotificationsActive
+properties:
+  address:
+    type: string
+    examples: [anna@example.org]
+  localPart:
+    type: string
+  domain:
+    type: string
+    description: Domain in ASCII form.
+  domainUnicode:
+    type: string
+    description: Domain in its readable (Unicode) form.
+  displayName:
+    type: string
+    description: The mailbox's display name, possibly empty.
+  authSource:
+    $ref: './MailboxAuthSource.yaml'
+  quota:
+    type: object
+    description: As feature 003 computes it from the mail server's usage record.
+    required: [quotaBytes, usedBytes, messages, percentUsed]
+    properties:
+      quotaBytes:
+        type: integer
+        minimum: 0
+        description: 0 means unlimited.
+      usedBytes:
+        type: integer
+        minimum: 0
+      messages:
+        type: integer
+        minimum: 0
+      percentUsed:
+        oneOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        description: Rounded whole percent; `null` for an unlimited quota.
+  protocolAccess:
+    $ref: './MailboxProtocolAccess.yaml'
+  webmail:
+    type: object
+    required: [enabled, redirectAfterSignIn]
+    properties:
+      enabled:
+        type: boolean
+        description: Whether the server runs the groupware (`SKIP_SOGO` not set).
+      redirectAfterSignIn:
+        type: boolean
+        description: |
+          The legacy "SOGo access" preference: after signing in, the user is sent to webmail. A
+          client honours it by calling `POST /me/webmail-handoff` and opening the address.
+  passwordChangedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+    description: '`null` when legacy never recorded it.'
+  recoveryEmail:
+    oneOf:
+      - type: string
+      - type: 'null'
+    description: The recovery address for the mailcow source; `null` when none is set or for an external source.
+  directAliases:
+    type: array
+    description: Aliases whose only target is this mailbox.
+    items:
+      $ref: '#/$defs/AliasEntry'
+  sharedAliases:
+    type: array
+    description: Aliases with this mailbox among several targets.
+    items:
+      $ref: '#/$defs/AliasEntry'
+  aliasDomainAddresses:
+    type: array
+    description: The mailbox's local part in each alias domain of its domain.
+    items:
+      type: object
+      required: [address, aliasDomain]
+      properties:
+        address: {type: string}
+        aliasDomain: {type: string}
+  sendAs:
+    type: object
+    description: What the mailbox may send as (mailcow `sender_acl`), besides its own addresses and aliases.
+    required: [addresses, domains, anyAddress]
+    properties:
+      addresses:
+        type: array
+        items: {type: string}
+      domains:
+        type: array
+        description: Whole domains (`@domain`), including the alias domains of such a domain.
+        items: {type: string}
+      anyAddress:
+        type: boolean
+        description: The mailbox may send as any address (`*`).
+  catchAllAddresses:
+    type: array
+    description: Catch-all aliases (`@domain`) that deliver to this mailbox.
+    items: {type: string}
+  temporaryAliasDomains:
+    type: array
+    description: Domains available for temporary aliases (FR-081), the mailbox's domain first.
+    items: {type: string}
+  activeAppPasswords:
+    type: integer
+    minimum: 0
+  activeTemporaryAliases:
+    type: integer
+    minimum: 0
+    description: Permanent or not yet expired temporary aliases.
+  pushNotificationsActive:
+    type: boolean
+$defs:
+  AliasEntry:
+    type: object
+    required: [address, publicComment]
+    properties:
+      address:
+        type: string
+      publicComment:
+        oneOf:
+          - type: string
+          - type: 'null'
+        description: The alias's public comment, as plain text.

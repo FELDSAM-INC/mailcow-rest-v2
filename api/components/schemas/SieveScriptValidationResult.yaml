@@ -1,0 +1,11 @@
+type: object
+required: [valid, message]
+properties:
+  valid:
+    type: boolean
+  message:
+    oneOf:
+      - type: string
+      - type: 'null'
+    description: The parser's message when the script is invalid (English, as the parser writes it).
+    examples: ['line 3: unknown command "fileinto2"']

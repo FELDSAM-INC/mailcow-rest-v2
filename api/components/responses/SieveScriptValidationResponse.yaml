@@ -1,0 +1,9 @@
+description: The validation result. An invalid script is a result, not an error.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/SieveScriptValidationResult.yaml'

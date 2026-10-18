@@ -1,0 +1,8 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `mailbox`, then `description` as the second key.
+schema:
+  type: string
+  enum: [description, mailbox, kind, active, createdAt, modifiedAt]
+  default: mailbox

@@ -1,0 +1,17 @@
+type: object
+description: |
+  A webmail sign-in handed to the requesting browser. The response sets mailcow's legacy session
+  cookie (`MCSESSID` by default) for a session that grants webmail only: opening `url` in the same
+  browser shows the mailbox without a sign-in prompt, while the legacy UI and `/api/v1` treat the
+  browser as signed out.
+required: [mailbox, url]
+properties:
+  mailbox:
+    type: string
+    description: Normalised mailbox address.
+    examples: [anna@example.org]
+  url:
+    type: string
+    format: uri-reference
+    description: Address of the webmail to open in the same browser.
+    examples: [/SOGo/so/]

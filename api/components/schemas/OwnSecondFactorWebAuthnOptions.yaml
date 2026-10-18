@@ -1,0 +1,10 @@
+type: object
+description: Single-use WebAuthn second-factor registration options bound to the session.
+required: [publicKey, expiresAt]
+properties:
+  publicKey:
+    $ref: './OwnSecondFactorWebAuthnCreationOptions.yaml'
+  expiresAt:
+    type: string
+    format: date-time
+    description: Five minutes after issue. The options are consumed by the first enrolment attempt.

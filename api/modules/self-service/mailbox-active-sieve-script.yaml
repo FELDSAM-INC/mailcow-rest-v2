@@ -1,0 +1,28 @@
+parameters:
+  - $ref: '../../components/parameters/MailboxAddress.yaml'
+get:
+  operationId: getActiveSieveScript
+  tags: [Sieve filters]
+  summary: Read the active Sieve script of a mailbox
+  description: |
+    Returns the Sieve script that the user manages in webmail and that the mail server runs for the
+    mailbox, as the mail server reports it through mailcow's container service. `name` and `script`
+    are `null` when no script is active. `503` when the mail server cannot be reached or does not
+    answer within the container-service timeout. A read: read-only keys may use it. Same callers as
+    `listMailboxSieveFilters`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/ActiveSieveScriptResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/SelfServiceTemporaryFailure.yaml'

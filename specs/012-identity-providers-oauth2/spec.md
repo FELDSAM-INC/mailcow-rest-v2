@@ -143,6 +143,22 @@
   copied individually (FR-060, FR-061). This replaces the earlier exclusion of batch operations.
   (orchestrator decision: legacy's "OAuth2 Apps" table offers "Remove", "Revoke all client tokens"
   and "Generate new client secret" for the selected clients.)
+- Q: How does a client learn the return addresses, defaults, limits and OAuth2 endpoint facts before
+  a configuration or client exists? → A: From two capabilities reads, `/capabilities/identity-provider`
+  and `/capabilities/oauth2-clients`, which administrators and their read-only keys may use and
+  which never contain secrets (FR-064). (orchestrator decision: `docs/conventions.md`, "Capabilities,
+  history and refusals"; the configuration read answers "not configured" before the first save, but
+  the setup flow must show the return addresses to register.)
+- Q: How is the audit log filtered for this feature? → A: With the generic target type and target
+  identifier filters and the existing event type and outcome filters. This feature adds target
+  types, not filter parameters; the sign-in method is shown on each record (FR-054). (orchestrator
+  decision: `docs/conventions.md` forbids feature-specific audit filter parameters.)
+- Q: Which refusals are audited, and may a version tag contain a secret? → A: Every refusal of a
+  state-changing request of this feature by an authenticated caller is audited, including refusals of
+  read-only keys and restricted sessions, but not anti-forgery failures or unauthenticated requests
+  (FR-052). Version tags cover the secrets only as an HMAC keyed with the server's application key,
+  never as a plain hash (FR-050). (orchestrator decision: `docs/conventions.md`, "Capabilities,
+  history and refusals".)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -370,7 +386,8 @@ endpoints with the client, and confirm the outcome the step implies.
 ### User Story 5 - Trace identity provider and OAuth2 changes (Priority: P3)
 
 An administrator investigating a sign-in problem or an unexpected change lists the audit log
-filtered by the identity provider configuration, an OAuth2 client, or the single sign-on method.
+filtered by the identity provider configuration, an OAuth2 client, a mailbox, or failed sign-ins,
+and sees on each sign-in entry its method, for example single sign-on.
 Each entry shows who did what and when, which settings changed (secrets only as "changed"), the
 outcome of connection tests, which mailboxes were created or updated on sign-in, and why failed
 sign-ins failed.
@@ -480,6 +497,7 @@ each filter.
   | Operation | Administrator | Domain administrator | Mailbox user | Not signed in |
   |---|---|---|---|---|
   | Read the identity provider configuration | Yes, without secrets | Forbidden | Forbidden | Unauthenticated |
+  | Read the identity provider and OAuth2 capabilities (FR-064) | Yes | Forbidden | Forbidden | Unauthenticated |
   | Save, change or delete the configuration | Yes | Forbidden | Forbidden | Unauthenticated |
   | Test a connection | Yes | Forbidden | Forbidden | Unauthenticated |
   | List and inspect OAuth2 clients | Yes, without secrets | Forbidden | Forbidden | Unauthenticated |
@@ -859,6 +877,8 @@ each filter.
   `/api/v1`. The configuration's tag MUST cover every stored setting, including the secrets, so that
   a changed secret changes it, and MUST NOT cover the cached Keycloak service token, which legacy
   rewrites during sign-ins. A client's tag MUST cover its redirect URIs and secret, not its tokens.
+  A secret MUST enter a tag only as an HMAC keyed with the server's application key, never as a
+  plain hash (`docs/conventions.md`).
 - **FR-051**: A client MAY send the version tag it read with a save, change, deletion, secret
   regeneration or token revocation. When the tag no longer matches, the request MUST be refused as
   outdated and MUST change nothing, as in feature 002 (FR-042 there). The contract MUST recommend
@@ -877,7 +897,10 @@ each filter.
   - for a test, the provider type, the address tested and the outcome category;
   - for a revocation or deletion of a client, the number of tokens and codes removed;
   - for an item of a bulk action (FR-060), one record per client, carrying the bulk request's
-    identifier, as `docs/conventions.md` requires.
+    identifier, as `docs/conventions.md` requires;
+  - for a refusal by an authenticated caller, the refusal's reason, including refusals of read-only
+    keys and restricted sessions. Anti-forgery failures and unauthenticated requests MUST NOT be
+    audited (`docs/conventions.md`).
 - **FR-053**: Sign-in audit records (feature 001, FR-045 and FR-046 there) MUST cover single sign-on
   and password sign-in through a provider, with the methods "single sign-on", "directory password"
   (LDAP) and "provider password" (Keycloak mailpassword flow), the provider type, and these failure
@@ -887,8 +910,9 @@ each filter.
   audited. A mailbox created or updated on sign-in MUST get its own audit record with the mailbox as
   target, the template used, the changes made and a reference to the sign-in.
 - **FR-054**: Administrators MUST be able to filter the audit log by the target types of this
-  feature and by sign-in method, in addition to the filters of features 001 (FR-047) and 002
-  (FR-058).
+  feature (identity provider configuration, OAuth2 client) through the generic target type and target
+  identifier filters (feature 002, FR-058), in addition to the filters of feature 001 (FR-047). This
+  feature MUST NOT add audit filter parameters of its own; each sign-in record shows its method.
 
 #### Cross-cutting
 
@@ -942,6 +966,14 @@ each filter.
   MUST audit a failed sign-in with the provider's error code. The error code MUST be 1 to 64
   characters of the OAuth 2.0 error code character set. The provider's free-text description MUST NOT
   be accepted or stored. An invalid state MUST be refused as "sign-in state invalid".
+- **FR-064**: Administrators MUST be able to read the identity provider capabilities: whether a
+  configuration is stored and its type, the new web app's return addresses (FR-021), available
+  before the first save, the provider types and what each offers, the defaults of FR-007, the field
+  limits of FR-010 to FR-013, the provider time-out and the single sign-on lifetimes. They MUST also
+  be able to read the OAuth2 client capabilities: the legacy endpoint paths, the scope, the accepted
+  grant types, the token lifetimes in effect (legacy's `ACCESS_TOKEN_LIFETIME` and
+  `REFRESH_TOKEN_LIFETIME`), the redirect URI length limit, the bulk limit and the page sizes. Both
+  reads MUST change nothing, MUST contain no secret, and MAY be used by read-only keys.
 
 ### Legacy Coverage
 

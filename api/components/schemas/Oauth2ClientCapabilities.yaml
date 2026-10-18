@@ -1,0 +1,62 @@
+type: object
+description: |
+  What a client needs to manage OAuth2 clients and to inform application developers, as configured
+  on this server. Contains no secret.
+required:
+  - endpoints
+  - scope
+  - grantTypes
+  - accessTokenLifetimeSeconds
+  - refreshTokenLifetimeSeconds
+  - redirectUrisMaxLength
+  - bulkLimit
+  - defaultPageSize
+  - maxPageSize
+properties:
+  endpoints:
+    type: object
+    description: Paths of the unchanged legacy OAuth2 endpoints on the server's host names.
+    required: [authorization, token, profile]
+    properties:
+      authorization:
+        type: string
+        const: /oauth/authorize
+      token:
+        type: string
+        const: /oauth/token
+      profile:
+        type: string
+        const: /oauth/profile
+    additionalProperties: false
+  scope:
+    type: string
+    const: profile
+    description: The only scope, also used when an application omits the scope parameter.
+  grantTypes:
+    type: array
+    description: |
+      Grant types the legacy token endpoint accepts. The legacy information text documents the
+      authorization code grant with refresh tokens; the endpoint also accepts the password grant for
+      mailbox users.
+    items:
+      type: string
+      enum: [authorization_code, refresh_token, password]
+  accessTokenLifetimeSeconds:
+    type: integer
+    minimum: 1
+    description: Lifetime of access tokens (mailcow's `ACCESS_TOKEN_LIFETIME`, 86400 by default).
+  refreshTokenLifetimeSeconds:
+    type: integer
+    minimum: 1
+    description: Lifetime of refresh tokens (mailcow's `REFRESH_TOKEN_LIFETIME`, 2678400 by default).
+  redirectUrisMaxLength:
+    type: integer
+    description: Maximum length of the redirect URIs joined by single spaces (2,000).
+  bulkLimit:
+    type: integer
+    description: Maximum number of clients in one bulk action (100).
+  defaultPageSize:
+    type: integer
+  maxPageSize:
+    type: integer
+additionalProperties: false

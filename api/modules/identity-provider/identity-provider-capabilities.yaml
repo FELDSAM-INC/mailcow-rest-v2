@@ -1,0 +1,23 @@
+get:
+  operationId: getIdentityProviderCapabilities
+  tags: [Identity provider]
+  summary: Get identity provider capabilities
+  description: |
+    Returns what a client needs before it shows or submits the identity provider forms: whether a
+    configuration is stored and its type, the new web app's return addresses to register at a
+    provider (also before the first save), the provider types and what each offers, the defaults,
+    the field limits, the provider time-out and the single sign-on lifetimes. Changes nothing and is
+    not audited. Administrators only: a signed-in administrator or a key owned by an administrator,
+    read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/IdentityProviderCapabilitiesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

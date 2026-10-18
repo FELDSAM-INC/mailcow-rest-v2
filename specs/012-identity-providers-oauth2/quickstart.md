@@ -28,7 +28,7 @@ docker compose run --rm app composer install
 # 3. Lint the contract.
 docker compose run --rm app composer contract:lint
 
-# 4. Full suite with contract validation and coverage (all 17 new operations must be covered).
+# 4. Full suite with contract validation and coverage (all 19 new operations must be covered).
 docker compose run --rm app composer test
 
 # 5. Only this feature's tests.
@@ -44,7 +44,7 @@ docker compose run --rm app vendor/bin/phpunit --group idp
 **Expected**:
 
 - `contract:lint` reports no errors.
-- `composer test` ends green; `build/contract/coverage.json` lists the 17 operations of this feature.
+- `composer test` ends green; `build/contract/coverage.json` lists the 19 operations of this feature.
 - The `idp` group passes: lookups with special characters in the username match literally, SSL on
   port 389 connects to 636, a wrong bind password gives `wrongPassword`, a stopped container gives
   `unavailable` within 7 seconds.
@@ -73,8 +73,10 @@ T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session -d '{"username":"admin","password":"Passw0rd!dev"}' >/dev/null
 # Create the mailbox template "Staff" first (feature 003, POST /mailbox-templates).
 
-# US1: no configuration yet.
+# US1: no configuration yet; the capabilities already list the return addresses to register.
 curl -s $C $B/identity-provider | jq .type             # ".../identity-provider-not-configured"
+curl -s $C $B/capabilities/identity-provider | jq '.data | {configured, appReturnUrls, defaults}'
+curl -s $C $B/capabilities/oauth2-clients | jq '.data | {endpoints, accessTokenLifetimeSeconds}'
 
 # US1: test unsaved LDAP settings with a wrong bind password, then the right one.
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/identity-provider/connection-tests -d '{
@@ -121,7 +123,7 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/oauth2-clients/bulk-actions \
 
 # US5: audit trail.
 curl -s $C "$B/audit-events?targetType=identityProvider&limit=5" | jq '.data[] | {eventType, outcome, details}'
-curl -s $C "$B/audit-events?authMethod=directoryPassword&limit=5" | jq '.data[] | {eventType, outcome, failureReason}'
+curl -s $C "$B/audit-events?eventType=signIn&limit=5" | jq '.data[] | {eventType, authMethod, outcome, failureReason}'
 ```
 
 **Single sign-on (US2)** needs a browser, because the provider's pages must be used. Switch the

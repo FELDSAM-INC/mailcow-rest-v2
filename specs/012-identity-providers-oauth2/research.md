@@ -231,8 +231,9 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
     PHP's default flags, exactly as legacy computes `attribute_hash`. It is stored in
     `mailbox.attributes.attribute_hash`.
   - **Creation** (FR-034 to FR-040): when `createMailboxOnSignIn` is off → `autoCreationOff`.
-    Otherwise, under the Redis lock `restv2:lock:idp-provision:<sha256(email)>` (15 s, wait up to
-    10 s), the mailbox is looked up again; if it now exists, the sign-in continues as for an
+    Otherwise, under MariaDB `GET_LOCK('restv2_idp_' . sha1($email), 10)` (`docs/conventions.md`:
+    uniqueness that upstream enforces only in code is protected with `GET_LOCK()`; the address must
+    be unique across mailboxes and aliases), the mailbox is looked up again; if it now exists, the sign-in continues as for an
     existing mailbox (FR-040). Otherwise `MailboxService::create()` is called as the system actor
     (administrator-equivalent, no domain-administrator flags, like legacy's
     `access_all_exception`) with local part and domain from the address, the template's identifier,
@@ -368,7 +369,8 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
     `array_filter` can produce `{"0":…,"2":…}`); values are taken in order. Mapping pairs beyond the
     shorter of the two lists are ignored. Empty strings are shown as `null`. Keys of another type
     are ignored.
-  - **Whole save** (`PUT`): one transaction that deletes every row whose key is not a key of the
+  - **Whole save** (`PUT`): under `GET_LOCK('restv2_identity_provider', 5)`, so that two first saves
+    cannot both answer `201`, one transaction that deletes every row whose key is not a key of the
     saved type (the `access_token` row included, then re-inserted as `''`), and upserts every key of
     the saved type with `INSERT … ON DUPLICATE KEY UPDATE value = VALUES(value)`. `created` and
     `modified` are left to their column defaults, as legacy does.
@@ -380,7 +382,9 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
     `authorize_url`, `token_url`, `userinfo_url`; LDAP `host`, `port`, `basedn`, `binddn`,
     `bindpass`, each non-empty (legacy's truthiness in `identity_provider('init')`).
   - **Version tag**: strong ETag (001 `ETag`) over `key\0value\n` of every row except
-    `access_token`, sorted by key (FR-050).
+    `access_token`, sorted by key, where the values of `client_secret` and `bindpass` are replaced
+    by `hash_hmac('sha256', value, config('app.key'))` before hashing (FR-050,
+    `docs/conventions.md`: a version tag never contains a plain hash of a stored secret).
   - **Last change**: `MAX(COALESCE(modified, created))` over the same rows, read through 001's
     `MailcowDateTime` cast.
 - **Secret retention** (FR-014, `App\Services\IdentityProvider\SecretRetentionPolicy`): an omitted
@@ -519,9 +523,9 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
   - **List**: `q` → `client_id LIKE ? OR redirect_uri LIKE ?` (escaped, case-insensitive with the
     table's collation); `hasActiveTokens` → `EXISTS` on either token table; sort `id`, `client_id`,
     `redirect_uri`.
-  - **Version tag**: strong ETag over `id|client_id|client_secret|redirect_uri|grant_types|scope|user_id`
-    (FR-050). It includes the secret as input to SHA-256 only; 96 random bits cannot be recovered
-    from it.
+  - **Version tag**: strong ETag over `id|client_id|hmac|redirect_uri|grant_types|scope|user_id`,
+    where `hmac` is `hash_hmac('sha256', client_secret, config('app.key'))` (FR-050,
+    `docs/conventions.md`), so a regenerated secret changes the tag without the tag revealing it.
   - **Compatibility check**: `bshaffer/oauth2-server-php ^1.11` (MIT), the OAuth2 server library of
     legacy's `/oauth/*` endpoints, as a **dev** dependency. A feature test builds an
     `OAuth2\Server` on the test connection's PDO with legacy's grant types and lifetimes, and runs
@@ -565,11 +569,23 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
     are refused for every unsafe method by 001's `EnforceKeyScope`, which covers the connection
     test and the bulk action (`POST`). The single sign-on routes use `restv2.auth:browser`,
     `restv2.csrf` and `restv2.pending:allow`, so keys get `session-required`.
-  - **Audited refusals**: requests refused by a policy (`permissionDenied`), by validation
-    (`validationFailed`), by a version mismatch (`versionOutdated`), by the in-use check
-    (`conflict`) or because the object is missing (`notFound`) are audited. Requests refused by the
-    pipeline before a controller (unauthenticated, CSRF, key scope, pending action) are not, as in
-    001.
+  - **Audited refusals** (`docs/conventions.md`, "Refusal auditing"): every state-changing route of
+    the identity provider and OAuth2 modules declares
+    `->defaults('restv2.audit', ['event' => …, 'target' => 'identityProvider'|'oauth2Client'])`, so
+    the shared `App\Services\Audit\RefusalAuditor` (created by feature 002 or 008, the first
+    implemented) records one failure record for every `4xx` refusal by an authenticated caller:
+    policy (`permissionDenied`), read-only key (`insufficient-key-scope`) and restricted session
+    (`pending-action-required`) refusals included, as well as validation (`validationFailed`),
+    version (`versionOutdated`), in-use (`conflict`) and missing objects (`notFound`). CSRF failures
+    and `401`s are not recorded. This feature registers two target resolvers:
+    `IdentityProviderAuditTargetResolver` (null id, name = stored type) and
+    `Oauth2ClientAuditTargetResolver` (the route's `oauth2ClientId` and its client ID, looked up
+    without scope; for a bulk request a `null` target with `details.itemIds` and
+    `details.bulkAction`). The connection test route declares `identityProviderConnectionTest`.
+    Refusals raised inside the services (in-use, version) are not recorded twice: the services throw
+    the problem and leave recording to `RefusalAuditor`. The single sign-on routes declare nothing:
+    their failures are sign-in failures recorded by `SingleSignOnService`, and their pipeline
+    refusals concern sign-in ceremonies, as for 001's sign-in routes.
   - **Details whitelist** per event type: changed settings with old and new values, where
     `client_secret`, `bindpass` and `access_token` appear only as `{"changed": true}`; test type,
     address and category; token and code counts; bulk request ID.
@@ -602,6 +618,7 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
 | `RESTV2_SSO_RETURN_PATH` | `/ng/sso/return` | Path of the new web app's sign-in return address |
 | `RESTV2_SSO_RETURN_SCHEME` | `https` | Scheme of the return address (development only) |
 | `ADDITIONAL_SERVER_NAMES` | empty | Existing `mailcow.conf` name (001 R14), host names for return addresses |
+| `RESTV2_ACCESS_TOKEN_LIFETIME`, `RESTV2_REFRESH_TOKEN_LIFETIME` | from the mounted `vars.inc.php`, else 86400 and 2678400 | OAuth2 token lifetimes reported by the capabilities read (001 R14 precedence, R20) |
 
 The OAuth2 list page size uses the shared list defaults (25, at most 1,000). These are the
 operator-changeable defaults the spec's assumptions list.
@@ -630,3 +647,27 @@ These plan-level decisions differ from legacy in detail and are recorded in the 
 2. Provider calls do not follow HTTP redirects (legacy's Guzzle default follows up to 5) (R1).
 3. LDAP calls time out after 7 s, as every provider call (legacy library default 5 s) (R2).
 4. IPv6 LDAP hosts are bracketed in connection URIs (legacy builds invalid URIs for them) (R2).
+
+### R20. Capabilities reads (FR-064)
+
+- **Decision**: `GET /capabilities/identity-provider` (`getIdentityProviderCapabilities`) and
+  `GET /capabilities/oauth2-clients` (`getOauth2ClientsCapabilities`), following
+  `docs/conventions.md`. Administrators and their keys, read-only included; not audited.
+  - The identity provider read reports whether a configuration is stored and its type,
+    `AppReturnUrls::all()` (so the setup flow can show the addresses to register before the first
+    save, when `GET /identity-provider` still answers `404`), the types with what each offers, the
+    FR-007 defaults, the FR-010 to FR-013 limits, `RESTV2_IDP_TIMEOUT` and the single sign-on
+    lifetimes.
+  - The OAuth2 read reports the fixed endpoint paths, the scope `profile`, the grant types that
+    legacy's server registers (`authorization_code`, `password` through `UserCredentials`,
+    `refresh_token`), the token lifetimes in effect, the 2,000-character redirect URI limit, the bulk
+    limit and the page sizes. The lifetimes are legacy PHP configuration (`ACCESS_TOKEN_LIFETIME`,
+    `REFRESH_TOKEN_LIFETIME` in `vars.inc.php`, overridable in `vars.local.inc.php`), so they come
+    from 001's `MailcowConfig` (001 R14) with the export extended by these two names and the
+    server settings `RESTV2_ACCESS_TOKEN_LIFETIME` and `RESTV2_REFRESH_TOKEN_LIFETIME` taking
+    precedence; upstream defaults 86400 and 2678400.
+- **Rationale**: The configuration read cannot serve a client before the first save, and the
+  token lifetimes vary per server; both are what `docs/conventions.md` puts into capabilities reads.
+- **Alternatives considered**: Returning the return addresses in a `404` body: rejected, a problem
+  must not carry data. Hard-coding the lifetimes in the contract text: rejected, operators override
+  them.

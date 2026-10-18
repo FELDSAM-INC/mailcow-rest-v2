@@ -1,4 +1,6 @@
 # Paths of the oauth2-clients module: clients of mailcow's own OAuth2 provider.
+/capabilities/oauth2-clients:
+  $ref: './oauth2-clients-capabilities.yaml'
 /oauth2-clients:
   $ref: './oauth2-clients.yaml'
 /oauth2-clients/bulk-actions:

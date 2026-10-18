@@ -77,16 +77,18 @@ keeps it read-only and writes with the query builder inside the two services.
 - `synchronisation`: see "Redis, mailcow-owned keys".
 - `modifiedAt`: `MAX(COALESCE(modified, created))` over every row except `access_token`.
 
-**Version tag**: strong ETag over `key\0value\n` of every row except `access_token`, sorted by key.
-It covers the secrets (a changed secret changes it) and leftover rows of another type (research
+**Version tag**: strong ETag over `key\0value\n` of every row except `access_token`, sorted by key,
+with the values of `client_secret` and `bindpass` replaced by `hash_hmac('sha256', value,
+config('app.key'))`. It covers the secrets only through that HMAC (a changed secret changes the tag,
+and the tag never contains a plain hash of a secret) and leftover rows of another type (research
 R9). It never covers the counts or the synchronisation status (`docs/conventions.md`).
 
 **Writes**:
 
 | Operation | SQL (one transaction) | Side effects |
 |---|---|---|
-| Whole save, change | `DELETE FROM identity_provider WHERE key NOT IN (<keys of the type>)`; `INSERT INTO identity_provider (key, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)` for every key of the type; `access_token` upserted as `''` | Cached service token cleared (FR-016); audit `identityProviderCreation` or `identityProviderUpdate` in the same transaction |
-| Delete | `DELETE FROM identity_provider` | Audit `identityProviderDeletion` |
+| Whole save, change | under `GET_LOCK('restv2_identity_provider', 5)`: `DELETE FROM identity_provider WHERE key NOT IN (<keys of the type>)`; `INSERT INTO identity_provider (key, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)` for every key of the type; `access_token` upserted as `''` | Cached service token cleared (FR-016); audit `identityProviderCreation` or `identityProviderUpdate` in the same transaction |
+| Delete | under the same lock: `DELETE FROM identity_provider` | Audit `identityProviderDeletion` |
 | Service token refresh | `INSERT … ('access_token', ?) ON DUPLICATE KEY UPDATE value = VALUES(value)` | None; not part of the version tag |
 
 **Validation**: FR-010 to FR-014 as rule objects (research R10). Key constraints, quoted for the
@@ -183,8 +185,8 @@ binding, `$timestamps = false`, `$guarded = ['*']`; reads only).
 fragment and without whitespace; joined by single spaces at most 2,000 characters; duplicates stored
 once". `clientId` and `scope` in a change "only with the current value" (`immutable`).
 
-**Version tag**: strong ETag over `id|client_id|client_secret|redirect_uri|grant_types|scope|user_id`.
-It never covers tokens or counts.
+**Version tag**: strong ETag over `id|client_id|hmac|redirect_uri|grant_types|scope|user_id`, where
+`hmac` is `hash_hmac('sha256', client_secret, config('app.key'))`. It never covers tokens or counts.
 
 **List**: search `client_id LIKE ? OR redirect_uri LIKE ?`; filter `hasActiveTokens` as `EXISTS` on
 unexpired access or refresh tokens; sort `id` (default asc), `client_id`, `redirect_uri`.
@@ -249,8 +251,16 @@ No schema change. Values added by this feature (all fit 001's column sizes: `eve
 `connectionTestFailed`). Refused writes reuse `permissionDenied`, `validationFailed`,
 `versionOutdated`, `conflict` and `notFound`.
 
-**Filters**: `authMethod` (new, FR-054) → `auth_method IN (…)`. Target types use 002's
-`targetType` and `targetId`.
+**Refusals**: every state-changing route of the identity provider and OAuth2 modules declares
+`restv2.audit` (event type and target type), and the shared `RefusalAuditor` (002 or 008) writes one
+failure record per refusal by an authenticated caller, including read-only keys
+(`insufficient-key-scope`) and restricted sessions (`pending-action-required`); never for CSRF
+failures or `401`s. A refused bulk request gives one record with a `null` target and
+`details.itemIds`.
+
+**Filters**: none added (`docs/conventions.md`). Clients use 002's `targetType`
+(`identityProvider`, `oauth2Client`, `mailbox`, `session`) and `targetId`, and 001's `eventType`
+and `outcome`; each record carries `authMethod`.
 
 ---
 
@@ -268,7 +278,15 @@ No schema change. Values added by this feature (all fit 001's column sizes: `eve
 |---|---|---|---|
 | `restv2:sso-link:<linkId>` | `Crypt::encryptString` of JSON `{accessToken, refreshToken, expiresAt, lastRenewedAt, username, type}` | `SESSION_LIFETIME`, renewed with the session | `IdentityProviderSessionGuard`, `SingleSignOnService` |
 | `restv2:lock:sso-link:<linkId>` | lock owner | 10 s | `IdentityProviderSessionGuard` (renewal) |
-| `restv2:lock:idp-provision:<sha256(email)>` | lock owner | 15 s | `MailboxProvisioner` (FR-040) |
+
+### MariaDB named locks (`GET_LOCK()`, no storage)
+
+| Name | Timeout | Owner |
+|---|---|---|
+| `restv2_identity_provider` | 5 s | `IdentityProviderConfigService`: serialises saves, changes and deletions, so two first saves cannot both create |
+| `restv2_idp_<sha1(email)>` | 10 s | `MailboxProvisioner`: one creation per address at a time (FR-040) |
+
+A lock that cannot be obtained in time is an unexpected failure (`500`), as in feature 008.
 
 ### Session keys added (001's session, `restv2:session:<id>`)
 
@@ -302,6 +320,20 @@ No schema change. Values added by this feature (all fit 001's column sizes: `eve
 ```
 
 ---
+
+## Capabilities (derived, no storage, FR-064)
+
+| Read | Member | Source |
+|---|---|---|
+| `IdentityProviderCapabilities` | `configured`, `configuredType` | `identity_provider.authsource` |
+| | `appReturnUrls` | `AppReturnUrls::all()` |
+| | `types` | fixed: Keycloak (single sign-on, password with the mailpassword flow, synchronisation), generic OIDC (single sign-on), LDAP (password, synchronisation) |
+| | `defaults` | FR-007 values |
+| | `limits` | FR-010 to FR-013 values (100 mapping entries, 255, 100 additional URLs, 2,000, 10 hosts, 1–10,080 minutes, 1,000, 50 scopes, 1,000, 1,000) |
+| | `providerTimeoutSeconds`, `singleSignOn` | `config('restv2.identity_provider.*')` |
+| `Oauth2ClientCapabilities` | `endpoints`, `scope`, `grantTypes` | fixed (legacy `prerequisites.inc.php`) |
+| | `accessTokenLifetimeSeconds`, `refreshTokenLifetimeSeconds` | 001's `MailcowConfig` (`ACCESS_TOKEN_LIFETIME`, `REFRESH_TOKEN_LIFETIME`; `RESTV2_*` overrides) |
+| | `redirectUrisMaxLength`, `bulkLimit`, page sizes | 2,000, 100, 25 and 1,000 |
 
 ## Value objects (no storage)
 

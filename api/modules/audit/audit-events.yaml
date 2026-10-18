@@ -86,20 +86,6 @@ get:
       schema:
         type: string
         maxLength: 255
-    - name: authMethod
-      in: query
-      required: false
-      description: |
-        Feature 012: only records whose sign-in or authentication method is one of these, for
-        example `singleSignOn`, `directoryPassword` or `providerPassword`. Repeat the parameter for
-        several.
-      style: form
-      explode: true
-      schema:
-        type: array
-        maxItems: 20
-        items:
-          $ref: '../../components/schemas/AuthMethod.yaml'
   responses:
     '200':
       $ref: '../../components/responses/AuditEventListResponse.yaml'

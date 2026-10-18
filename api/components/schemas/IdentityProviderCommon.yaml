@@ -66,6 +66,7 @@ properties:
   etag:
     type: string
     description: |
-      Version tag over every stored setting, secrets included, but not the cached Keycloak service
-      token, the mailbox counts or the synchronisation status. Equal to the `ETag` header of a
+      Version tag over every stored setting, secrets included (as an HMAC keyed with the server's
+      application key, never a plain hash), but not the cached Keycloak service token, the mailbox
+      counts or the synchronisation status. Equal to the `ETag` header of a
       single read; send it in `If-Match`.

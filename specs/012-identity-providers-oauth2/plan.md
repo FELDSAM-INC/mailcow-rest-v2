@@ -24,9 +24,9 @@ Feature 012 covers four areas:
 
 The technical approach:
 
-- The contract was authored first: 17 new operations in three modules (`identity-provider`,
-  `oauth2-clients`, `single-sign-on`), plus additive changes to feature 001's components. It lints
-  clean.
+- The contract was authored first: 19 new operations in three modules (`identity-provider`,
+  `oauth2-clients`, `single-sign-on`), including two capabilities reads, plus additive changes to
+  feature 001's components. It lints clean.
 - The configuration is stored in upstream `identity_provider` with legacy's keys and byte-identical
   encodings, so the legacy UI, `mailcowauth.php` and the legacy synchronisation jobs keep working
   on it (research R9).
@@ -84,7 +84,7 @@ provider calls per 5 minutes per single sign-on session.
 - Provider outages are never reported to fail2ban or counted towards throttling.
 
 **Scale/Scope**: one provider per server; up to about 10,000 mailboxes; up to a few hundred OAuth2
-clients with up to about 100,000 tokens. 17 new operations in 3 modules, 5 user stories, no new
+clients with up to about 100,000 tokens. 19 new operations in 3 modules, 5 user stories, no new
 table.
 
 ## Constitution Check
@@ -93,7 +93,7 @@ table.
 
 | Principle | Gate | Status |
 |---|---|---|
-| I. Contract-first | All 17 operations are authored under `api/modules/{identity-provider,oauth2-clients,single-sign-on}/` with new components named after their resource. Feature 001's components get additive changes only (new enum values, new optional or new required response members, a `503` on `createSession`, the `authMethod` audit filter). `npx @redocly/cli@2.64.1 lint` passes with 0 errors. Every test request and response is validated (001 R13). | PASS |
+| I. Contract-first | All 19 operations are authored under `api/modules/{identity-provider,oauth2-clients,single-sign-on}/` with new components named after their resource. Feature 001's components get additive changes only (new enum values, new optional or new required response members, a `503` on `createSession`). `npx @redocly/cli@2.64.1 lint` passes with 0 errors. Every test request and response is validated (001 R13). | PASS |
 | II. HTTP contract | Plural nouns; actions are sub-resources (`/connection-tests`, `/secret-regeneration`, `/token-revocation`, `/bulk-actions`, `/session/single-sign-on/completion`). `PUT` answers `201` with `Location` when it creates, `200` when it replaces; `PATCH` is JSON Merge Patch; `DELETE` answers `204`. `{data, meta}` list with `limit`, `offset`, `sort`, `order`, `q`. RFC 9457 problems with six documented types. `ETag` and `If-Match` on the configuration and on clients; every list entry carries `etag`. `503` justified below. | PASS (justified) |
 | III. Upstream schema | No migration at all. Upstream tables are written only by the services listed in the data model. | PASS |
 | IV. Parity | Legacy code was read (`identity_provider()`, `user_login()`, `keycloak_mbox_login_rest()`, `ldap_mbox_login()`, `mailbox_from_template`, `oauth2()`, the jobs, the `/oauth/*` endpoints and libraries). Every write goes through a service and reproduces legacy's side effects: settings upsert, service token clearing, mailbox creation and update through 003, `sasl_log`, `tfa` re-activation. Deviations are those of the spec's parity table, including the four plan-level rows (research R19). | PASS |
@@ -101,7 +101,7 @@ table.
 | VI. Security | Administrator-only policies; read-only keys refused for writes and tests; single sign-on never with a key. Session-bound single-use state, PKCE, encrypted provider tokens in Redis, renewal every 5 minutes. Write-only secrets with the address rule (FR-014). Every change and test audited without secrets; a secret-scan test. LDAP filter escaping. Provider outages kept away from fail2ban. | PASS (justified) |
 | VII. Test-first | `tasks.md` orders tests before implementation in every phase. MariaDB with the real schema, real Redis; HTTP providers faked with `Http::fake()`, LDAP behind an interface, OAuth2 endpoints simulated with legacy's own library. | PASS |
 | VIII. Simplicity | One runtime package (legacy's own OAuth 2.0 client) and one dev package (legacy's OAuth2 server). No LDAP package. No API-owned table. Interfaces only where a fake is needed (`OidcClient`, `LdapDirectory`, `KeycloakAdminClient`). | PASS |
-| Cross-feature conventions | Out-of-scope or missing clients answer `404`; `403` only for roles and key scope. Invalid input refused with field errors and shared rule codes (`immutable`, `conflictsWith`, plus `secretRequired`, `duplicate`). Bulk actions on OAuth2 clients follow the conventions (100 items, per-item version, one audit record per client, `BulkTarget`, `BulkResultResponse`). Secrets write-only or shown once. Version tags over stored settings only. No time-based caching. Settings owned by 003 (mailbox values) are applied through 003. | PASS |
+| Cross-feature conventions | Capabilities reads at `/capabilities/identity-provider` and `/capabilities/oauth2-clients`. History through the generic `targetType`/`targetId` filters only (no own audit filter). Refusals by authenticated callers audited through the shared `RefusalAuditor` (read-only keys and restricted sessions included; not CSRF failures or `401`s). Version tags carry secrets only as an HMAC keyed with the app key. Check-and-insert races guarded with MariaDB `GET_LOCK()`. Out-of-scope or missing clients answer `404`; `403` only for roles and key scope. Invalid input refused with field errors and shared rule codes (`immutable`, `conflictsWith`, plus `secretRequired`, `duplicate`). Bulk actions on OAuth2 clients follow the conventions (100 items, per-item version, one audit record per client, `BulkTarget`, `BulkResultResponse`). Secrets write-only or shown once. Version tags over stored settings only. No time-based caching. Settings owned by 003 (mailbox values) are applied through 003. | PASS |
 
 **Post-design re-check (after Phase 1)**: PASS. The decisions that touched gates:
 
@@ -109,12 +109,15 @@ table.
 - Sharing legacy's service token row, excluded from the version tag: IV, V (R3, R9).
 - Synchronisation status derived read-only from `CRON_LOG`: V, no legacy change (R12).
 - Bulk actions added by the orchestrator, replacing the spec's earlier exclusion: conventions (R14).
+- Capabilities reads, refusal auditing, HMAC version tags and `GET_LOCK()` from the conventions'
+  "Capabilities, history and refusals" section: I, VI (R9, R13, R15, R20).
 
 ## Contract Operations
 
 | Method and path | operationId | Auth | Story / FR |
 |---|---|---|---|
-| GET `/identity-provider` | getIdentityProvider | admin session or admin key (read-only too) | US1, FR-001–FR-008, FR-062 |
+| GET `/capabilities/identity-provider` | getIdentityProviderCapabilities | admin session or admin key (read-only too) | US1, FR-064 |
+| GET `/identity-provider` | getIdentityProvider | admin session or admin key (read-only too) | US1, FR-001–FR-008, FR-018 (documented), FR-059, FR-062 |
 | PUT `/identity-provider` | saveIdentityProvider | admin session + CSRF, or admin read-write key | US1, FR-009–FR-016, FR-050–FR-052 |
 | PATCH `/identity-provider` | updateIdentityProvider | as PUT | US1, FR-009–FR-016, FR-050–FR-052 |
 | DELETE `/identity-provider` | deleteIdentityProvider | as PUT | US1, FR-017, FR-051, FR-052 |
@@ -123,8 +126,9 @@ table.
 | DELETE `/session/single-sign-on` | cancelSingleSignOn | browser session + CSRF | US2, edge case "user cancels" |
 | POST `/session/single-sign-on/completion` | completeSingleSignOn | browser session + CSRF | US2, FR-022–FR-028, FR-034–FR-040 |
 | POST `/session/single-sign-on/provider-error` | reportSingleSignOnProviderError | browser session + CSRF | US2, FR-063 |
+| GET `/capabilities/oauth2-clients` | getOauth2ClientsCapabilities | admin session or admin key (read-only too) | US4, FR-049, FR-064 |
 | GET `/oauth2-clients` | listOauth2Clients | admin session or admin key | US4, FR-041, FR-042 |
-| POST `/oauth2-clients` | createOauth2Client | admin session + CSRF, or admin read-write key | US4, FR-043, FR-044 |
+| POST `/oauth2-clients` | createOauth2Client | admin session + CSRF, or admin read-write key | US4, FR-043, FR-044, FR-049 (endpoints documented in the tag) |
 | POST `/oauth2-clients/bulk-actions` | bulkOauth2ClientAction | as create | US4, FR-060, FR-061 |
 | GET `/oauth2-clients/{oauth2ClientId}` | getOauth2Client | admin session or admin key | US4, FR-041, FR-042 |
 | PATCH `/oauth2-clients/{oauth2ClientId}` | updateOauth2Client | as create | US4, FR-044, FR-045 |
@@ -142,7 +146,6 @@ table.
 | `AuthMethod`, `Session.authMethod` | `singleSignOn`, `directoryPassword[AndSecondFactor]`, `providerPassword[AndSecondFactor]` | FR-024, FR-053 |
 | `IdentityAuthentication` | optional `identityProvider` | FR-024 |
 | `Unauthorized` | type `identity-provider-session-ended` | FR-026 |
-| `GET /audit-events` | filter `authMethod` | FR-054 |
 | Shared enums | `KnownProblemType` (6), `AuditEventType` (10), `AuditTarget` (2), `AuditFailureReason` (12), `ValidationRuleCode` (2) | FR-052–FR-057 |
 
 Problem types are documented in [`docs/problems.md`](../../docs/problems.md).
@@ -171,9 +174,10 @@ Only the paths this feature adds or changes are listed; everything else is featu
 
 ```text
 api/
-├── openapi.yaml                                   # tags + 10 path refs added
-├── modules/identity-provider/{_index,identity-provider,identity-provider-connection-tests}.yaml
-├── modules/oauth2-clients/{_index,oauth2-clients,oauth2-client,oauth2-client-bulk-actions,
+├── openapi.yaml                                   # tags + 12 path refs added
+├── modules/identity-provider/{_index,identity-provider,identity-provider-connection-tests,
+│                              identity-provider-capabilities}.yaml
+├── modules/oauth2-clients/{_index,oauth2-clients,oauth2-clients-capabilities,oauth2-client,oauth2-client-bulk-actions,
 │                           oauth2-client-secret-regeneration,oauth2-client-token-revocation}.yaml
 ├── modules/single-sign-on/{_index,session-single-sign-on,session-single-sign-on-completion,
 │                           session-single-sign-on-provider-error}.yaml
@@ -190,6 +194,7 @@ app/
 │   └── Keycloak/{KeycloakAdminClient,HttpKeycloakAdminClient}.php
 ├── Http/
 │   ├── Controllers/Api/V2/{IdentityProviderController,IdentityProviderConnectionTestController,
+│   │                       IdentityProviderCapabilitiesController,Oauth2ClientCapabilitiesController,
 │   │                       SingleSignOnController,SingleSignOnCompletionController,
 │   │                       SingleSignOnProviderErrorController,Oauth2ClientController,
 │   │                       Oauth2ClientSecretRegenerationController,Oauth2ClientTokenRevocationController,
@@ -202,6 +207,7 @@ app/
 │   │                    UpdateOauth2ClientRequest,Oauth2ClientBulkActionRequest,
 │   │                    ListOauth2ClientsRequest}.php
 │   └── Resources/Api/V2/{IdentityProviderResource,IdentityProviderConnectionTestResource,
+│                         IdentityProviderCapabilitiesResource,Oauth2ClientCapabilitiesResource,
 │                         SingleSignOnStartResource,Oauth2ClientResource,Oauth2ClientWithSecretResource}.php
 ├── Models/Mailcow/{Oauth2Client,Oauth2AccessToken,Oauth2RefreshToken,Oauth2AuthorizationCode}.php
 ├── Policies/{IdentityProviderPolicy,Oauth2ClientPolicy}.php
@@ -219,8 +225,10 @@ app/
 │   │   ├── KeycloakServiceTokenCache.php                   # access_token row (upstream write)
 │   │   ├── ProviderPasswordVerifier.php, ProviderVerification.php
 │   │   ├── SingleSignOnService.php, IdentityProviderSessionGuard.php, SsoLinkStore.php
-│   │   └── MailboxProvisioner.php, TemplateMarker.php
-│   ├── Oauth2/Oauth2ClientService.php                      # oauth_* writes
+│   │   ├── MailboxProvisioner.php, TemplateMarker.php
+│   │   └── IdentityProviderAuditTargetResolver.php         # for 002/008's RefusalAuditor
+│   ├── Oauth2/{Oauth2ClientService,Oauth2ClientAuditTargetResolver}.php  # oauth_* writes; refusal targets
+│   ├── Config/MailcowConfig.php                            # 001; token lifetimes added
 │   └── Auth/{AccountResolver,PasswordSignInService,PendingActionEvaluator,SessionManager}.php  # 001, extended
 └── Support/Http/{ProblemType,BulkResult}.php               # 001: six cases added; BulkResult unless 002 has it
 
@@ -229,7 +237,8 @@ docker/php/Dockerfile                                        # ext-ldap
 compose.yaml                                                 # profile idp: openldap, keycloak
 deploy/docker-compose.override.yml                           # ADDITIONAL_SERVER_NAMES, optional settings
 scripts/legacy/extract-sync-log-texts.sh                     # cron log texts of a tag (R12)
-routes/api.php                                               # 17 routes
+resources/bin/export-mailcow-vars.php                        # 001; exports ACCESS/REFRESH_TOKEN_LIFETIME
+routes/api.php                                               # 19 routes
 
 tests/
 ├── Support/
@@ -265,6 +274,9 @@ place, and feature 003's mailbox service is called, never duplicated.
 - **002**: the audit filters `targetType` and `targetId`; domain rows in fixtures; the bulk result
   builder, if 002's plan creates one (`App\Support\Http\BulkResult`), otherwise this feature
   creates it.
+- **002 or 008**: the shared `App\Services\Audit\RefusalAuditor` and its route default
+  `restv2.audit` (whichever is implemented first creates it; this feature registers two target
+  resolvers).
 - **003**: the mailbox creation and change services (named in 003's plan; here
   `MailboxService::create()` and `::update()`), the `MailboxTemplate` model, mailbox fixtures and
   templates in `MailcowFactory`, and 003's clearing of `attribute_hash` on edits, to which this

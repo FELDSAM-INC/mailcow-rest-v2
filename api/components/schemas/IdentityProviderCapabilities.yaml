@@ -1,0 +1,145 @@
+type: object
+description: |
+  What a client needs before it shows or submits the identity provider forms, as configured on this
+  server. Available whether or not a configuration is stored. Contains no secret and no connection
+  detail of a stored configuration.
+required:
+  - configured
+  - configuredType
+  - appReturnUrls
+  - types
+  - defaults
+  - limits
+  - providerTimeoutSeconds
+  - singleSignOn
+properties:
+  configured:
+    type: boolean
+    description: Whether a configuration is stored (`GET /identity-provider` answers `404` otherwise).
+  configuredType:
+    description: Type of the stored configuration, `null` when none is stored.
+    oneOf:
+      - $ref: './IdentityProviderType.yaml'
+      - type: 'null'
+  appReturnUrls:
+    type: array
+    description: |
+      The new web app's sign-in return addresses, one per host name of the server
+      (`MAILCOW_HOSTNAME` first, then `ADDITIONAL_SERVER_NAMES`). Register them at a Keycloak or
+      generic OIDC provider before or after the first save.
+    items:
+      type: string
+      format: uri
+      examples: [https://mail.example.org/ng/sso/return]
+  types:
+    type: array
+    description: The provider types and what each offers.
+    items:
+      type: object
+      required: [type, singleSignOn, passwordSignIn, synchronisation]
+      properties:
+        type:
+          $ref: './IdentityProviderType.yaml'
+        singleSignOn:
+          type: boolean
+        passwordSignIn:
+          type: boolean
+          description: Password sign-in of its mailboxes (Keycloak only with the mailpassword flow).
+        synchronisation:
+          type: boolean
+      additionalProperties: false
+  defaults:
+    type: object
+    description: Values a whole save uses for omitted settings (legacy defaults).
+    required:
+      - createMailboxOnSignIn
+      - ignoreTlsErrors
+      - scopes
+      - port
+      - useSsl
+      - useStartTls
+      - usernameField
+      - mailpasswordFlow
+      - importUsers
+      - periodicSync
+      - syncInterval
+    properties:
+      createMailboxOnSignIn:
+        type: boolean
+      ignoreTlsErrors:
+        type: boolean
+      scopes:
+        type: string
+        examples: [openid profile email mailcow_template]
+      port:
+        type: integer
+      useSsl:
+        type: boolean
+      useStartTls:
+        type: boolean
+      usernameField:
+        type: string
+      mailpasswordFlow:
+        type: boolean
+      importUsers:
+        type: boolean
+      periodicSync:
+        type: boolean
+      syncInterval:
+        type: integer
+    additionalProperties: false
+  limits:
+    type: object
+    description: Field limits of a save, a change and a connection test.
+    required:
+      - attributeMappingMaxEntries
+      - attributeValueMaxLength
+      - additionalReturnUrlsMaxEntries
+      - urlMaxLength
+      - ldapHostsMaxEntries
+      - syncIntervalMinMinutes
+      - syncIntervalMaxMinutes
+      - secretMaxLength
+      - scopesMaxEntries
+      - distinguishedNameMaxLength
+      - filterMaxLength
+    properties:
+      attributeMappingMaxEntries:
+        type: integer
+      attributeValueMaxLength:
+        type: integer
+      additionalReturnUrlsMaxEntries:
+        type: integer
+      urlMaxLength:
+        type: integer
+      ldapHostsMaxEntries:
+        type: integer
+      syncIntervalMinMinutes:
+        type: integer
+      syncIntervalMaxMinutes:
+        type: integer
+      secretMaxLength:
+        type: integer
+      scopesMaxEntries:
+        type: integer
+      distinguishedNameMaxLength:
+        type: integer
+      filterMaxLength:
+        type: integer
+    additionalProperties: false
+  providerTimeoutSeconds:
+    type: integer
+    minimum: 1
+    description: Time-out of each call to the provider (7 by default).
+  singleSignOn:
+    type: object
+    required: [pendingLifetimeSeconds, renewalIntervalSeconds]
+    properties:
+      pendingLifetimeSeconds:
+        type: integer
+        description: Lifetime of a started single sign-on (600 by default).
+      renewalIntervalSeconds:
+        type: integer
+        description: Interval after which a single sign-on session is renewed with the provider (300 by default).
+    additionalProperties: false
+additionalProperties: false

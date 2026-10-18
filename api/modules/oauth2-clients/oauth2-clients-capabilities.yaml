@@ -1,0 +1,21 @@
+get:
+  operationId: getOauth2ClientsCapabilities
+  tags: [OAuth2 clients]
+  summary: Get OAuth2 client capabilities
+  description: |
+    Returns the legacy OAuth2 endpoint paths, the scope, the accepted grant types, the token
+    lifetimes in effect on this server, the redirect URI length limit, the bulk limit and the page
+    sizes. Changes nothing and is not audited. Administrators only: a signed-in administrator or a
+    key owned by an administrator, read-only keys included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/Oauth2ClientCapabilitiesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

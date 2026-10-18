@@ -39,5 +39,6 @@ properties:
   etag:
     type: string
     description: |
-      Version tag over the stored client (redirect URIs and secret included, tokens excluded). Equal
+      Version tag over the stored client (redirect URIs included, the secret as an HMAC keyed with
+      the server's application key, tokens excluded). Equal
       to the `ETag` header of a single read; send it in `If-Match`.

@@ -828,7 +828,7 @@ server fail or time out.
 
 ### Tests for User Story 7
 
-- [ ] T094 [P] [US7] Write `tests/Feature/Dkim/DkimDnsPublicationTest.php` (publication enabled,
+- [X] T094 [P] [US7] Write `tests/Feature/Dkim/DkimDnsPublicationTest.php` (publication enabled,
   `FakeIspconfigDnsClient`):
   - AS1: generation creates TXT `<selector>._domainkey` with the record value, `ttl 7200`,
     `active Y`, `server_id` from `RESTV2_ISPCONFIG_DNS_SERVER_ID`, client `sys_groupid - 1`;
@@ -850,7 +850,7 @@ server fail or time out.
 
 ### Implementation for User Story 7
 
-- [ ] T095 [US7] Implement `DkimKeyService::publishAgain()` in `app/Services/Dkim/DkimKeyService.php`
+- [X] T095 [US7] Implement `DkimKeyService::publishAgain()` in `app/Services/Dkim/DkimKeyService.php`
   (enabled check → disabled problem, `If-Match` against the stored fingerprint, publish with the
   current selector, audit) and create `app/Http/Controllers/Api/V2/DkimDnsPublicationController.php`
   (`200` with `DkimKeyChangeResource` and `ETag`), and register

@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V2\ContainerRestartController;
 use App\Http\Controllers\Api\V2\ContainerStartController;
 use App\Http\Controllers\Api\V2\ContainerStopController;
 use App\Http\Controllers\Api\V2\CsrfTokenController;
+use App\Http\Controllers\Api\V2\DkimDnsPublicationController;
 use App\Http\Controllers\Api\V2\DkimKeyBulkActionController;
 use App\Http\Controllers\Api\V2\DkimKeyController;
 use App\Http\Controllers\Api\V2\DkimKeyCopyController;
@@ -793,6 +794,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('dkimName', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'dkimKeyCopy', 'target' => 'dkimKey'])
             ->name('dkim-key-copy.store');
+        Route::post('/dkim-keys/{dkimName}/dns-publication', [DkimDnsPublicationController::class, 'store'])
+            ->where('dkimName', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'dkimDnsPublication', 'target' => 'dkimKey'])
+            ->name('dkim-dns-publication.store');
         Route::delete('/dkim-keys/{dkimName}', [DkimKeyController::class, 'destroy'])
             ->where('dkimName', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'dkimKeyDeletion', 'target' => 'dkimKey'])

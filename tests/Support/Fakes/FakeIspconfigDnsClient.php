@@ -59,6 +59,14 @@ final class FakeIspconfigDnsClient implements IspconfigDnsClient
         $this->failures[$function] = [$reason, $detail];
     }
 
+    /**
+     * Ends every programmed failure, as when the server is reachable again (feature 010 T094).
+     */
+    public function recover(): void
+    {
+        $this->failures = [];
+    }
+
     public function delay(string $function, float $seconds): void
     {
         $this->delays[$function] = $seconds;

@@ -213,6 +213,35 @@ class DkimKeyService
     }
 
     /**
+     * publishDkimDnsRecord (FR-031): the record of the name's current key published again, with the
+     * same steps and outcomes as after a key change. Administrators only; `403
+     * dkim-dns-publication-disabled` while the publication is off; a name without a key, or with a
+     * key lacking its selector or public key (nothing to publish), is `404`; `If-Match` applies to
+     * the key. The key is unchanged; the outcome is audited.
+     */
+    public function publishAgain(Principal $principal, string $rawName, ?string $ifMatch): DkimKeyChange
+    {
+        Gate::forUser($principal)->authorize('dkim.publish');
+
+        if (! IspconfigSettings::fromConfig()->enabled()) {
+            throw new ProblemException(ProblemType::DkimDnsPublicationDisabled);
+        }
+
+        $name = $this->names->resolve($principal, $rawName) ?? throw new NotFoundHttpException('The name has no DKIM key.');
+        $key = $this->store->read($name->name);
+
+        if ($key === null || $key->selector === null || $key->publicKey === null) {
+            throw new NotFoundHttpException('The name has no DKIM key to publish.');
+        }
+
+        $this->checkVersion($key, $ifMatch);
+        $publication = $this->publisher->publish($name->name, $key->selector, $key->publicKey);
+        $this->audit->publication(new AuditContext($principal), $name->name, $key->selector, $publication);
+
+        return new DkimKeyChange(new DkimEntry($name, $key), false, $publication);
+    }
+
+    /**
      * exportDkimPrivateKey (FR-026, research R9), in this order: administrators only (`403
      * forbidden`), only while SHOW_DKIM_PRIV_KEYS is enabled (`403 dkim-private-key-export-disabled`),
      * a name in scope (`404`) with a private key (`404`), then the audit record; when it cannot be

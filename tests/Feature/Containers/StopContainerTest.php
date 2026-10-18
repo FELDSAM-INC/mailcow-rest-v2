@@ -3,6 +3,7 @@
 namespace Tests\Feature\Containers;
 
 use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Monitoring\MonitoringFixtures;
 use Tests\Support\Monitoring\MonitoringTestHelpers;
 use Tests\TestCase;
@@ -15,6 +16,9 @@ class StopContainerTest extends TestCase
 {
     use MonitoringTestHelpers;
 
+    /**
+     * @return TestResponse<Response>
+     */
     private function stop(string $service): TestResponse
     {
         return $this->postEmpty("/api/v2/containers/{$service}/stop", $this->csrf());

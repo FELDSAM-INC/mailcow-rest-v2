@@ -415,18 +415,18 @@ secret-bearing, every priority, more than a page) and compare every filter and p
 
 ### Tests for User Story 3 (write first, observe failing) ⚠️
 
-- [ ] T044 [P] [US3] Write `tests/Unit/Logs/SecretMaskerTest.php` and
+- [X] T044 [P] [US3] Write `tests/Unit/Logs/SecretMaskerTest.php` and
   `tests/Unit/Logs/LegacyApiDataParserTest.php` (FR-028, R15): names containing `pass`,
   `secret`, `private`, `token` (any case) and the exact name `key` are masked at any depth,
   including whole nested objects; `api_key`, `keyboard` and list elements are not masked by name;
   `attr='{"password":"x","dkim":{"private_key_file":"-----BEGIN"}}', items='["a"]'` parses into
   `{attr: {...}, items: [...]}` and masks both values; a value containing `', x='` inside a JSON
   string parses correctly; an unsplittable string → `null`.
-- [ ] T045 [P] [US3] Write `tests/Unit/Logs/LogCursorTest.php` and `tests/Unit/Logs/Base64MessageTest.php`
+- [X] T045 [P] [US3] Write `tests/Unit/Logs/LogCursorTest.php` and `tests/Unit/Logs/Base64MessageTest.php`
   (R12): cursor encode/decode per source (Redis `<time>.<hash16>.<n>`, `logs` id, `sasl_log`
   base64url tuple), malformed cursors rejected; `base64,` + valid base64 of UTF-8 → decoded,
   `base64,` + text that is not base64 or decodes to invalid UTF-8 → text without the prefix.
-- [ ] T046 [P] [US3] Write `tests/Feature/Logs/RedisLogTypesTest.php` with a data provider over the
+- [X] T046 [P] [US3] Write `tests/Feature/Logs/RedisLogTypesTest.php` with a data provider over the
   ten Redis types (`postfix`, `dovecot`, `sogo`, `netfilter`, `autodiscover`, `watchdog`, `acme`,
   `cron`, `rate-limits`, `legacy-api-requests`), pushing lines with `MailcowLogs` in the producers'
   exact formats: each entry has the contract fields; watchdog text numbers become integers; a
@@ -436,7 +436,7 @@ secret-bearing, every priority, more than a page) and compare every filter and p
   type-specific filter of FR-022 (autodiscover `service`/`user`, watchdog `service`, cron
   `task`/`priority`, rate limits `rateLimitName`/`sender`/`user`, legacy API `method`/`clientAddress`,
   syslog `priority`/`program`) matches case-insensitively as a substring with OR across values.
-- [ ] T047 [P] [US3] Write `tests/Feature/Logs/LogPagingAndFiltersTest.php` (AS-1, AS-2, AS-3,
+- [X] T047 [P] [US3] Write `tests/Feature/Logs/LogPagingAndFiltersTest.php` (AS-1, AS-2, AS-3,
   AS-6, FR-024–FR-027): 10,000 Postfix entries → 25 newest, newest first, `total: 10000`;
   `order=asc`; equal times keep stored order; `q=ALICE@example.org` matches case-insensitively;
   `severity=error` returns `err`, `emerg`, `alert`, `crit` only; `priority` and `program` filters
@@ -445,12 +445,12 @@ secret-bearing, every priority, more than a page) and compare every filter and p
   older; a cursor whose entry was removed from the middle (`LREM`) falls back to strictly older
   times; malformed `before` → `422 invalidFormat` (`format: logCursor`); `limit=1001` →
   `422 outOfRange`; Redis unavailable → `503`.
-- [ ] T048 [P] [US3] Write `tests/Feature/Logs/LegacyLogMaskingTest.php` (AS-5, FR-028, SC-006):
+- [X] T048 [P] [US3] Write `tests/Feature/Logs/LegacyLogMaskingTest.php` (AS-5, FR-028, SC-006):
   an `API_LOG` entry with a DKIM private key and a password returns both as `*`; `q` equal to the
   masked password matches nothing and `total` is 0; `logs` rows whose `call` holds `client_secret`,
   `token`, `bind_password` and `private_key_file`, and a `msg` with parameters, are masked;
   a scan of every log response body of this test for the planted values finds none.
-- [ ] T049 [P] [US3] Write `tests/Feature/Logs/LegacyUiActivityLogTest.php` (FR-022, FR-029, R13):
+- [X] T049 [P] [US3] Write `tests/Feature/Logs/LegacyUiActivityLogTest.php` (FR-022, FR-029, R13):
   rows inserted with `MailcowFactory` in legacy's format (`msg` JSON string and list, `call` list,
   dual-login user `admin => alice@example.org`); `messageKey` and `messageParameters`; `call` as a
   list; order by id; `before` = id keyset; `type`, `user`, `role` filters; `q` verified on masked
@@ -458,38 +458,38 @@ secret-bearing, every priority, more than a page) and compare every filter and p
   page sizes for ranges (the legacy `LIMIT` bug is not reproduced); a row whose `msg` and `call` are
   not valid JSON is listed with `messageKey: null`, no parameters and `call: []`, and counts in the
   total.
-- [ ] T050 [P] [US3] Write `tests/Feature/Logs/LoginLogTest.php` (FR-030, R14): `sasl_log` rows with
+- [X] T050 [P] [US3] Write `tests/Feature/Logs/LoginLogTest.php` (FR-030, R14): `sasl_log` rows with
   local `datetime` in `Europe/Prague` are returned in UTC; with `RESTV2_SASL_LOG_SERVICE=WEBUI` a
   `MAILCOWUI` row is reported as `WEBUI` and `service=webui` matches it; upstream label keeps
   `MAILCOWUI`; `appPasswordUsed`; keyset cursor survives a `REPLACE` of an older row without
   duplicates; five rows sharing one `datetime`, paged two at a time with `before`, come back exactly
   once each in `service`, `real_rip`, `username` descending order; `from`/`to` converted from UTC.
-- [ ] T051 [P] [US3] Write `tests/Feature/Logs/UnknownLogTypeTest.php` (AS-7, FR-003):
+- [X] T051 [P] [US3] Write `tests/Feature/Logs/UnknownLogTypeTest.php` (AS-7, FR-003):
   `GET /logs/rspamd` and `/logs/unknown` → `404` problem (no route).
-- [ ] T052 [US3] Add the twelve `GET /logs/*` operations to the provider of
+- [X] T052 [US3] Add the twelve `GET /logs/*` operations to the provider of
   `MonitoringAuthorizationTest` (AS-8).
 
 ### Implementation for User Story 3
 
-- [ ] T053 [P] [US3] Create `app/Services/Logs/SecretMasker.php` and `LegacyApiDataParser.php`
+- [X] T053 [P] [US3] Create `app/Services/Logs/SecretMasker.php` and `LegacyApiDataParser.php`
   (R15). This makes T044 pass.
-- [ ] T054 [P] [US3] Create `app/Services/Logs/LogType.php` (enum of the twelve types with path,
+- [X] T054 [P] [US3] Create `app/Services/Logs/LogType.php` (enum of the twelve types with path,
   source, Redis key, severity support and type-specific filters), `LogQuery.php`, `LogPage.php`,
   `LogCursor.php`, `LogSeverity.php` and `Base64Message.php`. This makes T045 pass.
-- [ ] T055 [P] [US3] Create the mappers in `app/Services/Logs/Mappers/`:
+- [X] T055 [P] [US3] Create the mappers in `app/Services/Logs/Mappers/`:
   `SyslogEntryMapper`, `NetfilterEntryMapper`, `AutodiscoverEntryMapper`, `WatchdogEntryMapper`,
   `AcmeEntryMapper`, `CronEntryMapper`, `RateLimitEntryMapper`, `LegacyApiRequestEntryMapper`
   (each `map(string $raw): ?array`, `null` for unparseable lines, masking applied where FR-028
   requires).
-- [ ] T056 [US3] Create `app/Services/Logs/RedisListLogSource.php` (R12: full `LRANGE`, stable sort,
+- [X] T056 [US3] Create `app/Services/Logs/RedisListLogSource.php` (R12: full `LRANGE`, stable sort,
   cursor, filters, `q` on normalised entries, paging). Depends on T053–T055. This makes T046–T048
   (Redis parts) pass.
-- [ ] T057 [P] [US3] Create `app/Models/Mailcow/LegacyUiLogEntry.php` (read only, throws on
+- [X] T057 [P] [US3] Create `app/Models/Mailcow/LegacyUiLogEntry.php` (read only, throws on
   `saving` and `deleting`) and `app/Services/Logs/LegacyUiActivityLogSource.php` (R13, SQL paging
   without `q`, pre-filter plus `lazyById` verification with `q`).
-- [ ] T058 [P] [US3] Create `app/Services/Logs/LoginLogSource.php` (R14) using 001's
+- [X] T058 [P] [US3] Create `app/Services/Logs/LoginLogSource.php` (R14) using 001's
   `SaslLogEntry` and `MailcowDateTime`.
-- [ ] T059 [US3] Create `app/Http/Requests/Api/V2/ListLogEntriesRequest.php` (common rules plus the
+- [X] T059 [US3] Create `app/Http/Requests/Api/V2/ListLogEntriesRequest.php` (common rules plus the
   type-specific filters from `LogType`: arrays of at most 20 strings of 1–255 characters, `severity`
   only for types with a priority, `before` validated by `app/Rules/LogCursorFormat.php`), the
   resources `app/Http/Resources/Api/V2/LogEntryResource.php` (per-type shapes), and
@@ -982,3 +982,10 @@ Deviations and decisions made while implementing, with the reason:
   cannot be read after a successful restart, the response shows its state before the restart. No
   `ContainerActionResultResource` class: the controllers build the representation with
   `ContainerPresenter`.
+- **T053–T059** (US3): `LogMatcher` holds the filters and the search shared by the three sources;
+  `q` covers every text of the normalised, masked entry except `id`, `time` and `severity`. An empty
+  `requestData` is returned as `{}` (the contract's object). Contract gaps G6 and G9 are settled as
+  follows: `before` always selects the entries older than the cursor's entry, `order` then sorts
+  that selection (so with `order=asc` the page starts at the oldest retained entry), and
+  `meta.total` counts the matching entries after `before` (the remaining ones); both are documented
+  on `LogBefore`. No `LogEntryResource` class: the sources return the contract entries.

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Containers;
 
 use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Monitoring\MonitoringTestHelpers;
 use Tests\TestCase;
 
@@ -13,6 +14,9 @@ class RestartContainerTest extends TestCase
 {
     use MonitoringTestHelpers;
 
+    /**
+     * @return TestResponse<Response>
+     */
     private function restart(string $service): TestResponse
     {
         return $this->postEmpty("/api/v2/containers/{$service}/restart", $this->csrf());

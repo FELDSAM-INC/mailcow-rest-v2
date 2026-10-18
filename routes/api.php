@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\V2\DomainTemplateController;
 use App\Http\Controllers\Api\V2\HostOverviewController;
 use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\LivenessController;
+use App\Http\Controllers\Api\V2\LogEntryController;
 use App\Http\Controllers\Api\V2\MailboxBulkActionController;
 use App\Http\Controllers\Api\V2\MailboxCapabilitiesController;
 use App\Http\Controllers\Api\V2\MailboxController;
@@ -58,6 +59,7 @@ use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
 use App\Http\Controllers\Api\V2\SessionController;
 use App\Http\Middleware\AuthorizeMonitoring;
+use App\Services\Logs\LogType;
 use App\Services\Monitoring\ContainerRegistry;
 use Illuminate\Support\Facades\Route;
 
@@ -378,6 +380,12 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/containers/{containerName}/resource-usage', [ContainerResourceUsageController::class, 'show'])
             ->where('containerName', ContainerRegistry::NAME_PATTERN)
             ->name('container-resource-usage.show');
+
+        foreach (LogType::cases() as $logType) {
+            Route::get('/logs/'.$logType->value, [LogEntryController::class, 'index'])
+                ->defaults('logType', $logType->value)
+                ->name('logs.'.$logType->value);
+        }
     });
 
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending', AuthorizeMonitoring::class])->group(function (): void {

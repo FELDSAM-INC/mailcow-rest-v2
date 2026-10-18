@@ -762,7 +762,7 @@ type and sign-in method.
 
 ## Phase 8: Polish, operations and cross-cutting concerns
 
-- [ ] T088 [P] Write `tests/Feature/Security/IdentityProviderAuthorizationMatrixTest.php` (constitution
+- [X] T088 [P] Write `tests/Feature/Security/IdentityProviderAuthorizationMatrixTest.php` (constitution
   VI, quality gate 5, SC-005), following 001's `AuthorizationMatrixTest`: all 19 operations × anonymous,
   pending sign-in, restricted (`passwordChange`), restricted (`secondFactorSetup`), administrator
   session, domain-administrator session, mailbox session, administrator read-write key,
@@ -770,7 +770,7 @@ type and sign-in method.
   problem type from a table derived from the contract, R15 and FR-003. Object level: an unknown
   `oauth2ClientId` → `404` for administrators and `403 forbidden` for other roles; single sign-on
   operations with a key → `403 session-required`.
-- [ ] T089 [P] Write `tests/Feature/Security/IdentityProviderSecretScanTest.php` (SC-004, FR-055): run
+- [X] T089 [P] Write `tests/Feature/Security/IdentityProviderSecretScanTest.php` (SC-004, FR-055): run
   a save, change, test, single sign-on with renewal, provider password sign-ins, OAuth2 creation,
   regeneration, revocation and bulk deletion with distinctive secrets, codes, states, verifiers and
   tokens; capture the log channel; assert that no response (apart from the OAuth2 creation and
@@ -780,7 +780,7 @@ type and sign-in method.
   filter that excludes the entry, wrong password → code 49, wrong bind DN password → unavailable,
   `ldaps://` with the self-signed certificate refused unless `ignoreTlsErrors`, StartTLS, a stopped
   server → unavailable within 7 s.
-- [ ] T091 [P] Write `tests/Feature/Performance/SingleSignOnLatencyTest.php` (SC-003): over 20 faked
+- [X] T091 [P] Write `tests/Feature/Performance/SingleSignOnLatencyTest.php` (SC-003): over 20 faked
   single sign-ons (start and completion, with creation in 5 of them), the API's own time at p95 is
   below 2 s, measured without the faked provider latency.
 - [ ] T092 [P] Document the feature in `README.md`: identity provider setup, the return addresses to

@@ -33,8 +33,8 @@ post:
     are transient system objects, the documented exception to one record per object. Refusals are
     audited too. When the audit log cannot be written before the action, the request is refused
     with `temporary-failure` and nothing is done. When the record cannot be written after the
-    action, the response carries the header `Audit-Recorded: false` (the shared
-    `BulkResultResponse` cannot declare it).
+    action, the response carries the header `Audit-Recorded: false` (declared on the shared
+    `BulkResultResponse`).
   x-destructive: true
   security:
     - sessionCookie: []

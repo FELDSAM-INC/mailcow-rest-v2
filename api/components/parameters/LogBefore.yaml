@@ -7,6 +7,11 @@ description: |
   `offset` at 0: the next page then has no duplicates, whatever arrived meanwhile. When that entry
   was trimmed by mailcow's retention, nothing older is retained and the page is empty. A malformed
   cursor is refused (`invalidFormat`, `format: logCursor`).
+
+  `before` always selects the entries older than the cursor's entry, whatever `order` says; `order`
+  then sorts that selection, so with `order=asc` the page starts at the oldest retained entry.
+  Clients that page backwards keep the default `order=desc`. With `before`, `meta.total` counts the
+  matching entries older than the cursor (the remaining ones), not the whole log.
 schema:
   type: string
   minLength: 1

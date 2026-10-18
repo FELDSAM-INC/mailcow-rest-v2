@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\ApiKeys\ApiKeys;
 use Tests\Support\Mailcow\MailcowFactory;
+use Tests\Support\Monitoring\MonitoringFixtures;
 use Tests\TestCase;
 
 /**
@@ -36,6 +37,7 @@ class MonitoringAuthorizationTest extends TestCase
         $f->domain('example.org');
         $f->domainAdmin('reseller', ['example.org'], scheme: 'SSHA256');
         $f->mailbox('user@example.org', MailcowFactory::PASSWORD, 'SSHA256');
+        $this->dockerApi()->withQueue(MonitoringFixtures::text('postqueue-j.txt'));
         $this->keys = [
             'adminKey' => $this->apiKey('admin', 'readWrite')['secret'],
             'adminReadOnlyKey' => $this->apiKey('admin', 'readOnly')['secret'],
@@ -74,6 +76,15 @@ class MonitoringAuthorizationTest extends TestCase
             'listLegacyApiRequestLog' => ['GET', '/api/v2/logs/legacy-api-requests', null, null, null],
             'listLegacyUiActivityLog' => ['GET', '/api/v2/logs/legacy-ui-activity', null, null, null],
             'listLoginLog' => ['GET', '/api/v2/logs/logins', null, null, null],
+            // US4 (T066); the content view is the one audited read.
+            'listMailQueueMessages' => ['GET', '/api/v2/mail-queue/messages', null, null, null],
+            'getMailQueueMessageContent' => ['GET', '/api/v2/mail-queue/messages/4F0A1C2B3D/content', null, 'mailQueueMessageView', 'mailQueueMessage'],
+            'bulkMailQueueMessagesDeliver' => ['POST', '/api/v2/mail-queue/messages/bulk-actions', ['action' => 'deliver', 'targets' => [['id' => '4F0A1C2B3D']]], 'mailQueueDelivery', 'mailQueue'],
+            'bulkMailQueueMessagesHold' => ['POST', '/api/v2/mail-queue/messages/bulk-actions', ['action' => 'hold', 'targets' => [['id' => '4F0A1C2B3D']]], 'mailQueueHold', 'mailQueue'],
+            'bulkMailQueueMessagesRelease' => ['POST', '/api/v2/mail-queue/messages/bulk-actions', ['action' => 'release', 'targets' => [['id' => '9E5F607182']]], 'mailQueueRelease', 'mailQueue'],
+            'bulkMailQueueMessagesDelete' => ['POST', '/api/v2/mail-queue/messages/bulk-actions', ['action' => 'delete', 'targets' => [['id' => '9E5F607182']]], 'mailQueueDeletion', 'mailQueue'],
+            'flushMailQueue' => ['POST', '/api/v2/mail-queue/flush', null, 'mailQueueFlush', 'mailQueue'],
+            'purgeMailQueue' => ['POST', '/api/v2/mail-queue/purge', null, 'mailQueuePurge', 'mailQueue'],
             // US2 (T041).
             'startContainer' => ['POST', '/api/v2/containers/sogo-mailcow/start', null, 'containerStart', 'container'],
             'stopContainer' => ['POST', '/api/v2/containers/clamd-mailcow/stop', null, 'containerStop', 'container'],

@@ -38,6 +38,11 @@ use App\Http\Controllers\Api\V2\MailboxSenderSettingsController;
 use App\Http\Controllers\Api\V2\MailboxTagController;
 use App\Http\Controllers\Api\V2\MailboxTemplateBulkActionController;
 use App\Http\Controllers\Api\V2\MailboxTemplateController;
+use App\Http\Controllers\Api\V2\MailQueueBulkActionController;
+use App\Http\Controllers\Api\V2\MailQueueFlushController;
+use App\Http\Controllers\Api\V2\MailQueueMessageContentController;
+use App\Http\Controllers\Api\V2\MailQueueMessageController;
+use App\Http\Controllers\Api\V2\MailQueuePurgeController;
 use App\Http\Controllers\Api\V2\MailStorageUsageController;
 use App\Http\Controllers\Api\V2\MonitoringCapabilitiesController;
 use App\Http\Controllers\Api\V2\OpenApiDocumentController;
@@ -59,6 +64,7 @@ use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
 use App\Http\Controllers\Api\V2\SessionController;
 use App\Http\Middleware\AuthorizeMonitoring;
+use App\Rules\MailQueueId;
 use App\Services\Logs\LogType;
 use App\Services\Monitoring\ContainerRegistry;
 use Illuminate\Support\Facades\Route;
@@ -381,6 +387,12 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('containerName', ContainerRegistry::NAME_PATTERN)
             ->name('container-resource-usage.show');
 
+        Route::get('/mail-queue/messages', [MailQueueMessageController::class, 'index'])->name('mail-queue-messages.index');
+        Route::get('/mail-queue/messages/{queueId}/content', [MailQueueMessageContentController::class, 'show'])
+            ->where('queueId', MailQueueId::PATTERN)
+            ->defaults('restv2.audit', ['event' => 'mailQueueMessageView', 'target' => 'mailQueueMessage'])
+            ->name('mail-queue-message-content.show');
+
         foreach (LogType::cases() as $logType) {
             Route::get('/logs/'.$logType->value, [LogEntryController::class, 'index'])
                 ->defaults('logType', $logType->value)
@@ -401,6 +413,16 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('containerName', ContainerRegistry::NAME_PATTERN)
             ->defaults('restv2.audit', ['event' => 'containerRestart', 'target' => 'container'])
             ->name('container-restart.store');
+        // POST-only: queue IDs are hexadecimal, so they never collide with `bulk-actions`.
+        Route::post('/mail-queue/messages/bulk-actions', [MailQueueBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'mailQueue'])
+            ->name('mail-queue-bulk-actions.store');
+        Route::post('/mail-queue/flush', [MailQueueFlushController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'mailQueueFlush', 'target' => 'mailQueue'])
+            ->name('mail-queue-flush.store');
+        Route::post('/mail-queue/purge', [MailQueuePurgeController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'mailQueuePurge', 'target' => 'mailQueue'])
+            ->name('mail-queue-purge.store');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

@@ -511,13 +511,13 @@ acting on a simulated queue.
 
 ### Tests for User Story 4 (write first, observe failing) ⚠️
 
-- [ ] T060 [P] [US4] Write `tests/Unit/MailQueue/PostqueueJsonParserTest.php` (R17, R33): the
+- [X] T060 [P] [US4] Write `tests/Unit/MailQueue/PostqueueJsonParserTest.php` (R17, R33): the
   fixture parses into messages with recipients and deferral reasons and `forced_expire`; empty lines
   and the line `1` are skipped; the 12,000-line generated queue yields 10,000 messages,
   `truncated: true`, `queueCounts` over all 12,000 lines, and the IDs of all 12,000 lines for the
   membership check (an action on an ID from line 11,000 is `done`, not `notFound`); unparseable lines
   are skipped.
-- [ ] T061 [P] [US4] Write `tests/Feature/MailQueue/ListMailQueueTest.php` (AS-1, AS-8, FR-037,
+- [X] T061 [P] [US4] Write `tests/Feature/MailQueue/ListMailQueueTest.php` (AS-1, AS-8, FR-037,
   FR-038, FR-043): `queue=deferred&recipient=partner.example` → exactly 3; `meta.queueCounts`
   (`active`, `deferred`, `hold`, `incoming`, `maildrop`, `total`) independent of filters; sort by
   `arrivalTime` (default asc), `size`, `sender`, `queue`, `id` with ties by id; `q` over id, sender,
@@ -526,7 +526,7 @@ acting on a simulated queue.
   `409 mail-service-not-running` with `container: postfix-mailcow` and no exec; snapshot running
   but exec answers `null` and a fresh read shows it stopped → `409`; `danger` → `502
   queue-action-failed`; the exec call is `exec('postfix-mailcow', ['cmd' => 'mailq', 'task' => 'list'])`.
-- [ ] T062 [P] [US4] Write `tests/Feature/MailQueue/MailQueueContentTest.php` (AS-2, FR-039, FR-062):
+- [X] T062 [P] [US4] Write `tests/Feature/MailQueue/MailQueueContentTest.php` (AS-2, FR-039, FR-062):
   content returned as `{id, content}`; an audit row `mailQueueMessageView` with target
   `mailQueueMessage` and the queue ID and **no** content in any column; a missing message → `404` and
   an audit row with failure reason `notFound`; a read-only administrator key may view and is
@@ -534,7 +534,7 @@ acting on a simulated queue.
   `queueId` not hexadecimal → `404` (route constraint, unaudited); a domain administrator's and a
   restricted session's attempt → `403` with one `permissionDenied` row (`mailQueueMessageView`,
   target `mailQueueMessage`).
-- [ ] T063 [P] [US4] Write `tests/Feature/MailQueue/MailQueueBulkActionsTest.php` (AS-3, AS-4, AS-7,
+- [X] T063 [P] [US4] Write `tests/Feature/MailQueue/MailQueueBulkActionsTest.php` (AS-3, AS-4, AS-7,
   FR-040, FR-042, R17), all through `POST /mail-queue/messages/bulk-actions` with
   `{"action": …, "targets": [{"id": …}]}`: four IDs of which one is no longer listed →
   `action: hold`: three `done`, one
@@ -548,32 +548,32 @@ acting on a simulated queue.
   (`mailQueueDelivery`, `mailQueueHold`, `mailQueueRelease`, `mailQueueDeletion`); a target with
   `version` →
   `422`; `danger` → `502`; timeout → `504 outcome-unknown` (`step: hold`); Postfix stopped → `409`.
-- [ ] T064 [P] [US4] Write `tests/Feature/MailQueue/MailQueueFlushPurgeTest.php` (AS-5, AS-6,
+- [X] T064 [P] [US4] Write `tests/Feature/MailQueue/MailQueueFlushPurgeTest.php` (AS-5, AS-6,
   FR-041, FR-042): flush sends `flush`, purge sends `super_delete`, both answer
   `MailQueueActionResult` with `completedAt`; held messages are not part of flush (documented, fake
   queue keeps them); purge empties every queue of the fake including hold.
-- [ ] T065 [P] [US4] Write `tests/Feature/MailQueue/MailQueueAuditTest.php` (AS-3, FR-062, FR-064):
+- [X] T065 [P] [US4] Write `tests/Feature/MailQueue/MailQueueAuditTest.php` (AS-3, FR-062, FR-064):
   one audit row per bulk request listing every ID with its result, with the request ID as bulk
   request ID; flush and purge one row each; probe failure → `503` and no exec; audit insert failing
   until the deadline → `200` with `Audit-Recorded: false`.
-- [ ] T066 [US4] Add the five mail-queue operations (bulk actions once per action value) to the provider of
+- [X] T066 [US4] Add the five mail-queue operations (bulk actions once per action value) to the provider of
   `MonitoringAuthorizationTest`.
 
 ### Implementation for User Story 4
 
-- [ ] T067 [P] [US4] Create `app/Services/MailQueue/PostqueueJsonParser.php` and
+- [X] T067 [P] [US4] Create `app/Services/MailQueue/PostqueueJsonParser.php` and
   `MailQueueListing.php` (R17, R33). This makes T060 pass.
-- [ ] T068 [US4] Create `app/Services/MailQueue/MailQueueService.php` (R17): `list(MailQueueQuery)`,
+- [X] T068 [US4] Create `app/Services/MailQueue/MailQueueService.php` (R17): `list(MailQueueQuery)`,
   `content(Principal, string $id)`, `apply(Principal, action, list $ids): MailQueueBulkOutcome`,
   `flush(Principal)`, `purge(Principal)`, with the Postfix running check via `ContainerRegistry`,
   the pre-list membership check, `IrreversibleOperationAudit` for actions and `AuditLogger` for
   views.
-- [ ] T069 [US4] Create `app/Rules/MailQueueId.php`, `app/Http/Requests/Api/V2/ListMailQueueMessagesRequest.php`
+- [X] T069 [US4] Create `app/Rules/MailQueueId.php`, `app/Http/Requests/Api/V2/ListMailQueueMessagesRequest.php`
   and `MailQueueBulkActionRequest.php` (`action` "one of deliver, hold, release, delete" →
   `notInList`; `targets` "between 1 and 1,000" → `required`/`tooMany`; `targets.*.id`
   "hexadecimal characters only" → `invalidFormat` `queueId`; `targets.*.version` prohibited), the resources `MailQueueMessageResource`, `MailQueueMessageContentResource` and a
   `BulkResultResource` (reuse 002's if present) in `app/Http/Resources/Api/V2/`.
-- [ ] T070 [US4] Create the controllers `MailQueueMessageController` (`index`),
+- [X] T070 [US4] Create the controllers `MailQueueMessageController` (`index`),
   `MailQueueMessageContentController` (`show`, route with `restv2.audit` `mailQueueMessageView`,
   target `mailQueueMessage`), `MailQueueBulkActionController`,
   `MailQueueFlushController`, `MailQueuePurgeController` (`store`) in
@@ -989,3 +989,11 @@ Deviations and decisions made while implementing, with the reason:
   that selection (so with `order=asc` the page starts at the oldest retained entry), and
   `meta.total` counts the matching entries after `before` (the remaining ones); both are documented
   on `LogBefore`. No `LogEntryResource` class: the sources return the contract entries.
+- **T067–T070** (US4): the queue action builds its `BulkResult` itself instead of using
+  `BulkActionRunner`: one command carries every present ID and one record lists every result (the
+  spec's clarification 5), while the runner applies and audits each item on its own. A version tag
+  on a queue target is refused with `unknownField` (`App\Rules\UnknownField`). Contract gap G8 is
+  fixed by declaring the optional `Audit-Recorded` header on the shared `BulkResultResponse` (the
+  plan's Complexity Tracking row assumed a referenced response could not get it). A view whose
+  record cannot be written answers `503` and returns no content. No resource classes: the service
+  returns the contract representations.

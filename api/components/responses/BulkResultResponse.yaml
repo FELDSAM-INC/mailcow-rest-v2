@@ -2,6 +2,17 @@ description: |
   The bulk action was processed. The status is `200` even when some or all items did not succeed:
   check each item's `outcome`. The whole request is refused (`403`) only when the caller's role,
   permission flag or key scope never allows the action.
+headers:
+  Audit-Recorded:
+    description: |
+      Sent with the value `false` only when the action was carried out but its audit record could
+      not be written within the container-service timeout (feature 011's queue actions, whose
+      single record is written after Postfix ran the command). The failure is in the service log.
+      Absent otherwise.
+    required: false
+    schema:
+      type: string
+      enum: ["false"]
 content:
   application/json:
     schema:

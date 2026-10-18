@@ -159,14 +159,15 @@ curl -s -k $B/public-config | jq .data.externalIdentityProvider.singleSignOnAvai
 ```
 
 The authorization address points at `http://keycloak:8080`, which only the containers resolve, so
-the provider's pages are used from inside the `app` container. Keycloak sends its cookies without a
-domain, so the login form is posted with them by hand:
+the provider's pages are used from inside the `app` container, which has `curl` and PHP but no `jq`
+(`j` below reads one member). Keycloak's cookies are posted back with the login form by hand:
 
 ```bash
 docker compose exec app bash
+j() { php -r '$d=json_decode(stream_get_contents(STDIN),true); foreach(explode(".",$argv[1]) as $k){$d=$d[$k]??null;} echo is_array($d)?json_encode($d):$d, PHP_EOL;' "$1"; }
 B=https://localhost/api/v2; CT='--connect-to localhost:443:web:443'; C="-sk $CT -c /tmp/jar -b /tmp/jar"
-T=$(curl $C $B/csrf-token | jq -r .data.token)
-URL=$(curl $C -H "X-CSRF-Token: $T" -X POST $B/session/single-sign-on | jq -r .data.authorizationUrl)
+T=$(curl $C $B/csrf-token | j data.token)
+URL=$(curl $C -H "X-CSRF-Token: $T" -X POST $B/session/single-sign-on | j data.authorizationUrl)
 curl -s -i "$URL" > /tmp/kc-page
 CK=$(grep -i '^set-cookie' /tmp/kc-page | sed -E 's/^[Ss]et-[Cc]ookie: ([^;]*).*/\1/' | tr -d '\r' | paste -sd';' -)
 FORM=$(grep -o 'action="http[^"]*authenticate[^"]*"' /tmp/kc-page | head -1 | sed 's/action="//; s/"$//; s/&amp;/\&/g')
@@ -176,8 +177,8 @@ echo "$LOC"           # https://localhost/ng/sso/return?state=…&code=…
 CODE=$(php -r 'parse_str(parse_url($argv[1], PHP_URL_QUERY), $q); echo $q["code"];' "$LOC")
 STATE=$(php -r 'parse_str(parse_url($argv[1], PHP_URL_QUERY), $q); echo $q["state"];' "$LOC")
 curl $C -H 'Content-Type: application/json' -H "X-CSRF-Token: $T" -X POST $B/session/single-sign-on/completion \
-  -d "{\"code\":\"$CODE\",\"state\":\"$STATE\"}" | jq '.data | {state, authMethod}'
-curl $C $B/me | jq .data.authentication   # {"method":"singleSignOn","identityProvider":"keycloak"}
+  -d "{\"code\":\"$CODE\",\"state\":\"$STATE\"}" | j data   # state active, authMethod singleSignOn
+curl $C $B/me | j data.authentication     # {"method":"singleSignOn","identityProvider":"keycloak"}
 ```
 
 **Expected**:

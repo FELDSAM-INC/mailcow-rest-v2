@@ -1567,7 +1567,9 @@ record for secrets.
 
   *Implementation note*: green: 841 tests, coverage 31 of 31, Pint, PHPStan level 6 and the
   contract lint clean. The production image build and the CI image job's two checks were run
-  locally too.
+  locally too. The CI breaking-change check pinned `tufin/oasdiff:v1.15.3`, which cannot load the
+  shared contract (feature 011's `MailQueueBulkTarget` has a boolean property schema); it now pins
+  `v1.32.1`, which reports no breaking change between the contract of 3e10ee0 and this one.
 - [X] T114 Run quickstart.md Part A and Part B against the dev stack and confirm every expected
   output. Correct quickstart.md where commands drifted from the implementation, keeping it a
   validation guide.

@@ -14,7 +14,7 @@ permissions:
 
 env:
   REDOCLY_CLI: '@redocly/cli@2.64.1'
-  OASDIFF_IMAGE: tufin/oasdiff:v1.15.3
+  OASDIFF_IMAGE: tufin/oasdiff:v1.32.1
   IMAGE_NAME: ghcr.io/feldsam-inc/mailcow-rest-v2
   DEV_IMAGE: restv2-dev:ci
 

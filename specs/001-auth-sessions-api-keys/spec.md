@@ -94,6 +94,12 @@
   Reaching the same limit (10 within 15 minutes) refuses further attempts for that pair as "too
   many requests", like FR-007 (FR-007, FR-024). (orchestrator decision during implementation:
   security fix, recorded as a deviation in the parity table.)
+- Q: How do the manual end-to-end checks keep the session cookie, which is always `Secure`
+  (FR-011), on the development stack? → A: The development stack serves HTTPS on
+  `127.0.0.1:18443` with a self-signed certificate generated at stack start and never committed,
+  and quickstart Part B uses it with `curl -k`. Production behaviour is unchanged. (orchestrator
+  decision during implementation: Part B failed because curl never sends a `Secure` cookie over
+  plain HTTP.)
 - Q: Can the audit log be filtered by how the actor authenticated? → A: Yes, with a repeatable
   authentication-method filter (FR-059). (orchestrator decision: gap G18, found by the UI 012
   plan, whose history view filters single sign-on and directory sign-ins.)

@@ -15,6 +15,7 @@ use Tests\TestCase;
 
 /**
  * Feature 002 T048 (FR-023, FR-025–FR-027): the side effects of a creation and its per-step report.
+ * Like legacy, a creation does not rebuild the groupware directory.
  */
 class CreateDomainSideEffectsTest extends TestCase
 {
@@ -113,14 +114,35 @@ class CreateDomainSideEffectsTest extends TestCase
         $this->assertSame([], $this->redis()->hGetAll('DKIM_SELECTORS'));
     }
 
-    public function test_the_groupware_directory_is_rebuilt_and_a_restart_requested(): void
+    /**
+     * Legacy mailbox('add', 'domain') returns before the closing update_sogo_static_view(), so a
+     * creation neither rebuilds the groupware directory nor flushes its cache, with or without the
+     * restart. A rebuild would add the existing mailbox and drop the stale row.
+     */
+    public function test_the_groupware_directory_is_not_rebuilt(): void
+    {
+        $this->mailcow()->mailboxWithDomain('alice@example.org');
+        DB::table('_sogo_static_view')->insert([
+            'c_uid' => 'gone@example.org', 'domain' => 'example.org', 'c_name' => 'gone@example.org',
+            'c_password' => '', 'mail' => 'gone@example.org', 'aliases' => '',
+        ]);
+        $this->asAdmin();
+
+        $plain = $this->create(['name' => 'a.example', 'dkimSelector' => '']);
+        $restarted = $this->create(['name' => 'b.example', 'dkimSelector' => '', 'restartGroupware' => true]);
+
+        $this->assertSame(['gone@example.org'], DB::table('_sogo_static_view')->pluck('c_uid')->all());
+        $this->assertSame(0, $this->memcached()->flushCount());
+        $this->assertArrayNotHasKey('groupwareDirectoryUpdate', $plain['creationReport']);
+        $this->assertArrayNotHasKey('groupwareDirectoryUpdate', $restarted['creationReport']);
+    }
+
+    public function test_the_groupware_restarts_only_when_requested(): void
     {
         $this->asAdmin();
 
         $plain = $this->create(['name' => 'a.example', 'dkimSelector' => '']);
-        $this->assertSame('done', $plain['creationReport']['groupwareDirectoryUpdate']);
         $this->assertSame('notRequested', $plain['creationReport']['groupwareRestart']);
-        $this->assertSame(1, $this->memcached()->flushCount());
         $this->dockerApi()->assertNothingCalled();
 
         $restarted = $this->create(['name' => 'b.example', 'dkimSelector' => '', 'restartGroupware' => true]);
@@ -151,7 +173,7 @@ class CreateDomainSideEffectsTest extends TestCase
 
         $data = $this->create(['name' => 'example.org', 'dkimSelector' => '', 'restartGroupware' => true]);
 
-        $this->assertSame('groupwareDisabled', $data['creationReport']['groupwareDirectoryUpdate']);
+        $this->assertArrayNotHasKey('groupwareDirectoryUpdate', $data['creationReport']);
         $this->assertSame('groupwareDisabled', $data['creationReport']['groupwareRestart']);
         $this->dockerApi()->assertNothingCalled();
         $this->assertSame(0, $this->memcached()->flushCount());

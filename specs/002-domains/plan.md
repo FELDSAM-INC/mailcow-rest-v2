@@ -12,7 +12,7 @@ Feature 002 lets administrators manage the mail domains of an existing mailcow s
 
 - list, search, filter, sort and inspect domains with the usage figures of the legacy screens;
 - create a domain from a template, with the legacy side effects (domain map, rate limit, DKIM key,
-  groupware directory, optional groupware restart) and a per-step creation report;
+  optional groupware restart) and a per-step creation report;
 - edit limits, quotas, relay options, Global Address List flag, description, tags and active state,
   with version tags and the domain administrators' permission rules;
 - delete an empty domain with full cleanup, including its alias domains, BCC maps and footer, after

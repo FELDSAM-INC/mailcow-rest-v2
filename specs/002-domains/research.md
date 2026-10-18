@@ -193,7 +193,9 @@ Legacy references are paths in mailcow-dockerized `2026-09a`
      - the audit record (`domainCreation`) with `creationReport: "pending"` (D16);
      - commit. When the commit fails after `HSET`, the entry is removed again (`HDEL`).
   4. The follow-up steps, each caught on its own (FR-024, FR-025): rate limit (D9), DKIM key and
-     publication (D10), groupware directory update (D13), groupware restart (D13).
+     publication (D10), groupware restart (D13). Like legacy, whose add case returns before the
+     closing `update_sogo_static_view()`, a creation does not rebuild the groupware directory
+     (corrected on 2026-10-18).
   5. Complete the audit record with the report and return `201` with `Location` and `ETag`.
 - **Rationale**: FR-024 makes the row, the tags and the map entry atomic, unlike legacy, which can
   leave a domain without its map entry. Redis has no transaction shared with MariaDB, so the write
@@ -295,8 +297,9 @@ Legacy references are paths in mailcow-dockerized `2026-09a`
     `DELETE FROM _sogo_static_view WHERE c_uid NOT IN (SELECT username FROM mailbox WHERE active =
     '1')`, then a memcached flush. `c_password` is a fresh random `{SSHA256}` hash per rebuild
     (spec parity note: legacy's hash is built from undefined variables). It does nothing when
-    `SKIP_SOGO=y` and returns `done`, `failed` or `groupwareDisabled`. It runs after the commit
-    (legacy runs it at the end of `mailbox()`); a failure is logged and, for a creation, reported.
+    `SKIP_SOGO=y` and returns `done`, `failed` or `groupwareDisabled`. It runs after the commit of
+    an edit, a deletion or a bulk request (legacy runs it at the end of `mailbox()`); a failure is
+    logged. A creation does not run it, because legacy's add case returns before that point.
   - `App\Clients\Memcached\MemcachedFlusher` (`SocketMemcachedFlusher`): opens
     `tcp://<RESTV2_MEMCACHED_HOST>:<RESTV2_MEMCACHED_PORT>` (default `memcached:11211`), sends
     `flush_all\r\n` and expects `OK`, with a 2 s timeout. Failures are ignored like legacy's
@@ -304,8 +307,8 @@ Legacy references are paths in mailcow-dockerized `2026-09a`
   - Groupware restart: `DockerApiClient::restart('sogo-mailcow')` (D14), only when asked and the
     groupware is enabled. A changed Global Address List flag needs this restart to take effect
     (`bootstrap-sogo.sh` reads `domain.gal` at start); an edit never restarts (FR-034).
-- **Rationale**: Parity with every legacy domain write. The memcached text protocol needs no PHP
-  extension. One rebuild per bulk request (FR-063 allows it).
+- **Rationale**: Parity with legacy's domain edits and deletions. The memcached text protocol needs
+  no PHP extension. One rebuild per bulk request (FR-063 allows it).
 - **Alternatives considered**: The `memcached` PECL extension was rejected: one command does not
   justify a new extension. An incremental view update was rejected: legacy rebuilds fully for
   domain operations, because a domain change affects every mailbox.

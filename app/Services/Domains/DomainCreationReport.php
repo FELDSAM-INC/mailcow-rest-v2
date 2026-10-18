@@ -15,8 +15,6 @@ final class DomainCreationReport
 
     public string $dkimDnsPublication = 'skipped';
 
-    public string $groupwareDirectoryUpdate = 'groupwareDisabled';
-
     public string $groupwareRestart = 'notRequested';
 
     /** @var array<string, string> step => message */
@@ -42,7 +40,6 @@ final class DomainCreationReport
             'rateLimit' => $this->rateLimit,
             'dkimKey' => $this->dkimKey,
             'dkimDnsPublication' => $this->dkimDnsPublication,
-            'groupwareDirectoryUpdate' => $this->groupwareDirectoryUpdate,
             'groupwareRestart' => $this->groupwareRestart,
         ];
 

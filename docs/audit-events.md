@@ -116,7 +116,7 @@ follow-up steps have run.
 |---|---|---|---|
 | `values` | object | The stored attributes in contract names: `description`, `active`, `maxMailboxes`, `maxAliases`, `defaultMailboxQuota`, `maxMailboxQuota`, `domainQuota` (bytes), `backupMx`, `relayAllRecipients`, `relayUnknownOnly`, `globalAddressList`, `tags`, the initial `rateLimit` (`{value, frame}` or `null`), `dkimSelector` (empty: no key) and `dkimKeySize`. | on success |
 | `templateId` | integer or null | The domain template the values came from; `null` when the built-in values applied because no Default template exists. | on success |
-| `creationReport` | object | The creation report of the response (`DomainCreationReport`): `rateLimit`, `dkimKey`, `dkimDnsPublication`, `groupwareDirectoryUpdate`, `groupwareRestart` and, when a step failed, `messages`. `"pending"` only until the follow-up steps complete. | on success |
+| `creationReport` | object | The creation report of the response (`DomainCreationReport`): `rateLimit`, `dkimKey`, `dkimDnsPublication`, `groupwareRestart` and, when a step failed, `messages`. `"pending"` only until the follow-up steps complete. Records written before 2026-10-18 also carry `groupwareDirectoryUpdate`, from the directory rebuild that creations no longer run (legacy never did). | on success |
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |

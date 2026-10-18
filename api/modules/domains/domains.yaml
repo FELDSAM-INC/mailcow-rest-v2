@@ -75,8 +75,10 @@ post:
        defaults, unless a key already exists for the name or the selector is explicitly empty;
        when the DKIM DNS publication is enabled (FeldHost setting), the public key is published to
        the ISPConfig DNS server;
-    3. the groupware directory update and cache flush, unless the groupware is disabled;
-    4. the groupware restart, when `restartGroupware` is `true`.
+    3. the groupware restart, when `restartGroupware` is `true`.
+
+    Like legacy, a creation does not rebuild the groupware directory or flush its cache: the new
+    domain has no mailboxes yet.
 
     When mailcow's shared store is unavailable, the creation is refused with `503
     temporary-failure` and nothing is stored. Concurrent creations of the same name: exactly one

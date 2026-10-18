@@ -485,7 +485,7 @@ and list the audit log filtered by target.
   silently falls back to the first template.)
 - **Default template missing** from the database: creation uses the built-in values in FR-022.
 - **Follow-up step fails** after the domain was stored (rate limit, DKIM key, DNS publication,
-  groupware update or restart): the domain stays created, and the creation report and the audit
+  groupware restart): the domain stays created, and the creation report and the audit
   record name each failed step.
 - **Groupware restart requested on a server whose groupware is disabled**: not an error. The report
   says the groupware is disabled.
@@ -696,9 +696,10 @@ and list the audit log filtered by target.
     the domain is now local (legacy behaviour);
   - apply the initial rate limit, when the request or the template sets one;
   - generate a DKIM key as in FR-027;
-  - update the groupware directory view and flush its cache, unless the groupware is disabled on
-    the server;
   - restart the groupware when the request asks for it (FR-026).
+
+  As in legacy, a creation MUST NOT update the groupware directory view or flush its cache: the
+  new domain has no mailboxes yet (corrected on 2026-10-18).
 - **FR-024**: Storing the domain, its tags and its domain map entry MUST succeed or fail together.
   Failures of the other steps MUST NOT undo the creation.
 - **FR-025**: The creation response MUST contain the domain and a creation report with the outcome
@@ -707,7 +708,6 @@ and list the audit log filtered by target.
   - DKIM key: created, already existed, not requested, or failed;
   - DKIM DNS publication: published, no DNS zone found, failed, not configured, or skipped because
     no new key was generated;
-  - groupware directory update: done, failed, or groupware disabled;
   - groupware restart: done, failed, not requested, or groupware disabled.
 - **FR-026**: A creation request MAY ask for the groupware to be restarted, which legacy offers as
   "Add domain and restart SOGo". On a server whose groupware is disabled, the request MUST still
@@ -1006,7 +1006,7 @@ in three ways:
 | Tags | Appended on create and edit. Tags after the 26th of a request dropped with a warning, no total limit, a duplicate fails with a database error. `delete/domain/tag` removes tags | Set replacement, case-insensitive duplicates merged, total ≤ limit (default 25), refusal above it (FR-043, FR-044). **Deviation** |
 | Tag filter (`get/domain/all?tags=`) | Substring match, any tag | Whole-tag match, any tag. Substring matching through the search (FR-012, FR-013). **Deviation** |
 | Domain list | `search/domain`: search on name and tags, 9 sortable columns, one detail lookup per row | Search also on readable name and description, filters, more sort keys, one request (FR-011 to FR-015) |
-| Creation side effects | `domain` and `tags_domain` rows, `DOMAIN_MAP` entry, removal of external `sender_acl` entries for the domain, `ratelimit('edit')` → `RL_VALUE`, `dkim('add')` → `DKIM_PUB_KEYS`, `DKIM_SELECTORS`, `DKIM_PRIV_KEYS` (fork: ISPConfig TXT push), `update_sogo_static_view()` and memcached flush unless `SKIP_SOGO=y`, optional dockerapi restart of `sogo-mailcow` | Same (FR-023, FR-026, FR-027) |
+| Creation side effects | `domain` and `tags_domain` rows, `DOMAIN_MAP` entry, removal of external `sender_acl` entries for the domain, `ratelimit('edit')` → `RL_VALUE`, `dkim('add')` → `DKIM_PUB_KEYS`, `DKIM_SELECTORS`, `DKIM_PRIV_KEYS` (fork: ISPConfig TXT push), optional dockerapi restart of `sogo-mailcow`. The add case returns before the closing `update_sogo_static_view()`, so there is no directory rebuild and no memcached flush | Same, without a directory rebuild or memcached flush (FR-023, FR-026, FR-027). Corrected on 2026-10-18: the API had rebuilt the directory on creation |
 | Partial failure at creation | A shared-store failure after the row insert leaves a domain without its map entry. Rate limit, DKIM and SOGo restart failures leave the domain created, with a message each | Domain, tags and map entry atomic; follow-up outcomes reported (FR-024, FR-025). **Deviation** for atomicity |
 | Edit side effects | `update_sogo_static_view()` and memcached flush. GAL changes need a SOGo restart | Same (FR-034) |
 | Delete preconditions | Any `mailbox` row, including resources, blocks. A missing domain is reported as removed | Same; a missing domain is "not found" (FR-035, FR-040). **Deviation** |
@@ -1027,7 +1027,7 @@ in three ways:
 | DKIM key size | Any number the key generator accepts | 1024, 2048, 3072 or 4096, as the forms offer (FR-020). **Deviation** |
 | Default DKIM selector | `dkim` upstream, `feldhost` in the fork | Server setting, default `dkim` (FR-028) |
 | ISPConfig DKIM DNS push (fork) | Always attempted when the config file exists; failures ignored silently | Server setting, off by default; outcome reported (FR-025, FR-027) |
-| Groupware directory placeholder password (plan-level note) | `update_sogo_static_view()` means to write a random `{SSHA256}` hash into `_sogo_static_view.c_password` to deny direct groupware logins, but builds it from undefined variables, so every row gets the same hash of an empty password | A fresh random hash per rebuild (FR-023, FR-034, FR-036). **Deviation** (bug fix); the next legacy rebuild writes its own value |
+| Groupware directory placeholder password (plan-level note) | `update_sogo_static_view()` means to write a random `{SSHA256}` hash into `_sogo_static_view.c_password` to deny direct groupware logins, but builds it from undefined variables, so every row gets the same hash of an empty password | A fresh random hash per rebuild (FR-034, FR-036). **Deviation** (bug fix); the next legacy rebuild writes its own value |
 | Order of the stored-mail move on deletion (plan-level note) | The move to the garbage area is requested before the rows are deleted | Requested after the rows are deleted and committed, so a refused or failed deletion never moves mail; its outcome is still recorded in the audit record (FR-039) |
 | Footer exclusion spelling (plan-level note) | Stored as sent | Trimmed and lower-cased, with the domain part in ASCII, as the mail filter compares them exactly (FR-053) |
 

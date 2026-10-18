@@ -10,7 +10,8 @@ use Throwable;
 /**
  * The groupware's directory view `_sogo_static_view`, which SOGo reads for its users, aliases and
  * address books (feature 002 research D13). rebuild() is legacy update_sogo_static_view() without a
- * mailbox, the full rebuild legacy runs after every domain change, followed by the memcached flush.
+ * mailbox, the full rebuild legacy runs after a domain edit or deletion (not after a creation),
+ * followed by the memcached flush.
  *
  * Deviation (spec parity table): `c_password` gets a fresh random `{SSHA256}` placeholder per
  * rebuild, which denies direct groupware logins; legacy builds its hash from undefined variables.

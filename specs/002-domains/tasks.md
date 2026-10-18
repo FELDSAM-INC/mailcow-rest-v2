@@ -408,10 +408,11 @@ compare rows, Redis entries and fake calls with legacy's behaviour.
     RSA key has the requested bits, `DKIM_PRIV_KEYS["<selector>.example.org"]` = the matching
     private key; AS-7: an existing key is kept byte for byte, `alreadyExisted`, publication
     `skipped`; an explicitly empty selector → `notRequested`, no DKIM field;
-  - the groupware directory is rebuilt and memcached flushed → `groupwareDirectoryUpdate done`;
+  - the groupware directory is not rebuilt and memcached not flushed, and the report has no
+    `groupwareDirectoryUpdate` (corrected on 2026-10-18, see the implementation notes);
     `restartGroupware: true` → `FakeDockerApiClient` restarted `sogo-mailcow` → `done`; AS-8: the
     restart fails → `201` with `groupwareRestart failed` and a message; a timeout (`unknown`) →
-    `failed`; with `SKIP_SOGO=y` both groupware steps are `groupwareDisabled` and nothing is called
+    `failed`; with `SKIP_SOGO=y` the restart is `groupwareDisabled` and nothing is called
     (FR-026);
   - a failing rate limit write after the commit (Redis connection broken after the commit by a
     `SharedStore` double) → `rateLimit failed`, the domain stays.
@@ -864,7 +865,8 @@ and list the audit log filtered by target.
     rebuilds `_sogo_static_view` nor flushes memcached. The API does both
     (`DomainCreator::followUps()`, `groupwareDirectoryUpdate: done`, memcached `cmd_flush` +1),
     because spec.md's parity table assumes legacy does. It is harmless here, but a full rebuild
-    takes minutes on very large hosts (T090 note).
+    takes minutes on very large hosts (T090 note). Fixed on 2026-10-18 (see the implementation
+    notes).
   - Step 4 passes. After an edit in the legacy UI, the domain's version tag changed: a `PATCH` with
     the old tag answered `412` and one with the new tag `200`. A template created and edited through
     the API and a footer set through the API show every value in the legacy edit pages, stored in
@@ -887,7 +889,8 @@ and list the audit log filtered by target.
     `groupwareDisabled` for both steps, without a SOGo restart, a directory rebuild or a memcached
     flush.
 
-  Still open: step 6, a host on plain upstream `2026-09a`, and a decision on the step 3 deviation.
+  Still open: step 6 and a host on plain upstream `2026-09a`. The step 3 deviation was fixed on
+  2026-10-18.
 
 ---
 
@@ -1003,5 +1006,11 @@ Deviations and decisions made while implementing, with the reason:
 - **G28, G29, G33, G34** were fixed with this feature (`docs/api-gaps.md`); **G30** (optional bulk
   deletion preview) was not implemented.
 - **T097** (quickstart Part C on a mailcow host) ran partly on 2026-10-18 (see the task) and stays
-  open for step 6, a plain upstream host and the creation rebuild deviation.
+  open for step 6 and a plain upstream host.
+- **Creation rebuild (2026-10-18)**: T097 step 3 found that legacy's domain add returns before the
+  closing `update_sogo_static_view()` of `mailbox()` (fork and upstream `2026-09a`), so it neither
+  rebuilds `_sogo_static_view` nor flushes memcached. `DomainCreator` did both, following a wrong
+  row in spec.md's parity table. Per constitution IV it no longer does, and `DomainCreationReport`
+  lost `groupwareDirectoryUpdate` (contract and audit record). The requested SOGo restart is
+  unchanged. The parity table, FR-023, FR-025 and T048 were corrected.
 

@@ -119,9 +119,9 @@ private key or the ISPConfig password.
 3. **Creation (SC-002, SC-008)**: create `parity-a.example` through the legacy UI and
    `parity-b.example` through the API with the same input. Compare the `domain` and `tags_domain`
    rows, `DOMAIN_MAP`, `RL_VALUE` and the DKIM hashes (apart from key material). With a restart, both
-   show `container_post__restart` of `sogo-mailcow` in `docker compose logs dockerapi-mailcow`. The
-   API also rebuilds `_sogo_static_view` (`groupwareDirectoryUpdate: done`, memcached `cmd_flush` up
-   by one); legacy's creation returns before its rebuild (tasks.md T097). Create a mailbox in
+   show `container_post__restart` of `sogo-mailcow` in `docker compose logs dockerapi-mailcow`.
+   Neither rebuilds `_sogo_static_view` nor flushes memcached (`cmd_flush` unchanged): legacy's
+   creation returns before its rebuild, and the API does the same. Create a mailbox in
    `parity-b.example` in the legacy UI and send it a test message within a minute.
 4. **Coexistence**: edit a domain in the legacy UI, then send a `PATCH` with the version read before
    (`412`). Edit a template and a footer through the API and open them in the legacy UI.
@@ -136,7 +136,7 @@ private key or the ISPConfig password.
    `<selector>._domainkey` TXT record; create one without a zone and see `noZone` in the report.
 7. **Groupware disabled**: with `SKIP_SOGO=y`, `GET /capabilities/domains` reports
    `groupwareEnabled: false`, and a creation with `restartGroupware: true` reports
-   `groupwareDisabled` for both groupware steps. The override lists `SKIP_SOGO` under `environment`,
+   `groupwareRestart: groupwareDisabled`. The override lists `SKIP_SOGO` under `environment`,
    which wins over `env_file`. To set it for the API alone, run
    `SKIP_SOGO=y docker compose up -d --no-deps restv2-mailcow`, then restore it with the same command
    without the variable.

@@ -70,5 +70,7 @@ Contract changes made while implementing feature 002:
 - `BulkTarget.version` accepts the version tag with or without its quotes (G33).
 - `PermissionFlagRequiredProblem` declares `requiredFlags` and `requiredFlagsMatch` once; every
   feature's `*PermissionFlag*Problem` extends it (G34).
+- `DomainCreationReport` has no `groupwareDirectoryUpdate`: like legacy, a domain creation does not
+  rebuild the groupware directory.
 
 Release checks of feature 002 (quickstart Part C: SC-001, SC-002, SC-003, SC-008): not run yet.

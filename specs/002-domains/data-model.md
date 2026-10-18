@@ -169,12 +169,14 @@ helper is shared).
 
 ### Groupware directory (`_sogo_static_view`): written by `SogoDirectory`
 
-Full rebuild after every successful domain create, edit, delete or bulk request (unless
-`SKIP_SOGO=y`): legacy's `INSERT … SELECT … ON DUPLICATE KEY UPDATE` over `mailbox` joined to the
-views `grouped_mail_aliases`, `grouped_domain_alias_address` and `grouped_sender_acl_external`,
-then `DELETE FROM _sogo_static_view WHERE c_uid NOT IN (SELECT username FROM mailbox WHERE active =
-'1')`. Columns written: `c_uid`, `domain`, `c_name`, `c_password` (random `{SSHA256}` hash),
-`c_cn`, `mail`, `aliases`, `ad_aliases`, `ext_acl`, `kind`, `multiple_bookings`.
+Full rebuild after every successful domain edit, delete or bulk request (unless `SKIP_SOGO=y`),
+not after a creation: legacy's add case returns before its closing rebuild, and the new domain has
+no mailboxes yet. The rebuild is legacy's `INSERT … SELECT … ON DUPLICATE KEY UPDATE` over
+`mailbox` joined to the views `grouped_mail_aliases`, `grouped_domain_alias_address` and
+`grouped_sender_acl_external`, then `DELETE FROM _sogo_static_view WHERE c_uid NOT IN (SELECT
+username FROM mailbox WHERE active = '1')`. Columns written: `c_uid`, `domain`, `c_name`,
+`c_password` (random `{SSHA256}` hash), `c_cn`, `mail`, `aliases`, `ad_aliases`, `ext_acl`, `kind`,
+`multiple_bookings`.
 
 ---
 
@@ -232,7 +234,7 @@ from Redis directly, and Postfix and Dovecot read the domain tables directly.
 - `App\Support\Domain\DomainName`: `normalize(string): ?string`, `isValid(string): bool`,
   `toUnicode(string): string`.
 - `App\Services\Domains\DomainUsage`: the figures of `DomainUsage`.
-- `App\Services\Domains\DomainCreationReport`: the five step outcomes and messages.
+- `App\Services\Domains\DomainCreationReport`: the four step outcomes and messages.
 - `App\Services\Domains\DomainDeletionPlan`: blockers, alias domains, alias count and sample,
   footer flag, domain administrators to delete, DKIM flag, version tag.
 - `App\Clients\DockerApi\DockerCallResult`: `success | failed(message) | unknown`.

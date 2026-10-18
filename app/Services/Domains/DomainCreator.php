@@ -14,7 +14,6 @@ use App\Services\Dkim\DkimDnsOutcome;
 use App\Services\Dkim\DkimKeyService;
 use App\Services\DomainTemplates\DomainTemplateAttributes;
 use App\Services\Groupware\GroupwareOutcome;
-use App\Services\Groupware\SogoDirectory;
 use App\Services\RateLimits\RateLimitStore;
 use App\Support\Domain\DomainName;
 use App\Support\Http\FieldViolations;
@@ -35,8 +34,11 @@ use Throwable;
  *     addresses in the new domain, insert the row and its tags, set `DOMAIN_MAP` (removed again if
  *     anything later fails), write the audit record with the creation report "pending";
  *  4. after the commit, the follow-up steps, each reported and none undoing the creation: rate
- *     limit, DKIM key (with the FeldHost DNS publication), groupware directory, groupware restart;
+ *     limit, DKIM key (with the FeldHost DNS publication), groupware restart;
  *  5. complete the audit record with the report.
+ *
+ * Like legacy, which returns before the closing update_sogo_static_view(), a creation does not
+ * rebuild the groupware directory or flush memcached: the new domain has no mailboxes yet.
  */
 class DomainCreator
 {
@@ -46,7 +48,6 @@ class DomainCreator
         private readonly SharedStore $store,
         private readonly RateLimitStore $rateLimits,
         private readonly DkimKeyService $dkim,
-        private readonly SogoDirectory $sogo,
         private readonly DockerApiClient $docker,
         private readonly AuditLogger $audit,
     ) {}
@@ -251,13 +252,6 @@ class DomainCreator
                     $report->message('dkimDnsPublication', 'The DKIM record was not published ('.$step->publication->reasonCode.')'.($step->publication->detail === null ? '.' : ': '.$step->publication->detail));
                 }
             }
-        }
-
-        $directory = $this->sogo->rebuild();
-        $report->groupwareDirectoryUpdate = $directory->value;
-
-        if ($directory === GroupwareOutcome::Failed) {
-            $report->message('groupwareDirectoryUpdate', 'The groupware directory could not be updated.');
         }
 
         if ($restart) {

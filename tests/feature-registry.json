@@ -215,8 +215,6 @@
     "pendingOperations": [
         "getPublicAddresses",
         "getInstallationVersion",
-        "getUpdateStatus",
-        "listRspamdHistory",
-        "getRspamdStatistics"
+        "getUpdateStatus"
     ]
 }

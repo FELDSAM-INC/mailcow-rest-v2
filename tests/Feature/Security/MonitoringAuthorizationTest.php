@@ -101,6 +101,9 @@ class MonitoringAuthorizationTest extends TestCase
             'allowlistFail2BanBan' => ['POST', '/api/v2/fail2ban/active-bans/203.0.113.0%2F24/allowlist', null, 'fail2banBanAllowlisting', 'fail2banActiveBan'],
             'denylistFail2BanBan' => ['POST', '/api/v2/fail2ban/active-bans/203.0.113.0%2F24/denylist', null, 'fail2banBanDenylisting', 'fail2banActiveBan'],
             'listFail2BanPermanentBans' => ['GET', '/api/v2/fail2ban/permanent-bans', null, null, null],
+            // US6 (T094).
+            'listRspamdHistory' => ['GET', '/api/v2/rspamd/history', null, null, null],
+            'getRspamdStatistics' => ['GET', '/api/v2/rspamd/statistics', null, null, null],
             // US2 (T041).
             'startContainer' => ['POST', '/api/v2/containers/sogo-mailcow/start', null, 'containerStart', 'container'],
             'stopContainer' => ['POST', '/api/v2/containers/clamd-mailcow/stop', null, 'containerStop', 'container'],

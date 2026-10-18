@@ -68,6 +68,8 @@ use App\Http\Controllers\Api\V2\PublicConfigLogoController;
 use App\Http\Controllers\Api\V2\ReadinessController;
 use App\Http\Controllers\Api\V2\ResourceBulkActionController;
 use App\Http\Controllers\Api\V2\ResourceController;
+use App\Http\Controllers\Api\V2\RspamdHistoryController;
+use App\Http\Controllers\Api\V2\RspamdStatisticsController;
 use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
@@ -406,6 +408,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/fail2ban/rules', [Fail2BanRulesController::class, 'show'])->name('fail2ban-rules.show');
         Route::get('/fail2ban/active-bans', [Fail2BanActiveBanController::class, 'index'])->name('fail2ban-active-bans.index');
         Route::get('/fail2ban/permanent-bans', [Fail2BanPermanentBanController::class, 'index'])->name('fail2ban-permanent-bans.index');
+
+        Route::get('/rspamd/history', [RspamdHistoryController::class, 'index'])->name('rspamd-history.index');
+        Route::get('/rspamd/statistics', [RspamdStatisticsController::class, 'show'])->name('rspamd-statistics.show');
 
         foreach (LogType::cases() as $logType) {
             Route::get('/logs/'.$logType->value, [LogEntryController::class, 'index'])

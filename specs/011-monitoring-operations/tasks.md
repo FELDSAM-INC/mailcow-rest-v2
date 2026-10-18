@@ -725,28 +725,28 @@ netfilter-formatted keys and the fake for the netfilter restart.
 
 ### Tests for User Story 6 (write first, observe failing) ⚠️
 
-- [ ] T091 [P] [US6] Write `tests/Feature/Rspamd/RspamdHistoryTest.php` (AS-1, AS-2, FR-033, FR-034,
+- [X] T091 [P] [US6] Write `tests/Feature/Rspamd/RspamdHistoryTest.php` (AS-1, AS-2, FR-033, FR-034,
   R16): 1,000 rows → 25 newest with `total: 1000`; `q=spammer@example.net` returns the `reject` row
   with `score`, `requiredScore` and symbols ordered positive descending, negative ascending, zero
   last; `action` filter (case-insensitive, multiple values); `minScore`/`maxScore` and `from`/`to`
   inclusive; sort by `score`, `size`, `scanTime`; `user: null` for none; `minScore=abc` → `422`;
   the fake records one `history()` call per request (no caching).
-- [ ] T092 [P] [US6] Write `tests/Feature/Rspamd/RspamdStatisticsTest.php` (AS-3, FR-035): the
+- [X] T092 [P] [US6] Write `tests/Feature/Rspamd/RspamdStatisticsTest.php` (AS-3, FR-035): the
   documented fields only (an extra `pools_allocated` in the fixture is absent), `actions` as
   Rspamd names them, `statfiles` and `fuzzyHashes`, `collectedAt`; missing numbers → 0.
-- [ ] T093 [P] [US6] Write `tests/Feature/Rspamd/RspamdUnreachableTest.php` (AS-4, FR-036): an
+- [X] T093 [P] [US6] Write `tests/Feature/Rspamd/RspamdUnreachableTest.php` (AS-4, FR-036): an
   unreachable controller → `503 temporary-failure` for both operations.
-- [ ] T094 [US6] Add `GET /rspamd/history` and `/rspamd/statistics` to the provider of
+- [X] T094 [US6] Add `GET /rspamd/history` and `/rspamd/statistics` to the provider of
   `MonitoringAuthorizationTest`.
 
 ### Implementation for User Story 6
 
-- [ ] T095 [US6] Add `history(): array` to `app/Clients/Rspamd/RspamdController.php` and 006's
+- [X] T095 [US6] Add `history(): array` to `app/Clients/Rspamd/RspamdController.php` and 006's
   `UnixSocketRspamdController.php`, mapping connection failures, timeouts (5 s connect, 10 s total)
   and non-200 to 006's unavailable result, which renders `503 temporary-failure`. Write its
   `Http::fake()` unit test in `tests/Unit/Clients/UnixSocketRspamdControllerHistoryTest.php` first
   (asserting `CURLOPT_UNIX_SOCKET_PATH` and the `/history` path).
-- [ ] T096 [US6] Create `app/Services/Rspamd/RspamdHistoryService.php`,
+- [X] T096 [US6] Create `app/Services/Rspamd/RspamdHistoryService.php`,
   `RspamdStatisticsService.php`, `app/Http/Requests/Api/V2/ListRspamdHistoryRequest.php`,
   `app/Http/Resources/Api/V2/{RspamdHistoryEntryResource,RspamdStatisticsResource}.php` and the
   controllers `RspamdHistoryController` (`index`) and `RspamdStatisticsController` (`show`); register
@@ -1008,3 +1008,7 @@ Deviations and decisions made while implementing, with the reason:
   fixed with `minimum`/`maximum` on `Fail2BanSettingsPatch`; a resent unchanged stored value
   outside its range stays accepted (FR-046), as the schema description says. OpenApiContract
   already matched the raw (percent-encoded) path, so the `{network}` routes needed no change there.
+- **T095, T096** (US6): an unreachable controller answers `503 temporary-failure` with
+  `dependency: spamFilter` (006's convention) and `Retry-After: 5`. A history `user` of `unknown`
+  (what Rspamd records without authentication) is reported as `null`. The reads use 5 s to connect
+  and 10 s in total; feature 006's learning calls will use its own `RESTV2_RSPAMD_TIMEOUT`.

@@ -13,6 +13,8 @@ use App\Clients\Ispconfig\IspconfigDnsClient;
 use App\Clients\Ispconfig\JsonIspconfigDnsClient;
 use App\Clients\Memcached\MemcachedFlusher;
 use App\Clients\Memcached\SocketMemcachedFlusher;
+use App\Clients\Rspamd\RspamdController;
+use App\Clients\Rspamd\UnixSocketRspamdController;
 use App\Clients\Yubico\HttpYubicoOtpVerifier;
 use App\Clients\Yubico\YubicoOtpVerifier;
 use App\Models\Mailcow\Alias;
@@ -63,6 +65,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(DockerApiClient::class, HttpDockerApiClient::class);
         $this->app->bind(MemcachedFlusher::class, SocketMemcachedFlusher::class);
         $this->app->bind(IspconfigDnsClient::class, JsonIspconfigDnsClient::class);
+        $this->app->bind(RspamdController::class, UnixSocketRspamdController::class);
 
         if (config('restv2.fake_outbound')) {
             if ($this->app->environment('local')) {

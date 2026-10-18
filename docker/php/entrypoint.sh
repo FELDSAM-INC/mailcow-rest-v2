@@ -13,6 +13,12 @@ if [ "$#" -gt 0 ]; then
     exec "$@"
 fi
 
+# The application key signs the version tags; mailcow.conf provides it as RESTV2_APP_KEY.
+if [ -z "${APP_KEY:-}" ]; then
+    echo "entrypoint: APP_KEY is empty; set RESTV2_APP_KEY in mailcow.conf (php artisan key:generate --show)." >&2
+    exit 1
+fi
+
 php /app/artisan config:cache --no-interaction
 php /app/artisan migrate --force --isolated --no-interaction
 

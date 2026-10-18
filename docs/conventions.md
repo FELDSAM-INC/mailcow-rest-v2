@@ -132,7 +132,8 @@ this document next to the constitution.
 - **Shared enumerations** also include `AuditFailureReason`, which is append-only like the others.
 - **Refusal auditing:** state-changing routes are marked so that refusals by authenticated callers
   are audited. This covers read-only keys, restricted sessions, missing flags and out-of-scope
-  objects, but not CSRF failures or 401s. Use 008's `RefusalAuditor` mechanism, or the equivalent
+  objects, but not CSRF failures or 401s. Use the shared `RefusalAuditor` (008's design, created
+  with 002; it also records `503 temporary-failure`), or the equivalent
   that the first implemented feature creates.
 - **Version tags** never contain a plain hash of a stored secret. They use an HMAC keyed with the
   app key.
@@ -173,11 +174,13 @@ this document next to the constitution.
   `AddressLock`, which is `GET_LOCK('restv2_address_<sha1 of the lower-cased address>')`. Features
   003, 004 and 005 must take exactly this lock name before checking for and inserting an address.
 - **Shared helpers belong to the first feature that needs them**, and later features reuse them.
-  002 owns `DockerApiClient`, `SogoDirectory`, `AliasDomainCleanup`, `RateLimitStore`, the DKIM
-  classes and the ISPConfig client. 003 owns `AddressLock`, `NamedLock`, `TagSet`,
-  `BulkActionRunner`, `MailboxPasswordHasher` and `PasswordPolicyChecker`. 008 owns
-  `RefusalAuditor`, unless an earlier feature creates it first. 009 owns `app/Clients/Dns` and
-  `app/Clients/Smtp`.
+  002 created `DockerApiClient`, `SogoDirectory`, `MemcachedFlusher`, `SharedStore`,
+  `AliasDomainCleanup`, `OrphanedDomainAdminRemover`, `RateLimitStore`, `DomainName`, the DKIM
+  classes with 010's `DkimKeyService` and the ISPConfig client, and, as the first feature with bulk
+  actions and refusal auditing, `App\Support\Bulk\BulkActionRunner` and
+  `App\Services\Audit\RefusalAuditor` (008's design: route default `restv2.audit`). 003 owns
+  `AddressLock`, `NamedLock`, `TagSet`, `MailboxPasswordHasher` and `PasswordPolicyChecker`. 009
+  owns `app/Clients/Dns` and `app/Clients/Smtp`.
 
 ## Audit record details
 

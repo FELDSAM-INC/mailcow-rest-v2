@@ -235,6 +235,15 @@ feature 004's alias domain creation and every DKIM story of this feature.**
 **Checkpoint**: features 002 and 004 can call `DkimKeyService::generateForNewName()`; every DKIM
 write path exists below the HTTP layer.
 
+*Delivered with feature 002 (2026-10-18). Notes: `generateForNewName()` never throws, also when its
+audit record fails (the key is removed again and the step reports `failed`), because the domain is
+already committed. The shared `RefusalAuditor` also records `503 temporary-failure` refusals of
+routes that declare `restv2.audit`, so `DkimAudit` needs to write a 503 refusal only when a DKIM
+operation refuses outside such a route (or calls `RefusalAuditor::markRecorded()` after writing its
+own). T021 added every problem, event and target value of this feature; the event types other than
+`dkimKeyGeneration` stay in `AuditEventDetailsDocumentedTest::$notYetDocumented` until their
+operations exist.*
+
 ---
 
 ## Phase 3: Foundational B — feature 010 groundwork

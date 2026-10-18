@@ -914,3 +914,41 @@ tests/Feature/Domains/ListDomainTagsTest.php
 
 Each story ends with its checkpoint green and the contract coverage growing towards all 16
 operations.
+
+## Implementation notes (2026-10-18)
+
+Deviations and decisions made while implementing, with the reason:
+
+- **T001**: `COMPOSE_PROJECT_NAME` is in `.env.testing` (Laravel only), not in `.env.example`:
+  Docker Compose reads it from `.env` as the dev stack's own project name. The dev stack binds
+  stand-ins instead (`RESTV2_FAKE_OUTBOUND=y`, `App\Clients\Development\Null*`).
+- **T002**: 001's `deploy/docker-compose.override.yml` arrived with 001 Phase 9; the settings of
+  research D24 were added to it after the rebase.
+- **T003**: 001's contract validator already coerced boolean query parameters; the test cases were
+  added and pass.
+- **T004**: done through 001's `tests/feature-registry.json` (feature `002-domains`); no
+  `contract-scope.php` was needed. 001's `ProblemTypeConsistencyTest` checks the registered types.
+- **T011** is covered by feature 010's `tests/Unit/Dkim/JsonIspconfigDnsClientTest.php` (010 T012),
+  which tests the same adapter with 002's and 010's cases.
+- **T053, T054**: superseded by feature 010 Phase 2, delivered together: `DkimKeyGenerator` only
+  creates key pairs, `App\Clients\SharedStore\DkimKeyStore` writes the three hashes atomically
+  (Lua), and domain creation calls `DkimKeyService::generateForNewName()`, which also publishes and
+  writes the `dkimKeyGeneration` record.
+- **Refusal auditing** (research D16 superseded by `docs/conventions.md`): every 4xx refusal of an
+  authenticated caller on a state-changing route and every `503 temporary-failure` is recorded by
+  `App\Services\Audit\RefusalAuditor` (route default `restv2.audit`); services do not write
+  refusal records. Bulk items are recorded by `App\Support\Bulk\BulkActionRunner`.
+- **StoreDomainRequest** checks only the contract's types and bounds; whole MiB, the name syntax,
+  the template and the tags are `DomainRules`, so that SC-009's "reported together" holds.
+- **T087, T088**: an unknown `targetType` matches nothing instead of `422 notInList`, following
+  001's later decision for shared enumerations (FR-047 there); 001's `(target_type, target_id)`
+  index is replaced by `(target_type, target_id, occurred_at)`.
+- **T090**: with mailcow's MariaDB settings (24 MiB InnoDB buffer pool), sorting 5,000 domains by
+  `storageUsed` needs 100,000 `quota2` lookups and takes about 1.3 s at p95, so its budget is 2 s;
+  the default page stays under 1 s. The bulk timings run with the groupware disabled, because
+  legacy's own `update_sogo_static_view()` statement, ported verbatim, takes many minutes on 100,000
+  mailboxes (in legacy too).
+- **G28, G29, G33, G34** were fixed with this feature (`docs/api-gaps.md`); **G30** (optional bulk
+  deletion preview) was not implemented.
+- **T097** (quickstart Part C on a mailcow host) is open until the release checks run.
+

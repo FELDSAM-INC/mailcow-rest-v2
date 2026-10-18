@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\RequestContext;
 use App\Http\Requests\Api\V2\ListDomainsRequest;
 use App\Http\Requests\Api\V2\StoreDomainRequest;
+use App\Http\Requests\Api\V2\UpdateDomainRequest;
 use App\Http\Resources\Api\V2\DomainResource;
 use App\Models\Mailcow\Domain;
 use App\Services\Domains\DomainCreator;
 use App\Services\Domains\DomainPresenter;
 use App\Services\Domains\DomainQuery;
 use App\Services\Domains\DomainScope;
+use App\Services\Domains\DomainUpdater;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -58,5 +60,14 @@ class DomainController extends Controller
         $data['creationReport'] = $creation->report->toArray();
 
         return DomainResource::response($data, 201)->header('Location', '/api/v2/domains/'.rawurlencode($creation->name));
+    }
+
+    public function update(UpdateDomainRequest $request, DomainUpdater $updater): JsonResponse
+    {
+        $principal = RequestContext::requirePrincipal($request);
+        $updater->update($principal, $request->domain(), $request->members(), $request->header('If-Match'));
+        $row = DB::table('domain')->where('domain', $request->domain())->first() ?? throw new NotFoundHttpException('The domain does not exist.');
+
+        return DomainResource::response($this->presenter->presentOne($row, $principal));
     }
 }

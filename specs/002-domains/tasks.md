@@ -488,7 +488,7 @@ compare rows and side effects with legacy.
 
 ### Tests for User Story 3 (write first, observe failing) ⚠️
 
-- [ ] T059 [P] [US3] Write `tests/Feature/Domains/UpdateDomainAdminTest.php` for `updateDomain`
+- [X] T059 [P] [US3] Write `tests/Feature/Domains/UpdateDomainAdminTest.php` for `updateDomain`
   (FR-030, FR-031, FR-033, FR-034):
   - each editable attribute changes its column (quotas stored in MiB); omitted attributes keep
     their values; the response has the new `etag` and `ETag`;
@@ -508,7 +508,7 @@ compare rows and side effects with legacy.
     audit record with empty `changes` (FR-057), no rebuild;
   - after a change the groupware directory is rebuilt and memcached flushed, and dockerapi is never
     called, also for a `globalAddressList` change (FR-034); with `SKIP_SOGO=y` nothing is rebuilt.
-- [ ] T060 [P] [US3] Write `tests/Feature/Domains/UpdateDomainDomainAdminTest.php` (FR-032):
+- [X] T060 [P] [US3] Write `tests/Feature/Domains/UpdateDomainDomainAdminTest.php` (FR-032):
   - AS-6: without `domain_desc`, `globalAddressList` and `tags` are saved; `description` → `403
     attribute-not-permitted` with `attributes: [description]` and nothing changed; with
     `domain_desc` the description is saved;
@@ -519,7 +519,7 @@ compare rows and side effects with legacy.
     request change the description (FR-002);
   - `attribute-not-permitted` wins over `immutable`; a read-only key of a domain administrator →
     `403 insufficient-key-scope`; a mailbox user → `403 forbidden`.
-- [ ] T061 [P] [US3] Write `tests/Feature/Domains/UpdateDomainVersionTest.php` (FR-041, FR-042,
+- [X] T061 [P] [US3] Write `tests/Feature/Domains/UpdateDomainVersionTest.php` (FR-041, FR-042,
   SC-006):
   - AS-3: two clients read; the first saves; the second with the old `If-Match` → `412`, nothing
     changed, a failure record with `versionOutdated`;
@@ -528,7 +528,7 @@ compare rows and side effects with legacy.
   - AS-5: new `quota2` bytes, a new `RL_VALUE` or a new `domain_admins` row, then the old tag →
     saved;
   - no `If-Match` → saved; `If-Match: *` → saved.
-- [ ] T062 [P] [US3] Write `tests/Feature/Domains/UpdateDomainTagsTest.php` (FR-043, FR-044): AS-8
+- [X] T062 [P] [US3] Write `tests/Feature/Domains/UpdateDomainTagsTest.php` (FR-043, FR-044): AS-8
   (`a`, `b` → `b`, `c` gives exactly `b`, `c`); AS-9 (26 tags → `422 tooMany {max: 25}`; with
   `RESTV2_TAGGING_LIMIT=30` accepted); duplicates in other letter case stored once with the first
   spelling; a legacy domain with 30 tags can shrink to 28, keeps 30 when the set is unchanged, and
@@ -537,16 +537,16 @@ compare rows and side effects with legacy.
 
 ### Implementation for User Story 3
 
-- [ ] T063 [P] [US3] Create `app/Services/Domains/DomainAttributeGuard.php` (FR-032, D11 step 6:
+- [X] T063 [P] [US3] Create `app/Services/Domains/DomainAttributeGuard.php` (FR-032, D11 step 6:
   changed attributes per role and `domain_desc`, collected into `attribute-not-permitted`).
-- [ ] T064 [P] [US3] Create `app/Http/Requests/Api/V2/UpdateDomainRequest.php` (merge patch: at least
+- [X] T064 [P] [US3] Create `app/Http/Requests/Api/V2/UpdateDomainRequest.php` (merge patch: at least
   one member, else `required` on `body`; the types and bounds of `DomainPatch`; read-only members
   accepted with any type for the later `immutable` comparison).
-- [ ] T065 [US3] Create `app/Services/Domains/DomainUpdater.php` (D15: lock, `If-Match`, merge, guard,
+- [X] T065 [US3] Create `app/Services/Domains/DomainUpdater.php` (D15: lock, `If-Match`, merge, guard,
   `immutable`, rules, normalisation, `UPDATE`, tag replacement, audit with old and new values,
   failure records, no-op detection, post-commit `SogoDirectory::rebuild()` unless deferred by the
   bulk caller).
-- [ ] T066 [US3] Add `update` to `DomainController` and register `PATCH /domains/{domain}`. This
+- [X] T066 [US3] Add `update` to `DomainController` and register `PATCH /domains/{domain}`. This
   makes the US3 tests pass.
 
 **Checkpoint**: US1–US3 work; packages can be upgraded and domains suspended.

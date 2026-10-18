@@ -121,6 +121,22 @@ follow-up steps have run.
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
 
+## domainUpdate
+
+Feature 002. Written for every edit of a domain (`PATCH /domains/{domain}`), for every activation or
+deactivation of a bulk action, and for every refusal of them. The target is the domain. An edit that
+changes nothing is recorded too, with empty `changes`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed attribute (contract names) as `{old, new}`: quotas in bytes, `tags` as sorted lists, `description` after the empty-means-name rule, relay options after normalisation. Empty when nothing changed. | on success |
+| `bulkRequestId` | string | The request ID of the bulk action the record belongs to. | for bulk items |
+| `targetIds` | array of strings | See "Refusal records". | when a whole bulk request was refused |
+| `bulkAction` | string or null | The requested bulk action. | when a whole bulk request was refused |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
 <!-- Feature 010: DKIM keys. The DKIM core is delivered with feature 002. -->
 
 ## dkimKeyGeneration

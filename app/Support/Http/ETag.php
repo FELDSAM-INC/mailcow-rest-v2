@@ -30,8 +30,14 @@ final class ETag
      */
     public static function ifMatchFails(Request $request, string $current): bool
     {
-        $header = $request->headers->get('If-Match');
+        return self::preconditionFails($request->headers->get('If-Match'), $current);
+    }
 
+    /**
+     * ifMatchFails() for an `If-Match` value given directly, for example a bulk item's version.
+     */
+    public static function preconditionFails(?string $header, string $current): bool
+    {
         if ($header === null || trim($header) === '') {
             return false;
         }

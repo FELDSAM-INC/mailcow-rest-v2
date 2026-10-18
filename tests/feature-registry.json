@@ -95,7 +95,6 @@
     },
     "pendingOperations": [
         "applyDomainBulkAction",
-        "updateDomain",
         "deleteDomain",
         "previewDomainDeletion",
         "getDomainFooter",

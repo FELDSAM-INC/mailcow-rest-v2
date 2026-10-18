@@ -151,6 +151,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::post('/domains', [DomainController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'domainCreation', 'target' => 'domain'])
             ->name('domains.store');
+        Route::patch('/domains/{domain}', [DomainController::class, 'update'])
+            ->where('domain', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'domainUpdate', 'target' => 'domain'])
+            ->name('domains.update');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

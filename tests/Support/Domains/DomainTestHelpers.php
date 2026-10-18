@@ -66,6 +66,9 @@ trait DomainTestHelpers
         return $client;
     }
 
+    /**
+     * @phpstan-impure
+     */
     protected function domainRow(string $name): ?stdClass
     {
         $row = DB::table('domain')->where('domain', $name)->first();
@@ -75,6 +78,8 @@ trait DomainTestHelpers
 
     /**
      * @return list<string>
+     *
+     * @phpstan-impure
      */
     protected function tagsOf(string $domain): array
     {
@@ -83,6 +88,8 @@ trait DomainTestHelpers
 
     /**
      * @return list<stdClass>
+     *
+     * @phpstan-impure
      */
     protected function auditOf(string $eventType): array
     {

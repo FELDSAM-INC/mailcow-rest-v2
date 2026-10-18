@@ -1,6 +1,15 @@
 description: |
   Postfix reported a failure (type `/api/v2/problems/queue-action-failed`). `serviceMessage`
   carries its message. List the queue again to see its state.
+headers:
+  Audit-Recorded:
+    description: |
+      Sent with the value `false` only when the change was carried out but its audit record could
+      not be written (the failure is in the service log). Absent otherwise, and never on reads.
+    required: false
+    schema:
+      type: string
+      enum: ["false"]
 content:
   application/problem+json:
     schema:

@@ -128,5 +128,7 @@ environment variable, a masked secret or message content in an audit record.
 - The ban service rewrites `F2B_OPTIONS` every 10 seconds without a transaction. A settings change
   saved in exactly that instant can be overwritten, as with the legacy UI; reading the settings
   after saving shows it ([R18](./research.md#r18-settings-storage-version-tag-and-atomic-writes)).
-- `DOCKER_TIMEOUT` set in `vars.local.inc.php` is honoured; nginx's `fastcgi_read_timeout` must stay
-  above it plus 30 seconds ([R28](./research.md#r28-deployment-and-runtime-limits)).
+- `DOCKER_TIMEOUT` set in `vars.local.inc.php` is honoured. nginx's `fastcgi_read_timeout` (90 s)
+  and php-fpm's `request_terminate_timeout` (100 s) fit the default of 60 s; when raising it, keep
+  them at least `DOCKER_TIMEOUT + 30` and `DOCKER_TIMEOUT + 40`
+  ([R28](./research.md#r28-deployment-and-runtime-limits)).

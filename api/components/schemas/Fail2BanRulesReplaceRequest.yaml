@@ -2,7 +2,7 @@ type: object
 description: |
   The complete new rule list, 1 to 100 rules in order; they are numbered from 1. Each rule must be
   1 to 1,000 characters long (`tooShort`, `tooLong`), compile in the regular-expression dialect of
-  the ban service, Python `re` (`invalidFormat` with `format: regex` and the compiler's `error`),
+  the ban service, Python `re` (`invalidRegex` with the compiler's message as param `error`),
   and contain at least one capture group (`missingCaptureGroup`). The first group must capture the
   client address: a rule whose first group captures something else, or may capture nothing, stops
   the ban service when it matches, so clients should test rules before saving. An empty list is

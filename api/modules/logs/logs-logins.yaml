@@ -7,7 +7,8 @@ get:
     mailcow): username, service, client address and whether an app password was used. Times are
     converted from the server's time zone to UTC. Legacy web UI logins are reported with the service
     label configured in feature 001, and filters match the reported label. `q` searches the username,
-    service and client address.
+    service and client address. The table records no storage order, so entries with the same time are
+    ordered by service, client address and username.
 
     Administrators only, read-only keys included. Reads are not audited. Entries are returned as
     mailcow retains them (see `MonitoringCapabilities.logRetention`); entries that cannot be parsed

@@ -37,6 +37,12 @@ points in tests). Every request and response is validated against the contract b
 `tests/TestCase.php`. dockerapi, the Rspamd controller, the release source and the IP check
 service are faked; the fakes record every call and tests assert them.
 
+**Contract-violating input**: every case that sends input the contract forbids (a `limit` above
+1,000, an unknown `sort` or enum value, a non-numeric number, more than 100 rules, a rule over 1,000
+characters, more than 1,000 targets, a `version` on a queue target, a non-hexadecimal queue ID in a
+body) lives in a test method whose name contains `Invalid` or `Malformed` and calls
+`withoutRequestValidation()` (001 R13); the response is still validated.
+
 **Organisation**: Phase 1 is setup, Phase 2 the foundation that blocks every story. Phases 3 to 10
 are the user stories in spec priority order (US1–US4 P1, US5–US6 P2, US7–US8 P3). Phase 11 is
 polish.
@@ -81,7 +87,7 @@ recorded fixtures. No business logic.
   `RESTV2_PROTECTED_CONTAINERS=dockerapi-mailcow,mysql-mailcow,redis-mailcow,nginx-mailcow,restv2-mailcow`,
   `RESTV2_CONTAINER_ROLES={}`, `RESTV2_POSTFIX_CONTAINER=postfix-mailcow`,
   `RESTV2_DOVECOT_CONTAINER=dovecot-mailcow`, `RESTV2_BAN_SERVICE_CONTAINER=netfilter-mailcow`,
-  `RESTV2_RSPAMD_SOCKET=/var/lib/rspamd/rspamd.sock`, `RESTV2_UPDATE_CHECK=y`,
+  `RESTV2_UPDATE_CHECK=y` (006's `RESTV2_RSPAMD_SOCKET` is reused),
   `RESTV2_UPDATE_SOURCE_URL=` (empty → derived), `RESTV2_UPDATE_STABLE_BRANCH=master`,
   `RESTV2_IP_CHECK_IPV4_URL=http://ipv4.mailcow.email`,
   `RESTV2_IP_CHECK_IPV6_URL=http://ipv6.mailcow.email` (002's `RESTV2_FAKE_OUTBOUND` is reused for
@@ -136,14 +142,14 @@ values, authorisation and the route group. **No user story starts before this ph
   `tests/Support/Redis/MailcowLogs.php` (pushes log lines in each producer's exact format to the
   `mailcow` connection, and writes `F2B_*` keys as legacy and netfilter write them, including
   Python `json.dumps` spacing for `F2B_OPTIONS`).
-- [ ] T008 [P] Create `tests/Support/Fakes/FakeRspamdController.php` (or extend 006's) with
-  `history()` and `stat()` answers from fixtures, `unreachable()`, and a call log;
+- [ ] T008 [P] Extend 006's `tests/Support/Rspamd/FakeRspamdController.php` with `history()` and
+  `stat()` answers from fixtures, `unreachable()`, and a call log; create
   `tests/Support/Fakes/FakeReleaseSource.php` (`latest()`, `byTag()`, `fail()`, call counter); and
   `tests/Support/Fakes/FakePublicAddressLookup.php` (per-family answers, call counter).
 - [ ] T009 [P] Extend 002's `tests/Unit/Clients/HttpDockerApiClientTest.php` (`Http::fake()`, R2):
   `containers()` calls `GET /containers/json?all=true`, keeps only project `mailcowtest`
-  (case-insensitive), keys by service label, maps `0001-01-01T00:00:00Z` and absent health to
-  `null`, and the serialised `ContainerSnapshot` contains no `Env` value (assert `planted-secret` is
+  (case-insensitive), keys by service label, maps `0001-01-01T00:00:00Z`, absent health and
+  health `none` to `null`, and the serialised `ContainerSnapshot` contains no `Env` value (assert `planted-secret` is
   absent from `serialize()` and `json_encode()`); the ID lookup of `start()`, `stop()` and
   `restart()` uses `?all=true`, so a stopped container is found, and they post to
   `/containers/{id}/{action}`; `containerStats()` posts to `/container/{id}/stats/update` with a 5 s
@@ -178,7 +184,7 @@ values, authorisation and the route group. **No user story starts before this ph
   exactly one row; after an injected connection failure it reconnects and retries every second with
   the faked `Sleeper` until the deadline; a duplicate ULID on retry counts as success; after the
   deadline it logs at `error` without secrets and reports `recorded = false`, and the
-  `AuditRecordedHeader` response macro adds `Audit-Recorded: false`.
+  `withAuditRecorded(false)` response macro adds `Audit-Recorded: false`.
 - [ ] T014 [P] Write `tests/Unit/Support/ProblemTypeMonitoringTest.php`: the `ProblemType` cases
   `ContainerProtected` (409), `ContainerNotRunning` (409), `ContainerActionFailed` (502),
   `MailServiceNotRunning` (409), `QueueActionFailed` (502), `BanRulesNotRestored` (504) and
@@ -187,15 +193,19 @@ values, authorisation and the route group. **No user story starts before this ph
 - [ ] T015 [P] Create `tests/Feature/Security/MonitoringAuthorizationTest.php` with a data provider
   `operations()` (method, path, body) that each story phase extends with its operations, and the
   cases: signed-in administrator → not `401`/`403`; domain administrator and mailbox user sessions →
-  `403 forbidden`; key owned by a domain administrator → `403 forbidden` on `GET`; read-only
-  administrator key → allowed on every `GET`, `403 insufficient-key-scope` on every other method;
+  `403 forbidden`; read-write key owned by a domain administrator → `403 forbidden` on every
+  method; read-only key owned by a domain administrator → `403 forbidden` on `GET` and `403
+  insufficient-key-scope` on other methods (001's pipeline checks the key scope first, R26);
+  read-only administrator key → allowed on every `GET`, `403 insufficient-key-scope` on every other
+  method;
   read-write administrator key → allowed; restricted administrator session (`force_pw_update`) →
   `403 pending-action-required`; no credentials → `401 unauthenticated`; session without CSRF token
   on unsafe methods → `403 csrf-token-mismatch`. **Refusal auditing** (R24): every refused
   state-changing request of an authenticated caller (`forbidden`, `insufficient-key-scope`,
   `pending-action-required`) writes exactly one failure record with `permissionDenied`, the route's
-  event type and target type, and `details.problemType`; CSRF failures, `401`s and refused reads
-  write none. Seed with an empty provider row set so the class runs (and is skipped) until US1
+  event type and target type, and `details.problemType`, and so does a refused message content view
+  (the one read that declares `restv2.audit`); CSRF failures, `401`s and other refused reads write
+  none. Seed with an empty provider row set so the class runs (and is skipped) until US1
   adds rows.
 
 ### Implementation of the foundation
@@ -237,7 +247,8 @@ values, authorisation and the route group. **No user story starts before this ph
   `->defaults('restv2.audit', ['event' => …, 'target' => …])` (R24). Create
   `app/Services/Monitoring/MonitoringAuditTargetResolver.php` and register it with 008's
   `App\Services\Audit\RefusalAuditor` for the target types `container`, `mailQueue`,
-  `fail2banSettings`, `fail2banRules`, `fail2banActiveBan` and `fail2banBanListId` (R24: route
+  `mailQueueMessage`, `fail2banSettings`, `fail2banRules`, `fail2banActiveBan` and
+  `fail2banBanListId` (R24: route
   parameter as sent, decoded network, or a `null` target with `details.itemIds` for queue bulk
   requests), and let services that write their own failure record mark the request as audited so
   the auditor skips it. Where 002's `RESTV2_FAKE_OUTBOUND=y` binds the outbound fakes in
@@ -261,13 +272,17 @@ container and usage; compare with fixtures; count dockerapi calls with ten concu
 - [ ] T023 [P] [US1] Write `tests/Feature/Monitoring/HostOverviewTest.php` (AS-1, FR-005, FR-006,
   R6): `GET /host` returns `hostName` (`MAILCOW_HOSTNAME`), `timeZone`, `architecture`, `version`
   (from T019), `currentTime` (UTC), `uptimeSeconds` (integer), `cpu`, `memory`, `swap` mapped from the
-  psutil list, and `collectedAt` parsed from `system_time` in `Europe/Prague`; a second request
-  within 10 s makes no dockerapi call; after 10 s (`travel`) one call; dockerapi unavailable →
+  psutil list, and `collectedAt` parsed from `system_time` in `Europe/Prague` (the fake stamps
+  `system_time` with the current, travelled time unless a test sets it); a second request within
+  10 s makes no dockerapi call; after 10 s (`travel`) one call; a dockerapi answer whose
+  `system_time` is already 8 s old is served for only 2 more seconds; dockerapi unavailable →
   `503 temporary-failure` with `Retry-After`.
 - [ ] T024 [P] [US1] Write `tests/Feature/Monitoring/MonitoringSharedCollectionTest.php` (SC-004):
-  ten sequential requests from ten different administrator sessions within 10 s cause exactly one
-  `hostStats()` call and one `containers()` call; container actions invalidate the container
-  snapshot (asserted in US2).
+  ten requests from ten different administrator sessions within 5 s cause exactly one
+  `hostStats()` call and one `containers()` call; after `travel(6)` seconds the next container read
+  calls `containers()` again but the host figures are still served from the snapshot; after 11 s
+  `hostStats()` is called again; container actions invalidate the container snapshot (asserted in
+  US2).
 - [ ] T025 [P] [US1] Write `tests/Unit/Monitoring/DfOutputParserTest.php` and
   `tests/Feature/Monitoring/MailStorageUsageTest.php` (AS-2, FR-007, R8): `107G` → 107,000,000,000
   bytes with `approximate: true`; a 100 GB disk with 25 GB used reports 25%; the wrapped line has
@@ -279,7 +294,8 @@ container and usage; compare with fixtures; count dockerapi calls with ten concu
   `SKIP_CLAMD=y` the scanner is absent; the foreign project's container is absent; each item has
   `protected`, `role`, `availableActions` and `collectedAt`; sort by `name` (default), `state`,
   `startedAt` with ties by name; `running=false` filter; `q=postfix` matches name and `q=ghcr.io`
-  matches image; paging and `meta`; no response contains `planted-secret`.
+  matches image; paging and `meta`; `limit=0` and `sort=image` → `422`; no response contains
+  `planted-secret`.
 - [ ] T027 [P] [US1] Write `tests/Feature/Containers/GetContainerTest.php` (FR-010, FR-003):
   `GET /containers/postfix-mailcow`; a foreign container's service name, `clamd-mailcow` with
   `SKIP_CLAMD=y` and an unknown name → `404`; an invalid name pattern → `404` (route constraint).
@@ -343,7 +359,9 @@ action.
   container that starts on the third attempt → three calls and two `Sleeper` sleeps of 1.5 s; one
   that never starts → four calls, then `502 container-action-failed` with `serviceMessage`; a
   protected container may be started; dockerapi timeout → `504` type `outcome-unknown` with
-  `step: start`; dockerapi unavailable before the action → `503`, nothing called.
+  `step: start`; dockerapi unavailable before the action → `503`, nothing called; dockerapi
+  unreachable on the second attempt after a first attempt was sent → `504 outcome-unknown`; an
+  unknown name, a foreign project's container and a hidden scanner → `404`.
 - [ ] T038 [P] [US2] Write `tests/Feature/Containers/StopContainerTest.php` (AS-3, AS-4, FR-014,
   FR-015): `mysql-mailcow` → `409 container-protected` naming it, no dockerapi action; the own
   container (`restv2-mailcow`, and a container whose ID starts with the test's host name) →
@@ -363,7 +381,8 @@ action.
   restart of `mysql-mailcow` and keeps failing until `DOCKER_TIMEOUT` → `200` with header
   `Audit-Recorded: false` and an `error` log line; read-only key → `403 insufficient-key-scope`
   (AS-6) with exactly one failure row (`permissionDenied`, `details.problemType`) and no dockerapi
-  call; a domain administrator's attempt → one `permissionDenied` row.
+  call; a domain administrator's attempt → one `permissionDenied` row; dockerapi unavailable before
+  the action → one row with `temporaryFailure`; an unknown container → one row with `notFound`.
 - [ ] T041 [US2] Add `POST /containers/{name}/start|stop|restart` to the provider of
   `MonitoringAuthorizationTest`.
 
@@ -413,7 +432,10 @@ secret-bearing, every priority, more than a page) and compare every filter and p
   exact formats: each entry has the contract fields; watchdog text numbers become integers; a
   watchdog message entry has `null` health fields; rate-limit `rcpt` becomes a list and `err`
   becomes `null`; netfilter `warn` → severity `warning`; an unparseable line is left out of the list
-  and the total (FR-032); an ACME `base64,` entry is decoded or stripped (AS-4).
+  and the total (FR-032); an ACME `base64,` entry is decoded or stripped (AS-4); every
+  type-specific filter of FR-022 (autodiscover `service`/`user`, watchdog `service`, cron
+  `task`/`priority`, rate limits `rateLimitName`/`sender`/`user`, legacy API `method`/`clientAddress`,
+  syslog `priority`/`program`) matches case-insensitively as a substring with OR across values.
 - [ ] T047 [P] [US3] Write `tests/Feature/Logs/LogPagingAndFiltersTest.php` (AS-1, AS-2, AS-3,
   AS-6, FR-024–FR-027): 10,000 Postfix entries → 25 newest, newest first, `total: 10000`;
   `order=asc`; equal times keep stored order; `q=ALICE@example.org` matches case-insensitively;
@@ -433,12 +455,15 @@ secret-bearing, every priority, more than a page) and compare every filter and p
   dual-login user `admin => alice@example.org`); `messageKey` and `messageParameters`; `call` as a
   list; order by id; `before` = id keyset; `type`, `user`, `role` filters; `q` verified on masked
   entries with the SQL pre-filter (a row matching only in a masked value is not counted); exact
-  page sizes for ranges (the legacy `LIMIT` bug is not reproduced).
+  page sizes for ranges (the legacy `LIMIT` bug is not reproduced); a row whose `msg` and `call` are
+  not valid JSON is listed with `messageKey: null`, no parameters and `call: []`, and counts in the
+  total.
 - [ ] T050 [P] [US3] Write `tests/Feature/Logs/LoginLogTest.php` (FR-030, R14): `sasl_log` rows with
   local `datetime` in `Europe/Prague` are returned in UTC; with `RESTV2_SASL_LOG_SERVICE=WEBUI` a
   `MAILCOWUI` row is reported as `WEBUI` and `service=webui` matches it; upstream label keeps
   `MAILCOWUI`; `appPasswordUsed`; keyset cursor survives a `REPLACE` of an older row without
-  duplicates; `from`/`to` converted from UTC.
+  duplicates; five rows sharing one `datetime`, paged two at a time with `before`, come back exactly
+  once each in `service`, `real_rip`, `username` descending order; `from`/`to` converted from UTC.
 - [ ] T051 [P] [US3] Write `tests/Feature/Logs/UnknownLogTypeTest.php` (AS-7, FR-003):
   `GET /logs/rspamd` and `/logs/unknown` → `404` problem (no route).
 - [ ] T052 [US3] Add the twelve `GET /logs/*` operations to the provider of
@@ -489,12 +514,15 @@ acting on a simulated queue.
 - [ ] T060 [P] [US4] Write `tests/Unit/MailQueue/PostqueueJsonParserTest.php` (R17, R33): the
   fixture parses into messages with recipients and deferral reasons and `forced_expire`; empty lines
   and the line `1` are skipped; the 12,000-line generated queue yields 10,000 messages,
-  `truncated: true` and `queueCounts` over all 12,000 lines; unparseable lines are skipped.
+  `truncated: true`, `queueCounts` over all 12,000 lines, and the IDs of all 12,000 lines for the
+  membership check (an action on an ID from line 11,000 is `done`, not `notFound`); unparseable lines
+  are skipped.
 - [ ] T061 [P] [US4] Write `tests/Feature/MailQueue/ListMailQueueTest.php` (AS-1, AS-8, FR-037,
   FR-038, FR-043): `queue=deferred&recipient=partner.example` → exactly 3; `meta.queueCounts`
   (`active`, `deferred`, `hold`, `incoming`, `maildrop`, `total`) independent of filters; sort by
   `arrivalTime` (default asc), `size`, `sender`, `queue`, `id` with ties by id; `q` over id, sender,
-  recipients, reasons; `from`/`to` on arrival time; Postfix not running in the snapshot →
+  recipients, reasons; `from`/`to` on arrival time; `queue=bounce` → `422 notInList`; Postfix not
+  running in the snapshot →
   `409 mail-service-not-running` with `container: postfix-mailcow` and no exec; snapshot running
   but exec answers `null` and a fresh read shows it stopped → `409`; `danger` → `502
   queue-action-failed`; the exec call is `exec('postfix-mailcow', ['cmd' => 'mailq', 'task' => 'list'])`.
@@ -503,7 +531,9 @@ acting on a simulated queue.
   `mailQueueMessage` and the queue ID and **no** content in any column; a missing message → `404` and
   an audit row with failure reason `notFound`; a read-only administrator key may view and is
   audited with its key ID; when the audit insert fails the content is not returned (`503`);
-  `queueId` not hexadecimal → `404` (route constraint).
+  `queueId` not hexadecimal → `404` (route constraint, unaudited); a domain administrator's and a
+  restricted session's attempt → `403` with one `permissionDenied` row (`mailQueueMessageView`,
+  target `mailQueueMessage`).
 - [ ] T063 [P] [US4] Write `tests/Feature/MailQueue/MailQueueBulkActionsTest.php` (AS-3, AS-4, AS-7,
   FR-040, FR-042, R17), all through `POST /mail-queue/messages/bulk-actions` with
   `{"action": …, "targets": [{"id": …}]}`: four IDs of which one is no longer listed →
@@ -534,7 +564,7 @@ acting on a simulated queue.
 - [ ] T067 [P] [US4] Create `app/Services/MailQueue/PostqueueJsonParser.php` and
   `MailQueueListing.php` (R17, R33). This makes T060 pass.
 - [ ] T068 [US4] Create `app/Services/MailQueue/MailQueueService.php` (R17): `list(MailQueueQuery)`,
-  `content(Principal, string $id)`, `apply(Principal, action, list $ids): BulkOutcome`,
+  `content(Principal, string $id)`, `apply(Principal, action, list $ids): MailQueueBulkOutcome`,
   `flush(Principal)`, `purge(Principal)`, with the Postfix running check via `ContainerRegistry`,
   the pre-list membership check, `IrreversibleOperationAudit` for actions and `AuditLogger` for
   views.
@@ -544,7 +574,8 @@ acting on a simulated queue.
   "hexadecimal characters only" → `invalidFormat` `queueId`; `targets.*.version` prohibited), the resources `MailQueueMessageResource`, `MailQueueMessageContentResource` and a
   `BulkResultResource` (reuse 002's if present) in `app/Http/Resources/Api/V2/`.
 - [ ] T070 [US4] Create the controllers `MailQueueMessageController` (`index`),
-  `MailQueueMessageContentController` (`show`), `MailQueueBulkActionController`,
+  `MailQueueMessageContentController` (`show`, route with `restv2.audit` `mailQueueMessageView`,
+  target `mailQueueMessage`), `MailQueueBulkActionController`,
   `MailQueueFlushController`, `MailQueuePurgeController` (`store`) in
   `app/Http/Controllers/Api/V2/`, with `set_time_limit(DOCKER_TIMEOUT + 20)` on the actions, and
   register the routes in `routes/api.php` (`POST /mail-queue/messages/bulk-actions` with
@@ -619,24 +650,29 @@ netfilter-formatted keys and the fake for the netfilter restart.
   when the fake writes the defaults during the restart the response is `200` with them; when nothing
   appears within ten faked 1 s polls → `504 ban-rules-not-restored` and an audit row with
   `rulesNotRestored`; dockerapi unavailable → `503` and `F2B_REGEX` kept; restart timeout → `504
-  outcome-unknown` (`step: rulesReset`); audit probe failure → `503`, nothing deleted.
+  outcome-unknown` (`step: rulesReset`), and dockerapi unreachable on the restart after the `DEL` →
+  `504 outcome-unknown` too (never `503`); audit probe failure → `503`, nothing deleted.
 - [ ] T079 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanBanListsTest.php` (FR-052): active bans
   with `endsAt`, `remainingSeconds` and `queuedForLifting`; permanent bans with `startedAt`; sort by
   `endsAt` (default asc) and `network` (address then prefix, IPv4 before IPv6); `startedAt` default
-  desc; `q` on the network; `queuedForLifting` filter; paging.
+  desc; `q` on the network; `queuedForLifting` filter; paging; `sort=address` → `422`.
 - [ ] T080 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanBanActionsTest.php` (AS-4, AS-5, AS-6,
   FR-053, FR-054): lift `203.0.113.0%2F24` → `F2B_QUEUE_UNBAN` has it and the response shows
   `queuedForLifting: true`; allowlist → the network is in `F2B_WHITELIST`, removed from
   `F2B_BLACKLIST`, queued for lifting, in one transaction; denylist → in `F2B_BLACKLIST`, removed from
   `F2B_WHITELIST`; an IPv6 network `2001%3Adb8%3A%3A%2F64` works; a network that is not actively
-  banned → `404`; `banServiceRunning: false` when netfilter is stopped and the lift stays queued.
+  banned → `404`; `banServiceRunning: false` when netfilter is stopped and the lift stays queued;
+  allowlisting or denylisting when that list already holds 10,000 other entries → `422 tooMany`
+  on `network`.
 - [ ] T081 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanBanListRotationTest.php` (AS-9, FR-055):
   a new UUID v4 replaces `banlist_id` in `F2B_OPTIONS`, all other values unchanged; the response
   carries the new `banListUrl` and a new `ETag`; stale `If-Match` → `412`.
 - [ ] T082 [P] [US5] Write `tests/Feature/Fail2Ban/Fail2BanAuditTest.php` (FR-062, US8 AS-2, AS-3):
   settings change → one row with `changes.banTime {old, new}` and `allowlistAdded`/`Removed`;
   rules replacement and reset → `oldRules`/`newRules`; ban actions → network and list changes;
-  rotation → no ID anywhere in the row; a refused `412` → a failure row with `versionOutdated`.
+  rotation → no ID anywhere in the row; the first save that generates a `banlist_id` records no ID
+  in `changes`; a refused `412` → a failure row with `versionOutdated`; Redis unavailable → a
+  failure row with `temporaryFailure`.
 - [ ] T083 [US5] Add the eleven fail2ban operations to the provider of
   `MonitoringAuthorizationTest`.
 
@@ -651,8 +687,9 @@ netfilter-formatted keys and the fake for the netfilter restart.
   (Symfony `Process`, `python3 -I -S -B`, 5 s timeout). This makes T073 pass.
 - [ ] T086 [US5] Create `app/Clients/Fail2Ban/Fail2BanStore.php` (R18: reads with fallbacks and
   normalisation, `transaction(callable)` with `WATCH`/`MULTI`/`EXEC` and 5 retries, list hashes,
-  `F2B_REGEX`, ban hashes) and `app/Services/Fail2Ban/Fail2BanSettingsValues.php`,
-  `Fail2BanVersionTag.php` and `BanServiceStatus.php`. This makes T071 pass.
+  `F2B_REGEX`, ban hashes) and `app/Services/Fail2Ban/Fail2BanSettingsValues.php` and
+  `Fail2BanVersionTag.php` (`banServiceRunning` comes from `ContainerRegistry`). This makes T071
+  pass.
 - [ ] T087 [US5] Create `app/Services/Fail2Ban/Fail2BanSettingsService.php` (read, update with the
   stored-value exemption and cross-field rules, rotation; audit in a DB transaction around `EXEC`,
   R24) and `app/Http/Requests/Api/V2/UpdateFail2BanSettingsRequest.php` (merge patch types, list
@@ -666,7 +703,8 @@ netfilter-formatted keys and the fake for the netfilter restart.
   `Fail2BanBanActionResultResource.php`.
 - [ ] T090 [US5] Create the controllers `Fail2BanSettingsController` (`show`, `update`),
   `Fail2BanBanListRotationController`, `Fail2BanRulesController` (`show`, `update`),
-  `Fail2BanRulesResetController`, `Fail2BanActiveBanController` (`index`),
+  `Fail2BanRulesResetController` (calling `set_time_limit(DOCKER_TIMEOUT + 20)`),
+  `Fail2BanActiveBanController` (`index`),
   `Fail2BanBanLiftController`, `Fail2BanBanAllowlistController`, `Fail2BanBanDenylistController`
   (`store`) and `Fail2BanPermanentBanController` (`index`) in `app/Http/Controllers/Api/V2/`;
   register the routes in `routes/api.php`, the state-changing ones with `restv2.audit` and their
@@ -691,8 +729,8 @@ netfilter-formatted keys and the fake for the netfilter restart.
   R16): 1,000 rows → 25 newest with `total: 1000`; `q=spammer@example.net` returns the `reject` row
   with `score`, `requiredScore` and symbols ordered positive descending, negative ascending, zero
   last; `action` filter (case-insensitive, multiple values); `minScore`/`maxScore` and `from`/`to`
-  inclusive; sort by `score`, `size`, `scanTime`; `user: null` for none; the fake records one
-  `history()` call per request (no caching).
+  inclusive; sort by `score`, `size`, `scanTime`; `user: null` for none; `minScore=abc` → `422`;
+  the fake records one `history()` call per request (no caching).
 - [ ] T092 [P] [US6] Write `tests/Feature/Rspamd/RspamdStatisticsTest.php` (AS-3, FR-035): the
   documented fields only (an extra `pools_allocated` in the fixture is absent), `actions` as
   Rspamd names them, `statfiles` and `fuzzyHashes`, `collectedAt`; missing numbers → 0.
@@ -703,11 +741,11 @@ netfilter-formatted keys and the fake for the netfilter restart.
 
 ### Implementation for User Story 6
 
-- [ ] T095 [US6] Add `history(): array` to `app/Clients/Rspamd/RspamdController.php` and its socket
-  adapter (006), mapping connection failures, timeouts (5 s connect, 10 s total) and non-200 to
-  `RspamdUnavailable` → `503`. Write its `Http::fake()` unit test in
-  `tests/Unit/Clients/SocketRspamdControllerHistoryTest.php` first (asserting
-  `CURLOPT_UNIX_SOCKET_PATH`).
+- [ ] T095 [US6] Add `history(): array` to `app/Clients/Rspamd/RspamdController.php` and 006's
+  `UnixSocketRspamdController.php`, mapping connection failures, timeouts (5 s connect, 10 s total)
+  and non-200 to 006's unavailable result, which renders `503 temporary-failure`. Write its
+  `Http::fake()` unit test in `tests/Unit/Clients/UnixSocketRspamdControllerHistoryTest.php` first
+  (asserting `CURLOPT_UNIX_SOCKET_PATH` and the `/history` path).
 - [ ] T096 [US6] Create `app/Services/Rspamd/RspamdHistoryService.php`,
   `RspamdStatisticsService.php`, `app/Http/Requests/Api/V2/ListRspamdHistoryRequest.php`,
   `app/Http/Resources/Api/V2/{RspamdHistoryEntryResource,RspamdStatisticsResource}.php` and the
@@ -736,7 +774,8 @@ gated by `IP_CHECK`.
   `checkFailed`, and a second request within 5 minutes makes no source call while one after 5
   minutes does; success cached 1 hour; `RESTV2_UPDATE_CHECK=n` → `disabled` and zero source calls;
   branch `nightly` → `disabled`; no installed tag → `disabled`; the source URL defaults to
-  `https://api.github.com/repos/mailcow/mailcow-dockerized`; a changed version uses a new cache key.
+  `https://api.github.com/repos/mailcow/mailcow-dockerized`; a changed version uses a new cache key;
+  Redis unavailable → `503` and no source call.
 - [ ] T099 [P] [US7] Write `tests/Unit/Clients/GitHubReleaseSourceTest.php` with `Http::fake()`:
   `User-Agent: mailcow-update-check`, `Accept: application/vnd.github+json`, 10 s timeout, non-200
   → failure.
@@ -809,7 +848,8 @@ refused ones, and each content view, then filter the audit log.
   `app/Http/Controllers/Api/V2/` of this feature calls `Redis::`, `DB::` or a dockerapi method
   directly (services only, constitution IV), and `LegacyUiLogEntry` is never written.
 - [ ] T111 [P] Document the new settings of R27 in `README.md` (configuration table, FeldHost:
-  `RESTV2_UPDATE_CHECK=n`) and add the feature's contract changes to `CHANGELOG.md` under the next
+  `RESTV2_UPDATE_CHECK=n`; raising `DOCKER_TIMEOUT` needs `fastcgi_read_timeout` ≥ `DOCKER_TIMEOUT + 30`
+  and `request_terminate_timeout` ≥ `DOCKER_TIMEOUT + 40`) and add the feature's contract changes to `CHANGELOG.md` under the next
   release (42 operations, shared enum values, problem types).
 - [ ] T112 Run quickstart Part A and Part B (`specs/011-monitoring-operations/quickstart.md`),
   `composer test` with contract coverage of all 42 operations, `vendor/bin/pint --test` and

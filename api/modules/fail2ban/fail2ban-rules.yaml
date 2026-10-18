@@ -28,7 +28,8 @@ put:
     must compile in the ban service's regular-expression dialect (Python `re`) and contain a capture
     group whose first group captures the client address. An invalid rule refuses the request with
     `422`, naming it, and the stored rules stay unchanged. The ban service uses the new rules from
-    the next log line, without a restart. `If-Match` is optional. Needs an administrator session or
+    the next log line, without a restart. `If-Match` is optional. Interactive clients should always send the
+    version tag they read. Needs an administrator session or
     a read-write key owned by an administrator. Audited with the old and new rules.
   security:
     - sessionCookie: []

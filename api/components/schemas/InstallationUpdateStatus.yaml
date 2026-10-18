@@ -8,9 +8,9 @@ description: |
   - `upToDate`: no newer release.
   - `updateAvailable`: `latestRelease` describes the newest release.
   - `checkFailed`: the release source could not be reached, rate-limited the request, or has no
-    release for the installed version (for example a nightly build).
-  - `disabled`: the check is turned off, or the installation follows another branch. No outbound
-    request is made.
+    release for the installed version tag.
+  - `disabled`: the check is turned off, or the installation follows another branch (for example
+    `nightly`). No outbound request is made.
 
   Results are cached per installed version: successful checks for 1 hour, failed checks for
   5 minutes. Release notes are externally authored Markdown: clients must render them safely

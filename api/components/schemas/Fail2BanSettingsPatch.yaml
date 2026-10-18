@@ -8,15 +8,17 @@ description: |
   limits; a stored value outside them never blocks an edit that does not change it):
   - `banTime`: 60 to 2,147,483,647 (`outOfRange`);
   - `maxBanTime`: 60 to 2,147,483,647, and not less than the ban time (`outOfRange`, with
-    `minField: banTime` when the ban time is the limit);
+    `minField: banTime` when the ban time is the limit); when only `banTime` is sent and exceeds the
+    stored maximum, `mustNotExceed` on `banTime` (params `field: maxBanTime`, `value`);
   - `maxAttempts`: 1 to 2,147,483,647; `retryWindow`: 1 to 2,147,483,647;
   - `ipv4PrefixLength`: 8 to 32; `ipv6PrefixLength`: 8 to 128;
   - `allowlist` entries: an IPv4 or IPv6 address, a network in prefix notation or a host name
     (`invalidFormat`, `format: ipNetworkOrHostname`);
   - `denylist` entries: an address or a network in prefix notation (`invalidFormat`,
     `format: ipNetwork`), and not `0.0.0.0`, `0.0.0.0/0`, `::/0`, mailcow's internal IPv4 network
-    or its network address, or mailcow's internal IPv6 network (`reservedNetwork`);
-  - an entry on both lists is refused (`inBothLists`, on the denylist entry);
+    or its network address, or mailcow's internal IPv6 network (`reserved`, param `reserved`);
+  - an entry on both lists is refused (`conflictsWith` on the denylist entry, params
+    `field: allowlist` and `value`);
   - at most 10,000 entries per list (`tooMany`), each at most 253 characters (`tooLong`).
 
   Entries are trimmed and duplicates are stored once. Errors on list entries use the key

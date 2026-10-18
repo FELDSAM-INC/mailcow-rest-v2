@@ -91,7 +91,10 @@ identical.
     stopped (R7).
   - **Error mapping**: the new read methods throw `DockerApiUnreachable` (connection refused, DNS
     or TLS failure → `503 temporary-failure`) and `DockerApiTimeout` (→ `503` for reads). Actions
-    and exec return `DockerCallResult`: `failed` with `unreachable` → `503 temporary-failure`;
+    and exec return `DockerCallResult`: `failed` with `unreachable` → `503 temporary-failure` when
+    nothing has been changed yet in the request, and `504 outcome-unknown` once an earlier step of
+    the same request may have changed something (a start or stop retry after a first attempt, the
+    restart after the rule reset's `DEL F2B_REGEX`), because `503` promises that nothing changed;
     `unknown` (timeout) → `504 outcome-unknown`; `failed(message)` (dockerapi's
     `{"type": "danger", "msg": …}`, which it returns with HTTP 200 for every handler exception) →
     `502 container-action-failed` or `queue-action-failed`.
@@ -100,7 +103,8 @@ identical.
     case-insensitively, keyed by `Config.Labels["com.docker.compose.service"]`, as legacy
     `docker('info')`. `ContainerSnapshot` holds only `id`, `service`, `image` (`Config.Image`),
     `status` (`State.Status`), `running` (`State.Running`), `startedAt` (`State.StartedAt`,
-    `0001-01-01T00:00:00Z` → `null`) and `health` (`State.Health.Status`, absent → `null`).
+    `0001-01-01T00:00:00Z` → `null`) and `health` (`State.Health.Status`; absent or `none` →
+    `null`).
     **`Config.Env` and every other field are dropped at parse time**: the environment holds
     `DBPASS`, `REDISPASS` and other secrets, and nothing else is ever cached or logged.
 - **Rationale**: One client per external service (002 D27 names 011 as a reuser). These are the
@@ -190,7 +194,10 @@ identical.
   | Resource usage | `monitoring:usage:<service>` | 5 s (sample ≤ 15 s, R7) | `containerStats()` | newest sample's `read` |
   | Mail storage | `monitoring:mail-storage` | 60 s | `exec(dovecot, df)` | when `df` answered |
 
-  The maximum ages are constants in `config/restv2.php` (`monitoring.max_age.*`), also reported
+  Freshness is judged by `collectedAt`, the time the data was measured, never by the time it was
+  fetched, so a value dockerapi had already cached is served only for the rest of its maximum age
+  (FR-006). The maximum ages are constants in `config/restv2.php` (`monitoring.max_age.*`), also
+  reported
   by the capabilities read (R32). Container actions delete `monitoring:containers` and the
   container's usage key. Logs, the queue, bans, Rspamd data and the update check are not in this
   cache (spec clarification 6); the update check has its own cache (R10).
@@ -301,7 +308,9 @@ identical.
     returned. The comparison uses `created_at` exactly as legacy does; the response's
     `publishedAt` is GitHub's publication time.
   - Cache: `restv2:update-check:<sha1(source)>:<installed version>`, 3,600 s after success and
-    300 s after failure, with a single-flight lock like R5. The legacy key
+    300 s after failure, with a single-flight lock like R5. Redis unavailable → `503
+    temporary-failure` (no outbound request without the cache, so a Redis outage cannot turn every
+    poll into GitHub calls). The legacy key
     `MAILCOW_UPDATE_CHECK/<version>` is not shared, because its value lacks the release notes.
 - **Rationale**: Spec FR-019 and FR-020; the fork disables the check by setting.
 - **Alternatives considered**: Sharing legacy's cache key was rejected (different payload).
@@ -383,7 +392,10 @@ identical.
     masked and matched in PHP; `total` and the page come from the verified rows. Rows that matched
     only inside a masked value are therefore never counted.
   - `msg` (JSON): a string → `messageKey`, no parameters; a list → first element `messageKey`,
-    the rest `messageParameters`; `null` → `null`. `call` (JSON list) → `call`. Both masked.
+    the rest `messageParameters`; `null` → `null`. `call` (JSON list) → `call`. Both masked. A
+    row's columns always parse, so every row is an entry; a `msg` or `call` value that is not valid
+    JSON is returned as `messageKey: null` with no parameters, or `call: []`, failing closed so that
+    unmasked text never leaves the API.
   - DB unavailable → `503`.
 - **Rationale**: Spec FR-028 requires that searches cannot reveal masked values; counting
   pre-filter matches would leak through `total`. The table is never trimmed, so unbounded scans
@@ -398,9 +410,10 @@ identical.
   `TZ` for SQL. The reported service is
   `CASE WHEN service = 'MAILCOWUI' AND <label> = 'WEBUI' THEN 'WEBUI' ELSE service END` (FR-030,
   label `config('restv2.sasl_log_service')`), and the `service` filter and `q` match the reported
-  value. Order: `datetime DESC, service, real_rip, username` (the primary key breaks ties
-  deterministically). The cursor is base64url of `[datetime, service, real_rip, username]` with
-  keyset paging. `appPasswordUsed` = `app_password > 0`.
+  value. Order: `datetime DESC, service DESC, real_rip DESC, username DESC` (the primary key breaks
+  ties deterministically, in the same direction, so a row-value comparison works). The cursor is
+  base64url of `[datetime, service, real_rip, username]`, and the next page is
+  `(datetime, service, real_rip, username) < (?, ?, ?, ?)`; `order=asc` reverses the result. `appPasswordUsed` = `app_password > 0`.
 - **Rationale**: The table has no insertion ID and rows are `REPLACE`d, so keyset paging is the
   only duplicate-free option; a replaced row moves to the newest page.
 - **Alternatives considered**: Offset paging only was rejected (FR-026).
@@ -430,9 +443,9 @@ identical.
 
 ### R16. Rspamd controller client and mapping
 
-- **Decision**: `App\Clients\Rspamd\RspamdController` (from 006) gains `history(): array` and uses
-  006's `stat(): array`. The adapter talks HTTP over mailcow's controller socket
-  `/var/lib/rspamd/rspamd.sock` (`RESTV2_RSPAMD_SOCKET`; the override mounts `rspamd-vol-1` at
+- **Decision**: `App\Clients\Rspamd\RspamdController` with 006's adapter
+  `UnixSocketRspamdController` gains `history(): array` and uses 006's `stat(): array`. The adapter talks HTTP over mailcow's controller socket
+  `/var/lib/rspamd/rspamd.sock` (006's `RESTV2_RSPAMD_SOCKET`; the override mounts `rspamd-vol-1` at
   `/var/lib/rspamd`, read-only; connecting to a socket works on a read-only mount) with
   `CURLOPT_UNIX_SOCKET_PATH`, exactly as legacy `get_logs('rspamd-history')`. The socket is a
   trusted controller connection, so no password is sent. Timeouts: 5 s to connect, 10 s total.
@@ -467,8 +480,9 @@ identical.
   - **List** (`list`): `postqueue -j` as user `postfix`, one JSON object per line.
     `PostqueueJsonParser` decodes the **first 10,000** non-empty lines (legacy's limit, also
     skipping the line `1`) into `MailQueueMessage` (`queue_id`, `queue_name`, `arrival_time`,
-    `message_size`, `sender`, `recipients[].{address, delay_reason}`, `forced_expire`), and only
-    counts the remaining lines per queue with a `"queue_name"` regular expression.
+    `message_size`, `sender`, `recipients[].{address, delay_reason}`, `forced_expire`), and from the
+    remaining lines extracts only `queue_id` and `queue_name` with regular expressions, for the
+    counts and for the membership check of the actions.
     `meta.queueCounts` covers every line; `meta.truncated` is true beyond 10,000. Filters, sort
     and paging run in PHP. Unparseable lines are skipped.
   - **View** (`cat`): `postcat -q <id>` as user `postfix`, returned as text. Output starting with
@@ -605,7 +619,7 @@ identical.
 - **Decision**: `Fail2BanRulesService::reset()`: check `If-Match` against the rules tag; probe the
   audit log (R24); resolve `netfilter-mailcow` (`RESTV2_BAN_SERVICE_CONTAINER`) in a fresh
   container list (dockerapi down → `503`, nothing deleted); `DEL F2B_REGEX`;
-  `restart($service)` (timeout → `504 outcome-unknown`, `step: rulesReset`;
+  `restart($service)` (timeout or dockerapi unreachable after the `DEL` → `504 outcome-unknown`, `step: rulesReset`;
   `danger` → `502 container-action-failed`); then poll `F2B_REGEX` every 1 s up to 10 times
   (`Sleeper`). Rules found → `200` with them; otherwise `504 ban-rules-not-restored`. The audit
   record holds the old rules and the new ones (or `null`).
@@ -627,6 +641,8 @@ identical.
     `HSET F2B_QUEUE_UNBAN <net> 1`.
   - **denylist**: denylist rules of R19 (`reserved` on `network`); `MULTI`: `HSET F2B_BLACKLIST
     <net> 1`, `HDEL F2B_WHITELIST <net>`.
+  - Both list actions refuse with `422 tooMany` on `network` when the list they add to already holds
+    10,000 entries and does not contain the network (FR-047).
   - The ban service processes the unban queue every 10 s (`autopurge`) and reloads the lists
     every 60 s, resolving host names each time.
 - **Rationale**: Legacy `fail2ban('edit')` actions, restricted to active bans (FR-053) with the
@@ -636,7 +652,8 @@ identical.
 
 ### R23. Ban service running indicator
 
-- **Decision**: `banServiceRunning` comes from the shared container snapshot (R5) for
+- **Decision**: `banServiceRunning` comes from `ContainerRegistry::banServiceRunning()`, which reads
+  the shared container snapshot (R5) for
   `netfilter-mailcow`: `true`/`false`, or `null` when dockerapi is unavailable or the container is
   not listed. Reads and saves of settings, rules and bans never fail because dockerapi is down.
 - **Rationale**: FR-056; the ban data lives in Redis and does not need dockerapi.
@@ -651,19 +668,24 @@ identical.
   whatever its outcome, and one per message content view (FR-062):
   - The services write the record for every request that reaches the operation: success,
     `alreadyInState`, `409` refusals, `404` (absent container, queue ID or ban), `412`, `502`,
-    `503` after the operation started, and `504`.
+    `503` (failure reason `temporaryFailure`, also when dockerapi or Redis is unavailable before
+    anything changed) and `504`. The only attempts without a record are those refused because the
+    audit log itself cannot be written (FR-064).
   - **Refusal auditing** (`docs/conventions.md`): every state-changing route of this feature
     declares the route default `restv2.audit` (`['event' => <AuditEventType>, 'target' => <target
     type>]`), so 008's `RefusalAuditor` records the refusals raised before the operation runs:
     `403 forbidden` (domain administrators, mailbox users, their keys), `403
     insufficient-key-scope` (read-only keys), `403 pending-action-required` (restricted sessions),
-    `404` from route constraints, `422` and a malformed `400`. It maps them to `permissionDenied`
+    `422` and a malformed `400` (a path that fails a route constraint matches no route, so it is an
+    unaudited `404`, like any unknown path). It maps them to `permissionDenied`
     (told apart by `details.problemType`), `notFound` and `validationFailed`. CSRF failures and
     `401`s are not recorded. 011 registers resolvers for its target types:
     `container` (the `containerName` route parameter, as sent), `mailQueue` (a `null` target with
     `details.itemIds`, the sent queue IDs that are hexadecimal, at most 1,000; the event follows
     the body's `action` through 008's `'event' => 'fromBulkAction'`), `fail2banSettings`,
-    `fail2banRules` and `fail2banBanListId` (`null` ID), and `fail2banActiveBan` (the decoded
+    `fail2banRules` and `fail2banBanListId` (`null` ID), `mailQueueMessage` (the `queueId` route
+    parameter; the content route is the one read that declares `restv2.audit`, with event
+    `mailQueueMessageView`, because content views are audited), and `fail2banActiveBan` (the decoded
     `network` route parameter). A refusal the service raises itself is recorded by the service
     and not a second time (the service marks the request as audited).
   - Reads are not audited, except content views (`mailQueueMessageView`, also for `404`).
@@ -676,7 +698,7 @@ identical.
   | `mailQueueDelivery`, `mailQueueHold`, `mailQueueRelease`, `mailQueueDeletion` | `mailQueue`, null | `results`: every distinct ID with `done`/`notFound`/`failed` |
   | `mailQueueFlush`, `mailQueuePurge` | `mailQueue`, null | `serviceMessage` on failure |
   | `mailQueueMessageView` | `mailQueueMessage`, queue ID | — (never the content) |
-  | `fail2banSettingsUpdate` | `fail2banSettings` | `changes` (`{field: {old, new}}`), `allowlistAdded`, `allowlistRemoved`, `denylistAdded`, `denylistRemoved` |
+  | `fail2banSettingsUpdate` | `fail2banSettings` | `changes` (`{field: {old, new}}`, never `banListId`, also when the first save generates it), `allowlistAdded`, `allowlistRemoved`, `denylistAdded`, `denylistRemoved` |
   | `fail2banRulesReplacement`, `fail2banRulesReset` | `fail2banRules` | `oldRules`, `newRules` |
   | `fail2banBanLift`, `fail2banBanAllowlisting`, `fail2banBanDenylisting` | `fail2banActiveBan`, network | `network`, list entries added and removed |
   | `fail2banBanListIdRotation` | `fail2banBanListId`, null | — (never an ID) |
@@ -753,7 +775,6 @@ identical.
   | `RESTV2_PROTECTED_CONTAINERS` | `dockerapi-mailcow,mysql-mailcow,redis-mailcow,nginx-mailcow,restv2-mailcow` | containers that cannot be stopped |
   | `RESTV2_CONTAINER_ROLES` | `{}` | JSON map of extra service → role entries |
   | `RESTV2_POSTFIX_CONTAINER`, `RESTV2_DOVECOT_CONTAINER`, `RESTV2_BAN_SERVICE_CONTAINER` | `postfix-mailcow`, `dovecot-mailcow`, `netfilter-mailcow` | containers this feature execs into or restarts |
-  | `RESTV2_RSPAMD_SOCKET` | `/var/lib/rspamd/rspamd.sock` | Rspamd controller socket (shared with 006) |
   | `RESTV2_UPDATE_CHECK` | `y` | update check on or off (FeldHost: `n`) |
   | `RESTV2_UPDATE_SOURCE_URL` | GitHub releases API of `MAILCOW_GIT_OWNER/REPO` | release source |
   | `RESTV2_UPDATE_STABLE_BRANCH` | `master` | branch the update check runs on |
@@ -780,7 +801,10 @@ identical.
     retry).
   - `docker/php/Dockerfile` (`base` stage): `apk add --no-cache python3` for R20.
   - The long operations call `set_time_limit(DOCKER_TIMEOUT + 20)`; `docker/php/php-fpm.conf` sets
-    `request_terminate_timeout = 100s`.
+    `request_terminate_timeout = 100s`. These values suit the default `DOCKER_TIMEOUT` of 60 s; an
+    operator who raises it must raise `fastcgi_read_timeout` to at least `DOCKER_TIMEOUT + 30` and
+    `request_terminate_timeout` to at least `DOCKER_TIMEOUT + 40` (documented in the README and the
+    quickstart).
 - **Rationale**: SC-009 (an answer within the timeout plus 5 s) needs every hop to wait longer than
   the operation.
 

@@ -763,9 +763,12 @@ or when the audit log cannot be written before an irreversible operation (contai
 action, rule reset), and `outcome-unknown` (504) when the container service does not answer within
 `DOCKER_TIMEOUT`; there `step` names the action (`start`, `stop`, `restart`, `deliver`, `hold`,
 `release`, `delete`, `flush`, `purge`, `rulesReset`). An outdated `If-Match` on the ban settings,
-rules, rule reset or ban list rotation answers `412` (`about:blank`). An irreversible operation
-that was carried out but whose audit record could not be written answers normally and carries the
-response header `Audit-Recorded: false`.
+rules, rule reset or ban list rotation answers `412` (`about:blank`). A change that was carried out
+but whose audit record could not be written (an irreversible operation whose record still failed at
+the container-service timeout, or a ban service change whose record failed after it was stored)
+answers as it would otherwise and carries the response header `Audit-Recorded: false`. A
+`temporary-failure` of feature 011 always means that nothing was changed; a failure after a change
+started is `outcome-unknown`.
 
 ## quarantine-item-busy
 

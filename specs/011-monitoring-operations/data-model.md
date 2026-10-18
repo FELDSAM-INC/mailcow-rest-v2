@@ -48,7 +48,7 @@ Feature 001's model (`app/Models/Mailcow/SaslLogEntry.php`; 001 writes it for UI
 | `real_rip` | VARCHAR(64), PK part | `clientAddress` |
 | `datetime` | DATETIME(0) DEFAULT NOW(0) (mailcow local time) | `time` (via `MailcowDateTime`, UTC) |
 
-Queries (R14): `ORDER BY datetime DESC, service, real_rip, username`; keyset cursor
+Queries (R14): `ORDER BY datetime DESC, service DESC, real_rip DESC, username DESC`; keyset cursor
 `(datetime, service, real_rip, username) < (?, ?, ?, ?)`; `from`/`to` converted to `TZ`; filters on
 `username`, the reported service and `real_rip`. mailcow's MariaDB event `clean_sasl_log` cleans it
 daily.

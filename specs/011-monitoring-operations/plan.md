@@ -100,7 +100,7 @@ operations in 6 modules, 8 user stories, no API-owned table.
 | Principle | Gate | Status |
 |---|---|---|
 | I. Contract-first | All 42 operations are authored in `api/modules/{host,containers,logs,rspamd-stats,mail-queue,fail2ban}/` before code; `npx @redocly/cli@2.64.1 lint api/openapi.yaml` passes (only 001's four known system warnings remain). Every test request and response is validated (001 R13); the contract coverage check includes the new operations. | PASS |
-| II. HTTP contract | Plural nouns and sub-resource actions (`/containers/{containerName}/restart`, `/fail2ban/rules/reset`), bulk queue actions at `POST /mail-queue/messages/bulk-actions` with `{action, targets}`; `PATCH` with merge patch for settings, `PUT` for the rule list. `{data, meta}` lists (the queue's `meta` extends `ListMeta`), `{data}` singles, RFC 9457 problems with documented types, `ETag`/`If-Match` on the two mutable resources (ban settings and rules). camelCase, booleans, RFC 3339 UTC, bytes and seconds as explicit units. Statuses 502 and 504 are justified below. | PASS (justified) |
+| II. HTTP contract | Plural nouns and sub-resource actions (`/containers/{containerName}/restart`, `/fail2ban/rules/reset`), bulk queue actions at `POST /mail-queue/messages/bulk-actions` with `{action, targets}`; `PATCH` with merge patch for settings, `PUT` for the rule list. `{data, meta}` lists (the queue's `meta` extends `ListMeta`), `{data}` singles, RFC 9457 problems with documented types, `ETag`/`If-Match` on the two mutable resources (ban settings and rules). camelCase, booleans, RFC 3339 UTC, bytes and seconds as explicit units. Statuses 502, 503 and 504 are justified below. | PASS (justified) |
 | III. Upstream schema | No migration. `logs` and `sasl_log` are read through read-only models. | PASS |
 | IV. Parity | The legacy code was read ([research](./research.md)): `functions.{docker,mailq,fail2ban}.inc.php`, `get_logs()`, `json_api.php`, `container_ctrl.php`, `update_check.php`, `dashboard.php`, dockerapi and netfilter. Ban data is written exactly as legacy writes it (keys, JSON shape, list hashes), dockerapi tasks are legacy's. Every deviation is in the spec's parity table; plan-level details are recorded under "Parity notes" below. | PASS |
 | V. Coexistence | Own container; dockerapi, netfilter, Rspamd and php-fpm unchanged; the public ban list endpoint stays in legacy. The override gains environment variables and a read-only volume only. | PASS |
@@ -216,7 +216,7 @@ app/
 │   │   ├── DockerCallResult.php            # (002/003) + body if not yet present
 │   │   ├── ContainerSnapshot.php
 │   │   └── {DockerApiUnreachable,DockerApiTimeout}.php
-│   ├── Rspamd/{RspamdController,SocketRspamdController}.php       # (006) + history()
+│   ├── Rspamd/{RspamdController,UnixSocketRspamdController}.php   # (006) + history()
 │   ├── Releases/{ReleaseSource,GitHubReleaseSource}.php
 │   ├── PublicAddress/{PublicAddressLookup,HttpPublicAddressLookup}.php
 │   └── Fail2Ban/Fail2BanStore.php          # F2B_* keys (001's Fail2BanReporter stays)
@@ -240,11 +240,12 @@ app/
 │   ├── Config/MailcowConfig.php                         # (001) + app_info.inc.php values, DOCKER_TIMEOUT
 │   ├── Monitoring/
 │   │   ├── SharedSnapshotCache.php, Snapshot.php
-│   │   ├── ContainerRegistry.php, ContainerRoleMap.php, ContainerControlService.php
+│   │   ├── ContainerRegistry.php, ContainerRoleMap.php, ContainerControlService.php, ContainerActionOutcome.php
 │   │   ├── ContainerResourceUsageService.php, DockerStatsCalculator.php
 │   │   ├── HostOverviewService.php, MailStorageService.php, DfOutputParser.php
 │   │   ├── InstallationVersionService.php, UpdateCheckService.php, PublicAddressService.php
-│   │   └── MonitoringCapabilitiesService.php
+│   │   ├── MonitoringCapabilitiesService.php
+│   │   └── MonitoringAuditTargetResolver.php   # RefusalAuditor resolver for this feature's targets
 │   ├── Logs/
 │   │   ├── LogType.php (enum), LogQuery.php, LogPage.php, LogCursor.php
 │   │   ├── RedisListLogSource.php, LegacyUiActivityLogSource.php, LoginLogSource.php
@@ -252,11 +253,10 @@ app/
 │   │   ├── LogSeverity.php, Base64Message.php
 │   │   └── SecretMasker.php, LegacyApiDataParser.php
 │   ├── Rspamd/{RspamdHistoryService,RspamdStatisticsService}.php
-│   ├── MailQueue/{MailQueueService,PostqueueJsonParser,MailQueueListing}.php
+│   ├── MailQueue/{MailQueueService,PostqueueJsonParser,MailQueueListing,MailQueueQuery,MailQueueBulkOutcome}.php
 │   └── Fail2Ban/
 │       ├── Fail2BanSettingsService.php, Fail2BanSettingsValues.php, Fail2BanVersionTag.php
-│       ├── Fail2BanRulesService.php, Fail2BanBanService.php
-│       └── BanServiceStatus.php
+│       └── Fail2BanRulesService.php, Fail2BanBanService.php
 └── Support/
     ├── Regex/PythonRegexValidator.php
     └── Network/{IpNetwork,NetworkSort}.php
@@ -272,7 +272,8 @@ deploy/docker-compose.override.yml         # (001) + env and rspamd-vol-1 (ro)
 
 tests/
 ├── Support/
-│   ├── Fakes/{FakeDockerApiClient,FakeRspamdController,FakeReleaseSource,FakePublicAddressLookup}.php
+│   ├── Fakes/{FakeDockerApiClient,FakeReleaseSource,FakePublicAddressLookup}.php   # FakeDockerApiClient: 002
+│   ├── Rspamd/FakeRspamdController.php    # (006) + history()
 │   ├── Monitoring/MonitoringFixtures.php  # loads recorded dockerapi, postqueue, postcat and Rspamd payloads
 │   └── Redis/MailcowLogs.php              # pushes legacy-format log lines and F2B_* keys
 ├── fixtures/monitoring/                   # containers.json, host-stats.json, stats-*.json, postqueue-j.txt, postcat-*.txt, rspamd-history.json, rspamd-stat.json, df-*.txt
@@ -280,7 +281,8 @@ tests/
 ├── Feature/Security/MonitoringAuthorizationTest.php
 ├── Feature/Audit/MonitoringAuditTrailTest.php
 ├── Feature/Performance/MonitoringLatencyTest.php
-└── Unit/{Monitoring,Logs,MailQueue,Fail2Ban}/
+├── Feature/Config/MailcowConfigInstallationTest.php
+└── Unit/{Clients,Monitoring,Logs,MailQueue,Fail2Ban,Support,Architecture}/
 ```
 
 **Structure Decision**: The single Laravel project of feature 001. Business logic lives in
@@ -293,6 +295,7 @@ thin, one per resource or sub-resource action (`index`, `show`, `store`, `update
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |---|---|---|
+| Status `503` (not in constitution II's list) for `temporary-failure` (shared with 002) | A dependency (dockerapi, Redis, MariaDB, the Rspamd controller, or the audit log before an irreversible operation) is unavailable and nothing was changed; clients retry after `Retry-After` (FR-060). Justified in feature 001's Complexity Tracking for the same reason. | `500` cannot be told apart from a bug and gives no retry hint. |
 | Status `502` (not in constitution II's list) for `container-action-failed` and `queue-action-failed` | The container service or Postfix answered with a failure: the API worked, an upstream failed, and clients must show the upstream message (FR-016, FR-042). RFC 9110 defines 502 for exactly this. | `500` means "bug" to clients and monitoring and would hide actionable upstream messages; `409` would claim a conflict with the resource state. |
 | Status `504` (not in the list) for `outcome-unknown` (shared with 003) and `ban-rules-not-restored` | After `DOCKER_TIMEOUT` the outcome is unknown, and after a rule reset the ban service did not answer in time (FR-016, FR-042, FR-051). RFC 9110 defines 504 for an upstream that did not answer in time. | `503` with `Retry-After` invites an automatic retry of an operation that may have completed (a restart, a deletion, a reset). |
 | dockerapi's TLS certificate is not verified (constitution VI baseline) | dockerapi serves mailcow's mail certificate, whose names never match `dockerapi`; legacy disables verification for the same reason, and dockerapi is reachable only on mailcow's internal network. | Verifying would need a certificate and name dockerapi does not have, i.e. a change to dockerapi (constitution V). |

@@ -1,4 +1,13 @@
 description: The action was applied; `ban` is the ban afterwards.
+headers:
+  Audit-Recorded:
+    description: |
+      Sent with the value `false` only when the change was carried out but its audit record could
+      not be written (the failure is in the service log). Absent otherwise, and never on reads.
+    required: false
+    schema:
+      type: string
+      enum: ["false"]
 content:
   application/json:
     schema:

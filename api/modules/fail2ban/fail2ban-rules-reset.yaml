@@ -10,7 +10,8 @@ post:
     waits up to 10 seconds after the restart for the ban service to store mailcow's default rules,
     which it then returns. If they have not appeared in time, the request fails with
     `ban-rules-not-restored`: the ban service stores them with the next log line it receives.
-    `If-Match` takes the rules' version tag and is optional. Needs an administrator session or a
+    `If-Match` takes the rules' version tag and is optional. Interactive clients should always send the
+    version tag they read. Needs an administrator session or a
     read-write key owned by an administrator. Audited with the old and new rules; when the audit log
     cannot be written before the reset, it is refused with `temporary-failure` and nothing is done.
   x-destructive: true

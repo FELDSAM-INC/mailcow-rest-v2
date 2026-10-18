@@ -6,8 +6,8 @@ post:
   summary: Denylist the network of an active ban
   description: |
     Adds the network to the denylist and removes it from the allowlist (legacy "Blacklist"), in one
-    atomic change, with the denylist rules of `PATCH /fail2ban/settings` (`reservedNetwork` on the key
-    `network`). The ban service enforces the denylist entry as a permanent ban within 60 seconds,
+    atomic change, with the denylist rules of `PATCH /fail2ban/settings` (`reserved` on the key
+    `network`, or `tooMany` when the denylist already holds 10,000 entries). The ban service enforces the denylist entry as a permanent ban within 60 seconds,
     without a restart. Clients should warn when the network covers the caller's own address.
 
     Only for an active ban: a network that is not actively banned (including a ban that expired

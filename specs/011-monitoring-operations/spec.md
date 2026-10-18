@@ -493,8 +493,9 @@ and each queued message view, then list the audit log filtered by target type an
 - **Rspamd controller unreachable**: history and statistics fail with a temporary failure.
 - **Update source unreachable or rate-limited**: the update status reports a failed check, cached for
   5 minutes.
-- **Installed version without a published release** (for example a nightly build): the update status
-  reports a failed check, as in legacy.
+- **Installed version without a published release** (a version tag on the stable branch that the
+  release source does not know): the update status reports a failed check, as in legacy. Nightly and
+  other branches report the check as disabled (FR-019).
 - **External IP check service unreachable for one address family**: that address is reported as
   unavailable and the other is returned.
 - **Shared store unavailable**: in-memory logs, ban data and rules fail with a temporary failure, and
@@ -511,7 +512,9 @@ and each queued message view, then list the audit log filtered by target type an
 - **FR-001**: Every operation of this feature, including every read, MUST be limited to
   administrators. Domain administrators and mailbox users MUST be refused as forbidden.
 - **FR-002**: A request authenticated by an API key MUST act with the key owner's role (feature 001,
-  FR-033). A key owned by a domain administrator MUST be refused as forbidden. A read-only key owned
+  FR-033). A key owned by a domain administrator MUST be refused as forbidden; when such a key is
+  read-only and used for a state-changing operation, feature 001's key scope check may refuse it
+  first with the "insufficient key scope" error. A read-only key owned
   by an administrator MUST be able to use every read, including the content of a queued message,
   and MUST be refused on every state-changing operation with the "insufficient key scope" error
   (feature 001, FR-039). A restricted session (feature 001, FR-014) MUST be refused.
@@ -624,7 +627,7 @@ and each queued message view, then list the audit log filtered by target type an
   disable the update check; it is enabled by default (upstream behaviour) and the FeldHost deployment
   disables it. Another setting MUST name the release source and the stable branch, by default
   mailcow's public releases and `master`. When the check is enabled and the installed branch is the
-  stable branch, the system MUST compare the publication time of the newest release with that of the
+  stable branch, the system MUST compare the creation time of the newest release with that of the
   installed version's release and report one of:
   - up to date;
   - update available, with the newest version tag, its release page address, its publication time
@@ -672,7 +675,8 @@ and each queued message view, then list the audit log filtered by target type an
   (notice, info, debug).
 - **FR-024**: Each log list MUST support pagination (default 25, maximum 1,000) and MUST be sorted by
   time, newest first by default, or oldest first. Ties MUST keep the order in which mailcow stored
-  the entries. The total MUST count the matching retained entries.
+  the entries; the login log, which records no storage order, orders ties by service, client address
+  and username. The total MUST count the matching retained entries.
 - **FR-025**: Each log list MUST support a time range (from and to, inclusive), a case-insensitive
   substring search over every text field of the entry, a filter by severity class for types with a
   priority, and the type-specific filters of FR-022. Text filters MUST match case-insensitively as
@@ -789,8 +793,9 @@ and each queued message view, then list the audit log filtered by target type an
   host name. Each denylist entry MUST be an address or a network in prefix notation, and MUST NOT be
   `0.0.0.0`, `0.0.0.0/0`, `::/0`, mailcow's internal IPv4 network or its network address, or mailcow's
   internal IPv6 network. Entries MUST be trimmed, and duplicates MUST be stored once. An entry on both
-  lists MUST be refused. Any invalid entry MUST refuse the whole request with a validation error that
-  names each invalid entry, and both lists MUST stay unchanged.
+  lists MUST be refused. Each list MUST hold at most 10,000 entries. Any invalid entry MUST refuse the
+  whole request with a validation error that names each invalid entry, and both lists MUST stay
+  unchanged.
 - **FR-048**: The contract MUST document when changes take effect, as the ban service applies them:
   the parameters at the next ban decision and at least every 10 seconds, the allowlist and denylist
   within 60 seconds, without a restart, with host names resolved each time.
@@ -909,8 +914,8 @@ and each queued message view, then list the audit log filtered by target type an
     logs, and whether a log is unbounded or cleaned by age (FR-027);
   - the caller's own client address as this API sees it, after mailcow's trusted proxies, so that
     clients can warn before a denylist entry covers it;
-  - the bulk limit of FR-040, the rule limits of FR-050, the default and maximum page sizes, and the
-    10,000-message listing limit of FR-037.
+  - the bulk limit of FR-040, the rule limits of FR-050, the list size limit of FR-047, the default
+    and maximum page sizes, and the 10,000-message listing limit of FR-037.
 
   The values MUST reflect the server's current configuration and MUST NOT include any secret or
   connection detail. The read MUST change nothing, MUST NOT need the container service, and
@@ -1005,10 +1010,10 @@ container service and the ban service. The fork differs in three ways:
 | Rspamd statistics | `/stat` document as Rspamd returns it | Documented subset (FR-035). **Deviation**: fields not listed are not passed through |
 | Queue list | `postqueue -j`, first 10,000 lines; recipients flattened to `address (reason)` | Structured recipients, pagination, filters and a truncation indicator (FR-037, FR-038) |
 | Queued message content | `postcat -q`; each view logged as `queue_cat_success` | Same content; each view audited (FR-039, FR-062) |
-| Queue actions | One request for all selected IDs; non-hexadecimal IDs silently dropped; overall success only; no limit | Up to 1,000 IDs; invalid IDs refused; one result per ID (FR-040). **Deviation** |
+| Queue actions | One request for all selected IDs; non-hexadecimal IDs silently dropped; overall success only; no limit | Up to 1,000 IDs; invalid IDs refused; one result per ID, decided by a queue listing taken just before the Postfix command, so an ID that leaves the queue in between is reported done, which Postfix treats as a no-op (FR-040). **Deviation** |
 | Flush and delete all | `postqueue -f`, `postsuper -d ALL` | Same (FR-041, FR-042) |
 | Ban settings read | `F2B_OPTIONS`, lists as newline-separated text, remaining ban time as `hh mm ss` text | Structured values, lists as sets, times as timestamps and seconds; ban service defaults when unset (FR-044, FR-052) |
-| Ban settings edit | Values below the minimum raised silently; the IPv4 and IPv6 lower bounds never apply; "enforce externally" reset to off when omitted; invalid list entries skipped and the rest saved; lists deleted and rewritten | Out-of-range values and invalid entries refused; omitted values kept; stored together (FR-045 to FR-047, FR-061). **Deviation** |
+| Ban settings edit | Values below the minimum raised silently; the IPv4 and IPv6 lower bounds never apply; "enforce externally" reset to off when omitted; invalid list entries skipped and the rest saved; lists deleted and rewritten; no list size limit | Out-of-range values and invalid entries refused; omitted values kept; stored together; at most 10,000 entries per list (FR-045 to FR-047, FR-061). **Deviation** |
 | Maximum ban time below ban time | Accepted; the ban service then uses the ban time | Refused (FR-046). **Deviation** |
 | Denylist protection | `0.0.0.0`, `0.0.0.0/0`, mailcow's internal IPv4 network and its address, and the internal IPv6 network refused | Same, plus `::/0` (FR-047). **Deviation** |
 | Ban rules | Any strings, renumbered from 1; an empty list is ignored but reported as saved; a rule without a capture group stops the ban service when it matches | Validated, 1 to 100 rules of up to 1,000 characters; empty list refused (FR-050). **Deviation** |
@@ -1095,8 +1100,9 @@ container service and the ban service. The fork differs in three ways:
   the system reads them from the ban service instead of copying them, except for the documented
   defaults it reports when nothing is stored (FR-044).
 - These defaults can be changed by the operator: the container-service timeout (60 seconds), the
-  protected containers, the update check (on), the release source and stable branch (mailcow's public
-  releases, `master`) and the list page size (25, maximum 1,000).
+  protected containers, the update check (on), and the release source and stable branch (mailcow's
+  public releases, `master`). The list page size (25, maximum 1,000) is fixed for every list by
+  `docs/conventions.md`.
 - **Out of scope**:
   - container log streams from the container runtime;
   - resetting rate limits from the rate limit log (006) and the merged Rspamd action chart data (006);

@@ -35,7 +35,7 @@ properties:
         format: date-time
       - type: 'null'
   health:
-    description: Health status when the container defines a health check, else `null`.
+    description: Health status when the container defines a health check, else `null` (Docker's `none` is reported as `null`).
     oneOf:
       - type: string
         enum: [starting, healthy, unhealthy]

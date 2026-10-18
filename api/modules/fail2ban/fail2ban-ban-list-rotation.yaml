@@ -8,7 +8,8 @@ post:
 
     Stores a new random ban list ID (UUID) and returns the settings with the new ID and address
     (legacy `edit/fail2ban/banlist`). The public ban list endpoint itself stays in the legacy stack.
-    `If-Match` takes the settings' version tag and is optional. Needs an administrator session or a
+    `If-Match` takes the settings' version tag and is optional. Interactive clients should always send the
+    version tag they read. Needs an administrator session or a
     read-write key owned by an administrator. Audited without either ID.
   x-destructive: true
   security:

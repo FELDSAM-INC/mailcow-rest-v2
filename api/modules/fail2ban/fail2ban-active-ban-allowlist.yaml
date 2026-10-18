@@ -7,7 +7,8 @@ post:
   description: |
     Adds the network to the allowlist, removes it from the denylist and queues the ban for lifting
     (legacy "Whitelist"), in one atomic change. The ban service lifts the ban within about 10 seconds
-    and applies the allowlist within 60 seconds.
+    and applies the allowlist within 60 seconds. When the allowlist already holds 10,000 entries the
+    request is refused (`422`, `tooMany` on `network`).
 
     Only for an active ban: a network that is not actively banned (including a ban that expired
     meanwhile) answers `404`. No version tag is needed, because the action adds or removes single
@@ -26,6 +27,8 @@ post:
       $ref: '../../components/responses/Forbidden.yaml'
     '404':
       $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
     '500':
       $ref: '../../components/responses/InternalError.yaml'
     '503':

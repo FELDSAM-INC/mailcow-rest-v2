@@ -22,3 +22,5 @@ get:
       $ref: '../../components/responses/Forbidden.yaml'
     '500':
       $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

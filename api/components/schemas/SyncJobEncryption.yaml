@@ -1,0 +1,6 @@
+type: string
+description: |
+  Transport encryption to the remote IMAP server. `ssl`: implicit TLS (imapsync `--ssl1`, stored
+  as `SSL`). `starttls`: STARTTLS on a plain connection (imapsync `--tls1`, stored as `TLS`).
+  `plain`: no encryption (stored as `PLAIN`), as in legacy.
+enum: [ssl, starttls, plain]

@@ -1,0 +1,9 @@
+description: The run log of the sync job, to be rendered as plain text.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/SyncJobLog.yaml'

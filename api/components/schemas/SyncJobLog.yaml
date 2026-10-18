@@ -1,0 +1,17 @@
+type: object
+description: |
+  The run log of a sync job: the output of its last imapsync run as the runner stored it
+  (`imapsync.returned_text`). The text is produced by the remote server and by imapsync, not by
+  this API. The runner masks passwords in it, and this API refuses the `showpasswords` option, so
+  the remote password does not appear. Clients must render it as plain text, never as HTML. It can
+  be large (several megabytes for big mailboxes).
+required: [syncJobId, runStatus, log]
+properties:
+  syncJobId:
+    type: integer
+    minimum: 1
+  runStatus:
+    $ref: './SyncJobRunStatus.yaml'
+  log:
+    type: string
+    description: The stored output, empty when there is none. Invalid UTF-8 sequences are replaced by U+FFFD.

@@ -1,0 +1,9 @@
+description: The sync-job settings and limits in effect for the caller.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/SyncJobCapabilities.yaml'

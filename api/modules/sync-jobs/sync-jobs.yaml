@@ -1,0 +1,138 @@
+get:
+  operationId: listSyncJobs
+  tags: [Sync jobs]
+  summary: List sync jobs
+  description: |
+    Lists the sync jobs in the caller's scope, by default sorted by `id`. An administrator sees
+    every job whose target mailbox exists, a domain administrator the jobs of mailboxes in the
+    domains they manage, and a mailbox user the jobs that sync into their own mailbox. Each entry
+    carries its version tag and run status, but not the log (`GET /sync-jobs/{syncJobId}/log`).
+    The remote password is never included.
+
+    `q` searches the target mailbox, the remote user and the remote host. Filters narrow the
+    result within the caller's scope; a filter value outside the scope simply matches nothing.
+
+    Requires the sync-jobs permission (`permissions.syncjobs` of `GET /me`): administrators always
+    hold it, domain administrators and mailbox users only when their `syncjobs` flag is set.
+    Callers without it get `403` with type `/api/v2/problems/forbidden`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/SyncJobSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - $ref: '../../components/parameters/Search.yaml'
+    - name: mailbox
+      in: query
+      required: false
+      description: Only jobs that sync into this mailbox (exact address, case-insensitive).
+      schema:
+        type: string
+        maxLength: 255
+    - name: domain
+      in: query
+      required: false
+      description: Only jobs whose target mailbox belongs to this domain (exact name, case-insensitive).
+      schema:
+        type: string
+        maxLength: 255
+    - name: active
+      in: query
+      required: false
+      description: Only active (`true`) or inactive (`false`) jobs.
+      schema:
+        type: boolean
+    - name: running
+      in: query
+      required: false
+      description: Only jobs with (`true`) or without (`false`) a run in progress.
+      schema:
+        type: boolean
+    - name: lastResult
+      in: query
+      required: false
+      description: Only jobs whose last result is this value.
+      schema:
+        $ref: '../../components/schemas/SyncJobLastResult.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/SyncJobListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createSyncJob
+  tags: [Sync jobs]
+  summary: Create a sync job
+  description: |
+    Creates a sync job that pulls mail from a remote IMAP account into a local mailbox.
+    Administrators and domain administrators name the target `mailbox`; a mailbox user's job always
+    syncs into their own mailbox. Omitted options take the legacy form's defaults (see
+    `SyncJobCreateRequest` and `GET /sync-jobs/capabilities`). The remote password is stored for
+    the runner and never returned. Audited without the password.
+
+    This API never starts a run. An active job runs on the imapsync runner's own schedule: every
+    minute on the master node, mailcow's dovecot container runs each active job that is not
+    running and whose interval has elapsed since its last run (or that never ran).
+
+    Refusals:
+    - `403 forbidden`: the caller lacks the sync-jobs permission; `403 insufficient-key-scope`: a
+      read-only key.
+    - `404`: the target mailbox does not exist or lies outside the caller's scope (also when a
+      mailbox user names another mailbox).
+    - `409 sync-job-exists`: a job for the same mailbox, remote user and remote host exists.
+    - `422 validation-failed`: invalid members, all named at once; nothing is stored.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/SyncJobCreateRequest.yaml'
+        examples:
+          minimal:
+            summary: Only the required members (defaults apply)
+            value:
+              remoteHost: imap.old-provider.example
+              remotePort: 993
+              remoteUser: alice.old@old-provider.example
+              remotePassword: correct-horse-battery-staple
+          administrator:
+            summary: An administrator choosing the target and options
+            value:
+              mailbox: alice@example.org
+              remoteHost: imap.old-provider.example
+              remotePort: 143
+              encryption: starttls
+              remoteUser: alice.old
+              remotePassword: correct-horse-battery-staple
+              intervalMinutes: 60
+              destinationSubfolder: Imported
+              customParameters: --maxsize=50000000
+  responses:
+    '201':
+      $ref: '../../components/responses/SyncJobCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/SyncJobExists.yaml'
+    '422':
+      $ref: '../../components/responses/SyncJobValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

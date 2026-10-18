@@ -1,0 +1,24 @@
+description: |
+  Another sync job already pulls from the same remote user on the same remote host into the same
+  mailbox (type `/api/v2/problems/sync-job-exists`). Nothing was stored. The extension member
+  `syncJobId` names the existing job, which the caller can always reach.
+content:
+  application/problem+json:
+    schema:
+      allOf:
+        - $ref: '../schemas/Problem.yaml'
+        - type: object
+          required: [syncJobId]
+          properties:
+            syncJobId:
+              type: integer
+              minimum: 1
+    examples:
+      exists:
+        value:
+          type: /api/v2/problems/sync-job-exists
+          title: Sync job already exists
+          status: 409
+          detail: A sync job for this mailbox, remote user and remote host already exists.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          syncJobId: 17

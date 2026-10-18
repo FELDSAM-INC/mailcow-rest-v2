@@ -1,0 +1,8 @@
+type: object
+description: Inclusive range of a whole-number field.
+required: [minimum, maximum]
+properties:
+  minimum:
+    type: integer
+  maximum:
+    type: integer

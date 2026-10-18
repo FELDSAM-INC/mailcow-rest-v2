@@ -1,0 +1,23 @@
+description: |
+  The sync job was created. If it is active, the imapsync runner picks it up on its next cycle.
+  The response says whether a remote password is set and never contains the password.
+headers:
+  Location:
+    description: Absolute path of the created sync job (`/api/v2/sync-jobs/{syncJobId}`).
+    required: true
+    schema:
+      type: string
+      format: uri-reference
+  ETag:
+    description: Version tag (strong ETag) of the job's stored configuration, equal to `data.etag`. Send it in `If-Match` when changing or deleting the job.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/SyncJob.yaml'

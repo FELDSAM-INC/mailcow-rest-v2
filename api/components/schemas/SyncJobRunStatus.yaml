@@ -1,0 +1,35 @@
+type: object
+description: |
+  Run status maintained by mailcow's imapsync runner in the dovecot container. It is read-only,
+  except that rescheduling (`POST /sync-jobs/{syncJobId}/schedule-reset`) clears `lastRunAt` and
+  `lastResult`. It is not covered by the job's version tag, so a run never makes an open editor's
+  version stale.
+required: [lastRunAt, lastResult, exitStatus, running, logAvailable]
+properties:
+  lastRunAt:
+    description: End of the last run (`imapsync.last_run`), `null` when the job never ran or was rescheduled.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  lastResult:
+    $ref: './SyncJobLastResult.yaml'
+  exitStatus:
+    description: |
+      Short machine-readable exit code that the runner parsed from imapsync's output
+      (`imapsync.exit_status`), `null` when `lastResult` is `unknown` or the runner found none.
+      Legacy translates these codes: `EX_OK` (success), `EXIT_CONNECTION_FAILURE`,
+      `EXIT_CONNECTION_FAILURE_HOST1` (cannot connect to the remote server), `EXIT_TLS_FAILURE`,
+      `EXIT_AUTHENTICATION_FAILURE`, `EXIT_AUTHENTICATION_FAILURE_USER1` (wrong remote username or
+      password) and `EXIT_OVERQUOTA` (target mailbox over quota). Other codes mean "check the log".
+    oneOf:
+      - type: string
+        maxLength: 50
+        examples: [EX_OK, EXIT_AUTHENTICATION_FAILURE_USER1]
+      - type: 'null'
+  running:
+    type: boolean
+    description: Whether a run is in progress (`imapsync.is_running`).
+  logAvailable:
+    type: boolean
+    description: Whether the runner stored a log for the last run. Read it with `GET /sync-jobs/{syncJobId}/log`.

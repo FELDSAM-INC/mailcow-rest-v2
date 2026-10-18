@@ -1,0 +1,10 @@
+name: syncJobId
+in: path
+required: true
+description: |
+  `id` of a sync job (mailcow's `imapsync.id`). A job whose target mailbox lies outside the
+  caller's scope answers `404`, exactly like a job that does not exist.
+schema:
+  type: integer
+  minimum: 1
+  maximum: 2147483647

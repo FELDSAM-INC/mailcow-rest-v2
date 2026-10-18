@@ -1,0 +1,110 @@
+parameters:
+  - $ref: '../../components/parameters/SyncJobId.yaml'
+get:
+  operationId: getSyncJob
+  tags: [Sync jobs]
+  summary: Get a sync job
+  description: |
+    Returns the job's full configuration, its version tag and its run status. The remote password
+    is never included; `remotePasswordSet` says whether one is stored. Requires the sync-jobs
+    permission (`403 forbidden` otherwise). A job outside the caller's scope answers `404`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/SyncJobResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updateSyncJob
+  tags: [Sync jobs]
+  summary: Change, activate or deactivate a sync job
+  description: |
+    Changes the sent members only (JSON Merge Patch); every other member, including the stored
+    remote password, keeps its value. Activating and deactivating are changes of `active`. A change
+    takes effect from the runner's next cycle and never interrupts a run in progress. The target
+    `mailbox` cannot change (`immutable`). Audited with each changed attribute's old and new value;
+    the password is recorded only as changed.
+
+    Interactive clients should always send the version tag they read in `If-Match`: the legacy UI
+    and `/api/v1` edit the same rows, and an outdated tag answers `412` without changing anything.
+
+    Refusals: `403` (no sync-jobs permission, or a read-only key), `404` (unknown or out of scope),
+    `412` (outdated `If-Match`), `422` (invalid members, all named at once), `409 sync-job-exists`
+    (the new remote user and host duplicate another job of the same mailbox).
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/SyncJobPatch.yaml'
+        examples:
+          deactivate:
+            value:
+              active: false
+          newPassword:
+            value:
+              remotePassword: new-remote-secret
+              intervalMinutes: 30
+  responses:
+    '200':
+      $ref: '../../components/responses/SyncJobResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/SyncJobExists.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/SyncJobValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteSyncJob
+  tags: [Sync jobs]
+  summary: Delete a sync job
+  description: |
+    Deletes the job at once, so the runner no longer selects it. A run in progress is not
+    interrupted, and its final status write for the deleted job has no effect. Audited.
+
+    Interactive clients should send the version tag they read in `If-Match`; an outdated tag
+    answers `412` and deletes nothing. Refusals: `403` (no sync-jobs permission, or a read-only
+    key), `404` (unknown or out of scope), `412`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -1,0 +1,30 @@
+parameters:
+  - $ref: '../../components/parameters/SyncJobId.yaml'
+post:
+  operationId: rescheduleSyncJob
+  tags: [Sync jobs]
+  summary: Reschedule a sync job
+  description: |
+    Clears the job's last run time and last result (legacy "Schedule next"), so the imapsync runner
+    selects it on its next cycle if it is active and not running. This API never starts a run
+    itself. A run in progress is not interrupted: it finishes, writes its own status, and the next
+    cycle runs the job again.
+
+    Rescheduling changes only the run status, so it neither requires nor checks `If-Match` and does
+    not change the version tag. Audited. Refusals: `403` (no sync-jobs permission, or a read-only
+    key) and `404` (unknown or out of scope).
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/SyncJobResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -1,0 +1,6 @@
+type: string
+description: |
+  Result of the job's last run, as the imapsync runner recorded it (`imapsync.success`):
+  `succeeded` (1), `failed` (0) or `unknown` (empty: the job never ran, a run is in progress, or the
+  result was cleared by a reschedule).
+enum: [succeeded, failed, unknown]

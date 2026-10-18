@@ -1,0 +1,160 @@
+type: object
+description: |
+  A sync job: an imapsync task that pulls mail from a remote IMAP account into a local mailbox
+  (mailcow table `imapsync`). The legacy UI and `/api/v1` edit the same rows.
+
+  The remote password is write-only: a response only says whether one is set
+  (`remotePasswordSet`). It is stored in plain text because the imapsync runner needs it to log in
+  to the remote server, and it never appears in any response, log or audit record of this API.
+required:
+  - id
+  - mailbox
+  - remoteHost
+  - remotePort
+  - encryption
+  - authMechanism
+  - remoteUser
+  - remotePasswordSet
+  - exclude
+  - destinationSubfolder
+  - intervalMinutes
+  - maxAgeDays
+  - maxBytesPerSecond
+  - remoteTimeoutSeconds
+  - localTimeoutSeconds
+  - deleteFromSource
+  - deleteFromDestination
+  - deleteDuplicatesOnDestination
+  - automap
+  - skipCrossDuplicates
+  - subscribeAll
+  - dryRun
+  - customParameters
+  - active
+  - runStatus
+  - createdAt
+  - modifiedAt
+  - etag
+properties:
+  id:
+    type: integer
+    minimum: 1
+    description: Stable identifier (`imapsync.id`).
+  mailbox:
+    type: string
+    format: email
+    description: Local mailbox the mail is synced into (`imapsync.user2`). Fixed at creation.
+    examples: [alice@example.org]
+  remoteHost:
+    type: string
+    maxLength: 255
+    description: Host name or IPv4 address of the remote IMAP server (`imapsync.host1`).
+    examples: [imap.old-provider.example]
+  remotePort:
+    type: integer
+    minimum: 1
+    maximum: 65535
+    description: Port of the remote IMAP server (`imapsync.port1`).
+    examples: [993]
+  encryption:
+    $ref: './SyncJobEncryption.yaml'
+  authMechanism:
+    type: string
+    enum: [plain]
+    description: Authentication mechanism to the remote server. Always `plain`, as legacy stores it; not settable.
+  remoteUser:
+    type: string
+    maxLength: 255
+    description: Username on the remote server (`imapsync.user1`).
+    examples: [alice.old@old-provider.example]
+  remotePasswordSet:
+    type: boolean
+    description: Whether a remote password is stored (`imapsync.password1` is not empty). The password itself is never returned.
+  exclude:
+    type: string
+    maxLength: 500
+    description: |
+      Regular expression of remote folders to skip (imapsync `--exclude`, `imapsync.exclude`).
+      Empty means no exclusion.
+    examples: ['(?i)spam|(?i)junk']
+  destinationSubfolder:
+    type: string
+    maxLength: 255
+    description: Folder of the local mailbox that receives the synced folders (imapsync `--subfolder2`). Empty means the mailbox root.
+  intervalMinutes:
+    type: integer
+    minimum: 1
+    maximum: 43800
+    description: Minimum time between the end of one run and the start of the next, in minutes (`imapsync.mins_interval`).
+  maxAgeDays:
+    type: integer
+    minimum: 0
+    maximum: 32000
+    description: Only messages younger than this many days are synced (imapsync `--maxage`). `0` ignores the age.
+  maxBytesPerSecond:
+    type: integer
+    minimum: 0
+    maximum: 125000000
+    description: Transfer speed limit in bytes per second (imapsync `--maxbytespersecond`). `0` is unlimited.
+  remoteTimeoutSeconds:
+    type: integer
+    minimum: 1
+    maximum: 32000
+    description: Connection timeout to the remote server in seconds (imapsync `--timeout1`).
+  localTimeoutSeconds:
+    type: integer
+    minimum: 1
+    maximum: 32000
+    description: Connection timeout to the local mailbox in seconds (imapsync `--timeout2`).
+  deleteFromSource:
+    type: boolean
+    description: Delete messages on the remote server after they were synced (imapsync `--delete1`, `imapsync.delete1`).
+  deleteFromDestination:
+    type: boolean
+    description: Delete local messages that do not exist on the remote server (imapsync `--delete2`, `imapsync.delete2`).
+  deleteDuplicatesOnDestination:
+    type: boolean
+    description: Delete duplicate messages in the local mailbox (imapsync `--delete2duplicates`).
+  automap:
+    type: boolean
+    description: Map well-known remote folders (Sent, Trash, …) to the local ones (imapsync `--automap`).
+  skipCrossDuplicates:
+    type: boolean
+    description: Skip messages that exist in another folder of the local mailbox (imapsync `--skipcrossduplicates`).
+  subscribeAll:
+    type: boolean
+    description: Subscribe the local mailbox to every synced folder (imapsync `--subscribeall`).
+  dryRun:
+    type: boolean
+    description: Simulate the sync without transferring anything (imapsync `--dry`).
+  customParameters:
+    type: string
+    maxLength: 512
+    description: |
+      Additional imapsync options, as stored (`imapsync.custom_params`), for example
+      `--maxsize=10000000 --nofoldersizesatend`. Only options on the server's allow-list are
+      accepted; see `SyncJobCreateRequest.customParameters`.
+  active:
+    type: boolean
+    description: Inactive jobs are never run.
+  runStatus:
+    $ref: './SyncJobRunStatus.yaml'
+  createdAt:
+    type: string
+    format: date-time
+    description: Creation time (`imapsync.created`).
+  modifiedAt:
+    description: |
+      Last change of the row (`imapsync.modified`), including the runner's status updates. `null`
+      when the row never changed after its creation.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  etag:
+    type: string
+    description: |
+      Version tag of the stored configuration (remote connection, remote password, options,
+      custom parameters, active flag and target mailbox), equal to the `ETag` header of a single
+      read. It does not cover `runStatus` or `modifiedAt`, so runs and reschedules never change it.
+      Send it in `If-Match` when changing or deleting the job.

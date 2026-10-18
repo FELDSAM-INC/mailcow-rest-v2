@@ -1,0 +1,63 @@
+type: object
+description: |
+  Values a new sync job gets for omitted members: the values the legacy "Add sync job" form
+  pre-fills. The remote host, port, user and password have no default.
+required:
+  - encryption
+  - exclude
+  - destinationSubfolder
+  - intervalMinutes
+  - maxAgeDays
+  - maxBytesPerSecond
+  - remoteTimeoutSeconds
+  - localTimeoutSeconds
+  - deleteFromSource
+  - deleteFromDestination
+  - deleteDuplicatesOnDestination
+  - automap
+  - skipCrossDuplicates
+  - subscribeAll
+  - dryRun
+  - customParameters
+  - active
+properties:
+  encryption:
+    $ref: './SyncJobEncryption.yaml'
+  exclude:
+    type: string
+    examples: ['(?i)spam|(?i)junk']
+  destinationSubfolder:
+    type: string
+  intervalMinutes:
+    type: integer
+    examples: [20]
+  maxAgeDays:
+    type: integer
+    examples: [0]
+  maxBytesPerSecond:
+    type: integer
+    examples: [0]
+  remoteTimeoutSeconds:
+    type: integer
+    examples: [600]
+  localTimeoutSeconds:
+    type: integer
+    examples: [600]
+  deleteFromSource:
+    type: boolean
+  deleteFromDestination:
+    type: boolean
+  deleteDuplicatesOnDestination:
+    type: boolean
+  automap:
+    type: boolean
+  skipCrossDuplicates:
+    type: boolean
+  subscribeAll:
+    type: boolean
+  dryRun:
+    type: boolean
+  customParameters:
+    type: string
+  active:
+    type: boolean

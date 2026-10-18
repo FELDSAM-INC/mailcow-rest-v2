@@ -1,0 +1,26 @@
+parameters:
+  - $ref: '../../components/parameters/SyncJobId.yaml'
+get:
+  operationId: getSyncJobLog
+  tags: [Sync jobs]
+  summary: Get the run log of a sync job
+  description: |
+    Returns the output of the job's last imapsync run, as the runner stored it, together with the
+    current run status. The log is produced by the remote server and by imapsync; the runner masks
+    passwords in it, and because this API refuses the `showpasswords` option the remote password
+    does not appear. Render it as plain text. It may be empty, and it can be several megabytes
+    long. Anyone who may read the job may read its log; reads are not audited.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/SyncJobLogResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

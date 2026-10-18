@@ -1,0 +1,100 @@
+type: object
+description: |
+  Server settings and limits a client needs before it submits a sync job, computed from the
+  server's current configuration for the calling account. Contains no secret.
+required: [customParameters, bulkLimit, pageSize, limits, encryptions, defaults]
+properties:
+  customParameters:
+    type: object
+    required: [allowed, restrictedToAdministrators, allowedOptions]
+    properties:
+      allowed:
+        type: boolean
+        description: |
+          Whether the caller may set custom imapsync parameters. `false` when the server restricts
+          them to administrators and the caller is not one; such a caller may still send the
+          stored value unchanged.
+      restrictedToAdministrators:
+        type: boolean
+        description: The server setting that restricts custom parameters to administrators (legacy default `false`).
+      allowedOptions:
+        type: array
+        description: |
+          Option names on the allow-list in effect, as configured (without leading hyphens), in the
+          server's order. A custom option is accepted when its lower-cased name equals one of them.
+          Never contains `showpasswords`.
+        items:
+          type: string
+        examples:
+          - [maxsize, minage, nofoldersizesatend, useheader]
+    additionalProperties: false
+  bulkLimit:
+    type: integer
+    minimum: 1
+    description: Maximum number of sync jobs in one bulk action (default 100).
+  pageSize:
+    type: object
+    required: [default, maximum]
+    properties:
+      default:
+        type: integer
+        examples: [25]
+      maximum:
+        type: integer
+        examples: [1000]
+    additionalProperties: false
+  limits:
+    type: object
+    description: Ranges of the whole-number fields and maximum lengths of the text fields.
+    required:
+      - remotePort
+      - intervalMinutes
+      - maxAgeDays
+      - maxBytesPerSecond
+      - remoteTimeoutSeconds
+      - localTimeoutSeconds
+      - remoteHostMaxLength
+      - remoteUserMaxLength
+      - remotePasswordMaxLength
+      - destinationSubfolderMaxLength
+      - excludeMaxLength
+      - customParametersMaxLength
+    properties:
+      remotePort:
+        $ref: './SyncJobRange.yaml'
+      intervalMinutes:
+        $ref: './SyncJobRange.yaml'
+      maxAgeDays:
+        $ref: './SyncJobRange.yaml'
+      maxBytesPerSecond:
+        $ref: './SyncJobRange.yaml'
+      remoteTimeoutSeconds:
+        $ref: './SyncJobRange.yaml'
+      localTimeoutSeconds:
+        $ref: './SyncJobRange.yaml'
+      remoteHostMaxLength:
+        type: integer
+        examples: [255]
+      remoteUserMaxLength:
+        type: integer
+        examples: [255]
+      remotePasswordMaxLength:
+        type: integer
+        examples: [255]
+      destinationSubfolderMaxLength:
+        type: integer
+        examples: [255]
+      excludeMaxLength:
+        type: integer
+        examples: [500]
+      customParametersMaxLength:
+        type: integer
+        examples: [512]
+    additionalProperties: false
+  encryptions:
+    type: array
+    description: Allowed `encryption` values.
+    items:
+      $ref: './SyncJobEncryption.yaml'
+  defaults:
+    $ref: './SyncJobDefaults.yaml'

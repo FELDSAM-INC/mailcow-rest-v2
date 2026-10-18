@@ -1,0 +1,21 @@
+name: sort
+in: query
+required: false
+description: |
+  Sort field. Default `id` with `order=asc`. Ties are broken by `id` in the same direction.
+  In ascending order, jobs that never ran (`lastRunAt` empty) come first for `lastRunAt`, and
+  `lastResult` sorts `unknown`, then `failed`, then `succeeded`.
+schema:
+  type: string
+  enum:
+    - id
+    - mailbox
+    - remoteHost
+    - remoteUser
+    - intervalMinutes
+    - active
+    - lastRunAt
+    - lastResult
+    - createdAt
+    - modifiedAt
+  default: id

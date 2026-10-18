@@ -1,0 +1,43 @@
+description: |
+  Validation failed (type `/api/v2/problems/validation-failed`). Nothing was changed. `errors`
+  names every invalid member. Besides the common rule codes, sync jobs use `invalidFormat` with
+  `format: hostName` on `remoteHost`, `invalidRegex` on `exclude`, `optionNotAllowed` (param
+  `option`), `optionContainsSpace` (param `token`) and `customParamsNotPermitted` on
+  `customParameters`, `notEligible` (param `kind`) and `immutable` on `mailbox`, `outOfRange` (params
+  `min`, `max`) on every whole-number field, and `tooMany` (param `max`) on bulk `items`.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ValidationProblem.yaml'
+    examples:
+      customParameters:
+        value:
+          type: /api/v2/problems/validation-failed
+          title: Validation failed
+          status: 422
+          detail: The request contains invalid fields.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          errors:
+            customParameters:
+              - code: optionNotAllowed
+                params:
+                  option: showpasswords
+                message: The imapsync option "showpasswords" is not allowed.
+            intervalMinutes:
+              - code: outOfRange
+                params:
+                  min: 1
+                  max: 43800
+                message: The interval must be between 1 and 43800 minutes.
+      immutableMailbox:
+        value:
+          type: /api/v2/problems/validation-failed
+          title: Validation failed
+          status: 422
+          detail: The request contains invalid fields.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          errors:
+            mailbox:
+              - code: immutable
+                params: {}
+                message: The target mailbox of a sync job cannot be changed.

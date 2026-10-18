@@ -1,0 +1,15 @@
+description: One sync job.
+headers:
+  ETag:
+    description: Version tag (strong ETag) of the job's stored configuration, equal to `data.etag`. Send it in `If-Match` when changing or deleting the job.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/SyncJob.yaml'

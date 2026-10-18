@@ -1,0 +1,13 @@
+description: Sync jobs matching the filters, each with its version tag and run status, without logs.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '../schemas/SyncJob.yaml'
+        meta:
+          $ref: '../schemas/ListMeta.yaml'

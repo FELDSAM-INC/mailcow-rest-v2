@@ -1,0 +1,71 @@
+get:
+  operationId: listAuditEvents
+  tags: [Audit]
+  summary: List audit records
+  description: |
+    Lists audit records, newest first by default. Administrators only: a signed-in administrator
+    or a key owned by an administrator. Records cannot be changed or deleted through the API and
+    are removed after the configured retention period (365 days by default).
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/AuditEventSort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - name: from
+      in: query
+      required: false
+      description: Only records at or after this time.
+      schema:
+        type: string
+        format: date-time
+    - name: to
+      in: query
+      required: false
+      description: Only records before this time.
+      schema:
+        type: string
+        format: date-time
+    - name: eventType
+      in: query
+      required: false
+      description: Only these event types. Repeat the parameter for several.
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 20
+        items:
+          $ref: '../../components/schemas/AuditEventType.yaml'
+    - name: outcome
+      in: query
+      required: false
+      schema:
+        $ref: '../../components/schemas/AuditOutcome.yaml'
+    - name: actor
+      in: query
+      required: false
+      description: Only records whose actor username (including attempted usernames) or API key ID equals this value.
+      schema:
+        type: string
+        maxLength: 255
+    - name: clientAddress
+      in: query
+      required: false
+      description: Only records from this IPv4 or IPv6 address, or from within this prefix.
+      schema:
+        type: string
+        maxLength: 49
+  responses:
+    '200':
+      $ref: '../../components/responses/AuditEventListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

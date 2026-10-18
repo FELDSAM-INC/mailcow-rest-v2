@@ -1,0 +1,11 @@
+# Paths of the system module: health checks, the contract and problem type documentation.
+/health/live:
+  $ref: './health-live.yaml'
+/health/ready:
+  $ref: './health-ready.yaml'
+/openapi.yaml:
+  $ref: './openapi-document.yaml'
+/docs:
+  $ref: './docs.yaml'
+/problems/{problemType}:
+  $ref: './problem-type.yaml'

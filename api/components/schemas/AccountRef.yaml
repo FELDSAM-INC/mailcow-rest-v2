@@ -1,0 +1,6 @@
+type: object
+description: Reference to a mailcow account by username.
+required: [username]
+properties:
+  username:
+    type: string

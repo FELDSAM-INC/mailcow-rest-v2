@@ -1,0 +1,13 @@
+type: object
+description: |
+  Per-account web app preferences, stored by this API and shared by every device. Defaults: the
+  server's default language and `system`. A stored language that is no longer enabled falls back
+  to the default language.
+required: [language, theme]
+properties:
+  language:
+    type: string
+    description: One of the enabled language codes from `GET /public-config`.
+    examples: [cs-cz]
+  theme:
+    $ref: './Theme.yaml'

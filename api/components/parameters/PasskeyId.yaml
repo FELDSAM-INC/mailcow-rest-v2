@@ -1,0 +1,7 @@
+name: passkeyId
+in: path
+required: true
+description: '`id` of one of the caller''s passkeys. Other accounts'' passkeys answer `404`.'
+schema:
+  type: string
+  pattern: '^[0-9a-f]{64}$'

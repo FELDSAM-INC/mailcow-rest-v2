@@ -1,0 +1,9 @@
+type: string
+description: |
+  - `anonymous`: no account is signed in. The session only carries the anti-forgery token and
+    any passkey challenge.
+  - `pendingSecondFactor`: the password was verified and one of `pendingSignIn.methods` must be
+    completed within 5 minutes.
+  - `restricted`: signed in, but `pendingActions` must be completed first.
+  - `active`: signed in with full access for the account's role.
+enum: [anonymous, pendingSecondFactor, restricted, active]

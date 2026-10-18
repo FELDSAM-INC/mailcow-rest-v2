@@ -1,0 +1,5 @@
+type: string
+description: |
+  How the caller authenticated: `password` (no second factor active), `passwordAndSecondFactor`,
+  `passkey` (usernameless passkey sign-in) or `apiKey`.
+enum: [password, passwordAndSecondFactor, passkey, apiKey]

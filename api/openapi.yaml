@@ -1,0 +1,173 @@
+openapi: 3.1.0
+info:
+  title: mailcow REST API v2
+  version: 0.1.0
+  summary: Standards-compliant REST API for mailcow-dockerized.
+  license:
+    name: GPL-3.0-only
+    identifier: GPL-3.0-only
+  description: |
+    mailcow REST API v2 runs next to the legacy mailcow UI and `/api/v1`, which keep working
+    unchanged. It is the only backend of the mailcowui-ng web app. This document is the source of
+    truth: the implementation mirrors it exactly, and undocumented behaviour is a bug.
+
+    ## Conventions
+
+    - Names are camelCase. Booleans are `true`/`false`. Times are RFC 3339 in UTC.
+    - A single resource is returned as `{"data": {...}}`. A list is returned as
+      `{"data": [...], "meta": {"total", "limit", "offset"}}` and accepts `limit`, `offset`,
+      `sort` and `order` plus the documented filters.
+    - Create returns `201` with a `Location` header, read and update return `200`, delete returns
+      `204`. Non-CRUD actions are sub-resources (for example `POST /api-keys/{apiKeyId}/revocation`)
+      and return `200` with the affected resource or the ceremony data.
+    - `PATCH` takes JSON Merge Patch (RFC 7396, `application/merge-patch+json`).
+    - Mutable single resources return a strong `ETag`. Writes accept `If-Match` and answer `412`
+      when it does not match. The legacy UI edits the same rows, so clients should send it.
+
+    ## Errors
+
+    Every error is an RFC 9457 problem (`application/problem+json`) with `type`, `title`,
+    `status`, `detail` and `requestId`. Problem types that clients act on are relative URI
+    references of the form `/api/v2/problems/{name}`, documented in `docs/problems.md` and served
+    as HTML by `GET /problems/{problemType}`. Compare `type` as an exact string. Other problems
+    use `about:blank` and are identified by their status (`400` malformed request, `404` unknown
+    resource or path, `405` method not allowed, `412` precondition failed, `500` unexpected
+    failure).
+
+    Errors are never localised: the API ignores `Accept-Language`. `title` and `detail` are
+    English and meant for logs and scripts. A validation problem (`422`) carries an `errors` map
+    from each invalid field to a list of violations, each with a stable rule `code` and its
+    `params`, so that clients build translated messages themselves.
+
+    ## Authentication
+
+    **Browser clients** use a same-origin session cookie (`sessionCookie`, `Secure`, `HttpOnly`,
+    `SameSite=Strict`). Every state-changing request made with a session, including sign-in, must
+    carry the session's anti-forgery token in the `X-CSRF-Token` header (`csrfToken`), whatever
+    its content type. The flow is:
+
+    1. `GET /csrf-token` starts an anonymous session and returns its token. The token stays valid
+       for the lifetime of the session, including across sign-in. A `403` with type
+       `/api/v2/problems/csrf-token-mismatch` means the session ended: fetch a new token and retry
+       once.
+    2. Sign in with a passkey (`POST /session/passkey-challenge`, then
+       `POST /session/passkey-assertion`) or with a password (`POST /session`).
+    3. If the password step answers with state `pendingSecondFactor`, complete one of the listed
+       methods (`POST /session/pending-sign-in/second-factor`, after
+       `POST /session/pending-sign-in/webauthn-challenge` for WebAuthn) or cancel it
+       (`DELETE /session/pending-sign-in`).
+    4. Sign out with `DELETE /session`.
+
+    **Automation clients** send an API key in the `X-API-Key` header (`apiKeyAuth`). A request
+    with a key never creates a session and needs no anti-forgery token. When a request carries
+    both a key and a session cookie, the key decides and the cookie is ignored. Any request that
+    carries a non-empty `X-API-Key` header is authenticated by that key, and an invalid, expired
+    or revoked key, or a key used from a disallowed address, is reported to mailcow's fail2ban.
+
+    ## Recommended presentation of sign-in methods
+
+    Clients should offer **passkey sign-in first** whenever the device supports WebAuthn
+    (`PublicKeyCredential` is available), and username and password second. Passkeys registered
+    in the legacy UI under the names "FIDO2" or "Touch ID" are ordinary passkeys and need no
+    special handling. In the second-factor step, `PendingSignIn.methods` is already in the
+    recommended order: WebAuthn security keys and passkeys first, TOTP second, Yubico OTP last.
+    Methods with `tier: primary` are offered directly; methods with `tier: advanced` belong behind
+    an "other methods" option.
+
+    ## Restricted sessions
+
+    When mailcow forces an account to change its password or to set up a second factor, the
+    session is restricted (`state: restricted`, non-empty `pendingActions`). It can read
+    `GET /me` and `GET /session`, sign out and, when only `secondFactorSetup` is pending, register
+    a passkey. Every other operation answers `403` with type
+    `/api/v2/problems/pending-action-required`. Pending actions are re-evaluated from mailcow's
+    data on every request, so a restriction lifts as soon as it is resolved in either UI.
+servers:
+  - url: /api/v2
+    description: Same origin as the mailcow UI.
+tags:
+  - name: Authentication
+    description: CSRF bootstrap, password and passkey sign-in, second factors and sign-out.
+  - name: Identity
+    description: The authenticated caller and its preferences.
+  - name: Passkeys
+    description: The signed-in user's own passkeys (legacy "FIDO2" credentials).
+  - name: API keys
+    description: Administrator-managed keys for automation clients.
+  - name: Public configuration
+    description: Branding and login page settings readable before sign-in.
+  - name: Audit
+    description: Authentication and key-management audit log.
+  - name: System
+    description: Health, the contract itself and problem type documentation.
+paths:
+  /csrf-token:
+    $ref: './modules/auth/_index.yaml#/~1csrf-token'
+  /session:
+    $ref: './modules/auth/_index.yaml#/~1session'
+  /session/pending-sign-in:
+    $ref: './modules/auth/_index.yaml#/~1session~1pending-sign-in'
+  /session/pending-sign-in/webauthn-challenge:
+    $ref: './modules/auth/_index.yaml#/~1session~1pending-sign-in~1webauthn-challenge'
+  /session/pending-sign-in/second-factor:
+    $ref: './modules/auth/_index.yaml#/~1session~1pending-sign-in~1second-factor'
+  /session/passkey-challenge:
+    $ref: './modules/auth/_index.yaml#/~1session~1passkey-challenge'
+  /session/passkey-assertion:
+    $ref: './modules/auth/_index.yaml#/~1session~1passkey-assertion'
+  /me:
+    $ref: './modules/identity/_index.yaml#/~1me'
+  /me/preferences:
+    $ref: './modules/identity/_index.yaml#/~1me~1preferences'
+  /me/passkeys:
+    $ref: './modules/passkeys/_index.yaml#/~1me~1passkeys'
+  /me/passkeys/registration-options:
+    $ref: './modules/passkeys/_index.yaml#/~1me~1passkeys~1registration-options'
+  /me/passkeys/{passkeyId}:
+    $ref: './modules/passkeys/_index.yaml#/~1me~1passkeys~1{passkeyId}'
+  /api-keys:
+    $ref: './modules/api-keys/_index.yaml#/~1api-keys'
+  /api-keys/{apiKeyId}:
+    $ref: './modules/api-keys/_index.yaml#/~1api-keys~1{apiKeyId}'
+  /api-keys/{apiKeyId}/revocation:
+    $ref: './modules/api-keys/_index.yaml#/~1api-keys~1{apiKeyId}~1revocation'
+  /public-config:
+    $ref: './modules/public-config/_index.yaml#/~1public-config'
+  /public-config/logos/{variant}:
+    $ref: './modules/public-config/_index.yaml#/~1public-config~1logos~1{variant}'
+  /audit-events:
+    $ref: './modules/audit/_index.yaml#/~1audit-events'
+  /health/live:
+    $ref: './modules/system/_index.yaml#/~1health~1live'
+  /health/ready:
+    $ref: './modules/system/_index.yaml#/~1health~1ready'
+  /openapi.yaml:
+    $ref: './modules/system/_index.yaml#/~1openapi.yaml'
+  /docs:
+    $ref: './modules/system/_index.yaml#/~1docs'
+  /problems/{problemType}:
+    $ref: './modules/system/_index.yaml#/~1problems~1{problemType}'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-restv2_session
+      description: |
+        Same-origin browser session. The cookie is `Secure`, `HttpOnly`, `SameSite=Strict`,
+        `Path=/` and has no `Domain`. It expires after the server's idle session lifetime
+        (mailcow's `SESSION_LIFETIME`, 3 hours by default) and when the user agent changes.
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: |
+        Anti-forgery token of the current session, obtained from `GET /csrf-token`. Required on
+        every state-changing request made with a session.
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        Secret of an API key created by an administrator. The key acts with its owner's role,
+        scope and permission flags, limited by its access level.

@@ -1,0 +1,15 @@
+get:
+  operationId: getOpenApiDocument
+  tags: [System]
+  summary: Get this contract
+  description: Returns the bundled OpenAPI document of the running release.
+  security: []
+  responses:
+    '200':
+      description: The bundled contract.
+      content:
+        application/yaml:
+          schema:
+            type: string
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

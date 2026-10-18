@@ -1,0 +1,16 @@
+type: object
+description: Announcement banner (`UI_ANNOUNCEMENT_*`). The text is plain text.
+required: [text, type, active]
+properties:
+  text:
+    oneOf:
+      - type: string
+      - type: 'null'
+  type:
+    oneOf:
+      - type: string
+        enum: [info, warning, danger]
+      - type: 'null'
+  active:
+    type: boolean
+    description: Show the banner only when `active` is `true` and `text` is not `null`.

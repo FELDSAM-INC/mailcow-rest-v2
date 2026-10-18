@@ -1,0 +1,77 @@
+parameters:
+  - $ref: '../../components/parameters/PasskeyId.yaml'
+get:
+  operationId: getPasskey
+  tags: [Passkeys]
+  summary: Get one of my passkeys
+  security:
+    - sessionCookie: []
+  responses:
+    '200':
+      $ref: '../../components/responses/PasskeyResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updatePasskey
+  tags: [Passkeys]
+  summary: Rename one of my passkeys
+  description: Changes the display name. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/PasskeyPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/PasskeyResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deletePasskey
+  tags: [Passkeys]
+  summary: Remove one of my passkeys
+  description: |
+    Removes the passkey from mailcow, so it no longer signs in through either UI. Removing the
+    last passkey is allowed, as in legacy. Audited.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

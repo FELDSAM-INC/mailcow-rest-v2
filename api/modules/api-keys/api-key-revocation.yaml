@@ -1,0 +1,31 @@
+parameters:
+  - $ref: '../../components/parameters/ApiKeyId.yaml'
+post:
+  operationId: revokeApiKey
+  tags: [API keys]
+  summary: Revoke an API key
+  description: |
+    Revokes the key. It is refused from the very next request, stays listed with its revocation
+    time and the revoking administrator, and cannot be restored. Audited. Revoking an already
+    revoked key succeeds and changes nothing.
+
+    Only a signed-in administrator may revoke keys; requests authenticated by a key are refused
+    with `session-required`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/ApiKeyResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

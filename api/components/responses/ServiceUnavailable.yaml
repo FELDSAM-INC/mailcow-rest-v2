@@ -1,0 +1,5 @@
+description: Not ready (type `/api/v2/problems/service-unavailable`), with the failed checks.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ReadinessProblem.yaml'

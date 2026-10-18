@@ -1,0 +1,15 @@
+# Paths of the auth module: CSRF bootstrap, password and passkey sign-in, second factor, sign-out.
+/csrf-token:
+  $ref: './csrf-token.yaml'
+/session:
+  $ref: './session.yaml'
+/session/pending-sign-in:
+  $ref: './session-pending-sign-in.yaml'
+/session/pending-sign-in/webauthn-challenge:
+  $ref: './session-pending-sign-in-webauthn-challenge.yaml'
+/session/pending-sign-in/second-factor:
+  $ref: './session-pending-sign-in-second-factor.yaml'
+/session/passkey-challenge:
+  $ref: './session-passkey-challenge.yaml'
+/session/passkey-assertion:
+  $ref: './session-passkey-assertion.yaml'

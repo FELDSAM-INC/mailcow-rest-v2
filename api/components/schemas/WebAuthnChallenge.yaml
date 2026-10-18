@@ -1,0 +1,10 @@
+type: object
+description: A single-use WebAuthn challenge bound to the session.
+required: [publicKey, expiresAt]
+properties:
+  publicKey:
+    $ref: './WebAuthnRequestOptions.yaml'
+  expiresAt:
+    type: string
+    format: date-time
+    description: Five minutes after issue. The challenge is consumed by the first verification attempt.

@@ -1,0 +1,23 @@
+parameters:
+  - $ref: '../../components/parameters/ApiKeyId.yaml'
+get:
+  operationId: getApiKey
+  tags: [API keys]
+  summary: Get an API key
+  description: |
+    Returns one key with its owner, access level, networks, expiry, creation, last use (accurate
+    to the minute), status and revocation. Administrators only, as for `listApiKeys`.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/ApiKeyResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

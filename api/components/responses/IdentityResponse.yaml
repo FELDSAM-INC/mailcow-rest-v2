@@ -1,0 +1,9 @@
+description: The authenticated caller.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/Identity.yaml'

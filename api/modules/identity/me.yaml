@@ -1,0 +1,21 @@
+get:
+  operationId: getIdentity
+  tags: [Identity]
+  summary: Who am I
+  description: |
+    Returns the authenticated caller: username, role, how it authenticated, scope, effective
+    permission flags, pending actions and, for sessions, the preferences. For an API key it
+    returns the owner's role, scope and flags together with the key's identifier, name and access
+    level. Available in restricted sessions.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      $ref: '../../components/responses/IdentityResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

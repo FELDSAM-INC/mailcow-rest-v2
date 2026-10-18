@@ -1,0 +1,5 @@
+description: The request conflicts with the current state of the resource (type `about:blank`). See `detail`.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

@@ -1,0 +1,26 @@
+type: object
+description: |
+  The authenticated caller. Role, scope, permission flags, account status and pending actions are
+  evaluated from mailcow's current data on every request, so changes made in either UI apply to
+  the next request. For an API key, `username` and `role` are those of the key's owner.
+required: [username, role, authentication, scope, permissions, pendingActions]
+properties:
+  username:
+    type: string
+    examples: [reseller@example.org]
+  role:
+    $ref: './Role.yaml'
+  authentication:
+    $ref: './IdentityAuthentication.yaml'
+  scope:
+    $ref: './Scope.yaml'
+  permissions:
+    $ref: './PermissionFlags.yaml'
+  pendingActions:
+    type: array
+    uniqueItems: true
+    items:
+      $ref: './PendingAction.yaml'
+  preferences:
+    description: Present for sessions only.
+    $ref: './Preferences.yaml'

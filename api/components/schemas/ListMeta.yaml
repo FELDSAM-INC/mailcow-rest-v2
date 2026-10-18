@@ -1,0 +1,17 @@
+type: object
+description: Pagination metadata of a list response.
+required: [total, limit, offset]
+properties:
+  total:
+    type: integer
+    minimum: 0
+    description: Number of items matching the filters, ignoring `limit` and `offset`.
+  limit:
+    type: integer
+    minimum: 1
+    maximum: 100
+    description: Applied page size.
+  offset:
+    type: integer
+    minimum: 0
+    description: Applied offset.

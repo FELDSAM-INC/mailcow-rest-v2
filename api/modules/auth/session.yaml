@@ -1,0 +1,92 @@
+get:
+  operationId: getSession
+  tags: [Authentication]
+  summary: Get the current session
+  description: |
+    Returns the state of the caller's browser session: `anonymous`, `pendingSecondFactor` (with
+    the methods to offer), `restricted` (with the pending actions) or `active`. Never fails for a
+    missing or ended session; it reports `anonymous` instead. Requests with an API key are refused
+    with `session-required`.
+  security:
+    - {}
+    - sessionCookie: []
+  responses:
+    '200':
+      $ref: '../../components/responses/SessionResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createSession
+  tags: [Authentication]
+  summary: Sign in with username and password
+  description: |
+    Verifies an existing mailcow username and password, for every role, with every password hash
+    format mailcow accepts. Signing in never modifies the stored hash.
+
+    - Without an active second factor the session becomes `active`, or `restricted` when mailcow
+      forces a password change or second-factor setup. All of the account's second-factor entries
+      are re-activated (legacy "disable second factor for the next login").
+    - With active second factors the session becomes `pendingSecondFactor` and lists the methods
+      in the recommended order. Complete one within 5 minutes.
+    - A mailbox user's password verification records a recent-login entry (mailcow `sasl_log`),
+      as legacy does.
+
+    Failures return one generic `sign-in-failed` error, are audited and are published to mailcow's
+    fail2ban channel as `mailcow UI: Invalid password for <username> by <client address>` (not for
+    mailboxes that authenticate against an external identity provider). Each failure for the same
+    username and client address is answered 0.5 s later than the previous one; after 10 failures
+    within 15 minutes attempts are refused with `429` without checking the password. A correct
+    password resets the count.
+
+    The session identifier is renewed when the step succeeds. A previous sign-in of the same
+    session is replaced.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/PasswordSignInRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/SessionCreated.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/SignInRejected.yaml'
+    '403':
+      $ref: '../../components/responses/SignInForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '429':
+      $ref: '../../components/responses/TooManyRequests.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+delete:
+  operationId: deleteSession
+  tags: [Authentication]
+  summary: Sign out
+  description: |
+    Ends the session immediately in any state, including a pending sign-in, and audits the
+    sign-out of a signed-in account. Any further request with the old cookie is anonymous; fetch a
+    new anti-forgery token before signing in again. Without a live session the request succeeds
+    and changes nothing, and no anti-forgery token is needed.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - {}
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

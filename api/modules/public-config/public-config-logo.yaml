@@ -1,0 +1,36 @@
+parameters:
+  - $ref: '../../components/parameters/LogoVariant.yaml'
+get:
+  operationId: getPublicConfigLogo
+  tags: [Public configuration]
+  summary: Get an uploaded logo
+  description: |
+    Returns the logo uploaded in the legacy UI. `404` when none is uploaded for this variant; the
+    public configuration then points to the default logo instead.
+  security: []
+  parameters:
+    - name: v
+      in: query
+      required: false
+      description: Version from `Logo.url`. With a matching version the response is cacheable for a year.
+      schema:
+        type: string
+        pattern: '^[0-9a-f]{8,64}$'
+    - name: If-None-Match
+      in: header
+      required: false
+      schema:
+        type: string
+  responses:
+    '200':
+      $ref: '../../components/responses/LogoImage.yaml'
+    '304':
+      $ref: '../../components/responses/NotModified.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

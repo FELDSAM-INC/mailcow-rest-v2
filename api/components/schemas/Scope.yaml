@@ -1,0 +1,14 @@
+description: |
+  Objects the caller may reach: every domain for an administrator, the managed domains for a
+  domain administrator (active assignments in mailcow's `domain_admins`), the own mailbox for a
+  mailbox user. A domain administrator without domains has an empty list.
+oneOf:
+  - $ref: './AllDomainsScope.yaml'
+  - $ref: './DomainsScope.yaml'
+  - $ref: './MailboxScope.yaml'
+discriminator:
+  propertyName: type
+  mapping:
+    allDomains: './AllDomainsScope.yaml'
+    domains: './DomainsScope.yaml'
+    mailbox: './MailboxScope.yaml'

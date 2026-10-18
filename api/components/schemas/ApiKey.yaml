@@ -1,0 +1,71 @@
+type: object
+description: An API key. The secret is never returned after creation.
+required:
+  - id
+  - name
+  - prefix
+  - owner
+  - accessLevel
+  - allowedNetworks
+  - expiresAt
+  - status
+  - createdAt
+  - createdBy
+  - lastUsedAt
+  - lastUsedFrom
+  - revokedAt
+  - revokedBy
+properties:
+  id:
+    type: string
+    pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
+    description: ULID.
+  name:
+    type: string
+    maxLength: 255
+  prefix:
+    type: string
+    description: Non-secret leading characters of the secret, for recognising the key.
+    examples: [mcv2_Q7xK2pL]
+  owner:
+    $ref: './ApiKeyOwner.yaml'
+  accessLevel:
+    $ref: './ApiKeyAccessLevel.yaml'
+  allowedNetworks:
+    type: array
+    description: Normalised IPv4 and IPv6 prefixes. Empty means any address.
+    items:
+      type: string
+      examples: [192.0.2.0/24, 2001:db8::/32, 198.51.100.7/32]
+  expiresAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  status:
+    $ref: './ApiKeyStatus.yaml'
+  createdAt:
+    type: string
+    format: date-time
+  createdBy:
+    $ref: './AccountRef.yaml'
+  lastUsedAt:
+    description: Accurate to the minute. `null` when never used.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  lastUsedFrom:
+    description: Client address of the last use.
+    oneOf:
+      - type: string
+      - type: 'null'
+  revokedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  revokedBy:
+    oneOf:
+      - $ref: './AccountRef.yaml'
+      - type: 'null'

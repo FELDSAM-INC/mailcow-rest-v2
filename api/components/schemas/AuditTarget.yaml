@@ -1,0 +1,15 @@
+type: object
+description: Object the event acted on.
+required: [type, id, name]
+properties:
+  type:
+    type: string
+    enum: [apiKey, passkey, preferences, session]
+  id:
+    oneOf:
+      - type: string
+      - type: 'null'
+  name:
+    oneOf:
+      - type: string
+      - type: 'null'

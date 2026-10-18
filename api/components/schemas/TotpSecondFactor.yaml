@@ -1,0 +1,17 @@
+type: object
+description: |
+  A code from the authenticator app enrolled as method `methodId`. A code accepted once is not
+  accepted again within its validity window.
+required: [type, methodId, code]
+properties:
+  type:
+    type: string
+    const: totp
+  methodId:
+    type: integer
+    minimum: 1
+    description: '`id` of a `totp` method of the pending sign-in.'
+  code:
+    type: string
+    pattern: '^[0-9]{6}$'
+    writeOnly: true

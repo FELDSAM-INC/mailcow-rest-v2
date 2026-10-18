@@ -1,0 +1,12 @@
+description: |
+  The sign-in request is refused. Possible types:
+  - `/api/v2/problems/csrf-token-mismatch`: missing or wrong `X-CSRF-Token`. Call
+    `GET /csrf-token` first.
+  - `/api/v2/problems/session-required`: the request carries an API key; sign-in is for browser
+    sessions only.
+  - `/api/v2/problems/second-factor-unavailable`: the password is correct, but the account's only
+    active second factors are deprecated U2F or HOTP entries. An administrator must reset them.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

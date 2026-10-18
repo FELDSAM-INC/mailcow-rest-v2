@@ -1,0 +1,16 @@
+type: object
+description: |
+  The account whose role, scope and permission flags the key acts with, evaluated on every
+  request. `role` is `null` when the account no longer exists.
+required: [username, role, active]
+properties:
+  username:
+    type: string
+  role:
+    oneOf:
+      - type: string
+        enum: [admin, domainAdmin]
+      - type: 'null'
+  active:
+    type: boolean
+    description: '`false` when the owner is deactivated or deleted. The key is then rejected as invalid.'

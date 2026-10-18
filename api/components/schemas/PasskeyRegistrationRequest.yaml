@@ -1,0 +1,11 @@
+type: object
+description: Authenticator response to the options from `POST /me/passkeys/registration-options`.
+required: [credential]
+properties:
+  credential:
+    $ref: './WebAuthnRegistrationResponse.yaml'
+  name:
+    type: string
+    minLength: 1
+    maxLength: 255
+    description: Optional display name. It can be set or changed later with `PATCH`.

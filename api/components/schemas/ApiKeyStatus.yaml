@@ -1,0 +1,6 @@
+type: string
+description: |
+  `revoked` once revoked (final), otherwise `expired` once `expiresAt` has passed, otherwise
+  `active`. A key whose owner is inactive or deleted keeps its status but is rejected as invalid
+  (see `owner.active`).
+enum: [active, expired, revoked]

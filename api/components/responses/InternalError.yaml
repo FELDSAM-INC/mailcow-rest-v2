@@ -1,0 +1,5 @@
+description: Unexpected failure (type `about:blank`). Nothing was changed, and no audit record was lost.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

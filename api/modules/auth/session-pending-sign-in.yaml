@@ -1,0 +1,19 @@
+delete:
+  operationId: cancelPendingSignIn
+  tags: [Authentication]
+  summary: Cancel the pending sign-in
+  description: |
+    Cancels a sign-in that awaits a second factor. The session returns to `anonymous` and keeps
+    its anti-forgery token. Succeeds and changes nothing when no sign-in is pending.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '204':
+      $ref: '../../components/responses/NoContent.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SignInForbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

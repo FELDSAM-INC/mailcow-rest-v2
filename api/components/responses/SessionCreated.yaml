@@ -1,0 +1,16 @@
+description: Sign-in step succeeded. The session identifier was renewed. `state` is `active`, `restricted` or `pendingSecondFactor`.
+headers:
+  Location:
+    description: Absolute path of the created resource.
+    required: true
+    schema:
+      type: string
+      format: uri-reference
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/Session.yaml'

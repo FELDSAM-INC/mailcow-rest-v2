@@ -1,0 +1,14 @@
+description: |
+  Problem of type `/api/v2/problems/pending-action-required` (status `403`). The session is
+  restricted until the listed actions are completed.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [pendingActions]
+    properties:
+      pendingActions:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          $ref: './PendingAction.yaml'

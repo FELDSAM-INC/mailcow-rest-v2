@@ -1,0 +1,22 @@
+post:
+  operationId: createPasskeyChallenge
+  tags: [Authentication]
+  summary: Get a passkey sign-in challenge
+  description: |
+    Issues a single-use challenge for usernameless passkey sign-in, bound to the session, with
+    an empty `allowCredentials` list so that the device offers its discoverable credentials for
+    this host. It expires after 5 minutes or at the first sign-in attempt. A new request replaces
+    the previous challenge. User verification follows mailcow's `FIDO2_UV_FLAG_LOGIN` (default
+    `preferred`).
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '200':
+      $ref: '../../components/responses/WebAuthnChallengeResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/SignInForbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

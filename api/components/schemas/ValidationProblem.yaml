@@ -1,0 +1,23 @@
+description: |
+  Problem of type `/api/v2/problems/validation-failed` (status `422`). `errors` maps each invalid
+  field to its violations. Body fields use their dot-separated path in the request body
+  (`allowedNetworks.2`); query parameters use their name (`limit`).
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [errors]
+    properties:
+      errors:
+        type: object
+        minProperties: 1
+        additionalProperties:
+          type: array
+          minItems: 1
+          items:
+            $ref: './FieldViolation.yaml'
+        examples:
+          - language:
+              - code: notInList
+                params:
+                  allowed: [cs-cz, en-gb, sk-sk]
+                message: The selected language is not enabled on this server.

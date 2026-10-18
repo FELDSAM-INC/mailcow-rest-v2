@@ -1,0 +1,21 @@
+description: The key was created. This is the only response that contains the secret.
+headers:
+  Location:
+    description: Absolute path of the created resource.
+    required: true
+    schema:
+      type: string
+      format: uri-reference
+  ETag:
+    description: Strong entity tag of the returned representation. Send it in `If-Match` when changing the resource.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/ApiKeyCreated.yaml'

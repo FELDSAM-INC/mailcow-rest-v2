@@ -1,0 +1,49 @@
+get:
+  operationId: getPreferences
+  tags: [Identity]
+  summary: Get my preferences
+  description: Returns the signed-in user's language and theme. Not available to API keys.
+  security:
+    - sessionCookie: []
+  responses:
+    '200':
+      $ref: '../../components/responses/PreferencesResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+patch:
+  operationId: updatePreferences
+  tags: [Identity]
+  summary: Update my preferences
+  description: |
+    Changes the signed-in user's language (one of the enabled languages) and/or theme. The change
+    persists across sessions and devices and is audited. Not available to API keys.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  parameters:
+    - $ref: '../../components/parameters/IfMatch.yaml'
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: '../../components/schemas/PreferencesPatch.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/PreferencesResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '412':
+      $ref: '../../components/responses/PreconditionFailed.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

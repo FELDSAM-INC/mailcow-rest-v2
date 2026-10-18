@@ -1,0 +1,9 @@
+description: The caller's session.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/Session.yaml'

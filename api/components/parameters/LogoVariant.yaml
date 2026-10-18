@@ -1,0 +1,7 @@
+name: variant
+in: path
+required: true
+description: '`light` (`MAIN_LOGO`) or `dark` (`MAIN_LOGO_DARK`).'
+schema:
+  type: string
+  enum: [light, dark]

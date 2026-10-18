@@ -1,0 +1,24 @@
+description: |
+  The caller is authenticated but may not perform this request. Possible types:
+  - `/api/v2/problems/forbidden`: the caller's role or permission flags do not allow it.
+  - `/api/v2/problems/csrf-token-mismatch`: a session request without a valid `X-CSRF-Token`.
+  - `/api/v2/problems/session-required`: the operation is not available to API keys.
+  - `/api/v2/problems/pending-action-required`: the session is restricted (extension `pendingActions`).
+  - `/api/v2/problems/insufficient-key-scope`: a read-only key used for a state-changing request.
+  - `/api/v2/problems/api-key-source-not-allowed`: the key is used from an address outside its
+    allowed networks.
+content:
+  application/problem+json:
+    schema:
+      anyOf:
+        - $ref: '../schemas/PendingActionProblem.yaml'
+        - $ref: '../schemas/Problem.yaml'
+    examples:
+      pendingAction:
+        value:
+          type: /api/v2/problems/pending-action-required
+          title: Pending action required
+          status: 403
+          detail: Complete the pending actions before using this operation.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+          pendingActions: [passwordChange]

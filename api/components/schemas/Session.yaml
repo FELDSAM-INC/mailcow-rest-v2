@@ -1,0 +1,36 @@
+type: object
+description: |
+  The browser session of the caller. `username` and `role` are present in every state except
+  `anonymous`. `authMethod` and `signedInAt` are present in `restricted` and `active`.
+  `pendingSignIn` is present only in `pendingSecondFactor`.
+required: [state, pendingActions, idleTimeout]
+properties:
+  state:
+    $ref: './SessionState.yaml'
+  username:
+    type: string
+    description: Normalised (trimmed, lower-cased) username of the account.
+    examples: [alice@example.org]
+  role:
+    $ref: './Role.yaml'
+  authMethod:
+    type: string
+    enum: [password, passwordAndSecondFactor, passkey]
+    description: How this session was signed in.
+  signedInAt:
+    type: string
+    format: date-time
+  idleTimeout:
+    type: integer
+    minimum: 1
+    description: |
+      Seconds of inactivity after which the session ends (mailcow's `SESSION_LIFETIME`, 10800 by
+      default). Every request resets the timer.
+  pendingSignIn:
+    $ref: './PendingSignIn.yaml'
+  pendingActions:
+    type: array
+    uniqueItems: true
+    description: Empty unless `state` is `restricted`.
+    items:
+      $ref: './PendingAction.yaml'

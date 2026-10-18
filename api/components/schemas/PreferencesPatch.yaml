@@ -1,0 +1,10 @@
+type: object
+description: JSON Merge Patch of `Preferences`. Omitted members stay unchanged.
+minProperties: 1
+properties:
+  language:
+    type: string
+    maxLength: 16
+    description: Must be one of the enabled language codes.
+  theme:
+    $ref: './Theme.yaml'

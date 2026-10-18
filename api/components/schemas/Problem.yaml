@@ -1,0 +1,35 @@
+type: object
+description: |
+  RFC 9457 problem details (`application/problem+json`). `type` is the stable machine-readable
+  code: compare it as an exact string. `title` and `detail` are English and may be reworded.
+  Extension members may be added later without notice.
+required: [type, title, status, requestId]
+properties:
+  type:
+    type: string
+    format: uri-reference
+    description: |
+      Problem type. Either one of the documented types (see `KnownProblemType` and
+      `docs/problems.md`) or `about:blank`, in which case the status code identifies the problem.
+    examples:
+      - /api/v2/problems/sign-in-failed
+      - about:blank
+  title:
+    type: string
+    description: Short English summary of the problem type.
+    examples: [Sign-in failed]
+  status:
+    type: integer
+    minimum: 400
+    maximum: 599
+    description: HTTP status code of this occurrence.
+  detail:
+    type: string
+    description: English explanation of this occurrence. Never contains secrets.
+  requestId:
+    type: string
+    pattern: '^[0-9a-f]{32}$'
+    description: |
+      Identifier of the request (the W3C trace ID), also written to the service log and to any
+      audit record of the request.
+additionalProperties: true

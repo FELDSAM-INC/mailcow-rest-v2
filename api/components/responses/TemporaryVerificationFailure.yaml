@@ -1,0 +1,15 @@
+description: |
+  The Yubico verification service could not be reached (type
+  `/api/v2/problems/temporary-verification-failure`). The pending sign-in stays open, so another
+  method can be tried, and the attempt does not count towards throttling.
+headers:
+  Retry-After:
+    description: Seconds after which the request may be retried.
+    required: true
+    schema:
+      type: integer
+      minimum: 1
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

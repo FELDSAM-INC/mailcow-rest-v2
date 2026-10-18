@@ -1,0 +1,11 @@
+get:
+  operationId: getLiveness
+  tags: [System]
+  summary: Liveness check
+  description: Answers `200` while the PHP runtime serves requests. Checks no dependency and ignores `X-API-Key`.
+  security: []
+  responses:
+    '200':
+      $ref: '../../components/responses/HealthResponse.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

@@ -1,0 +1,5 @@
+# Paths of the public-config module: branding and login page settings readable before sign-in.
+/public-config:
+  $ref: './public-config.yaml'
+/public-config/logos/{variant}:
+  $ref: './public-config-logo.yaml'

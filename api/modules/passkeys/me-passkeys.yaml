@@ -1,0 +1,59 @@
+get:
+  operationId: listPasskeys
+  tags: [Passkeys]
+  summary: List my passkeys
+  description: |
+    Lists the signed-in user's passkeys, including those registered in the legacy UI as "FIDO2"
+    or "Touch ID" credentials. Not available to API keys or in restricted sessions.
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/PasskeySort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/PasskeyListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: registerPasskey
+  tags: [Passkeys]
+  summary: Register a passkey
+  description: |
+    Verifies the authenticator's response to the session's registration options and saves the
+    passkey where legacy mailcow stores FIDO2 credentials, bound to this host name, so that it
+    works for usernameless sign-in in both UIs. User verification and accepted attestation formats
+    follow mailcow's `FIDO2_UV_FLAG_REGISTER` and `FIDO2_FORMATS`. The registration is audited.
+
+    Needs a full session, or a session restricted only by `secondFactorSetup`, which the
+    registration lifts immediately. Not available to API keys or during a pending sign-in.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/PasskeyRegistrationRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/PasskeyCreated.yaml'
+    '400':
+      $ref: '../../components/responses/PasskeyRegistrationRejected.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

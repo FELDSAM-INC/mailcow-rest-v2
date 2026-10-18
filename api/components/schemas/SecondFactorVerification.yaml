@@ -1,0 +1,11 @@
+description: Proof for one of the pending sign-in's methods.
+oneOf:
+  - $ref: './TotpSecondFactor.yaml'
+  - $ref: './WebAuthnSecondFactor.yaml'
+  - $ref: './YubiOtpSecondFactor.yaml'
+discriminator:
+  propertyName: type
+  mapping:
+    totp: './TotpSecondFactor.yaml'
+    webauthn: './WebAuthnSecondFactor.yaml'
+    yubiOtp: './YubiOtpSecondFactor.yaml'

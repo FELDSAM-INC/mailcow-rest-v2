@@ -1,0 +1,42 @@
+post:
+  operationId: createSessionWithPasskey
+  tags: [Authentication]
+  summary: Sign in with a passkey
+  description: |
+    Verifies an assertion for the session's passkey challenge and signs in the account that owns
+    the credential, with no password and no further second factor. Passkeys registered in the
+    legacy UI ("FIDO2", "Touch ID") work unchanged.
+
+    The credential must be active and its account must be able to sign in (active account, active
+    mailbox and domain, not a resource mailbox). Without `role`, the account type is resolved in
+    mailcow's order (administrator or domain administrator, then mailbox user); with `role`, an
+    account of another type fails. Forced password change and second-factor setup restrict the
+    session as after a password sign-in. A mailbox user's sign-in records a recent-login entry.
+
+    Failures return the generic `sign-in-failed` error, are audited and count towards throttling
+    per client address. They are not reported to fail2ban. The session identifier is renewed on
+    success.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/PasskeySignInRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/SessionCreated.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/SignInRejected.yaml'
+    '403':
+      $ref: '../../components/responses/SignInForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '429':
+      $ref: '../../components/responses/TooManyRequests.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

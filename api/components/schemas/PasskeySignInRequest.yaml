@@ -1,0 +1,10 @@
+type: object
+description: |
+  Assertion for the challenge from `POST /session/passkey-challenge`. The account is the owner of
+  the credential. With `role`, the sign-in fails unless that account is of that role.
+required: [credential]
+properties:
+  credential:
+    $ref: './WebAuthnAuthenticationResponse.yaml'
+  role:
+    $ref: './Role.yaml'

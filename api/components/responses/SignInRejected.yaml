@@ -1,0 +1,23 @@
+description: |
+  The sign-in step failed. Possible types:
+  - `/api/v2/problems/sign-in-failed`: one generic error for an unknown account, a wrong password,
+    an inactive account or domain, a resource mailbox, a malformed username, a mailbox that
+    authenticates against an external identity provider, and an unknown, inactive or
+    wrong-role passkey. It never reveals which.
+  - `/api/v2/problems/sign-in-expired`: there is no pending sign-in or challenge in this session,
+    or it expired or was already used. Start again.
+  - `/api/v2/problems/second-factor-failed`: the second factor was wrong or no longer exists. The
+    pending sign-in is cancelled; start again with the password.
+  - The API key types of `Unauthorized` when the request carries an invalid `X-API-Key`.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'
+    examples:
+      signInFailed:
+        value:
+          type: /api/v2/problems/sign-in-failed
+          title: Sign-in failed
+          status: 401
+          detail: The credentials are invalid or the account cannot sign in.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736

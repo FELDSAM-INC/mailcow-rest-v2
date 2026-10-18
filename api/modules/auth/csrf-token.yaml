@@ -1,0 +1,19 @@
+get:
+  operationId: getCsrfToken
+  tags: [Authentication]
+  summary: Get the anti-forgery token
+  description: |
+    Returns the anti-forgery token of the caller's session and starts an anonymous session (sets
+    the session cookie) when there is none. Call it once when the web app starts and after a
+    `csrf-token-mismatch` problem. The token stays valid until the session ends, including
+    across sign-in.
+  security: []
+  responses:
+    '200':
+      $ref: '../../components/responses/CsrfTokenResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

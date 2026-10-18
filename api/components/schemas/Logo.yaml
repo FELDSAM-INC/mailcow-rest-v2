@@ -1,0 +1,13 @@
+type: object
+description: |
+  A logo. When the operator uploaded one, `url` points to `GET /public-config/logos/{variant}`
+  with a version parameter that changes with the image. Otherwise `url` is the default logo of
+  the deployed legacy UI (`/img/cow_mailcow.svg` upstream), served by the legacy web root.
+required: [url, isDefault]
+properties:
+  url:
+    type: string
+    format: uri-reference
+    examples: [/api/v2/public-config/logos/light?v=5f3c1a9e, /img/cow_mailcow.svg]
+  isDefault:
+    type: boolean

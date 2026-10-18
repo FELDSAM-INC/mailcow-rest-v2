@@ -1,0 +1,16 @@
+get:
+  operationId: getReadiness
+  tags: [System]
+  summary: Readiness check
+  description: |
+    Checks the MariaDB connection, the mailcow schema version (`versions.db_schema` must be one
+    this release supports), the Redis connection and that this API's own migrations are applied.
+    Ignores `X-API-Key`.
+  security: []
+  responses:
+    '200':
+      $ref: '../../components/responses/HealthResponse.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/ServiceUnavailable.yaml'

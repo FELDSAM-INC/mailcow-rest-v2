@@ -1,0 +1,6 @@
+type: string
+description: |
+  Second-factor type. `webauthn` covers security keys and passkeys enrolled as a second factor
+  (mailcow `tfa.authmech = webauthn`), `totp` authenticator apps, `yubiOtp` Yubico OTP keys
+  verified against the Yubico service. Deprecated U2F and HOTP entries are never offered.
+enum: [webauthn, totp, yubiOtp]

@@ -1,0 +1,10 @@
+type: object
+description: Single-use passkey registration options bound to the session.
+required: [publicKey, expiresAt]
+properties:
+  publicKey:
+    $ref: './WebAuthnCreationOptions.yaml'
+  expiresAt:
+    type: string
+    format: date-time
+    description: Five minutes after issue. The options are consumed by the first registration attempt.

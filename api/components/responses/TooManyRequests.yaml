@@ -1,0 +1,15 @@
+description: |
+  Throttled (type `/api/v2/problems/too-many-requests`). Sign-in attempts are refused after 10
+  failures for the same username and client address (passkeys: the same client address) within
+  15 minutes, without checking credentials.
+headers:
+  Retry-After:
+    description: Seconds after which the request may be retried.
+    required: true
+    schema:
+      type: integer
+      minimum: 1
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/TooManyRequestsProblem.yaml'

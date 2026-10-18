@@ -1,0 +1,16 @@
+type: object
+description: Login page options (`CUSTOM_LOGIN`). All default to `false`.
+required: [hideAdminLogin, hideDomainAdminLogin, hideMailboxUserLogin, forceSingleSignOn]
+properties:
+  hideAdminLogin:
+    type: boolean
+    description: Hide the administrator login link (`hide_admin_quicklink`).
+  hideDomainAdminLogin:
+    type: boolean
+    description: Hide the domain administrator login link (`hide_domainadmin_quicklink`).
+  hideMailboxUserLogin:
+    type: boolean
+    description: Hide the mailbox user login link (`hide_user_quicklink`).
+  forceSingleSignOn:
+    type: boolean
+    description: Legacy hides the password form in favour of identity-provider sign-in (`force_sso`).

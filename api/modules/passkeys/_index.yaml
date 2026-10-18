@@ -1,0 +1,7 @@
+# Paths of the passkeys module: the signed-in user's own passkeys.
+/me/passkeys:
+  $ref: './me-passkeys.yaml'
+/me/passkeys/registration-options:
+  $ref: './me-passkeys-registration-options.yaml'
+/me/passkeys/{passkeyId}:
+  $ref: './me-passkey.yaml'

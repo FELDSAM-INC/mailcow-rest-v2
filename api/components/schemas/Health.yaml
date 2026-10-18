@@ -1,0 +1,9 @@
+type: object
+description: Health of the service.
+required: [status]
+properties:
+  status:
+    type: string
+    enum: [ok]
+  checks:
+    $ref: './HealthChecks.yaml'

@@ -1,0 +1,10 @@
+description: |
+  Problem of type `/api/v2/problems/service-unavailable` (status `503`) returned by the readiness
+  check, with the result of each dependency check.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [checks]
+    properties:
+      checks:
+        $ref: './HealthChecks.yaml'

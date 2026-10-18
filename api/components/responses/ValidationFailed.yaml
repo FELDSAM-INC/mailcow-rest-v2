@@ -1,0 +1,5 @@
+description: Validation failed (type `/api/v2/problems/validation-failed`). See `errors`.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ValidationProblem.yaml'

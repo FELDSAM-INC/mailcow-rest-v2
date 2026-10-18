@@ -1,0 +1,8 @@
+name: sort
+in: query
+required: false
+description: Sort field. Default `occurredAt` with `order=desc` (newest first).
+schema:
+  type: string
+  enum: [occurredAt]
+  default: occurredAt

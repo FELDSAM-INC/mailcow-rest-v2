@@ -1,0 +1,11 @@
+type: object
+description: |
+  Assertion for the challenge from `POST /session/pending-sign-in/webauthn-challenge`. The
+  credential must be one of the pending sign-in's `webauthn` methods.
+required: [type, credential]
+properties:
+  type:
+    type: string
+    const: webauthn
+  credential:
+    $ref: './WebAuthnAuthenticationResponse.yaml'

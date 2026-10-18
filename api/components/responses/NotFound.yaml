@@ -1,0 +1,5 @@
+description: The resource does not exist or is outside the caller's scope (type `about:blank`).
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

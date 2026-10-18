@@ -1,0 +1,16 @@
+type: object
+description: One violated validation rule of one field.
+required: [code, params, message]
+properties:
+  code:
+    $ref: './ValidationRuleCode.yaml'
+  params:
+    type: object
+    description: |
+      Parameters of the rule, for building a translated message. Known keys: `min`, `max`
+      (numbers), `allowed` (list of allowed values), `format` (name of the expected format, see
+      `ValidationRuleCode`), `expected` (expected JSON type) and `allowedRoles`.
+    additionalProperties: true
+  message:
+    type: string
+    description: English message for logs and scripts. Clients translate from `code` and `params`.

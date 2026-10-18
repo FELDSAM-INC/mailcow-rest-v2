@@ -1,0 +1,5 @@
+type: string
+description: |
+  Account role. `admin` and `domainAdmin` accounts live in mailcow's `admin` table (`superadmin`
+  1 or 0); `mailboxUser` accounts are rows of the `mailbox` table.
+enum: [admin, domainAdmin, mailboxUser]

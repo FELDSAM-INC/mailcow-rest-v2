@@ -1,0 +1,9 @@
+description: The session's anti-forgery token.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/CsrfToken.yaml'

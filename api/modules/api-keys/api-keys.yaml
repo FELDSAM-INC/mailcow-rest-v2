@@ -1,0 +1,77 @@
+get:
+  operationId: listApiKeys
+  tags: [API keys]
+  summary: List API keys
+  description: |
+    Lists API keys, including revoked and expired ones. Administrators only: a signed-in
+    administrator or a key owned by an administrator. Secrets are never included.
+  security:
+    - sessionCookie: []
+    - apiKeyAuth: []
+  parameters:
+    - $ref: '../../components/parameters/Limit.yaml'
+    - $ref: '../../components/parameters/Offset.yaml'
+    - $ref: '../../components/parameters/ApiKeySort.yaml'
+    - $ref: '../../components/parameters/Order.yaml'
+    - name: ownerUsername
+      in: query
+      required: false
+      description: Only keys owned by this account (exact match).
+      schema:
+        type: string
+        maxLength: 255
+    - name: status
+      in: query
+      required: false
+      schema:
+        $ref: '../../components/schemas/ApiKeyStatus.yaml'
+    - name: accessLevel
+      in: query
+      required: false
+      schema:
+        $ref: '../../components/schemas/ApiKeyAccessLevel.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/ApiKeyListResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+post:
+  operationId: createApiKey
+  tags: [API keys]
+  summary: Create an API key
+  description: |
+    Creates a key owned by an existing administrator or domain administrator, with an access
+    level, an optional expiry in the future and optional allowed source networks. The response
+    contains the secret exactly once; only its SHA-256 hash is stored. Audited without the
+    secret.
+
+    Only a signed-in administrator may create keys. Requests authenticated by a key are refused
+    with `session-required`, so that a leaked key cannot mint replacements for itself.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/ApiKeyCreateRequest.yaml'
+  responses:
+    '201':
+      $ref: '../../components/responses/ApiKeyCreatedResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

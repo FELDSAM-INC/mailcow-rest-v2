@@ -1,0 +1,3 @@
+type: string
+description: '`readOnly` keys may only call safe methods (GET, HEAD); `readWrite` keys may also change state.'
+enum: [readOnly, readWrite]

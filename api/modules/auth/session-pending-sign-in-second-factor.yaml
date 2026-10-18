@@ -1,0 +1,43 @@
+post:
+  operationId: verifySecondFactor
+  tags: [Authentication]
+  summary: Complete the pending sign-in with a second factor
+  description: |
+    Verifies one of the pending sign-in's methods: a TOTP code, a WebAuthn assertion or a Yubico
+    OTP. Second factors enrolled in the legacy UI verify without re-enrolment.
+
+    On success the session identifier is renewed, the session becomes `active` (or `restricted`)
+    and the sign-in is audited with `authMethod: passwordAndSecondFactor`.
+
+    One failed attempt cancels the pending sign-in (`second-factor-failed`), counts towards the
+    sign-in throttling of the username and client address, and is audited. A method that was
+    deactivated or deleted since the password step also cancels it. A TOTP code is accepted only
+    once within its validity window. When the Yubico service is unreachable the answer is `503`,
+    the pending sign-in stays open and nothing is counted. A malformed request (`422`) changes
+    nothing.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/SecondFactorVerification.yaml'
+  responses:
+    '200':
+      $ref: '../../components/responses/SessionResponse.yaml'
+    '400':
+      $ref: '../../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../../components/responses/SignInRejected.yaml'
+    '403':
+      $ref: '../../components/responses/SignInForbidden.yaml'
+    '422':
+      $ref: '../../components/responses/ValidationFailed.yaml'
+    '429':
+      $ref: '../../components/responses/TooManyRequests.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/TemporaryVerificationFailure.yaml'

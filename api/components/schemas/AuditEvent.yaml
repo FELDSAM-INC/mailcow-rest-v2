@@ -1,0 +1,59 @@
+type: object
+description: |
+  One immutable audit record. Never contains passwords, one-time codes, WebAuthn assertions, key
+  secrets or session identifiers.
+required:
+  - id
+  - occurredAt
+  - eventType
+  - outcome
+  - actor
+  - target
+  - clientAddress
+  - userAgent
+  - authMethod
+  - failureReason
+  - requestId
+  - details
+properties:
+  id:
+    type: string
+    pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
+  occurredAt:
+    type: string
+    format: date-time
+  eventType:
+    $ref: './AuditEventType.yaml'
+  outcome:
+    $ref: './AuditOutcome.yaml'
+  actor:
+    $ref: './AuditActor.yaml'
+  target:
+    oneOf:
+      - $ref: './AuditTarget.yaml'
+      - type: 'null'
+  clientAddress:
+    type: string
+    description: Real client address as seen by mailcow's reverse proxy.
+  userAgent:
+    oneOf:
+      - type: string
+        maxLength: 512
+      - type: 'null'
+  authMethod:
+    oneOf:
+      - $ref: './AuthMethod.yaml'
+      - type: 'null'
+  failureReason:
+    oneOf:
+      - $ref: './AuditFailureReason.yaml'
+      - type: 'null'
+  requestId:
+    type: string
+    pattern: '^[0-9a-f]{32}$'
+  details:
+    type: object
+    description: |
+      Non-secret event details, for example `requestedRole`, `secondFactorType`,
+      `changedFields` or `accessLevel`.
+    additionalProperties: true

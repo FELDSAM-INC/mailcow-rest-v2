@@ -1,0 +1,17 @@
+type: object
+description: |
+  A sign-in whose password was verified and which needs one second factor. `methods` lists the
+  account's active, usable second factors in the recommended presentation order: WebAuthn
+  security keys and passkeys first, TOTP second, Yubico OTP last. One failed attempt cancels the
+  pending sign-in.
+required: [methods, expiresAt]
+properties:
+  methods:
+    type: array
+    minItems: 1
+    items:
+      $ref: './SecondFactorMethod.yaml'
+  expiresAt:
+    type: string
+    format: date-time
+    description: Five minutes after the password step.

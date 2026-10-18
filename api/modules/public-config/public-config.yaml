@@ -1,0 +1,27 @@
+get:
+  operationId: getPublicConfig
+  tags: [Public configuration]
+  summary: Get the public configuration
+  description: |
+    Returns the branding, login page options and languages configured in mailcow's legacy UI.
+    No authentication is needed. Values are read from mailcow on every request, so a change saved
+    in the legacy UI is visible immediately; clients revalidate with `If-None-Match`.
+  security: []
+  parameters:
+    - name: If-None-Match
+      in: header
+      required: false
+      description: '`ETag` of a cached representation.'
+      schema:
+        type: string
+  responses:
+    '200':
+      $ref: '../../components/responses/PublicConfigResponse.yaml'
+    '304':
+      $ref: '../../components/responses/NotModified.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

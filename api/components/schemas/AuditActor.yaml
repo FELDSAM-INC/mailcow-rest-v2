@@ -1,0 +1,18 @@
+type: object
+description: |
+  Who acted. For a failed sign-in, `username` is the attempted username when one is known and
+  `role` may be `null`. `apiKeyId` is set when the request was authenticated by an API key.
+required: [username, role, apiKeyId]
+properties:
+  username:
+    oneOf:
+      - type: string
+      - type: 'null'
+  role:
+    oneOf:
+      - $ref: './Role.yaml'
+      - type: 'null'
+  apiKeyId:
+    oneOf:
+      - type: string
+      - type: 'null'

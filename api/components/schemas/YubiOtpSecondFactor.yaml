@@ -1,0 +1,13 @@
+type: object
+description: |
+  A Yubico OTP. The key is identified by the OTP's public ID among the account's active Yubico OTP
+  methods and verified against the Yubico service with the credentials stored in mailcow.
+required: [type, otp]
+properties:
+  type:
+    type: string
+    const: yubiOtp
+  otp:
+    type: string
+    pattern: '^[A-Za-z0-9]{44}$'
+    writeOnly: true

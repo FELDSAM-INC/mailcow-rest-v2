@@ -1,0 +1,15 @@
+description: One of the caller's passkeys.
+headers:
+  ETag:
+    description: Strong entity tag of the returned representation. Send it in `If-Match` when changing the resource.
+    required: true
+    schema:
+      type: string
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/Passkey.yaml'

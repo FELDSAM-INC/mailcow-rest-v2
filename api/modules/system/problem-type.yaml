@@ -1,0 +1,21 @@
+parameters:
+  - $ref: '../../components/parameters/ProblemTypeName.yaml'
+get:
+  operationId: getProblemTypeDocumentation
+  tags: [System]
+  summary: Problem type documentation
+  description: |
+    Human-readable documentation of a problem type, so that every documented `type` URI
+    dereferences on each installation. Rendered from `docs/problems.md`.
+  security: []
+  responses:
+    '200':
+      description: The documentation of this problem type.
+      content:
+        text/html:
+          schema:
+            type: string
+    '404':
+      $ref: '../../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

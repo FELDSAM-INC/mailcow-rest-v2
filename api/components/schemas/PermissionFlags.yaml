@@ -1,0 +1,67 @@
+type: object
+description: |
+  Effective permission flags, named after the columns of mailcow's `user_acl` and `da_acl` tables
+  in camelCase. An administrator has every flag. A domain administrator has every `user_acl` flag,
+  overridden by its own `da_acl` row where the names overlap (`syncjobs`, `quarantine`,
+  `appPasswds`, `pushover`, `spamPolicy`). A mailbox user has its `user_acl` row and `false` for
+  the flags that exist only in `da_acl`. This is the legacy `acl('to_session')` logic.
+required:
+  - spamAlias
+  - tlsPolicy
+  - spamScore
+  - spamPolicy
+  - delimiterAction
+  - syncjobs
+  - easReset
+  - sogoProfileReset
+  - pushover
+  - quarantine
+  - quarantineAttachments
+  - quarantineNotification
+  - quarantineCategory
+  - appPasswds
+  - pwReset
+  - loginAs
+  - sogoAccess
+  - bccMaps
+  - filters
+  - ratelimit
+  - extendSenderAcl
+  - unlimitedQuota
+  - protocolAccess
+  - smtpIpAccess
+  - aliasDomains
+  - mailboxRelayhost
+  - domainRelayhost
+  - domainDesc
+  - aliasExternalGoto
+properties:
+  spamAlias: {type: boolean, description: '`user_acl.spam_alias`'}
+  tlsPolicy: {type: boolean, description: '`user_acl.tls_policy`'}
+  spamScore: {type: boolean, description: '`user_acl.spam_score`'}
+  spamPolicy: {type: boolean, description: '`user_acl.spam_policy`, `da_acl.spam_policy`'}
+  delimiterAction: {type: boolean, description: '`user_acl.delimiter_action`'}
+  syncjobs: {type: boolean, description: '`user_acl.syncjobs`, `da_acl.syncjobs`'}
+  easReset: {type: boolean, description: '`user_acl.eas_reset`'}
+  sogoProfileReset: {type: boolean, description: '`user_acl.sogo_profile_reset`'}
+  pushover: {type: boolean, description: '`user_acl.pushover`, `da_acl.pushover`'}
+  quarantine: {type: boolean, description: '`user_acl.quarantine`, `da_acl.quarantine`'}
+  quarantineAttachments: {type: boolean, description: '`user_acl.quarantine_attachments`'}
+  quarantineNotification: {type: boolean, description: '`user_acl.quarantine_notification`'}
+  quarantineCategory: {type: boolean, description: '`user_acl.quarantine_category`'}
+  appPasswds: {type: boolean, description: '`user_acl.app_passwds`, `da_acl.app_passwds`'}
+  pwReset: {type: boolean, description: '`user_acl.pw_reset`'}
+  loginAs: {type: boolean, description: '`da_acl.login_as`'}
+  sogoAccess: {type: boolean, description: '`da_acl.sogo_access`'}
+  bccMaps: {type: boolean, description: '`da_acl.bcc_maps`'}
+  filters: {type: boolean, description: '`da_acl.filters`'}
+  ratelimit: {type: boolean, description: '`da_acl.ratelimit`'}
+  extendSenderAcl: {type: boolean, description: '`da_acl.extend_sender_acl`'}
+  unlimitedQuota: {type: boolean, description: '`da_acl.unlimited_quota`'}
+  protocolAccess: {type: boolean, description: '`da_acl.protocol_access`'}
+  smtpIpAccess: {type: boolean, description: '`da_acl.smtp_ip_access`'}
+  aliasDomains: {type: boolean, description: '`da_acl.alias_domains`'}
+  mailboxRelayhost: {type: boolean, description: '`da_acl.mailbox_relayhost`'}
+  domainRelayhost: {type: boolean, description: '`da_acl.domain_relayhost`'}
+  domainDesc: {type: boolean, description: '`da_acl.domain_desc`'}
+  aliasExternalGoto: {type: boolean, description: '`da_acl.alias_external_goto`'}

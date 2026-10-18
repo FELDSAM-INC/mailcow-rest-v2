@@ -1,0 +1,12 @@
+type: object
+required: [type, mailbox, domain]
+properties:
+  type:
+    type: string
+    const: mailbox
+  mailbox:
+    type: string
+    examples: [alice@example.org]
+  domain:
+    type: string
+    examples: [example.org]

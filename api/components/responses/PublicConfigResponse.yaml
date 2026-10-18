@@ -1,0 +1,21 @@
+description: The public configuration. Changes saved in the legacy UI are visible on the next request.
+headers:
+  ETag:
+    description: Strong entity tag of the returned representation. Send it in `If-Match` when changing the resource.
+    required: true
+    schema:
+      type: string
+  Cache-Control:
+    description: Always `no-cache`; revalidate with `If-None-Match`.
+    required: true
+    schema:
+      type: string
+      const: no-cache
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/PublicConfig.yaml'

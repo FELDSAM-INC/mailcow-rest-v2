@@ -1,0 +1,26 @@
+description: |
+  The caller is not authenticated. Possible types:
+  - `/api/v2/problems/unauthenticated`: no session and no API key, or the session ended (idle
+    timeout, sign-out, changed user agent, account deactivated or deleted).
+  - `/api/v2/problems/second-factor-required`: the session's sign-in still awaits a second factor.
+  - `/api/v2/problems/api-key-invalid`: the key matches no key, or its owner is inactive or deleted.
+  - `/api/v2/problems/api-key-expired`, `/api/v2/problems/api-key-revoked`.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'
+    examples:
+      unauthenticated:
+        value:
+          type: /api/v2/problems/unauthenticated
+          title: Authentication required
+          status: 401
+          detail: Sign in or send a valid API key.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736
+      apiKeyRevoked:
+        value:
+          type: /api/v2/problems/api-key-revoked
+          title: API key revoked
+          status: 401
+          detail: The API key was revoked and can no longer be used.
+          requestId: 4bf92f3577b34da6a3ce929d0e0e4736

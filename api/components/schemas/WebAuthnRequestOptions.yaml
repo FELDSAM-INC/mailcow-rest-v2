@@ -1,0 +1,33 @@
+type: object
+description: |
+  `PublicKeyCredentialRequestOptionsJSON` of WebAuthn Level 3. Pass it to
+  `PublicKeyCredential.parseRequestOptionsFromJSON()` and then to `navigator.credentials.get()`.
+required: [challenge, rpId, userVerification, allowCredentials, timeout]
+properties:
+  challenge:
+    $ref: './Base64Url.yaml'
+  rpId:
+    type: string
+    description: Host name serving the API and the web app.
+    examples: [mail.example.org]
+  timeout:
+    type: integer
+    minimum: 1
+    description: Milliseconds.
+  userVerification:
+    type: string
+    enum: [required, preferred, discouraged]
+    description: Follows mailcow's `FIDO2_UV_FLAG_LOGIN` (passkeys) or `WEBAUTHN_UV_FLAG_LOGIN` (second factor).
+  allowCredentials:
+    type: array
+    description: Empty for passkey sign-in (discoverable credentials); the account's WebAuthn second factors otherwise.
+    items:
+      $ref: './WebAuthnCredentialDescriptor.yaml'
+  extensions:
+    type: object
+    description: Client extension inputs. The second-factor challenge sets `appid` as legacy mailcow does.
+    properties:
+      appid:
+        type: string
+        format: uri
+    additionalProperties: true

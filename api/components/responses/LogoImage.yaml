@@ -1,0 +1,36 @@
+description: |
+  The logo image uploaded in the legacy UI, with the media type it was uploaded with (GIF, JPEG,
+  PNG or SVG). Responses with the `v` query parameter are cacheable for a year.
+headers:
+  ETag:
+    description: Strong entity tag of the image.
+    required: true
+    schema:
+      type: string
+  Cache-Control:
+    description: '`public, max-age=31536000, immutable` with a matching `v`, `no-cache` otherwise.'
+    required: true
+    schema:
+      type: string
+  Content-Security-Policy:
+    description: '`default-src ''none''; style-src ''unsafe-inline''; sandbox`, so that SVG logos cannot run scripts.'
+    required: true
+    schema:
+      type: string
+content:
+  image/png:
+    schema:
+      type: string
+      contentMediaType: image/png
+  image/jpeg:
+    schema:
+      type: string
+      contentMediaType: image/jpeg
+  image/gif:
+    schema:
+      type: string
+      contentMediaType: image/gif
+  image/svg+xml:
+    schema:
+      type: string
+      contentMediaType: image/svg+xml

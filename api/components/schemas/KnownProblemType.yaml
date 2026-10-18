@@ -1,0 +1,27 @@
+type: string
+format: uri-reference
+description: |
+  Problem types of this API that clients act on, documented in `docs/problems.md`. Responses use
+  plain `string` for `Problem.type`; this enumeration exists so that generated clients get
+  constants. Later features add values.
+enum:
+  - /api/v2/problems/validation-failed
+  - /api/v2/problems/unauthenticated
+  - /api/v2/problems/forbidden
+  - /api/v2/problems/csrf-token-mismatch
+  - /api/v2/problems/session-required
+  - /api/v2/problems/pending-action-required
+  - /api/v2/problems/too-many-requests
+  - /api/v2/problems/sign-in-failed
+  - /api/v2/problems/sign-in-expired
+  - /api/v2/problems/second-factor-required
+  - /api/v2/problems/second-factor-failed
+  - /api/v2/problems/second-factor-unavailable
+  - /api/v2/problems/temporary-verification-failure
+  - /api/v2/problems/passkey-registration-failed
+  - /api/v2/problems/api-key-invalid
+  - /api/v2/problems/api-key-expired
+  - /api/v2/problems/api-key-revoked
+  - /api/v2/problems/api-key-source-not-allowed
+  - /api/v2/problems/insufficient-key-scope
+  - /api/v2/problems/service-unavailable

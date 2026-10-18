@@ -1,0 +1,10 @@
+description: A newly created API key with its secret. The secret is shown only in this response.
+allOf:
+  - $ref: './ApiKey.yaml'
+  - type: object
+    required: [secret]
+    properties:
+      secret:
+        type: string
+        pattern: '^mcv2_[A-Za-z0-9]{40}$'
+        description: Send it in the `X-API-Key` header. Only its SHA-256 hash is stored.

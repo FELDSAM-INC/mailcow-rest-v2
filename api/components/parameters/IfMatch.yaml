@@ -1,0 +1,8 @@
+name: If-Match
+in: header
+required: false
+description: |
+  `ETag` from a previous read, or `*`. When it does not match the current representation, the
+  request fails with `412` and nothing changes.
+schema:
+  type: string

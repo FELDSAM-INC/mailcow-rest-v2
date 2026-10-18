@@ -1,0 +1,10 @@
+description: |
+  The registration was rejected. Possible types:
+  - `/api/v2/problems/passkey-registration-failed`: the registration options are missing, used
+    or expired, the authenticator response does not verify (challenge, origin, host name, user
+    verification, attestation format), or the credential is already registered.
+  - `about:blank`: the body is not valid JSON.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

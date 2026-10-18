@@ -1,0 +1,29 @@
+type: object
+description: |
+  A new API key. Keys cannot be edited: to change the access level, networks or expiry, create a
+  new key and revoke the old one.
+required: [name, ownerUsername, accessLevel]
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 255
+  ownerUsername:
+    type: string
+    maxLength: 255
+    description: An existing administrator or domain administrator. Mailbox users cannot own keys.
+  accessLevel:
+    $ref: './ApiKeyAccessLevel.yaml'
+  expiresAt:
+    description: Must be in the future. Omit or send `null` for a key that never expires.
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  allowedNetworks:
+    type: array
+    maxItems: 100
+    description: IPv4 or IPv6 addresses or prefixes. Omit or send an empty list to allow any address.
+    items:
+      type: string
+      maxLength: 49

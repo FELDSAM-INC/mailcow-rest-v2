@@ -1,0 +1,26 @@
+type: string
+description: |
+  Why an audited operation failed. Later features add values.
+
+  - `invalidCredentials`: unknown account, wrong password or malformed username.
+  - `accountInactive`: inactive account, inactive domain or resource mailbox.
+  - `externalIdentitySource`: the mailbox authenticates against LDAP or an OIDC provider.
+  - `unknownPasskey`, `passkeyInactive`, `roleMismatch`, `passkeyVerificationFailed`.
+  - `challengeExpired`: pending sign-in, challenge or registration options missing, used or expired.
+  - `secondFactorFailed`, `secondFactorUnavailable`, `verificationUnavailable` (Yubico service).
+  - `throttled`: refused by sign-in throttling without checking credentials.
+  - `registrationFailed`: the authenticator's registration response was rejected.
+enum:
+  - invalidCredentials
+  - accountInactive
+  - externalIdentitySource
+  - unknownPasskey
+  - passkeyInactive
+  - roleMismatch
+  - passkeyVerificationFailed
+  - challengeExpired
+  - secondFactorFailed
+  - secondFactorUnavailable
+  - verificationUnavailable
+  - throttled
+  - registrationFailed

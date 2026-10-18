@@ -1,0 +1,34 @@
+type: object
+description: |
+  `AuthenticationResponseJSON` of WebAuthn Level 3, as returned by
+  `PublicKeyCredential.prototype.toJSON()` after `navigator.credentials.get()`.
+required: [id, rawId, type, response]
+properties:
+  id:
+    $ref: './Base64Url.yaml'
+  rawId:
+    $ref: './Base64Url.yaml'
+  type:
+    type: string
+    const: public-key
+  response:
+    type: object
+    required: [clientDataJSON, authenticatorData, signature]
+    properties:
+      clientDataJSON:
+        $ref: './Base64Url.yaml'
+      authenticatorData:
+        $ref: './Base64Url.yaml'
+      signature:
+        $ref: './Base64Url.yaml'
+      userHandle:
+        oneOf:
+          - $ref: './Base64Url.yaml'
+          - type: 'null'
+  authenticatorAttachment:
+    oneOf:
+      - type: string
+      - type: 'null'
+  clientExtensionResults:
+    type: object
+    additionalProperties: true

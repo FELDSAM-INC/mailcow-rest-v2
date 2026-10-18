@@ -1,0 +1,23 @@
+post:
+  operationId: createSecondFactorWebAuthnChallenge
+  tags: [Authentication]
+  summary: Get a WebAuthn challenge for the pending sign-in
+  description: |
+    Issues a single-use WebAuthn challenge, bound to the pending sign-in, that allows the
+    account's active WebAuthn second factors. It expires after 5 minutes or at the first
+    verification attempt. A new request replaces the previous challenge. User verification
+    follows mailcow's `WEBAUTHN_UV_FLAG_LOGIN`, and `extensions.appid` is set as in legacy.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '200':
+      $ref: '../../components/responses/WebAuthnChallengeResponse.yaml'
+    '401':
+      $ref: '../../components/responses/SignInRejected.yaml'
+    '403':
+      $ref: '../../components/responses/SignInForbidden.yaml'
+    '409':
+      $ref: '../../components/responses/Conflict.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

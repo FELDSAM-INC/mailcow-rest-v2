@@ -1,0 +1,7 @@
+description: The representation matching `If-None-Match` is still current.
+headers:
+  ETag:
+    description: Strong entity tag of the current representation.
+    required: true
+    schema:
+      type: string

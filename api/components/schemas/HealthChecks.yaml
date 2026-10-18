@@ -1,0 +1,12 @@
+type: object
+description: Result of each readiness check.
+required: [database, schema, redis, migrations]
+properties:
+  database:
+    $ref: './HealthCheckStatus.yaml'
+  schema:
+    $ref: './HealthCheckStatus.yaml'
+  redis:
+    $ref: './HealthCheckStatus.yaml'
+  migrations:
+    $ref: './HealthCheckStatus.yaml'

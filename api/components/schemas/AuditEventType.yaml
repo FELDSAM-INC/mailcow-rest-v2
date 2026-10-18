@@ -1,0 +1,11 @@
+type: string
+description: Audited event. Later features add values; clients must tolerate unknown ones.
+enum:
+  - signIn
+  - signOut
+  - preferencesUpdate
+  - passkeyRegistration
+  - passkeyRename
+  - passkeyRemoval
+  - apiKeyCreation
+  - apiKeyRevocation

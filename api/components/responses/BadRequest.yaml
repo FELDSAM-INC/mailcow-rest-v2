@@ -1,0 +1,5 @@
+description: Malformed request, for example a body that is not valid JSON (type `about:blank`).
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

@@ -1,0 +1,12 @@
+description: |
+  Problem of type `/api/v2/problems/too-many-requests` (status `429`). The `Retry-After` header
+  carries the same value as `retryAfter`.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [retryAfter]
+    properties:
+      retryAfter:
+        type: integer
+        minimum: 1
+        description: Seconds until the next attempt will be considered.

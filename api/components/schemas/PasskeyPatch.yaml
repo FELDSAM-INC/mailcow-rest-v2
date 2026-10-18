@@ -1,0 +1,8 @@
+type: object
+description: JSON Merge Patch of a passkey. Only the display name can change.
+required: [name]
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 255

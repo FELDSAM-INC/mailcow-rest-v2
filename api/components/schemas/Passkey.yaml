@@ -1,0 +1,33 @@
+type: object
+description: |
+  A passkey of the signed-in account: a discoverable WebAuthn credential stored where legacy
+  mailcow stores FIDO2 credentials (table `fido2`), so it works in both UIs.
+required: [id, name, authenticatorDescription, registeredAt, hostName, active]
+properties:
+  id:
+    type: string
+    pattern: '^[0-9a-f]{64}$'
+    description: Non-secret identifier, the SHA-256 of the credential ID in hex (the legacy `cid`).
+  name:
+    oneOf:
+      - type: string
+        maxLength: 255
+      - type: 'null'
+    description: Display name chosen by the user (`fido2.friendlyName`), `null` when never set.
+  authenticatorDescription:
+    oneOf:
+      - type: string
+      - type: 'null'
+    description: |
+      Subject of the attestation certificate (`fido2.certificateSubject`), `null` when the
+      authenticator sent none. Legacy shows "Unknown" with the registration date in that case.
+  registeredAt:
+    type: string
+    format: date-time
+  hostName:
+    type: string
+    description: Host name the passkey is bound to (`fido2.rpId`). It only works on that host.
+    examples: [mail.example.org]
+  active:
+    type: boolean
+    description: Inactive passkeys cannot sign in (`fido2.active`).

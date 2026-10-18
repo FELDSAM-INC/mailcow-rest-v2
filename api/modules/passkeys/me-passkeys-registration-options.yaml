@@ -1,0 +1,21 @@
+post:
+  operationId: createPasskeyRegistrationOptions
+  tags: [Passkeys]
+  summary: Get passkey registration options
+  description: |
+    Issues single-use registration options bound to the session: a discoverable credential
+    (`residentKey: required`) for this host name, with the account's existing passkeys excluded.
+    They expire after 5 minutes or at the first registration attempt. A new request replaces the
+    previous options. Same access rules as `registerPasskey`.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+  responses:
+    '200':
+      $ref: '../../components/responses/PasskeyRegistrationOptionsResponse.yaml'
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'

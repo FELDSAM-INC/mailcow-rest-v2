@@ -1,0 +1,5 @@
+description: The `If-Match` header does not match the current representation (type `about:blank`). Nothing changed.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

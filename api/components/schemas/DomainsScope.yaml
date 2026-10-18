@@ -1,0 +1,12 @@
+type: object
+required: [type, domains]
+properties:
+  type:
+    type: string
+    const: domains
+  domains:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+      examples: [example.org]

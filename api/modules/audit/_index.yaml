@@ -1,0 +1,3 @@
+# Paths of the audit module: the authentication and key-management audit log.
+/audit-events:
+  $ref: './audit-events.yaml'

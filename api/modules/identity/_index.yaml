@@ -1,0 +1,5 @@
+# Paths of the identity module: the authenticated caller and its preferences.
+/me:
+  $ref: './me.yaml'
+/me/preferences:
+  $ref: './me-preferences.yaml'

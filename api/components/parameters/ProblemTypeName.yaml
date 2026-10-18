@@ -1,0 +1,8 @@
+name: problemType
+in: path
+required: true
+description: Last path segment of a documented problem type URI.
+schema:
+  type: string
+  pattern: '^[a-z0-9-]+$'
+  examples: [sign-in-failed]

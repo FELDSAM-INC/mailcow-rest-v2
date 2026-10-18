@@ -1,0 +1,20 @@
+type: object
+description: One enrolled second factor. Never contains secret material.
+required: [id, type, name, tier]
+properties:
+  id:
+    type: integer
+    minimum: 1
+    description: Identifier of the second factor (mailcow `tfa.id`).
+  type:
+    $ref: './SecondFactorType.yaml'
+  name:
+    type: string
+    description: Display name given at enrolment (mailcow `tfa.key_id`).
+    examples: [YubiKey 5C, Phone]
+  tier:
+    type: string
+    enum: [primary, advanced]
+    description: |
+      `primary` for `webauthn` and `totp`, offered directly. `advanced` for `yubiOtp`, offered
+      behind an "other methods" option.

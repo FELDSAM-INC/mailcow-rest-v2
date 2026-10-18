@@ -1,0 +1,5 @@
+type: string
+description: |
+  `ok`, or `failed`. For `schema`, `failed` means the mailcow database schema version
+  (`versions.db_schema`) is not one this release supports.
+enum: [ok, failed]

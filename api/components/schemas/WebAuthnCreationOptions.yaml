@@ -1,0 +1,73 @@
+type: object
+description: |
+  `PublicKeyCredentialCreationOptionsJSON` of WebAuthn Level 3. Pass it to
+  `PublicKeyCredential.parseCreationOptionsFromJSON()` and then to `navigator.credentials.create()`.
+required: [rp, user, challenge, pubKeyCredParams, timeout, excludeCredentials, authenticatorSelection, attestation]
+properties:
+  rp:
+    type: object
+    required: [id, name]
+    properties:
+      id:
+        type: string
+        examples: [mail.example.org]
+      name:
+        type: string
+  user:
+    type: object
+    required: [id, name, displayName]
+    properties:
+      id:
+        $ref: './Base64Url.yaml'
+      name:
+        type: string
+      displayName:
+        type: string
+  challenge:
+    $ref: './Base64Url.yaml'
+  pubKeyCredParams:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required: [type, alg]
+      properties:
+        type:
+          type: string
+          const: public-key
+        alg:
+          type: integer
+          description: COSE algorithm identifier (for example -7 for ES256, -257 for RS256).
+  timeout:
+    type: integer
+    minimum: 1
+    description: Milliseconds.
+  excludeCredentials:
+    type: array
+    description: Passkeys already registered to the account, so the authenticator refuses duplicates.
+    items:
+      $ref: './WebAuthnCredentialDescriptor.yaml'
+  authenticatorSelection:
+    type: object
+    required: [residentKey, requireResidentKey, userVerification]
+    properties:
+      authenticatorAttachment:
+        type: string
+        enum: [platform, cross-platform]
+      residentKey:
+        type: string
+        const: required
+      requireResidentKey:
+        type: boolean
+        const: true
+      userVerification:
+        type: string
+        enum: [required, preferred, discouraged]
+        description: Follows mailcow's `FIDO2_UV_FLAG_REGISTER`.
+  attestation:
+    type: string
+    enum: [none, indirect, direct, enterprise]
+    description: '`none` when mailcow''s `FIDO2_FORMATS` only allows `none`, `direct` otherwise.'
+  extensions:
+    type: object
+    additionalProperties: true

@@ -1,0 +1,9 @@
+description: Single-use registration options bound to the session.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '../schemas/PasskeyRegistrationOptions.yaml'

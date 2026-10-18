@@ -36,6 +36,13 @@
   Clarifications › Session 2026-10-18 and integrated into the requirements, edge cases, parity table
   and key entities. 74 functional requirements, numbered without gaps; every internal reference
   resolves. All items still pass (16/16).
+- Validation iteration 3 (2026-10-18, orchestrator follow-up after the UI 007 spec and
+  `docs/conventions.md`): webmail sign-ins refused while impersonating (FR-049, FR-054); default
+  permission flags readable through the account capabilities (FR-077), chosen over contract
+  defaults because they come from the server's schema; the legacy mass actions became bulk actions
+  per the conventions (FR-075, FR-076), replacing the earlier one-request-per-account decision.
+  77 functional requirements, numbered without gaps, every internal reference resolves, 13
+  clarifications. All items still pass (16/16).
 - Legacy table, column, file and setting names (`da_acl`, `da_sso`, `ALLOW_ADMIN_EMAIL_LOGIN`,
   `/api/v1`) appear only in the Input, the Legacy Coverage table, the parity table and as the legacy
   name of a flag or setting. They identify the parity surface, as in features 001 to 003, and do not

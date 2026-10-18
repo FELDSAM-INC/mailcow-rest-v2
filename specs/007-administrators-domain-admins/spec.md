@@ -102,18 +102,36 @@
   (FR-028, FR-029). (agent decision: legacy refuses unrelated edits of inactive administrators, lets
   an `/api/v1` key delete every administrator, and has no protection against concurrent requests, so
   two administrators can lock the server out.)
-- Q: Does the API offer batch operations for the legacy mass actions (activate, deactivate, disable
-  TFA, remove)? → A: No. The web app sends one request per account (FR-073). (agent decision: as in
-  feature 002. Account lists are short, each account gets its own outcome, version check and audit
-  record, and the last-administrator rule stays simple per request. A batch operation can be added
-  later without breaking clients.)
+- Q: Does the API offer bulk actions for the legacy mass actions of the administrator and domain
+  administrator lists (activate, deactivate, disable TFA, remove)? → A: Yes. One request applies one
+  of these actions to up to 100 accounts of one role, in the order given. Each account is
+  authorised, checked, processed and audited on its own, including the last-administrator and
+  own-account rules, and gets one result: done, not found, refused, outdated or failed. Each item
+  may carry its own version tag. Bulk actions on administrator accounts need a signed-in
+  administrator session. Creation, renames, passwords, domains and permission flags stay one account
+  per request (FR-073, FR-075, FR-076). (orchestrator decision: legacy offers these mass actions, so
+  the bulk pattern of `docs/conventions.md` applies. It replaces the earlier agent decision of one
+  request per account.)
 - Q: Is webmail login on behalf of a user part of this feature, and when is it allowed? → A: Yes.
-  With the operator setting `ALLOW_ADMIN_EMAIL_LOGIN` on (default off), administrators, and domain
+  With the server setting `ALLOW_ADMIN_EMAIL_LOGIN` on (default off), administrators, and domain
   administrators with `login_as`, obtain a single-use webmail sign-in for an eligible mailbox in
-  their scope, also from inside an impersonation. It uses feature 005's webmail single sign-on
-  hand-off and writes the legacy `SSO` recent-login entry (FR-054 to FR-056). (agent decision:
-  feature 003 assigns "webmail login on behalf of a user" to this feature, the roadmap assigns the
-  webmail single sign-on mechanism to feature 005, and the gating is legacy `sogo-auth.php`.)
+  their scope. It uses feature 005's webmail single sign-on hand-off and writes the legacy `SSO`
+  recent-login entry (FR-054 to FR-056). (agent decision: feature 003 assigns "webmail login on
+  behalf of a user" to this feature, the roadmap assigns the webmail single sign-on mechanism to
+  feature 005, and the gating is legacy `sogo-auth.php`.)
+- Q: May a caller who is acting as another account open a mailbox's webmail on the user's behalf? →
+  A: No. While a session is impersonating, every webmail sign-in is refused with the documented "not
+  allowed while impersonating" error: webmail on behalf of a user, and feature 005's own-webmail
+  hand-off for the impersonated mailbox (FR-049, FR-054). (orchestrator decision: the UI 007 spec
+  found the gap. A webmail sign-in obtained while acting would be a second identity hand-off inside
+  an impersonation, which the no-nesting rule excludes. Legacy allows it, so this is a deviation.)
+- Q: How does a client learn the default permission flags of a new domain administrator before it
+  creates one? → A: From an administrator-only read of the account capabilities, which returns the
+  defaults of the 19 flags as this server creates them, together with the bulk limit, the page
+  sizes, the username length limit and the token lifetime (FR-077). (orchestrator decision: the UI
+  007 spec found the gap. The defaults are the column defaults of the server's mailcow schema, which
+  can differ between the supported mailcow releases, so a read is chosen over defaults fixed in the
+  contract.)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -172,6 +190,13 @@ input, and sign in with each account in the legacy UI and through feature 001.
    their domains, in pages of at most the requested size, with the total.
 10. **Given** a domain administrator or a mailbox user, **When** they list, create, change or delete
     domain administrators, **Then** the request is refused as forbidden.
+11. **Given** three domain administrators selected in the list, one of which another administrator
+    changed after the list was loaded, **When** a client deactivates all three in one bulk request
+    with the version tags from the list, **Then** two are reported done and deactivated, the changed
+    one is reported outdated and left unchanged, and each deactivation has its own audit record
+    carrying the bulk request identifier.
+12. **Given** a bulk request naming 101 domain administrators, **When** it is submitted, **Then** it
+    is refused with a validation error that states the limit of 100.
 
 ---
 
@@ -197,14 +222,17 @@ UI and through the API (for example with login-as) that the change applies at th
 1. **Given** a new domain administrator, **When** an administrator reads its permissions, **Then**
    it receives all 19 flags with the legacy defaults (for example "login as mailbox user" on,
    "unlimited quota" off).
-2. **Given** a domain administrator with "login as mailbox user" on, **When** an administrator turns
+2. **Given** no domain administrator yet, **When** an administrator reads the account capabilities,
+   **Then** it receives the default value of each of the 19 flags exactly as this server would store
+   them for a new account, so that the creation form can pre-select them.
+3. **Given** a domain administrator with "login as mailbox user" on, **When** an administrator turns
    only that flag off, **Then** that flag is off, every other flag is unchanged, and the domain
    administrator's next login-as attempt is refused as forbidden.
-3. **Given** a request that names a flag that does not exist, **When** it is submitted, **Then** it
+4. **Given** a request that names a flag that does not exist, **When** it is submitted, **Then** it
    is refused with a validation error naming the flag, and nothing changes.
-4. **Given** a domain administrator, **When** they try to change their own flags, **Then** the
+5. **Given** a domain administrator, **When** they try to change their own flags, **Then** the
    request is refused as forbidden.
-5. **Given** two administrators who read the same domain administrator, **When** the first saves a
+6. **Given** two administrators who read the same domain administrator, **When** the first saves a
    flag change and the second saves with the version they read, **Then** the second save is refused
    as outdated.
 
@@ -298,6 +326,14 @@ operation with API keys and with other roles.
 8. **Given** a read-write API key owned by an administrator, **When** a client uses it to create,
    change or delete an administrator account, **Then** the request is refused as forbidden. **When**
    it lists administrators, **Then** the list is returned.
+9. **Given** three active administrators including the signed-in `alice`, **When** `alice`
+   deactivates all three in one bulk request, **Then** the first two in the request are reported
+   done, the last one is reported refused with the "last active administrator" error, and one
+   administrator stays active.
+10. **Given** a signed-in administrator, **When** they bulk-delete a list that includes their own
+    account, **Then** their own account is reported refused with the "cannot delete own account"
+    error, and the other accounts are processed. **When** the same bulk request is sent with an API
+    key, **Then** the whole request is refused as forbidden.
 
 ---
 
@@ -342,13 +378,15 @@ password change set, and check each outcome and audit record.
 
 On a server whose operator allows administrators to open users' webmail, an administrator, or a
 reseller with "login as mailbox user", opens the webmail of a mailbox in their scope directly from
-the mailbox list, or from inside an impersonation of that mailbox user, to check what the user sees.
+the mailbox list, to check what the user sees. While acting as another account, they cannot open
+any webmail; they return to their own account first.
 
 **Why this priority**: The operator setting is off by default, and only some installations use it.
 
 **Independent Test**: With the operator setting on and off, open the webmail of mailboxes inside and
 outside the caller's scope as an administrator, as domain administrators with and without the flag,
-and while impersonating, and check each outcome, the recent-login entry and the audit record.
+and while impersonating (refused), and check each outcome, the recent-login entry and the audit
+record.
 
 **Acceptance Scenarios**:
 
@@ -361,6 +399,10 @@ and while impersonating, and check each outcome, the recent-login entry and the 
    webmail access for a mailbox outside its domains, **Then** the response is "not found".
 4. **Given** the setting on, **When** a client with an API key requests webmail access on behalf of
    a user, **Then** the request is refused as forbidden.
+5. **Given** the setting on and `alice` impersonating `bob@a.example` or `reseller1`, **When** she
+   requests webmail access on behalf of any mailbox user, or the impersonated Bob's own webmail
+   hand-off (feature 005), **Then** the request is refused with the "not allowed while
+   impersonating" error, and no webmail sign-in or recent-login entry is created.
 
 ---
 
@@ -439,6 +481,17 @@ tokens.
   anti-forgery token, so a request prepared in another tab under the previous identity is refused
   instead of running as the wrong account.
 - **Ending an impersonation when none is active**: succeeds and changes nothing.
+- **Webmail while impersonating**: every webmail sign-in, on behalf of a user or the impersonated
+  mailbox's own, is refused with "not allowed while impersonating". (Legacy allows it, and even
+  starts dual login from the webmail link.)
+- **Bulk action naming an account twice, or an account of the other role**: the account is processed
+  once; an account of the other role is reported not found.
+- **Bulk deactivation or deletion that would remove every active administrator**: accounts are
+  processed in the order given, and the item that would leave none active is reported refused with
+  "last active administrator", as legacy's sequential processing does.
+- **Bulk action that the caller's role or key may never use** (any bulk action on administrator
+  accounts with an API key, any bulk action by a domain administrator): the whole request is refused
+  as forbidden.
 - **Restricted or pending session** (feature 001): cannot start an impersonation, issue a token or
   open webmail on behalf.
 - **Single sign-on token for an account deleted, renamed or deactivated after issue**: sign-in fails
@@ -493,6 +546,9 @@ tokens.
   | Create, change, rename, delete administrators; suspend their second factors | Yes, signed-in session only (FR-004) | Forbidden | Forbidden |
   | List and inspect domain administrators | Yes | Forbidden | Forbidden |
   | Create, change, rename, delete domain administrators; suspend their second factors | Yes | Forbidden | Forbidden |
+  | Bulk actions on administrators: activate, deactivate, suspend second factors, delete (FR-075) | Yes, signed-in session only, per account as the single operation | Forbidden | Forbidden |
+  | Bulk actions on domain administrators: activate, deactivate, suspend second factors, delete (FR-075) | Yes, per account as the single operation | Forbidden | Forbidden |
+  | Read the account capabilities, including the default permission flags (FR-077) | Yes (session or key) | Forbidden | Forbidden |
   | Read and change domain administrator permission flags | Yes | Forbidden (own flags readable through feature 001's identity) | Forbidden |
   | Issue a single sign-on token for a domain administrator | Yes | Forbidden | Forbidden |
   | Sign in with a single sign-on token (the token decides the account) | Any client, signed in or not (FR-060, FR-063) | Same | Same |
@@ -500,7 +556,7 @@ tokens.
   | Impersonate a domain administrator | Any domain administrator | Forbidden | Forbidden |
   | Impersonate an administrator | Never | Never | Never |
   | End an impersonation | The impersonating session | The impersonating session | The impersonating session |
-  | Open webmail on behalf of a mailbox user (operator setting on) | Any mailbox | With `login_as`: mailboxes of own domains | Forbidden (own webmail is feature 005) |
+  | Open webmail on behalf of a mailbox user (server setting on, never while impersonating) | Any mailbox | With `login_as`: mailboxes of own domains | Forbidden (own webmail is feature 005) |
   | Read the audit records of this feature | Yes | Forbidden | Forbidden |
 
 #### Account representation
@@ -566,8 +622,8 @@ tokens.
   a password and at least one domain, all required, and the optional values of FR-017. Each domain
   MUST be normalised as feature 002 does (FR-006 there) and MUST be an existing primary domain. Alias
   domain names and unknown names MUST be refused with a validation error naming each entry.
-  Duplicates MUST be merged. Initial permission flags MAY be given. Flags not given MUST get the
-  legacy defaults of FR-037.
+  Duplicates MUST be merged. Initial permission flags MAY be given. Flags not given MUST get this
+  server's defaults, the same values the account capabilities report (FR-077).
 - **FR-019**: A successful domain administrator creation MUST store, together or not at all:
   - the account with the domain administrator role;
   - one assignment per domain, with the account's status;
@@ -658,9 +714,10 @@ tokens.
 
 #### Domain administrator permission flags
 
-- **FR-037**: A domain administrator MUST have these 19 permission flags, with these defaults for a
-  new account (the database defaults of the supported schema). Each flag is enforced by the feature
-  named:
+- **FR-037**: A domain administrator MUST have these 19 permission flags. A new account MUST get the
+  defaults of the server's mailcow schema, the values legacy also stores for a new account; the
+  defaults below are those of the supported `2026-09a` schema, and clients read the server's actual
+  defaults through FR-077. Each flag is enforced by the feature named:
 
   | Flag (legacy name) | Meaning (legacy label) | Default | Enforced by |
   |---|---|---|---|
@@ -727,9 +784,11 @@ tokens.
 - **FR-049**: During an impersonation, operations that manage the signed-in account's own sign-in
   credentials MUST be refused with a documented "not allowed while impersonating" error: changing
   the password, registering, renaming or removing passkeys, enrolling or removing second factors,
-  and changing the recovery e-mail. This applies to the operations of features 001 and 005. Every
-  other operation follows the effective role, scope and flags of FR-046, including app passwords,
-  which legacy grants to impersonators through `app_passwds`.
+  and changing the recovery e-mail. The same error MUST refuse every webmail sign-in during an
+  impersonation: webmail on behalf of a user (FR-054) and feature 005's own-webmail hand-off for the
+  impersonated mailbox. This applies to the operations of features 001 and 005. Every other
+  operation follows the effective role, scope and flags of FR-046, including app passwords, which
+  legacy grants to impersonators through `app_passwds`.
 - **FR-050**: The impersonating session MUST be able to end the impersonation. The session MUST then
   act as the impersonator again, with the impersonator's original sign-in method, and the session
   identifier and the anti-forgery token MUST be renewed. Ending when no impersonation is active MUST
@@ -747,17 +806,19 @@ tokens.
 
 #### Webmail login on behalf of a user
 
-- **FR-054**: When the operator setting that allows administrators' webmail login
+- **FR-054**: When the server setting that allows administrators' webmail login
   (`ALLOW_ADMIN_EMAIL_LOGIN`, default off) is on, an administrator, or a domain administrator whose
   `login_as` flag is on, MUST be able to obtain a single-use webmail sign-in for a mailbox in their
-  scope. The same MUST be possible during an impersonation of that mailbox user, with the effective
-  flags of FR-046. The mailbox MUST be active and in an active domain, and webmail MUST be enabled on
-  the server. Otherwise the request MUST be refused with a validation error.
+  scope. The mailbox MUST be active and in an active domain, and webmail MUST be enabled on the
+  server. Otherwise the request MUST be refused with a validation error. A session that is
+  impersonating another account MUST NOT obtain one, whatever the target: the request MUST be
+  refused with the documented "not allowed while impersonating" error (FR-049), consistent with the
+  no-nesting rule of FR-043.
 - **FR-055**: The webmail sign-in MUST use the webmail single sign-on hand-off that feature 005
   specifies for a user's own webmail, applied to the target mailbox. It MUST record, for the target
   mailbox, the recent-login entry that legacy records for webmail single sign-on, and MUST NOT
   change the caller's session in this API.
-- **FR-056**: When the operator setting is off, the request MUST be refused with a documented
+- **FR-056**: When the server setting is off, the request MUST be refused with a documented
   "webmail login on behalf disabled" error. The identity of administrators and domain administrators
   (feature 001, FR-028 there) MUST state whether the setting is on, so that the web app shows the
   webmail button only when it works.
@@ -801,7 +862,8 @@ tokens.
 #### Audit
 
 - **FR-066**: Every request of this feature that changes state, or tries to, MUST write exactly one
-  audit record into feature 001's audit log, with the fields of FR-046 there and:
+  audit record per affected account into feature 001's audit log (one per item of a bulk action,
+  each carrying the bulk request identifier), with the fields of FR-046 there and:
   - the target type (administrator, domain administrator, single sign-on token or impersonation) and
     the target identifier;
   - the outcome, including refusals and their reason;
@@ -816,7 +878,7 @@ tokens.
   impersonated account, as legacy logs "impersonator => target".
 - **FR-068**: A token sign-in, successful or failed, MUST be audited as a sign-in (feature 001,
   FR-045 there) with the method "single sign-on token". Obtaining a webmail sign-in on behalf of a
-  user MUST be audited with the caller, the impersonator if any, and the target mailbox.
+  user, or being refused one, MUST be audited with the caller, the target mailbox and the outcome.
 - **FR-069**: Administrators MUST be able to filter the audit log by target type and target
   identifier (as in feature 002, FR-058 there) and by impersonated account, and MUST see in each
   record whether it was written during an impersonation.
@@ -828,16 +890,53 @@ tokens.
   cannot delete own account, already impersonating, impersonation ended, not allowed while
   impersonating, webmail login on behalf disabled, account inactive, and outdated version.
   Validation errors MUST use stable rule codes with their parameters, for example the allowed
-  characters and the length limits of FR-014 and each unmet password rule.
+  characters and the length limits of FR-014, each unmet password rule, and the bulk limit of
+  FR-075.
 - **FR-071**: Every operation MUST be described in the published API contract before it is
   implemented, and its behaviour MUST match the contract.
 - **FR-072**: Changes made through the legacy UI or `/api/v1` MUST be visible in the next response
   of this API.
-- **FR-073**: This feature MUST NOT offer batch operations. Each account is created, changed,
-  suspended and deleted with its own request, and the legacy mass actions become one request per
-  account.
+- **FR-073**: Bulk actions MUST be offered only as FR-075 and FR-076 define them. Creating, renaming,
+  changing passwords, forced flags, domains or permission flags, and issuing tokens MUST be one
+  account per request.
 - **FR-074**: Passwords, password hashes and single sign-on tokens MUST NOT appear in any log, audit
   record or response, apart from the token in its issue response (FR-059).
+
+#### Bulk actions
+
+- **FR-075**: Administrators MUST be able to apply one of these actions to up to 100 accounts of one
+  role in one request, as the legacy mass actions of the administrator and domain administrator
+  lists do: activate, deactivate, suspend second factors (FR-027), delete. Bulk actions on
+  administrator accounts MUST need a signed-in administrator session (FR-004); bulk actions on
+  domain administrator accounts MAY also use a read-write key owned by an administrator. A request
+  with more than 100 accounts MUST be refused with a validation error that states the limit.
+- **FR-076**: A bulk action MUST be refused as a whole only when the caller's role or key scope does
+  not allow the action at all (FR-004, FR-005). Otherwise:
+  - the accounts MUST be processed one by one, in the order given, each with the same checks, side
+    effects and audit record as a single request for it, including the last-administrator rule
+    (FR-028), the own-account rule (FR-029) and the deletion effects (FR-034);
+  - the response MUST report one result per distinct account: done, not found (also for an account
+    of the other role), refused (with the error type), outdated, or failed (with the error type);
+  - a failure on one account MUST NOT stop or undo the others, as in legacy;
+  - each item MAY carry the version tag the client read, for example from the list. An item whose
+    tag no longer matches MUST be reported outdated and left unchanged. Items without a tag MUST be
+    processed without a version check;
+  - an account named twice MUST be processed once.
+
+#### Account capabilities
+
+- **FR-077**: Administrators MUST be able to read the account capabilities, the server values a
+  client needs before it submits:
+  - the default value of each of the 19 permission flags for a new domain administrator, as this
+    server stores them (the column defaults of its mailcow schema, FR-037), so that clients can
+    pre-select them and send only the flags that differ;
+  - the defaults of a new account's status (active) and forced flags (off);
+  - the bulk limit (FR-075), the default and maximum page sizes (FR-010), the username length limit
+    (FR-014) and the single sign-on token lifetime (FR-059).
+
+  The read MUST reflect the server's current schema and configuration, MUST change nothing, and MAY
+  be used with a read-only key owned by an administrator. Domain administrators and mailbox users
+  MUST be refused as forbidden.
 
 ### Legacy Coverage
 
@@ -850,24 +949,26 @@ follows. Actions are `/api/v1` names; *form* marks legacy UI form handlers and s
 | `get/admin/all`, `get/admin/{username}`, *form* administrators table | `admin('get')`, `admin('details')`, `js/site/admin.js` (`draw_admins`) | FR-006, FR-008 to FR-011, FR-013 |
 | `edit/admin`, *form* "Edit administrator" page (username, password, active, forced flags) | `admin('edit')`, `edit/admin.twig` | FR-021, FR-022, FR-024 to FR-026, FR-028, FR-064, FR-065 |
 | `edit/admin` `disable_tfa`, *form* "Disable TFA until next successful login" | `UPDATE tfa SET active = 0` | FR-027 |
-| *form* administrators mass actions: activate, deactivate, disable TFA, remove | `tab-config-admins.twig` | FR-022, FR-027, FR-028, FR-030, FR-073 |
+| *form* administrators mass actions: activate, deactivate, disable TFA, remove | `tab-config-admins.twig`, `edit/admin` and `delete/admin` with several usernames | FR-075, FR-076, FR-077 |
 | `edit/admin` forced self password update branch (`pending_pw_update`) | `admin('edit')` | Not covered: feature 005 |
-| `delete/admin`, single and mass | `admin('delete')` | FR-028 to FR-030, FR-033, FR-034 |
-| `add/domain-admin`, *form* "Add domain administrator" modal | `domain_admin('add')`, `modals/admin.twig` | FR-014 to FR-020, FR-037 |
+| `delete/admin`, single and mass | `admin('delete')` | FR-028 to FR-030, FR-033, FR-034, FR-075, FR-076 |
+| `add/domain-admin`, *form* "Add domain administrator" modal | `domain_admin('add')`, `modals/admin.twig` | FR-014 to FR-020, FR-037, FR-077 |
 | `get/domain-admin/all`, `get/domain-admin/{username}`, *form* domain administrators table | `domain_admin('get' / 'details')`, `js/site/admin.js` (`draw_domain_admins`) | FR-007 to FR-013 |
 | `edit/domain-admin` as administrator, *form* "Edit domain administrator" page | `domain_admin('edit')` administrator branch, `edit/domainadmin.twig` | FR-021, FR-023 to FR-027, FR-064, FR-065 |
-| *form* domain administrators mass actions: activate, deactivate, disable TFA, remove | `tab-config-admins.twig` | FR-023, FR-027, FR-031, FR-073 |
+| *form* domain administrators mass actions: activate, deactivate, disable TFA, remove | `tab-config-admins.twig`, `edit/domain-admin` and `delete/domain-admin` with several usernames | FR-075, FR-076, FR-077 |
 | `edit/domain-admin` as domain administrator and `edit/self` (own password) | `domain_admin('edit')` domain administrator branch | Not covered: feature 005 |
-| `delete/domain-admin`, single and mass | `domain_admin('delete')` | FR-031 to FR-034 |
+| `delete/domain-admin`, single and mass | `domain_admin('delete')` | FR-031 to FR-034, FR-075, FR-076 |
 | Domain administrator deletion by domain deletion | `mailbox('delete', 'domain')` | FR-032 (triggered by feature 002) |
-| `edit/da-acl`, *form* ACL selector on the "Edit domain administrator" page | `acl('edit' / 'get', 'domainadmin')` | FR-037 to FR-041, FR-064, FR-065 |
+| `edit/da-acl`, *form* ACL selector on the "Edit domain administrator" page | `acl('edit' / 'get', 'domainadmin')` | FR-037 to FR-041, FR-064, FR-065, FR-073 |
+| `da_acl` column defaults applied to new domain administrators | `init_db.inc.php` | FR-037, FR-077 |
 | Effective permission flags per request, including during dual login | `acl('to_session')` | FR-002, FR-040, FR-046 |
 | `add/sso/domain-admin` | `domain_admin_sso('issue')` | FR-057 to FR-059 |
 | Token sign-in `/domainadmin?sso_token=` | `domain_admin_sso('check')`, `triggers.domainadmin.inc.php` | FR-060 to FR-063 (sign-in to this API); the legacy page keeps accepting tokens (FR-058) |
 | Login-as `?duallogin=`, "Login" buttons in the mailbox list and in the domain administrator list | `triggers.global.inc.php`, `js/site/mailbox.js`, `js/site/admin.js` | FR-042 to FR-049 |
 | Return from login-as (sign-out while dual), navbar entry "user (impersonator)" | `sessions.inc.php`, `base.twig` | FR-048, FR-050, FR-051 |
 | Logging of actions during login-as (`impersonator => target`) | `logger()` in `functions.inc.php` | FR-067 |
-| Webmail login on behalf: `sogo-auth.php?login=`, "SOGo" button in the mailbox list, webmail button during dual login | `sogo-auth.php`, `js/site/mailbox.js`, `user/tab-user-auth.twig` | FR-054 to FR-056, FR-068 |
+| Webmail login on behalf: `sogo-auth.php?login=` and the "SOGo" button in the mailbox list | `sogo-auth.php`, `js/site/mailbox.js` | FR-054 to FR-056, FR-068 |
+| Webmail button on the user page during dual login | `user/tab-user-auth.twig`, `sogo-auth.php` | FR-049, FR-054 (refused while impersonating) |
 | Forced password change and forced 2FA attributes (`force_pw_update`, `force_tfa`) | `admin.attributes` | FR-006, FR-017, FR-022 to FR-024 |
 | Password hashing and policy check | `hash_password()`, `password_check()` | FR-016, FR-026 |
 | Dangling domain administrator cleanup at PHP container start | `init_db.inc.php` | FR-012, FR-023, Edge Cases |
@@ -918,8 +1019,8 @@ This feature therefore has no fork-only behaviour.
 | Rename | Administrator: second factors renamed unless `disable_tfa` is set, passkeys not. Domain administrator: assignments re-created, permission record and second factors renamed, passkeys not. Tokens and sessions left | Second factors, passkeys, assignments, flags, API keys and preferences follow; tokens removed; other sessions end (FR-025). **Deviation** |
 | Delete side effects | Administrator: `admin`, `domain_admins`, `tfa`, `fido2` rows. Domain administrator: `domain_admins`, `admin`, `da_acl`, `tfa`, `fido2` rows; `da_sso` rows left | Same rows; also tokens removed, API keys revoked, sessions ended, preferences removed (FR-030, FR-031, FR-034). **Deviation** for the additions |
 | Domain administrator removed by a domain deletion | `admin` and orphaned `da_acl` rows only; `tfa` and `fido2` rows left | Full cascade (FR-032). **Deviation** |
-| Permission flags | Administrators only; the whole set is replaced (unsent flags off); unknown names ignored; several accounts per request; a missing record fails with "Cannot determine current ACL" | Administrators only; partial change; unknown names refused; one account per request; missing record handled (FR-038 to FR-041, FR-073). **Deviation** |
-| Flag defaults | Database defaults of `da_acl` | Same (FR-037) |
+| Permission flags | Administrators only; the whole set is replaced (unsent flags off); unknown names ignored; several accounts per request through `/api/v1` (no UI mass action); a missing record fails with "Cannot determine current ACL" | Administrators only; partial change; unknown names refused; one account per request; missing record handled (FR-038 to FR-041, FR-073). **Deviation** |
+| Flag defaults | Database defaults of `da_acl`, never shown before creation | Same defaults, readable before creation (FR-037, FR-077). **Deviation** (additive) |
 | Login-as start | `GET ?duallogin=<target>` without an anti-forgery check; needs the session's `login_as` (always on for administrators); not nested; a mailbox target is checked with `mailbox_details` (scope, resources excluded, status not checked); other targets with `domain_admin('details')`, which only administrators pass; session identifier kept; not logged | A state-changing request with the anti-forgery check and the same eligibility (FR-042 to FR-044); identifiers renewed (FR-045); audited (FR-067). **Deviation** for the request form, renewal and audit |
 | Effective flags during login-as | Recomputed per request from the impersonator: administrator → every flag on; domain administrator → mailbox user flags on, except the five overlapping ones, taken from the impersonator's record | Same (FR-046) |
 | Target's forced actions during login-as | Not applied | Same (FR-047) |
@@ -927,12 +1028,12 @@ This feature therefore has no fork-only behaviour.
 | Return from login-as | Sign-out while dual returns to the impersonator and clears the webmail single sign-on grants; session identifier kept; not logged | Own end operation with renewal and audit (FR-050, FR-067); sign-out ends the whole session (FR-051). **Deviation** |
 | Invalidated login-as | Never re-checked: the session keeps acting for a deleted target or after `login_as` is removed | Ends with an error on the detecting request, which is not carried out (FR-052). **Deviation** |
 | Logging | `logs` rows with user `impersonator => target` and role `role => role` | This API's audit log with actor and impersonated account, not the `logs` table (FR-067), as in feature 001. **Deviation** |
-| Webmail on behalf | `sogo-auth.php?login=`: needs `login_as` and `ALLOW_ADMIN_EMAIL_LOGIN`; scope check; refused with pending actions; adds the address to the session's webmail grant and starts dual login if none is active; `sasl_log` entry with service `SSO`; redirects to SOGo even for mailboxes that cannot use it | Same gating, scope and recent-login entry, through feature 005's hand-off; the caller's session is unchanged; ineligible mailboxes refused (FR-054 to FR-056). **Deviation** for the session and eligibility |
+| Webmail on behalf | `sogo-auth.php?login=`: needs `login_as` and `ALLOW_ADMIN_EMAIL_LOGIN`; scope check; refused with pending actions; allowed during dual login; adds the address to the session's webmail grant and starts dual login if none is active; `sasl_log` entry with service `SSO`; redirects to SOGo even for mailboxes that cannot use it | Same gating, scope and recent-login entry, through feature 005's hand-off; the caller's session is unchanged; ineligible mailboxes refused (FR-054 to FR-056); every webmail sign-in refused while impersonating (FR-049, FR-054). **Deviation** for the session, eligibility and impersonation |
 | Token issue | Administrator role (session or `/api/v1` key); the target needs an assignment row; status not checked; 5 × 6 hexadecimal characters; stored in `da_sso`; tokens older than 30 s deleted; success not logged | Administrator session or administrator read-write key; any domain administrator account, inactive refused; same format and storage (FR-057 to FR-059); audited (FR-066). **Deviation** for inactive targets and the audit |
 | Token sign-in | `/domainadmin?sso_token=`: active domain administrator, younger than 30 s, single use; session identifier regenerated; no second factor; forced actions not applied; not logged, not throttled, not reported to fail2ban | Same validity, single use across both UIs, no second factor, not reported to fail2ban (FR-060 to FR-063); forced actions applied, audited, throttled. **Deviation** |
 | Shared store, container service and groupware | Account, flag, token and login-as operations make no shared-store writes, container-service or groupware calls; the shared store is only read for the password policy and holds the PHP sessions | None added. The webmail hand-off is feature 005's |
 | Concurrent edits | Last write wins | Version tags (FR-064, FR-065). **Deviation** |
-| Mass actions | One request with a list of usernames | One request per account (FR-073). **Deviation** |
+| Mass actions | `edit/admin`, `edit/domain-admin`, `delete/admin` and `delete/domain-admin` take a list of usernames; processed one by one in order, continuing past failures with one message each; no limit, no version check | Bulk actions activate, deactivate, suspend second factors and delete: up to 100 accounts of one role, in order, one result per account, optional per-item version tags, one audit record per account (FR-075, FR-076). Other changes one account per request (FR-073). **Deviation** for the limit, results and version tags |
 
 ### Key Entities *(include if feature involves data)*
 
@@ -955,6 +1056,11 @@ This feature therefore has no fork-only behaviour.
   webmail, with a recent-login entry for that mailbox.
 - **API key and preferences** (owned by this API, feature 001): revoked or removed when their owner is
   deleted, carried over on rename.
+- **Account capabilities** (read-only view of the server): the default permission flags of a new
+  domain administrator, the defaults of a new account, the bulk limit, the page sizes, the username
+  length limit and the token lifetime.
+- **Bulk action result**: one outcome per account of a bulk request (done, not found, refused,
+  outdated or failed), with the error type where there is one.
 - **Audit record** (owned by this API, feature 001): extended with the target types of this feature,
   the attribute, domain and flag changes, and the impersonated account.
 
@@ -983,7 +1089,8 @@ This feature therefore has no fork-only behaviour.
   returned within 1 second on a server with 5,000 domain administrators and 5,000 domains.
 - **SC-009**: A scan of all audit records and service logs after the full test run finds no
   password, password hash or single sign-on token.
-- **SC-010**: 100% of changes sent with an outdated version tag are refused.
+- **SC-010**: 100% of changes sent with an outdated version tag are refused, and 100% of bulk items
+  with an outdated tag are reported outdated and left unchanged while the other items proceed.
 
 ## Assumptions
 
@@ -995,7 +1102,8 @@ This feature therefore has no fork-only behaviour.
 - The supported schema (`2026-09a`) has 19 domain administrator flags. The legacy inventory's "20"
   counts the username column. When upstream adds a flag, the contract gains it in a later release,
   and until then it keeps its database default.
-- `ALLOW_ADMIN_EMAIL_LOGIN` is read from the operator's existing mailcow configuration, default off.
+- `ALLOW_ADMIN_EMAIL_LOGIN` is an API server setting with the same name as legacy's, default off,
+  which the operator keeps aligned with legacy (`docs/conventions.md`).
 - The 30-second token lifetime is fixed, because the legacy domain administrator login enforces the
   same lifetime on the same tokens.
 - The legacy UI never sends version tags, so it can still overwrite changes made through this API.
@@ -1003,14 +1111,16 @@ This feature therefore has no fork-only behaviour.
   accounts appear only transiently.
 - Legacy UI sessions are independent of this API (constitution V): deactivating or deleting an
   account through this API ends its sessions here, while its legacy sessions follow legacy rules.
-- These defaults can be changed by the operator: the list page size (25, maximum 1,000).
+- These defaults can be changed by the operator: the list page size (25, maximum 1,000). The bulk
+  limit is 100, as `docs/conventions.md` sets it. The account capabilities (FR-077) report all of
+  them.
 - **Out of scope**:
   - own password, forced password change completion and second-factor enrolment (005);
   - mailbox, domain and alias management, which only use the scope and flags defined here (002 to
     004);
   - promoting a domain administrator to administrator, or the reverse, which legacy does not offer;
   - the legacy `/api/v1` keys and the `logs` table;
-  - batch operations.
+  - bulk changes other than the legacy mass actions (FR-073).
 - **Dependencies**:
   - the upstream mailcow database schema of the supported release;
   - feature 001 for identity, sessions, sign-in rules, API keys, preferences, errors and the audit

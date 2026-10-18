@@ -982,7 +982,7 @@ from a new session.
 
 ### Tests for User Story 3 (write first, observe failing) ⚠️
 
-- [ ] T076 [P] [US3] Write `tests/Feature/Identity/IdentityTest.php` for `getIdentity` (FR-028, FR-029):
+- [X] T076 [P] [US3] Write `tests/Feature/Identity/IdentityTest.php` for `getIdentity` (FR-028, FR-029):
   - AS-1: a domain admin with two active assignments and one inactive → `scope {type: domains,
     domains: [the two, sorted]}`, and flags per `da_acl`.
   - AS-2: a mailbox user → `scope {type: mailbox, mailbox, domain}`, and `user_acl` flags.
@@ -999,7 +999,11 @@ from a new session.
   - A pending sign-in → `401 second-factor-required`.
   - No session → `401 unauthenticated`.
   - Times are UTC.
-- [ ] T077 [P] [US3] Write `tests/Feature/Identity/PermissionFlagsTest.php`, an exhaustive matrix
+
+  *Implementation note*: `Identity` has no date-time member, so "times are UTC" has nothing to
+  check here (`signedInAt` is covered by T028). The FR-013 check compares every key outside
+  `restv2:`, with its value, before and after a sign-in, an identity read and a sign-out.
+- [X] T077 [P] [US3] Write `tests/Feature/Identity/PermissionFlagsTest.php`, an exhaustive matrix
   of `acl('to_session')` (R20):
   - admin → all 29 true;
   - domain admin with a `da_acl` row that has every value 0 → every `user_acl`-only flag true and
@@ -1009,7 +1013,11 @@ from a new session.
   - mailbox without a `user_acl` row → all false;
   - the overlapping flags `syncjobs`, `quarantine`, `appPasswds`, `pushover` and `spamPolicy`
     taken from `da_acl` for domain admins.
-- [ ] T078 [P] [US3] Write `tests/Feature/Identity/PreferencesTest.php` for `getPreferences` and
+
+  *Implementation note*: as R20 decides, a domain administrator without a `da_acl` row has every
+  `da_acl` flag off, the five overlapping ones included; legacy would leave those on (and warn).
+  Legacy always writes the row when it creates a domain administrator.
+- [X] T078 [P] [US3] Write `tests/Feature/Identity/PreferencesTest.php` for `getPreferences` and
   `updatePreferences` (FR-030, AS-3, AS-4):
   - The defaults are `DEFAULT_LANG` from the vars fixture (`cs-cz`) and `system`.
   - The body carries `etag`, equal to the `ETag` header. The tag covers the stored values, so it
@@ -1026,16 +1034,21 @@ from a new session.
 
 ### Implementation for User Story 3
 
-- [ ] T079 [P] [US3] Create `app/Services/Identity/Scope.php` (value object) and
+- [X] T079 [P] [US3] Create `app/Services/Identity/Scope.php` (value object) and
   `app/Services/Identity/IdentityService.php`. It computes the scope with the legacy query, the
   flags per R20 using `App\Auth\PermissionFlag`, and the pending actions, for a `Principal` from a
   session or a key.
-- [ ] T080 [P] [US3] Create
+- [X] T080 [P] [US3] Create
   `database/migrations/2026_10_18_000003_create_restv2_preferences_table.php` (columns and unique
   key of data-model.md), `app/Models/Preference.php` (`$table = 'restv2_preferences'`) and
   `app/Services/Preferences/PreferencesService.php` (effective values, upsert, `ETag`, audit in
   one transaction).
-- [ ] T081 [US3] Create `app/Http/Requests/Api/V2/UpdatePreferencesRequest.php`: body "at least one
+
+  *Implementation note*: the first update of an account inserts an empty row (`insertOrIgnore`),
+  which reads like no row, and then locks it, so that concurrent first updates serialise instead of
+  failing on the unique key. Only changed stored values are written and audited
+  (`details.changedFields`, documented in `docs/audit-events.md`).
+- [X] T081 [US3] Create `app/Http/Requests/Api/V2/UpdatePreferencesRequest.php`: body "at least one
   of language, theme"; `language` "string, max 16, `EnabledLanguage`"; `theme` "in light, dark,
   system"; `null` → `invalidType`. Create `app/Http/Resources/Api/V2/IdentityResource.php` and
   `PreferencesResource.php` (with `etag`), and `app/Http/Controllers/Api/V2/IdentityController.php` (`show`) and

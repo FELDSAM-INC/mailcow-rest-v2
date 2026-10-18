@@ -65,9 +65,6 @@
         }
     },
     "pendingOperations": [
-        "getIdentity",
-        "getPreferences",
-        "updatePreferences",
         "listApiKeys",
         "createApiKey",
         "listApiKeyOwnerCandidates",

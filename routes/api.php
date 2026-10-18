@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\V2\CsrfTokenController;
+use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\PasskeyAssertionController;
 use App\Http\Controllers\Api\V2\PasskeyChallengeController;
 use App\Http\Controllers\Api\V2\PasskeyController;
 use App\Http\Controllers\Api\V2\PasskeyRegistrationOptionsController;
 use App\Http\Controllers\Api\V2\PendingSignInController;
+use App\Http\Controllers\Api\V2\PreferencesController;
 use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SessionController;
@@ -46,6 +48,21 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     Route::delete('/session', [SessionController::class, 'destroy'])
         ->middleware(['restv2.auth:browser', 'restv2.csrf:live', 'restv2.pending:allow'])
         ->name('session.destroy');
+
+    // Who am I (FR-028): sessions and API keys, also in restricted sessions.
+    Route::get('/me', [IdentityController::class, 'show'])
+        ->middleware(['restv2.auth:authenticated', 'restv2.pending:allow'])
+        ->name('identity.show');
+
+    // The signed-in user's preferences (FR-030, FR-031).
+    Route::middleware('restv2.auth:session')->group(function (): void {
+        Route::get('/me/preferences', [PreferencesController::class, 'show'])
+            ->middleware('restv2.pending')
+            ->name('preferences.show');
+        Route::patch('/me/preferences', [PreferencesController::class, 'update'])
+            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->name('preferences.update');
+    });
 
     // The signed-in user's own passkeys (FR-052, FR-053). Registering is also allowed when the
     // only pending action is second-factor setup, which it resolves (FR-054).

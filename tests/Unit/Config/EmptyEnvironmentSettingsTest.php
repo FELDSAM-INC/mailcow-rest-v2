@@ -67,6 +67,12 @@ class EmptyEnvironmentSettingsTest extends TestCase
             ['restv2', 'RESTV2_IP_CHECK_IPV6_URL', 'ip_check.ipv6_url', 'http://ipv6.mailcow.email'],
             ['restv2', 'RESTV2_RSPAMD_SOCKET', 'rspamd.socket', '/var/lib/rspamd/rspamd.sock'],
             ['restv2', 'RESTV2_RSPAMD_TIMEOUT', 'rspamd.timeout', 30],
+            ['restv2', 'RESTV2_IDP_TIMEOUT', 'identity_provider.timeout', 7],
+            ['restv2', 'RESTV2_IDP_RETRY_AFTER', 'identity_provider.retry_after', 30],
+            ['restv2', 'RESTV2_SSO_PENDING_TTL', 'identity_provider.sso_pending_ttl', 600],
+            ['restv2', 'RESTV2_SSO_RENEWAL_INTERVAL', 'identity_provider.sso_renewal_interval', 300],
+            ['restv2', 'RESTV2_SSO_RETURN_PATH', 'identity_provider.sso_return_path', '/ng/sso/return'],
+            ['restv2', 'RESTV2_SSO_RETURN_SCHEME', 'identity_provider.sso_return_scheme', 'https'],
             // config/restv2.php: mailcow.conf names.
             ['restv2', 'MAILCOW_HOSTNAME', 'mailcow_hostname', null],
             ['restv2', 'ADDITIONAL_SERVER_NAMES', 'additional_server_names', ''],

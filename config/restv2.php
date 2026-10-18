@@ -182,11 +182,11 @@ return [
     */
     'routing' => [
         // Default sender and recipient of connection tests (legacy transport_check.php).
-        'test_sender' => env('RESTV2_ROUTING_TEST_SENDER', 'relay@example.org'),
-        'test_recipient' => env('RESTV2_ROUTING_TEST_RECIPIENT', 'null@hosted.mailcow.de'),
+        'test_sender' => Env::get('RESTV2_ROUTING_TEST_SENDER', 'relay@example.org'),
+        'test_recipient' => Env::get('RESTV2_ROUTING_TEST_RECIPIENT', 'null@hosted.mailcow.de'),
         // Seconds per network step of a connection test, and for the whole test (FR-042).
-        'test_step_timeout' => env('RESTV2_ROUTING_TEST_STEP_TIMEOUT', 15),
-        'test_total_timeout' => env('RESTV2_ROUTING_TEST_TOTAL_TIMEOUT', 60),
+        'test_step_timeout' => Env::get('RESTV2_ROUTING_TEST_STEP_TIMEOUT', 15),
+        'test_total_timeout' => Env::get('RESTV2_ROUTING_TEST_TOTAL_TIMEOUT', 60),
         // Seconds a write waits for a routing table's named lock (research R9); not a setting.
         'lock_timeout' => 10,
         // DNS lookups of a forwarding host's SPF evaluation (FR-076); fixed.

@@ -1181,3 +1181,6 @@ what exists map as listed.
   (docs/problems.md, `RoutingTemporaryFailure`); data-model.md's audit table names the `values`
   member of creation records.
 
+- **Settings after main's empty-environment fix**: the four `RESTV2_ROUTING_TEST_*` settings are
+  read through `App\Support\Config\Env::get` (an empty value means unset, docs/conventions.md
+  "Configuration") and are listed in `tests/Unit/Config/EmptyEnvironmentSettingsTest.php`.

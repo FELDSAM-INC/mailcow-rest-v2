@@ -18,7 +18,11 @@ use Illuminate\Support\Facades\DB;
  */
 class MailboxListQuery
 {
-    /** Contract sort value => SQL expression (`q` usage, `l` last mail login). */
+    /**
+     * Contract sort value => SQL expression (`q` is the joined usage record). The last mail login is
+     * a correlated subquery on the indexed `sasl_log.username`: a join with a grouped derived table
+     * would scan it once per mailbox.
+     */
     public const SORTS = [
         'address' => '`m`.`username`',
         'displayName' => '`m`.`name`',
@@ -28,7 +32,7 @@ class MailboxListQuery
         'quotaUsed' => 'COALESCE(`q`.`bytes`, 0)',
         'percentUsed' => 'CASE WHEN `m`.`quota` = 0 THEN NULL ELSE CAST(COALESCE(`q`.`bytes`, 0) AS DOUBLE) / `m`.`quota` END',
         'messageCount' => 'COALESCE(`q`.`messages`, 0)',
-        'lastMailLogin' => '`l`.`last_login`',
+        'lastMailLogin' => "(SELECT MAX(`l`.`datetime`) FROM `sasl_log` `l` WHERE `l`.`username` = `m`.`username` AND `l`.`service` IN ('imap', 'pop3', 'smtp'))",
         'passwordChangedAt' => "CASE WHEN JSON_VALUE(`m`.`attributes`, '$.passwd_update') REGEXP '^[0-9]+$' THEN FROM_UNIXTIME(JSON_VALUE(`m`.`attributes`, '$.passwd_update')) ELSE STR_TO_DATE(JSON_VALUE(`m`.`attributes`, '$.passwd_update'), '%Y-%m-%d %H:%i:%s') END",
         'createdAt' => '`m`.`created`',
         'modifiedAt' => '`m`.`modified`',
@@ -52,19 +56,9 @@ class MailboxListQuery
 
         if (in_array($list->sort, ['quotaUsed', 'percentUsed', 'messageCount'], true)) {
             $query->leftJoin(config('restv2.master') ? 'quota2 as q' : 'quota2replica as q', 'q.username', '=', 'm.username');
-        } elseif ($list->sort === 'lastMailLogin') {
-            if ($this->config->showLastLogin()) {
-                $query->leftJoinSub(
-                    DB::table('sasl_log')->whereIn('service', ['imap', 'pop3', 'smtp'])->groupBy('username')->select('username', DB::raw('MAX(`datetime`) AS `last_login`')),
-                    'l',
-                    'l.username',
-                    '=',
-                    'm.username',
-                );
-            } else {
-                // Last logins are not reported, so they cannot order the list either.
-                $expression = 'NULL';
-            }
+        } elseif ($list->sort === 'lastMailLogin' && ! $this->config->showLastLogin()) {
+            // Last logins are not reported, so they cannot order the list either.
+            $expression = 'NULL';
         }
 
         $direction = $list->order === 'desc' ? 'DESC' : 'ASC';

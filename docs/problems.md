@@ -390,8 +390,8 @@ extension members.
   [protocolAccess]`). A domain administrator choosing a setting their flags do not
   allow gets `attribute-not-permitted`, which for mailboxes also carries `requiredFlags` (refused
   member path → `PermissionFlags` name). A shared store, mail store or webmail outage is
-  `temporary-failure`, which for mailboxes also carries `dependency` (`sharedStore`, `mailStore` or
-  `webmail`) and, for a rename, `steps`. Keeping the old address as an alias on rename can give
+  `temporary-failure`, which for mailboxes also carries `dependency` (`sharedStore`, `mailStore`,
+  `webmail`, or `database` for a rename's database step) and, for a rename, `steps`. Keeping the old address as an alias on rename can give
   `domain-alias-limit-reached` (feature 004). Invalid input is `validation-failed`; the rule codes
   of feature 003 are listed in `ValidationRuleCode`.
 

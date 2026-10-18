@@ -4,7 +4,7 @@ description: |
   A deletion then removed no records and is safe to retry. A rename undid every step known to be
   done; `steps` shows which step is unknown.
 allOf:
-  - $ref: './Problem.yaml'
+  - $ref: './OutcomeUnknownProblem.yaml'
   - type: object
     required: [step]
     properties:

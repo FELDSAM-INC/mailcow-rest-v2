@@ -807,3 +807,5 @@ components:
       $ref: './components/schemas/KnownProblemType.yaml'
     PermissionFlagRequiredProblem:
       $ref: './components/schemas/PermissionFlagRequiredProblem.yaml'
+    OutcomeUnknownProblem:
+      $ref: './components/schemas/OutcomeUnknownProblem.yaml'

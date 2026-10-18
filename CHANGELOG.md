@@ -76,6 +76,29 @@ Contract changes made while implementing feature 002:
 
 Release checks of feature 002 (quickstart Part C: SC-001, SC-002, SC-003, SC-008): not run yet.
 
+Contract: the 16 operations of feature 003 (mailboxes, mailbox templates and the password policy
+read):
+
+- Mailboxes: `listMailboxes`, `createMailbox`, `getMailboxCapabilities`, `listMailboxTags`,
+  `applyMailboxBulkAction`, `getMailbox`, `updateMailbox`, `deleteMailbox`,
+  `previewMailboxDeletion`, `renameMailbox`.
+- Mailbox templates: `listMailboxTemplates`, `createMailboxTemplate`, `getMailboxTemplate`,
+  `updateMailboxTemplate`, `deleteMailboxTemplate`.
+- Password policy: `getPasswordPolicy` (feature 013 adds the change operation with the same tag).
+- `listAuditEvents`: `targetType=mailbox|mailboxTemplate` with `targetId`.
+
+Contract changes made while implementing feature 003:
+
+- `MailboxCapabilities.preHashedPasswordSchemes`, the exact list of hash-scheme prefixes stored as
+  given (G31), and `MailboxCapabilities.templateDefaults` (`MailboxTemplateDefaults`), the built-in
+  values of new mailboxes and templates (G32).
+- `OutcomeUnknownProblem`, shared by every `outcome-unknown` variant, declares `step` (G11);
+  `MailboxOutcomeUnknownProblem` extends it.
+- Every `503 temporary-failure` now carries `dependency` (`sharedStore` for mailcow's Redis; for
+  mailboxes also `mailStore`, `webmail` and `database`), additively.
+
+Release checks of feature 003 (quickstart Part C: SC-001, SC-003, SC-007, SC-008): not run yet.
+
 Contract: the 23 operations of feature 004 (aliases, alias domains, resources and sender settings):
 
 - Aliases: `listAliases`, `createAlias`, `applyAliasBulkAction` (activate, deactivate, show or hide

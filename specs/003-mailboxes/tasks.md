@@ -159,7 +159,7 @@ is complete.**
   connection holding the lock makes `GET_LOCK(name, 5)` time out and the caller answer `500`; the
   lock is released in `finally` when the guarded code throws; two different addresses do not block
   each other; `NamedLock` holds several locks on one connection (rename).
-- [ ] T016 [P] Write `tests/Feature/Audit/MailboxRefusalAuditTest.php` (`docs/conventions.md`
+- [X] T016 [P] Write `tests/Feature/Audit/MailboxRefusalAuditTest.php` (`docs/conventions.md`
   "Refusal auditing", FR-056, SC-010): for each of the eight state-changing operations
   (`createMailbox`, `updateMailbox`, `deleteMailbox`, `renameMailbox`, `applyMailboxBulkAction`,
   `createMailboxTemplate`, `updateMailboxTemplate`, `deleteMailboxTemplate`), a refusal by an
@@ -834,25 +834,25 @@ inject a failure into each step (spec US8).
 
 ## Phase 11: Polish and cross-cutting concerns
 
-- [ ] T086 [P] Write `tests/Feature/Security/MailboxAuthorizationMatrixTest.php` (as 002's
+- [X] T086 [P] Write `tests/Feature/Security/MailboxAuthorizationMatrixTest.php` (as 002's
   `DomainAuthorizationMatrixTest`) covering the 16 operations of this feature × {administrator session, domain-administrator session in scope and
   out of scope, mailbox-user session, restricted session, administrator ro and rw key,
   domain-administrator ro and rw key, no credentials}, asserting the status of each cell
   (constitution VI, SC-004).
-- [ ] T087 [P] Extend `tests/Feature/Security/SecretLeakScanTest.php` (001, SC-010, FR-060): after
+- [X] T087 [P] Extend `tests/Feature/Security/SecretLeakScanTest.php` (001, SC-010, FR-060): after
   the feature suite, no response body, audit record or log line contains any test password, any
   generated or pre-hashed hash, or the `password` column of any seeded mailbox.
-- [ ] T088 [P] Write `tests/Feature/Performance/MailboxListPerformanceTest.php` (SC-002, group
+- [X] T088 [P] Write `tests/Feature/Performance/MailboxListPerformanceTest.php` (SC-002, group
   `performance`): seed 10,000 mailboxes with usage, tags and logins in 500 domains by multi-row
   inserts; for pages of 100 with each filter, `q` and every sort, p95 under 1 s over 20 runs; pages
   of 1,000 under 5 s. Also SC-009: a bulk `deactivate` of 100 mailboxes completes within 10 s and a
   bulk `delete` of 100 (fake container API answering at once) within 60 s, each with exactly 100
   results.
-- [ ] T089 [P] Write `tests/Feature/Mailboxes/MailboxAuditCompletenessTest.php` (SC-010): run one
+- [X] T089 [P] Write `tests/Feature/Mailboxes/MailboxAuditCompletenessTest.php` (SC-010): run one
   successful and one refused request of every state-changing operation (and a bulk action with
   three targets) and assert exactly one audit record per affected mailbox or template, with the
   right event type, target and outcome.
-- [ ] T090 [P] Extend `database/seeders/DevelopmentSeeder.php` with the Default mailbox template
+- [X] T090 [P] Extend `database/seeders/DevelopmentSeeder.php` with the Default mailbox template
   (as `init_db.inc.php` seeds it), the template "Small" and the mailbox limits of quickstart Part B.
 - [ ] T091 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
   `composer contract:lint`; confirm `build/contract/coverage.json` lists all 16 operations of this
@@ -1022,3 +1022,15 @@ what exists map as listed.
   partial changes (an ACL delete or set in the middle of its list) is `undoFailed`. The new local
   part is validated (`422`) before the address locks are taken, because the locks name the new
   address; `ignore_user_abort()`/`set_time_limit(0)` are set by the renamer after the preflight.
+- **T016** was written with the polish phase, once every route existed; it passes against the
+  shared refusal auditing as built in Phase 2.
+- **T087**: the mailbox flows are scanned by their own `tests/Feature/Security/MailboxSecretsTest.php`
+  (as 002's `DomainSecretsTest`), instead of growing 001's single-flow `SecretLeakScanTest`.
+- **T088**: each of the 18 query shapes is timed three times (54 pages of 100; p95 under 1 s), the
+  pages of 1,000 three times; the bulk timings run with the groupware disabled, as in 002's latency
+  test. Sorting by `lastMailLogin` uses an indexed correlated subquery: the grouped derived-table
+  join of research R10 took 13 s on 10,000 mailboxes.
+- **T090**: the dev seed's `reseller` lacks `protocol_access`, and example.org has room for 10
+  mailboxes and 5 GiB, as quickstart Part B expects.
+- **G11** (shared with 011): the shared `OutcomeUnknownProblem` declares `step`; 011's response
+  still has to reference it.

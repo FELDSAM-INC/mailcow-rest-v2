@@ -31,5 +31,12 @@ class DevelopmentSeederTest extends TestCase
         $this->assertSame('JBSWY3DPEHPK3PXP', DB::table('tfa')->where('username', 'alice@example.org')->value('secret'));
         $this->assertSame('1', json_decode((string) DB::table('mailbox')->where('username', 'bob@example.org')->value('attributes'), true)['force_pw_update']);
         $this->assertStringStartsWith('{BLF-CRYPT}', (string) DB::table('admin')->where('username', 'admin')->value('password'));
+
+        // Feature 003 T090: the mailbox templates and limits of quickstart Part B.
+        $this->assertSame(['Default', 'Small'], DB::table('templates')->where('type', 'mailbox')->orderBy('template')->pluck('template')->all());
+        $small = json_decode((string) DB::table('templates')->where('type', 'mailbox')->where('template', 'Small')->value('attributes'), true);
+        $this->assertSame([1073741824, 0, 1], [$small['quota'], $small['pop3_access'], $small['acl_syncjobs']]);
+        $this->assertSame([10, 5120], [(int) DB::table('domain')->where('domain', 'example.org')->value('mailboxes'), (int) DB::table('domain')->where('domain', 'example.org')->value('quota')]);
+        $this->assertSame(0, (int) DB::table('da_acl')->where('username', 'reseller')->value('protocol_access'));
     }
 }

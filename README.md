@@ -111,8 +111,10 @@ the upstream default otherwise; a non-empty `RESTV2_<NAME>` always wins (arrays 
 `RESTV2_FIDO2_UV_FLAG_REGISTER`, `RESTV2_FIDO2_UV_FLAG_LOGIN`, `RESTV2_FIDO2_USER_PRESENT_FLAG`,
 `RESTV2_FIDO2_FORMATS`, `RESTV2_WEBAUTHN_UV_FLAG_LOGIN`, `RESTV2_WEBAUTHN_USER_PRESENT_FLAG`,
 `RESTV2_OTP_LABEL`, `RESTV2_MAILCOW_APPS`, `RESTV2_TAGGING_LIMIT` (25), `RESTV2_DOCKER_TIMEOUT`
-(60 seconds) and `RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS` (`false`; `true` refuses external alias
-destinations for every role, administrators included, feature 004).
+(60 seconds), `RESTV2_SHOW_LAST_LOGIN` (`true`), `RESTV2_MAILBOX_DEFAULT_ATTRIBUTES` (merged over the
+upstream defaults of new mailboxes, feature 003) and `RESTV2_ALIAS_DISABLE_EXTERNAL_DOMAINS`
+(`false`; `true` refuses external alias destinations for every role, administrators included,
+feature 004).
 
 Domains (feature 002) and the DKIM keys of new domains (feature 010's DKIM core) also use
 `COMPOSE_PROJECT_NAME` from `mailcow.conf` (to find mailcow's containers) and these settings:
@@ -134,6 +136,20 @@ password set. The API container must reach `dockerapi:443` and `memcached:11211`
 `mailcow-network` (it joins it through the override) and, for the publication, the ISPConfig
 server. `RESTV2_FAKE_OUTBOUND=y` replaces dockerapi, memcached and ISPConfig with stand-ins in the
 dev stack only (`APP_ENV=local`); it is ignored everywhere else.
+
+Mailboxes (feature 003) also use these `mailcow.conf` variables: `MAILCOW_PASS_SCHEME` (hash scheme
+of new passwords, `BLF-CRYPT` by default, or `SSHA`, `SSHA256`, `SSHA512`), `MAILDIR_GC_TIME`
+(minutes the mail of a deleted mailbox stays in the garbage area, 7200), `CLUSTERMODE`
+(`replication`: maildir moves are confirmed on this node and broadcast to every mail node) and
+`MASTER` (`y`: usage figures from `quota2`, otherwise from `quota2replica`), and these settings:
+
+| Variable | Default | Meaning | FeldHost |
+|---|---|---|---|
+| `RESTV2_BULK_LIMIT` | `100` | Targets per mailbox bulk action (1 to 100) | |
+| `RESTV2_MAILBOX_CUSTOM_ATTRIBUTE_LIMIT` | `100` | Custom attributes per mailbox (1 to 100) | |
+
+A mailbox rename or a bulk deletion can make several container calls of up to `DOCKER_TIMEOUT` each;
+`deploy/nginx/site.restv2.custom` therefore allows FastCGI answers of up to 900 seconds.
 
 ## Development
 

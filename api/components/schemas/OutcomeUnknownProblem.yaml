@@ -1,0 +1,13 @@
+description: |
+  Problem of type `/api/v2/problems/outcome-unknown` (status `504`, G11): mailcow's container service
+  did not answer within its timeout (`DOCKER_TIMEOUT`, 60 seconds), so the outcome of one step is
+  unknown. Shared by every feature that calls the container service; each feature's variant extends
+  this schema and documents its step names.
+allOf:
+  - $ref: './Problem.yaml'
+  - type: object
+    required: [step]
+    properties:
+      step:
+        type: string
+        description: The step or action whose outcome is unknown.

@@ -54,35 +54,51 @@ docker compose run --rm app vendor/bin/phpunit --group idp
 ## Part B: Manual end-to-end checks against the dev stack
 
 ```bash
-docker compose --profile idp up -d          # adds openldap (:389, :636) and keycloak (:8081)
+docker compose --profile idp up -d          # adds openldap (no host port) and keycloak (http://localhost:8081)
 docker compose run --rm app scripts/dev/reset-dev-database.sh
 ```
 
 The `idp` profile loads `tests/fixtures/ldap/bootstrap.ldif` into OpenLDAP
 (`dc=example,dc=org`, bind DN `cn=admin,dc=example,dc=org`, password `ldap-secret`; users
 `carl@example.org` with `title: staff` and `dana@example.org`, password `Passw0rd!dev`). Keycloak
-(admin `admin`/`admin`) needs one manual setup at `http://localhost:8081`: realm `example`, client
-`mailcow` (confidential, standard flow, service account with `view-users`, secret `kc-secret`),
-valid redirect URI `http://localhost:8080/ng/sso/return`, user `anna@example.org` with the attribute
-`mailcow_template` = `staff` and a `mailcow_template` mapper on the `profile` scope. The dev stack
-sets `RESTV2_SSO_RETURN_SCHEME=http`.
+(admin `admin`/`admin`) imports `docker/keycloak/example-realm.json` on its first start (API gap
+G21), so it needs no manual setup: realm `example`, confidential client `mailcow` (secret
+`kc-secret`, standard flow, service account with `view-users`, a `mailcow_template` claim in the
+`profile` scope), the redirect URIs `http(s)://localhost/*` and the dev stack's published ports, and
+the user `anna@example.org` (password `Passw0rd!dev`, `mailcow_template` = `staff`). The import
+skips a realm that already exists: after changing the JSON, recreate the container
+(`docker compose --profile idp up -d --force-recreate keycloak`). The API reaches both providers by
+their service names (`openldap`, `http://keycloak:8080`).
+
+The session cookie is always Secure, so the API is called over the HTTPS listener (`-k`, see 001's
+quickstart). The mailbox template "Staff" is created with `POST /mailbox-templates` (feature 003);
+while that operation is still pending, insert it directly:
 
 ```bash
-B=http://localhost:8080/api/v2; J='-H Content-Type:application/json'; C='-c jar -b jar'
+docker compose exec mariadb mariadb -u mailcow -pmailcow mailcow -e "INSERT INTO templates (template, type, attributes)
+  VALUES ('Staff', 'mailbox', '{\"quota\":2147483648,\"tags\":[\"staff\"],\"active\":1,\"force_pw_update\":0,\"force_tfa\":0,
+  \"sogo_access\":1,\"imap_access\":1,\"pop3_access\":1,\"smtp_access\":1,\"sieve_access\":1,\"eas_access\":1,\"dav_access\":1,
+  \"tls_enforce_in\":0,\"tls_enforce_out\":0,\"quarantine_notification\":\"hourly\",\"quarantine_category\":\"reject\",
+  \"rl_value\":\"\",\"rl_frame\":\"s\"}')"
+```
+
+```bash
+B=https://127.0.0.1:18443/api/v2; J='-H Content-Type:application/json'; C='-k -c jar -b jar'; C2='-k -c jar2 -b jar2'
 T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session -d '{"username":"admin","password":"Passw0rd!dev"}' >/dev/null
-# Create the mailbox template "Staff" first (feature 003, POST /mailbox-templates).
 
 # US1: no configuration yet; the capabilities already list the return addresses to register.
 curl -s $C $B/identity-provider | jq .type             # ".../identity-provider-not-configured"
 curl -s $C $B/capabilities/identity-provider | jq '.data | {configured, appReturnUrls, defaults}'
+#   appReturnUrls: ["https://localhost/ng/sso/return"] (http with RESTV2_SSO_RETURN_SCHEME=http)
 curl -s $C $B/capabilities/oauth2-clients | jq '.data | {endpoints, accessTokenLifetimeSeconds}'
 
 # US1: test unsaved LDAP settings with a wrong bind password, then the right one.
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/identity-provider/connection-tests -d '{
   "type":"ldap","hosts":["openldap"],"baseDn":"dc=example,dc=org",
-  "bindDn":"cn=admin,dc=example,dc=org","bindPassword":"wrong"}' | jq '.data | {outcome, failureCategory}'
-#   -> {"outcome":"failure","failureCategory":"credentialsRejected"}
+  "bindDn":"cn=admin,dc=example,dc=org","bindPassword":"wrong"}' | jq '.data | {outcome, failureCategory, providerStatus}'
+#   -> {"outcome":"failure","failureCategory":"credentialsRejected","providerStatus":49}
+#   With "bindPassword":"ldap-secret": "outcome":"success".
 
 # US1: save the LDAP configuration (201), then read it: no secret, only bindPasswordSet.
 curl -s -i $C $J -H "X-CSRF-Token: $T" -X PUT $B/identity-provider -d '{
@@ -95,21 +111,25 @@ curl -s $C $B/identity-provider | grep -c ldap-secret   # 0
 # US1: change the hosts without the password -> secretRequired.
 curl -s $C -H 'Content-Type: application/merge-patch+json' -H "X-CSRF-Token: $T" -X PATCH $B/identity-provider \
   -d '{"hosts":["ldap.example.net"]}' | jq '.errors.bindPassword[0] | {code, params}'
+#   -> {"code":"secretRequired","params":{"reason":"addressChanged","field":"hosts"}}
 
 # US3: password sign-in of a directory user without a mailbox -> mailbox created from "Staff".
-T2=$(curl -s -c jar2 -b jar2 $B/csrf-token | jq -r .data.token)
-curl -s -c jar2 -b jar2 $J -H "X-CSRF-Token: $T2" -X POST $B/session \
+T2=$(curl -s $C2 $B/csrf-token | jq -r .data.token)
+curl -s $C2 $J -H "X-CSRF-Token: $T2" -X POST $B/session \
   -d '{"username":"carl@example.org","password":"Passw0rd!dev"}' | jq '.data | {state, authMethod}'
-#   -> {"state":"active","authMethod":"directoryPassword"}
+#   -> {"state":"active","authMethod":"directoryPassword"}; the mailbox has authsource ldap,
+#      name "Carl Example" and the template's 2 GiB quota.
 
-# US3: provider stopped -> 503, no fail2ban message.
+# US3: provider stopped -> 503 with Retry-After: 30, no fail2ban message.
 docker compose stop openldap
-curl -s -c jar2 -b jar2 $J -H "X-CSRF-Token: $T2" -X POST $B/session \
+T2=$(curl -s $C2 $B/csrf-token | jq -r .data.token)
+curl -s $C2 $J -H "X-CSRF-Token: $T2" -X POST $B/session \
   -d '{"username":"carl@example.org","password":"Passw0rd!dev"}' | jq .type   # ".../identity-provider-unavailable"
 docker compose start openldap
 
 # US1: deletion refused while LDAP mailboxes exist.
 curl -s $C -H "X-CSRF-Token: $T" -X DELETE $B/identity-provider | jq '{type, blockingMailboxes, mailboxCounts}'
+#   -> mailboxCounts {"keycloak":0,"genericOidc":0,"ldap":1}
 
 # US4: OAuth2 clients.
 CL=$(curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/oauth2-clients \
@@ -120,27 +140,70 @@ curl -s $C $B/oauth2-clients/$ID | jq '.data | has("clientSecret")'   # false
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/oauth2-clients/bulk-actions \
   -d "{\"action\":\"revokeTokens\",\"targets\":[{\"id\":\"$ID\"},{\"id\":\"999999\"}]}" | jq '.data.summary'
 #   -> done 1, notFound 1
+curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/oauth2-clients/bulk-actions \
+  -d "{\"action\":\"renewSecret\",\"targets\":[{\"id\":\"$ID\"}]}" | jq '.data.results[0] | {outcome, clientSecret}'
+#   -> the new secret, shown once (G42)
 
 # US5: audit trail.
 curl -s $C "$B/audit-events?targetType=identityProvider&limit=5" | jq '.data[] | {eventType, outcome, details}'
-curl -s $C "$B/audit-events?eventType=signIn&limit=5" | jq '.data[] | {eventType, authMethod, outcome, failureReason}'
+curl -s $C "$B/audit-events?eventType=signIn&authMethod=directoryPassword&limit=5" | jq '.data[] | {eventType, authMethod, outcome, failureReason}'
 ```
 
-**Single sign-on (US2)** needs a browser, because the provider's pages must be used. Switch the
-configuration to Keycloak (`PUT /identity-provider` with `type: keycloak`, server URL
-`http://keycloak:8080`, realm `example`, client `mailcow`, secret `kc-secret`, version `26.0.7`,
-legacy return URL `http://localhost:8080/`) after deleting or switching the LDAP mailboxes, then:
+**Single sign-on (US2).** Switch the configuration to Keycloak after switching the LDAP mailboxes
+back to mailcow (`UPDATE mailbox SET authsource='mailcow' WHERE authsource='ldap'`, or delete
+them), and test it first:
 
-1. `GET /public-config` reports `externalIdentityProvider.singleSignOnAvailable: true`.
-2. In the browser console on `http://localhost:8080/api/v2/docs`, call `POST /session/single-sign-on`
-   with the CSRF token and open `data.authorizationUrl`. Sign in as `anna@example.org`.
-3. Keycloak returns to `/ng/sso/return?code=…&state=…`. Without the UI, copy both values and call
-   `POST /session/single-sign-on/completion` from the same browser tab's console. Expect `201`,
-   `state: active`, `authMethod: singleSignOn`, and a new mailbox `anna@example.org` from "Staff".
-4. Repeat, but press "Cancel" at Keycloak; report `error` and `state` to
-   `POST /session/single-sign-on/provider-error`: `204`, and the audit log shows
-   `providerReturnedError` with `details.providerError: access_denied`.
-5. Disable `anna` in Keycloak, wait 5 minutes, call `GET /me`: `401 identity-provider-session-ended`.
+```bash
+curl -s $C $J -H "X-CSRF-Token: $T" -X PUT $B/identity-provider -d '{
+  "type":"keycloak","serverUrl":"http://keycloak:8080","realm":"example","clientId":"mailcow",
+  "clientSecret":"kc-secret","version":"26.0.7","legacyReturnUrl":"http://localhost/","mailpasswordFlow":true,
+  "attributeMapping":[{"attributeValue":"staff","template":"Staff"}]}' | jq .data.complete     # true
+curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/identity-provider/connection-tests -d '{
+  "type":"keycloak","serverUrl":"http://keycloak:8080","realm":"example","clientId":"mailcow",
+  "version":"26.0.7","legacyReturnUrl":"http://localhost/"}' | jq .data.outcome                 # "success"
+curl -s -k $B/public-config | jq .data.externalIdentityProvider.singleSignOnAvailable           # true
+```
+
+The authorization address points at `http://keycloak:8080`, which only the containers resolve, so
+the provider's pages are used from inside the `app` container. Keycloak sends its cookies without a
+domain, so the login form is posted with them by hand:
+
+```bash
+docker compose exec app bash
+B=https://localhost/api/v2; CT='--connect-to localhost:443:web:443'; C="-sk $CT -c /tmp/jar -b /tmp/jar"
+T=$(curl $C $B/csrf-token | jq -r .data.token)
+URL=$(curl $C -H "X-CSRF-Token: $T" -X POST $B/session/single-sign-on | jq -r .data.authorizationUrl)
+curl -s -i "$URL" > /tmp/kc-page
+CK=$(grep -i '^set-cookie' /tmp/kc-page | sed -E 's/^[Ss]et-[Cc]ookie: ([^;]*).*/\1/' | tr -d '\r' | paste -sd';' -)
+FORM=$(grep -o 'action="http[^"]*authenticate[^"]*"' /tmp/kc-page | head -1 | sed 's/action="//; s/"$//; s/&amp;/\&/g')
+LOC=$(curl -s -o /dev/null -w '%{redirect_url}' -H "Cookie: $CK" \
+  --data-urlencode 'username=anna@example.org' --data-urlencode 'password=Passw0rd!dev' "$FORM")
+echo "$LOC"           # https://localhost/ng/sso/return?state=…&code=…
+CODE=$(php -r 'parse_str(parse_url($argv[1], PHP_URL_QUERY), $q); echo $q["code"];' "$LOC")
+STATE=$(php -r 'parse_str(parse_url($argv[1], PHP_URL_QUERY), $q); echo $q["state"];' "$LOC")
+curl $C -H 'Content-Type: application/json' -H "X-CSRF-Token: $T" -X POST $B/session/single-sign-on/completion \
+  -d "{\"code\":\"$CODE\",\"state\":\"$STATE\"}" | jq '.data | {state, authMethod}'
+curl $C $B/me | jq .data.authentication   # {"method":"singleSignOn","identityProvider":"keycloak"}
+```
+
+**Expected**:
+
+1. The completion answers `201` with `state: active` and `authMethod: singleSignOn`, and the mailbox
+   `anna@example.org` exists with authsource `keycloak`, name "Anna Example" and the 2 GiB quota of
+   "Staff".
+2. Start again and report `{"error":"access_denied","state":"<state of the authorization address>"}`
+   to `POST /session/single-sign-on/provider-error`: `204`, and the audit log shows a failed `signIn`
+   with `providerReturnedError` and `details.providerError: access_denied`.
+3. Disable `anna` in Keycloak's admin console (`http://localhost:8081`, realm `example`), wait 5
+   minutes, call `GET /me` in the single sign-on session: `401 identity-provider-session-ended`.
+   Before disabling her, the first request after 5 minutes renews the session and answers `200`.
+4. A password sign-in of `anna@example.org` (mailpassword flow) answers `authMethod:
+   providerPassword`; with Keycloak stopped (`docker compose stop keycloak`) it answers `503
+   identity-provider-unavailable` with `Retry-After: 30`.
+
+A browser on the host can run the same flow when it resolves `keycloak` to `127.0.0.1` and Keycloak
+is published on port 8080 (`RESTV2_KEYCLOAK_PORT=8080`); the return address then shows the code and
+state in the address bar.
 
 ## Part C: Validation on a mailcow host
 

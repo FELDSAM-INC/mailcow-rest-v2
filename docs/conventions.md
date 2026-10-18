@@ -152,7 +152,10 @@ this document next to the constitution.
 - `403 /api/v2/problems/forbidden`: the caller's role or key type may never use the operation.
 - `403 /api/v2/problems/permission-flag-required`: the operation needs a permission flag (`da_acl`
   or `user_acl`) that the caller lacks. The problem lists the flags in a `requiredFlags` array (any
-  one of them would allow the operation), as `docs/problems.md` documents.
+  one of them would allow the operation), as `docs/problems.md` documents. Flag values are always
+  the property names of 001's `PermissionFlags` schema (camelCase, for example
+  `quarantineAttachments`, `loginAs`, `appPasswds`, `syncjobs`), never legacy column names, so
+  that clients can compare them with `GET /me`.
 - `403 /api/v2/problems/attribute-not-permitted`: the request sets a field that the caller's flags
   don't allow. The problem names each field and its flag.
 - Objects outside the caller's scope stay `404`, as described above.

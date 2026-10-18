@@ -35,7 +35,7 @@ properties:
   bulkLimit:
     type: integer
     minimum: 1
-    description: Maximum number of targets of one bulk action.
+    description: Maximum number of targets of one bulk action (100 for every bulk action of the API).
     examples: [100]
   defaultPageSize:
     type: integer

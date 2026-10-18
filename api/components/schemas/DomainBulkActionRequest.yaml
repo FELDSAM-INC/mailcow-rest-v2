@@ -4,8 +4,8 @@ description: |
   target is authorised, version-checked, processed and audited on its own, exactly as the single
   operation for it (`updateDomain` with `active`, or `deleteDomain`); one failure does not stop the
   others. A target is the domain name in ASCII or Unicode form; a name given twice, also in both
-  forms, is processed and reported once. At most the server's bulk limit of targets
-  (`DomainCapabilities.bulkLimit`, 100 by default) may be sent (`tooMany` on `targets`).
+  forms, is processed and reported once. At most 100 targets may be sent (`tooMany` on
+  `targets`, with `max: 100`).
 required: [action, targets]
 properties:
   action:
@@ -14,5 +14,6 @@ properties:
   targets:
     type: array
     minItems: 1
+    maxItems: 100
     items:
       $ref: './BulkTarget.yaml'

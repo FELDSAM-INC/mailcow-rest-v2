@@ -199,16 +199,20 @@ app/
 │   ├── DomainTemplates/{DomainTemplateService,DomainTemplateAttributes}.php
 │   ├── Groupware/SogoDirectory.php
 │   └── RateLimits/RateLimitStore.php                 # extended by 006
-└── Support/Domain/DomainName.php
+└── Support/{Domain/DomainName,Http/FieldViolations}.php
 
 config/restv2.php                                     # + settings of research D24
 database/migrations/2026_10_19_000001_add_target_index_to_restv2_audit_events.php
+database/seeders/DevelopmentSeeder.php                # + quickstart Part B data
 resources/bin/export-mailcow-vars.php                 # + TAGGING_LIMIT, DOCKER_TIMEOUT
 routes/api.php                                        # + 16 routes, specific before general
 deploy/docker-compose.override.yml                    # + COMPOSE_PROJECT_NAME, RESTV2_* of D24
 deploy/nginx/site.restv2.custom                       # client_max_body_size 5m
 
 tests/
+├── contract-scope.php                                # implemented OpenAPI tags for the coverage gate
+├── bin/check-contract-coverage.php                   # (001) scoped by contract-scope.php
+├── fixtures/legacy/{domain_details_queries,domain_add_expected}.php   # parity fixtures from 2026-09a
 ├── Support/Fakes/{FakeDockerApiClient,FakeMemcachedFlusher,FakeIspconfigDnsClient}.php
 ├── Support/Mailcow/MailcowFactory.php                # + domain, template, footer and cleanup rows
 ├── Feature/Domains/…                                 # per user story (tasks.md)

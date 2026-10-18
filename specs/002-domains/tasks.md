@@ -48,9 +48,8 @@ the user stories in spec order (US1–US3 P1, US4–US6 P2, US7–US8 P3). Phase
   (`env('RESTV2_DKIM_DNS_PUBLICATION', 'n') === 'y'`), `ispconfig.url`, `ispconfig.username`,
   `ispconfig.password`, `ispconfig.dns_server_id` (default `1`), `ispconfig.verify_tls` (default
   `true`), `dockerapi.url` (default `https://dockerapi:443`), `compose_project_name`
-  (`env('COMPOSE_PROJECT_NAME')`), `memcached.host` (`memcached`), `memcached.port` (`11211`),
-  `bulk_limit` (`RESTV2_BULK_LIMIT`, default 100, clamped to 1–1000) and `fake_outbound`
-  (`RESTV2_FAKE_OUTBOUND === 'y'`, honoured only when `APP_ENV=local`). Add to `.env.example`:
+  (`env('COMPOSE_PROJECT_NAME')`), `memcached.host` (`memcached`), `memcached.port` (`11211`) and
+  `fake_outbound` (`RESTV2_FAKE_OUTBOUND === 'y'`, honoured only when `APP_ENV=local`). Add to `.env.example`:
   `COMPOSE_PROJECT_NAME=mailcowdockerized`, `RESTV2_FAKE_OUTBOUND=y`; to `.env.testing`:
   `COMPOSE_PROJECT_NAME=mailcowdockerized`, `SKIP_SOGO=n`, `RESTV2_DEFAULT_DKIM_SELECTOR=dkim`.
 - [ ] T002 [P] Update `deploy/docker-compose.override.yml`: add `COMPOSE_PROJECT_NAME` and every
@@ -70,8 +69,8 @@ the user stories in spec order (US1–US3 P1, US4–US6 P2, US7–US8 P3). Phase
   `ProblemType` case must be a section of `docs/problems.md` and a value of `KnownProblemType` with
   the same status (subset instead of equality), and the six types of this feature must be cases.
   Skip this task if 001's implementation already scoped both gates.
-- [ ] T005 Verify the contract: `composer contract:lint` reports zero errors (001's four accepted
-  warnings only), `composer contract:bundle` succeeds, and
+- [ ] T005 Verify the contract (FR-060): `composer contract:lint` reports zero errors (001's four
+  accepted warnings only), `composer contract:bundle` succeeds, and
   `php tests/bin/check-contract-coverage.php` lists exactly the 16 operations of plan.md as not yet
   covered.
 
@@ -279,7 +278,7 @@ queries.
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
 - [ ] T037 [P] [US1] Write `tests/Feature/Domains/ListDomainsTest.php` for `listDomains`
-  (FR-011–FR-015):
+  (FR-001, FR-002, FR-011–FR-015):
   - AS-1: 60 domains, no parameters → the first 25 by name, `meta {total: 60, limit: 25, offset: 0}`;
     `limit=1000` returns all; `limit=1001` and `offset=-1` → `422`;
   - each `sort` value of `DomainSort` in both orders, ties broken by name; `mailboxes`, `aliases`,
@@ -291,8 +290,9 @@ queries.
   - `tag=CUSTOMER-A` matches whole tags without regard to letter case; two `tag` values match
     either; `active=false` and `backupMx=true` filter;
   - AS-4: a domain administrator with two of ten domains sees exactly those two (`total 2`),
-    including an inactive domain; a domain with an inactive assignment is not listed; entries never
-    have `domainAdmins`; administrators get `domainAdmins` sorted;
+    including an inactive domain; a domain with an inactive assignment is not listed; an assignment
+    added or removed through SQL applies to the next request; entries never have `domainAdmins`;
+    administrators get `domainAdmins` sorted;
   - AS-7: a read-only key owned by that domain administrator gets the same two;
   - AS-6: a mailbox user → `403 forbidden`; a restricted session → `403 pending-action-required`;
     no authentication → `401`;
@@ -310,7 +310,8 @@ queries.
   - an alias domain name → `404`; AS-4: a domain outside a domain administrator's scope → `404`
     with the same `type`, `title` and `status` as a name that does not exist (FR-003, SC-004);
     an invalid name → `404`;
-  - the `ETag` header equals `data.etag`; mailbox user → `403 forbidden`.
+  - the `ETag` header equals `data.etag`; a change made through SQL (the legacy UI) is visible in the
+    next read (FR-061); mailbox user → `403 forbidden`.
 - [ ] T039 [P] [US1] Write `tests/Feature/Domains/DomainUsageParityTest.php` (SC-001): create
   `tests/fixtures/legacy/domain_details_queries.php`, holding the SQL statements of legacy
   `mailbox('get', 'domain_details')` copied verbatim from `2026-09a` with the tag and source SHA-256
@@ -319,13 +320,13 @@ queries.
   equals the legacy query result (`mboxes_in_domain`, `aliases_in_domain`, `quota_used_in_domain`,
   `bytes_total`, `msgs_total`, `max_new_mailbox_quota` where non-negative, `def_new_mailbox_quota`).
 - [ ] T040 [P] [US1] Write `tests/Feature/Domains/DomainCapabilitiesTest.php` for
-  `getDomainCapabilities` (FR-064, SC-012, AS-11 of US2):
+  `getDomainCapabilities` (FR-028, FR-064, SC-012, AS-11 of US2):
   - administrator: `groupwareEnabled true`, `taggingLimit 25`, `maxTagLength 255`,
     `maxDescriptionLength 255`, `footerTextMaxBytes 1048576`, `bulkLimit 100`, `defaultPageSize 25`,
     `maxPageSize 1000`, `quotaUnit 1048576`, `dkim {defaultSelector: dkim, defaultKeySize: 2048,
     allowedKeySizes: [1024, 2048, 3072, 4096], dnsPublicationEnabled: false}`;
   - `SKIP_SOGO=y` → `groupwareEnabled false`; `RESTV2_DEFAULT_DKIM_SELECTOR=feldhost` → `feldhost`;
-    `RESTV2_TAGGING_LIMIT=30` → `30`; `RESTV2_BULK_LIMIT=150` → `150`; publication `y` with URL,
+    `RESTV2_TAGGING_LIMIT=30` → `30`; publication `y` with URL,
     user and password → `dnsPublicationEnabled true`, with the URL missing → `false`;
   - a domain administrator gets no `dkim`; a read-only key works; a mailbox user → `403`;
   - the body never contains the ISPConfig URL, user or password.
@@ -391,7 +392,8 @@ compare rows, Redis entries and fake calls with legacy's behaviour.
     `templateId` → `notFound`; 26 tags → `tooMany {max: 25}`; `description` of 256 characters →
     `tooLong`; `dkimSelector: "a b"` → `invalidFormat {format: dkimSelector}`; `dkimKeySize: 512`
     and `rateLimit.frame: week` → `notInList` (tests whose names contain `Invalid` where the body
-    violates the contract); several violations are reported together;
+    violates the contract); several violations are reported together, each with its rule code
+    (SC-009);
   - the Default template missing → the FR-022 built-ins with the configured default selector;
   - external `sender_acl` rows `x@example.org` are removed; internal ones and other domains' stay;
   - AS-10: a domain administrator → `403 forbidden`; a read-only administrator key → `403
@@ -421,7 +423,8 @@ compare rows, Redis entries and fake calls with legacy's behaviour.
     client `sys_groupid − 1` → `published`; a fully qualified record name is updated too; no record
     → `addTxt`; no zone → `noZone`; a client exception or a delay over 15 s → `failed` while the
     domain is created; on but URL missing → `notConfigured` and one warning;
-  - the FeldHost selector setting is the published selector.
+  - the FeldHost selector setting (`RESTV2_DEFAULT_DKIM_SELECTOR=feldhost`) is the published
+    selector (FR-028).
 - [ ] T050 [P] [US2] Write `tests/Feature/Domains/CreateDomainAtomicityTest.php` (FR-024, FR-056):
   - shared store down before the creation → `503 temporary-failure` with `Retry-After`, no `domain`
     or `tags_domain` row, a failure audit record with `temporaryFailure`;
@@ -438,7 +441,7 @@ compare rows, Redis entries and fake calls with legacy's behaviour.
   from. The API creation with the same input leaves identical `domain` and `tags_domain` rows
   (apart from `created`), `DOMAIN_MAP`, `RL_VALUE` and `DKIM_SELECTORS` values, and the same fake
   calls.
-- [ ] T052 [P] [US2] Write `tests/Feature/Domains/CreateDomainAuditTest.php` (FR-057): one
+- [ ] T052 [P] [US2] Write `tests/Feature/Domains/CreateDomainAuditTest.php` (FR-057, SC-007): one
   `domainCreation` record with actor, target `{type: domain, id: example.org, name}`, client
   address, `values`, `templateId` and `creationReport` equal to the response's (completed, not
   `"pending"`); refused creations (`409`, `422`) give one failure record with `conflict` or
@@ -501,8 +504,8 @@ compare rows and side effects with legacy.
   - read-only members equal to the current values (`name` also in Unicode form, `usage`, `etag`) are
     accepted; a different `name`, `createdAt`, `relayhost`, `rateLimit` or `usage` → `422
     immutable` naming each;
-  - `{}` → `422 required` on `body`; a patch that changes nothing → `200`, unchanged `ETag`, no
-    audit record, no rebuild;
+  - `{}` → `422 required` on `body`; a patch that changes nothing → `200`, unchanged `ETag`, one
+    audit record with empty `changes` (FR-057), no rebuild;
   - after a change the groupware directory is rebuilt and memcached flushed, and dockerapi is never
     called, also for a `globalAddressList` change (FR-034); with `SKIP_SOGO=y` nothing is rebuilt.
 - [ ] T060 [P] [US3] Write `tests/Feature/Domains/UpdateDomainDomainAdminTest.php` (FR-032):
@@ -512,7 +515,8 @@ compare rows and side effects with legacy.
   - AS-7: `maxMailboxes` or `active` → `403` naming them all; the whole representation with only
     `globalAddressList` changed → saved;
   - an inactive domain in scope is editable; a domain outside the scope, or whose assignment was
-    removed since the last read, → `404`;
+    removed since the last read, → `404`; setting `da_acl.domain_desc` through SQL lets the next
+    request change the description (FR-002);
   - `attribute-not-permitted` wins over `immutable`; a read-only key of a domain administrator →
     `403 insufficient-key-scope`; a mailbox user → `403 forbidden`.
 - [ ] T061 [P] [US3] Write `tests/Feature/Domains/UpdateDomainVersionTest.php` (FR-041, FR-042,
@@ -595,7 +599,7 @@ deviations; try a domain with a mailbox or a resource.
   - SC-011: preview then delete without changes → the deletion's audit record lists exactly the
     previewed alias domains and domain administrators and the alias count drops by the previewed
     count; preview, then a mailbox is added, then delete → `409`.
-- [ ] T070 [P] [US4] Write `tests/Feature/Domains/DeleteDomainAuditTest.php` (FR-057): one
+- [ ] T070 [P] [US4] Write `tests/Feature/Domains/DeleteDomainAuditTest.php` (FR-057, SC-007): one
   `domainDeletion` record with `removedAliasDomains`, `removedDomainAdmins`, `footerRemoved` and
   `maildirCleanup` completed to `done`, `failed` (with message) or `unknown`; a `409` refusal →
   failure record `conflict`; a `412` → `versionOutdated`.
@@ -677,8 +681,8 @@ domains created afterwards use the right values and earlier domains are unaffect
 
 ## Phase 8: User Story 6 — Apply an action to many domains at once (P2)
 
-**Goal**: administrators activate, deactivate or delete up to the bulk limit of domains in one
-request with one result per domain.
+**Goal**: administrators activate, deactivate or delete up to 100 domains in one request with one
+result per domain.
 
 **Independent test**: apply each action to a selection with an unknown domain and a failing
 domain; compare per-domain results, rows and audit records.
@@ -693,21 +697,21 @@ domain; compare per-domain results, rows and audit records.
     `domain-not-empty` problem, the fourth unchanged; one maildir cleanup per deleted domain;
   - AS-3: an unknown name → `notFound`, the others activated; an invalid name → `notFound`;
   - AS-4: a domain administrator, and a read-only administrator key → `403` for the whole request;
-  - AS-5: 101 targets → `422 tooMany {max: 100}` on `targets`; with `RESTV2_BULK_LIMIT=150`
-    accepted;
+  - AS-5: 101 targets → `422 tooMany {max: 100}` on `targets` (the body exceeds the contract's
+    `maxItems`, so the test name contains `Invalid`);
   - AS-6: one item with an outdated `version` → `outdated` with a `412` problem, unchanged; the
     others `done`;
   - the same domain named twice, also as ASCII and Unicode, → processed and reported once with the
     first spelling as `id`; results follow request order; `summary` counts each outcome;
-  - activating an active domain → `done` without an audit record; one deletion with the shared
-    store down → `failed` with `temporary-failure`, the others proceed.
+  - activating an active domain → `done`, audited with empty `changes` (FR-057, SC-007); one
+    deletion with the shared store down → `failed` with `temporary-failure`, the others proceed.
 
 ### Implementation for User Story 6
 
 - [ ] T082 [US6] Create `app/Services/Domains/DomainBulkActions.php` (D20), reusing `DomainUpdater`
   and `DomainDeleter` with the rebuild deferred to one call at the end.
 - [ ] T083 [US6] Create `app/Http/Requests/Api/V2/DomainBulkActionRequest.php` (`action` in
-  activate, deactivate, delete; `targets` array, 1 to `config('restv2.bulk_limit')` items, each
+  activate, deactivate, delete; `targets` array, 1 to 100 items (`tooMany {max: 100}`), each
   `{id: string 1–255, version?: string}`) and
   `app/Http/Controllers/Api/V2/DomainBulkActionController.php` (`store`); register
   `POST /domains/bulk-actions` **before** the `/domains/{domain}` routes. This makes the US6 test
@@ -745,7 +749,7 @@ confirm the stored row is the one legacy writes.
   - a text of 1,048,577 bytes (multi-byte characters under the character limit) → `tooLong {max:
     1048576, unit: bytes}`; empty texts without exclusions are saved; a stored exclusion that no
     longer belongs to the domain is shown on read and refused on the next save until removed.
-- [ ] T085 [P] [US7] Write `tests/Feature/Domains/DomainFooterAuditTest.php` (FR-057): one
+- [ ] T085 [P] [US7] Write `tests/Feature/Domains/DomainFooterAuditTest.php` (FR-057, SC-007): one
   `domainFooterUpdate` record per save, with `html` and `plain` as `{changed, oldSize, newSize}` and
   never their text; `skipReplies` and exclusions with old and new values; refusals audited.
 
@@ -798,8 +802,8 @@ and list the audit log filtered by target.
 ## Phase 11: Polish and cross-cutting concerns
 
 - [ ] T089 [P] Write `tests/Feature/Security/DomainAuthorizationMatrixTest.php` (constitution VI,
-  quality gate 5, SC-004): a data provider over the 16 operations × anonymous, pending sign-in,
-  restricted session, administrator session, domain-administrator session with and without
+  quality gate 5, FR-001, FR-003–FR-005, SC-004): a data provider over the 16 operations ×
+  anonymous, pending sign-in, restricted session, administrator session, domain-administrator session with and without
   `domain_desc`, mailbox session, administrator read-write and read-only keys, domain-administrator
   read-write and read-only keys, asserting status and problem `type` from a table derived from
   plan.md and the contract. Object level: a foreign domain → `404` on every domain-scoped
@@ -824,9 +828,14 @@ and list the audit log filtered by target.
   operations of feature 002 and the audit target filters").
 - [ ] T095 Run `composer test`, `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and
   `composer contract:lint`; fix every finding until all are green and the coverage check lists the
-  16 operations as covered.
+  16 operations as covered (FR-060).
 - [ ] T096 Run quickstart.md Parts A and B against the dev stack and confirm every expected output;
   correct quickstart.md where commands drifted.
+- [ ] T097 Before the release that ships this feature, run quickstart.md Part C on a mailcow host
+  (upstream `2026-09a` and the FeldHost fork): figure parity (SC-001), creation parity and mail
+  delivery to a new domain's mailbox within one minute (SC-002, SC-008), coexistence with the legacy
+  UI, deletion scan (SC-003), the ISPConfig publication and `SKIP_SOGO=y`. Record the results in the
+  release notes.
 
 ---
 

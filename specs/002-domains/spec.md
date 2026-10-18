@@ -393,7 +393,7 @@ records with the same mass action in the legacy UI.
    with a validation error that states the limit of 100.
 6. **Given** a bulk deactivation whose items carry the version tags from the list, and one domain
    that was changed in the legacy UI after the list was read, **When** it is submitted, **Then**
-   that domain is reported as refused with the outdated-version error, and the others are
+   that domain is reported as outdated, with the outdated-version error, and the others are
    deactivated.
 
 ---
@@ -684,7 +684,8 @@ and list the audit log filtered by target.
   of each follow-up step:
   - rate limit: applied, not requested, or failed;
   - DKIM key: created, already existed, not requested, or failed;
-  - DKIM DNS publication: published, no DNS zone found, failed, or not configured;
+  - DKIM DNS publication: published, no DNS zone found, failed, not configured, or skipped because
+    no new key was generated;
   - groupware directory update: done, failed, or groupware disabled;
   - groupware restart: done, failed, not requested, or groupware disabled.
 - **FR-026**: A creation request MAY ask for the groupware to be restarted, which legacy offers as
@@ -894,12 +895,13 @@ and list the audit log filtered by target.
 - **FR-063**: A bulk action MUST be refused as a whole when the caller's role or key scope does not
   allow the action (FR-004, FR-005). Otherwise each named domain MUST be processed on its own, with
   the same checks, side effects and audit record as a single request for it, and the response MUST
-  report one result per distinct domain: done, not found, refused (with the error type), or failed
-  (with the error type). A failure on one domain MUST NOT stop or undo the others, as in legacy.
-  Each item MAY carry the version tag the client read, for example from the list (FR-015). An item
-  whose tag no longer matches MUST be reported as refused with the outdated-version error and left
-  unchanged. Items without a tag MUST be processed without a version check. The groupware directory
-  update and cache flush MAY be made once for the whole request, as legacy does.
+  report one result per distinct domain: done, not found, refused (with the error type), outdated,
+  or failed (with the error type), the outcomes of `docs/conventions.md`. A failure on one domain
+  MUST NOT stop or undo the others, as in legacy. Each item MAY carry the version tag the client
+  read, for example from the list (FR-015). An item whose tag no longer matches MUST be reported as
+  outdated, with the outdated-version error, and left unchanged. Items without a tag MUST be
+  processed without a version check. The groupware directory update and cache flush MAY be made
+  once for the whole request, as legacy does.
 
 ### Legacy Coverage
 
@@ -1087,8 +1089,9 @@ in three ways:
 - The legacy UI never sends version tags, so it can still overwrite changes made through this API.
   Only clients of this API are protected against lost updates.
 - These defaults can be changed by the operator: the tagging limit (25), the default DKIM selector
-  (`dkim`), the DKIM DNS publication (off), the list page size (25, maximum 1,000) and the bulk
-  limit (100). Clients read the current values through the domain capabilities (FR-064).
+  (`dkim`) and the DKIM DNS publication (off). The list page size (25, maximum 1,000) and the bulk
+  limit (100) are fixed for every list and bulk action of the API (`docs/conventions.md`, FR-011,
+  FR-062). Clients read all of these values through the domain capabilities (FR-064).
 - Footer exclusion candidates are not offered by this feature. The web app picks them from the
   mailbox and alias lists of features 003 and 004.
 - **Out of scope**:

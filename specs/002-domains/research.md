@@ -333,9 +333,11 @@ Legacy references are paths in mailcow-dockerized `2026-09a`
   has no effect), `UPDATE domain` with every editable column (legacy sets them all), replace the
   tags when sent, and write the audit record with each changed attribute's old and new value. An
   empty `description` or `null` stores the domain name. A patch that changes nothing returns `200`
-  without a write, an audit record or a groupware rebuild. After the commit, `SogoDirectory::rebuild()`.
-- **Rationale**: FR-030 to FR-034 and the legacy parity table. Not auditing no-ops follows 001
-  (R22: "idempotent no-ops are not audited").
+  without a write or a groupware rebuild, and is audited with empty `changes`. After the commit,
+  `SogoDirectory::rebuild()`.
+- **Rationale**: FR-030 to FR-034 and the legacy parity table. FR-057 requires a record for every
+  request that changes state "or tries to", so an unchanged edit is audited too, unlike 001's
+  idempotent no-ops (R22 there), which no spec of 001 asks to audit.
 
 ### D16. Audit records
 
@@ -434,15 +436,17 @@ Legacy references are paths in mailcow-dockerized `2026-09a`
 ### D20. Bulk actions
 
 - **Decision**: `App\Services\Domains\DomainBulkActions`: the request is refused as a whole only
-  for the role or key scope (`403`) and for more targets than `config('restv2.bulk_limit')`
-  (`RESTV2_BULK_LIMIT`, default 100; `422 tooMany` on `targets` with `max`). Targets are
+  for the role or key scope (`403`) and for more than 100 targets (`422 tooMany` on `targets` with
+  `max: 100`; the contract's `maxItems`). The limit is fixed, as `docs/conventions.md` and FR-062
+  state; the spec's assumptions were aligned. Targets are
   normalised and deduplicated in request order (first spelling kept as `id`); an unnormalisable
   name gives `notFound`. Each target runs `DomainUpdater` (`{active: true|false}`) or
   `DomainDeleter` with its own transaction, version check (`version` compared like `If-Match`),
   audit record carrying `bulkRequestId` (the request ID) and outcome mapping: success → `done`
   (with the new `version` unless deleted), `404` → `notFound`, `412` → `outdated`,
   `409`/`403`/`422` → `refused`, `503` or an exception → `failed`. The groupware rebuild is
-  deferred until all targets are processed and runs once if any target changed.
+  deferred until all targets are processed and runs once if any target changed. Activating an
+  active domain is `done`, audited with empty `changes` (FR-057, "or tries to").
 - **Rationale**: FR-062, FR-063 and `docs/conventions.md`. Reusing the single-operation services
   guarantees identical checks and side effects.
 
@@ -491,16 +495,16 @@ Legacy references are paths in mailcow-dockerized `2026-09a`
 - **Decision**:
   - `DomainCapabilities`: `groupwareEnabled = !config('restv2.skip_sogo')`, `taggingLimit =
     MailcowConfig::taggingLimit()`, `maxTagLength = 255`, `maxDescriptionLength = 255`,
-    `footerTextMaxBytes = 1048576`, `bulkLimit = config('restv2.bulk_limit')`, `defaultPageSize` and
+    `footerTextMaxBytes = 1048576`, `bulkLimit = 100`, `defaultPageSize` and
     `maxPageSize` from 001's `ListQuery` constants (25 and 1,000, fixed by `docs/conventions.md` and
     `Limit.yaml`), `quotaUnit = 1048576`; for administrators `dkim = {defaultSelector,
     defaultKeySize: 2048, allowedKeySizes: [1024, 2048, 3072, 4096], dnsPublicationEnabled}`.
   - Distinct tags: `SELECT MIN(tag_name) AS name, COUNT(DISTINCT domain) AS domain_count FROM
     tags_domain WHERE domain IN (<scope>) [AND tag_name LIKE ?] GROUP BY LOWER(tag_name) ORDER BY
     LOWER(name)` (or by count, ties by name), paged with `ListQuery`.
-- **Rationale**: FR-064 and FR-066. The page sizes are contract constants, so the spec's
-  assumption that the operator can change them is satisfied only for the tagging and bulk limits
-  (see the analysis).
+- **Rationale**: FR-064 and FR-066. The page sizes and the bulk limit are API-wide constants of the
+  contract and `docs/conventions.md`; the tagging limit, the DKIM selector and the publication are
+  the operator-changeable values.
 
 ---
 
@@ -516,12 +520,12 @@ Legacy references are paths in mailcow-dockerized `2026-09a`
 | `RESTV2_TAGGING_LIMIT` | `vars.inc.php` `$TAGGING_LIMIT` (25) | Exported by `MailcowConfig` |
 | `RESTV2_MEMCACHED_HOST`, `RESTV2_MEMCACHED_PORT` | `memcached`, `11211` | Groupware cache flush |
 | `RESTV2_DEFAULT_DKIM_SELECTOR` | `dkim` | FR-028 (FeldHost: `feldhost`) |
-| `RESTV2_BULK_LIMIT` | `100` | FR-062 (1–1000) |
 | `RESTV2_DKIM_DNS_PUBLICATION` | `n` | FR-027 (FeldHost: `y`) |
 | `RESTV2_ISPCONFIG_URL` | empty | JSON remote endpoint, e.g. `https://ispconfig.example:8080/remote/json.php` |
 | `RESTV2_ISPCONFIG_USERNAME`, `RESTV2_ISPCONFIG_PASSWORD` | empty | ISPConfig remote user; the password is a secret, never logged |
 | `RESTV2_ISPCONFIG_DNS_SERVER_ID` | `1` | ISPConfig DNS server ID |
 | `RESTV2_ISPCONFIG_VERIFY_TLS` | `y` | TLS verification of the ISPConfig endpoint |
+| `RESTV2_FAKE_OUTBOUND` | `n` | Development only (`APP_ENV=local`): binds the dockerapi, memcached and ISPConfig fakes, because the dev stack has none of these services |
 
 `SKIP_SOGO` and `MAILCOW_HOSTNAME` are 001's. The publication is "enabled" only when
 `RESTV2_DKIM_DNS_PUBLICATION=y` and the URL, user and password are set; otherwise the outcome is

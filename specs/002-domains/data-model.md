@@ -219,7 +219,7 @@ from Redis directly, and Postfix and Dovecot read the domain tables directly.
 | `eventType` | `target` | `details` |
 |---|---|---|
 | `domainCreation` | `domain`, ASCII name, Unicode name | `values` (all stored attributes), `templateId`, `creationReport` (`"pending"` until completed) |
-| `domainUpdate` | `domain` | `changes` (`{attribute: {old, new}}`, tags as sorted lists), `bulkRequestId` |
+| `domainUpdate` | `domain` | `changes` (`{attribute: {old, new}}`, tags as sorted lists; empty for an unchanged edit, which is audited too), `bulkRequestId` |
 | `domainDeletion` | `domain` | `removedAliasDomains`, `removedDomainAdmins`, `footerRemoved`, `maildirCleanup` (`"pending"`, then `done`/`failed`/`unknown` with a message), `bulkRequestId` |
 | `domainFooterUpdate` | `domainFooter`, ASCII name | `changes` (`html`/`plain` as `{changed, oldSize, newSize}`, `skipReplies`, exclusions old/new) |
 | `domainTemplateCreation`, `domainTemplateUpdate`, `domainTemplateDeletion` | `domainTemplate`, ID, name | `values` or `changes` |

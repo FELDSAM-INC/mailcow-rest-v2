@@ -37,7 +37,8 @@ patch:
     tag does not change with the usage figures. After a successful change the groupware directory
     is updated and its cache flushed, unless the groupware is disabled. A change of
     `globalAddressList` takes effect at the groupware's next restart; an edit never restarts it.
-    A patch that changes nothing returns the domain unchanged and is not audited.
+    A patch that changes nothing returns the domain unchanged; it is audited with no changes and
+    triggers no groupware update.
   security:
     - sessionCookie: []
       csrfToken: []

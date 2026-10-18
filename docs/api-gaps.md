@@ -22,3 +22,5 @@ then marks the entry done here. Gaps that are a contract-wide rule are also reco
 | G13 | UI 004 | 004 | `Alias.destinations`, `AliasCopyOutcome.address` and `externalSenderAddresses` have no readable (Unicode) form. | Add Unicode display forms next to the ASCII values, as for domains. | open |
 | G14 | UI 004 | 004 | `MailboxSenderSettingsPatch` documents `reason: localDomain`, while `ValidationRuleCode` uses `kind`. | Align on `kind`. | open |
 | G15 | UI 006 | 006 | Allow/block list audit records use the entry ID as their target, with the owner only in `details`, so History can't be filtered to one domain's or mailbox's list. | Target the owner (`domain`, `aliasDomain` or `mailbox`, with its ID), and record the entry ID and value in `details`. | open |
+| G16 | UI 013 | 013 | A mass-mail recipient's `failureReason` is free text, so clients can't translate it. | Add a stable `failureCode` enum next to the text. | open |
+| G17 | UI 013 | 013 | The regex-map list returns every map's content, and the mass-mail job list every job's bodies, which is heavy on phones. | Lists return summaries; the content comes from the single-item reads. | open |

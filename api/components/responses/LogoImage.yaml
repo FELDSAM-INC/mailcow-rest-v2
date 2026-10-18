@@ -8,7 +8,7 @@ headers:
     schema:
       type: string
   Cache-Control:
-    description: '`public, max-age=31536000, immutable` with a matching `v`, `no-cache` otherwise.'
+    description: '`public, max-age=31536000, immutable` with a matching `v`, `no-cache, public` otherwise. The order of the directives may differ.'
     required: true
     schema:
       type: string

@@ -1241,7 +1241,7 @@ the way legacy's `customize('edit', …)` writes them. Change a key and read aga
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T091 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigTest.php` (SC-008) for `getPublicConfig`
+- [X] T091 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigTest.php` (SC-008) for `getPublicConfig`
   (FR-042–FR-044, AS-1–AS-3, R15):
   - With empty Redis: `pageTitle` = `productName` = `"mail.example.org - mail UI"`, logos with
     `url /img/cow_mailcow.svg` and `isDefault: true`, help, footer and announcement null and
@@ -1260,7 +1260,12 @@ the way legacy's `customize('edit', …)` writes them. Change a key and read aga
   - `ETag` and `Cache-Control: no-cache`; `If-None-Match` → `304`.
   - No password, secret or account data appears (scan the payload for `REDISPASS`, `DBPASS` and
     usernames).
-- [ ] T092 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigLogoTest.php` for
+
+  *Implementation note*: the scan leaves out `DBPASS`, because the dev value `mailcow` is part of
+  the default logo's file name; it checks `REDISPASS`, the app key and usernames. Extra cases: a
+  stored `"0"` or an unknown announcement type falls back like legacy, a logo that is not an
+  accepted data URI counts as unset, and an invalid `X-API-Key` is refused (R8).
+- [X] T092 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigLogoTest.php` for
   `getPublicConfigLogo`:
   - PNG, JPEG, GIF and SVG data URIs are served with their media type.
   - `image/x-png` and `image/pjpeg` are normalised.
@@ -1269,7 +1274,7 @@ the way legacy's `customize('edit', …)` writes them. Change a key and read aga
   - `ETag` and `304`.
   - The CSP `default-src 'none'; style-src 'unsafe-inline'; sandbox` is set.
   - An unset variant → `404`. An unknown variant → `404` (route constraint).
-- [ ] T093 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigAppLinksTest.php` (FR-056, AS-4,
+- [X] T093 [P] [US5] Write `tests/Feature/PublicConfig/PublicConfigAppLinksTest.php` (FR-056, AS-4,
   R15):
   - The upstream default `$MAILCOW_APPS` gives one `builtIn` Webmail link with `url` and
     `signedInUrl` `/SOGo/so` and `showOnLoginPage: false`.
@@ -1285,19 +1290,40 @@ the way legacy's `customize('edit', …)` writes them. Change a key and read aga
   - `APPS_NAME` = `htmlspecialchars("Tools & Apps")` gives `appsLabel "Tools & Apps"`.
   - Malformed `APP_LINKS` JSON gives the built-ins only and logs a warning.
 
+  *Implementation note*: an operator entry with an empty `user_link` uses its `link` for signed-in
+  users, as legacy's header does.
+
 ### Implementation for User Story 5
 
-- [ ] T094 [US5] Create `app/Services/Branding/PublicConfigService.php` (R15: Redis connection
+- [X] T094 [US5] Create `app/Services/Branding/PublicConfigService.php` (R15: Redis connection
   `mailcow`, entity decoding, defaults from `config/restv2.php`, languages from `MailcowConfig`,
   IdP flag from `IdentityProviderSetting`, logo decoding with the MIME whitelist). It reuses
   `ProductName` from T051 for `productName` and the title default. Add `appsLabel` (`APPS_NAME`,
   decoded) and `appLinks`, built from `MailcowConfig::mailcowApps()` and `APP_LINKS` per
   data-model.md "App links", including the old-style conversion and the `SKIP_SOGO` rule.
-- [ ] T095 [US5] Create `app/Http/Resources/Api/V2/PublicConfigResource.php` and the controllers
+
+  *Implementation note*:
+  - A non-empty `UI_IMPRESS` wins over `UI_FOOTER`: legacy copies it into `UI_FOOTER` whenever it
+    reads the texts, so that is what legacy shows. The API only reads. Values legacy treats as
+    falsy (`""`, `"0"`) fall back to the default; `ProductName` now does the same.
+  - `externalIdentityProvider.singleSignOnAvailable` (added to the contract by feature 012) is
+    always `false`: single sign-on through this API (`POST /session/single-sign-on`) arrives with
+    feature 012, which computes it.
+- [X] T095 [US5] Create `app/Http/Resources/Api/V2/PublicConfigResource.php` and the controllers
   `PublicConfigController.php` (`show`, with `ETag`, `304`, `Cache-Control`) and
   `PublicConfigLogoController.php` (`show`). Register the routes (`restv2.auth:public`,
   `restv2.pending:allow`, `variant` constrained to `light|dark`) in `routes/api.php`. The resource
   includes `appsLabel` and `appLinks` (contract `AppLink`). This makes T091, T092 and T093 pass.
+
+  *Implementation note*:
+  - Symfony always adds `private` to a bare `no-cache`, so the contract's
+    `Cache-Control: const no-cache` could not be met. The API sends `no-cache, public` (any cache
+    may store the account-free configuration but must revalidate), and the contract now requires
+    the `no-cache` directive (pattern) instead of the exact value; the logo's description names
+    `no-cache, public` too.
+  - Routes in auth mode `public` no longer start a session (`StartSessionUnlessApiKey`), so that
+    signed-out page loads and monitors create no Redis session.
+  - Logos also carry `X-Content-Type-Options: nosniff`.
 
 **Checkpoint**: Branding is readable before sign-in.
 

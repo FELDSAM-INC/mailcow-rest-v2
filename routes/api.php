@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\V2\PasskeyController;
 use App\Http\Controllers\Api\V2\PasskeyRegistrationOptionsController;
 use App\Http\Controllers\Api\V2\PendingSignInController;
 use App\Http\Controllers\Api\V2\PreferencesController;
+use App\Http\Controllers\Api\V2\PublicConfigController;
+use App\Http\Controllers\Api\V2\PublicConfigLogoController;
 use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SessionController;
@@ -112,4 +114,13 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         ->middleware(['restv2.auth:session', 'restv2.csrf', 'restv2.pending'])
         ->where('apiKeyId', '[0-9A-HJKMNP-TV-Z]{26}')
         ->name('api-key-revocation.store');
+
+    // Public branding configuration (FR-042–FR-044, FR-056): no authentication; an invalid API key
+    // is still refused (R8).
+    Route::middleware(['restv2.auth:public', 'restv2.pending:allow'])->group(function (): void {
+        Route::get('/public-config', [PublicConfigController::class, 'show'])->name('public-config.show');
+        Route::get('/public-config/logos/{variant}', [PublicConfigLogoController::class, 'show'])
+            ->where('variant', 'light|dark')
+            ->name('public-config-logo.show');
+    });
 });

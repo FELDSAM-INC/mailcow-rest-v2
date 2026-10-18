@@ -528,7 +528,7 @@ fork (`feldhost-202609a`) differs from it, for this feature, only in the `sasl_l
   | `pageTitle` | `TITLE_NAME` | `htmlspecialchars_decode(ENT_QUOTES)` (legacy stores it encoded and renders `|raw`); default per R14 |
   | `productName` | `MAIN_NAME` | same |
   | `loginHelpHtml` | `HELP_TEXT` | as stored, `null` when empty |
-  | `footerHtml` | `UI_FOOTER`, else `UI_IMPRESS` | as stored, `null` when empty |
+  | `footerHtml` | `UI_IMPRESS` when set, else `UI_FOOTER` (legacy copies a non-empty `UI_IMPRESS` into `UI_FOOTER` when it reads the texts) | as stored, `null` when empty |
   | `announcement.text` | `UI_ANNOUNCEMENT_TEXT` | `null` when empty |
   | `announcement.type` | `UI_ANNOUNCEMENT_TYPE` | `info`, `warning`, `danger`, else `null` |
   | `announcement.active` | `UI_ANNOUNCEMENT_ACTIVE` | `== 1` |

@@ -6,11 +6,13 @@ headers:
     schema:
       type: string
   Cache-Control:
-    description: Always `no-cache`; revalidate with `If-None-Match`.
+    description: |
+      Always contains `no-cache` (the API sends `no-cache, public`): any cache may store the
+      representation but must revalidate it with `If-None-Match`.
     required: true
     schema:
       type: string
-      const: no-cache
+      pattern: '(^|,)\s*no-cache\s*(,|$)'
 content:
   application/json:
     schema:

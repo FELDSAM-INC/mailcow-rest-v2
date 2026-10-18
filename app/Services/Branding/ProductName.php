@@ -23,7 +23,8 @@ class ProductName
             $stored = null;
         }
 
-        if (is_string($stored) && $stored !== '') {
+        // Legacy treats a falsy value ("" or "0") as unset.
+        if (is_string($stored) && $stored !== '' && $stored !== '0') {
             return htmlspecialchars_decode($stored, ENT_QUOTES);
         }
 

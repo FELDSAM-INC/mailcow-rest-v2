@@ -1099,4 +1099,12 @@ Checked on `main` at `e21f5ee`:
   `pending-action-required` instead of `permission-flag-required`. `reseller` manages
   `example.org` and `example.net` (001's seeder), so carol's job #3 is in his scope.
 - **T067**: the three settings are also passed through `deploy/docker-compose.override.yml`.
+- **T070**: Part B ran on 2026-10-18 against the dev database of the worktree's compose project
+  (`restv2-008`, no host ports), with `curl` in the `app` container against the `web` service over
+  HTTPS, and every output matched once the guide was corrected: the HTTPS listener (`curl -k`)
+  instead of `http://localhost:8080`, alice's TOTP step (001's seeder gives her a second factor),
+  `dave@example.org` instead of the restricted `bob@example.org`, `reseller` managing both
+  domains, and a refused write by dave for the actor history (reads are never audited, so the
+  refused read the guide listed could not appear). Part A's regeneration of the legacy oracles
+  gives no diff for `2026-09a`. Part C (a real mailcow host with the runner) stays open.
 

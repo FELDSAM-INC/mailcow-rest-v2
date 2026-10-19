@@ -380,6 +380,37 @@ return [
 
     /*
     |----------------------------------------------------------------------
+    | Feature 006: quarantine, spam policy and rate limits (006 research R20)
+    |----------------------------------------------------------------------
+    */
+
+    // Postfix's quarantine submission (port 590: it bypasses the spam filter and accepts mailcow's
+    // own networks only), which receives released messages without TLS, as legacy sends them.
+    'release_smtp' => [
+        'host' => (string) Env::get('RESTV2_RELEASE_SMTP_HOST', 'postfix'),
+        'port' => (int) Env::get('RESTV2_RELEASE_SMTP_PORT', 590),
+        'timeout' => max(1, (int) Env::get('RESTV2_RELEASE_SMTP_TIMEOUT', 30)),
+    ],
+
+    'quarantine' => [
+        // Largest stored message, in bytes, that is parsed and downloadable (legacy: 10 MiB).
+        'content_limit' => max(1, (int) Env::get('RESTV2_QUARANTINE_CONTENT_LIMIT', 10485760)),
+        // The default notification template (legacy /tpls/quarantine.tpl): mailcow's
+        // data/assets/templates, mounted read-only for feature 005 at RESTV2_MAILCOW_TPLS_DIR. When
+        // the file cannot be read, the bundled 2026-09a copy (resources/legacy/quarantine.tpl) is used.
+        'default_template' => (string) Env::get('RESTV2_QUARANTINE_DEFAULT_TEMPLATE', rtrim((string) Env::get('RESTV2_MAILCOW_TPLS_DIR', '/mailcow/tpls'), '/').'/quarantine.tpl'),
+        // Seconds a notification template check or preview may take (FR-070).
+        'template_timeout' => max(1, (int) Env::get('RESTV2_TEMPLATE_RENDER_TIMEOUT', 5)),
+        // The interpreter of the template check (the notifier's Jinja2 sandbox); shared with
+        // feature 011's ban rule check.
+        'python' => (string) Env::get('RESTV2_PYTHON', 'python3'),
+        // Seconds an item lock lives at most (research R4); it exceeds the worst case of a release
+        // (delivery, learning and fuzzy hashes, 30 s each). Tests lower it.
+        'lock_ttl' => max(1, (int) Env::get('RESTV2_QUARANTINE_LOCK_TTL', 300)),
+    ],
+
+    /*
+    |----------------------------------------------------------------------
     | Legacy PHP configuration
     |----------------------------------------------------------------------
     |

@@ -15,6 +15,7 @@ ARG PHP_IMAGE=php:8.4-fpm-alpine
 FROM ${PHP_IMAGE} AS base
 
 ARG PHPREDIS_VERSION=6.2.0
+ARG MAILPARSE_VERSION=3.2.0
 
 # ldap (feature 012, research R2): the LDAP identity provider. libldap and the CA bundle stay at
 # runtime; openldap-dev is only needed to compile the extension.
@@ -24,12 +25,22 @@ RUN set -eux; \
     # Python `re`, which only Python decides reliably (PSF-2.0, GPL-compatible).
     apk add --no-cache python3; \
     python3 -c "import re, json"; \
+    # Feature 006 (research R7, R23): the legacy quarantine notifier's template engine, sandbox and
+    # HTML-to-text converter (Jinja2 and MarkupSafe BSD-3-Clause, html2text GPL-3.0), so that a
+    # notification template is checked exactly as quarantine_notify.py renders it.
+    apk add --no-cache py3-jinja2 py3-markupsafe py3-html2text; \
+    python3 -I -c "import jinja2.sandbox, html2text"; \
     apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev linux-headers openldap-dev; \
     docker-php-ext-install -j"$(nproc)" pdo_mysql intl ldap; \
     # OPcache is compiled into the official PHP 8.4 images; install it only where it is not.
     if ! php -m | grep -qi '^Zend OPcache$'; then docker-php-ext-install opcache; fi; \
     pecl install "redis-${PHPREDIS_VERSION}"; \
     docker-php-ext-enable redis; \
+    # Feature 006 (research R5, R23): PECL mailparse (PHP-3.01), required by legacy's MIME parser
+    # php-mime-mail-parser, which parses quarantined messages exactly as the legacy detail view.
+    pecl install "mailparse-${MAILPARSE_VERSION}"; \
+    docker-php-ext-enable mailparse; \
+    php -m | grep -qi '^mailparse$'; \
     apk del .build-deps; \
     rm -rf /tmp/pear ~/.pearrc
 

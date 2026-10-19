@@ -121,6 +121,18 @@ services:
       - RESTV2_IP_CHECK_IPV4_URL=${RESTV2_IP_CHECK_IPV4_URL:-http://ipv4.mailcow.email}
       - RESTV2_IP_CHECK_IPV6_URL=${RESTV2_IP_CHECK_IPV6_URL:-http://ipv6.mailcow.email}
       - RESTV2_RSPAMD_SOCKET=${RESTV2_RSPAMD_SOCKET:-/var/lib/rspamd/rspamd.sock}
+      # Feature 006 (quarantine, spam policy and rate limits): the Rspamd controller timeout of the
+      # learning calls, Postfix's quarantine submission for releases (port 590, no TLS, as legacy),
+      # the content size limit of inspection and downloads, the default notification template
+      # (empty: quarantine.tpl of the templates mount below) and the template check's time limit.
+      # SKIP_CLAMD (above) tells clients whether virus scanning is enabled.
+      - RESTV2_RSPAMD_TIMEOUT=${RESTV2_RSPAMD_TIMEOUT:-30}
+      - RESTV2_RELEASE_SMTP_HOST=${RESTV2_RELEASE_SMTP_HOST:-postfix}
+      - RESTV2_RELEASE_SMTP_PORT=${RESTV2_RELEASE_SMTP_PORT:-590}
+      - RESTV2_RELEASE_SMTP_TIMEOUT=${RESTV2_RELEASE_SMTP_TIMEOUT:-30}
+      - RESTV2_QUARANTINE_CONTENT_LIMIT=${RESTV2_QUARANTINE_CONTENT_LIMIT:-10485760}
+      - RESTV2_QUARANTINE_DEFAULT_TEMPLATE=${RESTV2_QUARANTINE_DEFAULT_TEMPLATE:-}
+      - RESTV2_TEMPLATE_RENDER_TIMEOUT=${RESTV2_TEMPLATE_RENDER_TIMEOUT:-5}
       # Feature 009 (routing): defaults of the relayhost and transport connection test.
       - RESTV2_ROUTING_TEST_SENDER=${RESTV2_ROUTING_TEST_SENDER:-relay@example.org}
       - RESTV2_ROUTING_TEST_RECIPIENT=${RESTV2_ROUTING_TEST_RECIPIENT:-null@hosted.mailcow.de}
@@ -205,7 +217,8 @@ services:
       # Read-only: Rspamd's controller socket (features 006 and 011). Connecting to the socket
       # works on a read-only mount; Rspamd's data cannot be changed.
       - rspamd-vol-1:/var/lib/rspamd:ro
-      # Read-only: the default password reset message templates (feature 005, R6).
+      # Read-only: mailcow's message templates, the default password reset bodies (feature 005, R6)
+      # and the default quarantine notification template (feature 006, R8: quarantine.tpl).
       - ./data/assets/templates:/mailcow/tpls:ro,z
     labels:
       # mailcow's ofelia runs the audit retention purge daily (R22).

@@ -20,7 +20,9 @@
         "lbuchs/webauthn": "^2.2",
         "league/oauth2-client": "^2.8",
         "mlocati/spf-lib": "^3.3",
-        "robthree/twofactorauth": "^3.0"
+        "php-mime-mail-parser/php-mime-mail-parser": "^10.0",
+        "robthree/twofactorauth": "^3.0",
+        "soundasleep/html2text": "^2.1"
     },
     "require-dev": {
         "bshaffer/oauth2-server-php": "1.11.1",

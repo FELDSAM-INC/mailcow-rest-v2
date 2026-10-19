@@ -91,6 +91,11 @@ class SettingsAuthorizationMatrixTest extends TestCase
             'updateAppLinkSettings' => ['PATCH', '/api/v2/settings/app-links', ['links' => [['name' => 'Wiki', 'url' => '/wiki', 'signedInUrl' => null, 'showOnLoginPage' => true]]], 200, self::ADMIN_ONLY, []],
             'getBrandColors' => ['GET', '/api/v2/settings/brand-colors', null, 200, self::ADMIN_ONLY, []],
             'updateBrandColors' => ['PATCH', '/api/v2/settings/brand-colors', ['light' => '#1d4ed8'], 200, self::ADMIN_ONLY, []],
+            // US2: the password policy change (003's read stays open to domain administrators) and
+            // the password reset notification.
+            'updatePasswordPolicy' => ['PATCH', '/api/v2/password-policy', ['minLength' => 8], 200, self::ADMIN_ONLY, []],
+            'getPasswordResetNotification' => ['GET', '/api/v2/settings/password-reset-notification', null, 200, self::ADMIN_ONLY, []],
+            'updatePasswordResetNotification' => ['PATCH', '/api/v2/settings/password-reset-notification', ['subject' => 'Reset'], 200, self::ADMIN_ONLY, []],
         ];
     }
 

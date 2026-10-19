@@ -107,6 +107,7 @@ use App\Http\Controllers\Api\V2\PasskeyController;
 use App\Http\Controllers\Api\V2\PasskeyRegistrationOptionsController;
 use App\Http\Controllers\Api\V2\PasswordPolicyController;
 use App\Http\Controllers\Api\V2\PasswordResetController;
+use App\Http\Controllers\Api\V2\PasswordResetNotificationController;
 use App\Http\Controllers\Api\V2\PendingSignInController;
 use App\Http\Controllers\Api\V2\PreferencesController;
 use App\Http\Controllers\Api\V2\ProblemTypeController;
@@ -1332,6 +1333,7 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/settings/login-page', [LoginPageSettingsController::class, 'show'])->name('settings-login-page.show');
         Route::get('/settings/app-links', [AppLinkSettingsController::class, 'show'])->name('settings-app-links.show');
         Route::get('/settings/brand-colors', [BrandColorsController::class, 'show'])->name('settings-brand-colors.show');
+        Route::get('/settings/password-reset-notification', [PasswordResetNotificationController::class, 'show'])->name('settings-password-reset-notification.show');
     });
 
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
@@ -1355,6 +1357,13 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::patch('/settings/brand-colors', [BrandColorsController::class, 'update'])
             ->defaults('restv2.audit', ['event' => 'brandColorsUpdate', 'target' => 'brandColors'])
             ->name('settings-brand-colors.update');
+        // The change of feature 003's password policy resource (same path, same version tag).
+        Route::patch('/password-policy', [PasswordPolicyController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'passwordPolicyUpdate', 'target' => 'passwordPolicy'])
+            ->name('password-policy.update');
+        Route::patch('/settings/password-reset-notification', [PasswordResetNotificationController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'passwordResetNotificationUpdate', 'target' => 'passwordResetNotification'])
+            ->name('settings-password-reset-notification.update');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

@@ -553,9 +553,6 @@
     "pendingOperations": [
         "getIpCheckSetting",
         "updateIpCheckSetting",
-        "updatePasswordPolicy",
-        "getPasswordResetNotification",
-        "updatePasswordResetNotification",
         "getQuotaNotificationSettings",
         "updateQuotaNotificationSettings",
         "getQuotaNotificationRecipients",

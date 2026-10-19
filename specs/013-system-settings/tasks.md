@@ -355,7 +355,7 @@ follow; save reset notifications with valid and invalid senders and templates (s
 
 ### Tests for User Story 2 (write first, observe failing)
 
-- [ ] T040 [P] [US2] Write `tests/Feature/Settings/PasswordPolicyUpdateTest.php` (FR-036–FR-038, SC-011,
+- [x] T040 [P] [US2] Write `tests/Feature/Settings/PasswordPolicyUpdateTest.php` (FR-036–FR-038, SC-011,
   AS-2.1, AS-2.2, AS-2.6): PATCH `{minLength: 10, requireDigits: true, requireMixedCase: true}` →
   200 with the whole policy; Redis `PASSWD_POLICY` = `length 10, chars 0, special_chars 0,
   lowerupper 1, numbers 1` (all five fields, as legacy's `hMSet`); the response `ETag` equals the
@@ -364,7 +364,7 @@ follow; save reset notifications with valid and invalid senders and templates (s
   (test name contains `Invalid` for the contract-violating values); with no stored policy the merge
   starts from the defaults 6/0/0/0/0; two administrators with the same tag: the second → 412; Redis
   down → 503; audit `passwordPolicyUpdate` with each changed rule.
-- [ ] T041 [P] [US2] Write `tests/Feature/Settings/PasswordResetNotificationTest.php` (FR-039–FR-042,
+- [x] T041 [P] [US2] Write `tests/Feature/Settings/PasswordResetNotificationTest.php` (FR-039–FR-042,
   AS-2.3–2.5): sender `no-reply@` → 422 `invalidFormat` (`format: email`) and nothing stored (legacy
   would store `""`); valid values stored in `PW_RESET_FROM`/`SUBJ`/`TEXT`/`HTML`; both templates empty
   → the read returns the fixture default templates with `templatesAreDefault: true`; empty subject →
@@ -374,17 +374,17 @@ follow; save reset notifications with valid and invalid senders and templates (s
 
 ### Implementation for User Story 2
 
-- [ ] T042 [US2] Extend `app/Services/PasswordPolicy/PasswordPolicyService.php` (003) with
+- [x] T042 [US2] Extend `app/Services/PasswordPolicy/PasswordPolicyService.php` (003) with
   `update(array $patch, ?string $ifMatch, Principal $actor)` per R8 (003's tag, merge on effective
   values, `HMSET` of all five fields through `RedisSettingsStore`, audit), and add
   `update()` to `app/Http/Controllers/Api/V2/PasswordPolicyController.php` (003) with
   `app/Http/Requests/Api/V2/Settings/UpdatePasswordPolicyRequest.php`; register
   `PATCH password-policy` (admin write) in `routes/api.php`. This makes T040 pass.
-- [ ] T043 [US2] Create `app/Services/Settings/PasswordResetNotificationService.php` (R9, default
+- [x] T043 [US2] Create `app/Services/Settings/PasswordResetNotificationService.php` (R9, default
   templates from `restv2.template_dir`), `app/Http/Requests/Api/V2/Settings/UpdatePasswordResetNotificationRequest.php`
   and `app/Http/Controllers/Api/V2/PasswordResetNotificationController.php`; register the routes.
   This makes T041 pass.
-- [ ] T044 [US2] Add `updatePasswordPolicy` and the two reset notification operations to
+- [x] T044 [US2] Add `updatePasswordPolicy` and the two reset notification operations to
   `tests/Feature/Settings/SettingsAuthorizationMatrixTest.php` (domain admin and mailbox user → 403;
   003's read stays open to domain admins).
 
@@ -903,3 +903,7 @@ duplicate it"), recorded as they were made:
 - **T038**: the four Form Requests share `App\Http\Requests\Api\V2\Settings\SettingsRequest`
   (authorisation before the rules, `unknownField` for members the schema does not define, the
   `validateOnly` query flag). The contrast rule is `App\Rules\BrandColorContrast`.
+- **T042**: feature 003 has no `PasswordPolicyService`; its components are
+  `App\Services\Passwords\PasswordPolicyReader` and `EffectivePasswordPolicy` (which carries the
+  shared tag). The change is the new `App\Services\Passwords\PasswordPolicyService::update()` next
+  to them, which reuses the reader for the answer and `EffectivePasswordPolicy::etag()` for the tag.

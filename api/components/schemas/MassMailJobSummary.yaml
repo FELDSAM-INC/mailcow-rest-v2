@@ -1,0 +1,53 @@
+type: object
+description: |
+  A mass mail job as the list returns it: everything but its bodies, which
+  `GET /mass-mail-jobs/{jobId}` returns (gap G17: lists stay light, also on slow connections).
+required:
+  - id
+  - status
+  - sender
+  - subject
+  - selection
+  - recipientCount
+  - counts
+  - createdBy
+  - createdAt
+  - startedAt
+  - finishedAt
+  - cancelledBy
+properties:
+  id:
+    type: string
+    pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
+  status:
+    $ref: './MassMailJobStatus.yaml'
+  sender:
+    type: string
+  subject:
+    type: string
+  selection:
+    $ref: './MassMailSelection.yaml'
+  recipientCount:
+    type: integer
+    minimum: 1
+  counts:
+    $ref: './MassMailRecipientCounts.yaml'
+  createdBy:
+    $ref: './AccountRef.yaml'
+  createdAt:
+    type: string
+    format: date-time
+  startedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  finishedAt:
+    oneOf:
+      - type: string
+        format: date-time
+      - type: 'null'
+  cancelledBy:
+    oneOf:
+      - $ref: './AccountRef.yaml'
+      - type: 'null'

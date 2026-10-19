@@ -557,18 +557,18 @@ runner with the fake LMTP client, cancel, interrupt, and compare outcomes (spec 
 
 ### Tests for User Story 6 (write first, observe failing)
 
-- [ ] T064 [P] [US6] Write `tests/Unit/Clients/SocketLmtpClientTest.php` (R18) against
+- [x] T064 [P] [US6] Write `tests/Unit/Clients/SocketLmtpClientTest.php` (R18) against
   `tests/Support/Lmtp/LmtpStubServer.php` (create it: a PHP child process on an ephemeral port that
   scripts replies and records the dialogue): greeting, `LHLO mail.example.org`, `MAIL FROM`,
   `RCPT TO`, `DATA`, dot-stuffing of a line starting with `.`, CRLF endings, one reply per recipient;
   `250` → delivered, `452` → temporaryFailure, `550` → permanentFailure, connection refused →
   temporaryFailure; the connection is reused with `RSET` and reopened after an error; a server that
   stalls past the 5 s deadline before the final `.` → temporaryFailure "timeout" and no `.` sent.
-- [ ] T065 [P] [US6] Write `tests/Unit/Services/MassMailMessageFactoryTest.php`: `From`, a single
+- [x] T065 [P] [US6] Write `tests/Unit/Services/MassMailMessageFactoryTest.php`: `From`, a single
   `To`, `Subject` (UTF-8 encoded), `Date`, `Message-ID` `<jobid.recipientid@mail.example.org>`,
   `X-Mailer: MooMassMail`; text only → `text/plain`; with HTML → `multipart/alternative` with both
   parts.
-- [ ] T066 [P] [US6] Write `tests/Feature/MassMail/MassMailPreviewTest.php` (FR-072, FR-073, AS-6.1,
+- [x] T066 [P] [US6] Write `tests/Feature/MassMail/MassMailPreviewTest.php` (FR-072, FR-073, AS-6.1,
   AS-6.6): 3 domains with 120 receiving mailboxes, 2 inactive (`active = 0`), 1 with `active = 2`
   (counted) and 4 resources → `recipientCount` 121 for `{}`, rows sorted by address and paged;
   `q=alice` filters rows while `recipientCount` stays; domain limit; include and exclude;
@@ -576,7 +576,7 @@ runner with the fake LMTP client, cancel, interrupt, and compare outcomes (spec 
   `selection.exclude.0`; an inactive mailbox → `notEligible` `reason: notReceiving`; a mailbox outside
   the chosen domains → `notEligible` `reason: outsideSelectedDomains`; an alias domain in `domains`
   → `notFound`; 1,001 entries → 422; admin ro key → 200 (`restv2.readOnly`); no audit record, no row.
-- [ ] T067 [P] [US6] Write `tests/Feature/MassMail/MassMailCreateTest.php` (FR-074, FR-075, AS-6.2–6.4,
+- [x] T067 [P] [US6] Write `tests/Feature/MassMail/MassMailCreateTest.php` (FR-074, FR-075, AS-6.2–6.4,
   AS-6.7): admin session with `expectedRecipients` 121 → 201 with `Location`, a `running` job and 121
   `pending` recipient rows; a mailbox created after the preview → 409
   `mass-mail-recipient-count-changed` with `actualRecipients` 122 and no rows; a second job while one
@@ -585,7 +585,7 @@ runner with the fake LMTP client, cancel, interrupt, and compare outcomes (spec 
   invalid sender, empty subject or text, a 1 MiB + 1 byte body → 422; any API key (rw or ro, admin
   owner) → 403 `session-required`; audit `massMailJobCreation` with sender, subject, selection
   summary and count.
-- [ ] T068 [P] [US6] Write `tests/Feature/MassMail/MassMailRunnerTest.php` (FR-076, FR-079, FR-087,
+- [x] T068 [P] [US6] Write `tests/Feature/MassMail/MassMailRunnerTest.php` (FR-076, FR-079, FR-087,
   SC-008, SC-009) calling `MassMailRunner` with `FakeLmtpClient`, a fake `Sleeper` and
   `Carbon::setTestNow()`: every recipient gets exactly one message addressed only to itself; the
   sleeper enforces ≥ 100 ms between delivery starts at rate 10 and 1/rate for `RESTV2_MASS_MAIL_RATE`
@@ -596,48 +596,48 @@ runner with the fake LMTP client, cancel, interrupt, and compare outcomes (spec 
   (actor null, creation `requestId` and client address, counts); a second runner while the lock is
   held exits without delivering; with no running job the runner exits at once; 10,000 recipients at
   rate 10 complete in ≤ 1,050 s of simulated time (SC-009, fake clock).
-- [ ] T069 [P] [US6] Write `tests/Feature/MassMail/MassMailCancellationTest.php` (FR-078, AS-6.5): a
+- [x] T069 [P] [US6] Write `tests/Feature/MassMail/MassMailCancellationTest.php` (FR-078, AS-6.5): a
   running job with 60 delivered → POST cancellation → 200 `cancelled`, the remaining rows `skipped`,
   counts frozen, audit `massMailJobCancellation` with counts; a runner iteration after the commit
   claims nothing; a delivery in flight at cancellation (fake hanging up to the 5 s deadline) is
   recorded as delivered or, for a temporary reply, `skipped`; cancelling again → 200 unchanged and no
   audit; cancelling a completed job → 409; any key → 403 `session-required`; unknown id → 404.
-- [ ] T070 [P] [US6] Write `tests/Feature/MassMail/MassMailReadTest.php` (FR-077, FR-080, FR-081,
+- [x] T070 [P] [US6] Write `tests/Feature/MassMail/MassMailReadTest.php` (FR-077, FR-080, FR-081,
   AS-6.8): list newest first, sort by status, `status` filter, `q` on subject; single read with
   sender, subject, bodies, selection, creator, times and counts (`delivering` counted as `pending`);
   recipients list sorted by address, `outcome` filter (`pending` includes `delivering`), `q` on the
   address, failure reasons; admin ro key may read; domain admin and mailbox user → 403.
-- [ ] T071 [P] [US6] Write `tests/Feature/MassMail/MassMailPurgeTest.php`: `restv2:mass-mail-purge`
+- [x] T071 [P] [US6] Write `tests/Feature/MassMail/MassMailPurgeTest.php`: `restv2:mass-mail-purge`
   deletes non-running jobs older than `RESTV2_AUDIT_RETENTION_DAYS` with their recipients and keeps
   running and recent ones.
 
 ### Implementation for User Story 6
 
-- [ ] T072 [US6] Create `database/migrations/2026_10_18_013001_create_restv2_mass_mail_jobs_table.php`
+- [x] T072 [US6] Create `database/migrations/2026_10_18_013001_create_restv2_mass_mail_jobs_table.php`
   with both tables, columns, indexes, the unique `running_slot` and the cascading foreign key of
   data-model.md section 4, and the models `app/Models/{MassMailJob,MassMailRecipient}.php`. Run 001's
   `MigrationPrefixTest`.
-- [ ] T073 [P] [US6] Create `app/Clients/Lmtp/{LmtpClient,SocketLmtpClient,LmtpResult}.php` (R18),
+- [x] T073 [P] [US6] Create `app/Clients/Lmtp/{LmtpClient,SocketLmtpClient,LmtpResult}.php` (R18),
   bound in `AppServiceProvider`. This makes T064 pass.
-- [ ] T074 [P] [US6] Create `app/Services/MassMail/MassMailMessageFactory.php` (`symfony/mime`). This
+- [x] T074 [P] [US6] Create `app/Services/MassMail/MassMailMessageFactory.php` (`symfony/mime`). This
   makes T065 pass.
-- [ ] T075 [US6] Create `app/Services/MassMail/{Selection,SelectionResolver}.php` (R19: starting set,
+- [x] T075 [US6] Create `app/Services/MassMail/{Selection,SelectionResolver}.php` (R19: starting set,
   validation with field paths and reasons, preview query with `ListQuery`, count) and
   `app/Http/Controllers/Api/V2/MassMailRecipientPreviewController.php` with
   `app/Http/Requests/Api/V2/Settings/PreviewMassMailRecipientsRequest.php`. This makes T066 pass.
-- [ ] T076 [US6] Create `app/Services/MassMail/MassMailJobService.php` (create with the count check,
+- [x] T076 [US6] Create `app/Services/MassMail/MassMailJobService.php` (create with the count check,
   the running-slot guard, the batch insert of recipients and the creation audit in one transaction;
   cancel per R17; list and read with computed counts), `app/Policies/MassMailJobPolicy.php`,
   `app/Http/Requests/Api/V2/Settings/StoreMassMailJobRequest.php` and the controllers
   `app/Http/Controllers/Api/V2/{MassMailJobController,MassMailJobRecipientController,
   MassMailJobCancellationController}.php`; register the routes. This makes T067, T069 and T070 pass.
-- [ ] T077 [US6] Create `app/Services/MassMail/MassMailRunner.php` (R17: lock, recovery, claim with
+- [x] T077 [US6] Create `app/Services/MassMail/MassMailRunner.php` (R17: lock, recovery, claim with
   the job row locked, rate through `Sleeper`, delivery through `LmtpClient` with the deadline, retry
   schedule, completion with audit) and `app/Console/Commands/MassMailRunCommand.php`
   (`restv2:mass-mail-run --max-time=290`). This makes T068 pass.
-- [ ] T078 [P] [US6] Create `app/Console/Commands/MassMailPurgeCommand.php` (`restv2:mass-mail-purge`).
+- [x] T078 [P] [US6] Create `app/Console/Commands/MassMailPurgeCommand.php` (`restv2:mass-mail-purge`).
   This makes T071 pass.
-- [ ] T079 [US6] Add the six mass mail operations to
+- [x] T079 [US6] Add the six mass mail operations to
   `tests/Feature/Settings/SettingsAuthorizationMatrixTest.php`.
 
 **Checkpoint**: US6 works independently.
@@ -925,3 +925,17 @@ duplicate it"), recorded as they were made:
   which also refuses mailbox users; the Form Request checks role and scope before its rules, so a
   foreign domain answers `404` whatever the body. The default `quota.tpl` comes from feature 005's
   template mount, read by `PasswordResetNotificationService::template()`.
+- **T064 to T079 (gaps G16, G17)**: each recipient row also stores a `failure_code`, exposed as
+  `MassMailRecipient.failureCode` (G16); `listMassMailJobs` returns `MassMailJobSummary` without the
+  bodies (G17). The migration adds the index `(job_id, outcome, address)`, which the runner's claim
+  (the next pending recipient by address) needs to stop at the first due row. Admin-only access uses
+  `SettingsPolicy` (no separate `MassMailJobPolicy`). The selection is checked by the Form Requests
+  through `SelectionResolver::violations()`, so its errors are reported together with the other
+  fields; an empty selection is sent as the JSON object `{}`. The runner uses 001's injectable
+  `Clock` and `Sleeper` (the tests advance the fake clock with each sleep) and the `restv2` cache
+  store's lock; the completion record is written with the creating request's ID and client address
+  by binding a request with those values while it is recorded. The SC-009 check runs 1,000
+  recipients in simulated time in the main suite; the 10,000-recipient version is in the
+  `performance` group. A read-only key on the session-only operations is refused by 001's key scope
+  check first (`insufficient-key-scope`), before the session requirement (`session-required`) that a
+  read-write key gets; both are `403`.

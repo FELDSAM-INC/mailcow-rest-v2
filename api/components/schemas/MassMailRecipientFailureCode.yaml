@@ -1,0 +1,18 @@
+type: string
+description: |
+  Why the delivery to a mass mail recipient failed, a stable code clients translate (gap G16), next
+  to Dovecot's reply in `failureReason`:
+
+  - `overQuota`: the mailbox is full (enhanced status `x.2.2`);
+  - `mailboxUnavailable`: Dovecot refused the mailbox, for example because it was deleted or
+    deactivated after the job was created (enhanced status `5.1.x`, or a `550` reply);
+  - `rejected`: any other permanent refusal;
+  - `temporaryFailurePersisted`: Dovecot refused temporarily on every attempt (the first try and 3
+    retries within 5 minutes);
+  - `connectionFailed`: Dovecot's local delivery could not be reached or did not answer within the
+    delivery deadline on every attempt;
+  - `interrupted`: this API stopped while the delivery was in progress; it is never retried, so that
+    no recipient receives two copies.
+
+  Clients show unknown codes like `rejected`.
+enum: [overQuota, mailboxUnavailable, rejected, temporaryFailurePersisted, connectionFailed, interrupted]

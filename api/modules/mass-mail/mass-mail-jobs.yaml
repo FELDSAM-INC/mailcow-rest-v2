@@ -3,8 +3,8 @@ get:
   tags: [Mass mail]
   summary: List mass mail jobs
   description: |
-    Lists mass mail jobs, newest first by default, with their counts per outcome. `q` searches the
-    subject. Jobs are kept for the audit retention period. Administrators only, by session or by an
+    Lists mass mail jobs, newest first by default, with their counts per outcome but without their
+    bodies, which the single read returns. `q` searches the subject. Jobs are kept for the audit retention period. Administrators only, by session or by an
     administrator's key, read-only keys included.
   security:
     - sessionCookie: []

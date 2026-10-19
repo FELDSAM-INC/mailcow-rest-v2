@@ -1,16 +1,21 @@
 type: object
 description: One recipient of a mass mail job.
-required: [address, outcome, failureReason, attempts, lastAttemptAt]
+required: [address, outcome, failureCode, failureReason, attempts, lastAttemptAt]
 properties:
   address:
     type: string
     examples: [alice@example.org]
   outcome:
     $ref: './MassMailRecipientOutcome.yaml'
+  failureCode:
+    description: For `failed`, the stable reason of the failure (gap G16); `null` otherwise.
+    oneOf:
+      - $ref: './MassMailRecipientFailureCode.yaml'
+      - type: 'null'
   failureReason:
     description: |
       For `failed`: Dovecot's reply (for example an over-quota refusal), `interrupted` when this
-      API stopped during the delivery, or the connection error. `null` otherwise.
+      API stopped during the delivery, or the connection error, in English. `null` otherwise.
     oneOf:
       - type: string
         maxLength: 1024

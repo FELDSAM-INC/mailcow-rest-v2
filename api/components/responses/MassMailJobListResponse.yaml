@@ -1,4 +1,4 @@
-description: Mass mail jobs matching the filters.
+description: Mass mail jobs matching the filters, as summaries without their bodies (gap G17).
 content:
   application/json:
     schema:
@@ -8,6 +8,6 @@ content:
         data:
           type: array
           items:
-            $ref: '../schemas/MassMailJob.yaml'
+            $ref: '../schemas/MassMailJobSummary.yaml'
         meta:
           $ref: '../schemas/ListMeta.yaml'

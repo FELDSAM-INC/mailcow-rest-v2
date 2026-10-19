@@ -84,6 +84,10 @@ use App\Http\Controllers\Api\V2\MailQueueMessageContentController;
 use App\Http\Controllers\Api\V2\MailQueueMessageController;
 use App\Http\Controllers\Api\V2\MailQueuePurgeController;
 use App\Http\Controllers\Api\V2\MailStorageUsageController;
+use App\Http\Controllers\Api\V2\MassMailJobCancellationController;
+use App\Http\Controllers\Api\V2\MassMailJobController;
+use App\Http\Controllers\Api\V2\MassMailJobRecipientController;
+use App\Http\Controllers\Api\V2\MassMailRecipientPreviewController;
 use App\Http\Controllers\Api\V2\MonitoringCapabilitiesController;
 use App\Http\Controllers\Api\V2\MtaStsPolicyController;
 use App\Http\Controllers\Api\V2\Oauth2ClientBulkActionController;
@@ -1417,6 +1421,33 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('domain', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'quotaNotificationRecipientsUpdate', 'target' => 'quotaNotificationRecipients'])
             ->name('quota-notification-recipients.update');
+    });
+
+    // Feature 013: mass mail (research R17 to R19). Sending and cancelling need a signed-in
+    // administrator; the preview is a POST that only reads (read-only keys may use it, not
+    // audited). The literal recipient-preview path comes before {jobId}.
+    $massMailJob = '[0-9A-HJKMNP-TV-Z]{26}';
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function () use ($massMailJob): void {
+        Route::get('/mass-mail-jobs', [MassMailJobController::class, 'index'])->name('mass-mail-jobs.index');
+        Route::get('/mass-mail-jobs/{jobId}', [MassMailJobController::class, 'show'])
+            ->where('jobId', $massMailJob)
+            ->name('mass-mail-jobs.show');
+        Route::get('/mass-mail-jobs/{jobId}/recipients', [MassMailJobRecipientController::class, 'index'])
+            ->where('jobId', $massMailJob)
+            ->name('mass-mail-job-recipients.index');
+    });
+    Route::post('/mass-mail-jobs/recipient-preview', [MassMailRecipientPreviewController::class, 'store'])
+        ->middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])
+        ->defaults('restv2.readOnly', true)
+        ->name('mass-mail-recipient-preview.store');
+    Route::middleware(['restv2.auth:session', 'restv2.csrf', 'restv2.pending'])->group(function () use ($massMailJob): void {
+        Route::post('/mass-mail-jobs', [MassMailJobController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'massMailJobCreation', 'target' => 'massMailJob'])
+            ->name('mass-mail-jobs.store');
+        Route::post('/mass-mail-jobs/{jobId}/cancellation', [MassMailJobCancellationController::class, 'store'])
+            ->where('jobId', $massMailJob)
+            ->defaults('restv2.audit', ['event' => 'massMailJobCancellation', 'target' => 'massMailJob'])
+            ->name('mass-mail-job-cancellation.store');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

@@ -24,6 +24,8 @@ use App\Clients\Keycloak\HttpKeycloakAdminClient;
 use App\Clients\Keycloak\KeycloakAdminClient;
 use App\Clients\Ldap\ExtLdapDirectory;
 use App\Clients\Ldap\LdapDirectory;
+use App\Clients\Lmtp\LmtpClient;
+use App\Clients\Lmtp\SocketLmtpClient;
 use App\Clients\Mail\QuarantineReleaseMailer;
 use App\Clients\Mail\SmtpQuarantineReleaseMailer;
 use App\Clients\Memcached\MemcachedFlusher;
@@ -122,8 +124,15 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MemcachedFlusher::class, SocketMemcachedFlusher::class);
         $this->app->bind(IspconfigDnsClient::class, JsonIspconfigDnsClient::class);
         $this->app->bind(RspamdController::class, UnixSocketRspamdController::class);
-        // Feature 013: mailcow's generated Rspamd settings map (faked in tests).
+        // Feature 013: mailcow's generated Rspamd settings map and Dovecot's local delivery of
+        // mass mail (both faked in tests).
         $this->app->bind(SettingsMapClient::class, HttpSettingsMapClient::class);
+        $this->app->bind(LmtpClient::class, fn () => new SocketLmtpClient(
+            (string) config('restv2.lmtp.host'),
+            (int) config('restv2.lmtp.port'),
+            strtolower((string) config('restv2.mailcow_hostname')),
+            (float) config('restv2.mass_mail.delivery_deadline'),
+        ));
         // Feature 006: releases to Postfix's quarantine submission (faked in tests).
         $this->app->bind(QuarantineReleaseMailer::class, SmtpQuarantineReleaseMailer::class);
         $this->app->bind(ReleaseSource::class, GitHubReleaseSource::class);

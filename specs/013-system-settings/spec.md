@@ -796,7 +796,8 @@ filtered by target type and identifier.
   mailcow configuration makes editable (13 by default, from "Header-From: Denylist" to "Monitoring
   Hosts"). Each map has a stable identifier (its legacy file name), its English name, its content
   and a version tag. The list MUST support pagination and sorting by name and identifier, and a
-  search on the name.
+  search on the name; it MUST return summaries (size instead of content), and the single read
+  returns the content (API gap G17).
 - **FR-057**: Administrators MUST be able to replace a map's content. The content MUST be at most
   1 MiB. Every line MUST be empty, a comment starting with `#`, or a regular expression written as
   `/pattern/` followed by at most one of the flags `i`, `m` or `s`, whose pattern contains no
@@ -892,7 +893,9 @@ filtered by target type and identifier.
   cancelled), sender, subject, bodies, selection, and the number of recipients per outcome
   (pending, delivered, failed, skipped). Its recipients MUST be listable with pagination, sorted by
   address, filtered by outcome and searchable by address, each with its outcome and, for failures,
-  Dovecot's reason.
+  Dovecot's reason and a stable failure code that clients translate (`overQuota`,
+  `mailboxUnavailable`, `rejected`, `temporaryFailurePersisted`, `connectionFailed`,
+  `interrupted`; API gap G16).
 - **FR-078**: A signed-in administrator (FR-006) MUST be able to cancel a running job. No further
   message MUST be delivered once the cancellation is confirmed, and the pending recipients MUST be
   recorded as skipped. Cancelling a cancelled job MUST succeed and change nothing. Cancelling a
@@ -902,7 +905,8 @@ filtered by target type and identifier.
   recipient whose delivery was in progress MUST be recorded as failed with the reason
   "interrupted".
 - **FR-080**: Administrators MUST be able to list jobs with pagination, newest first by default,
-  sortable by creation time and status, filtered by status, with a search on the subject. Jobs
+  sortable by creation time and status, filtered by status, with a search on the subject. The list
+  MUST return summaries without the bodies, which the single read returns (API gap G17). Jobs
   MUST be kept for the audit retention period (365 days by default, feature 001 FR-048) and MUST
   NOT be changed apart from their delivery progress and cancellation.
 - **FR-081**: Previews and jobs MUST be readable by administrators by session or by an

@@ -556,12 +556,6 @@
         "setRspamdUiPassword",
         "getLegacyApiCorsSettings",
         "updateLegacyApiCorsSettings",
-        "listMassMailJobs",
-        "createMassMailJob",
-        "previewMassMailRecipients",
-        "getMassMailJob",
-        "listMassMailJobRecipients",
-        "cancelMassMailJob",
         "getLicenseStatus",
         "verifyLicense"
     ]

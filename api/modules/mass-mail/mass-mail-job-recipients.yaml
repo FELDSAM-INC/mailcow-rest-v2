@@ -6,7 +6,7 @@ get:
   summary: List a job's recipients
   description: |
     Lists the job's recipients, sorted by address by default, each with its outcome and, for a
-    failure, Dovecot's reason. `q` searches the address. Administrators only, by session or by an
+    failure, a stable `failureCode` and Dovecot's reply. `q` searches the address. Administrators only, by session or by an
     administrator's key.
   security:
     - sessionCookie: []

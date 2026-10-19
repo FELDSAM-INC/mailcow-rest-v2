@@ -7,6 +7,7 @@ use App\Services\Settings\SettingsAuditTargetResolver;
 use App\Support\Http\ProblemType;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route as RoutingRoute;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\Settings\SettingsTestHelpers;
@@ -118,5 +119,11 @@ class SettingsRefusalAuditorTest extends TestCase
         $this->assertSame(['type' => 'globalSieveFilter', 'id' => 'prefilter', 'name' => null], $this->resolve('globalSieveFilter', ['filterId' => 'prefilter']));
         $this->assertSame(['type' => 'quotaNotificationRecipients', 'id' => 'xn--mnchen-3ya.de', 'name' => 'münchen.de'], $this->resolve('quotaNotificationRecipients', ['domain' => 'MÜNCHEN.de']));
         $this->assertSame(255, mb_strlen((string) $this->resolve('quotaNotificationRecipients', ['domain' => str_repeat('a', 300)])['id']));
+        DB::table('restv2_mass_mail_jobs')->insert([
+            'id' => '01JABCDEFGHJKMNPQRSTVWXYZ0', 'status' => 'completed', 'sender' => 'a@example.org', 'subject' => 'Maintenance',
+            'text_body' => 'x', 'selection' => '{}', 'recipient_count' => 1, 'created_by' => 'admin',
+            'created_request_id' => str_repeat('a', 32), 'created_client_address' => '192.0.2.1', 'created_at' => '2026-10-01 10:00:00',
+        ]);
+        $this->assertSame(['type' => 'massMailJob', 'id' => '01JABCDEFGHJKMNPQRSTVWXYZ0', 'name' => 'Maintenance'], $this->resolve('massMailJob', ['jobId' => '01JABCDEFGHJKMNPQRSTVWXYZ0']));
     }
 }

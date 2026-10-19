@@ -4,6 +4,7 @@ namespace Tests\Feature\Settings;
 
 use App\Auth\Role;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Response;
@@ -69,6 +70,7 @@ class SettingsAuthorizationMatrixTest extends TestCase
         $this->sharedValue('MAIN_LOGO', 'data:image/png;base64,'.base64_encode((string) file_get_contents(__DIR__.'/../../fixtures/logos/valid/logo-300x80.png')));
         $this->values = [
             '{rule}' => (string) $f->settingsRule('Rule', 'x = 1;', 0),
+            '{job}' => $this->cancelledJob(),
         ];
     }
 
@@ -120,6 +122,13 @@ class SettingsAuthorizationMatrixTest extends TestCase
             'updateQuotaNotificationSettings' => ['PATCH', '/api/v2/settings/quota-notification', ['subject' => 'Full'], 200, self::ADMIN_ONLY, []],
             'getQuotaNotificationRecipients' => ['GET', '/api/v2/domains/example.org/quota-notification-recipients', null, 200, self::ADMIN_AND_DOMAIN_ADMIN, []],
             'updateQuotaNotificationRecipients' => ['PATCH', '/api/v2/domains/example.org/quota-notification-recipients', ['recipients' => ['it@example.org'], 'active' => true], 200, self::ADMIN_AND_DOMAIN_ADMIN, []],
+            // US6: mass mail. Sending and cancelling need a session; the preview reads only.
+            'listMassMailJobs' => ['GET', '/api/v2/mass-mail-jobs', null, 200, self::ADMIN_ONLY, []],
+            'createMassMailJob' => ['POST', '/api/v2/mass-mail-jobs', ['sender' => 'noreply@mail.example.org', 'subject' => 'Hi', 'textBody' => 'Hello', 'selection' => ['include' => ['alice@example.org']], 'expectedRecipients' => 1], 201, self::ADMIN_ONLY, ['session']],
+            'previewMassMailRecipients' => ['POST', '/api/v2/mass-mail-jobs/recipient-preview', ['selection' => ['include' => ['alice@example.org']]], 200, self::ADMIN_ONLY, ['readOnly']],
+            'getMassMailJob' => ['GET', '/api/v2/mass-mail-jobs/{job}', null, 200, self::ADMIN_ONLY, []],
+            'listMassMailJobRecipients' => ['GET', '/api/v2/mass-mail-jobs/{job}/recipients', null, 200, self::ADMIN_ONLY, []],
+            'cancelMassMailJob' => ['POST', '/api/v2/mass-mail-jobs/{job}/cancellation', null, 200, self::ADMIN_ONLY, ['session']],
         ];
     }
 
@@ -225,7 +234,27 @@ class SettingsAuthorizationMatrixTest extends TestCase
             $files[$file] = sha1((string) file_get_contents($file));
         }
 
-        return ['redis' => array_map(fn (mixed $v): string => is_string($v) ? sha1($v) : '', $values), 'files' => $files, 'settingsmap' => DB::table('settingsmap')->count()];
+        return [
+            'redis' => array_map(fn (mixed $v): string => is_string($v) ? sha1($v) : '', $values),
+            'files' => $files,
+            'settingsmap' => DB::table('settingsmap')->count(),
+            'massMail' => DB::table('restv2_mass_mail_jobs')->orderBy('id')->get(['id', 'status'])->map(fn (object $j): string => $j->id.':'.$j->status)->all(),
+            'massMailRecipients' => DB::table('restv2_mass_mail_recipients')->count(),
+        ];
+    }
+
+    /** A cancelled job: it may be read, cancelling it again changes nothing, and a new job may start. */
+    private function cancelledJob(): string
+    {
+        $id = (string) Str::ulid();
+        DB::table('restv2_mass_mail_jobs')->insert([
+            'id' => $id, 'status' => 'cancelled', 'running_slot' => null, 'sender' => 'noreply@mail.example.org', 'subject' => 'Old',
+            'text_body' => 'x', 'selection' => '{"domains":[],"include":[],"exclude":[]}', 'recipient_count' => 1, 'created_by' => 'admin',
+            'created_request_id' => str_repeat('b', 32), 'created_client_address' => '192.0.2.1', 'created_at' => '2026-10-01 10:00:00', 'cancelled_by' => 'admin',
+        ]);
+        DB::table('restv2_mass_mail_recipients')->insert(['job_id' => $id, 'address' => 'alice@example.org', 'outcome' => 'skipped']);
+
+        return $id;
     }
 
     #[DataProvider('cases')]

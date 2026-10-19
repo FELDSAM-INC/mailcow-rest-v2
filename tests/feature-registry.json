@@ -494,17 +494,6 @@
         }
     },
     "pendingOperations": [
-        "getSpamFilterActionStatistics",
-        "listRateLimits",
-        "getDomainRateLimit",
-        "setDomainRateLimit",
-        "removeDomainRateLimit",
-        "getAliasDomainRateLimit",
-        "setAliasDomainRateLimit",
-        "removeAliasDomainRateLimit",
-        "getMailboxRateLimit",
-        "setMailboxRateLimit",
-        "removeMailboxRateLimit",
-        "resetRateLimitBucket"
+        "getSpamFilterActionStatistics"
     ]
 }

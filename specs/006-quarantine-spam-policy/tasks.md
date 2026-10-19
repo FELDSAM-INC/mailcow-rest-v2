@@ -690,12 +690,12 @@ reset existing and missing buckets; confirm `RL_VALUE` and `RL_LOG`.
 
 ### Tests for User Story 6 (write first, observe failing) ⚠️
 
-- [ ] T068 [P] [US6] Write `tests/Feature/RateLimits/RateLimitStoreTest.php` on the real Redis
+- [X] T068 [P] [US6] Write `tests/Feature/RateLimits/RateLimitStoreTest.php` on the real Redis
   (R12): parse `100 / 1h` → `{100, hour}`; `0 / 1h`, `-5 / 1m`, `10/1h`, `10 / 1w`, `abc` →
   invalid with the raw text; compare-and-set: with the current raw value → written; with a stale one
   → refused without change; absent expected and absent actual → written; `HDEL` of an absent field
   → no change reported; a closed Redis port → `RedisException` mapped to `temporaryFailure`.
-- [ ] T069 [P] [US6] Write `tests/Feature/RateLimits/RateLimitTest.php` for the domain, alias domain
+- [X] T069 [P] [US6] Write `tests/Feature/RateLimits/RateLimitTest.php` for the domain, alias domain
   and mailbox `get`/`set`/`remove` operations (FR-050, FR-052 to FR-056, AS-6.1 to AS-6.5): a
   domain admin with `ratelimit` sets `{100, hour}` on their domain → `RL_VALUE[example.org]` =
   `100 / 1h`; the domain name is normalised (`EXAMPLE.ORG` and the Unicode form write the ASCII
@@ -708,12 +708,12 @@ reset existing and missing buckets; confirm `RL_VALUE` and `RL_LOG`.
   forbidden` for every operation; an alias domain limit is stored under the alias domain; a
   resource → `404`; `If-Match` mismatch → `412`, unchanged; Redis down → `503 sharedStore`; audit
   with old and new values.
-- [ ] T070 [P] [US6] Write `tests/Feature/RateLimits/RateLimitListTest.php` for `listRateLimits`
+- [X] T070 [P] [US6] Write `tests/Feature/RateLimits/RateLimitListTest.php` for `listRateLimits`
   (FR-051, AS-6.7): with limits on 3 domains, 1 alias domain, 4 mailboxes, a resource and an orphan
   field → `kind=mailbox` returns exactly the 4 mailbox limits; no filter returns 8 sorted by
   object; `sort=kind`; `q`; a domain admin gets only their domains, alias domains and mailboxes;
   each entry has its `etag`; a mailbox user → `403 forbidden`.
-- [ ] T071 [P] [US6] Write `tests/Feature/RateLimits/RateLimitBucketResetTest.php` for
+- [X] T071 [P] [US6] Write `tests/Feature/RateLimits/RateLimitBucketResetTest.php` for
   `resetRateLimitBucket` (FR-057, AS-6.6): a bucket hash `RLabc=` and three `RL_LOG` lines with
   `rl_hash` `RLabc=` plus two other lines (one containing `RLabc=` in another field) → `204`, the key
   gone, exactly the three lines removed; only log lines (expired bucket) → `204`; neither → `404`;
@@ -724,16 +724,16 @@ reset existing and missing buckets; confirm `RL_VALUE` and `RL_LOG`.
 
 ### Implementation for User Story 6
 
-- [ ] T072 [US6] Create `app/Support/Redis/LuaScripts.php` with the scripts `compareAndSetField`
+- [X] T072 [US6] Create `app/Support/Redis/LuaScripts.php` with the scripts `compareAndSetField`
   (`HGET` compare, then `HSET` or `HDEL`) and `resetRateLimitBucket` (R13: `TYPE`/`DEL`, `LRANGE`,
   `cjson.decode`, `LREM` on matching `rl_hash`, return counts). Extend 002's
   `app/Services/RateLimits/RateLimitStore.php` with `get`, `all`, `setIfMatches`,
   `removeIfMatches`, value parsing and formatting, running the scripts through 002's `SharedStore`
   (`SharedStoreUnavailable` → `temporaryFailure('sharedStore')`). This makes T068 pass.
-- [ ] T073 [US6] Create `app/Services/RateLimits/RateLimitService.php` (scope and existence per kind,
+- [X] T073 [US6] Create `app/Services/RateLimits/RateLimitService.php` (scope and existence per kind,
   normalisation, mailbox effective limit, ETag, audit, list classification with one query per kind,
   filters, search, sort, paging) and `RateLimitBucketService.php`.
-- [ ] T074 [US6] Create `app/Http/Requests/Api/V2/SetRateLimitRequest.php` and
+- [X] T074 [US6] Create `app/Http/Requests/Api/V2/SetRateLimitRequest.php` and
   `ListRateLimitsRequest.php`, `app/Http/Resources/Api/V2/RateLimitResource.php`, and the
   controllers `app/Http/Controllers/Api/V2/RateLimitController.php` (`index`, `show`, `update`,
   `destroy`, object kind from route defaults) and `RateLimitBucketController.php` (`destroy`);

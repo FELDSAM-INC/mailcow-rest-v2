@@ -7,6 +7,7 @@ use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Support\Facades\DB;
 use Redis;
 use RedisException;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -181,6 +182,28 @@ class SharedStore
             }
 
             throw new SharedStoreUnavailable('mailcow\'s shared store kept changing while the change was saved.');
+        });
+    }
+
+    /**
+     * Runs a Lua script atomically (feature 006: App\Support\Redis\LuaScripts) and returns its
+     * reply. A script error is a defect, not an outage: it raises a RuntimeException.
+     *
+     * @param  list<string>  $keys
+     * @param  list<string>  $arguments
+     */
+    public function evaluate(string $script, array $keys, array $arguments = []): mixed
+    {
+        return $this->run(function (Redis $redis) use ($script, $keys, $arguments): mixed {
+            $redis->clearLastError();
+            $result = $redis->eval($script, [...$keys, ...$arguments], count($keys));
+            $error = $redis->getLastError();
+
+            if ($result === false && is_string($error)) {
+                throw new RuntimeException('A shared store script failed: '.$error);
+            }
+
+            return $result;
         });
     }
 

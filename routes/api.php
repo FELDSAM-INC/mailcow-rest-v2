@@ -120,6 +120,8 @@ use App\Http\Controllers\Api\V2\QuarantineNotificationBulkActionController;
 use App\Http\Controllers\Api\V2\QuarantineNotificationSettingsController;
 use App\Http\Controllers\Api\V2\QuarantineSettingsController;
 use App\Http\Controllers\Api\V2\QuarantineTemplatePreviewController;
+use App\Http\Controllers\Api\V2\RateLimitBucketController;
+use App\Http\Controllers\Api\V2\RateLimitController;
 use App\Http\Controllers\Api\V2\ReadinessController;
 use App\Http\Controllers\Api\V2\RecentLoginController;
 use App\Http\Controllers\Api\V2\RecipientMapController;
@@ -1175,6 +1177,19 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where(['mailbox' => '[^/]+', 'entryId' => '[1-9][0-9]{0,9}'])
             ->defaults('restv2.ownerKind', 'mailbox')
             ->name('mailboxes-spam-policy-entries.show');
+        Route::get('/rate-limits', [RateLimitController::class, 'index'])->name('rate-limits.index');
+        Route::get('/domains/{domain}/rate-limit', [RateLimitController::class, 'show'])
+            ->where('domain', '[^/]+')
+            ->defaults('restv2.objectKind', 'domain')
+            ->name('domains-rate-limit.show');
+        Route::get('/alias-domains/{aliasDomain}/rate-limit', [RateLimitController::class, 'show'])
+            ->where('aliasDomain', '[^/]+')
+            ->defaults('restv2.objectKind', 'aliasDomain')
+            ->name('alias-domains-rate-limit.show');
+        Route::get('/mailboxes/{mailbox}/rate-limit', [RateLimitController::class, 'show'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.objectKind', 'mailbox')
+            ->name('mailboxes-rate-limit.show');
         Route::get('/mailboxes/{mailbox}/spam-score', [SpamScoreController::class, 'show'])
             ->where('mailbox', '[^/]+')
             ->name('spam-score.show');
@@ -1245,6 +1260,40 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'spamScoreReset', 'target' => 'spamScore'])
             ->name('spam-score.destroy');
+        Route::put('/domains/{domain}/rate-limit', [RateLimitController::class, 'update'])
+            ->where('domain', '[^/]+')
+            ->defaults('restv2.objectKind', 'domain')
+            ->defaults('restv2.audit', ['event' => 'rateLimitUpdate', 'target' => 'rateLimit', 'kind' => 'domain'])
+            ->name('domains-rate-limit.update');
+        Route::delete('/domains/{domain}/rate-limit', [RateLimitController::class, 'destroy'])
+            ->where('domain', '[^/]+')
+            ->defaults('restv2.objectKind', 'domain')
+            ->defaults('restv2.audit', ['event' => 'rateLimitRemoval', 'target' => 'rateLimit', 'kind' => 'domain'])
+            ->name('domains-rate-limit.destroy');
+        Route::put('/alias-domains/{aliasDomain}/rate-limit', [RateLimitController::class, 'update'])
+            ->where('aliasDomain', '[^/]+')
+            ->defaults('restv2.objectKind', 'aliasDomain')
+            ->defaults('restv2.audit', ['event' => 'rateLimitUpdate', 'target' => 'rateLimit', 'kind' => 'aliasDomain'])
+            ->name('alias-domains-rate-limit.update');
+        Route::delete('/alias-domains/{aliasDomain}/rate-limit', [RateLimitController::class, 'destroy'])
+            ->where('aliasDomain', '[^/]+')
+            ->defaults('restv2.objectKind', 'aliasDomain')
+            ->defaults('restv2.audit', ['event' => 'rateLimitRemoval', 'target' => 'rateLimit', 'kind' => 'aliasDomain'])
+            ->name('alias-domains-rate-limit.destroy');
+        Route::put('/mailboxes/{mailbox}/rate-limit', [RateLimitController::class, 'update'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.objectKind', 'mailbox')
+            ->defaults('restv2.audit', ['event' => 'rateLimitUpdate', 'target' => 'rateLimit', 'kind' => 'mailbox'])
+            ->name('mailboxes-rate-limit.update');
+        Route::delete('/mailboxes/{mailbox}/rate-limit', [RateLimitController::class, 'destroy'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.objectKind', 'mailbox')
+            ->defaults('restv2.audit', ['event' => 'rateLimitRemoval', 'target' => 'rateLimit', 'kind' => 'mailbox'])
+            ->name('mailboxes-rate-limit.destroy');
+        Route::delete('/rate-limit-buckets/{bucketId}', [RateLimitBucketController::class, 'destroy'])
+            ->where('bucketId', 'RL[0-9A-Za-z=]{1,126}')
+            ->defaults('restv2.audit', ['event' => 'rateLimitBucketReset', 'target' => 'rateLimitBucket'])
+            ->name('rate-limit-buckets.destroy');
         // A preview changes nothing and is not audited.
         Route::post('/quarantine/settings/template-preview', [QuarantineTemplatePreviewController::class, 'store'])
             ->name('quarantine-template-preview.store');

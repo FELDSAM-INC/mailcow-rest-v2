@@ -122,7 +122,7 @@ class StartImpersonationTest extends TestCase
         $keys = $this->redis()->keys('PHPREDIS_SESSION:*');
         sort($keys);
 
-        return array_values($keys);
+        return $keys;
     }
 
     public function test_invalid_bodies_are_refused_when_invalid(): void

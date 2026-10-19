@@ -121,7 +121,7 @@ class ListAuditEventsRequest extends ApiFormRequest
      */
     private static function account(string $value): string
     {
-        return MailboxAddress::normalize($value)?->address ?? mb_strtolower(trim($value));
+        return MailboxAddress::normalize($value)->address ?? mb_strtolower(trim($value));
     }
 
     /**

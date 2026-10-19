@@ -42,7 +42,7 @@ class DomainAdminAccountService extends AccountService
 
     protected function transaction(callable $write): mixed
     {
-        return DB::transaction($write, 3);
+        return DB::transaction(fn (): mixed => $write(), 3);
     }
 
     protected function createRoleRows(string $username, bool $active, array $values): array

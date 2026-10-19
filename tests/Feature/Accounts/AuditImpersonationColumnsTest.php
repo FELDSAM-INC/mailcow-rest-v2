@@ -69,7 +69,7 @@ class AuditImpersonationColumnsTest extends TestCase
         });
         $this->asAdmin();
 
-        $events = collect($this->getJson('/api/v2/audit-events')->assertOk()->json('data'))->keyBy('eventType');
+        $events = collect((array) $this->getJson('/api/v2/audit-events')->assertOk()->json('data'))->keyBy('eventType');
 
         $this->assertSame(['username' => 'bob@a.example', 'role' => 'mailboxUser'], $events['preferencesUpdate']['impersonatedAccount']);
         $this->assertSame('alice', $events['preferencesUpdate']['actor']['username']);

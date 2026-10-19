@@ -13,6 +13,9 @@ use Tests\TestCase;
  */
 class AccountVersionTest extends TestCase
 {
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
     private function admin(array $overrides = []): stdClass
     {
         return (object) ($overrides + [
@@ -35,6 +38,9 @@ class AccountVersionTest extends TestCase
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
     private function daAcl(array $overrides = []): stdClass
     {
         $columns = ['syncjobs' => 1, 'quarantine' => 1, 'login_as' => 1, 'sogo_access' => 1, 'app_passwds' => 1, 'bcc_maps' => 1,

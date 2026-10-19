@@ -3,6 +3,9 @@
 namespace Tests\Unit\Accounts;
 
 use App\Rules\AccountUsername;
+use Illuminate\Translation\ArrayLoader;
+use Illuminate\Translation\PotentiallyTranslatedString;
+use Illuminate\Translation\Translator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -18,7 +21,7 @@ class AccountUsernameRuleTest extends TestCase
     private function violation(mixed $value): ?array
     {
         $rule = new AccountUsername;
-        $rule->validate('username', $value, function (): void {});
+        $rule->validate('username', $value, fn (string $message, ?string $key = null): PotentiallyTranslatedString => new PotentiallyTranslatedString($message, new Translator(new ArrayLoader, 'en')));
 
         return $rule->violationFor('username');
     }

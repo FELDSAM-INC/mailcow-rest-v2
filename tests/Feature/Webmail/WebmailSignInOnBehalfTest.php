@@ -5,6 +5,7 @@ namespace Tests\Feature\Webmail;
 use App\Auth\Role;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Accounts\AccountTestHelpers;
 use Tests\TestCase;
 
@@ -25,6 +26,9 @@ class WebmailSignInOnBehalfTest extends TestCase
         config(['restv2.allow_admin_email_login' => true]);
     }
 
+    /**
+     * @return TestResponse<Response>
+     */
     private function open(string $mailbox): TestResponse
     {
         return $this->postEmpty('/api/v2/mailboxes/'.$mailbox.'/webmail-sign-in', $this->csrf());

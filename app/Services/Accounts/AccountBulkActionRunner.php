@@ -27,8 +27,7 @@ class AccountBulkActionRunner
      */
     public function run(Request $request, Principal $actor, Role $role, AccountBulkAction $action, array $targets): array
     {
-        $service = app($role === Role::Admin ? AdminAccountService::class : DomainAdminAccountService::class);
-        assert($service instanceof AccountService);
+        $service = $role === Role::Admin ? app(AdminAccountService::class) : app(DomainAdminAccountService::class);
         // The runner reports the request ID as the bulk request's identifier.
         $bulkRequestId = RequestContext::requestId($request);
 

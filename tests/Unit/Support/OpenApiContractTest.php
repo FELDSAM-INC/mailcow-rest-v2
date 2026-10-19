@@ -222,8 +222,10 @@ class OpenApiContractTest extends TestCase
         ]));
 
         $this->assertSame('applyAdminBulkAction', $contract->match('POST', '/api/v2/admins/bulk-actions')?->operationId);
-        $this->assertSame('getAdmin', $contract->match('GET', '/api/v2/admins/bulk-actions')?->operationId);
-        $this->assertSame(['username' => 'bulk-actions'], $contract->match('GET', '/api/v2/admins/bulk-actions')?->pathParameters);
+        $get = $contract->match('GET', '/api/v2/admins/bulk-actions');
+        $this->assertNotNull($get);
+        $this->assertSame('getAdmin', $get->operationId);
+        $this->assertSame(['username' => 'bulk-actions'], $get->pathParameters);
         $this->assertNull($contract->match('DELETE', '/api/v2/admins/bulk-actions'));
     }
 

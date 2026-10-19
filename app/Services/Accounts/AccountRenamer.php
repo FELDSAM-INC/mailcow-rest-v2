@@ -61,15 +61,16 @@ class AccountRenamer
         $this->keys->transferOwner($old, $new);
         $this->preferences->renameAccount(AccountKind::Admin, $old, $new);
 
-        $own = $callerSession !== null && ! $actor->isApiKey() && $actor->impersonator === null
+        $own = ! $actor->isApiKey() && $actor->impersonator === null
             && $actor->accountKind === AccountKind::Admin && mb_strtolower($actor->username) === mb_strtolower($old);
+        $ownSession = $own ? $callerSession : null;
 
-        DB::afterCommit(function () use ($old, $new, $own, $callerSession): void {
-            $exceptHandle = $own && $callerSession !== null ? $this->sessions->handle($callerSession) : null;
+        DB::afterCommit(function () use ($old, $new, $ownSession): void {
+            $exceptHandle = $ownSession === null ? null : $this->sessions->handle($ownSession);
             $this->registry->endAll(AccountKind::Admin, mb_strtolower($old), $exceptHandle);
 
-            if ($own && $callerSession !== null) {
-                $this->sessions->rebindPrincipal($callerSession, $new);
+            if ($ownSession !== null) {
+                $this->sessions->rebindPrincipal($ownSession, $new);
             }
 
             $this->generations->bump('admin', $old);

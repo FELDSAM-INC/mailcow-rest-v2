@@ -16,6 +16,12 @@ parameters:
     scanFiles:
         - tests/fixtures/legacy/verify_hash.php
         - tests/fixtures/legacy/syncjob_validation.php
+    ignoreErrors:
+        # Feature 007: field-error assertions that Tests\Support\Accounts\AccountTestHelpers
+        # registers as TestResponse macros in its setUp (Larastan sees only boot-time macros).
+        -
+            message: '#^Call to an undefined method Illuminate\\Testing\\TestResponse(<.*>)?::assertViolation(Params)?\(\)\.$#'
+            path: tests/*
     excludePaths:
         # Legacy code copied verbatim from mailcow (tests/fixtures/legacy) and mailcow's vars files.
         - tests/fixtures/*

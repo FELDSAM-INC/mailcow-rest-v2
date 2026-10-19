@@ -149,9 +149,14 @@ class SessionManager
     public function effectivePrincipal(Session $session): ?Principal
     {
         $principal = $this->principal($session);
-        $impersonation = $principal === null ? null : $this->impersonation($session);
 
-        return $impersonation === null || $principal === null ? $principal : self::impersonating($principal, $impersonation);
+        if ($principal === null) {
+            return null;
+        }
+
+        $impersonation = $this->impersonation($session);
+
+        return $impersonation === null ? $principal : self::impersonating($principal, $impersonation);
     }
 
     /**

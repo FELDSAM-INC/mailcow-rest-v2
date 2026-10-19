@@ -5,6 +5,7 @@ namespace Tests\Feature\SsoTokens;
 use App\Auth\Role;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Accounts\AccountTestHelpers;
 use Tests\Support\Redis\ChannelSpy;
 use Tests\TestCase;
@@ -30,6 +31,9 @@ class SsoTokenSignInTest extends TestCase
         $this->mailcow()->mailboxWithDomain('bob@a.example');
     }
 
+    /**
+     * @return TestResponse<Response>
+     */
     private function signInWith(string $token): TestResponse
     {
         return $this->postJson('/api/v2/session/sso-token', ['token' => $token], $this->csrf());

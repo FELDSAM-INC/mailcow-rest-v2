@@ -28,7 +28,7 @@ class ImpersonationRefusalsTest extends TestCase
     }
 
     /**
-     * @return array<string, callable(self): TestResponse<Response>>
+     * @return array<string, callable(): TestResponse<Response>>
      */
     private function credentialRequests(int $secondFactorId): array
     {

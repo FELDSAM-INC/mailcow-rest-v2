@@ -85,6 +85,6 @@ final class AccountAuditTargets
             return null;
         }
 
-        return MailboxAddress::normalize($value)?->address ?? mb_substr(mb_strtolower(trim($value)), 0, 255);
+        return MailboxAddress::normalize($value)->address ?? mb_substr(mb_strtolower(trim($value)), 0, 255);
     }
 }

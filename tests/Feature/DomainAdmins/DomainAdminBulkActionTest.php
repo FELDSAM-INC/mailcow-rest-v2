@@ -29,7 +29,7 @@ class DomainAdminBulkActionTest extends TestCase
 
     public function test_outdated_items_are_left_unchanged_while_the_others_proceed(): void
     {
-        $tags = collect($this->getJson('/api/v2/domain-admins')->json('data'))->pluck('etag', 'username');
+        $tags = collect((array) $this->getJson('/api/v2/domain-admins')->json('data'))->pluck('etag', 'username');
         // Another administrator changed r2 after the list was loaded.
         DB::table('admin')->where('username', 'r2')->update(['attributes' => '{"force_tfa": "1", "force_pw_update": "0"}']);
 
@@ -39,7 +39,7 @@ class DomainAdminBulkActionTest extends TestCase
             ['id' => 'r3', 'version' => trim((string) $tags['r3'], '"')],
         ])->assertOk();
 
-        $results = collect($response->json('data.results'))->keyBy('id');
+        $results = collect((array) $response->json('data.results'))->keyBy('id');
         $this->assertSame('done', $results['r1']['outcome']);
         $this->assertSame('outdated', $results['r2']['outcome']);
         $this->assertSame(412, $results['r2']['problem']['status']);

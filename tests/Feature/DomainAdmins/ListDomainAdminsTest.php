@@ -64,11 +64,11 @@ class ListDomainAdminsTest extends TestCase
         $this->mailcow()->assignmentOnly('odd', 'removed.example');
         $this->mailcow()->admin('admin2', 'x');
 
-        $data = collect($this->getJson('/api/v2/domain-admins')->assertOk()->json('data'))->keyBy('username');
+        $data = collect((array) $this->getJson('/api/v2/domain-admins')->assertOk()->json('data'))->keyBy('username');
 
         $this->assertSame(['lonely', 'odd'], $data->keys()->all());
         $this->assertSame([], $data['lonely']['domains']);
-        $domains = collect($data['odd']['domains'])->keyBy('domain');
+        $domains = collect((array) $data['odd']['domains'])->keyBy('domain');
         $this->assertTrue($domains['a.example']['domainExists']);
         $this->assertFalse($domains['ALL']['domainExists']);
         $this->assertFalse($domains['alias.example']['domainExists']);

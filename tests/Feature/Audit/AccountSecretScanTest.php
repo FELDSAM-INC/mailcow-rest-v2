@@ -6,6 +6,7 @@ use App\Auth\Role;
 use Database\Factories\MailcowRows;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Accounts\AccountTestHelpers;
 use Tests\TestCase;
 
@@ -62,6 +63,9 @@ class AccountSecretScanTest extends TestCase
         }
     }
 
+    /**
+     * @return TestResponse<Response>
+     */
     private function postMailboxWebmail(): TestResponse
     {
         return $this->postEmpty('/api/v2/mailboxes/carol@a.example/webmail-sign-in', $this->csrf())->assertOk();

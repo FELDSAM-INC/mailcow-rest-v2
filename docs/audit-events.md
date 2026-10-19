@@ -1925,7 +1925,7 @@ and every refusal, also when no entry was active.
 
 | Key | Type | Meaning | Present |
 |---|---|---|---|
-| `suspendedCount` | integer | The number of active TOTP, WebAuthn and Yubico OTP entries that were suspended (0 when none was active). | on success |
+| `suspendedCount` | integer | The number of second-factor entries that were active and were suspended (every entry type, as legacy's `disable_tfa`; 0 when none was active). | on success |
 | `bulkRequestId` | string | See `adminUpdate`. | for items of a bulk action |
 | `targetIds` | array of strings | See "Refusal records". | on a refused bulk request |
 | `bulkAction` | string | `suspendSecondFactors`. | on a refused bulk request |

@@ -4,7 +4,7 @@ description: |
   `AdminCreateRequest`. Each entry of `domains` is normalised (trimmed, lower-cased, converted to
   ASCII with the UTS #46 rules) and must be an existing primary domain: an invalid name is refused
   with `invalidFormat` (`format: domainName`), an alias domain name with `notEligible`
-  (`expected: primaryDomain`) and an unknown name with `notFound`, each on `domains.<index>`.
+  (`kind: aliasDomain`) and an unknown name with `notFound`, each on `domains.<index>`.
   Duplicates are merged. Permission flags that are not sent get this server's defaults, the values
   `GET /capabilities/accounts` reports. The account, its assignments (with the account's status) and
   its permission record are stored together or not at all; an orphaned permission record left by

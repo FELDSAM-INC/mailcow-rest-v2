@@ -371,3 +371,42 @@ Contract changes made while implementing feature 005:
   `no-store` (the server sends `no-store, private`) instead of being exactly `no-store`.
 
 Release checks of feature 005 (quickstart Part C): not run yet.
+
+Contract: the 21 operations of feature 007 (administrators, domain administrators, single sign-on
+tokens and impersonation):
+
+- Administrators (signed-in administrator session for every change): `listAdmins`, `getAdmin`,
+  `createAdmin`, `updateAdmin`, `deleteAdmin`, `suspendAdminSecondFactors`,
+  `applyAdminBulkAction`, and the account capabilities `getAccountCapabilities`.
+- Domain administrators with their domains and 19 permission flags (session or an administrator's
+  read-write key): `listDomainAdmins`, `getDomainAdmin`, `createDomainAdmin`, `updateDomainAdmin`,
+  `deleteDomainAdmin`, `suspendDomainAdminSecondFactors`, `applyDomainAdminBulkAction`.
+- Single sign-on tokens shared with the legacy domain administrator login:
+  `issueDomainAdminSsoToken`, `createSessionWithSsoToken`.
+- Impersonation (login-as) and webmail on a user's behalf: `getImpersonation`,
+  `startImpersonation`, `endImpersonation`, `createWebmailSignInOnBehalf`.
+
+Additive changes to feature 001's components: `Identity` (`impersonation`,
+`webmailOnBehalfEnabled`), `Session` (`impersonation`, `authMethod: ssoToken`), `AuthMethod`
+(`ssoToken`), `AuditEvent` (`impersonatedAccount`), `ApiKey` (`revocationReason`), the shared
+`Forbidden` response (`impersonation-ended`, `not-allowed-while-impersonating`) and the
+`impersonatedAccount` filter of `listAuditEvents`.
+
+Problem types: `account-exists`, `last-active-admin`, `cannot-delete-own-account`,
+`already-impersonating`, `impersonation-ended`, `not-allowed-while-impersonating`,
+`webmail-on-behalf-disabled`, `account-inactive`. The shared enumerations gain feature 007's audit
+event types and targets. New server setting: `ALLOW_ADMIN_EMAIL_LOGIN` (mailcow.conf, default `n`).
+
+Contract changes made while implementing feature 007:
+
+- `DomainAdminCreateRequest` names the alias-domain refusal `notEligible` with `kind: aliasDomain`,
+  as `ValidationRuleCode` documents (it said `expected: primaryDomain`).
+
+Behaviour changes of earlier features: the credential operations of features 001 and 005 (own
+password, passkeys, second factors, recovery e-mail, own webmail hand-off) answer
+`not-allowed-while-impersonating` during an impersonation; a domain deletion that leaves a domain
+administrator without a domain deletes it with feature 007's full cascade (`domainAdminDeletion`
+record, keys revoked as `ownerDeleted`); sessions and API keys are bound to their account's
+creation time, so a later account with the same username never inherits them.
+
+Release checks of feature 007 (quickstart Part C): not run yet.

@@ -86,8 +86,11 @@ mailcow's ofelia scheduler runs the audit retention purge daily through the cont
 
 `mailcow.conf` variables used as they are: `MAILCOW_HOSTNAME`, `ADDITIONAL_SERVER_NAMES`, `TZ`,
 `DBNAME`, `DBUSER`, `DBPASS`, `REDISPASS`, `REDIS_SLAVEOF_IP`, `REDIS_SLAVEOF_PORT`,
-`IPV4_NETWORK`, `IPV6_NETWORK`, `WEBAUTHN_ONLY_TRUSTED_VENDORS` and `SKIP_SOGO`. `DBHOST`
-(default `mysql-mailcow`) and `REDISHOST` (default `redis-mailcow`) locate the services.
+`IPV4_NETWORK`, `IPV6_NETWORK`, `WEBAUTHN_ONLY_TRUSTED_VENDORS`, `SKIP_SOGO` and
+`ALLOW_ADMIN_EMAIL_LOGIN` (feature 007: administrators, and domain administrators with the
+`loginAs` permission, may open a mailbox's webmail on the user's behalf; `y` or `yes` enables it,
+default `n`, as in legacy `sogo-auth.php`). `DBHOST` (default `mysql-mailcow`) and `REDISHOST`
+(default `redis-mailcow`) locate the services.
 
 An empty or whitespace-only value counts as unset and takes the default listed here, so the
 `NAME=${NAME:-}` lines of the deploy example are safe. The only exception is

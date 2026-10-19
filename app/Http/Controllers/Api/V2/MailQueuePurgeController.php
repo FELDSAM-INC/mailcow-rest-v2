@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\RequestContext;
 use App\Services\Config\MailcowConfig;
 use App\Services\MailQueue\MailQueueService;
+use App\Support\Runtime\TimeLimit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,7 +18,7 @@ class MailQueuePurgeController extends Controller
 {
     public function store(Request $request, MailQueueService $queue, MailcowConfig $config): JsonResponse
     {
-        set_time_limit($config->dockerTimeout() + 20);
+        TimeLimit::raise($config->dockerTimeout() + 20);
 
         $result = $queue->whole(RequestContext::requirePrincipal($request), 'purge');
 

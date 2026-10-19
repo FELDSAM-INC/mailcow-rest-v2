@@ -7,6 +7,7 @@ use App\Http\RequestContext;
 use App\Services\Config\MailcowConfig;
 use App\Services\Monitoring\ContainerControlService;
 use App\Services\Monitoring\ContainerPresenter;
+use App\Support\Runtime\TimeLimit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,7 +19,7 @@ class ContainerRestartController extends Controller
 {
     public function store(Request $request, string $containerName, ContainerControlService $control, ContainerPresenter $presenter, MailcowConfig $config): JsonResponse
     {
-        set_time_limit($config->dockerTimeout() + 20);
+        TimeLimit::raise($config->dockerTimeout() + 20);
 
         $outcome = $control->perform(RequestContext::requirePrincipal($request), 'restart', $containerName);
 

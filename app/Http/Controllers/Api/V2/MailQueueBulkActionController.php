@@ -7,6 +7,7 @@ use App\Http\RequestContext;
 use App\Http\Requests\Api\V2\MailQueueBulkActionRequest;
 use App\Services\Config\MailcowConfig;
 use App\Services\MailQueue\MailQueueService;
+use App\Support\Runtime\TimeLimit;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -17,7 +18,7 @@ class MailQueueBulkActionController extends Controller
 {
     public function store(MailQueueBulkActionRequest $request, MailQueueService $queue, MailcowConfig $config): JsonResponse
     {
-        set_time_limit($config->dockerTimeout() + 20);
+        TimeLimit::raise($config->dockerTimeout() + 20);
 
         /** @var 'deliver'|'hold'|'release'|'delete' $action */
         $action = (string) $request->validated('action');

@@ -1012,3 +1012,102 @@ T065 SpfEvaluator   T067 ZoneFileRenderer
 | Phase 11: US8 (P3) | 4 (T096–T099) |
 | Phase 12: Polish | 8 (T100–T107) |
 | **Total** | **107** |
+
+## Implementation notes (2026-10-19)
+
+Deviations and decisions made while implementing Phases 1 and 3 to 12, with the reason. Names in
+tasks that differ from what exists map as listed.
+
+- **T001**: `mlocati/spf-lib` 3.3.0, `mlocati/ip-lib` 1.22.1 and `mlocati/idna` 1.1.3 are MIT in
+  `composer.lock`. 001 keeps its R28 justification in its research, not in a `composer.json` `extra`
+  block, so the R25 lines are in the README's Licence section.
+- **T003**: also `dkim.bulk_limit` (fixed 100, G4). The port variables are read through a local
+  helper in `config/restv2.php` (last `:`-separated part, the mailcow default when unset or not a
+  port). `.env.example` gives the dev stack documentation addresses as public addresses, so that the
+  dev stack never asks the echo service; `.env.testing` leaves them empty (the tests fake it).
+- **T005, T006**: `MailcowConfig::showDkimPrivateKeys()` and `autodiscoverConfig()` (the `imap`,
+  `pop3`, `smtp` and `sieve` entries); `AutodiscoverConfig::resolve()` falls back per host and port to
+  the port variables, because upstream's `vars.inc.php` derives the ports from environment variables
+  the API container may lack (then 0). The vars-file override is written at test time into a copy of
+  001's fixture directory (008's pattern).
+- **T024, T027**: `DkimNameResolver` normalises with 002's `DomainName::normalizeValid()` (UTS #46
+  with `IDNA_DEFAULT`, as 002 stores domains) rather than `IDNA_NONTRANSITIONAL_TO_ASCII`, so that a
+  domain's key is found under the name 002 stored. The administrators' exact-spelling step compares
+  in PHP, because MariaDB compares names case-insensitively; it asks the store only for field names
+  (`DkimKeyStore::hasKey()`), and resolves normally when the store is unavailable. `kindOf()` gives
+  the kind of a normalised name (copy targets, import names). An invalid import name is reported by
+  `ImportDkimKeyRequest` together with the body's violations.
+- **T026**: `AliasDomain` existed (004).
+- **T029**: 004's `MailcowRows::mtaSts()` gained optional parameters after the domain (existing
+  callers unchanged); `MailcowRows::dkimKeyHashes()` writes the hashes for the dev seeder;
+  `dkimKey()`, `legacyDkimKey()` and `partialDkimKey()` live on the test `MailcowFactory`.
+- **T031**: the policies are registered as gates `dkim.*`, `mtaSts.use`, `dnsDiagnostics.run` and
+  `dnsDiagnostics.serverChecks`.
+- **T032**: the resolvers are `App\Services\Dkim\DkimAuditTargets` and
+  `App\Services\MtaSts\MtaStsAuditTargets` (named like the other features'); the test is a feature-level
+  test with `__testing` routes, like 008's. Whole-request bulk refusals use 002's
+  `RefusalAuditor::bulkRefusal()`, so they carry `targetIds` and `bulkAction` (T086's `itemIds`).
+- **T038**: a page reads its keys in three round trips (public keys, selectors, private keys for the
+  version tag's HMAC; `DkimKeyStore::readMany()`); the completeness filter uses pipelined `HEXISTS`.
+  Ties are broken by name in the requested direction (001's `ListQuery` convention); entries without
+  a key sort last ascending and first descending.
+- **T040**: an unused key stored under a legacy spelling keeps that spelling as `displayName`.
+- **T043**: the failing audit insert is 011's `FlakyAuditLogger` instead of a database trigger (DDL
+  would end the test transaction).
+- **T044**: the five workers call `DkimKeyService::generate()` through `artisan tinker` after a common
+  start time; the domain row is committed and removed again in `tearDown()` (008's pattern).
+- **T045, T046**: a domain administrator asking to overwrite is refused (`403`) before the name is
+  looked up; `If-Match` on a name without a key is `412`. The store script's `replace` and `delete`
+  also return the old private key (kept in memory, hidden from debug output by `DkimStoreResult`), so
+  that a failed audit record can restore the whole previous key (research R13).
+- **T048**: `FakeDnsResolver` takes the fake clock (TestCase passes it); `FakeSmtpProbe` answers
+  TLS-only requests (`certificate()`, `tlsFailure()`, `tlsCertificate()`);
+  `ScriptedSmtpServer::certificatePem()` exposes the presented certificate.
+- **T052, T056**: `named-checkzone -i local` checks each rendering behind a minimal `$TTL`, SOA and
+  NS header, because a record list for import carries no SOA (as legacy's download). Server-wide
+  checks never enter the zone file, also when the host name lies inside the domain.
+- **T058**: a failed lookup that lasted at least the resolver's bound (4 s,
+  `LookupGuard::RESOLVER_BOUND_SECONDS`, the container's `dns_opt`) is `lookupTimeout`, whose
+  `timeoutSeconds` reports RESTV2_DNS_LOOKUP_TIMEOUT; `runTimeout` reports RESTV2_DNS_RUN_TIMEOUT.
+  POP3 and POP3S checks whose lookup failed are reported (`lookupFailed`) also on standard ports.
+- **T059, T069**: `DiagnosticsRateLimiter` keeps a fixed window in a Redis hash (one Lua hit) on the
+  injectable clock instead of Laravel's `RateLimiter`, whose window follows Redis expiry and so cannot
+  be tested with the fake clock (011's note); the key is `restv2:dns-diagnostics:<sha256(caller)>`.
+- **T062**: TLS-only requests add the failure reasons `starttlsNotOffered` and `noCertificate`;
+  `TlsaProbe` maps the failing step to the `certificateUnavailable` cause and connects to the SMTP
+  host name itself. `SmtpProbeResult::jsonSerialize()` leaves `peerCertificate` out when it is null,
+  so 009's results are unchanged.
+- **T063**: `PublicAddressDetector` is separate from 011's `PublicAddressLookup` (legacy's
+  `ip4`/`ip6.mailcow.email` URLs, 3 s and 5 s instead of 10 s and 15 s, the overrides and the reuse);
+  the TLSA digest is reused through `ServerFactsCache` by `TlsaProbe`.
+- **T066**: the server facts are passed in (`ServerFacts`); with an unknown IPv4 address, `ptr:ipv4`
+  has the record name `in-addr.arpa`. On a server without IPv6 the address-record fallback compares
+  IPv4 only (spec edge case).
+- **T070**: no `DnsDiagnosticsResource` class: `DnsDiagnosticsReport::toArray()` builds the contract
+  representation. Symfony appends `private` to a bare `Cache-Control: no-store`, which the contract
+  states as a constant, so the new shared `App\Support\Http\NoStore` keeps it exact (also for the
+  export).
+- **T078**: the member rules are the trait `MtaStsPolicyRules`; case-insensitive enumerations use
+  the new shared `App\Rules\OneOf` (`notInList` with the values in their own type, also for
+  `keySize`); the joined MX length is checked on the normalised hosts once the per-host rules pass.
+- **T079, T080**: `MtaStsPolicyService` works on `mta_sts` rows (the model serves diagnostics); a
+  creation checks for an existing row under a lock and maps a duplicate key (1062) to `409`. The list
+  joins `domain`, restricts with 002's `DomainScope`, searches the readable form with 004's
+  `UnicodeSearch` and sorts `maxAge` numerically.
+- **T087**: `privateKey` is in `dontFlash` through `$exceptions->dontFlash()`;
+  `RedactSecrets` drops `privateKey` and `private_key` (pattern `private_?key`).
+- **T089**: an incomplete copy source is `409 about:blank` naming the missing parts; a copy target
+  that is not a valid name is `notFound`.
+- **T093**: successful exports are audited by the service, refusals by `RefusalAuditor` through the
+  GET route's `restv2.audit` declaration.
+- **T095**: a key without a selector or a public key has nothing to publish and answers `404` (the
+  contract offers no `409` for this operation).
+- **T099**: the normalisation lives where 002's does, in `AuditEventController::whereTargetId()`,
+  not in `ListAuditEventsRequest`; the contract's `targetId` text says so.
+- **T100**: the log is captured with a `MessageLogged` listener.
+- **T101**: the keys are the fixture texts of `DkimFixtures` (their lengths are parsed once per text
+  per request), as the task says.
+- **T102**: a run's time is the fake clock's advance plus the real time spent.
+- **G3, G4**: the eight event types are documented in `docs/audit-events.md`
+  (`AuditEventDetailsDocumentedTest::$notYetDocumented` is empty); `DnsCapabilities.dkim.bulkLimit`
+  closes G4.

@@ -105,6 +105,8 @@ class AuditEventListTest extends TestCase
             'failureReason' => null,
             'requestId' => $response->json('data.1.requestId'),
             'details' => ['requestedRole' => null, 'restricted' => false],
+            // Feature 007: null outside impersonations.
+            'impersonatedAccount' => null,
         ], $response->json('data.1'));
         $this->assertSame(['type' => 'apiKey', 'id' => '01JAAAAAAAAAAAAAAAAAAAAAAA', 'name' => 'Billing'], $response->json('data.0.target'));
         // Empty details are an object, and records carry no version tag.

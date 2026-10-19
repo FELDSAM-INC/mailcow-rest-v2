@@ -101,6 +101,7 @@ class SessionManager
             identityProvider: IdentityProviderType::tryFrom((string) ($data['identityProvider'] ?? '')),
             passwordSource: PasswordSource::tryFrom((string) ($data['passwordSource'] ?? '')),
             ssoLinkId: is_string($data['ssoLinkId'] ?? null) ? $data['ssoLinkId'] : null,
+            accountCreatedAt: is_string($data['accountCreatedAt'] ?? null) ? $data['accountCreatedAt'] : null,
         );
     }
 
@@ -189,9 +190,33 @@ class SessionManager
             'passwordSource' => $principal->passwordSource?->value,
             'ssoLinkId' => $principal->ssoLinkId,
             'secondFactorId' => $secondFactorId,
+            // Feature 007 (FR-036): the account's raw creation time, compared on every request.
+            'accountCreatedAt' => $principal->accountCreatedAt ?? $this->accounts()->createdAt($principal->accountKind, $principal->username),
         ], fn (mixed $value): bool => $value !== null));
         $session->put(self::HANDLE, (string) Str::ulid());
         $this->touch($session);
+        $this->register($session);
+    }
+
+    /**
+     * Moves the signed-in session to the account's new username after the account renamed itself
+     * (feature 007 FR-025, research R9): the principal and its registry entry follow the rename, so
+     * that the session continues under the new name while the account's other sessions end.
+     */
+    public function rebindPrincipal(Session $session, string $newUsername): void
+    {
+        $principal = $this->principal($session);
+        $handle = $this->handle($session);
+
+        if ($principal === null) {
+            return;
+        }
+
+        if ($handle !== null) {
+            $this->registry->forget($principal->accountKind, $principal->username, $handle);
+        }
+
+        $session->put(self::PRINCIPAL.'.username', $newUsername);
         $this->register($session);
     }
 
@@ -352,6 +377,11 @@ class SessionManager
     public static function userAgentHash(?string $userAgent): string
     {
         return hash('sha256', (string) $userAgent);
+    }
+
+    private function accounts(): AccountResolver
+    {
+        return app(AccountResolver::class);
     }
 
     private function challengeTtl(): int

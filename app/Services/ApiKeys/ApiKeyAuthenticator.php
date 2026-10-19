@@ -23,7 +23,8 @@ use Symfony\Component\HttpFoundation\IpUtils;
  *     value whose SHA-256 matches no key → `api-key-invalid` (legacy `/api/v1` keys never match);
  *  2. a revoked key → `api-key-revoked`;
  *  3. an expired key → `api-key-expired`;
- *  4. an owner missing from mailcow's `admin` table, or inactive → `api-key-invalid`;
+ *  4. an owner missing from mailcow's `admin` table, inactive, or created after the key was bound to
+ *     it (feature 007 FR-036: `owner_created_at`) → `api-key-invalid`;
  *  5. a client address outside a non-empty list of allowed networks → `api-key-source-not-allowed`.
  *
  * Every refusal is published to mailcow's fail2ban channel as legacy reports an invalid API key.
@@ -61,9 +62,12 @@ class ApiKeyAuthenticator
             $this->refuse(ProblemType::ApiKeyExpired, $ip);
         }
 
-        $owner = Admin::query()->whereKey($key->owner_username)->toBase()->first(['username', 'superadmin', 'active']);
+        $owner = Admin::query()->whereKey($key->owner_username)->toBase()->first(['username', 'superadmin', 'active', 'created']);
 
-        if ($owner === null || (int) $owner->active !== 1) {
+        // Feature 007 (FR-036): a key bound to its owner's creation time never acts for a later
+        // account with the same username (a legacy deletion and re-creation).
+        if ($owner === null || (int) $owner->active !== 1
+            || ($key->owner_created_at !== null && $key->owner_created_at !== (string) $owner->created)) {
             $this->refuse(ProblemType::ApiKeyInvalid, $ip);
         }
 

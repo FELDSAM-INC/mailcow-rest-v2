@@ -59,6 +59,9 @@ class AuditLogger
         $request = app('request');
 
         [$username, $role, $apiKeyId] = $this->actor($actor);
+        // Feature 007 (FR-067): during an impersonation the impersonator is the actor and the
+        // target the impersonated account, for every feature's records.
+        $impersonated = $actor instanceof Principal && $actor->impersonator !== null ? $actor : null;
         $userAgent = $request->userAgent();
 
         $event = new AuditEvent;
@@ -83,6 +86,8 @@ class AuditLogger
             'failure_reason' => $failureReason,
             'request_id' => RequestContext::requestId($request),
             'details' => array_intersect_key($details, array_flip($type->detailKeys())),
+            'impersonated_username' => $impersonated?->username,
+            'impersonated_role' => $impersonated?->role->value,
         ])->save();
 
         return $event;
@@ -136,7 +141,9 @@ class AuditLogger
     private function actor(Principal|array|null $actor): array
     {
         if ($actor instanceof Principal) {
-            return [$actor->username, $actor->role->value, $actor->apiKey?->id];
+            $acting = $actor->actingAccount();
+
+            return [$acting->username, $acting->role->value, $acting->apiKey?->id];
         }
 
         $role = $actor['role'] ?? null;

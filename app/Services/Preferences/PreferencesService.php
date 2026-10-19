@@ -3,6 +3,7 @@
 namespace App\Services\Preferences;
 
 use App\Audit\AuditEventType;
+use App\Auth\AccountKind;
 use App\Auth\Principal;
 use App\Models\Preference;
 use App\Services\Audit\AuditLogger;
@@ -55,8 +56,8 @@ class PreferencesService
                 // concurrent first updates serialise on its lock instead of on the unique key.
                 $now = now('UTC');
                 Preference::query()->insertOrIgnore([
-                    'account_kind' => $principal->accountKind->value,
-                    'username' => $principal->username,
+                    'account_kind' => $principal->actingAccount()->accountKind->value,
+                    'username' => $principal->actingAccount()->username,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ]);
@@ -93,11 +94,39 @@ class PreferencesService
         });
     }
 
+    /**
+     * Moves an account's preferences to its new username (feature 007 FR-025), inside the rename's
+     * transaction. Stale preferences of the new name, if any, are replaced.
+     */
+    public function renameAccount(AccountKind $kind, string $old, string $new): void
+    {
+        if (mb_strtolower($old) === mb_strtolower($new)) {
+            return;
+        }
+
+        Preference::query()->where('account_kind', $kind->value)->where('username', $new)->delete();
+        Preference::query()->where('account_kind', $kind->value)->where('username', $old)->update(['username' => $new, 'updated_at' => now('UTC')]);
+    }
+
+    /**
+     * Removes the preferences of a deleted account (feature 007 FR-034), inside the deletion's
+     * transaction. Returns whether there were any.
+     */
+    public function deleteForAccount(AccountKind $kind, string $username): bool
+    {
+        return Preference::query()->where('account_kind', $kind->value)->where('username', $username)->delete() > 0;
+    }
+
+    /**
+     * The stored row of the account that signed in: during an impersonation the impersonator's
+     * (feature 007 FR-047), never the target's.
+     */
     private function stored(Principal $principal, bool $lock = false): ?Preference
     {
+        $account = $principal->actingAccount();
         $query = Preference::query()
-            ->where('account_kind', $principal->accountKind->value)
-            ->where('username', $principal->username);
+            ->where('account_kind', $account->accountKind->value)
+            ->where('username', $account->username);
 
         return ($lock ? $query->lockForUpdate() : $query)->first();
     }

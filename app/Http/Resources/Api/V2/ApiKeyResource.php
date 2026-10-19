@@ -55,6 +55,8 @@ class ApiKeyResource extends JsonResource
             'lastUsedFrom' => $key->last_used_from,
             'revokedAt' => ApiKeyService::time($key->revoked_at),
             'revokedBy' => $key->revoked_by === null ? null : ['username' => $key->revoked_by],
+            // Feature 007: `manual` or `ownerDeleted`; null while the key is not revoked.
+            'revocationReason' => $key->revoked_at === null ? null : ($key->revocation_reason ?? 'manual'),
             'etag' => ApiKeyService::etag($key),
         ];
 

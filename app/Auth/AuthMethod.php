@@ -12,6 +12,9 @@ enum AuthMethod: string
     case Passkey = 'passkey';
     case ApiKey = 'apiKey';
 
+    // Feature 007: a domain administrator's single sign-on token (legacy `da_sso`).
+    case SsoToken = 'ssoToken';
+
     // Feature 012: sign-ins through the external identity provider.
     case SingleSignOn = 'singleSignOn';
     case DirectoryPassword = 'directoryPassword';

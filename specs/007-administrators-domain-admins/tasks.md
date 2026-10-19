@@ -85,38 +85,38 @@ username rule and the policies. **No user story can start before this phase is c
 
 ### Tests for the foundation (write first, observe failing) ⚠️
 
-- [ ] T006 [P] Write `tests/Unit/Accounts/AccountUsernameRuleTest.php` for `App\Rules\AccountUsername`
+- [X] T006 [P] Write `tests/Unit/Accounts/AccountUsernameRuleTest.php` for `App\Rules\AccountUsername`
   (R4, FR-014): the value is trimmed and lower-cased; `""` → `required`; 256 characters → `tooLong`
   `{max: 255}`; `a b`, `bö`, `...`, `-_.` → `invalidFormat` `{format: accountUsername}`; `API` and
   ` api ` → `reserved` `{reserved: [api]}`; `ops.1-x_y` and `R1` (→ `r1`) pass.
-- [ ] T007 [P] Write `tests/Unit/Accounts/AccountVersionTest.php` for
+- [X] T007 [P] Write `tests/Unit/Accounts/AccountVersionTest.php` for
   `App\Services\Accounts\AccountVersion` (R3, FR-064): the tag covers "`username`, `created`,
   `active`, `force_pw_update`, `force_tfa`; for domain administrators also the assignments ordered
   by domain as `[domain, active, created]` and the 19 `da_acl` values (or `null` without a row)";
   it changes when any of them changes, never with `modified`, `tfa` or `fido2`; a missing `da_acl`
   row and an all-zero row give different tags; equal input gives equal tags; the format is 001's
   strong ETag.
-- [ ] T008 [P] Write `tests/Unit/Accounts/SecondFactorStatusTest.php` (FR-008, R2): no entry →
+- [X] T008 [P] Write `tests/Unit/Accounts/SecondFactorStatusTest.php` (FR-008, R2): no entry →
   `none`; one active `totp`, `webauthn` or `yubi_otp` → `active`; entries all inactive →
   `suspended`; only `u2f` or `hotp` entries (active or not) → `none`.
-- [ ] T009 [P] Write `tests/Feature/Accounts/AccountBindingTest.php` (FR-036, R11): a session signed
+- [X] T009 [P] Write `tests/Feature/Accounts/AccountBindingTest.php` (FR-036, R11): a session signed
   in as domain administrator `reseller1` gets `401 unauthenticated` at its next request when the
   `admin` row is deleted and re-inserted with a later `created` (a legacy deletion and
   re-creation), and the same for a mailbox session; an unchanged account's session keeps working.
   A key whose `owner_created_at` differs from the owner's current `created` is refused with `401
   api-key-invalid` and published to fail2ban (`ChannelSpy`); a key of the unchanged owner keeps
   working. `AccountGeneration::current()` is 0 for an unknown name and `bump()` increments it.
-- [ ] T010 [P] Write `tests/Feature/Accounts/AuditImpersonationColumnsTest.php` (FR-067, R22): when
+- [X] T010 [P] Write `tests/Feature/Accounts/AuditImpersonationColumnsTest.php` (FR-067, R22): when
   the request principal carries an impersonator, `AuditLogger::record()` writes the impersonator as
   `actor_username`/`actor_role` and the target in `impersonated_username`/`impersonated_role`;
   otherwise both columns are `NULL`. `GET /audit-events` returns `impersonatedAccount` as
   `{username, role}` or `null` (contract-validated).
-- [ ] T011 [P] Write `tests/Feature/Schema/Feature007MigrationsTest.php`: after the migrations,
+- [X] T011 [P] Write `tests/Feature/Schema/Feature007MigrationsTest.php`: after the migrations,
   `restv2_audit_events` has `impersonated_username VARCHAR(255) NULL` (indexed with `occurred_at`)
   and `impersonated_role VARCHAR(16) NULL`; `restv2_api_keys` has `owner_created_at DATETIME NULL`
   and `revocation_reason VARCHAR(16) NULL`; a key inserted before the migration is back-filled with
   its owner's `admin.created`; 001's `MigrationPrefixTest` still passes.
-- [ ] T012 [P] Write `tests/Feature/ApiKeys/ApiKeyRevocationReasonTest.php` (FR-034): 001's
+- [X] T012 [P] Write `tests/Feature/ApiKeys/ApiKeyRevocationReasonTest.php` (FR-034): 001's
   `POST /api-keys/{id}/revocation` stores `revocation_reason = 'manual'` and returns
   `revocationReason: manual`; an active key returns `revocationReason: null`; the version tag
   changes on revocation; `ApiKeyService::revokeAllForOwner('reseller1', 'alice', 'ownerDeleted')`
@@ -125,40 +125,40 @@ username rule and the policies. **No user story can start before this phase is c
 
 ### Implementation of the foundation
 
-- [ ] T013 [P] Create `database/migrations/2026_10_18_000701_add_impersonation_to_restv2_audit_events_table.php`
+- [X] T013 [P] Create `database/migrations/2026_10_18_000701_add_impersonation_to_restv2_audit_events_table.php`
   (columns and index of data-model.md) and add the two attributes to `app/Models/AuditEvent.php`.
-- [ ] T014 [P] Create `database/migrations/2026_10_18_000702_add_owner_binding_to_restv2_api_keys_table.php`
+- [X] T014 [P] Create `database/migrations/2026_10_18_000702_add_owner_binding_to_restv2_api_keys_table.php`
   (`owner_created_at` DATETIME(0) NULL, `revocation_reason` VARCHAR(16) NULL, then the back-fill
   `UPDATE restv2_api_keys k JOIN admin a ON a.username = k.owner_username SET k.owner_created_at =
   a.created WHERE k.owner_created_at IS NULL`) and update `app/Models/ApiKey.php`. This makes T011
   pass.
-- [ ] T015 Change 001's `app/Auth/Principal.php` (add `?Principal $impersonator`,
+- [X] T015 Change 001's `app/Auth/Principal.php` (add `?Principal $impersonator`,
   `?string $impersonationId`, `?CarbonImmutable $impersonationStartedAt`,
   `?string $accountCreatedAt`, and `actingAccount(): Principal` returning the impersonator when
   present) and `app/Auth/AuthMethod.php` (case `SsoToken = 'ssoToken'`). Create
   `app/Auth/ImpersonationEndReason.php` (`TargetDeletedOrRenamed`, `TargetOutOfScope`,
   `LoginAsRevoked`).
-- [ ] T016 [P] Create `app/Services/Accounts/AccountGeneration.php` on the `restv2` Redis connection:
+- [X] T016 [P] Create `app/Services/Accounts/AccountGeneration.php` on the `restv2` Redis connection:
   `current(kind, username): int` (`GET restv2:account-generation:<kind>:<username>`, absent = 0)
   and `bump(kind, username): int` (`INCR`, no TTL); `kind` is `admin` or `mailbox`, the username
   lower-cased. It is read only to validate impersonation targets (R11).
-- [ ] T017 Change 001's `app/Services/Auth/SessionManager.php` to store `accountCreatedAt` (raw
+- [X] T017 Change 001's `app/Services/Auth/SessionManager.php` to store `accountCreatedAt` (raw
   `admin.created` or `mailbox.created`) in `restv2.principal` at every sign-in, and add
   `rebindPrincipal(string $newUsername)` (used by a self-rename; it also calls feature 005's
   `SessionRegistry::rename()` for the session's handle). Change 001's
   `app/Http/Middleware/EnsureSessionIntegrity.php` to end the session when the account's current
   `created` differs from the stored value. This makes T009's session cases pass.
-- [ ] T018 Change 001's `app/Services/ApiKeys/ApiKeyService.php` (write `owner_created_at` at
+- [X] T018 Change 001's `app/Services/ApiKeys/ApiKeyService.php` (write `owner_created_at` at
   creation; `revocation_reason = 'manual'` on revocation; new `revokeAllForOwner(string $owner,
   string $revokedBy, string $reason): array` and `transferOwner(string $old, string $new): void`;
   the version tag also covers `revocation_reason`), `app/Services/ApiKeys/ApiKeyAuthenticator.php`
   (owner `created` must equal `owner_created_at`, otherwise `api-key-invalid` with the fail2ban
   report) and `app/Http/Resources/Api/V2/ApiKeyResource.php` (`revocationReason`). This makes T009's
   key cases and T012 pass.
-- [ ] T019 [P] Change 001's `app/Services/Preferences/PreferencesService.php`: add
+- [X] T019 [P] Change 001's `app/Services/Preferences/PreferencesService.php`: add
   `renameAccount(AccountKind $kind, string $old, string $new)` and
   `deleteForAccount(AccountKind $kind, string $username)` (data-model.md "restv2_preferences").
-- [ ] T020 Change 001's `app/Services/Audit/AuditLogger.php`: actor from
+- [X] T020 Change 001's `app/Services/Audit/AuditLogger.php`: actor from
   `Principal::actingAccount()`, the target of an impersonating principal in
   `impersonated_username`/`impersonated_role`; add the event types of data-model.md "New events"
   with their `details` whitelists (`changes`, `passwordChanged`, `passwordPreHashed`,
@@ -174,13 +174,13 @@ username rule and the policies. **No user story can start before this phase is c
   T086). Change
   `app/Http/Resources/Api/V2/AuditEventResource.php` to return `impersonatedAccount`. This makes
   T010 pass.
-- [ ] T021 [P] Create `app/Rules/AccountUsername.php` (rule codes of T006) and
+- [X] T021 [P] Create `app/Rules/AccountUsername.php` (rule codes of T006) and
   `app/Services/Accounts/SecondFactorStatus.php` (enum with `fromTfaRows()`). This makes T006 and
   T008 pass.
-- [ ] T022 [P] Create `app/Services/Accounts/AccountVersion.php` (`forAdmin(row)`,
+- [X] T022 [P] Create `app/Services/Accounts/AccountVersion.php` (`forAdmin(row)`,
   `forDomainAdmin(row, assignments, daAcl)`, canonical JSON then 001's `ETag`). This makes T007
   pass.
-- [ ] T023 Create `app/Services/Accounts/AccountRepresentation.php`: loads one account by username
+- [X] T023 Create `app/Services/Accounts/AccountRepresentation.php`: loads one account by username
   (lower-cased, case-insensitive match) and role (`superadmin`), with its `tfa` aggregate, active
   `fido2` count and, for domain administrators, its assignments (joined to `domain` for
   `domainExists`, `idn_to_utf8` UTS #46 for `domainUnicode`, ordered by domain) and `da_acl` row;
@@ -188,7 +188,7 @@ username rule and the policies. **No user story can start before this phase is c
   `app/Http/Resources/Api/V2/AdminResource.php`, `DomainAdminResource.php` and
   `DomainAdminAssignmentResource.php` (contract `Admin`, `DomainAdmin`, `DomainAdminAssignment`;
   times through 001's `MailcowDateTime`; `etag` from `AccountVersion`).
-- [ ] T024 Create `app/Policies/AdminPolicy.php` and `app/Policies/DomainAdminPolicy.php` (R24):
+- [X] T024 Create `app/Policies/AdminPolicy.php` and `app/Policies/DomainAdminPolicy.php` (R24):
   every ability needs an administrator principal (else `forbidden`); `AdminPolicy` write abilities
   (`create`, `update`, `delete`, `suspend`, `bulk`) need a session (a key gets `session-required`);
   read abilities accept keys; `DomainAdminPolicy` accepts sessions and administrator keys for every

@@ -23,14 +23,15 @@ provider-error report included), password sign-ins verified by the LDAP director
 named the user is the provider's e-mail address. Opening a pending
 sign-in (password verified, second factor outstanding) is not recorded; its outcome is.
 `authMethod` is `password`, `passwordAndSecondFactor` or `passkey`; `failureReason` says why a step
-was refused.
+was refused. Feature 007 adds the single sign-on token sign-in (`authMethod: ssoToken`,
+`requestedRole: domainAdmin`, `step: ssoToken` on failure), never with the token.
 
 | Key | Type | Meaning | Present |
 |---|---|---|---|
 | `requestedRole` | string or null | The role the sign-in named (`admin`, `domainAdmin`, `mailboxUser`), or `null` when it named none. For the second-factor step, the role named in the password step. | always |
 | `secondFactorType` | string | The second factor used or attempted: `totp`, `webauthn` or `yubiOtp`. | when a second factor completed the sign-in, and on every failure of the second-factor step |
 | `restricted` | boolean | Whether the new session is restricted by pending actions (forced password change or second-factor setup). | on success only |
-| `step` | string | The refused step: `password`, `secondFactor` or `passkey`. | on failure only |
+| `step` | string | The refused step: `password`, `secondFactor`, `passkey` or (feature 007) `ssoToken`. | on failure only |
 | `identityProvider` | string | Feature 012: the provider of a sign-in through it (`keycloak`, `genericOidc`, `ldap`). | for single sign-on and provider password sign-ins, when the provider type is known |
 | `mailboxCreated` | boolean | Feature 012: whether the sign-in created the mailbox (first sign-in). | on success of a sign-in through the provider |
 | `templateApplied` | boolean | Feature 012: whether the mailbox was updated from its mapped template before the session was established. | on success of a sign-in through the provider |
@@ -1845,3 +1846,226 @@ target is `{type: webmailHandOff, id: <mailbox>}`. The legacy session identifier
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
 | `requiredFlags` | array of strings | See "Refusal records of feature 005". | on `permission-flag-required` failures |
+
+<!-- Feature 007: administrators, domain administrators, single sign-on tokens and impersonation. -->
+
+## Refusal records of feature 007
+
+The state-changing operations of feature 007 declare refusal auditing like those of feature 002
+onwards ("Refusal records" above): every refusal of an authenticated caller writes one record with
+`problemType`, `status` and, for `422`, `errors`, including refusals of read-only keys
+(`insufficient-key-scope`), of keys on session-only operations (`session-required`), of restricted
+sessions and of out-of-scope or unknown accounts (`404`). The target of an account operation is the
+account as addressed (`{type: admin | domainAdmin, id: <username as sent, lower-cased>, name: same}`),
+or `null` for a creation whose username is invalid. Impersonation and webmail refusals also record
+`requiredFlags` (`["loginAs"]`) on `permission-flag-required`. A single sign-on token issued for an
+inactive account is recorded with `failureReason: accountInactive`; the other feature 007 problem
+types map to `conflict` (`409`) and `permissionDenied` (`403`). Records written during an
+impersonation, by any feature, carry the impersonator as `actor` and the target as
+`impersonatedAccount`. Passwords, password hashes and single sign-on tokens never appear in any
+record.
+
+## adminCreation
+
+Feature 007. Written for every creation of an administrator (`POST /admins`) and every refusal.
+The target is `{type: admin, id: <username>, name: <username>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `active` | boolean | The status of the new account. | on success |
+| `forcePasswordChange` | boolean | Whether the account must change its password at its next sign-in. | on success |
+| `forceSecondFactorSetup` | boolean | Whether the account must set up a second factor at its next sign-in. | on success |
+| `passwordPreHashed` | boolean | Whether the password was given with a hash-scheme prefix and stored as given. The password is never recorded. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## adminUpdate
+
+Feature 007. Written for every change of an administrator (`PATCH /admins/{username}`, and the
+`activate` and `deactivate` bulk actions) that changes a stored value, and every refusal. A patch
+that changes nothing writes no record. The target is the account under its username before the
+change; a rename is recorded in `changes.username`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | The changed values as `{field: {old, new}}`: `username`, `active`, `forcePasswordChange`, `forceSecondFactorSetup`. | on success |
+| `passwordChanged` | boolean | `true` when the password was changed; the password is never recorded. | on success, when the password changed |
+| `passwordPreHashed` | boolean | Whether the new password was given pre-hashed. | on success, when the password changed |
+| `bulkRequestId` | string | The request ID of the bulk action the change belongs to. | for items of a bulk action |
+| `targetIds` | array of strings | See "Refusal records" (a bulk request refused as a whole). | on a refused bulk request |
+| `bulkAction` | string | The requested bulk action (`activate`, `deactivate`). | on a refused bulk request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## adminDeletion
+
+Feature 007. Written for every deletion of an administrator (`DELETE /admins/{username}` and the
+`delete` bulk action) and every refusal, including `cannot-delete-own-account` and
+`last-active-admin`. The target is the deleted account.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `revokedApiKeyIds` | array of strings | The API keys of the account that the deletion revoked (`revocationReason: ownerDeleted`). | on success |
+| `removedSecondFactors` | integer | The number of `tfa` entries (TOTP, WebAuthn, Yubico OTP and deprecated types) removed. | on success |
+| `removedPasskeys` | integer | The number of passkeys removed. | on success |
+| `bulkRequestId` | string | See `adminUpdate`. | for items of a bulk action |
+| `targetIds` | array of strings | See "Refusal records". | on a refused bulk request |
+| `bulkAction` | string | `delete`. | on a refused bulk request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## adminSecondFactorSuspension
+
+Feature 007. Written for every second-factor suspension of an administrator
+(`POST /admins/{username}/second-factor-suspension` and the `suspendSecondFactors` bulk action)
+and every refusal, also when no entry was active.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `suspendedCount` | integer | The number of active TOTP, WebAuthn and Yubico OTP entries that were suspended (0 when none was active). | on success |
+| `bulkRequestId` | string | See `adminUpdate`. | for items of a bulk action |
+| `targetIds` | array of strings | See "Refusal records". | on a refused bulk request |
+| `bulkAction` | string | `suspendSecondFactors`. | on a refused bulk request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## domainAdminCreation
+
+Feature 007. Written for every creation of a domain administrator (`POST /domain-admins`) and
+every refusal. The target is `{type: domainAdmin, id: <username>, name: <username>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `active` | boolean | The status of the new account and its assignments. | on success |
+| `forcePasswordChange` | boolean | See `adminCreation`. | on success |
+| `forceSecondFactorSetup` | boolean | See `adminCreation`. | on success |
+| `passwordPreHashed` | boolean | See `adminCreation`. | on success |
+| `domains` | array of strings | The assigned domains (ASCII form), sorted. | on success |
+| `permissions` | object | The 19 permission flags as stored (`{flag: boolean}`, contract names). | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## domainAdminUpdate
+
+Feature 007. Written for every change of a domain administrator (`PATCH /domain-admins/{username}`,
+and the `activate` and `deactivate` bulk actions) that changes a stored value, and every refusal.
+A patch that changes nothing writes no record. The target is the account under its username before
+the change.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | See `adminUpdate`. | on success |
+| `passwordChanged` | boolean | See `adminUpdate`. | on success, when the password changed |
+| `passwordPreHashed` | boolean | See `adminUpdate`. | on success, when the password changed |
+| `domainsAdded` | array of strings | Domains assigned by the change (ASCII form), sorted. | on success, when the domain set changed |
+| `domainsRemoved` | array of strings | Assignments removed by the change, sorted; names that are not primary domains (for example legacy's `ALL`) included. | on success, when the domain set changed |
+| `permissionsChanged` | object | The changed permission flags as `{flag: {old, new}}` (contract names; `old` is `false` when the account had no permission record). | on success, when a flag changed |
+| `bulkRequestId` | string | See `adminUpdate`. | for items of a bulk action |
+| `targetIds` | array of strings | See "Refusal records". | on a refused bulk request |
+| `bulkAction` | string | `activate` or `deactivate`. | on a refused bulk request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## domainAdminDeletion
+
+Feature 007. Written for every deletion of a domain administrator (`DELETE /domain-admins/{username}`,
+the `delete` bulk action, and feature 002's domain deletion that leaves the account without a
+domain) and every refusal. The target is the deleted account.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `revokedApiKeyIds` | array of strings | See `adminDeletion`. | on success |
+| `removedSecondFactors` | integer | See `adminDeletion`. | on success |
+| `removedPasskeys` | integer | See `adminDeletion`. | on success |
+| `domains` | array of strings | The assignments the account had, sorted. | on success |
+| `removedSsoTokens` | integer | The number of unused single sign-on tokens removed. | on success |
+| `trigger` | string | `request` for a deletion of the account, `domainDeletion` when feature 002's domain deletion removed its last domain (the record then carries the domain deletion's request ID). | on success |
+| `bulkRequestId` | string | See `adminUpdate`. | for items of a bulk action |
+| `targetIds` | array of strings | See "Refusal records". | on a refused bulk request |
+| `bulkAction` | string | `delete`. | on a refused bulk request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## domainAdminSecondFactorSuspension
+
+Feature 007. As `adminSecondFactorSuspension`, for a domain administrator
+(`POST /domain-admins/{username}/second-factor-suspension` and the `suspendSecondFactors` bulk
+action).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `suspendedCount` | integer | See `adminSecondFactorSuspension`. | on success |
+| `bulkRequestId` | string | See `adminUpdate`. | for items of a bulk action |
+| `targetIds` | array of strings | See "Refusal records". | on a refused bulk request |
+| `bulkAction` | string | `suspendSecondFactors`. | on a refused bulk request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## ssoTokenIssue
+
+Feature 007. Written for every single sign-on token issued for a domain administrator
+(`POST /domain-admins/{username}/sso-token`) and every refusal (an inactive account:
+`failureReason: accountInactive`). The target is `{type: ssoToken, id: null, name: <username>}`.
+The token itself is never recorded. Signing in with a token is a `signIn` record with
+`authMethod: ssoToken` and `step: ssoToken` on failure.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `expiresAt` | string (RFC 3339, UTC) | When the token expires (issue time plus 30 seconds). | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## impersonationStart
+
+Feature 007. Written for every start of an impersonation (`POST /session/impersonation`) and every
+refusal of an authenticated caller. The target is `{type: impersonation, id: <impersonation ULID>,
+name: <target username>}` on success, and `{type: impersonation, id: null, name: <requested
+username>}` on failure. The record of a start carries the target as `impersonatedAccount`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `targetRole` | string | `mailboxUser` or `domainAdmin`. | on success, and on failure when the request named a valid role |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 007". | on `permission-flag-required` failures |
+
+## impersonationEnd
+
+Feature 007. Written when an impersonation ends: explicitly (`DELETE /session/impersonation`), by
+signing out (`DELETE /session`, before the `signOut` record), automatically when it became invalid,
+or when a new sign-in replaces the impersonating session. Ending without an impersonation writes
+nothing. The target is the impersonation (`id` its ULID, `name` the target username), and the record
+carries the target as `impersonatedAccount` and the impersonator as `actor`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `endedBy` | string | `explicit`, `signOut`, `automatic` or `sessionReplaced`. | on success |
+| `endReason` | string | Why it ended automatically: `targetDeletedOrRenamed`, `targetOutOfScope` or `loginAsRevoked`. | when `endedBy` is `automatic` |
+| `durationSeconds` | integer | Seconds since the impersonation started. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## webmailSignInOnBehalf
+
+Feature 007. Written for every webmail sign-in on behalf of a mailbox user
+(`POST /mailboxes/{mailbox}/webmail-sign-in`) and every refusal of an authenticated caller. The
+target is `{type: mailbox, id: <mailbox address as normalised>, name: null}`. The legacy session
+identifier is never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 007". | on `permission-flag-required` failures |

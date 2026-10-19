@@ -141,6 +141,20 @@ enum AuditEventType: string
     case GroupwareProfileReset = 'groupwareProfileReset';
     case WebmailHandOff = 'webmailHandOff';
 
+    // Feature 007: administrators, domain administrators, single sign-on tokens and impersonation.
+    case AdminCreation = 'adminCreation';
+    case AdminUpdate = 'adminUpdate';
+    case AdminDeletion = 'adminDeletion';
+    case AdminSecondFactorSuspension = 'adminSecondFactorSuspension';
+    case DomainAdminCreation = 'domainAdminCreation';
+    case DomainAdminUpdate = 'domainAdminUpdate';
+    case DomainAdminDeletion = 'domainAdminDeletion';
+    case DomainAdminSecondFactorSuspension = 'domainAdminSecondFactorSuspension';
+    case SsoTokenIssue = 'ssoTokenIssue';
+    case ImpersonationStart = 'impersonationStart';
+    case ImpersonationEnd = 'impersonationEnd';
+    case WebmailSignInOnBehalf = 'webmailSignInOnBehalf';
+
     /**
      * Keys of refusal records written by App\Services\Audit\RefusalAuditor (docs/conventions.md
      * "Refusal auditing"): the problem type, the status and, for `422`, the field errors (rule codes
@@ -171,6 +185,18 @@ enum AuditEventType: string
 
     /** Refusal keys of feature 009, which also records the missing permission flags. */
     private const ROUTING_REFUSAL = ['problemType', 'status', 'errors', 'requiredFlags'];
+
+    /** Refusal keys of feature 007's impersonation and webmail records: REFUSAL plus the missing flags (`loginAs`). */
+    private const ACCOUNT_SWITCH_REFUSAL = ['problemType', 'status', 'errors', 'requiredFlags'];
+
+    /** Feature 007: keys of an account creation (never the password). */
+    private const ACCOUNT_CREATION = ['active', 'forcePasswordChange', 'forceSecondFactorSetup', 'passwordPreHashed'];
+
+    /** Feature 007: keys of an account change (a password only as changed). */
+    private const ACCOUNT_UPDATE = ['changes', 'passwordChanged', 'passwordPreHashed'];
+
+    /** Feature 007: keys of an account deletion. */
+    private const ACCOUNT_DELETION = ['revokedApiKeyIds', 'removedSecondFactors', 'removedPasskeys'];
 
     /** Keys of a connection test record (feature 009 FR-085): never the transcript. */
     private const CONNECTION_TEST = ['sender', 'recipient', 'accepted', 'step', 'failureReason'];
@@ -278,6 +304,17 @@ enum AuditEventType: string
             self::RecentLoginsClear => ['removedRecentLogins', 'removedSignInRecords', ...self::SELF_SERVICE_REFUSAL],
             self::ActiveSyncCacheReset, self::GroupwareProfileReset => ['removed', ...self::SELF_SERVICE_REFUSAL],
             self::WebmailHandOff => [...self::SELF_SERVICE_REFUSAL],
+            self::AdminCreation => [...self::ACCOUNT_CREATION, ...self::REFUSAL],
+            self::AdminUpdate => [...self::ACCOUNT_UPDATE, ...self::BULK, ...self::REFUSAL],
+            self::AdminDeletion => [...self::ACCOUNT_DELETION, ...self::BULK, ...self::REFUSAL],
+            self::AdminSecondFactorSuspension, self::DomainAdminSecondFactorSuspension => ['suspendedCount', ...self::BULK, ...self::REFUSAL],
+            self::DomainAdminCreation => [...self::ACCOUNT_CREATION, 'domains', 'permissions', ...self::REFUSAL],
+            self::DomainAdminUpdate => [...self::ACCOUNT_UPDATE, 'domainsAdded', 'domainsRemoved', 'permissionsChanged', ...self::BULK, ...self::REFUSAL],
+            self::DomainAdminDeletion => [...self::ACCOUNT_DELETION, 'domains', 'removedSsoTokens', 'trigger', ...self::BULK, ...self::REFUSAL],
+            self::SsoTokenIssue => ['expiresAt', ...self::REFUSAL],
+            self::ImpersonationStart => ['targetRole', ...self::ACCOUNT_SWITCH_REFUSAL],
+            self::ImpersonationEnd => ['endedBy', 'endReason', 'durationSeconds', ...self::REFUSAL],
+            self::WebmailSignInOnBehalf => [...self::ACCOUNT_SWITCH_REFUSAL],
         };
     }
 }

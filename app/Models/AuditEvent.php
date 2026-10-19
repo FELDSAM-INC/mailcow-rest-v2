@@ -30,6 +30,8 @@ use LogicException;
  * @property string|null $failure_reason
  * @property string $request_id
  * @property array<string, mixed> $details
+ * @property string|null $impersonated_username feature 007: the impersonated account, or null
+ * @property string|null $impersonated_role feature 007: `mailboxUser` or `domainAdmin`, or null
  */
 class AuditEvent extends Model
 {

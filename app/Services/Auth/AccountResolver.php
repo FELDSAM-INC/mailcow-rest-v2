@@ -89,16 +89,38 @@ class AccountResolver
     public function accountStillActive(Principal $principal): bool
     {
         if ($principal->accountKind === AccountKind::Admin) {
-            return Admin::query()
+            $query = Admin::query()
                 ->whereKey($principal->username)
                 ->where('active', 1)
-                ->where('superadmin', $principal->role === Role::Admin ? 1 : 0)
-                ->exists();
+                ->where('superadmin', $principal->role === Role::Admin ? 1 : 0);
+
+            // Feature 007 (FR-036): a later account with the same username is another account.
+            if ($principal->accountCreatedAt !== null) {
+                $query->where('created', $principal->accountCreatedAt);
+            }
+
+            return $query->exists();
         }
 
         $mailbox = $this->findMailboxAccount($principal->username);
 
-        return $mailbox !== null && (int) $mailbox->getAttribute('active') === 1 && (int) $mailbox->getAttribute('d_active') === 1;
+        return $mailbox !== null
+            && (int) $mailbox->getAttribute('active') === 1
+            && (int) $mailbox->getAttribute('d_active') === 1
+            && ($principal->accountCreatedAt === null || $mailbox->getRawOriginal('created') === $principal->accountCreatedAt);
+    }
+
+    /**
+     * The raw `created` value (mailcow local time) of an account, or null when it does not exist
+     * (feature 007 FR-036: sessions, keys and impersonations are bound to it).
+     */
+    public function createdAt(AccountKind $kind, string $username): ?string
+    {
+        $created = $kind === AccountKind::Admin
+            ? Admin::query()->whereKey($username)->toBase()->value('created')
+            : Mailbox::query()->whereKey($username)->toBase()->value('created');
+
+        return is_string($created) ? $created : null;
     }
 
     /**

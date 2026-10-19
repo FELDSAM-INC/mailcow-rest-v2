@@ -42,6 +42,11 @@ class AuditEventResource extends JsonResource
             'requestId' => $event->request_id,
             // A JSON object, also when empty.
             'details' => (object) $event->details,
+            // Feature 007: the account impersonated when the record was written, or null.
+            'impersonatedAccount' => $event->impersonated_username === null ? null : [
+                'username' => $event->impersonated_username,
+                'role' => $event->impersonated_role,
+            ],
         ];
     }
 }

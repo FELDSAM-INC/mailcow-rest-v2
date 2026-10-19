@@ -57,16 +57,20 @@ class ApiKeyService
     ): array {
         $secret = self::generateSecret();
         // The owner exists (App\Rules\EligibleKeyOwner); keep mailcow's spelling of the username.
-        $owner = (string) (Admin::query()->whereKey($ownerUsername)->value('username') ?? $ownerUsername);
+        $ownerRow = Admin::query()->whereKey($ownerUsername)->toBase()->first(['username', 'created']);
+        $owner = (string) ($ownerRow->username ?? $ownerUsername);
+        // Feature 007 (FR-036): the key acts only for this account, never for a later one of the name.
+        $ownerCreatedAt = is_string($ownerRow->created ?? null) ? $ownerRow->created : null;
         $networks = self::normaliseNetworks($allowedNetworks);
 
-        $key = DB::transaction(function () use ($actor, $name, $owner, $accessLevel, $expiresAt, $networks, $secret): ApiKey {
+        $key = DB::transaction(function () use ($actor, $name, $owner, $ownerCreatedAt, $accessLevel, $expiresAt, $networks, $secret): ApiKey {
             $key = new ApiKey;
             $key->forceFill([
                 'name' => $name,
                 'prefix' => substr($secret, 0, 12),
                 'secret_hash' => hash('sha256', $secret),
                 'owner_username' => $owner,
+                'owner_created_at' => $ownerCreatedAt,
                 'access_level' => ApiKey::storedAccessLevel($accessLevel),
                 'allowed_networks' => $networks,
                 'expires_at' => $expiresAt?->utc()->startOfSecond(),
@@ -143,7 +147,8 @@ class ApiKeyService
 
             $key->forceFill([
                 'revoked_at' => CarbonImmutable::now('UTC')->startOfSecond(),
-                'revoked_by' => $actor->username,
+                'revoked_by' => $actor->actingAccount()->username,
+                'revocation_reason' => 'manual',
             ])->save();
 
             $this->audit->record(AuditEventType::ApiKeyRevocation, true, $actor, self::target($key), $actor->authMethod->value, null, [
@@ -154,6 +159,49 @@ class ApiKeyService
         });
 
         return $this->find($key->id) ?? $key;
+    }
+
+    /**
+     * Revokes every unrevoked key of an owner whose account is deleted (feature 007 FR-034, research
+     * R10), permanently, with the deleting administrator as the revoker. Runs inside the caller's
+     * transaction and returns the IDs of the keys it revoked.
+     *
+     * @return list<string>
+     */
+    public function revokeAllForOwner(string $owner, string $revokedBy, string $reason): array
+    {
+        $ids = DB::table('restv2_api_keys')
+            ->where('owner_username', $owner)
+            ->whereNull('revoked_at')
+            ->lockForUpdate()
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn (mixed $id): string => (string) $id)
+            ->all();
+
+        if ($ids !== []) {
+            $now = CarbonImmutable::now('UTC')->format('Y-m-d H:i:s');
+            DB::table('restv2_api_keys')->whereIn('id', $ids)->update([
+                'revoked_at' => $now,
+                'revoked_by' => $revokedBy,
+                'revocation_reason' => $reason,
+                'updated_at' => $now,
+            ]);
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Moves an owner's keys to its new username after a rename (feature 007 FR-025, research R9).
+     * The binding to the account's creation time stays: a rename keeps `created`.
+     */
+    public function transferOwner(string $old, string $new): void
+    {
+        DB::table('restv2_api_keys')->where('owner_username', $old)->update([
+            'owner_username' => $new,
+            'updated_at' => CarbonImmutable::now('UTC')->format('Y-m-d H:i:s'),
+        ]);
     }
 
     /**
@@ -170,6 +218,7 @@ class ApiKeyService
             self::time($key->expires_at),
             self::time($key->revoked_at),
             $key->revoked_by,
+            $key->revocation_reason,
         ]);
     }
 

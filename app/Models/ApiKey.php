@@ -12,8 +12,9 @@ use Illuminate\Support\Str;
 
 /**
  * An API key (`restv2_api_keys`, FR-032–FR-036, R19). Written only by
- * App\Services\ApiKeys\ApiKeyService (creation, revocation) and ApiKeyAuthenticator (last use).
- * Times are UTC.
+ * App\Services\ApiKeys\ApiKeyService (creation, revocation, feature 007's revocation of a deleted
+ * owner's keys and the transfer on a rename) and ApiKeyAuthenticator (last use). Times are UTC,
+ * except `owner_created_at`, which is the owner's raw mailcow `created` value, compared verbatim.
  *
  * @property string $id
  * @property string $name
@@ -28,6 +29,8 @@ use Illuminate\Support\Str;
  * @property string|null $last_used_from
  * @property CarbonImmutable|null $revoked_at
  * @property string|null $revoked_by
+ * @property string|null $revocation_reason feature 007: `manual` or `ownerDeleted`, null while not revoked
+ * @property string|null $owner_created_at feature 007: the owner's raw `admin.created` at creation (FR-036)
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  * @property-read Admin|null $owner

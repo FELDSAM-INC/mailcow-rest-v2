@@ -4,6 +4,7 @@ namespace Tests\Support\Accounts;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Assert;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\ApiKeys\ApiKeys;
 use Tests\Support\Auth\AuthRequests;
@@ -41,6 +42,29 @@ trait AccountTestHelpers
         'domainDesc' => 'domain_desc',
         'aliasExternalGoto' => 'alias_external_goto',
     ];
+
+    /**
+     * Registers `assertViolation()` and `assertViolationParams()` on test responses: the field
+     * errors of a `422` by their exact key, also when it contains dots (`domains.1`).
+     */
+    protected function setUpAccountTestHelpers(): void
+    {
+        TestResponse::macro('assertViolation', function (string $field, string $code, int $index = 0): TestResponse {
+            /** @var TestResponse<Response> $this */
+            $errors = (array) $this->json('errors');
+            Assert::assertArrayHasKey($field, $errors, 'No violation of '.$field.': '.json_encode($errors));
+            Assert::assertSame($code, $errors[$field][$index]['code'] ?? null, 'Violations of '.$field.': '.json_encode($errors[$field]));
+
+            return $this;
+        });
+        TestResponse::macro('assertViolationParams', function (string $field, array $params, int $index = 0): TestResponse {
+            /** @var TestResponse<Response> $this */
+            $errors = (array) $this->json('errors');
+            Assert::assertSame($params, $errors[$field][$index]['params'] ?? null, 'Violations of '.$field.': '.json_encode($errors[$field] ?? null));
+
+            return $this;
+        });
+    }
 
     /**
      * The `da_acl` column defaults of the test schema, by contract name.

@@ -82,7 +82,7 @@ class DomainDeleter
                 $aliasDomains = $this->planner->aliasDomains($name);
                 $footer = DB::table('domain_wide_footer')->where('domain', $name)->exists();
                 $this->deleteRows($name, $aliasDomains);
-                $removedAdmins = $this->orphans->remove();
+                $removedAdmins = $this->orphans->remove($principal, $name);
 
                 $fields = ['DOMAIN_MAP' => [$name], 'RL_VALUE' => [$name]];
 

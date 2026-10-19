@@ -33,7 +33,9 @@ class DeleteDomainAuditTest extends TestCase
         $this->assertSame(['only-this'], $records[0]->details['removedDomainAdmins']);
         $this->assertTrue($records[0]->details['footerRemoved']);
         $this->assertSame(['outcome' => 'done'], $records[0]->details['maildirCleanup']);
-        $this->assertSame(1, DB::table('restv2_audit_events')->count());
+        // Feature 007 (FR-032): the domain administrator left without a domain is deleted with the
+        // full cascade and its own record.
+        $this->assertSame(['domainAdminDeletion', 'domainDeletion'], DB::table('restv2_audit_events')->orderBy('event_type')->pluck('event_type')->all());
     }
 
     public function test_failed_and_unknown_mail_moves_are_completed_with_a_message(): void

@@ -69,7 +69,13 @@ trait AccountAssertions
 
         $this->assertInstanceOf(stdClass::class, $row, "No da_acl row for {$username}.");
         $stored = array_map('intval', array_diff_key((array) $row, ['username' => true]));
-        $this->assertSame($flags, array_intersect_key($stored, $flags));
+        $actual = [];
+
+        foreach (array_keys($flags) as $column) {
+            $actual[$column] = $stored[$column] ?? null;
+        }
+
+        $this->assertSame($flags, $actual);
     }
 
     /**

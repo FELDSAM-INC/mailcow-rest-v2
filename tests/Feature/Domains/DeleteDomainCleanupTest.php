@@ -98,7 +98,8 @@ class DeleteDomainCleanupTest extends TestCase
         $this->assertSame(['e.example'], DB::table('domain_admins')->pluck('domain')->all());
 
         $this->forgetCookies();
-        $this->getJson('/api/v2/domains', $this->keyHeader($key))->assertStatus(401)->assertJsonPath('type', '/api/v2/problems/api-key-invalid');
+        // Feature 007 (FR-032, FR-034): the deleted account's keys are revoked.
+        $this->getJson('/api/v2/domains', $this->keyHeader($key))->assertStatus(401)->assertJsonPath('type', '/api/v2/problems/api-key-revoked');
     }
 
     public function test_a_domain_created_again_starts_without_a_footer(): void

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V2\AccountBulkActionController;
 use App\Http\Controllers\Api\V2\AliasBulkActionController;
 use App\Http\Controllers\Api\V2\AliasController;
 use App\Http\Controllers\Api\V2\AliasCopyController;
@@ -27,6 +28,8 @@ use App\Http\Controllers\Api\V2\DkimKeyImportController;
 use App\Http\Controllers\Api\V2\DkimPrivateKeyController;
 use App\Http\Controllers\Api\V2\DnsCapabilitiesController;
 use App\Http\Controllers\Api\V2\DnsDiagnosticsController;
+use App\Http\Controllers\Api\V2\DomainAdminController;
+use App\Http\Controllers\Api\V2\DomainAdminSecondFactorSuspensionController;
 use App\Http\Controllers\Api\V2\DomainBulkActionController;
 use App\Http\Controllers\Api\V2\DomainCapabilitiesController;
 use App\Http\Controllers\Api\V2\DomainController;
@@ -1030,6 +1033,37 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where(['mailbox' => '[^/]+', 'temporaryAlias' => '[^/]+'])
             ->defaults('restv2.audit', ['event' => 'temporaryAliasDeletion', 'target' => 'temporaryAlias'])
             ->name('temporary-aliases.destroy');
+    });
+
+    // Feature 007: domain administrators. Administrators only, with a session or a key (read-write
+    // for changes). The POST-only bulk path comes before {username}, whose routes never accept POST,
+    // so that an account named "bulk-actions" stays readable.
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/domain-admins', [DomainAdminController::class, 'index'])->name('domain-admins.index');
+        Route::get('/domain-admins/{username}', [DomainAdminController::class, 'show'])
+            ->where('username', '[A-Za-z0-9._-]+')
+            ->name('domain-admins.show');
+    });
+
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::post('/domain-admins/bulk-actions', [AccountBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'domainAdmin'])
+            ->name('domain-admin-bulk-actions.store');
+        Route::post('/domain-admins', [DomainAdminController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'domainAdminCreation', 'target' => 'domainAdmin'])
+            ->name('domain-admins.store');
+        Route::patch('/domain-admins/{username}', [DomainAdminController::class, 'update'])
+            ->where('username', '[A-Za-z0-9._-]+')
+            ->defaults('restv2.audit', ['event' => 'domainAdminUpdate', 'target' => 'domainAdmin'])
+            ->name('domain-admins.update');
+        Route::delete('/domain-admins/{username}', [DomainAdminController::class, 'destroy'])
+            ->where('username', '[A-Za-z0-9._-]+')
+            ->defaults('restv2.audit', ['event' => 'domainAdminDeletion', 'target' => 'domainAdmin'])
+            ->name('domain-admins.destroy');
+        Route::post('/domain-admins/{username}/second-factor-suspension', [DomainAdminSecondFactorSuspensionController::class, 'store'])
+            ->where('username', '[A-Za-z0-9._-]+')
+            ->defaults('restv2.audit', ['event' => 'domainAdminSecondFactorSuspension', 'target' => 'domainAdmin'])
+            ->name('domain-admin-second-factor-suspension.store');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

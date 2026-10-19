@@ -59,6 +59,7 @@ use App\Policies\MonitoringPolicy;
 use App\Policies\MtaStsPolicyPolicy;
 use App\Policies\Oauth2ClientPolicy;
 use App\Policies\SyncJobPolicy;
+use App\Services\Accounts\AccountAuditTargets;
 use App\Services\Aliases\AliasAuditTargets;
 use App\Services\Audit\RefusalAuditor;
 use App\Services\Auth\SessionRegistry;
@@ -168,6 +169,8 @@ class AppServiceProvider extends ServiceProvider
         Oauth2ClientAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
         RoutingAuditTargets::register($this->app->make(RefusalAuditor::class));
         SelfServiceAuditTargets::register($this->app->make(RefusalAuditor::class));
+        // Feature 007: accounts, single sign-on tokens, impersonations and webmail on behalf.
+        AccountAuditTargets::register($this->app->make(RefusalAuditor::class));
 
         // Feature 011: administrators only (research R26).
         Gate::define('operate-monitoring', [MonitoringPolicy::class, 'operate']);

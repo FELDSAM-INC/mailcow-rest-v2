@@ -209,7 +209,7 @@ the accounts in through feature 001.
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T025 [P] [US1] Write `tests/Feature/DomainAdmins/CreateDomainAdminTest.php` for
+- [X] T025 [P] [US1] Write `tests/Feature/DomainAdmins/CreateDomainAdminTest.php` for
   `createDomainAdmin` (AS US1-1 to US1-3, FR-014 to FR-020, R6):
   - `201`, `Location: /api/v2/domain-admins/reseller1`, `ETag`, representation without any password
     member; the username `Reseller1` is stored as `reseller1`; `active` defaults to `true` and the
@@ -232,7 +232,7 @@ the accounts in through feature 001.
     account's flags are the defaults or the sent values, not the orphan's);
   - unknown member → `unknownField`; audit `domainAdminCreation` success without the password; when
     the audit insert fails (forced through a test double of the connection) nothing is stored.
-- [ ] T026 [P] [US1] Write `tests/Feature/DomainAdmins/ListDomainAdminsTest.php` for
+- [X] T026 [P] [US1] Write `tests/Feature/DomainAdmins/ListDomainAdminsTest.php` for
   `listDomainAdmins` (AS US1-9, FR-010, FR-012, R14): default page 25, `limit` 1–1000 (`1001` →
   `outOfRange`), `meta.total`; every entry equals `getDomainAdmin`'s `data` including `etag`;
   accounts without assignments are listed with `domains: []`; assignments to `ALL`, a removed
@@ -245,12 +245,12 @@ the accounts in through feature 001.
   `permission` → `422 required` on `permission`); sorts `username`, `active`, `createdAt`,
   `modifiedAt` (never-modified first ascending), `domainCount`, ties by username; administrators
   never appear.
-- [ ] T027 [P] [US1] Write `tests/Feature/DomainAdmins/GetDomainAdminTest.php` for `getDomainAdmin`
+- [X] T027 [P] [US1] Write `tests/Feature/DomainAdmins/GetDomainAdminTest.php` for `getDomainAdmin`
   (FR-003, FR-007, FR-009, FR-013): any letter case finds the account; an administrator's username
   and an unknown username both answer the same `404 about:blank`; `ETag` header equals `data.etag`; `modifiedAt` is
   `null` for a never-modified row; `secondFactorStatus` and `activePasskeyCount` reflect `tfa` and
   `fido2`; a missing `da_acl` row reads as all flags `false` (FR-041).
-- [ ] T028 [P] [US1] Write `tests/Feature/DomainAdmins/UpdateDomainAdminTest.php` for
+- [X] T028 [P] [US1] Write `tests/Feature/DomainAdmins/UpdateDomainAdminTest.php` for
   `updateDomainAdmin` attributes (FR-021 to FR-024, FR-026, FR-065, R7):
   - unsent members keep their values; `{}` → `422 required` on `body`; unknown member →
     `unknownField`; `createdAt`, `modifiedAt`, `secondFactorStatus`, `activePasskeyCount` and `etag`
@@ -264,14 +264,14 @@ the accounts in through feature 001.
   - `If-Match` with a stale tag → `412`, nothing changed, also after a raw `UPDATE` that simulates a
     legacy edit, and the next `GET` shows the legacy edit (FR-072, SC-010); a patch that changes nothing returns `200` and writes no audit record;
   - audit `domainAdminUpdate` with `changes` old/new and `passwordChanged: true` without the value.
-- [ ] T029 [P] [US1] Write `tests/Feature/DomainAdmins/DomainAdminDomainsTest.php` (AS US1-4,
+- [X] T029 [P] [US1] Write `tests/Feature/DomainAdmins/DomainAdminDomainsTest.php` (AS US1-4,
   FR-023): replacing `[a, b]` with `[b, c]` keeps the `b` row's `id`, `created` and `active`,
   deletes `a`, inserts `c` with the account's status; the domain administrator's next `GET /me`
   shows the new scope; `domains: []` → `422 required`; one invalid entry refuses the whole request
   and changes nothing; a non-domain row (`ALL`) is dropped by any saved set; items sent as
   assignment objects with unchanged read-only members are accepted, changed members → `immutable`;
   audit `domainsAdded` and `domainsRemoved`.
-- [ ] T030 [P] [US1] Write `tests/Feature/DomainAdmins/RenameDomainAdminTest.php` (AS US1-7, FR-025,
+- [X] T030 [P] [US1] Write `tests/Feature/DomainAdmins/RenameDomainAdminTest.php` (AS US1-7, FR-025,
   R9): with two passkeys, one TOTP entry (inactive) and one WebAuthn entry, assignments, a
   `da_acl` row, two keys and preferences, `PATCH {"username": "reseller-one"}` moves every one of
   them to `reseller-one` (assignment `created` kept, keys keep `owner_created_at`); unused `da_sso`
@@ -279,20 +279,20 @@ the accounts in through feature 001.
   collision with an administrator's name → `409 account-exists` and nothing changed (all tables);
   `RESELLER1` → no change; audit records written before keep `reseller1`; a later account named
   `reseller1` sees none of the moved data.
-- [ ] T031 [P] [US1] Write `tests/Feature/DomainAdmins/DeleteDomainAdminTest.php` (AS US1-8, FR-031,
+- [X] T031 [P] [US1] Write `tests/Feature/DomainAdmins/DeleteDomainAdminTest.php` (AS US1-8, FR-031,
   FR-033, FR-034, FR-036, R10): `204`; `assertNothingLeftFor('reseller1')`; its keys are revoked
   with `revocationReason: ownerDeleted` and `revokedBy` = the caller; its session gets `401`; audit
   `domainAdminDeletion` with `revokedApiKeyIds`, `removedSecondFactors`, `removedPasskeys`,
   `removedSsoTokens`; an account without assignments is deletable; `404` for an unknown username
   and for an administrator's; stale `If-Match` → `412`; a new `reseller1` created afterwards has no
   key, passkey, second factor, preference or flag of the old one, and the old key stays revoked.
-- [ ] T032 [P] [US1] Write `tests/Feature/DomainAdmins/DomainAdminSecondFactorSuspensionTest.php`
+- [X] T032 [P] [US1] Write `tests/Feature/DomainAdmins/DomainAdminSecondFactorSuspensionTest.php`
   (AS US1-6, FR-027, R13): with an active TOTP and an active WebAuthn entry, the suspension answers
   `200` with `secondFactorStatus: suspended`, every `tfa` row has `active = 0`, `fido2` rows are
   unchanged; `POST /session` with the password alone then yields an active session (no pending
   second factor) and both entries are active again; without active entries → `200`, no change,
   audit `suspendedCount: 0`; stale `If-Match` → `412`.
-- [ ] T033 [P] [US1] Write `tests/Feature/DomainAdmins/DomainAdminBulkActionTest.php` for
+- [X] T033 [P] [US1] Write `tests/Feature/DomainAdmins/DomainAdminBulkActionTest.php` for
   `applyDomainAdminBulkAction` (AS US1-11, US1-12, FR-075, FR-076, R15): three targets with list
   tags, one changed in between → two `done` (with new `version`) and deactivated, one `outdated`
   (`412` problem) unchanged; one audit record per processed account, each with `bulkRequestId` =
@@ -303,14 +303,14 @@ the accounts in through feature 001.
   an active account → `done`; results in request order and `summary` counts; an `action` other than
   the four (for example `rename` or `setPassword`) → `422 notInList` (FR-073); every outdated item
   is left unchanged while the others proceed (SC-010).
-- [ ] T034 [P] [US1] Write `tests/Feature/DomainAdmins/DomainAdminAuthorizationTest.php` (AS US1-10,
+- [X] T034 [P] [US1] Write `tests/Feature/DomainAdmins/DomainAdminAuthorizationTest.php` (AS US1-10,
   FR-001, FR-004, FR-005): for each of the seven domain administrator operations: administrator
   session → allowed; administrator read-write key → allowed; administrator read-only key → reads
   allowed, writes `403 insufficient-key-scope`; domain administrator session and key → `403
   forbidden` (also on its own account); mailbox user → `403 forbidden`; no credentials → `401`;
   restricted administrator session → `403 pending-action-required`; session write without CSRF
   token → `403 csrf-token-mismatch`.
-- [ ] T035 [P] [US1] Write `tests/Feature/DomainAdmins/DomainDeletionCascadeTest.php` (FR-032): 002's
+- [X] T035 [P] [US1] Write `tests/Feature/DomainAdmins/DomainDeletionCascadeTest.php` (FR-032): 002's
   `DELETE /domains/{domain}` of a domain administrator's only domain deletes the account with the
   full cascade of T031 (also `tfa`, `fido2`, `da_sso`, keys revoked `ownerDeleted`, preferences),
   audited as `domainAdminDeletion` with `trigger: domainDeletion` in the same request; a domain
@@ -318,30 +318,30 @@ the accounts in through feature 001.
 
 ### Implementation for User Story 1
 
-- [ ] T036 [P] [US1] Create `app/Rules/AssignableDomain.php`: normalises with feature 002's
+- [X] T036 [P] [US1] Create `app/Rules/AssignableDomain.php`: normalises with feature 002's
   `App\Support\Domain\DomainName` (002 FR-006); reports `invalidFormat` `{format: domainName}`, `notEligible`
   `{kind: aliasDomain}` (row in `alias_domain`) or `notFound` per entry; exposes the normalised,
   de-duplicated list.
-- [ ] T037 [P] [US1] Create `app/Services/Accounts/AccountQuery.php` (R14): base query per role,
+- [X] T037 [P] [US1] Create `app/Services/Accounts/AccountQuery.php` (R14): base query per role,
   the filters, the search (usernames by escaped `LIKE`; for domain administrators also ASCII domain
   names in SQL and Unicode names through `idn_to_utf8` + `mb_stripos` over the distinct assigned
   names), the sorts with the username tie-breaker, 001's `ListQuery` paging, and three batched
   loads per page (assignments with `domainExists`, `tfa` aggregate, active `fido2` counts).
-- [ ] T038 [P] [US1] Create `app/Services/Accounts/SecondFactorSuspender.php`:
+- [X] T038 [P] [US1] Create `app/Services/Accounts/SecondFactorSuspender.php`:
   `suspend(username): int` runs `UPDATE tfa SET active = '0' WHERE username = ?` and returns the
   number of entries that were active.
-- [ ] T039 [P] [US1] Create `app/Services/Accounts/DomainAdminPermissionService.php` (R12): maps the
+- [X] T039 [P] [US1] Create `app/Services/Accounts/DomainAdminPermissionService.php` (R12): maps the
   19 contract names to `da_acl` columns through 001's `PermissionFlag`; `insertForNewAccount(username,
   sentFlags)` (delete orphan, insert only the sent columns); `apply(username, sentFlags): array`
   (update sent columns, or insert with every other flag `0` when no row exists; returns
   `{flag: {old, new}}`).
-- [ ] T040 [US1] Create `app/Services/Accounts/AccountRenamer.php` (R9): one transaction with the
+- [X] T040 [US1] Create `app/Services/Accounts/AccountRenamer.php` (R9): one transaction with the
   updates of `admin`, `domain_admins`, `da_acl`, `tfa`, `fido2`, `ApiKeyService::transferOwner()`,
   `PreferencesService::renameAccount()`, `DELETE FROM da_sso WHERE username = :old`; after commit
   feature 005's `SessionRegistry::endAll('admin', old, exceptHandle)` (the caller's handle when it
   renamed itself), `AccountGeneration::bump('admin', old)` and, for a self-rename,
   `SessionManager::rebindPrincipal(new)`. A duplicate-key error becomes `account-exists`.
-- [ ] T041 [US1] Create `app/Services/Accounts/AccountDeleter.php` (R10): `delete(username, Principal
+- [X] T041 [US1] Create `app/Services/Accounts/AccountDeleter.php` (R10): `delete(username, Principal
   $actor, ?string $bulkRequestId, string $trigger = 'request')` counts `tfa`/`fido2` rows, deletes
   from `domain_admins`, `admin`, `da_acl`, `tfa`, `fido2`, `da_sso`, calls
   `ApiKeyService::revokeAllForOwner(..., 'ownerDeleted')` and
@@ -350,7 +350,7 @@ the accounts in through feature 001.
   username)`; `deleteOrphanedDomainAdmins(array $usernames, Principal $actor)` serves feature 002.
   It joins an outer transaction when one is open and defers the after-commit steps until the outer
   commit (`DB::afterCommit`).
-- [ ] T042 [US1] Create `app/Services/Accounts/DomainAdminAccountService.php`: `create()` (R6, one
+- [X] T042 [US1] Create `app/Services/Accounts/DomainAdminAccountService.php`: `create()` (R6, one
   transaction: `admin` insert with normalised `attributes`, orphan cleanup, assignments,
   `DomainAdminPermissionService::insertForNewAccount()`, audit), `update()` (R7: lock row, compare
   `If-Match` with `AccountVersion` inside the transaction, read-only and no-op handling, forced
@@ -359,13 +359,13 @@ the accounts in through feature 001.
   rename through `AccountRenamer`, audit with changes), `delete()` (through `AccountDeleter`) and
   `suspendSecondFactors()` (through `SecondFactorSuspender`, audit). Every method throws the
   `ProblemException` of the documented problem; nothing is written on failure.
-- [ ] T043 [US1] Create `app/Services/Accounts/AccountBulkAction.php` (enum) and
+- [X] T043 [US1] Create `app/Services/Accounts/AccountBulkAction.php` (enum) and
   `app/Services/Accounts/AccountBulkActionRunner.php` (R15): normalises and de-duplicates targets,
   runs each through the role's service with its own transaction, maps outcomes (`done` with the new
   version, `notFound`, `outdated`, `refused` for `last-active-admin` and
   `cannot-delete-own-account`, `failed` with a logged `500` problem), passes `bulkRequestId` to
   every audit record, and builds `BulkResult` with `summary`.
-- [ ] T044 [US1] Create the Form Requests `app/Http/Requests/Api/V2/ListDomainAdminsRequest.php`
+- [X] T044 [US1] Create the Form Requests `app/Http/Requests/Api/V2/ListDomainAdminsRequest.php`
   (`ListQuery` with the sort enum and filters of the contract), `StoreDomainAdminRequest.php`
   ("`username`: required, `AccountUsername`; `password`: required, string 1–4096, feature 003's
   policy unless pre-hashed; `domains`: required array of 1+ strings, `AssignableDomain`;
@@ -376,7 +376,7 @@ the accounts in through feature 001.
   unchanged → `immutable`) and `AccountBulkActionRequest.php` ("`action` in activate, deactivate,
   suspendSecondFactors, delete; `targets`: 1 to `config('restv2.account_bulk_limit')` items, more →
   `tooMany` `{max: 100}`; each `id` string 1–255, optional `version` string").
-- [ ] T045 [US1] Create `app/Http/Controllers/Api/V2/DomainAdminController.php` (`index`, `show`,
+- [X] T045 [US1] Create `app/Http/Controllers/Api/V2/DomainAdminController.php` (`index`, `show`,
   `store`, `update`, `destroy`), `DomainAdminSecondFactorSuspensionController.php` (`store`) and
   `DomainAdminBulkActionController.php` (`store`), authorised through `DomainAdminPolicy`. Register
   in `routes/api.php`: `GET|POST /domain-admins`, `POST /domain-admins/bulk-actions` (before the
@@ -385,7 +385,7 @@ the accounts in through feature 001.
   `POST /domain-admins/{username}/second-factor-suspension` with `restv2.auth:authenticated`,
   `restv2.csrf` on writes and the `{username}` constraint `[A-Za-z0-9._-]+`. Responses carry
   `ETag` (single account) and `Location` (create). This makes T025–T034 pass.
-- [ ] T046 [US1] Change feature 002's `app/Services/DomainAdmins/OrphanedDomainAdminRemover.php`
+- [X] T046 [US1] Change feature 002's `app/Services/DomainAdmins/OrphanedDomainAdminRemover.php`
   (002 D18, planned to be extended by 007): keep its selection of the orphaned usernames (for 002's
   audit record and deletion preview) and hand them to
   `AccountDeleter::deleteOrphanedDomainAdmins()` inside the domain deletion transaction instead of

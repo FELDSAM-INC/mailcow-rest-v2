@@ -832,7 +832,7 @@ behalf in the audit log, without secrets.
   renaming an administrator and a domain administrator through the API, a new account with the old
   username inherits no session, key, passkey, second factor, preference, permission, impersonation
   or token, in every combination.
-- [ ] T095 Run `composer test` and confirm that `build/contract/coverage.json` lists all 21
+- [X] T095 Run `composer test` and confirm that `build/contract/coverage.json` lists all 21
   operations of this feature and that the 001 operations changed by it still pass.
 - [X] T096 [P] Run `vendor/bin/pint --test` and `vendor/bin/phpstan analyse` (Larastan level 6) and
   fix every finding in the files of this feature.
@@ -840,7 +840,7 @@ behalf in the audit log, without secrets.
   `Identity`, `Session`, `AuthMethod`, `AuditEvent`, `ApiKey`, `Forbidden` and `listAuditEvents`
   changes; eight problem types; `ALLOW_ADMIN_EMAIL_LOGIN`) and the setting to the README's
   configuration table, so that mailcowui-ng can bump its pinned contract (constitution workflow).
-- [ ] T098 Walk through [quickstart.md](./quickstart.md) Parts A and B on the dev stack; Part C runs
+- [X] T098 Walk through [quickstart.md](./quickstart.md) Parts A and B on the dev stack; Part C runs
   on a mailcow host before the release.
 
 ---
@@ -1011,7 +1011,12 @@ what exists map as listed.
   `web` and `ALLOW_ADMIN_EMAIL_LOGIN=y` on `app`, curl running in the `app` container with
   `--connect-to localhost:443:web:443`; every command printed the value of its comment and the logs
   held no password or token. Fixed drift: the HTTPS listener with `-k`, the key creation command,
-  the expected outputs, the timing test's group. Part C (mailcow host) is not run.
+  the expected outputs, the timing test's group. After the dev host's restart it ran again on the
+  rebuilt image (main's php-fpm listener on IPv6 and IPv4), with the same results. Part C (mailcow
+  host) is not run.
+- **T095**: `composer test` on 2026-10-19 after the restart: 8,062 tests green (performance and idp
+  groups excluded), contract coverage 292 of 292 registered operations with none pending, the 21
+  operations of this feature among them.
 - **Deployment**: `ALLOW_ADMIN_EMAIL_LOGIN=${ALLOW_ADMIN_EMAIL_LOGIN:-n}` in
   `deploy/docker-compose.override.yml`; two migrations of API-owned tables
   (`restv2_audit_events`, `restv2_api_keys`). The production image is unchanged.

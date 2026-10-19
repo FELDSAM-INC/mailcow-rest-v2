@@ -104,6 +104,7 @@ class EmptyEnvironmentSettingsTest extends TestCase
             ['restv2', 'IPV6_NETWORK', 'ipv6_network', 'fd4d:6169:6c63:6f77::/64'],
             ['restv2', 'WEBAUTHN_ONLY_TRUSTED_VENDORS', 'webauthn_only_trusted_vendors', false],
             ['restv2', 'SKIP_SOGO', 'skip_sogo', false],
+            ['restv2', 'ALLOW_ADMIN_EMAIL_LOGIN', 'allow_admin_email_login', false],
             ['restv2', 'TZ', 'timezone', 'UTC'],
             ['restv2', 'COMPOSE_PROJECT_NAME', 'compose_project_name', null],
             ['restv2', 'MAILCOW_PASS_SCHEME', 'mailcow_pass_scheme', 'BLF-CRYPT'],

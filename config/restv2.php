@@ -73,6 +73,10 @@ return [
     'ipv6_network' => Env::get('IPV6_NETWORK', 'fd4d:6169:6c63:6f77::/64'),
     'webauthn_only_trusted_vendors' => Env::get('WEBAUTHN_ONLY_TRUSTED_VENDORS', 'n') === 'y',
     'skip_sogo' => Env::get('SKIP_SOGO', 'n') === 'y',
+    // Feature 007: administrators, and domain administrators with `login_as`, may open a mailbox's
+    // webmail on the user's behalf (mailcow.conf ALLOW_ADMIN_EMAIL_LOGIN, legacy sogo-auth.php's
+    // pattern, default off).
+    'allow_admin_email_login' => preg_match('/^([yY][eE][sS]|[yY])+$/', (string) Env::get('ALLOW_ADMIN_EMAIL_LOGIN', 'n')) === 1,
     'timezone' => Env::get('TZ', 'UTC'),
 
     // dockerapi container lookup (feature 002 research D14): the compose project of mailcow.
@@ -198,6 +202,12 @@ return [
 
     // Targets per mailbox bulk action (1 to 100; a setting can lower the limit, never raise it).
     'bulk_limit' => max(1, min(100, (int) Env::get('RESTV2_BULK_LIMIT', 100))),
+
+    // Feature 007: targets per administrator or domain administrator bulk action (docs/conventions.md
+    // "Bulk actions"), and the lifetime of a domain administrator's single sign-on token in seconds,
+    // which the legacy domain administrator login enforces on the same tokens. Not settings.
+    'account_bulk_limit' => 100,
+    'sso_token_lifetime' => 30,
 
     /*
     |----------------------------------------------------------------------

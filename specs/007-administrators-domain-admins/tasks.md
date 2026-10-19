@@ -40,34 +40,34 @@ one user story each in spec priority order (US1–US3 P1, US4–US5 P2, US6–US
 
 **Purpose**: Configuration, problem types and test helpers. No business logic.
 
-- [ ] T001 [P] Add to `config/restv2.php`: `allow_admin_email_login` from env
+- [X] T001 [P] Add to `config/restv2.php`: `allow_admin_email_login` from env
   `ALLOW_ADMIN_EMAIL_LOGIN`, `true` only when it matches `^([yY][eE][sS]|[yY])+$` (legacy
   `sogo-auth.php`), default `false`; `account_bulk_limit` = 100; `sso_token_lifetime` = 30 (not
   configurable). Add `ALLOW_ADMIN_EMAIL_LOGIN=n` to `.env.example` and `.env.testing`, and pass
   `ALLOW_ADMIN_EMAIL_LOGIN=${ALLOW_ADMIN_EMAIL_LOGIN:-n}` to the API service in
   `deploy/docker-compose.override.yml` (R21).
-- [ ] T002 [P] Add the cases `AccountExists` (409), `LastActiveAdmin` (409), `CannotDeleteOwnAccount`
+- [X] T002 [P] Add the cases `AccountExists` (409), `LastActiveAdmin` (409), `CannotDeleteOwnAccount`
   (409), `AlreadyImpersonating` (409), `ImpersonationEnded` (403), `NotAllowedWhileImpersonating`
   (403), `WebmailOnBehalfDisabled` (403) and `AccountInactive` (409) to
   `app/Support/Http/ProblemType.php`, with URIs `/api/v2/problems/<name>` and English titles (R23).
   Extend 001's test that checks every `ProblemType` case against `docs/problems.md` (or create
   `tests/Unit/Support/ProblemTypeDocumentedTest.php` if 001 has none), so that every new case has a
   `## <name>` section (FR-070).
-- [ ] T003 [P] Extend `database/factories/MailcowRows.php` and
+- [X] T003 [P] Extend `database/factories/MailcowRows.php` and
   `tests/Support/Mailcow/MailcowFactory.php` with: an optional `created` for `admin()` and
   `mailbox()`; `domainAdmin(username, domains[], daAcl = [], active = 1, withDaAcl = true,
   assignmentActive = [])`; `assignmentOnly(username, domain, active = 1)` (orphaned or non-domain
   rows such as `ALL`); `daAclOnly(username, flags = [])`; `aliasDomain(alias, target)`;
   `daSso(username, token, createdSecondsAgo = 0)`; mailboxes with `active = 2` and resource kinds.
   Rows are written exactly as legacy writes them (data-model.md).
-- [ ] T004 [P] Create `tests/Support/Accounts/AccountAssertions.php` (trait used by the feature
+- [X] T004 [P] Create `tests/Support/Accounts/AccountAssertions.php` (trait used by the feature
   tests): `assertAdminRow(username, superadmin, active, forcePw, forceTfa)`,
   `assertAssignments(username, [[domain, active, created?]])`, `assertDaAcl(username, flags|null)`,
   `assertNothingLeftFor(username)` (no row in `admin`, `domain_admins`, `da_acl`, `tfa`, `fido2`,
   `da_sso`, `restv2_preferences`, and no unrevoked `restv2_api_keys`),
   `assertAudit(eventType, outcome, targetType, targetName, detailsSubset, impersonated = null)` and
   `assertNoSecretIn(string ...$secrets)` over `restv2_audit_events` and the captured log.
-- [ ] T005 Make sure 001's `tests/Support/Contract/OpenApiContract.php` matches a concrete path
+- [X] T005 Make sure 001's `tests/Support/Contract/OpenApiContract.php` matches a concrete path
   only when it defines the request's method and otherwise falls back to the templated path, so that
   `GET /admins/bulk-actions` validates as `getAdmin` (`docs/conventions.md`, "Bulk paths"); extend
   its unit test with that case. Run `composer contract:lint` and `composer contract:bundle` (FR-071); confirm that

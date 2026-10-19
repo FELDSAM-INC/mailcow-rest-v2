@@ -34,10 +34,10 @@ class MailcowFactory extends MailcowRows
      * @param  array<string, mixed>  $attributes
      * @param  array<string, int|bool>  $userAcl
      */
-    public function mailboxWithDomain(string $username, array $attributes = [], int $active = 1, int $domainActive = 1, array $userAcl = []): void
+    public function mailboxWithDomain(string $username, array $attributes = [], int $active = 1, int $domainActive = 1, array $userAcl = [], string $kind = '', ?string $created = null): void
     {
         $this->ensureDomain(explode('@', $username, 2)[1], $domainActive);
-        $this->mailbox($username, self::PASSWORD, 'BLF-CRYPT', $active, attributes: $attributes, userAcl: $userAcl);
+        $this->mailbox($username, self::PASSWORD, 'BLF-CRYPT', $active, $kind, attributes: $attributes, userAcl: $userAcl, created: $created);
     }
 
     /**

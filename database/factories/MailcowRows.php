@@ -85,15 +85,17 @@ class MailcowRows
      *
      * @param  array<string, mixed>  $attributes
      */
-    public function admin(string $username, string $password, string $scheme = 'BLF-CRYPT', int $active = 1, array $attributes = []): void
+    public function admin(string $username, string $password, string $scheme = 'BLF-CRYPT', int $active = 1, array $attributes = [], ?string $created = null): void
     {
-        DB::table('admin')->insert([
+        DB::table('admin')->insert(array_filter([
             'username' => $username,
             'password' => self::hash($scheme, $password),
             'superadmin' => 1,
             'active' => $active,
             'attributes' => json_encode(array_merge(self::ADMIN_ATTRIBUTES, $attributes)),
-        ]);
+            // Feature 007: a raw mailcow DATETIME (local time); NOW() when null.
+            'created' => $created,
+        ], fn (mixed $value): bool => $value !== null));
     }
 
     /**
@@ -101,6 +103,8 @@ class MailcowRows
      * and a `da_acl` row (column defaults, overridden by $daAcl).
      *
      * $assignmentActive sets `domain_admins.active` separately from the account's `active`.
+     * Feature 007: without $withDaAcl no `da_acl` row is written (legacy can leave one out), and
+     * $created sets `admin.created` (a raw mailcow DATETIME; NOW() when null).
      *
      * @param  list<string>  $domains
      * @param  array<string, int|bool>  $daAcl
@@ -115,6 +119,8 @@ class MailcowRows
         string $scheme = 'BLF-CRYPT',
         array $attributes = [],
         ?int $assignmentActive = null,
+        bool $withDaAcl = true,
+        ?string $created = null,
     ): void {
         foreach ($domains as $domain) {
             DB::table('domain_admins')->insert([
@@ -125,15 +131,58 @@ class MailcowRows
             ]);
         }
 
-        DB::table('admin')->insert([
+        DB::table('admin')->insert(array_filter([
             'username' => $username,
             'password' => self::hash($scheme, $password),
             'superadmin' => 0,
             'active' => $active,
             'attributes' => json_encode(array_merge(self::ADMIN_ATTRIBUTES, $attributes)),
-        ]);
+            'created' => $created,
+        ], fn (mixed $value): bool => $value !== null));
 
-        DB::table('da_acl')->insert(['username' => $username] + array_map(fn (int|bool $v): int => (int) $v, $daAcl));
+        if ($withDaAcl) {
+            $this->daAclOnly($username, $daAcl);
+        }
+    }
+
+    /**
+     * Feature 007: a `domain_admins` row without anything else, for example an assignment to a
+     * name that is not a primary domain (an alias domain, a removed domain or legacy's `ALL`), or
+     * an orphaned assignment of a username without an account. $created is a raw mailcow DATETIME
+     * (NOW() when null). Returns the row's `id`.
+     */
+    public function assignmentOnly(string $username, string $domain, int $active = 1, ?string $created = null): int
+    {
+        return (int) DB::table('domain_admins')->insertGetId([
+            'username' => $username,
+            'domain' => $domain,
+            'created' => $created ?? DB::raw('NOW()'),
+            'active' => $active,
+        ]);
+    }
+
+    /**
+     * Feature 007: a `da_acl` row (column defaults, overridden by $flags), also for a username
+     * without an account (an orphaned permission record).
+     *
+     * @param  array<string, int|bool>  $flags  legacy column names
+     */
+    public function daAclOnly(string $username, array $flags = []): void
+    {
+        DB::table('da_acl')->insert(['username' => $username] + array_map(fn (int|bool $v): int => (int) $v, $flags));
+    }
+
+    /**
+     * Feature 007: a single sign-on token as legacy `domain_admin_sso('issue')` and `/api/v1`
+     * store it (`INSERT INTO da_sso (username, token)`), optionally issued some seconds ago.
+     */
+    public function daSso(string $username, string $token, int $createdSecondsAgo = 0): void
+    {
+        DB::table('da_sso')->insert([
+            'username' => $username,
+            'token' => $token,
+            'created' => DB::raw('NOW() - INTERVAL '.max(0, $createdSecondsAgo).' SECOND'),
+        ]);
     }
 
     /**
@@ -479,6 +528,7 @@ class MailcowRows
         array $attributes = [],
         array $userAcl = [],
         int $quota = 0,
+        ?string $created = null,
     ): void {
         [$localPart, $domain] = explode('@', $username, 2) + [1 => ''];
 
@@ -486,7 +536,7 @@ class MailcowRows
             throw new InvalidArgumentException("{$username} is not an e-mail address");
         }
 
-        DB::table('mailbox')->insert([
+        DB::table('mailbox')->insert(($created === null ? [] : ['created' => $created]) + [
             'username' => $username,
             'password' => self::hash($scheme, $password),
             'name' => $localPart,

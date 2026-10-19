@@ -404,7 +404,64 @@
                 "push-notifications-not-configured",
                 "groupware-disabled"
             ]
+        },
+        "007-administrators-domain-admins": {
+            "operations": [
+                "listAdmins",
+                "createAdmin",
+                "getAdmin",
+                "updateAdmin",
+                "deleteAdmin",
+                "suspendAdminSecondFactors",
+                "applyAdminBulkAction",
+                "getAccountCapabilities",
+                "listDomainAdmins",
+                "createDomainAdmin",
+                "getDomainAdmin",
+                "updateDomainAdmin",
+                "deleteDomainAdmin",
+                "suspendDomainAdminSecondFactors",
+                "applyDomainAdminBulkAction",
+                "issueDomainAdminSsoToken",
+                "createSessionWithSsoToken",
+                "getImpersonation",
+                "startImpersonation",
+                "endImpersonation",
+                "createWebmailSignInOnBehalf"
+            ],
+            "problemTypes": [
+                "account-exists",
+                "last-active-admin",
+                "cannot-delete-own-account",
+                "already-impersonating",
+                "impersonation-ended",
+                "not-allowed-while-impersonating",
+                "webmail-on-behalf-disabled",
+                "account-inactive"
+            ]
         }
     },
-    "pendingOperations": []
+    "pendingOperations": [
+        "listAdmins",
+        "createAdmin",
+        "getAdmin",
+        "updateAdmin",
+        "deleteAdmin",
+        "suspendAdminSecondFactors",
+        "applyAdminBulkAction",
+        "getAccountCapabilities",
+        "listDomainAdmins",
+        "createDomainAdmin",
+        "getDomainAdmin",
+        "updateDomainAdmin",
+        "deleteDomainAdmin",
+        "suspendDomainAdminSecondFactors",
+        "applyDomainAdminBulkAction",
+        "issueDomainAdminSsoToken",
+        "createSessionWithSsoToken",
+        "getImpersonation",
+        "startImpersonation",
+        "endImpersonation",
+        "createWebmailSignInOnBehalf"
+    ]
 }

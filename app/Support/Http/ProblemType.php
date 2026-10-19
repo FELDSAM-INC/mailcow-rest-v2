@@ -96,6 +96,16 @@ enum ProblemType: string
     case PushNotificationsNotConfigured = 'push-notifications-not-configured';
     case GroupwareDisabled = 'groupware-disabled';
 
+    // Feature 007.
+    case AccountExists = 'account-exists';
+    case LastActiveAdmin = 'last-active-admin';
+    case CannotDeleteOwnAccount = 'cannot-delete-own-account';
+    case AlreadyImpersonating = 'already-impersonating';
+    case ImpersonationEnded = 'impersonation-ended';
+    case NotAllowedWhileImpersonating = 'not-allowed-while-impersonating';
+    case WebmailOnBehalfDisabled = 'webmail-on-behalf-disabled';
+    case AccountInactive = 'account-inactive';
+
     public function uri(): string
     {
         return '/api/v2/problems/'.$this->value;
@@ -132,6 +142,9 @@ enum ProblemType: string
             self::AttributeNotPermitted, self::PermissionFlagRequired, self::DkimPrivateKeyExportDisabled,
             self::DkimDnsPublicationDisabled, self::CurrentPasswordIncorrect, self::PasswordManagedExternally,
             self::PasswordResetUnavailable, self::SecondFactorRequiredByPolicy, self::GroupwareDisabled => 403,
+            self::AccountExists, self::LastActiveAdmin, self::CannotDeleteOwnAccount, self::AlreadyImpersonating,
+            self::AccountInactive => 409,
+            self::ImpersonationEnded, self::NotAllowedWhileImpersonating, self::WebmailOnBehalfDisabled => 403,
         };
     }
 
@@ -209,6 +222,14 @@ enum ProblemType: string
             self::SecondFactorRequiredByPolicy => 'Second factor required by policy',
             self::PushNotificationsNotConfigured => 'Push notifications not configured',
             self::GroupwareDisabled => 'Groupware disabled',
+            self::AccountExists => 'Account exists',
+            self::LastActiveAdmin => 'Last active administrator',
+            self::CannotDeleteOwnAccount => 'Cannot delete own account',
+            self::AlreadyImpersonating => 'Already impersonating',
+            self::ImpersonationEnded => 'Impersonation ended',
+            self::NotAllowedWhileImpersonating => 'Not allowed while impersonating',
+            self::WebmailOnBehalfDisabled => 'Webmail login on behalf disabled',
+            self::AccountInactive => 'Account inactive',
         };
     }
 
@@ -286,6 +307,14 @@ enum ProblemType: string
             self::SecondFactorRequiredByPolicy => 'An administrator requires this account to keep a second factor.',
             self::PushNotificationsNotConfigured => 'The mailbox has no stored push notification credentials.',
             self::GroupwareDisabled => 'The groupware (webmail) is disabled on this server.',
+            self::AccountExists => 'An administrator or domain administrator already uses this username.',
+            self::LastActiveAdmin => 'The server must keep at least one active administrator.',
+            self::CannotDeleteOwnAccount => 'Administrators cannot delete their own account.',
+            self::AlreadyImpersonating => 'The session is already impersonating an account. End it first.',
+            self::ImpersonationEnded => 'The impersonation ended because it is no longer valid. The request was not carried out; the session acts as the impersonator again.',
+            self::NotAllowedWhileImpersonating => 'This operation is not available while impersonating another account.',
+            self::WebmailOnBehalfDisabled => 'Opening a mailbox\'s webmail on the user\'s behalf is disabled on this server.',
+            self::AccountInactive => 'The account is inactive.',
         };
     }
 

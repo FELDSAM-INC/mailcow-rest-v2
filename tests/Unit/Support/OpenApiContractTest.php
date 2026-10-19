@@ -201,6 +201,32 @@ class OpenApiContractTest extends TestCase
         $this->assertSame([], $this->contract->validateResponse($wrongMethod, $this->json(405, $problem, ['Allow' => 'POST'], 'application/problem+json')));
     }
 
+    /**
+     * Feature 007 T005 (docs/conventions.md "Bulk paths"): a literal path that does not define the
+     * request's method gives way to the templated path, so that an object named `bulk-actions`
+     * stays addressable with `GET`.
+     */
+    public function test_a_literal_path_without_the_method_falls_back_to_the_templated_path(): void
+    {
+        $contract = OpenApiContract::fromJson((string) json_encode([
+            'openapi' => '3.1.0',
+            'info' => ['title' => 'test', 'version' => '1'],
+            'servers' => [['url' => '/api/v2']],
+            'paths' => [
+                '/admins/bulk-actions' => ['post' => ['operationId' => 'applyAdminBulkAction', 'responses' => ['200' => ['description' => 'ok']]]],
+                '/admins/{username}' => [
+                    'parameters' => [['name' => 'username', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string']]],
+                    'get' => ['operationId' => 'getAdmin', 'responses' => ['200' => ['description' => 'ok']]],
+                ],
+            ],
+        ]));
+
+        $this->assertSame('applyAdminBulkAction', $contract->match('POST', '/api/v2/admins/bulk-actions')?->operationId);
+        $this->assertSame('getAdmin', $contract->match('GET', '/api/v2/admins/bulk-actions')?->operationId);
+        $this->assertSame(['username' => 'bulk-actions'], $contract->match('GET', '/api/v2/admins/bulk-actions')?->pathParameters);
+        $this->assertNull($contract->match('DELETE', '/api/v2/admins/bulk-actions'));
+    }
+
     public function test_testing_routes_are_exempt(): void
     {
         $request = Request::create('/api/v2/__testing/anything', 'POST', content: 'free-form');

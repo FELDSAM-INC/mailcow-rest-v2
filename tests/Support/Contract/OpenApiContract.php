@@ -108,8 +108,9 @@ final class OpenApiContract
                 );
             }
 
-            // The best-matching path exists, but not with this method: no operation.
-            return null;
+            // The best-matching path exists, but not with this method: a less literal path may
+            // define it (feature 007 T005: `GET /admins/bulk-actions` is `getAdmin`, because the
+            // POST-only bulk path does not take GET).
         }
 
         return null;

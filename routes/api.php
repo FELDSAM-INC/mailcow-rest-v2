@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\V2\AccountBulkActionController;
 use App\Http\Controllers\Api\V2\AccountCapabilitiesController;
+use App\Http\Controllers\Api\V2\AdminController;
+use App\Http\Controllers\Api\V2\AdminSecondFactorSuspensionController;
 use App\Http\Controllers\Api\V2\AliasBulkActionController;
 use App\Http\Controllers\Api\V2\AliasController;
 use App\Http\Controllers\Api\V2\AliasCopyController;
@@ -1049,6 +1051,37 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where(['mailbox' => '[^/]+', 'temporaryAlias' => '[^/]+'])
             ->defaults('restv2.audit', ['event' => 'temporaryAliasDeletion', 'target' => 'temporaryAlias'])
             ->name('temporary-aliases.destroy');
+    });
+
+    // Feature 007: administrators. Reads with a session or an administrator's key; writes only in a
+    // signed-in administrator session (keys get `session-required`). The POST-only bulk path comes
+    // before {username}, whose routes never accept POST.
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/admins', [AdminController::class, 'index'])->name('admins.index');
+        Route::get('/admins/{username}', [AdminController::class, 'show'])
+            ->where('username', '[A-Za-z0-9._-]+')
+            ->name('admins.show');
+    });
+
+    Route::middleware(['restv2.auth:session', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::post('/admins/bulk-actions', [AccountBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'admin'])
+            ->name('admin-bulk-actions.store');
+        Route::post('/admins', [AdminController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'adminCreation', 'target' => 'admin'])
+            ->name('admins.store');
+        Route::patch('/admins/{username}', [AdminController::class, 'update'])
+            ->where('username', '[A-Za-z0-9._-]+')
+            ->defaults('restv2.audit', ['event' => 'adminUpdate', 'target' => 'admin'])
+            ->name('admins.update');
+        Route::delete('/admins/{username}', [AdminController::class, 'destroy'])
+            ->where('username', '[A-Za-z0-9._-]+')
+            ->defaults('restv2.audit', ['event' => 'adminDeletion', 'target' => 'admin'])
+            ->name('admins.destroy');
+        Route::post('/admins/{username}/second-factor-suspension', [AdminSecondFactorSuspensionController::class, 'store'])
+            ->where('username', '[A-Za-z0-9._-]+')
+            ->defaults('restv2.audit', ['event' => 'adminSecondFactorSuspension', 'target' => 'admin'])
+            ->name('admin-second-factor-suspension.store');
     });
 
     // Feature 007: domain administrators. Administrators only, with a session or a key (read-write

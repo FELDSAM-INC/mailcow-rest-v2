@@ -583,36 +583,36 @@ loses its last active administrator, and nobody deletes their own account.
 
 ### Tests for User Story 4 (write first, observe failing) ⚠️
 
-- [ ] T065 [P] [US4] Write `tests/Feature/Admins/ListAdminsTest.php` and
+- [X] T065 [P] [US4] Write `tests/Feature/Admins/ListAdminsTest.php` and
   `tests/Feature/Admins/GetAdminTest.php` (FR-006, FR-008 to FR-011, FR-013): paging, `meta.total`,
   entries equal to `getAdmin`'s `data` with `etag`; `q` on usernames; filters `active`,
   `secondFactorStatus`, `forcePasswordChange`, `forceSecondFactorSetup`; sorts with username
   tie-breaker; domain administrators never listed; any letter case; a domain administrator's
   username → `404`; read-only administrator key allowed (AS US4-8).
-- [ ] T066 [P] [US4] Write `tests/Feature/Admins/CreateAdminTest.php` (AS US4-1, US4-2, FR-014 to
+- [X] T066 [P] [US4] Write `tests/Feature/Admins/CreateAdminTest.php` (AS US4-1, US4-2, FR-014 to
   FR-017, FR-020, R6): `201` with `Location` and `ETag`; `admin` row with `superadmin = 1`, `active`
   default `1`, `attributes` `{"force_tfa":"0","force_pw_update":"0"}`; `bob` signs in through
   `POST /session`; policy violations name each unmet rule with 003's codes; pre-hashed values stored
   as given; `409 account-exists` across roles and letter case; orphaned `domain_admins`, `da_acl`
   and `da_sso` rows of the name are removed; audit `adminCreation` without the password.
-- [ ] T067 [P] [US4] Write `tests/Feature/Admins/UpdateAdminTest.php` (AS US4-6, US4-7, FR-021,
+- [X] T067 [P] [US4] Write `tests/Feature/Admins/UpdateAdminTest.php` (AS US4-6, US4-7, FR-021,
   FR-022, FR-024, FR-026, FR-065): merge-patch rules as in T028; changing an inactive `bob`'s
   password while `alice` is the only active administrator succeeds; `forcePasswordChange: true`
   makes `bob`'s next `POST /session` answer `state: restricted` with `pendingActions:
   [passwordChange]`; stale `If-Match` → `412`; no-op → `200` without audit.
-- [ ] T068 [P] [US4] Write `tests/Feature/Admins/RenameAdminTest.php` (FR-025, R9): second factors
+- [X] T068 [P] [US4] Write `tests/Feature/Admins/RenameAdminTest.php` (FR-025, R9): second factors
   (active and inactive) and passkeys, keys and preferences move; `da_sso` and other leftovers of the
   old name are removed; `alice` renaming herself keeps her session under the new name (`GET /me`)
   while her second session gets `401`; collision with a domain administrator → `409
   account-exists`; audit `adminUpdate` with `changes.username`.
-- [ ] T069 [P] [US4] Write `tests/Feature/Admins/DeleteAdminTest.php` (AS US4-5, FR-029, FR-030,
+- [X] T069 [P] [US4] Write `tests/Feature/Admins/DeleteAdminTest.php` (AS US4-5, FR-029, FR-030,
   FR-033, FR-034): `alice` deleting `alice` → `409 cannot-delete-own-account`; deleting `bob` →
   `204`, `assertNothingLeftFor('bob')` (also `domain_admins` and `da_acl` rows with his name),
   keys revoked `ownerDeleted`, sessions end, audit with counts; `404` for unknown and for a domain
   administrator's username.
-- [ ] T070 [P] [US4] Write `tests/Feature/Admins/AdminSecondFactorSuspensionTest.php` (FR-027): as
+- [X] T070 [P] [US4] Write `tests/Feature/Admins/AdminSecondFactorSuspensionTest.php` (FR-027): as
   T032 for an administrator, in a session only.
-- [ ] T071 [P] [US4] Write `tests/Feature/Admins/LastActiveAdminTest.php` (AS US4-3, FR-028, R8,
+- [X] T071 [P] [US4] Write `tests/Feature/Admins/LastActiveAdminTest.php` (AS US4-3, FR-028, R8,
   edge cases): only `alice` active → `alice` deactivating herself → `409 last-active-admin`, no
   change; a service-level `AdminAccountService::delete()` of the only active administrator on
   behalf of another principal → `last-active-admin` (over HTTP this happens only concurrently,
@@ -620,19 +620,19 @@ loses its last active administrator, and nobody deletes their own account.
   deactivating an already inactive administrator and saving it unchanged are never refused;
   self-deactivation with another active administrator → `200`, then her session gets `401`; a
   rename combined with `active: false` of the last active administrator → `409`, name unchanged.
-- [ ] T072 [P] [US4] Write `tests/Feature/Admins/LastActiveAdminConcurrencyTest.php` (AS US4-4,
+- [X] T072 [P] [US4] Write `tests/Feature/Admins/LastActiveAdminConcurrencyTest.php` (AS US4-4,
   SC-003): 1,000 rounds; in each, two active administrators exist and two parallel PHP processes
   (`Symfony\Component\Process\Process` running `tests/bin/admin-race.php`, which calls
   `AdminAccountService` with its own database connection outside the test transaction) deactivate
   or delete each other; after every round at least one administrator is active and at most one
   request succeeded. The test cleans its rows itself (no `DatabaseTransactions`).
-- [ ] T073 [P] [US4] Write `tests/Feature/Admins/AdminBulkActionTest.php` (AS US4-9, US4-10,
+- [X] T073 [P] [US4] Write `tests/Feature/Admins/AdminBulkActionTest.php` (AS US4-9, US4-10,
   FR-075, FR-076): three active administrators including `alice`; bulk `deactivate` of all three →
   first two `done`, the last `refused` with `last-active-admin`, one stays active; bulk `delete`
   including `alice` → her item `refused` (`cannot-delete-own-account`), the others processed; the
   same request with any key → whole request `403` (`session-required` or
   `insufficient-key-scope`); `outdated` and `notFound` items as in T033.
-- [ ] T074 [P] [US4] Write `tests/Feature/Admins/AdminAuthorizationTest.php` (AS US4-8, FR-001,
+- [X] T074 [P] [US4] Write `tests/Feature/Admins/AdminAuthorizationTest.php` (AS US4-8, FR-001,
   FR-004, FR-005): for each of the eight administrator operations: administrator session allowed;
   administrator read-write key allowed on `listAdmins`, `getAdmin`, `getAccountCapabilities` and
   `403 session-required` on every write; read-only administrator key → reads allowed, writes `403
@@ -641,15 +641,15 @@ loses its last active administrator, and nobody deletes their own account.
 
 ### Implementation for User Story 4
 
-- [ ] T075 [US4] Create `app/Services/Accounts/LastAdminGuard.php` (R8: `DB::transaction(..., 3)`,
+- [X] T075 [US4] Create `app/Services/Accounts/LastAdminGuard.php` (R8: `DB::transaction(..., 3)`,
   `SELECT username, active FROM admin WHERE superadmin = '1' ORDER BY username FOR UPDATE`, the
   remaining-active computation and `last-active-admin`).
-- [ ] T076 [US4] Create `app/Services/Accounts/AdminAccountService.php`: `create()`, `update()`,
+- [X] T076 [US4] Create `app/Services/Accounts/AdminAccountService.php`: `create()`, `update()`,
   `delete()` (own account → `cannot-delete-own-account` first), `suspendSecondFactors()`, with every
   deactivation, combined rename and deactivation, and deletion running inside
   `LastAdminGuard::within()`; renames through `AccountRenamer`, deletions through `AccountDeleter`.
   Extend `AccountBulkActionRunner` to dispatch administrator targets to it.
-- [ ] T077 [US4] Create `app/Http/Requests/Api/V2/ListAdminsRequest.php`, `StoreAdminRequest.php`
+- [X] T077 [US4] Create `app/Http/Requests/Api/V2/ListAdminsRequest.php`, `StoreAdminRequest.php`
   and `UpdateAdminRequest.php` (rules of T044 without domains and permissions), and
   `app/Http/Controllers/Api/V2/AdminController.php`, `AdminSecondFactorSuspensionController.php`
   and `AdminBulkActionController.php`, authorised through `AdminPolicy`. Register

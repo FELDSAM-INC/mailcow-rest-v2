@@ -442,13 +442,6 @@
         }
     },
     "pendingOperations": [
-        "listAdmins",
-        "createAdmin",
-        "getAdmin",
-        "updateAdmin",
-        "deleteAdmin",
-        "suspendAdminSecondFactors",
-        "applyAdminBulkAction",
         "issueDomainAdminSsoToken",
         "createSessionWithSsoToken",
         "createWebmailSignInOnBehalf"

@@ -1,0 +1,7 @@
+Files of mailcow-dockerized, copied unmodified from tag 2026-09a
+by scripts/legacy/copy-settings-fixtures.sh 2026-09a. Do not edit: regenerate instead.
+mailcow-dockerized is distributed under the GNU General Public License, version 3.
+
+SHA-256 of each file:
+d6e22188952c6f386272b50f2dc20434a0b57843e866f9151599c1469d354007  global_sieve_before  (data/conf/dovecot/global_sieve_before)
+002c32c994fca2460d197e27e8e13be5329bf03db59a45aad3a643804a681713  global_sieve_after  (data/conf/dovecot/global_sieve_after)

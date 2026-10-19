@@ -22,7 +22,9 @@
         "mlocati/spf-lib": "^3.3",
         "php-mime-mail-parser/php-mime-mail-parser": "^10.0",
         "robthree/twofactorauth": "^3.0",
-        "soundasleep/html2text": "^2.1"
+        "soundasleep/html2text": "^2.1",
+        "symfony/mime": "^8.0",
+        "symfony/yaml": "^8.0"
     },
     "require-dev": {
         "bshaffer/oauth2-server-php": "1.11.1",

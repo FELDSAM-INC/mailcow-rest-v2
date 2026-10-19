@@ -30,8 +30,13 @@ RUN set -eux; \
     # notification template is checked exactly as quarantine_notify.py renders it.
     apk add --no-cache py3-jinja2 py3-markupsafe py3-html2text; \
     python3 -I -c "import jinja2.sandbox, html2text"; \
-    apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev linux-headers openldap-dev; \
-    docker-php-ext-install -j"$(nproc)" pdo_mysql intl ldap; \
+    # Feature 013 (research R3, R27): GD decodes uploaded raster logos to check that they are valid
+    # images (legacy uses Imagick). Only libpng and libjpeg-turbo stay at runtime.
+    apk add --no-cache libpng libjpeg-turbo; \
+    apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev linux-headers openldap-dev libpng-dev libjpeg-turbo-dev zlib-dev; \
+    docker-php-ext-configure gd --with-jpeg; \
+    docker-php-ext-install -j"$(nproc)" pdo_mysql intl ldap gd; \
+    php -m | grep -qi '^gd$'; \
     # OPcache is compiled into the official PHP 8.4 images; install it only where it is not.
     if ! php -m | grep -qi '^Zend OPcache$'; then docker-php-ext-install opcache; fi; \
     pecl install "redis-${PHPREDIS_VERSION}"; \

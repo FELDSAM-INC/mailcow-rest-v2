@@ -1,0 +1,8 @@
+Files of mailcow-dockerized, copied unmodified from tag 2026-09a
+by scripts/legacy/copy-settings-fixtures.sh 2026-09a. Do not edit: regenerate instead.
+mailcow-dockerized is distributed under the GNU General Public License, version 3.
+
+SHA-256 of each file:
+3fae1c1589a64170cddef052f3acfd69e17293a3c30211590840031f377f35e5  preset_1.yml  (data/web/inc/presets/rspamd/preset_1.yml)
+a92b8107e5f939cf289b89f7a503253b0e474e85064148d89ddcce9d22546bb6  preset_3.yml  (data/web/inc/presets/rspamd/preset_3.yml)
+38c99ca89d32c474842c02ffaaf935ac8f004284f8fb0e2e12fca9824ba8e11c  preset_4.yml  (data/web/inc/presets/rspamd/preset_4.yml)

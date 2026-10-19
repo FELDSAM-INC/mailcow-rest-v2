@@ -56,6 +56,43 @@ class MailcowFactory extends MailcowRows
     }
 
     /**
+     * Feature 013: an Rspamd settings rule as legacy rsettings('add') inserts it (content as given,
+     * `created` by the database). Returns its ID.
+     */
+    public function settingsRule(string $description, string $content, int $active = 0): int
+    {
+        return (int) DB::table('settingsmap')->insertGetId(['desc' => $description, 'content' => $content, 'active' => $active]);
+    }
+
+    /**
+     * Feature 013: the server's GUID as dovecot-mailcow's entrypoint stores it (`INVALID` when
+     * mailcow marked it invalid).
+     */
+    public function guid(string $value): void
+    {
+        DB::statement('REPLACE INTO `versions` (`application`, `version`) VALUES (?, ?)', ['GUID', $value]);
+    }
+
+    /**
+     * Feature 013: raw values of mailcow's own Redis keys (connection `mailcow`, no prefix), exactly
+     * as legacy's functions write them, for parity fixtures. `null` deletes a key.
+     *
+     * @param  array<string, string|null>  $keys
+     */
+    public function redisLegacy(array $keys): void
+    {
+        $client = Redis::connection('mailcow')->client();
+
+        if (! $client instanceof \Redis) {
+            throw new RuntimeException('The mailcow Redis connection does not use phpredis.');
+        }
+
+        foreach ($keys as $key => $value) {
+            $value === null ? $client->del($key) : $client->set($key, $value);
+        }
+    }
+
+    /**
      * A DKIM key in legacy's format (feature 010 T029): a fixture key of the given length
      * (DkimFixtures), or the public key derived from the given PEM. Returns the key pair.
      *

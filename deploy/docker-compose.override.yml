@@ -211,6 +211,17 @@ services:
       - RESTV2_COUNTRY_LOOKUP_URL=${RESTV2_COUNTRY_LOOKUP_URL:-https://dfdata.bella.network/country/}
       - RESTV2_COUNTRY_LOOKUP_BUDGET_MS=${RESTV2_COUNTRY_LOOKUP_BUDGET_MS:-1500}
       - RESTV2_PUSHOVER_VALIDATE_URL=${RESTV2_PUSHOVER_VALIDATE_URL:-https://api.pushover.net/1/users/validate.json}
+      # Feature 013 (system settings, research R2, R26): mailcow.conf's demo mode, the license
+      # verification switch (FeldHost: false), the mass mail delivery rate (messages per second,
+      # 1 to 100) and the legacy logo limits and editable regex maps as JSON (empty: mailcow's vars
+      # files). Optional, with their defaults: RESTV2_LMTP_HOST (dovecot-mailcow), RESTV2_LMTP_PORT
+      # (24), RESTV2_MASS_MAIL_DELIVERY_DEADLINE (5 s), RESTV2_RSPAMD_SETTINGS_MAP_URL
+      # (http://nginx:8081/settings.php), RESTV2_RSPAMD_UI_URL (/rspamd/).
+      - DEMO_MODE=${DEMO_MODE:-n}
+      - RESTV2_LICENSE_VERIFICATION=${RESTV2_LICENSE_VERIFICATION:-true}
+      - RESTV2_MASS_MAIL_RATE=${RESTV2_MASS_MAIL_RATE:-10}
+      - RESTV2_LOGO_LIMITS=${RESTV2_LOGO_LIMITS:-}
+      - RESTV2_RSPAMD_MAPS=${RESTV2_RSPAMD_MAPS:-}
     volumes:
       # Read-only: legacy's vars.inc.php and vars.local.inc.php (R14).
       - ./data/web/inc:/mailcow/web/inc:ro,z
@@ -220,6 +231,14 @@ services:
       # Read-only: mailcow's message templates, the default password reset bodies (feature 005, R6)
       # and the default quarantine notification template (feature 006, R8: quarantine.tpl).
       - ./data/assets/templates:/mailcow/tpls:ro,z
+      # Feature 013 (research R13, R14, R22): the files php-fpm-mailcow edits, at the same host
+      # paths. The global regex maps and the two global Sieve files are rewritten in place (the map
+      # directory belongs to Rspamd's user, and the Sieve files are single-file mounts); the
+      # language files give the English preset headlines and legacy's license texts.
+      - ./data/conf/rspamd/custom:/mailcow/rspamd_custom_maps:z
+      - ./data/conf/dovecot/global_sieve_before:/mailcow/global_sieve/before:z
+      - ./data/conf/dovecot/global_sieve_after:/mailcow/global_sieve/after:z
+      - ./data/web/lang:/mailcow/web/lang:ro,z
     labels:
       # mailcow's ofelia runs the audit retention purge daily (R22).
       ofelia.enabled: "true"
@@ -228,6 +247,14 @@ services:
       # Ends the webmail hand-offs of expired API sessions within a minute (feature 005, R3).
       ofelia.job-exec.restv2_webmail_handoff_sweep.schedule: "@every 1m"
       ofelia.job-exec.restv2_webmail_handoff_sweep.command: "php /app/artisan restv2:webmail-handoffs:sweep"
+      # Feature 013 (research R17): the mass mail runner delivers the running job's messages in
+      # runs of at most 290 s; no-overlap keeps one runner, and a lock inside the API does too.
+      # The purge removes jobs older than RESTV2_AUDIT_RETENTION_DAYS.
+      ofelia.job-exec.restv2_mass_mail.schedule: "@every 10s"
+      ofelia.job-exec.restv2_mass_mail.no-overlap: "true"
+      ofelia.job-exec.restv2_mass_mail.command: "php /app/artisan restv2:mass-mail-run --max-time=290"
+      ofelia.job-exec.restv2_mass_mail_purge.schedule: "@daily"
+      ofelia.job-exec.restv2_mass_mail_purge.command: "php /app/artisan restv2:mass-mail-purge"
     healthcheck:
       test: ["CMD", "php", "/app/artisan", "restv2:health", "--ready"]
       interval: 30s

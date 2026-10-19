@@ -9,11 +9,13 @@ use App\Auth\Role;
 use App\Clients\Dns\DnsResolver;
 use App\Clients\DockerApi\DockerApiClient;
 use App\Clients\Ispconfig\IspconfigDnsClient;
+use App\Clients\Lmtp\LmtpClient;
 use App\Clients\Mail\QuarantineReleaseMailer;
 use App\Clients\Memcached\MemcachedFlusher;
 use App\Clients\PublicAddress\PublicAddressLookup;
 use App\Clients\Releases\ReleaseSource;
 use App\Clients\Rspamd\RspamdController;
+use App\Clients\Rspamd\SettingsMapClient;
 use App\Clients\Smtp\SmtpProbe;
 use App\Services\Auth\SessionManager;
 use App\Services\Dkim\DkimDnsPublisher;
@@ -35,9 +37,11 @@ use Tests\Support\Dns\FakeClock;
 use Tests\Support\Dns\FakeDnsResolver;
 use Tests\Support\Fakes\FakeDockerApiClient;
 use Tests\Support\Fakes\FakeIspconfigDnsClient;
+use Tests\Support\Fakes\FakeLmtpClient;
 use Tests\Support\Fakes\FakeMemcachedFlusher;
 use Tests\Support\Fakes\FakePublicAddressLookup;
 use Tests\Support\Fakes\FakeReleaseSource;
+use Tests\Support\Fakes\FakeSettingsMapClient;
 use Tests\Support\Mail\FakeQuarantineReleaseMailer;
 use Tests\Support\Mailcow\MailcowFactory;
 use Tests\Support\Rspamd\FakeRspamdController;
@@ -60,7 +64,9 @@ use Tests\Support\Smtp\FakeSmtpProbe;
  *    connection test of feature 009 are faked as well, so that no test resolves a real name or
  *    opens an SMTP connection (Tests\Support\Routing\RoutingTestHelpers). Feature 006 extends the
  *    Rspamd fake with the learning calls (`useFakeSpamFilter()`) and fakes Postfix's quarantine
- *    submission (`useFakeReleaseMailer()`), so that no release reaches a mail server.
+ *    submission (`useFakeReleaseMailer()`), so that no release reaches a mail server. Feature 013
+ *    fakes Dovecot's local delivery of mass mail (`lmtp()`) and mailcow's generated Rspamd
+ *    settings map (`settingsMap()`).
  */
 abstract class TestCase extends BaseTestCase
 {
@@ -90,6 +96,10 @@ abstract class TestCase extends BaseTestCase
 
     private FakeQuarantineReleaseMailer $releaseMailer;
 
+    private FakeLmtpClient $lmtp;
+
+    private FakeSettingsMapClient $settingsMap;
+
     /** @var array<string, string> */
     private array $cookieJar = [];
 
@@ -111,6 +121,8 @@ abstract class TestCase extends BaseTestCase
         $this->app->instance(ReleaseSource::class, $this->releases = new FakeReleaseSource);
         $this->app->instance(PublicAddressLookup::class, $this->publicAddresses = new FakePublicAddressLookup);
         $this->app->instance(QuarantineReleaseMailer::class, $this->releaseMailer = new FakeQuarantineReleaseMailer);
+        $this->app->instance(LmtpClient::class, $this->lmtp = new FakeLmtpClient);
+        $this->app->instance(SettingsMapClient::class, $this->settingsMap = new FakeSettingsMapClient);
         $this->app->instance(DnsResolver::class, new FakeDnsResolver($this->clock));
         $this->app->instance(SmtpProbe::class, new FakeSmtpProbe);
         DkimDnsPublisher::resetWarnings();
@@ -156,6 +168,18 @@ abstract class TestCase extends BaseTestCase
     protected function useFakeReleaseMailer(): FakeQuarantineReleaseMailer
     {
         return $this->releaseMailer;
+    }
+
+    /** Feature 013: Dovecot's local delivery of mass mail. */
+    protected function lmtp(): FakeLmtpClient
+    {
+        return $this->lmtp;
+    }
+
+    /** Feature 013: mailcow's generated Rspamd settings map. */
+    protected function settingsMap(): FakeSettingsMapClient
+    {
+        return $this->settingsMap;
     }
 
     protected function releases(): FakeReleaseSource

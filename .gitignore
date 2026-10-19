@@ -41,3 +41,4 @@ Thumbs.db
 
 # Untracked legacy reference (mailcow-dockerized checkout, read-only)
 /source_code
+/storage/dev-mailcow/

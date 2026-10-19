@@ -414,6 +414,48 @@ return [
 
     /*
     |----------------------------------------------------------------------
+    | Feature 013: system settings (013 research R2, R26)
+    |----------------------------------------------------------------------
+    */
+
+    // mailcow.conf's DEMO_MODE (prerequisites.inc.php): `y` refuses the customisation writes
+    // (logos, UI texts, login page, app links, brand colours, IP check) with `403 demo-mode`.
+    'demo_mode' => strtolower((string) Env::get('DEMO_MODE', 'n')) === 'y',
+
+    // Shared mailcow files, mounted as php-fpm-mailcow mounts them (research R13, R14). The
+    // templates (pw_reset_*.tpl, quota.tpl) are feature 005's mount, RESTV2_MAILCOW_TPLS_DIR above.
+    // Relative paths are resolved against the application base path.
+    'rspamd_map_dir' => (string) Env::get('RESTV2_RSPAMD_MAP_DIR', '/mailcow/rspamd_custom_maps'),
+    'global_sieve_dir' => (string) Env::get('RESTV2_GLOBAL_SIEVE_DIR', '/mailcow/global_sieve'),
+    // mailcow's language files (data/web/lang): English preset headlines and legacy's license texts.
+    'mailcow_lang_dir' => (string) Env::get('RESTV2_MAILCOW_LANG_DIR', '/mailcow/web/lang'),
+
+    // The effective Rspamd settings map as mailcow generates it (legacy admin/system.php).
+    'rspamd_settings_map_url' => (string) Env::get('RESTV2_RSPAMD_SETTINGS_MAP_URL', 'http://nginx:8081/settings.php'),
+    // The Rspamd web interface, which legacy links on the same host (capabilities only).
+    'rspamd_ui_url' => (string) Env::get('RESTV2_RSPAMD_UI_URL', '/rspamd/'),
+
+    // Mass mail (research R17, R18): Dovecot's local delivery, as legacy sys_mail() uses it.
+    'lmtp' => [
+        'host' => (string) Env::get('RESTV2_LMTP_HOST', 'dovecot-mailcow'),
+        'port' => (int) Env::get('RESTV2_LMTP_PORT', 24),
+    ],
+    'mass_mail' => [
+        // Messages per second, 1 to 100 (FR-076).
+        'rate' => max(1, min(100, (int) Env::get('RESTV2_MASS_MAIL_RATE', 10))),
+        // Seconds one LMTP transaction may take (SC-008).
+        'delivery_deadline' => max(1, (int) Env::get('RESTV2_MASS_MAIL_DELIVERY_DEADLINE', 5)),
+    ],
+
+    // License verification (FR-085): enabled by default as upstream; the FeldHost deployment sets
+    // RESTV2_LICENSE_VERIFICATION=false. `false` arrives as a boolean (Laravel's env conversion).
+    'license' => [
+        'enabled' => ! in_array(($license = Env::get('RESTV2_LICENSE_VERIFICATION', true)) === false ? 'false' : strtolower((string) $license), ['n', 'no', 'false', '0', 'off'], true),
+        'verify_url' => (string) Env::get('RESTV2_LICENSE_VERIFY_URL', 'https://verify.mailcow.email'),
+    ],
+
+    /*
+    |----------------------------------------------------------------------
     | Legacy PHP configuration
     |----------------------------------------------------------------------
     |
@@ -466,6 +508,10 @@ return [
         'WEBAUTHN_UV_FLAG_REGISTER' => Env::get('RESTV2_WEBAUTHN_UV_FLAG_REGISTER'),
         'SESSION_NAME' => Env::get('RESTV2_SESSION_NAME'),
         'SESSION_SAMESITE_POLICY' => Env::get('RESTV2_SESSION_SAMESITE_POLICY'),
+        // Feature 013: the logo limits, JSON {"max_size", "max_width", "max_height"}, and the
+        // editable global Rspamd maps, JSON {"regex": {"<name>": "<file>.map", ...}} (research R2).
+        'LOGO_LIMITS' => Env::get('RESTV2_LOGO_LIMITS'),
+        'RSPAMD_MAPS' => Env::get('RESTV2_RSPAMD_MAPS'),
     ],
 
     // Upstream defaults of mailcow-dockerized 2026-09a (data/web/inc/vars.inc.php).
@@ -592,6 +638,30 @@ return [
         'WEBAUTHN_UV_FLAG_REGISTER' => false,
         'SESSION_NAME' => 'MCSESSID',
         'SESSION_SAMESITE_POLICY' => 'Lax',
+        // Feature 013 (research R2): 15 MiB and 1,920 × 1,920 pixels; the 13 editable regex maps
+        // in their configured order.
+        'LOGO_LIMITS' => [
+            'max_size' => 15728640,
+            'max_width' => 1920,
+            'max_height' => 1920,
+        ],
+        'RSPAMD_MAPS' => [
+            'regex' => [
+                'Header-From: Denylist' => 'global_mime_from_blacklist.map',
+                'Header-From: Allowlist' => 'global_mime_from_whitelist.map',
+                'Envelope Sender Denylist' => 'global_smtp_from_blacklist.map',
+                'Envelope Sender Allowlist' => 'global_smtp_from_whitelist.map',
+                'Recipient Denylist' => 'global_rcpt_blacklist.map',
+                'Recipient Allowlist' => 'global_rcpt_whitelist.map',
+                'Fishy TLDS (only fired in combination with bad words)' => 'fishy_tlds.map',
+                'Bad Words (only fired in combination with fishy TLDs)' => 'bad_words.map',
+                'Bad Words DE (only fired in combination with fishy TLDs)' => 'bad_words_de.map',
+                'Bad Languages' => 'bad_languages.map',
+                'Bulk Mail Headers' => 'bulk_header.map',
+                'Bad (Junk) Mail Headers' => 'bad_header.map',
+                'Monitoring Hosts' => 'monitoring_nolog.map',
+            ],
+        ],
     ],
 
 ];

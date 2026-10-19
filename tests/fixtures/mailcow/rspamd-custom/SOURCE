@@ -1,0 +1,20 @@
+Files of mailcow-dockerized, copied unmodified from tag 2026-09a
+by scripts/legacy/copy-settings-fixtures.sh 2026-09a. Do not edit: regenerate instead.
+mailcow-dockerized is distributed under the GNU General Public License, version 3.
+
+SHA-256 of each file:
+015ed8230c1f3cf52678ff98a5116040d696ca7e526d4618e8227dccbd78a7e0  bad_asn.map  (data/conf/rspamd/custom/bad_asn.map)
+6935f7493b41137297deda9b6da4866e5ce8c233df00e18e10c3fb9741ca05a1  bad_header.map  (data/conf/rspamd/custom/bad_header.map)
+2dedce5e38ab99487c7d8308a3e0cdd1c96df9338ab2600439e7490b5cc99145  bad_languages.map  (data/conf/rspamd/custom/bad_languages.map)
+4f32025d92700dfb8b0c3e51838f450a89afbdbc90df82aca7f1464b92340ed5  bad_words.map  (data/conf/rspamd/custom/bad_words.map)
+c919f4e7e41053fa9aa079976eea1af28c01e9dce804dda0b79405ca6f4ec752  bad_words_de.map  (data/conf/rspamd/custom/bad_words_de.map)
+b1d1af34734b432d034c01e193995f73b3be6fdd7f09fe0e7d591e04c782a3bb  bulk_header.map  (data/conf/rspamd/custom/bulk_header.map)
+ba02c323dc61c589e8dd418563a9e6cf4a87da247d87af2ef04c85ce3421c8ce  fishy_tlds.map  (data/conf/rspamd/custom/fishy_tlds.map)
+271880e44a80d96b3649503efd4251061f64fe8fd374f6d40f84576f9ff6406b  global_mime_from_blacklist.map  (data/conf/rspamd/custom/global_mime_from_blacklist.map)
+271880e44a80d96b3649503efd4251061f64fe8fd374f6d40f84576f9ff6406b  global_mime_from_whitelist.map  (data/conf/rspamd/custom/global_mime_from_whitelist.map)
+271880e44a80d96b3649503efd4251061f64fe8fd374f6d40f84576f9ff6406b  global_rcpt_blacklist.map  (data/conf/rspamd/custom/global_rcpt_blacklist.map)
+271880e44a80d96b3649503efd4251061f64fe8fd374f6d40f84576f9ff6406b  global_rcpt_whitelist.map  (data/conf/rspamd/custom/global_rcpt_whitelist.map)
+271880e44a80d96b3649503efd4251061f64fe8fd374f6d40f84576f9ff6406b  global_smtp_from_blacklist.map  (data/conf/rspamd/custom/global_smtp_from_blacklist.map)
+271880e44a80d96b3649503efd4251061f64fe8fd374f6d40f84576f9ff6406b  global_smtp_from_whitelist.map  (data/conf/rspamd/custom/global_smtp_from_whitelist.map)
+fd77533a7d60e6de089869a914a5059b73f2a7510dc8cc2641ebecec29be28f4  ip_wl.map  (data/conf/rspamd/custom/ip_wl.map)
+0d4728d97e48d8aeabb7a6959624efef0131e4f72553bc1aa81e9cdeee5e06aa  monitoring_nolog.map  (data/conf/rspamd/custom/monitoring_nolog.map)

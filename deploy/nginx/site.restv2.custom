@@ -18,7 +18,8 @@ location ^~ /api/v2/ {
     fastcgi_param SCRIPT_NAME /index.php;
     # httpoxy mitigation: never pass a client "Proxy" header on as HTTP_PROXY.
     fastcgi_param HTTP_PROXY "";
-    # Two domain footer texts of 1 MiB each, with JSON escaping (feature 002 research D21).
+    # Two domain footer texts of 1 MiB each, with JSON escaping (feature 002 research D21); feature
+    # 013's templates, rules, maps, scripts and mass mail bodies (1 MiB each, two per request).
     client_max_body_size 5m;
     # A mailbox rename or a bulk deletion makes several container calls of up to DOCKER_TIMEOUT
     # (60 s) each; the API finishes them even when the client goes away (feature 003 R26). It also
@@ -28,6 +29,20 @@ location ^~ /api/v2/ {
     # 006 R18).
     fastcgi_read_timeout 900s;
     fastcgi_pass $restv2_upstream;
+
+    # Feature 013 (research R3): logos are uploaded as raw bodies of up to 15 MiB (legacy
+    # $LOGO_LIMITS); raise this limit too when the operator raises max_size.
+    # The rewrite module's `set` runs only in the matched location, so it is repeated here.
+    location ^~ /api/v2/settings/logos/ {
+        set $restv2_upstream restv2-mailcow:9000;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /app/public/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_param HTTP_PROXY "";
+        client_max_body_size 16m;
+        fastcgi_read_timeout 900s;
+        fastcgi_pass $restv2_upstream;
+    }
 }
 
 # The web app lives under /ng/; /ng without the slash redirects there. A relative Location keeps

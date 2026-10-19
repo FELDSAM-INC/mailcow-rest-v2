@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="300px" height="80px">
+  <defs>
+    <clipPath id="clip"><rect width="300" height="80" rx="8"/></clipPath>
+    <image id="bitmap" width="300" height="80" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAABQCAIAAAAsiN8sAAAACXBIWXMAAA7EAAAOxAGVKw4bAAABJElEQVR42u3bQQqDMBBAUZVeQ7fepp7V2+jWk3SREkINIgYJ1PdWJbgKfGZsadu/lwaop3MFIEIQISBCECEgQnik1/5om8fwYZhWFwQVJqH2wDoKz15Hs+KOmo7KdHHd5jGcZ58EiiZh6GqY1jSz9DCGl30SsI7CP0YYZ12cfm4TbnwnPNhRXSKUaH/+yrR/izv4uuX8IXA2wmuT0FSEChEaelA/QqCcnyhAhCBCQIQgQkCEIEJAhCBCQIQgQkCEIEJAhCBCQIQgQkCEIEJAhCBCQIQgQkCEIEJAhCBCQIQgQkCEIEJAhCBCQIQgQkCEIEJAhCBCQIQgQkCEIEJAhCBCQIQgQkCEIEJAhCBCQIQgQkCEIEJAhCBCQIQgQkCEIELg6wOKbUc3kODFHgAAAABJRU5ErkJggg=="/>
+  </defs>
+  <style>.mark { fill: url(#fade); }</style>
+  <linearGradient id="fade"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#fff"/></linearGradient>
+  <use href="#bitmap" clip-path="url(#clip)"/>
+  <rect class="mark" x="0" y="70" width="300" height="10" filter="url(#none)"/>
+</svg>

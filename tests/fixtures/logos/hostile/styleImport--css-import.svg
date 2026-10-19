@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <style>
+    @import url("https://evil.example.net/style.css");
+    rect { fill: #000; }
+  </style>
+  <rect width="100" height="100"/>
+</svg>

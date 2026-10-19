@@ -1,0 +1,7 @@
+Files of mailcow-dockerized, copied unmodified from tag 2026-09a
+by scripts/legacy/copy-settings-fixtures.sh 2026-09a. Do not edit: regenerate instead.
+mailcow-dockerized is distributed under the GNU General Public License, version 3.
+
+SHA-256 of each file:
+55554f4067268636ec68813ed67d0730db8be613ada52fa912621f7a3fe9e440  lang.en-gb.json  (data/web/lang/lang.en-gb.json)
+baf5b51ef67475b0a0858d199bb9034e2a73953fccee1969c0aadbfa1f25a1cf  lang.de-de.json  (data/web/lang/lang.de-de.json)

@@ -1,0 +1,13 @@
+Files of mailcow-dockerized, copied unmodified from tag 2026-09a
+by scripts/legacy/copy-settings-fixtures.sh 2026-09a. Do not edit: regenerate instead.
+mailcow-dockerized is distributed under the GNU General Public License, version 3.
+
+SHA-256 of each file:
+219eb1f4cb25526752a81f664feb85e50cafadfede49e5079dbfa7e576c16c68  sieve_1.yml  (data/web/inc/presets/sieve/sieve_1.yml)
+cb4b79dd2a03cabeb456621db68fc9605519b855db73bb863d982fa6a690b37d  sieve_2.yml  (data/web/inc/presets/sieve/sieve_2.yml)
+698c5128e89c5b52c88ef79cf683925519f0d1fd8252a9fd293d425cefadc9ce  sieve_3.yml  (data/web/inc/presets/sieve/sieve_3.yml)
+415365c5a8f3630d5360d8713aed0c4b69c59f60d82892c5ebd479ebd6f56199  sieve_4.yml  (data/web/inc/presets/sieve/sieve_4.yml)
+7ef22628ba7e347854ce2b175ffa6d9fdb9f40df6f57c58395d187ac4500a506  sieve_5.yml  (data/web/inc/presets/sieve/sieve_5.yml)
+3fb4fc94ce883443c722b07602806b39e210e01779a245ebcb3d5889b2eea042  sieve_6.yml  (data/web/inc/presets/sieve/sieve_6.yml)
+4b33079049314e8bfd28c8046cc11dd6557b75622ccb452d102ca83077c67898  sieve_7.yml  (data/web/inc/presets/sieve/sieve_7.yml)
+a746f3b242bb0034bba8b552ffacba8b8b31b4c0b824b2c97fafe9c301a5aebc  sieve_8.yml  (data/web/inc/presets/sieve/sieve_8.yml)

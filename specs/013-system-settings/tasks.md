@@ -67,20 +67,20 @@ quota copy recipients of their own domains (foreign or alias domain → `404`) a
 
 **Purpose**: Dependencies, configuration, deployment mounts and test fixtures. No business logic.
 
-- [ ] T001 Add the dependencies of R27: `composer require symfony/yaml:^7.0 symfony/mime:^7.0`; add
+- [x] T001 Add the dependencies of R27: `composer require symfony/yaml:^7.0 symfony/mime:^7.0`; add
   the `gd` extension to the `base` stage of `docker/php/Dockerfile`
   (`apk add libpng-dev libjpeg-turbo-dev`, `docker-php-ext-configure gd --with-jpeg`,
   `docker-php-ext-install gd`, keeping only the runtime libraries in the final layer); set
   `post_max_size = 20M` in `docker/php/php.ini`. Rebuild the dev image and check
   `php -m | grep gd`.
-- [ ] T002 [P] Extend `config/restv2.php`, `.env.example` and `.env.testing` with the settings of R2:
+- [x] T002 [P] Extend `config/restv2.php`, `.env.example` and `.env.testing` with the settings of R2:
   `demo_mode => env('DEMO_MODE', 'n') === 'y'`, `rspamd_map_dir`, `global_sieve_dir`,
   `template_dir`, `mailcow_lang_dir`, `rspamd_settings_map_url`, `rspamd_ui_url`, `lmtp.host`,
   `lmtp.port`, `mass_mail.rate` (integer 1–100, default 10), `mass_mail.delivery_deadline` (5),
   `license.enabled` (`RESTV2_LICENSE_VERIFICATION`, default `true`), `license.verify_url`. In
   `.env.testing` point the four directory settings to `storage/framework/testing/mailcow/…` (the
   sandbox, T008) and `RESTV2_MAILCOW_INC_DIR` / `RESTV2_MAILCOW_LANG_DIR` to the fixtures of T005.
-- [ ] T003 [P] Extend `deploy/docker-compose.override.yml` (R26): volumes
+- [x] T003 [P] Extend `deploy/docker-compose.override.yml` (R26): volumes
   `./data/conf/rspamd/custom:/mailcow/rspamd_custom_maps:z`,
   `./data/conf/dovecot/global_sieve_before:/mailcow/global_sieve/before:z`,
   `./data/conf/dovecot/global_sieve_after:/mailcow/global_sieve/after:z`,
@@ -91,12 +91,12 @@ quota copy recipients of their own domains (foreign or alias domain → `404`) a
   `ofelia.job-exec.restv2_mass_mail.command: "php /app/artisan restv2:mass-mail-run --max-time=290"`,
   and `ofelia.job-exec.restv2_mass_mail_purge.schedule: "@daily"` with
   `command: "php /app/artisan restv2:mass-mail-purge"`.
-- [ ] T004 [P] Extend `deploy/nginx/site.restv2.custom` (R3, R26): `client_max_body_size 5m;` in
+- [x] T004 [P] Extend `deploy/nginx/site.restv2.custom` (R3, R26): `client_max_body_size 5m;` in
   `location ^~ /api/v2/`, and a nested `location ^~ /api/v2/settings/logos/` with
   `client_max_body_size 16m;`, `include /etc/nginx/fastcgi_params;`, the same `fastcgi_param` lines
   and `fastcgi_pass $restv2_upstream;`. Verify with `nginx -t` in `nginx:1.28-alpine` on
   `docker/nginx/dev.conf` (001's CI job) and with a 10 MiB `PUT` reaching PHP.
-- [ ] T005 [P] Create the legacy fixtures copied from upstream `2026-09a` with
+- [x] T005 [P] Create the legacy fixtures copied from upstream `2026-09a` with
   `scripts/legacy/copy-settings-fixtures.sh <tag>` (new; `git -C "$MAILCOW_REPO" show <tag>:<path>`,
   refuses fork branches, writes a `SOURCE` file with the tag and SHA-256 of each file):
   `tests/fixtures/mailcow/rspamd-custom/*.map` (the 15 shipped map files),
@@ -105,7 +105,7 @@ quota copy recipients of their own domains (foreign or alias domain → `404`) a
   `tests/fixtures/mailcow-inc/presets/{rspamd,sieve}/*.yml` (into 001's inc fixture directory) and
   `tests/fixtures/mailcow/lang/{lang.en-gb.json,lang.de-de.json}`. Mount the same directories into
   the dev stack's `app` service in `compose.yaml` for quickstart Part B.
-- [ ] T006 [P] Create the logo fixtures of SC-003 in `tests/fixtures/logos/`: `valid/` (a 300 × 80
+- [x] T006 [P] Create the logo fixtures of SC-003 in `tests/fixtures/logos/`: `valid/` (a 300 × 80
   PNG, a JPEG, an animated GIF, an SVG with `width="300" height="80"`, an SVG without dimensions, an
   Inkscape SVG with `sodipodi:`/`inkscape:` metadata, an SVG with an embedded PNG data URL and
   `#id` references, a 1920 × 1920 PNG) and `hostile/` (SVGs with `<script>`, `onload=`,
@@ -114,18 +114,18 @@ quota copy recipients of their own domains (foreign or alias domain → `404`) a
   `<set attributeName="href" to="javascript:…"/>`, a nested `data:image/svg+xml`, a root `html`
   element, a not-well-formed document; a PDF named `logo.png`; a 1921 × 10 PNG; a truncated PNG; a
   16 MiB file). Each hostile file name states the expected `construct`.
-- [ ] T007 [P] Create `tests/Support/Fakes/FakeLmtpClient.php` (implements `App\Clients\Lmtp\LmtpClient`
+- [x] T007 [P] Create `tests/Support/Fakes/FakeLmtpClient.php` (implements `App\Clients\Lmtp\LmtpClient`
   once T024 exists; records `from`, `to`, the raw message and time; programmable replies per address
   and per attempt: `delivered`, `temporaryFailure(code, text)`, `permanentFailure(code, text)`,
   `throw`, `hang(seconds)`) and `tests/Support/Fakes/FakeSettingsMapClient.php` (returns a given text
   or throws). Bind both in `tests/TestCase.php` next to 002's fakes.
-- [ ] T008 [P] Create `tests/Support/Settings/SharedFilesSandbox.php`: per test, creates
+- [x] T008 [P] Create `tests/Support/Settings/SharedFilesSandbox.php`: per test, creates
   `storage/framework/testing/mailcow/{rspamd_custom_maps,global_sieve,templates}` from the fixtures of
   T005 (map files mode 0644 in a 0755 directory, like rspamd's entrypoint), points the
   `restv2.*_dir` settings at it, offers `mapContent()`, `mapMtime()`, `removeMap()`, `sieve()`,
   `makeDirectoryReadOnly()` and cleans up in `tearDown()`. Use it from `tests/TestCase.php` through a
   trait `UsesSharedFiles`.
-- [ ] T009 [P] Extend `tests/Support/Mailcow/MailcowFactory.php` (001) with
+- [x] T009 [P] Extend `tests/Support/Mailcow/MailcowFactory.php` (001) with
   `settingsRule(desc, content, active = 0)` (inserts `settingsmap` like legacy `rsettings('add')`),
   `aliasDomain(alias, target)` (if 004 has not added it), `guid(value)` (REPLACE INTO `versions`
   `('GUID', value)`) and `redisLegacy(array $keys)` (writes raw legacy values on the `mailcow`
@@ -842,3 +842,22 @@ operations are covered (T095).
 - Every side effect is asserted in the test that triggers it: Redis bytes, file bytes and mtimes,
   rows, and the calls recorded by the fakes.
 - Commit after each task or logical group, with short imperative messages and no AI attribution.
+
+## Implementation notes
+
+Adaptations to existing components (tasks.md: "adapt the task to the existing component; never
+duplicate it"), recorded as they were made:
+
+- **T001**: Laravel 13 ships Symfony 8, so the constraints are `symfony/yaml:^8.0` and
+  `symfony/mime:^8.0` (the research's `^7` cannot be installed next to Laravel 13). GD is built in
+  the `base` stage with `libpng-dev`, `libjpeg-turbo-dev` and `zlib-dev` as build dependencies;
+  only `libpng` and `libjpeg-turbo` stay at runtime.
+- **T002, T005**: the default templates (`pw_reset_*.tpl`, `quota.tpl`) are read from feature
+  005's existing setting `restv2.mailcow_tpls_dir` (`RESTV2_MAILCOW_TPLS_DIR`, mount `/mailcow/tpls`
+  of `./data/assets/templates`), not from a second `template_dir` setting and mount. `quota.tpl`
+  joins 005's copies in `tests/fixtures/mailcow-tpls/`. The dev stack already mounts the repository
+  at `/app`, so `compose.yaml` needs no extra mounts: `.env.example` points the shared directories
+  at `storage/dev-mailcow/` (gitignored), which quickstart Part B fills from the fixtures, so that
+  manual saves never rewrite tracked fixture files.
+- **T006**: the 16 MiB oversize file is generated in the test rather than committed. Hostile file
+  names start with the expected `construct` or rule code (`scriptElement--script.svg`).

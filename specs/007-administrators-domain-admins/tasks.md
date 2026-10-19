@@ -834,9 +834,9 @@ behalf in the audit log, without secrets.
   or token, in every combination.
 - [ ] T095 Run `composer test` and confirm that `build/contract/coverage.json` lists all 21
   operations of this feature and that the 001 operations changed by it still pass.
-- [ ] T096 [P] Run `vendor/bin/pint --test` and `vendor/bin/phpstan analyse` (Larastan level 6) and
+- [X] T096 [P] Run `vendor/bin/pint --test` and `vendor/bin/phpstan analyse` (Larastan level 6) and
   fix every finding in the files of this feature.
-- [ ] T097 [P] Add the feature's contract changes to `CHANGELOG.md` (21 operations; additive
+- [X] T097 [P] Add the feature's contract changes to `CHANGELOG.md` (21 operations; additive
   `Identity`, `Session`, `AuthMethod`, `AuditEvent`, `ApiKey`, `Forbidden` and `listAuditEvents`
   changes; eight problem types; `ALLOW_ADMIN_EMAIL_LOGIN`) and the setting to the README's
   configuration table, so that mailcowui-ng can bump its pinned contract (constitution workflow).

@@ -24,7 +24,8 @@ use Illuminate\Support\Str;
  *  - `restv2.passkeyChallenge` and `restv2.passkeyRegistration`: single-use WebAuthn challenges;
  *  - `restv2.lastActivity`: Unix seconds of the last request (idle timeout, FR-009);
  *  - `restv2.handle`: the stable handle of a signed-in session (feature 005 research R2), which
- *    survives identifier renewals and keys the account's entry in SessionRegistry.
+ *    survives identifier renewals and keys the account's entry in SessionRegistry;
+ *  - `restv2.impersonation` (feature 007): the account the signed-in account impersonates.
  *
  * The principal and the pending sign-in carry the SHA-256 of the User-Agent they were created
  * with (FR-012). Every step that changes who is signed in renews the session identifier (FR-008).
@@ -46,6 +47,13 @@ class SessionManager
     public const LAST_ACTIVITY = 'restv2.lastActivity';
 
     public const HANDLE = 'restv2.handle';
+
+    /**
+     * Feature 007: the impersonation of the signed-in account (research R16): `id` (ULID),
+     * `startedAt` (Unix seconds) and `target` (`username`, `role`, `accountKind`,
+     * `accountCreatedAt`, `generation`). `restv2.principal` keeps the impersonator.
+     */
+    public const IMPERSONATION = 'restv2.impersonation';
 
     /** Ceremonies of a signed-in account (feature 005), which a new sign-in discards. */
     private const ACCOUNT_CEREMONIES = ['restv2.totpEnrolment', 'restv2.secondFactorWebauthn'];
@@ -106,6 +114,96 @@ class SessionManager
     }
 
     /**
+     * The impersonation of the session (feature 007), or null.
+     *
+     * @return array{id: string, startedAt: int, target: array{username: string, role: Role, accountKind: AccountKind, accountCreatedAt: string|null, generation: int}}|null
+     */
+    public function impersonation(Session $session): ?array
+    {
+        $data = $session->get(self::IMPERSONATION);
+        $target = is_array($data) && is_array($data['target'] ?? null) ? $data['target'] : null;
+        $role = Role::tryFrom((string) ($target['role'] ?? ''));
+        $kind = AccountKind::tryFrom((string) ($target['accountKind'] ?? ''));
+
+        if ($target === null || $role === null || $kind === null || ! is_string($data['id'] ?? null) || ! is_string($target['username'] ?? null)) {
+            return null;
+        }
+
+        return [
+            'id' => $data['id'],
+            'startedAt' => (int) ($data['startedAt'] ?? 0),
+            'target' => [
+                'username' => $target['username'],
+                'role' => $role,
+                'accountKind' => $kind,
+                'accountCreatedAt' => is_string($target['accountCreatedAt'] ?? null) ? $target['accountCreatedAt'] : null,
+                'generation' => (int) ($target['generation'] ?? 0),
+            ],
+        ];
+    }
+
+    /**
+     * The principal requests act as (feature 007 FR-046): during an impersonation the target, with
+     * the signed-in account as its impersonator; otherwise the signed-in account.
+     */
+    public function effectivePrincipal(Session $session): ?Principal
+    {
+        $principal = $this->principal($session);
+        $impersonation = $principal === null ? null : $this->impersonation($session);
+
+        return $impersonation === null || $principal === null ? $principal : self::impersonating($principal, $impersonation);
+    }
+
+    /**
+     * The principal of an impersonation's target, acting for $impersonator (feature 007).
+     *
+     * @param  array{id: string, startedAt: int, target: array{username: string, role: Role, accountKind: AccountKind, accountCreatedAt: string|null, generation: int}}  $impersonation
+     */
+    public static function impersonating(Principal $impersonator, array $impersonation): Principal
+    {
+        $target = $impersonation['target'];
+
+        return new Principal(
+            username: $target['username'],
+            role: $target['role'],
+            accountKind: $target['accountKind'],
+            authMethod: $impersonator->authMethod,
+            signedInAt: $impersonator->signedInAt,
+            impersonator: $impersonator,
+            impersonationId: $impersonation['id'],
+            impersonationStartedAt: CarbonImmutable::createFromTimestampUTC($impersonation['startedAt']),
+            accountCreatedAt: $target['accountCreatedAt'],
+        );
+    }
+
+    /**
+     * Starts an impersonation (feature 007 FR-045): stores it, renews the session identifier and
+     * the anti-forgery token, and keeps the session's registry entry under the impersonator.
+     *
+     * @param  array{id: string, startedAt: int, target: array{username: string, role: string, accountKind: string, accountCreatedAt: string|null, generation: int}}  $impersonation
+     */
+    public function startImpersonation(Session $session, array $impersonation): void
+    {
+        $session->put(self::IMPERSONATION, $impersonation);
+        $session->migrate(true);
+        $session->regenerateToken();
+        $this->register($session);
+    }
+
+    /**
+     * Ends the impersonation (feature 007 FR-050, FR-052): removes it and renews the session
+     * identifier and the anti-forgery token, so that requests prepared under the previous identity
+     * in other tabs are refused.
+     */
+    public function endImpersonation(Session $session): void
+    {
+        $session->forget(self::IMPERSONATION);
+        $session->migrate(true);
+        $session->regenerateToken();
+        $this->register($session);
+    }
+
+    /**
      * The pending sign-in, unless it is missing or expired.
      *
      * @return array{username: string, role: Role, accountKind: AccountKind, methodIds: list<int>, expiresAt: CarbonImmutable, requestedRole: Role|null, passwordSource: PasswordSource}|null
@@ -148,6 +246,7 @@ class SessionManager
     {
         $expiresAt = CarbonImmutable::now('UTC')->addSeconds($this->challengeTtl());
 
+        $this->replaceImpersonation($session);
         $this->unregister($session);
         $session->migrate(true);
         $session->forget([self::PRINCIPAL, self::HANDLE]);
@@ -175,6 +274,7 @@ class SessionManager
      */
     public function promote(Session $session, Principal $principal, ?string $userAgent, ?int $secondFactorId = null): void
     {
+        $this->replaceImpersonation($session);
         $this->unregister($session);
         $session->migrate(true);
         $session->forget([self::PENDING, self::PASSKEY_CHALLENGE, self::PASSKEY_REGISTRATION, ...self::ACCOUNT_CEREMONIES]);
@@ -303,6 +403,22 @@ class SessionManager
         }
 
         $session->invalidate();
+    }
+
+    /**
+     * A new sign-in replaces an impersonating session (feature 007 FR-063): the impersonation's end
+     * is audited (`endedBy: sessionReplaced`) and it is removed.
+     */
+    private function replaceImpersonation(Session $session): void
+    {
+        $principal = $this->principal($session);
+        $impersonation = $principal === null ? null : $this->impersonation($session);
+
+        if ($principal !== null && $impersonation !== null) {
+            app(ImpersonationAudit::class)->ended(self::impersonating($principal, $impersonation), 'sessionReplaced');
+        }
+
+        $session->forget(self::IMPERSONATION);
     }
 
     /**

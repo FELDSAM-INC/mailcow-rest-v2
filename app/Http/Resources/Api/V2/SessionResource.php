@@ -31,14 +31,20 @@ class SessionResource extends JsonResource
         $data = ['state' => $state->value];
 
         if ($state === SessionState::Restricted || $state === SessionState::Active) {
-            $principal = $sessions->principal($session);
+            $principal = $sessions->effectivePrincipal($session);
             assert($principal !== null);
+            // Feature 007: during an impersonation the target's username and role, the
+            // impersonator's sign-in method and time.
             $data += [
                 'username' => $principal->username,
                 'role' => $principal->role->value,
                 'authMethod' => $principal->authMethod->value,
                 'signedInAt' => self::time($principal->signedInAt ?? CarbonImmutable::now('UTC')),
             ];
+
+            if ($principal->impersonator !== null) {
+                $data['impersonation'] = ImpersonationResource::present($principal);
+            }
         }
 
         if ($state === SessionState::PendingSecondFactor) {

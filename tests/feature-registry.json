@@ -451,9 +451,6 @@
         "applyAdminBulkAction",
         "issueDomainAdminSsoToken",
         "createSessionWithSsoToken",
-        "getImpersonation",
-        "startImpersonation",
-        "endImpersonation",
         "createWebmailSignInOnBehalf"
     ]
 }

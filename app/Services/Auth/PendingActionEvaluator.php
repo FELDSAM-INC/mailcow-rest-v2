@@ -30,6 +30,10 @@ class PendingActionEvaluator
      */
     public function evaluate(Principal $principal): array
     {
+        // Feature 007 (FR-047): during an impersonation the impersonator's own pending actions
+        // apply, never the target's.
+        $principal = $principal->actingAccount();
+
         // A single sign-on is never restricted by forced password change or second-factor setup:
         // the provider is responsible for the strength of the sign-in (feature 012 FR-024).
         if ($principal->isApiKey() || $principal->authMethod === AuthMethod::SingleSignOn) {

@@ -450,7 +450,7 @@ and without the flag, with keys and restricted sessions.
 
 ### Tests for User Story 3 (write first, observe failing) ⚠️
 
-- [ ] T051 [P] [US3] Write `tests/Feature/Impersonation/StartImpersonationTest.php` for
+- [X] T051 [P] [US3] Write `tests/Feature/Impersonation/StartImpersonationTest.php` for
   `startImpersonation` (AS US3-1, US3-4, US3-6, FR-042 to FR-045, R16): administrator `alice` →
   `{"role":"mailboxUser","username":"Bob@A.example"}` answers `201` with
   `Location: /api/v2/session/impersonation`, `target.username` `bob@a.example`,
@@ -463,7 +463,7 @@ and without the flag, with keys and restricted sessions.
   mailbox in an inactive domain → `201`; a second start → `409 already-impersonating`; audit
   `impersonationStart` with the impersonation ULID and `impersonatedAccount`; no
   `PHPREDIS_SESSION:*` key is written or changed by starting or ending (FR-053).
-- [ ] T052 [P] [US3] Write `tests/Feature/Impersonation/ImpersonationIdentityTest.php` (FR-046 to
+- [X] T052 [P] [US3] Write `tests/Feature/Impersonation/ImpersonationIdentityTest.php` (FR-046 to
   FR-048, R18): during an impersonation `GET /me` has the target's `username`, `role` and `scope`,
   `impersonation` (impersonator, sign-in method, target, start time) and the impersonator's
   `authentication` and `preferences`; an administrator impersonator yields all 29 flags `true`;
@@ -475,7 +475,7 @@ and without the flag, with keys and restricted sessions.
   still `GET /me` and `DELETE /session/impersonation`; `PATCH /me/preferences` changes the
   impersonator's `restv2_preferences` row only; `GET /session` and `GET /session/impersonation`
   report the impersonation.
-- [ ] T053 [P] [US3] Write `tests/Feature/Impersonation/EndImpersonationTest.php` for
+- [X] T053 [P] [US3] Write `tests/Feature/Impersonation/EndImpersonationTest.php` for
   `endImpersonation` and sign-out (AS US3-3, US3-10, FR-050, FR-051): `DELETE` → `204`; `GET /me` is
   `alice` again with her original `authentication.method`; the session cookie and CSRF token were
   renewed; audit `impersonationEnd` with `endedBy: explicit` and `durationSeconds`; without an
@@ -484,7 +484,7 @@ and without the flag, with keys and restricted sessions.
   password sign-in (`POST /session`) on an impersonating session audits `endedBy: sessionReplaced`;
   `GET /session/impersonation` afterwards → `404`; starting and ending each answer within 1 s
   (SC-007 budget of 10 s).
-- [ ] T054 [P] [US3] Write `tests/Feature/Impersonation/ImpersonationValidityTest.php` (AS US3-8,
+- [X] T054 [P] [US3] Write `tests/Feature/Impersonation/ImpersonationValidityTest.php` (AS US3-8,
   FR-052, R17): for each cause — target mailbox deleted through 003's `DELETE /mailboxes/{mailbox}`,
   deleted as a raw row (legacy), renamed through 003's rename, re-created with the same address in
   the same second (generation bump), domain administrator target deleted through
@@ -499,7 +499,7 @@ and without the flag, with keys and restricted sessions.
   answers `204`, audits the automatic end and `signOut`, and ends the session (FR-052 as amended);
   a flag change of an impersonating domain administrator applies to its next request (FR-002,
   FR-040).
-- [ ] T055 [P] [US3] Write `tests/Feature/Impersonation/ImpersonationRefusalsTest.php` (AS US3-9,
+- [X] T055 [P] [US3] Write `tests/Feature/Impersonation/ImpersonationRefusalsTest.php` (AS US3-9,
   FR-049, R19): during an impersonation of a mailbox user, 001's
   `POST /me/passkeys/registration-options`, `POST /me/passkeys`, `PATCH` and
   `DELETE /me/passkeys/{passkeyId}`, and feature 005's own password change, TOTP, WebAuthn and Yubico
@@ -507,7 +507,7 @@ and without the flag, with keys and restricted sessions.
   not-allowed-while-impersonating` and change nothing; feature 005's app password creation follows
   the effective `appPasswds` flag (allowed for an administrator impersonator, refused for a domain
   administrator impersonator whose `app_passwds` is off).
-- [ ] T056 [P] [US3] Write `tests/Feature/Impersonation/ImpersonationAuthorizationTest.php` (AS US3-5,
+- [X] T056 [P] [US3] Write `tests/Feature/Impersonation/ImpersonationAuthorizationTest.php` (AS US3-5,
   US3-7, FR-042, FR-043, R24): any API key on `startImpersonation` — administrator read-write →
   `403 session-required`, read-only → `403 insufficient-key-scope`, domain administrator key →
   `403 session-required`; a mailbox user → `403 forbidden`; a domain administrator without
@@ -518,7 +518,7 @@ and without the flag, with keys and restricted sessions.
   sign-in → `401 second-factor-required`; no session → `401`; zero impersonations can be started
   with any key (SC-002); `GET /session/impersonation` and
   `DELETE /session/impersonation` with a key → `403 session-required`.
-- [ ] T057 [P] [US3] Write `tests/Feature/Impersonation/ImpersonationAuditTest.php` (AS US3-2,
+- [X] T057 [P] [US3] Write `tests/Feature/Impersonation/ImpersonationAuditTest.php` (AS US3-2,
   FR-067, SC-005): a change made during the impersonation through another feature (001
   `PATCH /me/preferences` and 003 `PATCH /mailboxes/{mailbox}` by an administrator impersonating a
   domain administrator) is audited with `actor` `alice`/`admin` and `impersonatedAccount`
@@ -527,7 +527,7 @@ and without the flag, with keys and restricted sessions.
 
 ### Implementation for User Story 3
 
-- [ ] T058 [US3] Create `app/Services/Auth/ImpersonationService.php` (R16, R17): `start(Principal
+- [X] T058 [US3] Create `app/Services/Auth/ImpersonationService.php` (R16, R17): `start(Principal
   $impersonator, string $role, string $username)` (eligibility and scope with 003's address
   normaliser and the `mailbox`/`admin` lookups of data-model.md, writes `restv2.impersonation` with
   the target's `created` and generation, renews the identifier and the CSRF token through
@@ -535,36 +535,36 @@ and without the flag, with keys and restricted sessions.
   string $endedBy, ?ImpersonationEndReason $reason)` (removes the key, renews, audits),
   `validate(Principal $principal): ?ImpersonationEndReason`, and `effectivePrincipal(array
   $sessionData): Principal`. Create `app/Policies/ImpersonationPolicy.php`.
-- [ ] T059 [US3] Change 001's `app/Services/Auth/SessionManager.php`: `principal()` returns
+- [X] T059 [US3] Change 001's `app/Services/Auth/SessionManager.php`: `principal()` returns
   `ImpersonationService::effectivePrincipal()` while `restv2.impersonation` exists; `promote()` and
   `end()` audit `impersonationEnd` with `endedBy: sessionReplaced` or `signOut` when an
   impersonation is replaced or ended. Change 001's
   `app/Http/Controllers/Api/V2/SessionController.php` (`destroy`) so that the impersonation end is
   audited before `signOut`.
-- [ ] T060 [US3] Change 001's `app/Services/Identity/IdentityService.php` (R18 flags for an
+- [X] T060 [US3] Change 001's `app/Services/Identity/IdentityService.php` (R18 flags for an
   impersonating principal; pending actions of `actingAccount()`; `webmailOnBehalfEnabled` for
   administrators and domain administrators from `config('restv2.allow_admin_email_login')`) and
   `app/Http/Resources/Api/V2/IdentityResource.php` and `SessionResource.php` (`impersonation`,
   `webmailOnBehalfEnabled`). Change 001's `app/Services/Preferences/PreferencesService.php` and
   `PreferencesController.php` to use `actingAccount()` (FR-047).
-- [ ] T061 [US3] Create `app/Http/Middleware/EnforceImpersonation.php` (R17: validation on every
+- [X] T061 [US3] Create `app/Http/Middleware/EnforceImpersonation.php` (R17: validation on every
   session request, automatic end with renewal and audit, then `403 impersonation-ended` for every
   detecting request except `DELETE /session/impersonation` and `DELETE /session`, which continue to
   their controllers and complete normally) and append it to the `api.v2` group right
   after `EnsureSessionIntegrity` in `bootstrap/app.php`. Create
   `app/Http/Middleware/RefuseDuringImpersonation.php` with the alias `restv2.not-impersonating`,
   running after `restv2.auth` and before `restv2.pending`.
-- [ ] T062 [US3] Create `app/Http/Requests/Api/V2/StartImpersonationRequest.php` ("`role` in
+- [X] T062 [US3] Create `app/Http/Requests/Api/V2/StartImpersonationRequest.php` ("`role` in
   mailboxUser, domainAdmin (`notInList`); `username` required string 1–255; unknown member →
   `unknownField`"), `app/Http/Resources/Api/V2/ImpersonationResource.php` and
   `app/Http/Controllers/Api/V2/ImpersonationController.php` (`show`, `store`, `destroy`). Register
   `GET|POST|DELETE /session/impersonation` with `restv2.auth:session`, `restv2.csrf` on writes,
   `restv2.pending:allow` on `GET` and `DELETE`, in `routes/api.php`.
-- [ ] T063 [US3] In `routes/api.php`, attach `restv2.not-impersonating` to 001's passkey management
+- [X] T063 [US3] In `routes/api.php`, attach `restv2.not-impersonating` to 001's passkey management
   routes (`POST /me/passkeys/registration-options`, `POST /me/passkeys`,
   `PATCH|DELETE /me/passkeys/{passkeyId}`) and to feature 005's routes for the own password change,
   second-factor enrolment and removal, recovery e-mail change and own webmail hand-off (R19).
-- [ ] T064 [US3] Change feature 003's `app/Services/Mailboxes/MailboxDeleter.php` and
+- [X] T064 [US3] Change feature 003's `app/Services/Mailboxes/MailboxDeleter.php` and
   `MailboxRenamer.php` to call `AccountGeneration::bump('mailbox', $address)` (the old address for a
   rename) after commit (R11). This makes
   T051–T057 pass; 003's tests stay green.

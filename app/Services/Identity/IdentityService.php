@@ -60,6 +60,13 @@ class IdentityService
      */
     public function permissions(Principal $principal): array
     {
+        // Feature 007 (FR-046, research R18): an impersonator's flags, as legacy acl('to_session')
+        // computes them with `dual-login`: an administrator has every flag; a domain administrator
+        // every mailbox user flag, its own values overriding the overlapping ones.
+        if ($principal->impersonator !== null) {
+            return $this->permissions($principal->impersonator);
+        }
+
         $flags = [];
 
         if ($principal->role === Role::Admin) {

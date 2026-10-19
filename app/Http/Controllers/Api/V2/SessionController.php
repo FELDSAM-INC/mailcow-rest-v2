@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api\V2;
 
 use App\Audit\AuditEventType;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\EnforceImpersonation;
 use App\Http\RequestContext;
 use App\Http\Requests\Api\V2\PasswordSignInRequest;
 use App\Http\Resources\Api\V2\SessionResource;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\ImpersonationAudit;
 use App\Services\Auth\PasswordSignInService;
 use App\Services\Auth\SessionManager;
 use App\Services\Webmail\WebmailHandOffService;
@@ -59,6 +61,16 @@ class SessionController extends Controller
             // Feature 005: the session's webmail hand-off ends with it, and its cookie is removed.
             if ($handle !== null && $handOffs->hasHandOff($handle)) {
                 $response->headers->setCookie($handOffs->expiredCookie());
+            }
+
+            // Feature 007 (FR-051, FR-052): signing out during an impersonation ends the whole
+            // session; the impersonation's end is audited first, as automatic when it had become
+            // invalid.
+            $impersonating = RequestContext::principal($request);
+
+            if ($impersonating?->impersonator !== null) {
+                $reason = $request->attributes->get(EnforceImpersonation::INVALID);
+                app(ImpersonationAudit::class)->ended($impersonating, $reason === null ? 'signOut' : 'automatic', $reason);
             }
 
             if ($principal !== null) {

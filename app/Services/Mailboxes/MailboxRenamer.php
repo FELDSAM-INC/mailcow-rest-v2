@@ -11,6 +11,7 @@ use App\Exceptions\AuditedFailure;
 use App\Exceptions\MailboxDependencyUnavailable;
 use App\Exceptions\OutcomeUnknown;
 use App\Exceptions\ProblemException;
+use App\Services\Accounts\AccountGeneration;
 use App\Services\Audit\AuditLogger;
 use App\Services\Domains\DomainUsageCalculator;
 use App\Support\Http\ETag;
@@ -90,6 +91,9 @@ class MailboxRenamer
             $row = $this->preflight($address, $new, $keepOldAddress, $ifMatch);
             $this->runSteps($principal, $row, $new, $keepOldAddress);
         });
+
+        // Feature 007 (research R11): every impersonation of the renamed mailbox ends.
+        app(AccountGeneration::class)->bump('mailbox', $address);
 
         if (! config('restv2.skip_sogo')) {
             $this->flusher->flush();

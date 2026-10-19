@@ -7,9 +7,11 @@ use App\Exceptions\ProblemRenderer;
 use App\Exceptions\ValidationProblemException;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\AuthenticateApiKey;
+use App\Http\Middleware\EnforceImpersonation;
 use App\Http\Middleware\EnforceKeyScope;
 use App\Http\Middleware\EnforcePendingActions;
 use App\Http\Middleware\EnsureSessionIntegrity;
+use App\Http\Middleware\RefuseDuringImpersonation;
 use App\Http\Middleware\RequireAuth;
 use App\Http\Middleware\StartSessionUnlessApiKey;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -48,6 +50,8 @@ return Application::configure(basePath: dirname(__DIR__))
             EnforceKeyScope::class,
             StartSessionUnlessApiKey::class,
             EnsureSessionIntegrity::class,
+            // Feature 007: requests of an impersonating session act as its target, while it is valid.
+            EnforceImpersonation::class,
         ]);
 
         // Laravel sorts route middleware by its priority list, which hoists StartSession (and so
@@ -58,14 +62,18 @@ return Application::configure(basePath: dirname(__DIR__))
         }
 
         // The routes of the signed-in account's own credentials and functions (feature 005 research
-        // R5). Empty for now; feature 007 adds its "not while impersonating" refusal here.
+        // R5). It stays empty: feature 007 refuses only the credential and webmail operations among
+        // them during an impersonation (`restv2.not-impersonating` per route), so that reads, the
+        // mailbox overview and app passwords keep following the effective identity (007 FR-049).
         $middleware->group('restv2.own', []);
 
-        // Per route, in this order: restv2.auth:<mode>, restv2.csrf, restv2.pending:<mode>.
+        // Per route, in this order: restv2.auth:<mode>, restv2.csrf, restv2.not-impersonating,
+        // restv2.pending:<mode>.
         $middleware->alias([
             'restv2.auth' => RequireAuth::class,
             'restv2.csrf' => VerifyCsrfToken::class,
             'restv2.pending' => EnforcePendingActions::class,
+            'restv2.not-impersonating' => RefuseDuringImpersonation::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

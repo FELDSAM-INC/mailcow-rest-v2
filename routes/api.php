@@ -55,6 +55,7 @@ use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\IdentityProviderCapabilitiesController;
 use App\Http\Controllers\Api\V2\IdentityProviderConnectionTestController;
 use App\Http\Controllers\Api\V2\IdentityProviderController;
+use App\Http\Controllers\Api\V2\ImpersonationController;
 use App\Http\Controllers\Api\V2\InstallationController;
 use App\Http\Controllers\Api\V2\LivenessController;
 use App\Http\Controllers\Api\V2\LogEntryController;
@@ -183,6 +184,20 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::post('/session/single-sign-on/provider-error', [SingleSignOnProviderErrorController::class, 'store'])->name('single-sign-on-provider-error.store');
     });
 
+    // Feature 007: the session's impersonation (login-as). Signed-in browser sessions only;
+    // reading and ending also in restricted sessions.
+    Route::get('/session/impersonation', [ImpersonationController::class, 'show'])
+        ->middleware(['restv2.auth:session', 'restv2.pending:allow'])
+        ->name('impersonation.show');
+    Route::post('/session/impersonation', [ImpersonationController::class, 'store'])
+        ->middleware(['restv2.auth:session', 'restv2.csrf', 'restv2.pending'])
+        ->defaults('restv2.audit', ['event' => 'impersonationStart', 'target' => 'impersonation'])
+        ->name('impersonation.store');
+    Route::delete('/session/impersonation', [ImpersonationController::class, 'destroy'])
+        ->middleware(['restv2.auth:session', 'restv2.csrf', 'restv2.pending:allow'])
+        ->defaults('restv2.audit', ['event' => 'impersonationEnd', 'target' => 'impersonation'])
+        ->name('impersonation.destroy');
+
     // Signing out needs the token only with a live session (R7).
     Route::delete('/session', [SessionController::class, 'destroy'])
         ->middleware(['restv2.auth:browser', 'restv2.csrf:live', 'restv2.pending:allow'])
@@ -207,24 +222,24 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     // only pending action is second-factor setup, which it resolves (FR-054).
     Route::middleware('restv2.auth:session')->group(function (): void {
         Route::post('/me/passkeys/registration-options', [PasskeyRegistrationOptionsController::class, 'store'])
-            ->middleware(['restv2.csrf', 'restv2.pending:secondFactorSetup'])
+            ->middleware(['restv2.csrf', 'restv2.not-impersonating', 'restv2.pending:secondFactorSetup'])
             ->name('passkey-registration-options.store');
         Route::get('/me/passkeys', [PasskeyController::class, 'index'])
             ->middleware('restv2.pending')
             ->name('passkeys.index');
         Route::post('/me/passkeys', [PasskeyController::class, 'store'])
-            ->middleware(['restv2.csrf', 'restv2.pending:secondFactorSetup'])
+            ->middleware(['restv2.csrf', 'restv2.not-impersonating', 'restv2.pending:secondFactorSetup'])
             ->name('passkeys.store');
         Route::get('/me/passkeys/{passkeyId}', [PasskeyController::class, 'show'])
             ->middleware('restv2.pending')
             ->where('passkeyId', '[0-9a-f]{64}')
             ->name('passkeys.show');
         Route::patch('/me/passkeys/{passkeyId}', [PasskeyController::class, 'update'])
-            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->middleware(['restv2.csrf', 'restv2.not-impersonating', 'restv2.pending'])
             ->where('passkeyId', '[0-9a-f]{64}')
             ->name('passkeys.update');
         Route::delete('/me/passkeys/{passkeyId}', [PasskeyController::class, 'destroy'])
-            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->middleware(['restv2.csrf', 'restv2.not-impersonating', 'restv2.pending'])
             ->where('passkeyId', '[0-9a-f]{64}')
             ->name('passkeys.destroy');
     });
@@ -847,7 +862,7 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->middleware('restv2.pending:includes,passwordChange')
             ->name('own-password-policy.show');
         Route::put('/me/password', [OwnPasswordController::class, 'update'])
-            ->middleware(['restv2.csrf', 'restv2.pending:includes,passwordChange'])
+            ->middleware(['restv2.csrf', 'restv2.not-impersonating', 'restv2.pending:includes,passwordChange'])
             ->defaults('restv2.audit', ['event' => 'ownPasswordChange', 'target' => 'accountPassword'])
             ->name('own-password.update');
 
@@ -855,18 +870,18 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->middleware('restv2.pending:includes,secondFactorSetup')
             ->name('own-second-factors.index');
         Route::post('/me/second-factors', [OwnSecondFactorController::class, 'store'])
-            ->middleware(['restv2.csrf', 'restv2.pending:includes,secondFactorSetup'])
+            ->middleware(['restv2.csrf', 'restv2.not-impersonating', 'restv2.pending:includes,secondFactorSetup'])
             ->defaults('restv2.audit', ['event' => 'ownSecondFactorEnrolment', 'target' => 'secondFactor'])
             ->name('own-second-factors.store');
         // Ceremony requests (TOTP start, WebAuthn options) are not audited (plan Complexity Tracking).
         Route::post('/me/second-factors/totp-enrolment', [OwnTotpEnrolmentController::class, 'store'])
-            ->middleware(['restv2.csrf', 'restv2.pending:includes,secondFactorSetup'])
+            ->middleware(['restv2.csrf', 'restv2.not-impersonating', 'restv2.pending:includes,secondFactorSetup'])
             ->name('own-totp-enrolment.store');
         Route::post('/me/second-factors/webauthn-registration-options', [OwnSecondFactorWebAuthnOptionsController::class, 'store'])
-            ->middleware(['restv2.csrf', 'restv2.pending:includes,secondFactorSetup'])
+            ->middleware(['restv2.csrf', 'restv2.not-impersonating', 'restv2.pending:includes,secondFactorSetup'])
             ->name('own-second-factor-webauthn-options.store');
         Route::post('/me/second-factors/removal', [OwnSecondFactorRemovalController::class, 'store'])
-            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->middleware(['restv2.csrf', 'restv2.not-impersonating', 'restv2.pending'])
             ->defaults('restv2.audit', ['event' => 'ownSecondFactorRemoval', 'target' => 'secondFactor'])
             ->name('own-second-factor-removal.store');
         Route::get('/me/second-factors/{secondFactorId}', [OwnSecondFactorController::class, 'show'])
@@ -874,7 +889,7 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('secondFactorId', '[1-9][0-9]{0,9}')
             ->name('own-second-factors.show');
         Route::delete('/me/second-factors/{secondFactorId}', [OwnSecondFactorController::class, 'destroy'])
-            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->middleware(['restv2.csrf', 'restv2.not-impersonating', 'restv2.pending'])
             ->where('secondFactorId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'ownSecondFactorRemoval', 'target' => 'secondFactor'])
             ->name('own-second-factors.destroy');
@@ -886,7 +901,7 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->middleware('restv2.pending')
             ->name('own-recovery-email.show');
         Route::put('/me/recovery-email', [OwnRecoveryEmailController::class, 'update'])
-            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->middleware(['restv2.csrf', 'restv2.not-impersonating', 'restv2.pending'])
             ->defaults('restv2.audit', ['event' => 'ownRecoveryEmailChange', 'target' => 'recoveryEmail'])
             ->name('own-recovery-email.update');
     });
@@ -906,7 +921,7 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->middleware('restv2.pending')
             ->name('own-mailbox.show');
         Route::post('/me/webmail-handoff', [WebmailHandOffController::class, 'store'])
-            ->middleware(['restv2.csrf', 'restv2.pending'])
+            ->middleware(['restv2.csrf', 'restv2.not-impersonating', 'restv2.pending'])
             ->defaults('restv2.audit', ['event' => 'webmailHandOff', 'target' => 'webmailHandOff'])
             ->name('webmail-handoff.store');
         Route::get('/me/mailbox/client-configuration', [OwnClientConfigurationController::class, 'show'])

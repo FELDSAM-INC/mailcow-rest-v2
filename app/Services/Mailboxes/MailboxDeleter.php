@@ -11,6 +11,7 @@ use App\Exceptions\AuditedFailure;
 use App\Exceptions\MailboxDependencyUnavailable;
 use App\Exceptions\MailStoreUnreachable;
 use App\Exceptions\OutcomeUnknown;
+use App\Services\Accounts\AccountGeneration;
 use App\Services\Audit\AuditLogger;
 use App\Services\Groupware\SogoDirectory;
 use App\Services\RateLimits\RateLimitStore;
@@ -65,6 +66,10 @@ class MailboxDeleter
             $this->cleanupMaildir((string) $row->domain, (string) $row->local_part);
             $this->removeRows($principal, $address, $ifMatch, $bulkRequestId);
         });
+
+        // Feature 007 (research R11): every impersonation of the deleted mailbox ends, also when a
+        // mailbox with the same address is created within the same second.
+        app(AccountGeneration::class)->bump('mailbox', $address);
 
         if (! $deferFlush && ! config('restv2.skip_sogo')) {
             $this->flusher->flush();

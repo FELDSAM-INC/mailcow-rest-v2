@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\ApiKeys\ApiKeys;
 use Tests\Support\Auth\AuthRequests;
 use Tests\Support\Domains\DomainTestHelpers;
+use Tests\Support\Mailcow\MailcowFactory;
 
 /**
  * Requests and lookups shared by the tests of feature 007. Used in Tests\TestCase subclasses.
@@ -166,6 +167,44 @@ trait AccountTestHelpers
     protected function bulkAccounts(string $collection, string $action, array $targets, array $headers = []): TestResponse
     {
         return $this->postJson("/api/v2/{$collection}/bulk-actions", ['action' => $action, 'targets' => $targets], isset($headers['X-API-Key']) ? $headers : $this->csrf() + $headers);
+    }
+
+    /**
+     * `POST /session/impersonation` with the session's anti-forgery token.
+     *
+     * @return TestResponse<Response>
+     */
+    protected function impersonate(string $role, string $username): TestResponse
+    {
+        return $this->postJson('/api/v2/session/impersonation', ['role' => $role, 'username' => $username], $this->csrf());
+    }
+
+    /**
+     * `DELETE /session/impersonation` with the session's anti-forgery token.
+     *
+     * @return TestResponse<Response>
+     */
+    protected function endImpersonation(): TestResponse
+    {
+        return $this->deleteJson('/api/v2/session/impersonation', [], $this->csrf());
+    }
+
+    /**
+     * The usual cast: administrator `alice` signed in, domain administrator `reseller1` of
+     * a.example (with `login_as` unless given otherwise), mailbox users `bob@a.example`,
+     * `carol@a.example` and `dave@b.example`.
+     *
+     * @param  array<string, int|bool>  $daAcl
+     */
+    protected function impersonationCast(array $daAcl = []): void
+    {
+        $this->mailcow()->ensureDomain('a.example');
+        $this->mailcow()->ensureDomain('b.example');
+        $this->mailcow()->admin('alice', MailcowFactory::PASSWORD);
+        $this->mailcow()->domainAdmin('reseller1', ['a.example'], $daAcl);
+        $this->mailcow()->mailboxWithDomain('bob@a.example');
+        $this->mailcow()->mailboxWithDomain('carol@a.example');
+        $this->mailcow()->mailboxWithDomain('dave@b.example');
     }
 
     /**

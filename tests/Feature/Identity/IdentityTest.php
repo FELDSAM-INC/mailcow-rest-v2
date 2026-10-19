@@ -44,7 +44,8 @@ class IdentityTest extends TestCase
             ->assertJsonPath('data.pendingActions', []);
         $this->assertCount(29, $response->json('data.permissions'));
         $this->assertArrayNotHasKey('impersonation', $response->json('data'));
-        $this->assertArrayNotHasKey('webmailOnBehalfEnabled', $response->json('data'));
+        // Feature 007 (FR-056): administrators and domain administrators learn the server setting.
+        $this->assertFalse($response->json('data.webmailOnBehalfEnabled'));
     }
 
     public function test_an_inactive_domain_that_is_still_assigned_stays_in_scope(): void

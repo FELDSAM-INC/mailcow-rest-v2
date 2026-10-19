@@ -406,7 +406,7 @@ with 001's identity of the domain administrator.
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T047 [P] [US2] Write `tests/Feature/DomainAdmins/DomainAdminPermissionsTest.php` (AS US2-1,
+- [X] T047 [P] [US2] Write `tests/Feature/DomainAdmins/DomainAdminPermissionsTest.php` (AS US2-1,
   US2-3 to US2-6, FR-037 to FR-041): a new account reads the schema defaults (`loginAs: true`,
   `unlimitedQuota: false`, all 19 compared with `information_schema`); for each of the 19 flags a
   `PATCH {"permissions": {<flag>: <negated>}}` changes exactly that `da_acl` column and the domain
@@ -415,7 +415,7 @@ with 001's identity of the domain administrator.
   administrator patching itself → `403 forbidden`; two administrators with the same tag → the
   second `PATCH` gets `412`; without a `da_acl` row every flag reads `false`, and a change creates
   the row with the sent flags and every other flag `0` (FR-041); audit `permissionsChanged`.
-- [ ] T048 [P] [US2] Write `tests/Feature/Admins/AccountCapabilitiesTest.php` for
+- [X] T048 [P] [US2] Write `tests/Feature/Admins/AccountCapabilitiesTest.php` for
   `getAccountCapabilities` (AS US2-2, FR-077, R12): `domainAdminPermissionDefaults` equals the
   `COLUMN_DEFAULT` values of `da_acl` in `information_schema`; `newAccountDefaults` is
   `{active: true, forcePasswordChange: false, forceSecondFactorSetup: false}`; `bulkLimit` 100,
@@ -425,13 +425,13 @@ with 001's identity of the domain administrator.
 
 ### Implementation for User Story 2
 
-- [ ] T049 [US2] Create `app/Services/Accounts/AccountCapabilitiesService.php` (the
+- [X] T049 [US2] Create `app/Services/Accounts/AccountCapabilitiesService.php` (the
   `information_schema` query of data-model.md, parsing `'1'`/`1`/`'0'`/`0`, and the configured
   limits), `app/Http/Resources/Api/V2/AccountCapabilitiesResource.php` and
   `app/Http/Controllers/Api/V2/AccountCapabilitiesController.php` (`show`, `AdminPolicy::viewAny`).
   Register `GET /capabilities/accounts` with `restv2.auth:authenticated` in `routes/api.php`. This
   makes T048 pass.
-- [ ] T050 [US2] Complete the `permissions` paths of `DomainAdminAccountService::update()` and
+- [X] T050 [US2] Complete the `permissions` paths of `DomainAdminAccountService::update()` and
   `UpdateDomainAdminRequest` where T047 still fails (partial change, missing record, unknown names,
   audit `permissionsChanged`). This makes T047 pass.
 

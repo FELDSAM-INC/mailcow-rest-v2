@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V2\AccountBulkActionController;
+use App\Http\Controllers\Api\V2\AccountCapabilitiesController;
 use App\Http\Controllers\Api\V2\AliasBulkActionController;
 use App\Http\Controllers\Api\V2\AliasController;
 use App\Http\Controllers\Api\V2\AliasCopyController;
@@ -1039,6 +1040,7 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     // for changes). The POST-only bulk path comes before {username}, whose routes never accept POST,
     // so that an account named "bulk-actions" stays readable.
     Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/capabilities/accounts', [AccountCapabilitiesController::class, 'show'])->name('account-capabilities.show');
         Route::get('/domain-admins', [DomainAdminController::class, 'index'])->name('domain-admins.index');
         Route::get('/domain-admins/{username}', [DomainAdminController::class, 'show'])
             ->where('username', '[A-Za-z0-9._-]+')

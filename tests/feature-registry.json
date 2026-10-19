@@ -449,7 +449,6 @@
         "deleteAdmin",
         "suspendAdminSecondFactors",
         "applyAdminBulkAction",
-        "getAccountCapabilities",
         "issueDomainAdminSsoToken",
         "createSessionWithSsoToken",
         "getImpersonation",

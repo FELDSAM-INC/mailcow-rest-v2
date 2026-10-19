@@ -590,8 +590,8 @@ change.
     unreachable (not an error, FR-083).
   - **Storage** (legacy's format, so the legacy dashboard shows it): `LICENSE_STATUS_CACHE` =
     `json_encode({valid: "true"|"false", c, s, m})` with legacy's English strings: valid → `c`, `s`
-    as returned and `m` as cows (`🐄` repeated); invalid → `"No"` three times; unreachable →
-    `"Temporary error"` three times (the `en-gb` values of `mailbox.no` and
+    as returned and `m` as cows (`🐄` repeated); invalid → `"&#10005;"` (a cross mark) three
+    times; unreachable → `"Temporary error"` three times (the `en-gb` values of `mailbox.no` and
     `danger.temp_error`). In addition, `restv2:license:last-verification` stores
     `{result, verifiedAt, customerId, serviceId, supportLevel, cacheHash}` where `cacheHash` is the
     SHA-256 of the `LICENSE_STATUS_CACHE` value written.

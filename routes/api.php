@@ -63,6 +63,10 @@ use App\Http\Controllers\Api\V2\IdentityProviderConnectionTestController;
 use App\Http\Controllers\Api\V2\IdentityProviderController;
 use App\Http\Controllers\Api\V2\ImpersonationController;
 use App\Http\Controllers\Api\V2\InstallationController;
+use App\Http\Controllers\Api\V2\IpCheckSettingController;
+use App\Http\Controllers\Api\V2\LegacyApiCorsController;
+use App\Http\Controllers\Api\V2\LicenseController;
+use App\Http\Controllers\Api\V2\LicenseVerificationController;
 use App\Http\Controllers\Api\V2\LivenessController;
 use App\Http\Controllers\Api\V2\LogEntryController;
 use App\Http\Controllers\Api\V2\LoginPageSettingsController;
@@ -152,6 +156,7 @@ use App\Http\Controllers\Api\V2\RspamdRegexMapController;
 use App\Http\Controllers\Api\V2\RspamdSettingsMapController;
 use App\Http\Controllers\Api\V2\RspamdSettingsRuleController;
 use App\Http\Controllers\Api\V2\RspamdStatisticsController;
+use App\Http\Controllers\Api\V2\RspamdUiPasswordController;
 use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SelfServiceCapabilitiesController;
@@ -1359,6 +1364,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('filterId', 'prefilter|postfilter')
             ->name('settings-global-sieve-filters.show');
         Route::get('/settings/quota-notification', [QuotaNotificationSettingsController::class, 'show'])->name('settings-quota-notification.show');
+        Route::get('/settings/legacy-api-cors', [LegacyApiCorsController::class, 'show'])->name('settings-legacy-api-cors.show');
+        Route::get('/settings/ip-check', [IpCheckSettingController::class, 'show'])->name('settings-ip-check.show');
+        Route::get('/license', [LicenseController::class, 'show'])->name('license.show');
         Route::get('/domains/{domain}/quota-notification-recipients', [QuotaNotificationRecipientsController::class, 'show'])
             ->where('domain', '[^/]+')
             ->name('quota-notification-recipients.show');
@@ -1421,6 +1429,23 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('domain', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'quotaNotificationRecipientsUpdate', 'target' => 'quotaNotificationRecipients'])
             ->name('quota-notification-recipients.update');
+        Route::patch('/settings/legacy-api-cors', [LegacyApiCorsController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'legacyApiCorsUpdate', 'target' => 'legacyApiCors'])
+            ->name('settings-legacy-api-cors.update');
+        Route::patch('/settings/ip-check', [IpCheckSettingController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'ipCheckUpdate', 'target' => 'ipCheck'])
+            ->name('settings-ip-check.update');
+        Route::post('/license/verification', [LicenseVerificationController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'licenseVerification', 'target' => 'license'])
+            ->name('license-verification.store');
+    });
+
+    // Feature 013: the Rspamd web interface password needs a signed-in administrator (research
+    // R16): keys get `session-required`, whatever their owner and access level.
+    Route::middleware(['restv2.auth:session', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::put('/settings/rspamd-ui-password', [RspamdUiPasswordController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'rspamdUiPasswordChange', 'target' => 'rspamdUiPassword'])
+            ->name('settings-rspamd-ui-password.update');
     });
 
     // Feature 013: mass mail (research R17 to R19). Sending and cancelling need a signed-in

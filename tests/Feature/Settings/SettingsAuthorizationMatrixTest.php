@@ -4,6 +4,7 @@ namespace Tests\Feature\Settings;
 
 use App\Auth\Role;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -68,6 +69,8 @@ class SettingsAuthorizationMatrixTest extends TestCase
             'domainAdminReadOnlyKey' => $this->apiKey('reseller', 'readOnly')['secret'],
         ];
         $this->sharedValue('MAIN_LOGO', 'data:image/png;base64,'.base64_encode((string) file_get_contents(__DIR__.'/../../fixtures/logos/valid/logo-300x80.png')));
+        $f->guid(str_repeat('ab', 32));
+        Http::fake(['*' => Http::response(['response' => 'invalid'])]);
         $this->values = [
             '{rule}' => (string) $f->settingsRule('Rule', 'x = 1;', 0),
             '{job}' => $this->cancelledJob(),
@@ -129,6 +132,15 @@ class SettingsAuthorizationMatrixTest extends TestCase
             'getMassMailJob' => ['GET', '/api/v2/mass-mail-jobs/{job}', null, 200, self::ADMIN_ONLY, []],
             'listMassMailJobRecipients' => ['GET', '/api/v2/mass-mail-jobs/{job}/recipients', null, 200, self::ADMIN_ONLY, []],
             'cancelMassMailJob' => ['POST', '/api/v2/mass-mail-jobs/{job}/cancellation', null, 200, self::ADMIN_ONLY, ['session']],
+            // US7: the Rspamd web interface password (sessions only), the legacy API's CORS
+            // settings, the IP check and the license.
+            'setRspamdUiPassword' => ['PUT', '/api/v2/settings/rspamd-ui-password', ['password' => 'Moo pass 1'], 204, self::ADMIN_ONLY, ['session']],
+            'getLegacyApiCorsSettings' => ['GET', '/api/v2/settings/legacy-api-cors', null, 200, self::ADMIN_ONLY, []],
+            'updateLegacyApiCorsSettings' => ['PATCH', '/api/v2/settings/legacy-api-cors', ['allowedMethods' => ['GET']], 200, self::ADMIN_ONLY, []],
+            'getIpCheckSetting' => ['GET', '/api/v2/settings/ip-check', null, 200, self::ADMIN_ONLY, []],
+            'updateIpCheckSetting' => ['PATCH', '/api/v2/settings/ip-check', ['enabled' => true], 200, self::ADMIN_ONLY, []],
+            'getLicenseStatus' => ['GET', '/api/v2/license', null, 200, self::ADMIN_ONLY, []],
+            'verifyLicense' => ['POST', '/api/v2/license/verification', null, 200, self::ADMIN_ONLY, []],
         ];
     }
 
@@ -255,6 +267,19 @@ class SettingsAuthorizationMatrixTest extends TestCase
         DB::table('restv2_mass_mail_recipients')->insert(['job_id' => $id, 'address' => 'alice@example.org', 'outcome' => 'skipped']);
 
         return $id;
+    }
+
+    public function test_the_matrix_covers_every_operation_of_the_feature(): void
+    {
+        /** @var array{features: array<string, array{operations: list<string>}>} $registry */
+        $registry = json_decode((string) file_get_contents(base_path('tests/feature-registry.json')), true);
+        $operations = $registry['features']['013-system-settings']['operations'];
+        $covered = array_keys(self::requests());
+        sort($operations);
+        sort($covered);
+
+        $this->assertCount(45, $operations);
+        $this->assertSame($operations, $covered);
     }
 
     #[DataProvider('cases')]

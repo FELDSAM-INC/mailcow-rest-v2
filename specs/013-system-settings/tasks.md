@@ -653,7 +653,7 @@ check, verify the GUID with the service reachable, unreachable and disabled (spe
 
 ### Tests for User Story 7 (write first, observe failing)
 
-- [ ] T080 [P] [US7] Write `tests/Feature/Rspamd/RspamdUiPasswordTest.php` (FR-006, FR-066, FR-067,
+- [x] T080 [P] [US7] Write `tests/Feature/Rspamd/RspamdUiPasswordTest.php` (FR-006, FR-066, FR-067,
   AS-7.1, AS-7.2): admin session with a 12-character passphrase containing a quote and a space → 204
   after the fake confirmed one `exec('rspamd-mailcow', {cmd: rspamd, task: worker_password, raw:
   <exact passphrase>})`; 5 characters → 422 `tooShort` (`min: 6`); 257 → 422; a newline → 422
@@ -661,7 +661,7 @@ check, verify the GUID with the service reachable, unreachable and disabled (spe
   `container: rspamd-mailcow` and no `serviceMessage`; fake `unknown` → 504 `outcome-unknown`
   `step: rspamdUiPassword`; any key → 403 `session-required` and no call; the passphrase appears in
   no response, no audit row (`passwordChanged: true` only) and not in the captured log output.
-- [ ] T081 [P] [US7] Write `tests/Feature/Settings/LegacyApiCorsTest.php` (FR-068–FR-071, AS-7.3,
+- [x] T081 [P] [US7] Write `tests/Feature/Settings/LegacyApiCorsTest.php` (FR-068–FR-071, AS-7.3,
   AS-7.4): nothing stored → `allowedOrigins: []`, `serverOrigin: https://mail.example.org`, the four
   methods; PATCH origins `https://Portal.example.org`, `*` and methods GET, POST → `CORS_SETTINGS`
   `allowed_origins` = `https://portal.example.org, *`, `allowed_methods` = `GET, POST` (legacy's
@@ -669,17 +669,17 @@ check, verify the GUID with the service reachable, unreachable and disabled (spe
   `PATCH` → 422 for an unknown method; a stored legacy bare host name is returned as stored and a PATCH
   of only the methods → 422 on that origin until it is replaced; duplicates stored once; 101 origins →
   422; audit `legacyApiCorsUpdate`.
-- [ ] T082 [P] [US7] Write `tests/Feature/Settings/IpCheckSettingTest.php` (FR-035, AS-7.8): default
+- [x] T082 [P] [US7] Write `tests/Feature/Settings/IpCheckSettingTest.php` (FR-035, AS-7.8): default
   off; PATCH on → `IP_CHECK = 1`, and 011's public address lookup is no longer refused with
   `ip-check-disabled` (its HTTP client faked); off again → `0`; demo mode → 403; audit
   `ipCheckUpdate`.
-- [ ] T083 [P] [US7] Write `tests/Feature/Settings/LicenseTest.php` (FR-082–FR-085, AS-7.5–7.7):
+- [x] T083 [P] [US7] Write `tests/Feature/Settings/LicenseTest.php` (FR-082–FR-085, AS-7.5–7.7):
   GUID row → `guid` and `guidValid: true`; `INVALID` → `guid: null`, `guidValid: false`, still
   verifiable; never verified → `neverVerified`; `POST /license/verification` with `Http::fake()`
   answering `{"response":"ok","c":"C1","s":"S1","m":"Mooore"}` → valid, `supportLevel` 3, Redis
   `LICENSE_STATUS_CACHE` = legacy's JSON with `"valid":"true"` and three cows, and
   `restv2:license:last-verification` with `verifiedAt`; only the field `guid` was posted and the
-  connect timeout is 10 s; `{"response":"invalid"}` → invalid with `"No"`; connection error or
+  connect timeout is 10 s; `{"response":"invalid"}` → invalid with legacy's `mailbox.no` (`&#10005;`); connection error or
   garbage → 200 `unreachable` with `"Temporary error"`; a `LICENSE_STATUS_CACHE` written by legacy in
   German (`danger.temp_error` of the `de-de` fixture) reads as `unreachable`, a legacy valid entry as
   valid with `verifiedAt: null`; `RESTV2_LICENSE_VERIFICATION=false` → both operations 403
@@ -688,19 +688,19 @@ check, verify the GUID with the service reachable, unreachable and disabled (spe
 
 ### Implementation for User Story 7
 
-- [ ] T084 [P] [US7] Create `app/Services/Rspamd/RspamdUiPasswordService.php` (R16),
+- [x] T084 [P] [US7] Create `app/Services/Rspamd/RspamdUiPasswordService.php` (R16),
   `app/Http/Requests/Api/V2/Settings/SetRspamdUiPasswordRequest.php` (`password` in `$dontFlash`)
   and `app/Http/Controllers/Api/V2/RspamdUiPasswordController.php`. This makes T080 pass.
-- [ ] T085 [P] [US7] Create `app/Services/Settings/LegacyApiCorsService.php` (R21),
+- [x] T085 [P] [US7] Create `app/Services/Settings/LegacyApiCorsService.php` (R21),
   `app/Http/Requests/Api/V2/Settings/UpdateLegacyApiCorsRequest.php` and
   `app/Http/Controllers/Api/V2/LegacyApiCorsController.php`. This makes T081 pass.
-- [ ] T086 [P] [US7] Add `ipCheck()` / `updateIpCheck()` to `app/Services/Settings/BrandingService.php`,
+- [x] T086 [P] [US7] Add `ipCheck()` / `updateIpCheck()` to `app/Services/Settings/BrandingService.php`,
   create `app/Http/Requests/Api/V2/Settings/UpdateIpCheckSettingRequest.php` and
   `app/Http/Controllers/Api/V2/IpCheckSettingController.php`. This makes T082 pass.
-- [ ] T087 [P] [US7] Create `app/Services/Settings/LicenseService.php` (R20) and
+- [x] T087 [P] [US7] Create `app/Services/Settings/LicenseService.php` (R20) and
   `app/Http/Controllers/Api/V2/{LicenseController,LicenseVerificationController}.php`. This makes T083
   pass.
-- [ ] T088 [US7] Register the US7 routes in `routes/api.php` and add the eight operations to
+- [x] T088 [US7] Register the US7 routes in `routes/api.php` and add the eight operations to
   `tests/Feature/Settings/SettingsAuthorizationMatrixTest.php`.
 
 **Checkpoint**: every operation of the contract is implemented.
@@ -939,3 +939,22 @@ duplicate it"), recorded as they were made:
   `performance` group. A read-only key on the session-only operations is refused by 001's key scope
   check first (`insufficient-key-scope`), before the session requirement (`session-required`) that a
   read-write key gets; both are `403`.
+- **T080, T084**: `password` is already in Laravel's exception handler `dontFlash` list (001 adds
+  `privateKey` to it), so the Form Request needs no property of its own. A container service that
+  cannot be reached (dockerapi down or no Rspamd container) is also `502 container-action-failed`,
+  with a detail saying that the password was not changed.
+- **T083, T087**: legacy's license('verify') writes `$lang['mailbox']['no']` for an invalid GUID, which
+  is `&#10005;` (a cross mark) in every shipped language, not `"No"`; the API writes that text, and
+  research R20 was corrected. A `LICENSE_STATUS_CACHE` value that cannot be decoded reads as
+  `neverVerified`; a GUID that is not 64 hexadecimal characters reads like `INVALID`. The cache value
+  and the API's record are written in one MULTI with the audit record (RedisSettingsStore), so the
+  record's hash always matches what it wrote. The form is posted URL-encoded (legacy's cURL array
+  post is multipart; the service reads the field either way).
+- **T085**: the origins' format and the non-empty methods are checked by `LegacyApiCorsService` on the
+  merged settings (FieldViolations), so that a stored bare host name is reported by index too; the Form
+  Request checks types, sizes and the method names. A request that changes neither list writes and
+  audits nothing. Stored methods outside the four (legacy's read adds `OPTION`) are left out when read.
+- **T086**: `BrandingService::ipCheck()` and `updateIpCheck()` were written with US1 (T036); the IP
+  check is a customisation write, refused in demo mode.
+- **T088**: `SettingsAuthorizationMatrixTest` also asserts that it covers exactly the 45 operations
+  the feature registry lists for 013; the license operations run against `Http::fake()`.

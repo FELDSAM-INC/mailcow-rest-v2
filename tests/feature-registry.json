@@ -550,13 +550,5 @@
             ]
         }
     },
-    "pendingOperations": [
-        "getIpCheckSetting",
-        "updateIpCheckSetting",
-        "setRspamdUiPassword",
-        "getLegacyApiCorsSettings",
-        "updateLegacyApiCorsSettings",
-        "getLicenseStatus",
-        "verifyLicense"
-    ]
+    "pendingOperations": []
 }

@@ -757,7 +757,7 @@ target type and identifier (spec US8).
   rules and of 25 recipients with 10,000 rows stay under 1 s at the 95th percentile.
 - [ ] T095 (FR-090) Run `composer contract:lint`, `composer test` (including the contract coverage check for the
   45 operations), `vendor/bin/pint --test` and `vendor/bin/phpstan analyse`; fix every finding.
-- [ ] T096 [P] Update `specs/013-system-settings/quickstart.md` if a command or output changed, and add
+- [x] T096 [P] Update `specs/013-system-settings/quickstart.md` if a command or output changed, and add
   the 013 settings to the operator notes in `deploy/README.md` (if 001 created it) or the
   docker-compose override comments: the new mounts, `DEMO_MODE`, `RESTV2_LICENSE_VERIFICATION`,
   `RESTV2_MASS_MAIL_RATE`, the nginx logo limit.
@@ -976,3 +976,8 @@ duplicate it"), recorded as they were made:
 - **T094**: in the `performance` group (`composer test:performance`) rather than behind
   `RESTV2_PERF=1`, as the other timing tests; it passed once on the shared machine, which is not a
   measurement.
+- **T096**: Part B was walked through and corrected (the dev stack's HTTPS address, the copies under
+  `storage/dev-mailcow/`, the hostile fixture's name, the US4 and US7 checks and the nginx body
+  limits were added). The operator notes are the comments of `deploy/docker-compose.override.yml`
+  (mounts, `DEMO_MODE`, `RESTV2_LICENSE_VERIFICATION`, `RESTV2_MASS_MAIL_RATE`, the ofelia jobs) and of
+  `deploy/nginx/site.restv2.custom` (the 16 MiB logo location); 001 created no `deploy/README.md`.

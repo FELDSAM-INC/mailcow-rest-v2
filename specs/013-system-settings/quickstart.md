@@ -35,14 +35,24 @@ docker compose run --rm app vendor/bin/phpstan analyse
 
 ## Part B: Manual checks against the dev stack
 
-The dev stack mounts fixture copies of mailcow's shared directories from `tests/fixtures/mailcow/`
-(research R26) and uses fakes for dockerapi and LMTP only in tests; manual checks of the Dovecot
-restart, the Rspamd password and mass mail delivery belong to Part C. Sign in as `admin` as in 001's
-quickstart Part B.
+The dev stack has no mailcow, so it reads and writes copies of mailcow's shared files under
+`storage/dev-mailcow/` (git-ignored; `.env.example` points `RESTV2_RSPAMD_MAP_DIR` and
+`RESTV2_GLOBAL_SIEVE_DIR` there) and uses fakes for dockerapi and LMTP only in tests; manual checks
+of the Dovecot restart, the Rspamd password and mass mail delivery belong to Part C. Copy the
+fixtures, reset the dev database and sign in as `admin` as in 001's quickstart Part B:
 
 ```bash
-B=http://localhost:8080/api/v2; J='-H Content-Type:application/json'
-M='-H Content-Type:application/merge-patch+json'; C='-c jar -b jar'
+mkdir -p storage/dev-mailcow/rspamd_custom_maps storage/dev-mailcow/global_sieve
+cp tests/fixtures/mailcow/rspamd-custom/*.map storage/dev-mailcow/rspamd_custom_maps/
+cp tests/fixtures/mailcow/global-sieve/global_sieve_before storage/dev-mailcow/global_sieve/before
+cp tests/fixtures/mailcow/global-sieve/global_sieve_after storage/dev-mailcow/global_sieve/after
+docker compose run --rm app scripts/dev/reset-dev-database.sh
+docker compose up -d app web
+```
+
+```bash
+B=https://127.0.0.1:18443/api/v2; J='-H Content-Type:application/json'
+M='-H Content-Type:application/merge-patch+json'; C='-k -c jar -b jar'
 T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session -d '{"username":"admin","password":"Passw0rd!dev"}' >/dev/null
 
@@ -52,8 +62,8 @@ curl -s $C $B/capabilities/settings | jq '.data | {hostname, demoMode, licenseVe
 # US1: logo upload by content, SVG refusal, public configuration
 curl -s $C -H "X-CSRF-Token: $T" -H 'Content-Type: image/jpeg' --data-binary @tests/fixtures/logos/valid/logo-300x80.png \
   -X PUT $B/settings/logos/light | jq '.data | {mediaType, width, height, sizeBytes}'      # image/png, 300, 80
-curl -s $C -H "X-CSRF-Token: $T" -H 'Content-Type: image/svg+xml' --data-binary @tests/fixtures/logos/hostile/onload.svg \
-  -X PUT $B/settings/logos/dark | jq '.errors.body[0] | {code, params}'                    # unsafeSvgContent
+curl -s $C -H "X-CSRF-Token: $T" -H 'Content-Type: image/svg+xml' --data-binary @tests/fixtures/logos/hostile/eventHandlerAttribute--onload.svg \
+  -X PUT $B/settings/logos/dark | jq '.errors.body[0] | {code, params}'                    # unsafeSvgContent, eventHandlerAttribute
 curl -s $B/public-config | jq '.data | {logos, brandColors}'
 
 # US1: plain-text product name stored escaped, colours with contrast check
@@ -75,7 +85,7 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X POST "$B/settings/rspamd-rules?validateOn
   -d '{"description":"broken","content":"rcpt = \"x\"; apply {"}' | jq '.errors.content[0]'  # unbalancedStructure, unclosedBrace
 curl -s $C $J -H "X-CSRF-Token: $T" -X PUT $B/settings/rspamd-regex-maps/global_smtp_from_blacklist.map \
   -d '{"content":"# comment\n/.*@spam\\.example$/i\n"}' | jq '.data | {id, available}'
-cat tests/fixtures/mailcow/rspamd-custom/global_smtp_from_blacklist.map                    # trimmed content + newline
+cat storage/dev-mailcow/rspamd_custom_maps/global_smtp_from_blacklist.map                  # trimmed content + newline
 curl -s $C $J -H "X-CSRF-Token: $T" -X PUT $B/settings/rspamd-regex-maps/global_smtp_from_blacklist.map \
   -d '{"content":"/[unclosed/i"}' | jq '.errors.content[0].params'                        # {"line":1,"reason":"doesNotCompile"}
 
@@ -85,12 +95,29 @@ curl -s $C $M -H "X-CSRF-Token: $T" -X PATCH $B/domains/example.org/quota-notifi
 curl -s $C $M -H "X-CSRF-Token: $T" -X PATCH $B/settings/legacy-api-cors \
   -d '{"allowedOrigins":["https://portal.example.org/app/"]}' | jq '.errors["allowedOrigins.0"][0].params'   # {"format":"origin"}
 
+curl -s $C $M -H "X-CSRF-Token: $T" -X PATCH $B/settings/ip-check -d '{"enabled":true}' | jq .data.enabled  # true
+curl -s $C $B/license | jq .data.lastVerification.result                                 # "neverVerified" (nothing sent)
+
+# US4: a global Sieve script is checked with legacy's parser
+curl -s $C $J -H "X-CSRF-Token: $T" -X PUT "$B/settings/global-sieve-filters/prefilter?validateOnly=true" \
+  -d '{"script":"if true { keep }"}' | jq '.errors.script[0].code'                        # "sieveSyntax"
+
 # US6: preview with search
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST "$B/mass-mail-jobs/recipient-preview?q=alice" -d '{"selection":{}}' | jq .meta
+
+# nginx: a logo body above the general 5 MiB limit reaches the API, one above 16 MiB does not
+head -c 11534336 /dev/zero > /tmp/11m.bin; head -c 17825792 /dev/zero > /tmp/17m.bin
+curl -s $C -H "X-CSRF-Token: $T" -H 'Content-Type: image/png' --data-binary @/tmp/11m.bin -X PUT $B/settings/logos/light -o /dev/null -w '%{http_code}\n'  # 422 (from the API)
+curl -s $C -H "X-CSRF-Token: $T" -H 'Content-Type: image/png' --data-binary @/tmp/17m.bin -X PUT $B/settings/logos/light -o /dev/null -w '%{http_code}\n'  # 413 (from nginx)
 ```
 
 **Expected**: each command prints the value in its comment; `GET /audit-events?targetType=rspamdRegexMap`
 lists the map change with its sizes.
+
+**Walked through** on 2026-10-19 on the dev stack (compose project without host ports, the requests
+sent from a `curl` container in the compose network to `https://web/api/v2`): every command printed
+the value in its comment. The capabilities report the dev host name `localhost`; the 11 MiB body is
+answered by the API (`unsupportedImageType`, zeros are no image) and the 17 MiB body by nginx.
 
 ## Part C: Validation on a mailcow host
 

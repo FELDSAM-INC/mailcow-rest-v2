@@ -981,3 +981,11 @@ duplicate it"), recorded as they were made:
   limits were added). The operator notes are the comments of `deploy/docker-compose.override.yml`
   (mounts, `DEMO_MODE`, `RESTV2_LICENSE_VERIFICATION`, `RESTV2_MASS_MAIL_RATE`, the ofelia jobs) and of
   `deploy/nginx/site.restv2.custom` (the 16 MiB logo location); 001 created no `deploy/README.md`.
+- **Runner retry wait (found by the first full run)**: the runner computed the wait for a retry in
+  milliseconds (Carbon's `getTimestampMs()` rounds) and stored `next_attempt_at` without its
+  fraction, so depending on the start time's microseconds the wait could end a few microseconds
+  before the retry was due; a wait then rounded to zero, and the runner claimed nothing again without
+  the clock moving on, a busy loop under the test's fake clock (and up to a millisecond of busy
+  waiting on a real one). The runner now stores `next_attempt_at` with microseconds, computes waits
+  and the rate gap in microseconds and always waits at least one millisecond;
+  `MassMailRunnerTest::test_retries_become_due_whatever_the_start_time` pins four start fractions.

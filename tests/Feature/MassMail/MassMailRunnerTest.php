@@ -4,10 +4,14 @@ namespace Tests\Feature\MassMail;
 
 use App\Clients\Lmtp\LmtpResult;
 use App\Services\MassMail\MassMailRunner;
+use App\Support\Clock\Clock;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Support\Dns\FakeClock;
 use Tests\Support\MassMail\MassMailTestHelpers;
 use Tests\TestCase;
 
@@ -129,6 +133,46 @@ class MassMailRunnerTest extends TestCase
         $row = DB::table('restv2_mass_mail_recipients')->where('job_id', $job)->first();
         $this->assertNotNull($row);
         $this->assertSame(['failed', 'connectionFailed', 'connection refused'], [$row->outcome, $row->failure_code, $row->failure_reason]);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function startTimes(): array
+    {
+        return [
+            'whole second' => ['2026-10-19 15:35:31.000000'],
+            'below half a millisecond' => ['2026-10-19 15:35:31.431949'],
+            'above half a millisecond' => ['2026-10-19 15:35:31.531949'],
+            'just before the second' => ['2026-10-19 15:35:31.999949'],
+        ];
+    }
+
+    /**
+     * A retry becomes due at the exact microsecond, whatever fraction of a second the run started
+     * at; a wait rounded to milliseconds once ended just before it and the runner then claimed
+     * nothing again without the clock moving on.
+     */
+    #[DataProvider('startTimes')]
+    public function test_retries_become_due_whatever_the_start_time(string $start): void
+    {
+        $begin = CarbonImmutable::parse($start, 'UTC');
+        $clock = new FakeClock($begin);
+        $this->app->instance(Clock::class, $clock);
+        $this->sleeper()->advancing($clock);
+        $job = $this->runningJob(['a@example.org']);
+        $this->lmtp()->replyTo('a@example.org', LmtpResult::connectionFailure('connection refused'));
+        /** @var \ArrayObject<int, float> $attempts */
+        $attempts = new \ArrayObject;
+        $this->lmtp()->onDeliver(function () use ($attempts, $clock, $begin): void {
+            $attempts->append(($clock->now()->getPreciseTimestamp() - $begin->getPreciseTimestamp()) / 1e6);
+        });
+
+        $this->runner()->run(600);
+
+        $this->assertSame(['a@example.org' => 'failed'], $this->outcomes($job));
+        $this->assertSame([0.0, 30.0, 90.0, 210.0], $attempts->getArrayCopy(), 'each retry exactly when due');
+        $this->assertLessThan(10, count($this->sleeper()->slept), 'one wait per retry');
     }
 
     public function test_an_interrupted_delivery_is_failed_and_never_delivered_again(): void

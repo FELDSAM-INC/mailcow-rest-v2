@@ -97,7 +97,7 @@ class MassMailRunner
 
         while ($this->clock->now()->lessThan($deadline)) {
             if ($lastStart !== null) {
-                $gap = $interval - ($this->clock->now()->getTimestampMs() - $lastStart) / 1000;
+                $gap = $interval - self::secondsBetween($lastStart, $this->clock->now());
 
                 if ($gap > 0) {
                     $this->sleeper->sleepSeconds($gap);
@@ -118,7 +118,7 @@ class MassMailRunner
                 continue;
             }
 
-            $lastStart = $this->clock->now()->getTimestampMs();
+            $lastStart = $this->clock->now();
             $message = $this->messages->build($job->id, $recipient->id, $job->sender, $recipient->address, $job->subject, $job->text_body, $job->html_body, $this->clock->now());
             $this->record($recipient, $this->lmtp->deliver($job->sender, $recipient->address, $message));
         }
@@ -180,16 +180,17 @@ class MassMailRunner
             return false;
         }
 
+        // Microsecond precision: a wait rounded to milliseconds could end just before the retry is
+        // due, and a wait of zero would then claim nothing again without the time moving on. At
+        // least one millisecond is waited, so that every round makes progress.
         $due = CarbonImmutable::parse((string) $next, 'UTC');
-        $wait = ($due->getTimestampMs() - $this->clock->now()->getTimestampMs()) / 1000;
+        $wait = max(0.001, self::secondsBetween($this->clock->now(), $due));
 
-        if ($this->clock->now()->addMilliseconds((int) ceil(max(0, $wait) * 1000))->greaterThan($deadline)) {
+        if ($this->clock->now()->addMicroseconds((int) ceil($wait * 1_000_000))->greaterThan($deadline)) {
             return false;
         }
 
-        if ($wait > 0) {
-            $this->sleeper->sleepSeconds($wait);
-        }
+        $this->sleeper->sleepSeconds($wait);
 
         return true;
     }
@@ -208,7 +209,7 @@ class MassMailRunner
                 $recipient->attempts > SettingsLimits::MASS_MAIL_MAX_RETRIES => ['outcome' => MassMailRecipient::FAILED, 'failure_code' => self::temporaryCode($result), 'failure_reason' => $reason],
                 default => [
                     'outcome' => MassMailRecipient::PENDING,
-                    'next_attempt_at' => $this->clock->now()->utc()->addSeconds(SettingsLimits::MASS_MAIL_RETRY_DELAYS[$recipient->attempts - 1]),
+                    'next_attempt_at' => $this->clock->now()->utc()->addSeconds(SettingsLimits::MASS_MAIL_RETRY_DELAYS[$recipient->attempts - 1])->format('Y-m-d H:i:s.u'),
                 ],
             };
 
@@ -248,6 +249,11 @@ class MassMailRunner
                 app()->instance('request', $previous);
             }
         }
+    }
+
+    private static function secondsBetween(CarbonImmutable $from, CarbonImmutable $to): float
+    {
+        return ($to->getPreciseTimestamp() - $from->getPreciseTimestamp()) / 1_000_000;
     }
 
     /** The stable code of a permanent refusal (gap G16). */

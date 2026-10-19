@@ -214,7 +214,18 @@ this document next to the constitution.
   values), `App\Support\Http\NoStore` (an exact `Cache-Control: no-store`, which Symfony would
   otherwise extend with `private`), `App\Clients\Dns\PublicAddressDetector` with
   `App\Services\DnsDiagnostics\ServerFactsCache`, and `App\Services\Dkim\DkimNameResolver`
-  (DKIM names, an unused legacy key by its exact spelling for administrators).
+  (DKIM names, an unused legacy key by its exact spelling for administrators). 013 created
+  `App\Services\Settings\RedisSettingsStore` with `SettingsWrite` (settings in mailcow's Redis
+  written through 006's `transactionWatching()`: the `If-Match` check, a plan on the current
+  values, the audit record, and the old values restored when the commit fails),
+  `App\Support\Files\SharedFileWriter` (a shared mailcow file rewritten in place under `flock`, with
+  its version tag), `App\Support\Images\ImageInspector` with `SvgSafetyInspector`,
+  `App\Support\Color\WcagContrast`, the clients `App\Clients\Lmtp\LmtpClient` and
+  `App\Clients\Rspamd\SettingsMapClient`, the rules `SingleLineText`, `AppLinkUrl`, `HexColor` and
+  `LegacyOrigin`, and the test helpers `FakeLmtpClient`, `FakeSettingsMapClient`,
+  `SharedFilesSandbox` and `SecretScan` (every response of the suite is checked for the test
+  passphrases of the Rspamd password); it extended 005's `EmailAddress` rule
+  (`rejectControlCharacters`) and 003's password policy resource with its change.
 
 ## Audit record details
 

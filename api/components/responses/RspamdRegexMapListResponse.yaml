@@ -1,4 +1,6 @@
-description: The editable global regex maps. Each entry carries its version tag.
+description: |
+  The editable global regex maps as summaries, without their content (gap G17). Each entry carries
+  its version tag.
 content:
   application/json:
     schema:
@@ -8,6 +10,6 @@ content:
         data:
           type: array
           items:
-            $ref: '../schemas/RspamdRegexMap.yaml'
+            $ref: '../schemas/RspamdRegexMapSummary.yaml'
         meta:
           $ref: '../schemas/ListMeta.yaml'

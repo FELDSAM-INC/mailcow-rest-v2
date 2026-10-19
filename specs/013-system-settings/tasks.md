@@ -401,17 +401,17 @@ with valid and invalid lines and check the shared files (spec US3).
 
 ### Tests for User Story 3 (write first, observe failing)
 
-- [ ] T045 [P] [US3] Write `tests/Unit/Support/UclStructureCheckerTest.php` (R11): the three upstream
+- [x] T045 [P] [US3] Write `tests/Unit/Support/UclStructureCheckerTest.php` (R11): the three upstream
   rspamd presets pass; `apply "default" {` without closing → `unclosedBrace` with the opening line;
   `}` without opener → `unexpectedBrace`; `[` `}` nesting → `unexpectedBrace`; an unterminated
   `"…` → `unclosedString`; braces inside strings (`"/^((?!.*@domain\.tld).)*$/"`), `#` comments,
   `/* */` comments and heredocs are ignored; escaped quotes inside strings handled.
-- [ ] T046 [P] [US3] Write `tests/Unit/Support/RegexMapValidatorTest.php` (R13): every shipped map of
+- [x] T046 [P] [US3] Write `tests/Unit/Support/RegexMapValidatorTest.php` (R13): every shipped map of
   `tests/fixtures/mailcow/rspamd-custom/` passes; `# comment`, `/.*@spam\.example$/i` and an empty
   line pass; `/[unclosed/i` → line 1 `doesNotCompile`; `spam.example` → `notSlashDelimited`;
   `/x/im` → `tooManyFlags`; `/a/b/` → `innerSlash`; a whitespace-only line fails; CRLF input is
   accepted; the reported line is 1-based and the first failing one.
-- [ ] T047 [P] [US3] Write `tests/Feature/Rspamd/RspamdSettingsRuleTest.php` (FR-050–FR-055, FR-093, SC-006,
+- [x] T047 [P] [US3] Write `tests/Feature/Rspamd/RspamdSettingsRuleTest.php` (FR-050–FR-055, FR-093, SC-006,
   AS-3.2, AS-3.3, AS-3.8): create from preset 4 adapted to `example.org` as active → 201 with
   `Location`, row in `settingsmap` with trimmed content and `active = 1`; created without `active` →
   inactive; unbalanced content → 422 `unbalancedStructure` and no row; `validateOnly=true` → 200
@@ -420,7 +420,7 @@ with valid and invalid lines and check the shared files (spec US3).
   description → 422 (legacy keeps the old value); PATCH `validateOnly`; DELETE → 204 and row gone;
   unknown id → 404; outdated tag → 412; the effective settings map (fake) is unaffected by refused
   writes; audit creation, update and deletion with content sizes only.
-- [ ] T048 [P] [US3] Write `tests/Feature/Rspamd/RspamdRegexMapTest.php` (FR-056–FR-059, FR-093, SC-006,
+- [x] T048 [P] [US3] Write `tests/Feature/Rspamd/RspamdRegexMapTest.php` (FR-056–FR-059, FR-093, SC-006,
   AS-3.4–3.6):
   list returns the 13 configured maps in configured order with `available`, content and `etag`
   (sort by name and id, `q` on name); a map removed from the configuration (local override) is
@@ -430,34 +430,34 @@ with valid and invalid lines and check the shared files (spec US3).
   missing file → 409 `regex-map-unavailable`, nothing created; `validateOnly` → no write; 1 MiB + 1
   byte → 422; If-Match mismatch (file changed by "legacy" in between) → 412; audit with old and new
   size.
-- [ ] T049 [P] [US3] Write `tests/Feature/Rspamd/RspamdSettingsMapTest.php` (FR-060): admin → 200
+- [x] T049 [P] [US3] Write `tests/Feature/Rspamd/RspamdSettingsMapTest.php` (FR-060): admin → 200
   with the fake's text unchanged; fake throwing or non-200 → 503 `temporary-failure`; and
   `tests/Unit/Clients/HttpSettingsMapClientTest.php` with `Http::fake()` (URL, no
   `If-Modified-Since`, timeouts, status mapping).
-- [ ] T050 [P] [US3] Write `tests/Feature/Rspamd/PresetTest.php` (FR-061, AS-3.1, AS-3.7): admin lists
+- [x] T050 [P] [US3] Write `tests/Feature/Rspamd/PresetTest.php` (FR-061, AS-3.1, AS-3.7): admin lists
   `rspamd` (3 presets, `translationKey` `admin.rsettings_preset_N`, English headline from the
   `lang.en-gb.json` fixture, content) and `sieve` (8, `mailbox.sieve_preset_N`), sorted by id with
   paging and `q`; a domain administrator gets `sieve` and 403 for `rspamd`; mailbox user → 403;
   unknown kind → 404; a preset with a literal headline → `translationKey: null`.
-- [ ] T051 [US3] Add the US3 operations to `tests/Feature/Settings/SettingsAuthorizationMatrixTest.php`.
+- [x] T051 [US3] Add the US3 operations to `tests/Feature/Settings/SettingsAuthorizationMatrixTest.php`.
 
 ### Implementation for User Story 3
 
-- [ ] T052 [P] [US3] Create `app/Support/Rspamd/{UclStructureChecker,StructureViolation}.php`. This
+- [x] T052 [P] [US3] Create `app/Support/Rspamd/{UclStructureChecker,StructureViolation}.php`. This
   makes T045 pass.
-- [ ] T053 [P] [US3] Create `app/Support/Rspamd/{RegexMapValidator,RegexLineViolation}.php`. This makes
+- [x] T053 [P] [US3] Create `app/Support/Rspamd/{RegexMapValidator,RegexLineViolation}.php`. This makes
   T046 pass.
-- [ ] T054 [P] [US3] Create `app/Models/Mailcow/RspamdSettingsRule.php` (`$table = 'settingsmap'`,
+- [x] T054 [P] [US3] Create `app/Models/Mailcow/RspamdSettingsRule.php` (`$table = 'settingsmap'`,
   casts per data-model.md) and `app/Services/Rspamd/RspamdSettingsRuleService.php` (create, update,
   delete, list with `ListQuery`, validate-only path, tag `id|desc|sha256(content)|active`, audit).
-- [ ] T055 [P] [US3] Create `app/Services/Rspamd/RspamdRegexMapService.php` (configured maps from
+- [x] T055 [P] [US3] Create `app/Services/Rspamd/RspamdRegexMapService.php` (configured maps from
   `MailcowConfig`, files under `restv2.rspamd_map_dir`, `SharedFileWriter` with `touchAfter`,
   validate-only path, audit).
-- [ ] T056 [P] [US3] Create `app/Clients/Rspamd/{SettingsMapClient,HttpSettingsMapClient}.php` (R12),
+- [x] T056 [P] [US3] Create `app/Clients/Rspamd/{SettingsMapClient,HttpSettingsMapClient}.php` (R12),
   bound in `AppServiceProvider`.
-- [ ] T057 [P] [US3] Create `app/Services/Presets/PresetCatalog.php` (R22, `symfony/yaml`, natural
+- [x] T057 [P] [US3] Create `app/Services/Presets/PresetCatalog.php` (R22, `symfony/yaml`, natural
   sort, English headlines) and `app/Policies/PresetPolicy.php`.
-- [ ] T058 [US3] Create the Form Requests `StoreRspamdSettingsRuleRequest`,
+- [x] T058 [US3] Create the Form Requests `StoreRspamdSettingsRuleRequest`,
   `UpdateRspamdSettingsRuleRequest`, `ReplaceRspamdRegexMapRequest` in
   `app/Http/Requests/Api/V2/Settings/` (each sets the request attribute `restv2.auditSkip` when
   `validateOnly=true`, R24) and the controllers
@@ -907,3 +907,11 @@ duplicate it"), recorded as they were made:
   `App\Services\Passwords\PasswordPolicyReader` and `EffectivePasswordPolicy` (which carries the
   shared tag). The change is the new `App\Services\Passwords\PasswordPolicyService::update()` next
   to them, which reuses the reader for the answer and `EffectivePasswordPolicy::etag()` for the tag.
+- **T048, T055 (gap G17)**: `listRspamdRegexMaps` returns `RspamdRegexMapSummary` entries (ID, name,
+  availability, size in bytes, version tag) without the content, which `getRspamdRegexMap` returns;
+  the contract and FR-056 were changed accordingly (the operation was not released yet). The tag is
+  an HMAC over the SHA-256 of the file content (`ETag::of`), not a plain SHA-256, following the
+  conventions' rule for version tags.
+- **T052 to T058**: the structure and line checks are also rule objects (`App\Rules\UclStructure`,
+  `App\Rules\RegexMapLines`) used by the Form Requests; the settings map endpoint's failure is
+  feature 006's `ProblemException::temporaryFailure()` with `dependency: settingsMap`.

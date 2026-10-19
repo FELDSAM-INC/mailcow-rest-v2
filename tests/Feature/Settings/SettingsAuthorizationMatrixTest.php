@@ -39,6 +39,8 @@ class SettingsAuthorizationMatrixTest extends TestCase
     /** Who may use an operation: `ok` or `forbidden` per role. */
     private const ADMIN_ONLY = ['admin' => 'ok', 'domainAdmin' => 'forbidden', 'mailbox' => 'forbidden'];
 
+    private const ADMIN_AND_DOMAIN_ADMIN = ['admin' => 'ok', 'domainAdmin' => 'ok', 'mailbox' => 'forbidden'];
+
     /** Request bodies that are raw files rather than JSON. */
     private const PNG = '@png';
 
@@ -65,7 +67,9 @@ class SettingsAuthorizationMatrixTest extends TestCase
             'domainAdminReadOnlyKey' => $this->apiKey('reseller', 'readOnly')['secret'],
         ];
         $this->sharedValue('MAIN_LOGO', 'data:image/png;base64,'.base64_encode((string) file_get_contents(__DIR__.'/../../fixtures/logos/valid/logo-300x80.png')));
-        $this->values = [];
+        $this->values = [
+            '{rule}' => (string) $f->settingsRule('Rule', 'x = 1;', 0),
+        ];
     }
 
     /**
@@ -96,6 +100,17 @@ class SettingsAuthorizationMatrixTest extends TestCase
             'updatePasswordPolicy' => ['PATCH', '/api/v2/password-policy', ['minLength' => 8], 200, self::ADMIN_ONLY, []],
             'getPasswordResetNotification' => ['GET', '/api/v2/settings/password-reset-notification', null, 200, self::ADMIN_ONLY, []],
             'updatePasswordResetNotification' => ['PATCH', '/api/v2/settings/password-reset-notification', ['subject' => 'Reset'], 200, self::ADMIN_ONLY, []],
+            // US3: Rspamd settings rules, regex maps, the effective settings map and the presets.
+            'listRspamdSettingsRules' => ['GET', '/api/v2/settings/rspamd-rules', null, 200, self::ADMIN_ONLY, []],
+            'createRspamdSettingsRule' => ['POST', '/api/v2/settings/rspamd-rules', ['description' => 'New', 'content' => 'priority = 1;'], 201, self::ADMIN_ONLY, []],
+            'getRspamdSettingsRule' => ['GET', '/api/v2/settings/rspamd-rules/{rule}', null, 200, self::ADMIN_ONLY, []],
+            'updateRspamdSettingsRule' => ['PATCH', '/api/v2/settings/rspamd-rules/{rule}', ['active' => true], 200, self::ADMIN_ONLY, []],
+            'deleteRspamdSettingsRule' => ['DELETE', '/api/v2/settings/rspamd-rules/{rule}', null, 204, self::ADMIN_ONLY, []],
+            'listRspamdRegexMaps' => ['GET', '/api/v2/settings/rspamd-regex-maps', null, 200, self::ADMIN_ONLY, []],
+            'getRspamdRegexMap' => ['GET', '/api/v2/settings/rspamd-regex-maps/bad_words.map', null, 200, self::ADMIN_ONLY, []],
+            'replaceRspamdRegexMap' => ['PUT', '/api/v2/settings/rspamd-regex-maps/bad_words.map', ['content' => '/x/i'], 200, self::ADMIN_ONLY, []],
+            'getEffectiveRspamdSettingsMap' => ['GET', '/api/v2/settings/rspamd-settings-map', null, 200, self::ADMIN_ONLY, []],
+            'listPresets' => ['GET', '/api/v2/presets/sieve', null, 200, self::ADMIN_AND_DOMAIN_ADMIN, []],
         ];
     }
 

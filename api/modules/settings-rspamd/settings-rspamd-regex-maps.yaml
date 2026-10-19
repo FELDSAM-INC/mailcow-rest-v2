@@ -4,8 +4,10 @@ get:
   summary: List the global regex maps
   description: |
     Lists the global regex maps that the operator's configuration makes editable (13 by default,
-    from "Header-From: Denylist" to "Monitoring Hosts"), each with its content and version tag. A
-    map whose file is missing on this server is listed with `available: false`. `q` searches the name.
+    from "Header-From: Denylist" to "Monitoring Hosts"), in the configured order unless `sort` is
+    given, each with its size and version tag but without its content, which the single read
+    returns. A map whose file is missing on this server is listed with `available: false`. `q`
+    searches the name.
     Administrators only, by session or by an administrator's key, read-only keys included.
   security:
     - sessionCookie: []

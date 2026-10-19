@@ -110,6 +110,7 @@ use App\Http\Controllers\Api\V2\PasswordResetController;
 use App\Http\Controllers\Api\V2\PasswordResetNotificationController;
 use App\Http\Controllers\Api\V2\PendingSignInController;
 use App\Http\Controllers\Api\V2\PreferencesController;
+use App\Http\Controllers\Api\V2\PresetController;
 use App\Http\Controllers\Api\V2\ProblemTypeController;
 use App\Http\Controllers\Api\V2\PublicAddressesController;
 use App\Http\Controllers\Api\V2\PublicConfigController;
@@ -140,6 +141,9 @@ use App\Http\Controllers\Api\V2\RoutingBulkActionController;
 use App\Http\Controllers\Api\V2\RoutingCapabilitiesController;
 use App\Http\Controllers\Api\V2\RoutingConnectionTestController;
 use App\Http\Controllers\Api\V2\RspamdHistoryController;
+use App\Http\Controllers\Api\V2\RspamdRegexMapController;
+use App\Http\Controllers\Api\V2\RspamdSettingsMapController;
+use App\Http\Controllers\Api\V2\RspamdSettingsRuleController;
 use App\Http\Controllers\Api\V2\RspamdStatisticsController;
 use App\Http\Controllers\Api\V2\SecondFactorChallengeController;
 use App\Http\Controllers\Api\V2\SecondFactorController;
@@ -1334,6 +1338,18 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/settings/app-links', [AppLinkSettingsController::class, 'show'])->name('settings-app-links.show');
         Route::get('/settings/brand-colors', [BrandColorsController::class, 'show'])->name('settings-brand-colors.show');
         Route::get('/settings/password-reset-notification', [PasswordResetNotificationController::class, 'show'])->name('settings-password-reset-notification.show');
+        Route::get('/settings/rspamd-rules', [RspamdSettingsRuleController::class, 'index'])->name('settings-rspamd-rules.index');
+        Route::get('/settings/rspamd-rules/{ruleId}', [RspamdSettingsRuleController::class, 'show'])
+            ->where('ruleId', '[1-9][0-9]{0,9}')
+            ->name('settings-rspamd-rules.show');
+        Route::get('/settings/rspamd-regex-maps', [RspamdRegexMapController::class, 'index'])->name('settings-rspamd-regex-maps.index');
+        Route::get('/settings/rspamd-regex-maps/{mapId}', [RspamdRegexMapController::class, 'show'])
+            ->where('mapId', '[A-Za-z0-9_.-]{1,128}')
+            ->name('settings-rspamd-regex-maps.show');
+        Route::get('/settings/rspamd-settings-map', [RspamdSettingsMapController::class, 'show'])->name('settings-rspamd-settings-map.show');
+        Route::get('/presets/{presetKind}', [PresetController::class, 'index'])
+            ->where('presetKind', 'rspamd|sieve')
+            ->name('presets.index');
     });
 
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
@@ -1364,6 +1380,21 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::patch('/settings/password-reset-notification', [PasswordResetNotificationController::class, 'update'])
             ->defaults('restv2.audit', ['event' => 'passwordResetNotificationUpdate', 'target' => 'passwordResetNotification'])
             ->name('settings-password-reset-notification.update');
+        Route::post('/settings/rspamd-rules', [RspamdSettingsRuleController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'rspamdSettingsRuleCreation', 'target' => 'rspamdSettingsRule', 'skipWhenQueryTrue' => 'validateOnly'])
+            ->name('settings-rspamd-rules.store');
+        Route::patch('/settings/rspamd-rules/{ruleId}', [RspamdSettingsRuleController::class, 'update'])
+            ->where('ruleId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'rspamdSettingsRuleUpdate', 'target' => 'rspamdSettingsRule', 'skipWhenQueryTrue' => 'validateOnly'])
+            ->name('settings-rspamd-rules.update');
+        Route::delete('/settings/rspamd-rules/{ruleId}', [RspamdSettingsRuleController::class, 'destroy'])
+            ->where('ruleId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'rspamdSettingsRuleDeletion', 'target' => 'rspamdSettingsRule'])
+            ->name('settings-rspamd-rules.destroy');
+        Route::put('/settings/rspamd-regex-maps/{mapId}', [RspamdRegexMapController::class, 'update'])
+            ->where('mapId', '[A-Za-z0-9_.-]{1,128}')
+            ->defaults('restv2.audit', ['event' => 'rspamdRegexMapReplacement', 'target' => 'rspamdRegexMap', 'skipWhenQueryTrue' => 'validateOnly'])
+            ->name('settings-rspamd-regex-maps.update');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

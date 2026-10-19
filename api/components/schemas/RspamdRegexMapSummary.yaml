@@ -1,0 +1,25 @@
+type: object
+description: |
+  A global regex map as the list returns it: everything but its content, which
+  `GET /settings/rspamd-regex-maps/{mapId}` returns (docs/api-gaps.md G17: lists stay light, also on
+  slow connections). The version tag equals the one of the single read.
+required: [id, name, available, sizeBytes, etag]
+properties:
+  id:
+    type: string
+    description: The map's file name, its stable identifier.
+    examples: [global_smtp_from_blacklist.map]
+  name:
+    type: string
+    description: English name from the operator's configuration.
+    examples: [Envelope Sender Denylist]
+  available:
+    type: boolean
+    description: '`false` when the map file does not exist on this server; replacing it is then refused.'
+  sizeBytes:
+    type: integer
+    minimum: 0
+    description: Size of the map's content in bytes, 0 while the map is unavailable.
+  etag:
+    type: string
+    description: Version tag of the stored content.

@@ -36,7 +36,9 @@ use App\Clients\Pushover\HttpPushoverClient;
 use App\Clients\Pushover\PushoverClient;
 use App\Clients\Releases\GitHubReleaseSource;
 use App\Clients\Releases\ReleaseSource;
+use App\Clients\Rspamd\HttpSettingsMapClient;
 use App\Clients\Rspamd\RspamdController;
+use App\Clients\Rspamd\SettingsMapClient;
 use App\Clients\Rspamd\UnixSocketRspamdController;
 use App\Clients\Smtp\SmtpProbe;
 use App\Clients\Smtp\StreamSmtpProbe;
@@ -120,6 +122,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MemcachedFlusher::class, SocketMemcachedFlusher::class);
         $this->app->bind(IspconfigDnsClient::class, JsonIspconfigDnsClient::class);
         $this->app->bind(RspamdController::class, UnixSocketRspamdController::class);
+        // Feature 013: mailcow's generated Rspamd settings map (faked in tests).
+        $this->app->bind(SettingsMapClient::class, HttpSettingsMapClient::class);
         // Feature 006: releases to Postfix's quarantine submission (faked in tests).
         $this->app->bind(QuarantineReleaseMailer::class, SmtpQuarantineReleaseMailer::class);
         $this->app->bind(ReleaseSource::class, GitHubReleaseSource::class);

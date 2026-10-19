@@ -168,6 +168,30 @@ enum AuditEventType: string
     case RateLimitRemoval = 'rateLimitRemoval';
     case RateLimitBucketReset = 'rateLimitBucketReset';
 
+    // Feature 013: system settings.
+    case LogoReplacement = 'logoReplacement';
+    case LogoDeletion = 'logoDeletion';
+    case UiTextsUpdate = 'uiTextsUpdate';
+    case LoginPageUpdate = 'loginPageUpdate';
+    case AppLinksUpdate = 'appLinksUpdate';
+    case BrandColorsUpdate = 'brandColorsUpdate';
+    case IpCheckUpdate = 'ipCheckUpdate';
+    case PasswordPolicyUpdate = 'passwordPolicyUpdate';
+    case PasswordResetNotificationUpdate = 'passwordResetNotificationUpdate';
+    case QuotaNotificationUpdate = 'quotaNotificationUpdate';
+    case QuotaNotificationRecipientsUpdate = 'quotaNotificationRecipientsUpdate';
+    case RspamdSettingsRuleCreation = 'rspamdSettingsRuleCreation';
+    case RspamdSettingsRuleUpdate = 'rspamdSettingsRuleUpdate';
+    case RspamdSettingsRuleDeletion = 'rspamdSettingsRuleDeletion';
+    case RspamdRegexMapReplacement = 'rspamdRegexMapReplacement';
+    case GlobalSieveFilterReplacement = 'globalSieveFilterReplacement';
+    case RspamdUiPasswordChange = 'rspamdUiPasswordChange';
+    case LegacyApiCorsUpdate = 'legacyApiCorsUpdate';
+    case MassMailJobCreation = 'massMailJobCreation';
+    case MassMailJobCompletion = 'massMailJobCompletion';
+    case MassMailJobCancellation = 'massMailJobCancellation';
+    case LicenseVerification = 'licenseVerification';
+
     /**
      * Keys of refusal records written by App\Services\Audit\RefusalAuditor (docs/conventions.md
      * "Refusal auditing"): the problem type, the status and, for `422`, the field errors (rule codes
@@ -348,6 +372,20 @@ enum AuditEventType: string
             self::SpamPolicyEntryCreation, self::SpamPolicyEntryRemoval => ['entryId', 'list', 'pattern', ...self::SPAM_FILTER_REFUSAL],
             self::RateLimitUpdate, self::RateLimitRemoval => ['kind', 'old', 'new', ...self::SPAM_FILTER_REFUSAL],
             self::RateLimitBucketReset => ['countersExisted', 'logEntriesRemoved', ...self::REFUSAL],
+            self::LogoReplacement => ['old', 'new', ...self::REFUSAL],
+            self::LogoDeletion => ['old', ...self::REFUSAL],
+            self::UiTextsUpdate => ['changes', 'footerMigrated', ...self::REFUSAL],
+            self::LoginPageUpdate, self::AppLinksUpdate, self::BrandColorsUpdate, self::IpCheckUpdate, self::PasswordPolicyUpdate,
+            self::PasswordResetNotificationUpdate, self::QuotaNotificationUpdate, self::QuotaNotificationRecipientsUpdate,
+            self::RspamdSettingsRuleCreation, self::RspamdSettingsRuleUpdate, self::RspamdSettingsRuleDeletion,
+            self::LegacyApiCorsUpdate => ['changes', ...self::REFUSAL],
+            self::RspamdRegexMapReplacement => ['oldBytes', 'newBytes', ...self::REFUSAL],
+            self::GlobalSieveFilterReplacement => ['oldBytes', 'newBytes', 'dovecotRestart', 'restartDetail', ...self::REFUSAL],
+            self::RspamdUiPasswordChange => ['passwordChanged', 'rspamdConfirmed', ...self::REFUSAL],
+            self::MassMailJobCreation => ['sender', 'subject', 'selection', 'recipientCount', ...self::REFUSAL],
+            self::MassMailJobCompletion => ['counts'],
+            self::MassMailJobCancellation => ['counts', ...self::REFUSAL],
+            self::LicenseVerification => ['result', ...self::REFUSAL],
         };
     }
 }

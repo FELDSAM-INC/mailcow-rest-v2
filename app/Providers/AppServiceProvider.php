@@ -80,6 +80,7 @@ use App\Services\Oauth2\Oauth2ClientService;
 use App\Services\Quarantine\SpamFilterAuditTargets;
 use App\Services\Routing\RoutingAuditTargets;
 use App\Services\SelfService\SelfServiceAuditTargets;
+use App\Services\Settings\SettingsAuditTargetResolver;
 use App\Services\SyncJobs\SyncJobAuditTargets;
 use App\Services\Webmail\WebmailHandOffService;
 use App\Support\Clock\Clock;
@@ -178,6 +179,8 @@ class AppServiceProvider extends ServiceProvider
         AccountAuditTargets::register($this->app->make(RefusalAuditor::class));
         // Feature 006: quarantine, spam policy and rate limits.
         SpamFilterAuditTargets::register($this->app->make(RefusalAuditor::class));
+        // Feature 013: system settings.
+        SettingsAuditTargetResolver::register($this->app->make(RefusalAuditor::class));
 
         // Feature 011: administrators only (research R26).
         Gate::define('operate-monitoring', [MonitoringPolicy::class, 'operate']);

@@ -141,7 +141,7 @@ quota copy recipients of their own domains (foreign or alias domain → `404`) a
 
 ### Tests (write first, observe failing)
 
-- [ ] T010 [P] Write `tests/Unit/Services/RedisSettingsStoreTest.php` (R1; FR-007–FR-009, FR-011,
+- [x] T010 [P] Write `tests/Unit/Services/RedisSettingsStoreTest.php` (R1; FR-007–FR-009, FR-011,
   FR-091): a write applies all keys
   in one MULTI (a reader never sees half — simulated with a second connection inside the callback);
   a concurrent change of a watched key between read and EXEC makes the store retry with fresh values;
@@ -149,12 +149,12 @@ quota copy recipients of their own domains (foreign or alias domain → `404`) a
   three consecutive aborted EXECs end in 503 `temporary-failure`; a failing DB commit after EXEC
   restores the old raw values; a Redis connection error yields 503 with `Retry-After: 5` (connection
   pointed at a closed port, 002's technique).
-- [ ] T011 [P] Write `tests/Unit/Support/SharedFileWriterTest.php` (R13, R14): `replaceInPlace()`
+- [x] T011 [P] Write `tests/Unit/Support/SharedFileWriterTest.php` (R13, R14): `replaceInPlace()`
   keeps the inode, owner and mode of the existing file, writes the exact bytes, holds `flock` during
   the write (a second writer blocks), refuses a missing file (`SharedFileMissing`); with
   `touchAfter: true` it waits through the injected `Sleeper` until the clock is one second past the
   write's mtime and then sets a later mtime (fake clock, no real sleep).
-- [ ] T012 [P] Write `tests/Unit/Rules/SettingsRulesTest.php` for the rule objects of T016:
+- [x] T012 [P] Write `tests/Unit/Rules/SettingsRulesTest.php` for the rule objects of T016:
   `SingleLineText` (control characters and line breaks → `invalidFormat`, `format: singleLine`),
   `MailcowEmail` (`FILTER_VALIDATE_EMAIL` plus no `\x00-\x1F\x7F` → `invalidFormat`, `format: email`;
   empty allowed when `nullable`), `ByteLength` (`tooLong` with `max` and `unit: bytes`, counting
@@ -164,7 +164,7 @@ quota copy recipients of their own domains (foreign or alias domain → `404`) a
   `LegacyOrigin` (port of `valid_origin()`: `https://portal.example.org`, `http://[2001:db8::1]:8080`,
   `*` valid; `https://portal.example.org/app/`, `https://u:p@h`, `ftp://h`, `portal.example.org`,
   `https://h/?q`, `https://h#f` invalid → `format: origin`).
-- [ ] T013 [P] Write `tests/Feature/Settings/SettingsProblemTypesTest.php` (FR-089): each new `ProblemType`
+- [x] T013 [P] Write `tests/Feature/Settings/SettingsProblemTypesTest.php` (FR-089): each new `ProblemType`
   case of T015 (`demo-mode` 403, `feature-disabled` 403, `regex-map-unavailable` 409,
   `global-sieve-filter-unavailable` 409, `mass-mail-already-running` 409 with `runningJobId`,
   `mass-mail-recipient-count-changed` 409 with `actualRecipients`) renders as problem+json with its
@@ -176,39 +176,39 @@ quota copy recipients of their own domains (foreign or alias domain → `404`) a
   the two mass mail conflicts → `conflict`; a request with the attribute `restv2.auditSkip` writes no
   record; `SettingsAuditTargetResolver` gives the identifier and name of R24 for each of the 17
   target types.
-- [ ] T014 [P] Write `tests/Unit/Services/MailcowConfigSettingsTest.php` (R2): `logoLimits()` and
+- [x] T014 [P] Write `tests/Unit/Services/MailcowConfigSettingsTest.php` (R2): `logoLimits()` and
   `rspamdRegexMaps()` come from `RESTV2_LOGO_LIMITS` / `RESTV2_RSPAMD_MAPS` when set, else from the
   mounted `vars.inc.php` / `vars.local.inc.php` fixtures (a local override changing `max_width` and
   removing one map), else the upstream defaults (15 MiB, 1920, 1920; the 13 maps in order).
 
 ### Implementation
 
-- [ ] T015 Add the cases `DemoMode`, `FeatureDisabled`, `RegexMapUnavailable`,
+- [x] T015 Add the cases `DemoMode`, `FeatureDisabled`, `RegexMapUnavailable`,
   `GlobalSieveFilterUnavailable`, `MassMailAlreadyRunning`, `MassMailRecipientCountChanged` to
   `app/Support/Http/ProblemType.php` (001), with URI, status and title as in `docs/problems.md`, and
   the extension members of the last two. This makes T013 pass.
-- [ ] T016 [P] Create `app/Rules/{SingleLineText,MailcowEmail,ByteLength,AppLinkUrl,HexColor,LegacyOrigin}.php`,
+- [x] T016 [P] Create `app/Rules/{SingleLineText,MailcowEmail,ByteLength,AppLinkUrl,HexColor,LegacyOrigin}.php`,
   each reporting its rule code and params to 001's `ApiFormRequest`, and
   `app/Services/Settings/SettingsLimits.php` with the constants of `SettingsLimits` in the contract
   (255, 65535, 1048576 ×4, 50, 100, 100, 3, 64, 6, 256, 25, 1000, and the mass mail values 1000
   entries, 1048576 bytes, 3 retries, 300 s). This makes T012 pass.
-- [ ] T017 Create `app/Services/Settings/RedisSettingsStore.php` (R1):
+- [x] T017 Create `app/Services/Settings/RedisSettingsStore.php` (R1):
   `transaction(array $keys, ?string $ifMatch, callable $etagOf, callable $mutate, callable $audit)`
   with WATCH / read / tag compare / mutate / validate / audit insert inside `DB::transaction` /
   MULTI-EXEC / commit, up to three retries, compensation on commit failure, and the mapping of
   `RedisException` to `ProblemException(temporary-failure)` with `Retry-After: 5`. Also
   `read(array $keys): array` (raw values, `null` for missing) with the same error mapping. This makes
   T010 pass.
-- [ ] T018 [P] Create `app/Support/Files/SharedFileWriter.php` (R13, R14) with
+- [x] T018 [P] Create `app/Support/Files/SharedFileWriter.php` (R13, R14) with
   `read(string $path): ?string`, `replaceInPlace(string $path, string $bytes, ?string $ifMatch,
   callable $etagOf, bool $touchAfter = false)` (`c+`, `flock`, tag compare under the lock,
   `ftruncate`, single `fwrite`, `fflush`, `fsync`, unlock; the legacy touch through 001's `Sleeper`)
   and the exception `SharedFileMissing`. This makes T011 pass.
-- [ ] T019 Extend `resources/bin/export-mailcow-vars.php` and `app/Services/Config/MailcowConfig.php`
+- [x] T019 Extend `resources/bin/export-mailcow-vars.php` and `app/Services/Config/MailcowConfig.php`
   (001) with `LOGO_LIMITS` and `RSPAMD_MAPS` (`logoLimits(): array{max_size:int,max_width:int,max_height:int}`,
   `rspamdRegexMaps(): array<string,string>` name → file, filtered to file names matching
   `^[A-Za-z0-9_.-]{1,128}$`), with the precedence of 001-R14. This makes T014 pass.
-- [ ] T020 [P] Create `app/Policies/SettingsPolicy.php` (administrator role required; `demoMode()`
+- [x] T020 [P] Create `app/Policies/SettingsPolicy.php` (administrator role required; `demoMode()`
   helper throwing `ProblemException(demo-mode)` when `config('restv2.demo_mode')`), register it in
   `app/Providers/AppServiceProvider.php`, and add to `app/Services/Audit/AuditLogger.php` (001) the
   `details` whitelists of data-model.md section 7 for the 22 new event types and the target types
@@ -216,11 +216,11 @@ quota copy recipients of their own domains (foreign or alias domain → `404`) a
   reasons of R24 and the `restv2.auditSkip` request attribute, and create
   `app/Services/Settings/SettingsAuditTargetResolver.php`, registered for the 17 target types. This
   makes the auditor part of T013 pass.
-- [ ] T021 [P] Extend `tests/Support/Contract/OpenApiContract.php` (001) so that request bodies with a
+- [x] T021 [P] Extend `tests/Support/Contract/OpenApiContract.php` (001) so that request bodies with a
   non-JSON media type (`image/*`, `application/octet-stream`) are matched by media type only and not
   schema-validated as JSON, and responses with `oneOf` data under `200` are validated as usual. Add
   a unit test in `tests/Unit/Support/OpenApiContractBinaryBodyTest.php`.
-- [ ] T022 Create the route group skeleton for this feature in `routes/api.php`
+- [x] T022 Create the route group skeleton for this feature in `routes/api.php`
   (`capabilities/settings`, `Route::prefix('settings')`, `presets`, `mass-mail-jobs`, `license`, and
   `domains/{domain}/quota-notification-recipients`), with 001's middleware order and route modes per
   R25. Every state-changing route declares `->defaults('restv2.audit', ['event' => …, 'target' => …])`
@@ -861,3 +861,29 @@ duplicate it"), recorded as they were made:
   manual saves never rewrite tracked fixture files.
 - **T006**: the 16 MiB oversize file is generated in the test rather than committed. Hostile file
   names start with the expected `construct` or rule code (`scriptElement--script.svg`).
+- **T010, T017**: `RedisSettingsStore` is built on feature 006's `SharedStore::transactionWatching()`
+  (WATCH, plan, audit insert inside the database transaction, MULTI/EXEC, commit), not on a second
+  transaction loop; it adds the `If-Match` comparison on every attempt, three attempts, and the
+  compensation of a failed commit (`SettingsWrite::$restore`, then `500`). Redis failures stay
+  006's `SharedStoreUnavailable`, which 001's problem renderer already answers with
+  `503 temporary-failure`, `dependency: sharedStore` and `Retry-After: 10` (the research said 5).
+- **T013, T020**: the refusal auditor needs no new code. Its validate-only skip is feature 006's
+  route option `skipWhenQueryTrue: validateOnly` (instead of a `restv2.auditSkip` request attribute),
+  and the type-specific failure reasons are registered with `RefusalAuditor::mapProblemType()` by
+  `SettingsAuditTargetResolver::register()`. 5xx problems thrown as `ProblemException`
+  (`container-action-failed`, `outcome-unknown`) are recorded by the auditor too, because the
+  exception carries audit details (feature 003's rule). The auditor checks of 013 are in their own
+  file, `tests/Feature/Settings/SettingsRefusalAuditorTest.php`, next to 008's unchanged test. The
+  `details` whitelists live in `AuditEventType::detailKeys()` (001's mechanism), not in
+  `AuditLogger`.
+- **T016**: the byte-length rule is feature 005's `CharacterLength(bytes: true)`, and the e-mail
+  rule is the shared `EmailAddress` with the new option `rejectControlCharacters`; no
+  `ByteLength` or `MailcowEmail` class was added.
+- **T019**: `resources/bin/export-mailcow-vars.php` exports every name listed in
+  `restv2.vars_overrides` and `restv2.vars_defaults`, so only those two config lists gained
+  `LOGO_LIMITS` and `RSPAMD_MAPS`. Map file names must also not start with a dot.
+- **T021**: 001's contract harness already matches non-JSON request bodies by media type only;
+  the new unit test keeps that behaviour.
+- **T022**: the routes are registered with the controllers of each story (a route to a controller
+  that does not exist yet would fail static analysis and the route cache); the 013 feature entry in
+  `tests/feature-registry.json` lists its 45 operations as pending until each story lands.

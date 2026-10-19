@@ -265,6 +265,10 @@ abstract class ApiFormRequest extends FormRequest
                 'recipientMapDestination' => 'Not a valid domain name or e-mail address.',
                 'tlsPolicyDestination' => 'Not a valid destination: use a domain, .domain, [host] or [host]:port.',
                 'tlsPolicyParameters' => 'Use name=value items separated by spaces.',
+                'singleLine' => 'Must not contain line breaks or other control characters.',
+                'appLinkUrl' => 'Must be an absolute http or https URL, or a path starting with a single /.',
+                'hexColor' => 'Must be a colour of the form #RRGGBB.',
+                'origin' => 'Must be * or an origin of the form scheme://host[:port].',
                 default => 'Invalid format.',
             },
             'notMultipleOf' => 'Must be a whole multiple of '.($params['factor'] ?? 'the unit').'.',
@@ -287,6 +291,17 @@ abstract class ApiFormRequest extends FormRequest
             'invalidCharacter' => 'Must not contain: '.implode(', ', array_map(fn (mixed $c): string => '"'.(is_scalar($c) ? (string) $c : '').'"', (array) ($params['characters'] ?? []))).'.',
             'notResolvable' => 'The host name resolves to no address.',
             'invalidRegex' => 'Not a valid regular expression.',
+            // Feature 013: system settings.
+            'unsupportedImageType' => 'Not a PNG, JPEG, GIF or SVG image.',
+            'invalidImage' => 'The image cannot be decoded.',
+            'imageDimensionsExceeded' => 'The image is larger than '.($params['maxWidth'] ?? '?').' × '.($params['maxHeight'] ?? '?').' pixels.',
+            'unsafeSvgContent' => 'The SVG contains active content or external references ('.($params['construct'] ?? 'unknown').').',
+            'insufficientContrast' => 'The contrast against '.($params['surface'] ?? 'the reference surface').' is '.($params['ratio'] ?? '?').':1, below '.($params['minimum'] ?? '?').':1.',
+            'invalidRegexLine' => 'Line '.($params['line'] ?? '?').' is not a valid regular expression line ('.($params['reason'] ?? 'invalid').').',
+            'unbalancedStructure' => 'The structure is not balanced at line '.($params['line'] ?? '?').' ('.($params['construct'] ?? 'unknown').').',
+            'sieveSyntax' => (string) ($params['message'] ?? 'Invalid Sieve syntax.'),
+            'mutuallyExclusive' => 'Not allowed together with '.($params['with'] ?? 'another field').'.',
+            'tooFew' => 'Must contain at least '.($params['min'] ?? 1).' item(s).',
             default => 'Invalid value.',
         };
 

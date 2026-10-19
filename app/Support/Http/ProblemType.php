@@ -112,6 +112,15 @@ enum ProblemType: string
     case QuarantineMessageTooLarge = 'quarantine-message-too-large';
     case SpamPolicyEntryExists = 'spam-policy-entry-exists';
 
+    // Feature 013 (system settings; temporary-failure, container-action-failed and
+    // outcome-unknown are earlier features' types).
+    case DemoMode = 'demo-mode';
+    case FeatureDisabled = 'feature-disabled';
+    case RegexMapUnavailable = 'regex-map-unavailable';
+    case GlobalSieveFilterUnavailable = 'global-sieve-filter-unavailable';
+    case MassMailAlreadyRunning = 'mass-mail-already-running';
+    case MassMailRecipientCountChanged = 'mass-mail-recipient-count-changed';
+
     public function uri(): string
     {
         return '/api/v2/problems/'.$this->value;
@@ -152,6 +161,9 @@ enum ProblemType: string
             self::AccountExists, self::LastActiveAdmin, self::CannotDeleteOwnAccount, self::AlreadyImpersonating,
             self::AccountInactive => 409,
             self::ImpersonationEnded, self::NotAllowedWhileImpersonating, self::WebmailOnBehalfDisabled => 403,
+            self::DemoMode, self::FeatureDisabled => 403,
+            self::RegexMapUnavailable, self::GlobalSieveFilterUnavailable, self::MassMailAlreadyRunning,
+            self::MassMailRecipientCountChanged => 409,
         };
     }
 
@@ -241,6 +253,12 @@ enum ProblemType: string
             self::QuarantineDeliveryRefused => 'Delivery refused',
             self::QuarantineMessageTooLarge => 'Quarantine message too large',
             self::SpamPolicyEntryExists => 'List entry already exists',
+            self::DemoMode => 'Demo mode',
+            self::FeatureDisabled => 'Feature disabled',
+            self::RegexMapUnavailable => 'Regex map unavailable',
+            self::GlobalSieveFilterUnavailable => 'Global Sieve filter unavailable',
+            self::MassMailAlreadyRunning => 'Mass mail already running',
+            self::MassMailRecipientCountChanged => 'Mass mail recipient count changed',
         };
     }
 
@@ -330,6 +348,12 @@ enum ProblemType: string
             self::QuarantineDeliveryRefused => 'The mail server refused the released message. The item was kept and nothing was learned.',
             self::QuarantineMessageTooLarge => 'The stored message is larger than the content size limit.',
             self::SpamPolicyEntryExists => 'The owner already has this pattern on its allow or block list.',
+            self::DemoMode => 'Customisation changes are disabled in demo mode.',
+            self::FeatureDisabled => 'This operation is disabled on this server.',
+            self::RegexMapUnavailable => 'The map file does not exist on this server. Nothing was written.',
+            self::GlobalSieveFilterUnavailable => 'The filter file does not exist on this server. Nothing was written and Dovecot was not restarted.',
+            self::MassMailAlreadyRunning => 'Another mass mail job is running. Nothing was sent.',
+            self::MassMailRecipientCountChanged => 'The selection now yields another number of recipients than the confirmed count. Nothing was sent.',
         };
     }
 

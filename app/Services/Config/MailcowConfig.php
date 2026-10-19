@@ -497,6 +497,52 @@ class MailcowConfig
         return $values;
     }
 
+    /**
+     * Feature 013 (research R2): the logo limits of legacy `$LOGO_LIMITS`, each a positive integer;
+     * an unusable value falls back to its upstream default (15 MiB, 1,920 × 1,920 pixels).
+     *
+     * @return array{max_size: int, max_width: int, max_height: int}
+     *
+     * @phpstan-impure
+     */
+    public function logoLimits(): array
+    {
+        $defaults = (array) config('restv2.vars_defaults.LOGO_LIMITS');
+        $value = $this->value('LOGO_LIMITS');
+        $value = is_array($value) ? $value : [];
+        $limits = [];
+
+        foreach (['max_size', 'max_width', 'max_height'] as $name) {
+            $limits[$name] = is_numeric($value[$name] ?? null) && (int) $value[$name] > 0 ? (int) $value[$name] : (int) $defaults[$name];
+        }
+
+        return $limits;
+    }
+
+    /**
+     * Feature 013 (research R2, R13): the editable global regex maps of legacy
+     * `$RSPAMD_MAPS['regex']`, English name => file name, in the configured order. File names that
+     * could leave the map directory or are hidden files are left out.
+     *
+     * @return array<string, string>
+     *
+     * @phpstan-impure
+     */
+    public function rspamdRegexMaps(): array
+    {
+        $value = $this->value('RSPAMD_MAPS');
+        $regex = is_array($value) && is_array($value['regex'] ?? null) ? $value['regex'] : (array) config('restv2.vars_defaults.RSPAMD_MAPS.regex');
+        $maps = [];
+
+        foreach ($regex as $name => $file) {
+            if (is_string($file) && preg_match('/^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,127}$/', $file) === 1) {
+                $maps[(string) $name] = $file;
+            }
+        }
+
+        return $maps;
+    }
+
     private function positiveInt(string $name): int
     {
         $value = $this->value($name);

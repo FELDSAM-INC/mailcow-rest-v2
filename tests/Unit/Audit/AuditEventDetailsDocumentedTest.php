@@ -18,7 +18,14 @@ class AuditEventDetailsDocumentedTest extends TestCase
      *
      * @var list<string>
      */
-    private static array $notYetDocumented = [];
+    private static array $notYetDocumented = [
+        // Feature 013: documented with its audit trail (T091, T096).
+        'logoReplacement', 'logoDeletion', 'uiTextsUpdate', 'loginPageUpdate', 'appLinksUpdate', 'brandColorsUpdate',
+        'ipCheckUpdate', 'passwordPolicyUpdate', 'passwordResetNotificationUpdate', 'quotaNotificationUpdate',
+        'quotaNotificationRecipientsUpdate', 'rspamdSettingsRuleCreation', 'rspamdSettingsRuleUpdate',
+        'rspamdSettingsRuleDeletion', 'rspamdRegexMapReplacement', 'globalSieveFilterReplacement', 'rspamdUiPasswordChange',
+        'legacyApiCorsUpdate', 'massMailJobCreation', 'massMailJobCompletion', 'massMailJobCancellation', 'licenseVerification',
+    ];
 
     /**
      * The documented keys per event type: `## <eventType>` sections, keys from the first column of

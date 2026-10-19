@@ -29,8 +29,8 @@ delete:
   description: |
     Removes the entry through its owner. An entry of another owner, such as a domain entry
     addressed through one of its mailboxes, answers `404`. Administrators may always remove; domain administrators need `spamPolicy`; mailbox users are refused (`forbidden`). The spam filter stops applying it
-    within one refresh of its settings map (at most 1 minute). Audited with the owner, the list
-    and the pattern.
+    within one refresh of its settings map (at most 1 minute). Audited on the owner (audit
+    target `domain`), with the entry's `entryId`, `list` and `pattern` in the details.
   security:
     - sessionCookie: []
       csrfToken: []

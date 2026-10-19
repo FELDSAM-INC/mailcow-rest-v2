@@ -33,6 +33,12 @@ use RuntimeException;
  *    `PW_RESET_SUBJ`), alice's recovery address, two app passwords of alice (one inactive), a
  *    prefilter of alice and recent logins of alice (IMAP from a public address, a web UI sign-in,
  *    SMTP with an app password); feature 010's alias domain example.com is a temporary-alias domain.
+ *  - feature 006: 30 quarantine items for alice@example.org (rejected, junk, subject rewritten, a
+ *    virus, attachments, one over 10 MiB, one unparseable; the message fixtures of
+ *    tests/fixtures/quarantine/messages) and 5 for bob@example.org, the domain block list entry
+ *    for every sender of spam.example on example.org, the rate limit
+ *    `100 / 1h` on example.org and the quarantine settings as mailcow seeds them (retention 20,
+ *    maximum size 15 MiB, release format `raw`).
  *
  * Run by scripts/dev/reset-dev-database.sh. It refuses to run outside APP_ENV=local, so that it
  * can never write accounts into a real mailcow database.
@@ -101,5 +107,49 @@ class DevelopmentSeeder extends Seeder
         $rows->saslLogEntry('alice@example.org', 'imap', '203.0.113.7', (string) DB::scalar('SELECT NOW() - INTERVAL 2 HOUR'));
         $rows->saslLogEntry('alice@example.org', 'WEBUI', '198.51.100.20', (string) DB::scalar('SELECT NOW() - INTERVAL 1 DAY'));
         $rows->saslLogEntry('alice@example.org', 'smtp', '203.0.113.7', (string) DB::scalar('SELECT NOW() - INTERVAL 3 DAY'), $phone);
+
+        // Feature 006: quarantine, spam policy and rate limits (quickstart Part B).
+        $this->seedQuarantine($rows);
+        $rows->filterconf('example.org', 'blacklist_from', '*@spam.example');
+        Redis::connection('mailcow')->hset('RL_VALUE', 'example.org', '100 / 1h');
+        Redis::connection('mailcow')->mset(['Q_RETENTION_SIZE' => '20', 'Q_MAX_SIZE' => '15', 'Q_RELEASE_FORMAT' => 'raw', 'Q_MAX_AGE' => '365']);
+    }
+
+    /**
+     * 30 items for alice and 5 for bob, one per minute, newest last; every third item is junk or
+     * had its subject rewritten, the fourth carries a virus.
+     */
+    private function seedQuarantine(MailcowRows $rows): void
+    {
+        $fixtures = ['plain', 'multipart-two-attachments', 'html-only', 'html-attachment', 'svg-attachment', 'path-name-attachment',
+            'unnamed-attachment', 'encoded-subject', 'spam-flag', 'dot-lines', 'lf-only', 'cc-bcc'];
+        $actions = ['reject', 'add header', 'rewrite subject'];
+        $virus = [['name' => 'VIRUS_FOUND', 'score' => 2000, 'options' => ['Eicar-Test-Signature']]];
+        $spam = [['name' => 'BAYES_SPAM', 'score' => 5.1, 'options' => ['99.99%']], ['name' => 'MISSING_DATE', 'score' => 1, 'options' => []]];
+
+        for ($i = 0; $i < 35; $i++) {
+            $alice = $i < 30;
+            $fixture = $alice && $i === 28 ? 'unparseable' : $fixtures[$i % count($fixtures)];
+            $message = $alice && $i === 29 ? self::largeMessage() : (string) file_get_contents(base_path("tests/fixtures/quarantine/messages/{$fixture}.eml"));
+            $rows->quarantineItem(
+                $alice ? 'alice@example.org' : 'bob@example.org',
+                $message,
+                subject: $alice && $i === 29 ? 'Large message' : 'Quarantined '.$fixture.' #'.($i + 1),
+                score: $i === 3 ? 2015.5 : 10 + $i / 2,
+                action: $actions[$i % 3],
+                symbols: $i === 3 ? $virus : $spam,
+                sender: 'sender'.$i.'@spam.example',
+                ip: '192.0.2.'.($i + 1),
+                created: (string) DB::scalar('SELECT NOW() - INTERVAL ? MINUTE', [35 - $i]),
+            );
+        }
+    }
+
+    /** A message larger than the 10 MiB content size limit. */
+    private static function largeMessage(): string
+    {
+        $head = "From: Sender <sender@example.net>\r\nTo: alice@example.org\r\nSubject: Large message\r\n\r\n";
+
+        return $head.str_repeat(str_repeat('x', 998)."\r\n", intdiv(10485761 - strlen($head), 1000) + 1);
     }
 }

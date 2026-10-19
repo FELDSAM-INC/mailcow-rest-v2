@@ -811,7 +811,7 @@ filtered by target.
 
 ## Phase 11: Polish and cross-cutting concerns
 
-- [ ] T080 [P] Write `tests/Feature/Security/SpamFilterAuthorizationMatrixTest.php` (constitution
+- [X] T080 [P] Write `tests/Feature/Security/SpamFilterAuthorizationMatrixTest.php` (constitution
   VI, quality gate 5, SC-005): a data provider over **all 42 operations** × anonymous, restricted
   session, admin session, domain-admin session with all flags, domain-admin session without
   `quarantine`/`spam_policy`/`ratelimit`, mailbox session with all flags, mailbox session without the
@@ -821,25 +821,25 @@ filtered by target.
   alias domain and foreign list entry → `404`, identical to unknown objects; every refusal of a
   state-changing operation by an authenticated caller writes exactly one failure audit record, and
   anonymous requests write none (conventions "Refusal auditing").
-- [ ] T081 [P] Write `tests/Feature/Quarantine/Performance/QuarantineListLatencyTest.php` (group
+- [X] T081 [P] Write `tests/Feature/Quarantine/Performance/QuarantineListLatencyTest.php` (group
   `performance`, SC-007, R16): seeds 100,000 rows (multi-row inserts, `msg` of 2 KiB, 50 mailboxes
   in 5 domains) and measures 20 requests each of the default page, a domain admin page, a `q`
   search and a `sort=score` page; p95 < 1 s.
-- [ ] T082 [P] Write `tests/Feature/Quarantine/Performance/QuarantineBulkReleaseDurationTest.php`
+- [X] T082 [P] Write `tests/Feature/Quarantine/Performance/QuarantineBulkReleaseDurationTest.php`
   (group `performance`, SC-008): a bulk release of 100 items with the fake mailer and fake Rspamd
   delaying 100 ms per call completes within 60 s and reports 100 `done`.
-- [ ] T083 [P] Extend 001's `tests/Unit/Support/ProblemTypeConsistencyTest.php` expectations, if
+- [X] T083 [P] Extend 001's `tests/Unit/Support/ProblemTypeConsistencyTest.php` expectations, if
   needed, so that the four new `ProblemType` cases match `docs/problems.md` and `KnownProblemType`;
   add one sentence to the `temporary-failure` section of `docs/problems.md` pointing to the 006
   extension members `dependency` and `step` (documented in the `quarantine-item-busy` section).
-- [ ] T084 Extend `database/seeders/DevelopmentSeeder.php` with the data of quickstart Part B
+- [X] T084 Extend `database/seeders/DevelopmentSeeder.php` with the data of quickstart Part B
   (quarantine items from the T007 fixtures for alice and bob, a domain block entry, a domain rate
   limit, quarantine settings retention 20 and size 15 MiB).
 - [ ] T085 Run `composer test` (contract coverage lists all 42 operations of 006),
   `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and the 006 performance group; fix
   findings. Run quickstart Part B against the dev stack and record any deviation in
   `quickstart.md`.
-- [ ] T086 Add the feature's contract changes to the release notes (`CHANGELOG.md`, section
+- [X] T086 Add the feature's contract changes to the release notes (`CHANGELOG.md`, section
   "Unreleased"): the 42 operations, the four problem types and the appended enum values, so that
   mailcowui-ng can bump its pinned contract.
 

@@ -128,6 +128,35 @@ curl -s $C "$B/audit-events?targetType=quarantineItem&targetId=$ID" | jq '.data[
 **Expected**: each command prints the value in its comment. No response contains `qhash`, `msg` or
 HTML from a message. `docker compose logs app | grep -c qhash` prints `0`.
 
+### Walkthrough of 2026-10-19
+
+Part B ran on the dev stack of compose project `restv2-006` without host ports: `web` and `mailpit`
+ran with `ports: !reset []`, the API container had `RESTV2_RELEASE_SMTP_HOST=mailpit` and
+`RESTV2_RELEASE_SMTP_PORT=1025`, and the commands ran in a second `app` container against
+`https://web` (`curl -k --connect-to localhost:443:web:443`) and `http://mailpit:8025`. Every check
+gave the expected result: 30 items for alice, newest first; bob's item `404`; the attachment
+download `application/octet-stream` with `Content-Disposition: attachment` and `nosniff`; the
+large item `contentStatus: tooLarge` and its message `409 quarantine-message-too-large`; the
+unparseable item `parserFallback: true`, `textPlain: null`; a release without learning delivered to
+mailpit and removed; a release with learning `delivery: done, learning: failed, fuzzy:
+notRequested`; learning as spam `503 temporary-failure` (`spamFilter`, `learning`) with the item
+kept; the settings read back from the seeded `Q_*` keys (`raw` reported as `original`); the
+template check `invalidTemplate` (`syntax`, line 1); `validateOnly` `{"valid": true}`; the preview;
+the notification, spam score, list entry and rate limit changes; the bucket reset `204`, then
+`404`; the statistics `503 spamFilter`; the audit record of the released item without its subject.
+No response and no log line contained `qhash`.
+
+Deviations from the commands above (the guide is kept as written; read it with these):
+
+- The dev stack serves the API on `https://127.0.0.1:18443/api/v2` (the session cookie is
+  `Secure`), not `http://localhost:8080`.
+- alice has a TOTP second factor (feature 001's seed): signing in needs
+  `POST /session/pending-sign-in/second-factor` with a code for the secret `JBSWY3DPEHPK3PXP`.
+- `X-Pre-Release-Spam-Flag` appears only on a released message that carried `X-Spam-Flag`: of the
+  seeded items, those built from `spam-flag.eml` (`q=spam-flag`). The first rejected item has no
+  such header, so its delivered copy has none either.
+- An attachment's name is `content.attachments[].fileName`.
+
 ## Part C: Parity on a mailcow host
 
 1. **Quarantine round trip**: send a GTUBE message to a test mailbox so that it is rejected into

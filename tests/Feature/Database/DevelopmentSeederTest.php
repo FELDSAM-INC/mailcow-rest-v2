@@ -67,5 +67,16 @@ class DevelopmentSeederTest extends TestCase
         $this->assertSame(1, DB::table('sieve_filters')->where('username', 'alice@example.org')->count());
         $this->assertSame(3, DB::table('sasl_log')->where('username', 'alice@example.org')->count());
         $this->assertSame('alice.private@example.net', json_decode((string) DB::table('mailbox')->where('username', 'alice@example.org')->value('attributes'), true)['recovery_email']);
+
+        // Feature 006 T084: the quarantine, list entry, rate limit and settings of quickstart Part B.
+        $this->assertSame(30, DB::table('quarantine')->where('rcpt', 'alice@example.org')->count());
+        $this->assertSame(5, DB::table('quarantine')->where('rcpt', 'bob@example.org')->count());
+        $this->assertSame(['add header', 'reject', 'rewrite subject'], DB::table('quarantine')->distinct()->orderBy('action')->pluck('action')->all());
+        $this->assertSame(1, DB::table('quarantine')->where('symbols', 'like', '%VIRUS_FOUND%')->count());
+        $this->assertSame(1, DB::table('quarantine')->whereRaw('LENGTH(msg) > 10485760')->count());
+        $this->assertSame(0, DB::table('quarantine')->whereNull('qhash')->count());
+        $this->assertSame('*@spam.example', DB::table('filterconf')->where('object', 'example.org')->where('option', 'blacklist_from')->value('value'));
+        $this->assertSame('100 / 1h', Redis::connection('mailcow')->hget('RL_VALUE', 'example.org'));
+        $this->assertSame(['20', '15', 'raw'], Redis::connection('mailcow')->mget(['Q_RETENTION_SIZE', 'Q_MAX_SIZE', 'Q_RELEASE_FORMAT']));
     }
 }

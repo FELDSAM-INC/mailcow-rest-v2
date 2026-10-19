@@ -410,3 +410,44 @@ record, keys revoked as `ownerDeleted`); sessions and API keys are bound to thei
 creation time, so a later account with the same username never inherits them.
 
 Release checks of feature 007 (quickstart Part C): not run yet.
+
+Contract: the 42 operations of feature 006 (quarantine, spam policy and rate limits):
+
+- Quarantine items: `listQuarantineItems`, `getQuarantineItem`, `deleteQuarantineItem`,
+  `releaseQuarantineItem`, `learnQuarantineItemAsSpam`, `downloadQuarantineMessage`,
+  `downloadQuarantineAttachment`, `applyQuarantineBulkAction`, `getQuarantineCapabilities`.
+- Quarantine settings and the notification template: `getQuarantineSettings`,
+  `updateQuarantineSettings` (with `validateOnly`), `previewQuarantineTemplate`.
+- Mailbox notification settings: `getMailboxQuarantineNotificationSettings`,
+  `updateMailboxQuarantineNotificationSettings`, `applyQuarantineNotificationBulkAction`.
+- Spam scores: `getMailboxSpamScore`, `setMailboxSpamScore`, `resetMailboxSpamScore`.
+- Allow and block lists of domains, alias domains and mailboxes: `listDomainSpamPolicyEntries`,
+  `createDomainSpamPolicyEntry`, `getDomainSpamPolicyEntry`, `deleteDomainSpamPolicyEntry`,
+  `listAliasDomainSpamPolicyEntries`, `createAliasDomainSpamPolicyEntry`,
+  `getAliasDomainSpamPolicyEntry`, `deleteAliasDomainSpamPolicyEntry`,
+  `listMailboxSpamPolicyEntries`, `createMailboxSpamPolicyEntry`, `getMailboxSpamPolicyEntry`,
+  `deleteMailboxSpamPolicyEntry`.
+- Spam filter statistics: `getSpamFilterActionStatistics`.
+- Rate limits: `listRateLimits`, `getDomainRateLimit`, `setDomainRateLimit`,
+  `removeDomainRateLimit`, `getAliasDomainRateLimit`, `setAliasDomainRateLimit`,
+  `removeAliasDomainRateLimit`, `getMailboxRateLimit`, `setMailboxRateLimit`,
+  `removeMailboxRateLimit`, `resetRateLimitBucket`.
+
+Problem types: `quarantine-item-busy`, `quarantine-delivery-refused`,
+`quarantine-message-too-large`, `spam-policy-entry-exists`; `temporary-failure` gains the
+dependencies `spamFilter` and `mailServer` and, for item actions, the member `step`. The shared
+enumerations gain feature 006's audit event types (`quarantineItemRelease` …
+`rateLimitBucketReset`), audit targets (`quarantineItem`, `quarantineSettings`,
+`quarantineNotificationSettings`, `spamScore`, `spamPolicyEntry`, `rateLimit`, `rateLimitBucket`)
+and the rule code `invalidTemplate`; `invalidFormat` uses `format: senderPattern`.
+
+Contract changes made while implementing feature 006:
+
+- `RateLimitLogEntry.rateLimitHash` (feature 011's representation) has the pattern and length of
+  `resetRateLimitBucket`'s `bucketId`; another stored text is `null` (gap G10).
+- The allow and block list operations state their audit target: the owner (`domain`,
+  `aliasDomain` or `mailbox`), with `entryId`, `list` and `pattern` in the details, so that History
+  filters one owner's lists (gap G15). The target type `spamPolicyEntry` is not used.
+
+Release checks of feature 006 (quickstart Part C): not run yet. The timing checks (SC-007, SC-008:
+`composer test:performance`) are pending an otherwise idle machine.

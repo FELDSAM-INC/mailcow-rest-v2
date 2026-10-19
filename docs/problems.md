@@ -333,8 +333,10 @@ extension members.
   database step of a mailbox rename). A mailbox rename adds `steps`, as in
   `mailbox-rename-incomplete`. Feature 009 adds `dns` (a forwarding host name could not be resolved
   because DNS failed temporarily) and `database` (another request held a routing table's write lock
-  too long). Later features may add values. The `Retry-After` header gives the seconds after which a
-  retry makes sense.
+  too long). Feature 006 adds `spamFilter` (the Rspamd controller) and `mailServer` (the mail server
+  that receives quarantine releases), and for quarantine item actions the member `step` (`delivery`
+  or `learning`); see "Related feature 006 errors" under `quarantine-item-busy`. Later features may
+  add values. The `Retry-After` header gives the seconds after which a retry makes sense.
 - **Client action**: Retry later. Tell the user if it persists.
 
 ## dkim-key-exists

@@ -811,24 +811,24 @@ behalf in the audit log, without secrets.
 
 ## Phase 10: Polish and cross-cutting concerns
 
-- [ ] T091 [P] Write `tests/Feature/Accounts/LegacyParityRowsTest.php` (SC-001): for each create,
+- [X] T091 [P] Write `tests/Feature/Accounts/LegacyParityRowsTest.php` (SC-001): for each create,
   change, rename, flag change and delete case of the parity set, the rows of `admin`,
   `domain_admins`, `da_acl`, `tfa`, `fido2` and `da_sso` equal the rows legacy `admin()`,
   `domain_admin()` and `acl('edit')` write for the same input (expected rows written out in the test
   with the legacy line references), apart from timestamps, hashes and the deviations of the spec's
   parity table.
-- [ ] T092 [P] Write `tests/Feature/DomainAdmins/DomainAdminListPerformanceTest.php` (SC-008):
+- [X] T092 [P] Write `tests/Feature/DomainAdmins/DomainAdminListPerformanceTest.php` (SC-008):
   seeds 5,000 domains and 5,000 domain administrators with one to three assignments, flags and some
   `tfa`/`fido2` rows; 50 requests of `GET /domain-admins?limit=25` with varying offsets, sorts
   (`domainCount` included) and `q`; p95 under 1 s on the CI runner. Group `performance`.
-- [ ] T093 [P] Write `tests/Feature/Security/Feature007AuthorizationMatrixTest.php`: one data
+- [X] T093 [P] Write `tests/Feature/Security/Feature007AuthorizationMatrixTest.php`: one data
   provider over all 21 operations × {administrator session, administrator read-write key,
   administrator read-only key, domain administrator session, domain administrator key, mailbox user
   session, restricted session, impersonating session, no credentials}, asserting the status and
   problem type of the FR-005 matrix and research R24 (`forbidden` for roles and key types,
   `permission-flag-required` with `requiredFlags: [loginAs]` for a missing flag), and that objects outside a domain
   administrator's scope get the same answer as missing ones (SC-002; constitution quality gate 5).
-- [ ] T094 [P] Write `tests/Feature/Accounts/AccountReuseTest.php` (SC-004): after deleting and after
+- [X] T094 [P] Write `tests/Feature/Accounts/AccountReuseTest.php` (SC-004): after deleting and after
   renaming an administrator and a domain administrator through the API, a new account with the old
   username inherits no session, key, passkey, second factor, preference, permission, impersonation
   or token, in every combination.

@@ -551,18 +551,6 @@
         }
     },
     "pendingOperations": [
-        "getSettingsCapabilities",
-        "getLogoSetting",
-        "replaceLogo",
-        "deleteLogo",
-        "getUiTexts",
-        "updateUiTexts",
-        "getLoginPageSettings",
-        "updateLoginPageSettings",
-        "getAppLinkSettings",
-        "updateAppLinkSettings",
-        "getBrandColors",
-        "updateBrandColors",
         "getIpCheckSetting",
         "updateIpCheckSetting",
         "updatePasswordPolicy",

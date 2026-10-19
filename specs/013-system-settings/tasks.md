@@ -247,23 +247,23 @@ stored Redis bytes with what legacy writes (spec US1).
 
 ### Tests for User Story 1 (write first, observe failing)
 
-- [ ] T023 [P] [US1] Write `tests/Unit/Support/ImageInspectorTest.php` (R3) over `tests/fixtures/logos/`:
+- [x] T023 [P] [US1] Write `tests/Unit/Support/ImageInspectorTest.php` (R3) over `tests/fixtures/logos/`:
   detection by magic bytes (a PNG declared as JPEG is PNG; the PDF named `logo.png` →
   `unsupportedImageType` with `allowed`), dimensions of PNG/JPEG/GIF and of SVGs (`width="300"`,
   `300px`, `2in` → 192, `50%` → null, missing → null), size limit (`tooLong`, `max`, `unit: bytes`),
   dimension limit checked before decoding (`imageDimensionsExceeded` with `maxWidth`, `maxHeight`,
   `width`, `height`; the decoder is never called for the 1921 px file), truncated PNG → `invalidImage`,
   animated GIF accepted, SVG without dimensions accepted.
-- [ ] T024 [P] [US1] Write `tests/Unit/Support/SvgSafetyInspectorTest.php` (R4): every file in
+- [x] T024 [P] [US1] Write `tests/Unit/Support/SvgSafetyInspectorTest.php` (R4): every file in
   `hostile/` is refused with the `construct` named in its file name and a line number; every SVG in
   `valid/` is accepted; the inspector never modifies its input (byte comparison); XXE is impossible
   (an entity referencing `/etc/passwd` is refused as `doctype` without reading the file).
-- [ ] T025 [P] [US1] Write `tests/Unit/Support/WcagContrastTest.php` (R5): luminance and ratio of
+- [x] T025 [P] [US1] Write `tests/Unit/Support/WcagContrastTest.php` (R5): luminance and ratio of
   `#ffffff`/`#000000` (21:1), `#1d4ed8` (6.70 on white, 2.19 on `#1d2939`), `#ffd700` (1.40 on
   white); the boundary (a colour with exact ratio 4.4999 refused and reported as 4.49; 4.5 accepted);
   effective colours of FR-031 for every combination of light/dark set/unset/passing; foreground
   selection and the ≥ 4.5:1 guarantee for 1,000 random accepted colours (SC-004).
-- [ ] T026 [P] [US1] Write `tests/Feature/Settings/LogoSettingTest.php` (FR-012–FR-018, AS-1.1–1.4):
+- [x] T026 [P] [US1] Write `tests/Feature/Settings/LogoSettingTest.php` (FR-012–FR-018, AS-1.1–1.4):
   `PUT` of each valid fixture as admin session and rw key → 200 with type, size, dimensions, `ETag`;
   Redis `MAIN_LOGO` equals `data:<detected type>;base64,<bytes>`; `GET /public-config` signed out
   shows the logo URL; the dark logo is independent; each hostile fixture → 422 on `body` with the
@@ -273,7 +273,7 @@ stored Redis bytes with what legacy writes (spec US1).
   `image/jpeg` (as 001 serves it); a legacy-stored hostile SVG stays readable (edge case); demo mode → 403 `demo-mode`
   for `PUT` and `DELETE`; Redis down → 503. Audit: `logoReplacement` / `logoDeletion` with old and new
   metadata, never the bytes.
-- [ ] T027 [P] [US1] Write `tests/Feature/Settings/UiTextsTest.php` (FR-019–FR-023, AS-1.5, AS-1.6):
+- [x] T027 [P] [US1] Write `tests/Feature/Settings/UiTextsTest.php` (FR-019–FR-023, AS-1.5, AS-1.6):
   PATCH `productName: "Acme & Co Mail"` → Redis `MAIN_NAME` = `Acme &amp; Co Mail` (the expression
   `htmlspecialchars('Acme & Co Mail')` of legacy, asserted byte-exact), response and public config
   return the plain text; `<b>` stored escaped; help text and footer stored raw; announcement
@@ -284,12 +284,12 @@ stored Redis bytes with what legacy writes (spec US1).
   writes `UI_FOOTER` and deletes `UI_IMPRESS` in the same transaction (`footerMigrated: true` in the
   audit); outdated tag → 412; a change in Redis by "legacy" between read and PATCH with the old tag →
   412; demo mode → 403. Audit `uiTextsUpdate` with plain old/new values and HTML fields as sizes.
-- [ ] T028 [P] [US1] Write `tests/Feature/Settings/LoginPageSettingsTest.php` (FR-024): PATCH writes
+- [x] T028 [P] [US1] Write `tests/Feature/Settings/LoginPageSettingsTest.php` (FR-024): PATCH writes
   `CUSTOM_LOGIN` byte-identical to legacy's `json_encode` (key order and integer values), unsent
   flags keep their values, `forceSingleSignOn: true` is stored without an identity provider and
   password sign-in keeps working (001's `POST /session`), public config reflects the flags; demo mode
   → 403; audit `loginPageUpdate`.
-- [ ] T029 [P] [US1] Write `tests/Feature/Settings/AppLinkSettingsTest.php` (FR-025–FR-028, AS-1.9,
+- [x] T029 [P] [US1] Write `tests/Feature/Settings/AppLinkSettingsTest.php` (FR-025–FR-028, AS-1.9,
   AS-1.10): GET returns custom links in order and the built-in links read-only (also with
   `SKIP_SOGO=y`, where 001's rule applies); old-style legacy entries are returned converted; PATCH
   with "Helpdesk" and `signedInUrl: https://help.example.org/?u=%u` writes `APP_LINKS` exactly as
@@ -297,45 +297,45 @@ stored Redis bytes with what legacy writes (spec US1).
   then contains it with `showOnLoginPage` and the `%u` placeholder; `javascript:alert(1)` → 422 on
   `links.0.url` and nothing stored; 51 entries → 422 `tooMany`; duplicate names accepted; demo mode →
   403; audit `appLinksUpdate`.
-- [ ] T030 [P] [US1] Write `tests/Feature/Settings/BrandColorsTest.php` (FR-029–FR-034, AS-1.7,
+- [x] T030 [P] [US1] Write `tests/Feature/Settings/BrandColorsTest.php` (FR-029–FR-034, AS-1.7,
   AS-1.8): `#FFD700` light → 422 `insufficientContrast` with `{ratio: 1.4, minimum: 4.5, surface:
   "#ffffff"}`; `#1D4ED8` → stored `#1d4ed8` in `restv2:brand-colors`, `effective.light` with white
   foreground, `effective.dark` null; a passing dark colour applies to dark; `null` clears; public
   config `brandColors` follows on the next read and its `ETag` changes; demo mode → 403; audit
   `brandColorsUpdate`.
-- [ ] T031 [P] [US1] Write `tests/Feature/Settings/SettingsCapabilitiesTest.php` (FR-094): admin
+- [x] T031 [P] [US1] Write `tests/Feature/Settings/SettingsCapabilitiesTest.php` (FR-094): admin
   session, rw and ro keys → 200 with `hostname` = `mail.example.org`, `massMail.suggestedSender` =
   `noreply@mail.example.org`, `demoMode` and `licenseVerificationEnabled` following the settings,
   `logos` following `RESTV2_LOGO_LIMITS`, the contrast constants, the limits equal to
   `SettingsLimits`; no secret or host name other than `hostname` appears; domain admin and mailbox
   user → 403.
-- [ ] T032 [US1] Add the US1 operations to `tests/Feature/Settings/SettingsAuthorizationMatrixTest.php`
+- [x] T032 [US1] Add the US1 operations to `tests/Feature/Settings/SettingsAuthorizationMatrixTest.php`
   (FR-001–FR-006, SC-010; new; a data provider over operation × matrix entry, see the header): `getSettingsCapabilities`,
   the three logo operations, UI texts, login page, app links, brand colours. Each refused case
   changes nothing (Redis snapshot compared).
 
 ### Implementation for User Story 1
 
-- [ ] T033 [P] [US1] Create `app/Support/Images/{ImageInspector,ImageInspection}.php` (R3). This makes
+- [x] T033 [P] [US1] Create `app/Support/Images/{ImageInspector,ImageInspection}.php` (R3). This makes
   T023 pass.
-- [ ] T034 [P] [US1] Create `app/Support/Images/SvgSafetyInspector.php` (R4). This makes T024 pass.
-- [ ] T035 [P] [US1] Create `app/Support/Color/WcagContrast.php` (R5). This makes T025 pass.
-- [ ] T036 [US1] Create `app/Services/Settings/BrandingService.php` with `logo(variant)`,
+- [x] T034 [P] [US1] Create `app/Support/Images/SvgSafetyInspector.php` (R4). This makes T024 pass.
+- [x] T035 [P] [US1] Create `app/Support/Color/WcagContrast.php` (R5). This makes T025 pass.
+- [x] T036 [US1] Create `app/Services/Settings/BrandingService.php` with `logo(variant)`,
   `replaceLogo(variant, bytes, ifMatch, principal)`, `deleteLogo(variant, ifMatch, principal)`,
   `uiTexts()`, `updateUiTexts(patch, ifMatch, principal)` (escaping, `UI_IMPRESS` migration),
   `loginPage()`, `updateLoginPage(…)`, `appLinks()`, `updateAppLinks(…)` (legacy `json_encode`
   format, old-style conversion on read), each through `RedisSettingsStore`, each checking demo mode
   through `SettingsPolicy`, each auditing per data-model section 7.
-- [ ] T037 [US1] Create `app/Services/Settings/BrandColorService.php` (hash `restv2:brand-colors` on
+- [x] T037 [US1] Create `app/Services/Settings/BrandColorService.php` (hash `restv2:brand-colors` on
   the `restv2` connection, contrast validation, effective colours) and extend
   `app/Services/Branding/PublicConfigService.php` (001) to add `brandColors` and include it in the
   public configuration's `ETag`.
-- [ ] T038 [P] [US1] Create the Form Requests in `app/Http/Requests/Api/V2/Settings/`:
+- [x] T038 [P] [US1] Create the Form Requests in `app/Http/Requests/Api/V2/Settings/`:
   `UpdateUiTextsRequest`, `UpdateLoginPageSettingsRequest`, `UpdateAppLinkSettingsRequest`,
   `UpdateBrandColorsRequest` (merge patch: at least one member, `required` on `body` when empty;
   `null` allowed only for `announcement.type` and the colours), with the rules of data-model.md
   section 1 and the rule objects of T016.
-- [ ] T039 [US1] Create `app/Services/Settings/SettingsCapabilitiesService.php` (R23) and the
+- [x] T039 [US1] Create `app/Services/Settings/SettingsCapabilitiesService.php` (R23) and the
   controllers `app/Http/Controllers/Api/V2/{SettingsCapabilitiesController,LogoSettingController,
   UiTextsController,LoginPageSettingsController,AppLinkSettingsController,BrandColorsController}.php`
   (thin: authorise with `SettingsPolicy`, call the service, return the resource with `ETag`; the logo
@@ -887,3 +887,19 @@ duplicate it"), recorded as they were made:
 - **T022**: the routes are registered with the controllers of each story (a route to a controller
   that does not exist yet would fail static analysis and the route cache); the 013 feature entry in
   `tests/feature-registry.json` lists its 45 operations as pending until each story lands.
+- **T036**: the UI texts read the footer key of older releases (`UI_IMPRESS`) whenever it holds a
+  value, not only while `UI_FOOTER` is empty, because legacy's `customize('get', 'ui_texts')` and
+  001's public configuration both let it win; the next change moves it to `UI_FOOTER` and deletes it,
+  as FR-023 says. A stored text `0` reads as empty, as legacy tests the values for truthiness.
+  `BrandingService` also holds the IP check from the start (T086).
+- **T037**: `restv2:brand-colors` is written through `RedisSettingsStore` on the `mailcow`
+  connection with its full name, so that it shares the transaction, tag and audit mechanics of the
+  other settings; it is the same Redis key as `brand-colors` behind the `restv2` connection's
+  `restv2:` prefix (both connections use `REDIS_DB`). 001's `PublicConfigService` gained the
+  `brandColors` member, public `builtInApps()` (the app link settings show them read-only) and the
+  static `logoUrl()`/`logoVersion()` helpers shared with the logo settings; its `ETag` covers the
+  colours because it is computed over the representation. 001's `PublicConfigTest` expects the new
+  member.
+- **T038**: the four Form Requests share `App\Http\Requests\Api\V2\Settings\SettingsRequest`
+  (authorisation before the rules, `unknownField` for members the schema does not define, the
+  `validateOnly` query flag). The contrast rule is `App\Rules\BrandColorContrast`.

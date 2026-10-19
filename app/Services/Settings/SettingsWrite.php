@@ -13,8 +13,8 @@ use Redis;
 final readonly class SettingsWrite
 {
     /**
-     * @param  Closure(Redis): void  $apply
-     * @param  Closure(Redis): void  $restore
+     * @param  Closure(Redis): mixed  $apply
+     * @param  Closure(Redis): mixed  $restore
      */
     public function __construct(
         public Closure $apply,

@@ -65,6 +65,8 @@ class PublicConfigTest extends TestCase
                 'showOnLoginPage' => false,
                 'source' => 'builtIn',
             ]],
+            // Feature 013 (FR-033): no brand colours until an administrator sets them.
+            'brandColors' => ['light' => null, 'dark' => null],
         ]);
         // Any cache may store it but must revalidate (directives in Symfony's order).
         $response->assertHeader('Cache-Control', 'no-cache, public');

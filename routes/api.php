@@ -14,9 +14,11 @@ use App\Http\Controllers\Api\V2\ApiDocsController;
 use App\Http\Controllers\Api\V2\ApiKeyController;
 use App\Http\Controllers\Api\V2\ApiKeyOwnerCandidateController;
 use App\Http\Controllers\Api\V2\ApiKeyRevocationController;
+use App\Http\Controllers\Api\V2\AppLinkSettingsController;
 use App\Http\Controllers\Api\V2\AppPasswordController;
 use App\Http\Controllers\Api\V2\AuditEventController;
 use App\Http\Controllers\Api\V2\BccMapController;
+use App\Http\Controllers\Api\V2\BrandColorsController;
 use App\Http\Controllers\Api\V2\ContainerController;
 use App\Http\Controllers\Api\V2\ContainerResourceUsageController;
 use App\Http\Controllers\Api\V2\ContainerRestartController;
@@ -62,6 +64,8 @@ use App\Http\Controllers\Api\V2\ImpersonationController;
 use App\Http\Controllers\Api\V2\InstallationController;
 use App\Http\Controllers\Api\V2\LivenessController;
 use App\Http\Controllers\Api\V2\LogEntryController;
+use App\Http\Controllers\Api\V2\LoginPageSettingsController;
+use App\Http\Controllers\Api\V2\LogoSettingController;
 use App\Http\Controllers\Api\V2\MailboxBulkActionController;
 use App\Http\Controllers\Api\V2\MailboxCapabilitiesController;
 use App\Http\Controllers\Api\V2\MailboxController;
@@ -141,6 +145,7 @@ use App\Http\Controllers\Api\V2\SecondFactorController;
 use App\Http\Controllers\Api\V2\SelfServiceCapabilitiesController;
 use App\Http\Controllers\Api\V2\SenderPermissionCandidateController;
 use App\Http\Controllers\Api\V2\SessionController;
+use App\Http\Controllers\Api\V2\SettingsCapabilitiesController;
 use App\Http\Controllers\Api\V2\SieveFilterController;
 use App\Http\Controllers\Api\V2\SingleSignOnCompletionController;
 use App\Http\Controllers\Api\V2\SingleSignOnController;
@@ -157,6 +162,7 @@ use App\Http\Controllers\Api\V2\SyncJobScheduleResetController;
 use App\Http\Controllers\Api\V2\TemporaryAliasController;
 use App\Http\Controllers\Api\V2\TlsPolicyMapController;
 use App\Http\Controllers\Api\V2\TransportController;
+use App\Http\Controllers\Api\V2\UiTextsController;
 use App\Http\Controllers\Api\V2\UpdateStatusController;
 use App\Http\Controllers\Api\V2\WebmailHandOffController;
 use App\Http\Middleware\AuthorizeMonitoring;
@@ -1311,6 +1317,44 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('itemId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'quarantineItemSpamLearning', 'target' => 'quarantineItem'])
             ->name('quarantine-spam-learning.store');
+    });
+
+    // Feature 013: system settings (research R25). Reads: administrators by session or key,
+    // read-only keys included; writes: a session with the anti-forgery token or a read-write key.
+    // State-changing routes declare `restv2.audit` with their event and target type (R24); the
+    // validate-only option is not audited (`skipWhenQueryTrue`).
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/capabilities/settings', [SettingsCapabilitiesController::class, 'show'])->name('settings-capabilities.show');
+        Route::get('/settings/logos/{variant}', [LogoSettingController::class, 'show'])
+            ->where('variant', 'light|dark')
+            ->name('settings-logos.show');
+        Route::get('/settings/ui-texts', [UiTextsController::class, 'show'])->name('settings-ui-texts.show');
+        Route::get('/settings/login-page', [LoginPageSettingsController::class, 'show'])->name('settings-login-page.show');
+        Route::get('/settings/app-links', [AppLinkSettingsController::class, 'show'])->name('settings-app-links.show');
+        Route::get('/settings/brand-colors', [BrandColorsController::class, 'show'])->name('settings-brand-colors.show');
+    });
+
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::put('/settings/logos/{variant}', [LogoSettingController::class, 'update'])
+            ->where('variant', 'light|dark')
+            ->defaults('restv2.audit', ['event' => 'logoReplacement', 'target' => 'logo'])
+            ->name('settings-logos.update');
+        Route::delete('/settings/logos/{variant}', [LogoSettingController::class, 'destroy'])
+            ->where('variant', 'light|dark')
+            ->defaults('restv2.audit', ['event' => 'logoDeletion', 'target' => 'logo'])
+            ->name('settings-logos.destroy');
+        Route::patch('/settings/ui-texts', [UiTextsController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'uiTextsUpdate', 'target' => 'uiTexts'])
+            ->name('settings-ui-texts.update');
+        Route::patch('/settings/login-page', [LoginPageSettingsController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'loginPageUpdate', 'target' => 'loginPage'])
+            ->name('settings-login-page.update');
+        Route::patch('/settings/app-links', [AppLinkSettingsController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'appLinksUpdate', 'target' => 'appLinks'])
+            ->name('settings-app-links.update');
+        Route::patch('/settings/brand-colors', [BrandColorsController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'brandColorsUpdate', 'target' => 'brandColors'])
+            ->name('settings-brand-colors.update');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

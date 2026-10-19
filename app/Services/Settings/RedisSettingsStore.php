@@ -112,7 +112,7 @@ class RedisSettingsStore
      * @param  Closure(Redis): TRaw  $read  the resource's raw values
      * @param  Closure(TRaw): string  $etagOf  the version tag of raw values
      * @param  Closure(TRaw): (SettingsWrite|null)  $plan  the change, or null when nothing changes
-     * @param  Closure(mixed): void  $audit  writes the success audit record from the write's payload
+     * @param  Closure(mixed): mixed  $audit  writes the success audit record from the write's payload
      *
      * @throws PreconditionFailedHttpException when $ifMatch is outdated
      * @throws SharedStoreUnavailable

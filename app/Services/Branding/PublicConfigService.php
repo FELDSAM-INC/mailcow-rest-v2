@@ -5,6 +5,8 @@ namespace App\Services\Branding;
 use App\Models\Mailcow\IdentityProviderSetting;
 use App\Services\Config\MailcowConfig;
 use App\Services\IdentityProvider\IdentityProviderRepository;
+use App\Services\Settings\BrandColorService;
+use App\Support\Color\WcagContrast;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -20,7 +22,9 @@ use Throwable;
  *  - a value legacy treats as unset (missing, empty or "0") falls back to its default;
  *  - logos are data URIs of the media types legacy accepts on upload;
  *  - app links are the built-in apps of `$MAILCOW_APPS` (without SOGo ones when SOGo is
- *    disabled), then the operator's `APP_LINKS`, old-style entries converted like legacy.
+ *    disabled), then the operator's `APP_LINKS`, old-style entries converted like legacy;
+ *  - feature 013: the brand colours in effect (`brandColors`), from the API-owned hash
+ *    `restv2:brand-colors` (App\Services\Settings\BrandColorService).
  */
 class PublicConfigService
 {
@@ -96,7 +100,28 @@ class PublicConfigService
             ],
             'appsLabel' => $appsLabel === null ? null : htmlspecialchars_decode($appsLabel, ENT_QUOTES),
             'appLinks' => [...$this->builtInApps(), ...$this->operatorLinks()],
+            // Feature 013 (FR-033): every colour reaches 4.5:1 against its reference surface.
+            'brandColors' => $this->brandColors(),
         ];
+    }
+
+    /**
+     * Feature 013: the brand colours in effect; none when the hash cannot be read.
+     *
+     * @return array{light: array{color: string, foreground: string}|null, dark: array{color: string, foreground: string}|null}
+     */
+    private function brandColors(): array
+    {
+        try {
+            $stored = $this->redis->connection('mailcow')->hgetall(BrandColorService::KEY);
+        } catch (Throwable $e) {
+            Log::warning('The brand colours could not be read for the public configuration.', ['error' => $e->getMessage()]);
+            $stored = [];
+        }
+
+        $stored = is_array($stored) ? $stored : [];
+
+        return WcagContrast::effective(BrandColorService::valid($stored['light'] ?? null), BrandColorService::valid($stored['dark'] ?? null));
     }
 
     /**
@@ -121,7 +146,7 @@ class PublicConfigService
             return null;
         }
 
-        return ['type' => $type, 'bytes' => $bytes, 'version' => substr(hash('sha256', $value), 0, 16)];
+        return ['type' => $type, 'bytes' => $bytes, 'version' => self::logoVersion($value)];
     }
 
     /**
@@ -135,16 +160,31 @@ class PublicConfigService
 
         return $logo === null
             ? ['url' => $default, 'isDefault' => true]
-            : ['url' => "/api/v2/public-config/logos/{$variant}?v={$logo['version']}", 'isDefault' => false];
+            : ['url' => self::logoUrl($variant, $logo['version']), 'isDefault' => false];
+    }
+
+    /**
+     * The address of an uploaded logo (shared with feature 013's logo settings): the image route
+     * with the version of the stored value.
+     */
+    public static function logoUrl(string $variant, string $version): string
+    {
+        return "/api/v2/public-config/logos/{$variant}?v={$version}";
+    }
+
+    /** The version of a stored logo value: the first 16 hex digits of its SHA-256. */
+    public static function logoVersion(string $storedValue): string
+    {
+        return substr(hash('sha256', $storedValue), 0, 16);
     }
 
     /**
      * `$MAILCOW_APPS` as `AppLink`s; with SKIP_SOGO=y, apps whose address points to SOGo are left
-     * out (legacy `is_uri('SOGo', …)`).
+     * out (legacy `is_uri('SOGo', …)`). Feature 013's app link settings show them read-only.
      *
      * @return list<array<string, mixed>>
      */
-    private function builtInApps(): array
+    public function builtInApps(): array
     {
         $links = [];
 

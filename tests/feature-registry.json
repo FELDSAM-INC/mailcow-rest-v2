@@ -553,10 +553,6 @@
     "pendingOperations": [
         "getIpCheckSetting",
         "updateIpCheckSetting",
-        "getQuotaNotificationSettings",
-        "updateQuotaNotificationSettings",
-        "getQuotaNotificationRecipients",
-        "updateQuotaNotificationRecipients",
         "setRspamdUiPassword",
         "getLegacyApiCorsSettings",
         "updateLegacyApiCorsSettings",

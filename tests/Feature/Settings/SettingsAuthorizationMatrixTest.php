@@ -115,6 +115,11 @@ class SettingsAuthorizationMatrixTest extends TestCase
             'listGlobalSieveFilters' => ['GET', '/api/v2/settings/global-sieve-filters', null, 200, self::ADMIN_ONLY, []],
             'getGlobalSieveFilter' => ['GET', '/api/v2/settings/global-sieve-filters/prefilter', null, 200, self::ADMIN_ONLY, []],
             'replaceGlobalSieveFilter' => ['PUT', '/api/v2/settings/global-sieve-filters/postfilter', ['script' => "keep;\n", 'deferRestart' => true], 200, self::ADMIN_ONLY, []],
+            // US5: quota notifications and a domain's copy recipients (domain administrators too).
+            'getQuotaNotificationSettings' => ['GET', '/api/v2/settings/quota-notification', null, 200, self::ADMIN_ONLY, []],
+            'updateQuotaNotificationSettings' => ['PATCH', '/api/v2/settings/quota-notification', ['subject' => 'Full'], 200, self::ADMIN_ONLY, []],
+            'getQuotaNotificationRecipients' => ['GET', '/api/v2/domains/example.org/quota-notification-recipients', null, 200, self::ADMIN_AND_DOMAIN_ADMIN, []],
+            'updateQuotaNotificationRecipients' => ['PATCH', '/api/v2/domains/example.org/quota-notification-recipients', ['recipients' => ['it@example.org'], 'active' => true], 200, self::ADMIN_AND_DOMAIN_ADMIN, []],
         ];
     }
 

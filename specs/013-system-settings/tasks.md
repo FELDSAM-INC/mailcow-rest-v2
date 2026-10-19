@@ -516,13 +516,13 @@ and try foreign and alias domains as a domain administrator (spec US5).
 
 ### Tests for User Story 5 (write first, observe failing)
 
-- [ ] T061 [P] [US5] Write `tests/Feature/Settings/QuotaNotificationSettingsTest.php` (FR-043–FR-045,
+- [x] T061 [P] [US5] Write `tests/Feature/Settings/QuotaNotificationSettingsTest.php` (FR-043–FR-045,
   AS-5.1, AS-5.2): with nothing stored → `quota-warning@localhost`, `Quota warning` and the fixture
   `quota.tpl`, each marked default; PATCH sender, subject and a template with `{{username}}` and
   `{{percent}}` → `QW_SENDER`, `QW_SUBJ`, `QW_HTML` written, markers false; `""` restores the default
   marker; invalid sender → 422 (legacy stores `""`); subject with a line break → 422; template with a
   Jinja syntax error accepted; audit with template sizes.
-- [ ] T062 [P] [US5] Write `tests/Feature/Settings/QuotaNotificationRecipientsTest.php` (FR-046–FR-049,
+- [x] T062 [P] [US5] Write `tests/Feature/Settings/QuotaNotificationRecipientsTest.php` (FR-046–FR-049,
   AS-5.3–5.6): a domain administrator of `example.org` saves `it@example.org` and `boss@example.net`
   active → `QW_BCC` field `example.org` = `{"bcc_rcpts":["it@example.org","boss@example.net"],"active":1}`
   (a JSON list, integer active); `IT@example.org` after `it@example.org` stored once; `not-an-address`
@@ -535,7 +535,7 @@ and try foreign and alias domains as a domain administrator (spec US5).
 
 ### Implementation for User Story 5
 
-- [ ] T063 [US5] Create `app/Services/Settings/QuotaNotificationService.php`,
+- [x] T063 [US5] Create `app/Services/Settings/QuotaNotificationService.php`,
   `app/Services/Settings/QuotaNotificationRecipientsService.php` (R10, scope through 002's lookup,
   alias domains → 404), `app/Policies/QuotaNotificationRecipientsPolicy.php`, the Form Requests
   `UpdateQuotaNotificationSettingsRequest`, `UpdateQuotaNotificationRecipientsRequest` and the
@@ -920,3 +920,8 @@ duplicate it"), recorded as they were made:
   with `TimeLimit::raise(DOCKER_TIMEOUT + 20)`. The script check is the rule object
   `App\Rules\GlobalSieveScript` around 005's `SieveValidator`; the size limit applies to the
   normalised script, as stored.
+- **T063**: the scope lookup is feature 002's `App\Services\Domains\DomainScope::resolve()` (alias
+  domains and invalid names resolve to nothing), wrapped by `QuotaNotificationRecipientsPolicy`,
+  which also refuses mailbox users; the Form Request checks role and scope before its rules, so a
+  foreign domain answers `404` whatever the body. The default `quota.tpl` comes from feature 005's
+  template mount, read by `PasswordResetNotificationService::template()`.

@@ -127,6 +127,8 @@ use App\Http\Controllers\Api\V2\QuarantineNotificationBulkActionController;
 use App\Http\Controllers\Api\V2\QuarantineNotificationSettingsController;
 use App\Http\Controllers\Api\V2\QuarantineSettingsController;
 use App\Http\Controllers\Api\V2\QuarantineTemplatePreviewController;
+use App\Http\Controllers\Api\V2\QuotaNotificationRecipientsController;
+use App\Http\Controllers\Api\V2\QuotaNotificationSettingsController;
 use App\Http\Controllers\Api\V2\RateLimitBucketController;
 use App\Http\Controllers\Api\V2\RateLimitController;
 use App\Http\Controllers\Api\V2\ReadinessController;
@@ -1352,6 +1354,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/settings/global-sieve-filters/{filterId}', [GlobalSieveFilterController::class, 'show'])
             ->where('filterId', 'prefilter|postfilter')
             ->name('settings-global-sieve-filters.show');
+        Route::get('/settings/quota-notification', [QuotaNotificationSettingsController::class, 'show'])->name('settings-quota-notification.show');
+        Route::get('/domains/{domain}/quota-notification-recipients', [QuotaNotificationRecipientsController::class, 'show'])
+            ->where('domain', '[^/]+')
+            ->name('quota-notification-recipients.show');
         Route::get('/presets/{presetKind}', [PresetController::class, 'index'])
             ->where('presetKind', 'rspamd|sieve')
             ->name('presets.index');
@@ -1404,6 +1410,13 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('filterId', 'prefilter|postfilter')
             ->defaults('restv2.audit', ['event' => 'globalSieveFilterReplacement', 'target' => 'globalSieveFilter', 'skipWhenQueryTrue' => 'validateOnly'])
             ->name('settings-global-sieve-filters.update');
+        Route::patch('/settings/quota-notification', [QuotaNotificationSettingsController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'quotaNotificationUpdate', 'target' => 'quotaNotification'])
+            ->name('settings-quota-notification.update');
+        Route::patch('/domains/{domain}/quota-notification-recipients', [QuotaNotificationRecipientsController::class, 'update'])
+            ->where('domain', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'quotaNotificationRecipientsUpdate', 'target' => 'quotaNotificationRecipients'])
+            ->name('quota-notification-recipients.update');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

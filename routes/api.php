@@ -110,6 +110,8 @@ use App\Http\Controllers\Api\V2\PublicAddressesController;
 use App\Http\Controllers\Api\V2\PublicConfigController;
 use App\Http\Controllers\Api\V2\PublicConfigLogoController;
 use App\Http\Controllers\Api\V2\PushNotificationSettingsController;
+use App\Http\Controllers\Api\V2\QuarantineBulkActionController;
+use App\Http\Controllers\Api\V2\QuarantineCapabilitiesController;
 use App\Http\Controllers\Api\V2\QuarantineItemController;
 use App\Http\Controllers\Api\V2\QuarantineItemDownloadController;
 use App\Http\Controllers\Api\V2\QuarantineItemReleaseController;
@@ -1141,6 +1143,7 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     // routes declare `restv2.audit` (research R19).
     Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
         Route::get('/quarantine', [QuarantineItemController::class, 'index'])->name('quarantine.index');
+        Route::get('/capabilities/quarantine', [QuarantineCapabilitiesController::class, 'show'])->name('quarantine-capabilities.show');
         Route::get('/quarantine/{itemId}', [QuarantineItemController::class, 'show'])
             ->where('itemId', '[1-9][0-9]{0,9}')
             ->name('quarantine.show');
@@ -1153,6 +1156,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     });
 
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        // POST-only bulk path: object paths never accept POST.
+        Route::post('/quarantine/bulk-actions', [QuarantineBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'quarantineItem'])
+            ->name('quarantine-bulk-actions.store');
         Route::delete('/quarantine/{itemId}', [QuarantineItemController::class, 'destroy'])
             ->where('itemId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'quarantineItemDeletion', 'target' => 'quarantineItem'])

@@ -3,9 +3,11 @@
 namespace App\Services\Quarantine;
 
 use App\Auth\Principal;
+use App\Casts\MailcowDateTime;
 use App\Models\Mailcow\QuarantineItem;
 use App\Services\Access\SpamFilterScope;
 use App\Support\Http\ListQuery;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -18,11 +20,22 @@ use Illuminate\Support\Facades\DB;
  */
 class QuarantineQuery
 {
-    /** Contract sort value => column. */
+    /** Contract sort value => column (`virus` is the computed flag). */
     public const SORTS = [
         'arrivedAt' => 'quarantine.created',
         'id' => 'quarantine.id',
+        'queueId' => 'quarantine.qid',
+        'score' => 'quarantine.score',
+        'sender' => 'quarantine.sender',
+        'recipient' => 'quarantine.rcpt',
+        'subject' => 'quarantine.subject',
+        'action' => 'quarantine.action',
+        'virus' => 'virus',
+        'notified' => 'quarantine.notified',
     ];
+
+    /** Contract action => stored action; `other` is any other stored value. */
+    public const ACTIONS = ['rejected' => 'reject', 'junk' => 'add header', 'subjectRewritten' => 'rewrite subject'];
 
     public const LIST_COLUMNS = ['id', 'qid', 'subject', 'score', 'sender', 'rcpt', 'action', 'created', 'notified'];
 
@@ -44,15 +57,72 @@ class QuarantineQuery
     }
 
     /**
+     * @param  array{recipient?: string|null, domain?: string|null, actions?: list<string>, virus?: bool|null, notified?: bool|null, from?: CarbonImmutable|null, to?: CarbonImmutable|null, minScore?: float|null, maxScore?: float|null}  $filters
      * @return array{rows: list<QuarantineItem>, total: int}
      */
-    public function page(Principal $principal, ListQuery $list): array
+    public function page(Principal $principal, ListQuery $list, array $filters = []): array
     {
         $query = $this->base($principal);
+        $this->filter($query, $filters);
+        $list->applySearch($query, ['quarantine.subject', 'quarantine.sender', 'quarantine.rcpt', 'quarantine.qid']);
         $total = (clone $query)->count();
         $query->orderBy($list->sortColumn(), $list->order)->orderBy('quarantine.id', 'desc');
 
         return ['rows' => array_values($query->offset($list->offset)->limit($list->limit)->get()->all()), 'total' => $total];
+    }
+
+    /**
+     * The filters of research R16; times are compared in mailcow's local time zone (TZ), in which
+     * `created` is stored; items without a score never match a score range.
+     *
+     * @param  Builder<QuarantineItem>  $query
+     * @param  array<string, mixed>  $filters
+     */
+    private function filter(Builder $query, array $filters): void
+    {
+        if (is_string($filters['recipient'] ?? null)) {
+            $query->where('quarantine.rcpt', $filters['recipient']);
+        }
+
+        if (is_string($filters['domain'] ?? null)) {
+            $query->whereRaw("SUBSTRING_INDEX(`quarantine`.`rcpt`, '@', -1) = ?", [$filters['domain']]);
+        }
+
+        $actions = (array) ($filters['actions'] ?? []);
+
+        if ($actions !== []) {
+            $query->where(function (Builder $inner) use ($actions): void {
+                $stored = array_values(array_intersect_key(self::ACTIONS, array_flip($actions)));
+
+                if ($stored !== []) {
+                    $inner->orWhereIn('quarantine.action', $stored);
+                }
+
+                if (in_array('other', $actions, true)) {
+                    $inner->orWhereNotIn('quarantine.action', array_values(self::ACTIONS));
+                }
+            });
+        }
+
+        if (is_bool($filters['virus'] ?? null)) {
+            $query->whereRaw("IFNULL(LOCATE('VIRUS_FOUND', `quarantine`.`symbols`), 0) ".($filters['virus'] ? '> 0' : '= 0'));
+        }
+
+        if (is_bool($filters['notified'] ?? null)) {
+            $filters['notified'] ? $query->where('quarantine.notified', '<>', 0) : $query->where('quarantine.notified', 0);
+        }
+
+        foreach (['from' => '>=', 'to' => '<'] as $name => $operator) {
+            if (($filters[$name] ?? null) instanceof CarbonImmutable) {
+                $query->where('quarantine.created', $operator, $filters[$name]->setTimezone(MailcowDateTime::zone())->format('Y-m-d H:i:s'));
+            }
+        }
+
+        foreach (['minScore' => '>=', 'maxScore' => '<='] as $name => $operator) {
+            if (is_float($filters[$name] ?? null)) {
+                $query->where('quarantine.score', $operator, $filters[$name]);
+            }
+        }
     }
 
     /**

@@ -28,7 +28,7 @@ class QuarantineItemController extends Controller
         $principal = RequestContext::requirePrincipal($request);
         $policy->authorize($principal, QuarantinePolicy::VIEW_ITEMS);
         $list = $request->listQuery();
-        $page = $query->page($principal, $list);
+        $page = $query->page($principal, $list, $request->filters());
 
         return QuarantineItemResource::list($page['rows'], $list->meta($page['total']));
     }

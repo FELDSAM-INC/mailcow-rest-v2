@@ -399,7 +399,7 @@ across several domains; run concurrent releases; make Rspamd unreachable during 
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T042 [P] [US2] Write `tests/Feature/Quarantine/QuarantineScopeAndFilterTest.php` for
+- [X] T042 [P] [US2] Write `tests/Feature/Quarantine/QuarantineScopeAndFilterTest.php` for
   `listQuarantineItems` (FR-001, FR-009 to FR-011, AS-2.1): a domain admin of 2 of 5 domains gets
   exactly the items whose recipient domain is managed, including an item of a deleted mailbox and
   an item of a resource; admin gets all; filters `recipient`, `domain` (also in Unicode form),
@@ -408,7 +408,7 @@ across several domains; run concurrent releases; make Rspamd unreachable during 
   subject, sender, recipient and queue id case-insensitively, with `%` and `_` literal; every sort
   field ascending and descending, ties by `id DESC`; invalid values (`sort=foo`, `action=bar`,
   `limit=1001`, `from=yesterday`) → `422` with rule codes.
-- [ ] T043 [P] [US2] Write `tests/Feature/Quarantine/QuarantineBulkActionTest.php` for
+- [X] T043 [P] [US2] Write `tests/Feature/Quarantine/QuarantineBulkActionTest.php` for
   `applyQuarantineBulkAction` (FR-027, AS-2.2, AS-2.3, AS-2.8): 40 targets with one removed → 39
   `done` with `report`, one `notFound`, `summary` counts, 40 audit records sharing `bulkRequestId`
   (39 success, 1 failure); each action (`release`, `releaseWithoutLearning`, `learnAsSpam`,
@@ -419,7 +419,7 @@ across several domains; run concurrent releases; make Rspamd unreachable during 
   → `403 permission-flag-required`, nothing removed; a read-only key → `403
   insufficient-key-scope`, with one failure record (null target, `details.itemIds`); 101 targets
   → `422 tooMany` `max: 100`; out-of-scope ids → `notFound`.
-- [ ] T044 [P] [US2] Write `tests/Feature/Quarantine/QuarantineConcurrencyTest.php` (FR-026,
+- [X] T044 [P] [US2] Write `tests/Feature/Quarantine/QuarantineConcurrencyTest.php` (FR-026,
   AS-2.5, SC-006): while the lock of an item is held (acquired in the test), release, learn and
   delete answer `409 quarantine-item-busy` with `Retry-After: 5`, and after the item is removed
   `404`; ten PHP processes (`Symfony\Component\Process`) run `php artisan restv2:test-release`
@@ -427,14 +427,14 @@ across several domains; run concurrent releases; make Rspamd unreachable during 
   attempts (SC-006) — and every item is delivered exactly once and learned exactly once (the fakes
   append their calls to a shared file), every other attempt ending in `409` or `404`; a lock left by
   a killed process expires after its TTL (a short test TTL).
-- [ ] T045 [P] [US2] Write `tests/Feature/Quarantine/QuarantineRoleAndKeyAccessTest.php` (FR-004,
+- [X] T045 [P] [US2] Write `tests/Feature/Quarantine/QuarantineRoleAndKeyAccessTest.php` (FR-004,
   FR-006, AS-2.6): roles × keys for list, inspect, downloads, release and delete: a domain admin's
   read-only key with `quarantine` lists and downloads within the scope and gets `403
   insufficient-key-scope` on release; a domain admin without `quarantine` lists, inspects and
   downloads attachments but gets `permission-flag-required` for the whole message and actions; a
   domain admin's key acts with the owner's current flags (flag removed in `da_acl` → next request
   refused, FR-002); a restricted session → `403 pending-action-required`.
-- [ ] T046 [P] [US2] Write `tests/Feature/Quarantine/QuarantineCapabilitiesTest.php` for
+- [X] T046 [P] [US2] Write `tests/Feature/Quarantine/QuarantineCapabilitiesTest.php` for
   `getQuarantineCapabilities` at `GET /capabilities/quarantine` (FR-072, AS-2.9): every role and both key types get `bulkLimit` 100,
   `defaultPageSize` 25, `maxPageSize` 1000, `contentSizeLimit` 10485760,
   `pipelineMaxMessageSize` 10485760, the spam score range 0–5000 step 0.1, `senderPattern`
@@ -446,12 +446,12 @@ across several domains; run concurrent releases; make Rspamd unreachable during 
 
 ### Implementation for User Story 2
 
-- [ ] T047 [US2] Extend `app/Services/Quarantine/QuarantineQuery.php` and
+- [X] T047 [US2] Extend `app/Services/Quarantine/QuarantineQuery.php` and
   `ListQuarantineItemsRequest.php` with the filters, search and sort map of R16 (`recipient`
   normalised, `domain` normalised with 002's normaliser, repeated `action` read from the raw query
   string like 001's audit filter, `virus`, `notified`, `from`/`to` converted to `TZ`, score range,
   escaped `LIKE` for `q`, every sort field with `id DESC` tie-break). This makes T042 pass.
-- [ ] T048 [US2] Create `app/Http/Requests/Api/V2/QuarantineBulkActionRequest.php` (`action` enum,
+- [X] T048 [US2] Create `app/Http/Requests/Api/V2/QuarantineBulkActionRequest.php` (`action` enum,
   `targets` 1–100 `BulkTarget`s with `id` `^[0-9]+$`, `tooMany` `max: 100`),
   `app/Services/Quarantine/QuarantineBulkActions.php` (R18, built like 002's `DomainBulkActions`:
   whole-request policy check, deduplication, `QuarantineActionService` per distinct target with its
@@ -459,11 +459,11 @@ across several domains; run concurrent releases; make Rspamd unreachable during 
   `bulkRequestId`) and `app/Http/Controllers/Api/V2/QuarantineBulkActionController.php` (`store`,
   `QuarantineBulkResult` response); register `POST /quarantine/bulk-actions` before
   `/quarantine/{itemId}`. This makes T043 and T045 pass.
-- [ ] T049 [US2] Add the test-only artisan command `tests/Support/Commands/TestReleaseCommand.php`
+- [X] T049 [US2] Add the test-only artisan command `tests/Support/Commands/TestReleaseCommand.php`
   (`restv2:test-release`, registered only in the `testing` environment) used by T044, and make
   `QuarantineItemLock` TTL configurable for tests (`restv2.quarantine.lock_ttl`, default 300). This
   makes T044 pass.
-- [ ] T050 [US2] Create `app/Services/Quarantine/QuarantineCapabilities.php` (values from
+- [X] T050 [US2] Create `app/Services/Quarantine/QuarantineCapabilities.php` (values from
   configuration, FR-072) and `app/Http/Controllers/Api/V2/QuarantineCapabilitiesController.php`
   (`show`); register `GET /capabilities/quarantine` (`restv2.auth:authenticated`). This makes T046
   pass.

@@ -42,6 +42,7 @@ class SelfServiceListLatencyTest extends TestCase
 
             DB::table('mailbox')->where('domain', 'perf005.example')->delete();
             DB::table('domain')->where('domain', 'perf005.example')->delete();
+            DB::table('admin')->where('username', 'admin')->delete();
             DB::table('restv2_audit_events')->where('occurred_at', '>=', $this->startedAt)->delete();
             $this->redis()->del('IP_SHORTCOUNTRY');
         }
@@ -98,6 +99,7 @@ class SelfServiceListLatencyTest extends TestCase
             $this->redis()->hMSet('IP_SHORTCOUNTRY', $chunk);
         }
 
+        $this->mailcow()->admin('admin', 'Passw0rd!');
         $this->signInAs('admin', Role::Admin);
         $base = '/api/v2/mailboxes/u1@perf005.example';
         $cases = [

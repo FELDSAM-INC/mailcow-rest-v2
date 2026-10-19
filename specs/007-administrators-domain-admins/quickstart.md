@@ -24,20 +24,29 @@ docker compose run --rm app vendor/bin/pint --test && docker compose run --rm ap
   feature as covered.
 - `LastActiveAdminConcurrencyTest` (SC-003) ends with at least one active administrator in every
   one of its 1,000 rounds.
-- `DomainAdminListPerformanceTest` (SC-008) reports a p95 under 1 s for a page of 25 with 5,000
-  domain administrators and 5,000 domains.
+- `SsoTokenConcurrencyTest` ends with exactly one successful sign-in in every one of its 200
+  rounds (this API against legacy's statements).
+- `DomainAdminListPerformanceTest` (SC-008, group `performance`, left out of `composer test`; run
+  `docker compose run --rm app composer test:performance`) reports a p95 under 1 s for a page of 25
+  with 5,000 domain administrators and 5,000 domains on an idle machine.
 - `AccountSecretScanTest` (SC-009) finds no password, hash or token in any audit record or in the
   captured log output.
 
 ## Part B: Manual checks on the dev stack
 
-Reset the dev database (`scripts/dev/reset-dev-database.sh`, 001), which creates `admin`,
+Reset the dev database (`docker compose run --rm app scripts/dev/reset-dev-database.sh`, 001), which creates `admin`,
 `reseller` (domain administrator of `example.org` and `example.net`) and the mailboxes
 `alice@example.org` and `bob@example.org`, all with the password `Passw0rd!dev`. Set
-`ALLOW_ADMIN_EMAIL_LOGIN=y` in the dev environment for the webmail checks.
+`ALLOW_ADMIN_EMAIL_LOGIN=y` in the dev environment for the webmail checks (for example in `.env`,
+or as an `environment` entry of the `app` service in a compose override). The session cookie is
+`Secure`, so the commands use the HTTPS listener with its self-signed certificate (`-k`), as 001's
+quickstart does. Without published ports (a compose override with `ports: !reset []` on `web`),
+run the same commands from a container of the project's network with
+`curl -k --connect-to 127.0.0.1:18443:web:443`.
 
 ```bash
-B=http://localhost:8080/api/v2; J='-H Content-Type:application/json'; M='-H Content-Type:application/merge-patch+json'; C='-c jar -b jar'
+B=https://127.0.0.1:18443/api/v2; alias curl='curl -k'
+J='-H Content-Type:application/json'; M='-H Content-Type:application/merge-patch+json'; C='-c jar -b jar'
 T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/session -d '{"username":"admin","password":"Passw0rd!dev"}' >/dev/null
 
@@ -50,9 +59,11 @@ curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/domain-admins -i \
   -d '{"username":"Reseller1","password":"Passw0rd!dev","domains":["example.org","example.net"]}' | grep -i '^location'
 #   -> Location: /api/v2/domain-admins/reseller1
 curl -s $C "$B/domain-admins?domain=example.org&sort=domainCount&order=desc" | jq '.meta, [.data[].username]'
+#   -> {"total": 2, "limit": 25, "offset": 0}, ["reseller", "reseller1"]
 E=$(curl -s $C $B/domain-admins/reseller1 | jq -r .data.etag)
 curl -s $C $M -H "X-CSRF-Token: $T" -H "If-Match: \"$E\"" -X PATCH $B/domain-admins/reseller1 \
-  -d '{"domains":["example.net"],"permissions":{"loginAs":false}}' | jq '.data | {domains, loginAs: .permissions.loginAs}'
+  -d '{"domains":["example.net"],"permissions":{"loginAs":false}}' | jq '.data | {domains: [.domains[].domain], loginAs: .permissions.loginAs}'
+#   -> {"domains": ["example.net"], "loginAs": false}
 curl -s $C $M -H "X-CSRF-Token: $T" -H "If-Match: \"$E\"" -X PATCH $B/domain-admins/reseller1 -d '{"active":false}' -o /dev/null -w '%{http_code}\n'
 #   -> 412 (the tag changed)
 
@@ -63,13 +74,14 @@ curl -s $C -H "X-CSRF-Token: $T" -X DELETE $B/admins/admin | jq .type
 #   -> "/api/v2/problems/cannot-delete-own-account"
 
 # US4: administrator writes refuse keys. Create a read-write key owned by admin (001), then:
+KEY=$(curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/api-keys -d '{"name":"Part B","ownerUsername":"admin","accessLevel":"readWrite"}' | jq -r .data.secret)
 curl -s -H "X-API-Key: $KEY" $J -X POST $B/admins -d '{"username":"x","password":"Passw0rd!dev"}' | jq .type
 #   -> "/api/v2/problems/session-required";  GET $B/admins with the key -> 200
 
 # US1: bulk deactivation with a stale tag for one item.
 curl -s $C $J -H "X-CSRF-Token: $T" -X POST $B/domain-admins/bulk-actions \
   -d '{"action":"deactivate","targets":[{"id":"reseller1"},{"id":"reseller","version":"stale"}]}' | jq '.data.results'
-#   -> reseller1: done (deactivated); reseller: outdated (still active)
+#   -> [{"id":"reseller1","outcome":"done",...},{"id":"reseller","outcome":"outdated",...}]
 
 # US5: issue a token with the key and sign in with it in a fresh cookie jar.
 TOK=$(curl -s -H "X-API-Key: $KEY" -X POST $B/domain-admins/reseller/sso-token | jq -r .data.token)
@@ -90,6 +102,7 @@ T=$(curl -s $C $B/csrf-token | jq -r .data.token)
 # US6: webmail on behalf (setting on), then the audit trail (US7).
 curl -s $C -H "X-CSRF-Token: $T" -X POST -i $B/mailboxes/alice@example.org/webmail-sign-in | grep -i '^set-cookie'
 curl -s $C "$B/audit-events?impersonatedAccount=bob@example.org" | jq '[.data[] | {eventType, actor: .actor.username, impersonatedAccount}]'
+#   -> impersonationEnd and impersonationStart by admin, impersonatedAccount bob@example.org
 curl -s $C "$B/audit-events?targetType=domainAdmin&targetId=reseller1" | jq '[.data[] | {eventType, details}]'
 ```
 

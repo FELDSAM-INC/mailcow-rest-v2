@@ -1,8 +1,9 @@
 type: object
 description: |
   One message that hit a rate limit (Redis list `RL_LOG`, written by Rspamd's metadata exporter).
-  `rateLimitHash` identifies the limit, so that a client can reset it with feature 006; it is
-  `null` when legacy recorded `err` (the limit could not be identified).
+  `rateLimitHash` identifies the limit's bucket, so that a client can reset it with feature 006
+  (`resetRateLimitBucket`); it is `null` when legacy recorded `err` (the limit could not be
+  identified) or another text that is not a bucket identifier.
 required:
   - id
   - time
@@ -31,6 +32,8 @@ properties:
   rateLimitHash:
     oneOf:
       - type: string
+        pattern: '^RL[0-9A-Za-z=]+$'
+        maxLength: 128
       - type: 'null'
   sender:
     description: Envelope sender.

@@ -164,6 +164,17 @@ class RedisLogTypesTest extends TestCase
         $this->assertSame(['bob@example.org'], array_column($this->entries('rate-limits', 'sender=BOB'), 'sender'));
     }
 
+    /** Feature 006 G10: `rateLimitHash` is a bucket identifier that resetRateLimitBucket accepts, or null. */
+    public function test_a_rate_limit_hash_that_is_not_a_bucket_identifier_is_null(): void
+    {
+        MailcowLogs::rateLimit(self::T, ['rl_hash' => 'not a bucket']);
+        MailcowLogs::rateLimit(self::T + 1, ['rl_hash' => 'RL'.str_repeat('a', 127)]);
+        MailcowLogs::rateLimit(self::T + 2, ['rl_hash' => 'RLabc=']);
+        $this->asAdmin();
+
+        $this->assertSame(['RLabc=', null, null], array_column($this->entries('rate-limits'), 'rateLimitHash'));
+    }
+
     public function test_legacy_api_request_entries_and_filters(): void
     {
         MailcowLogs::apiLog(self::T, '/api/v1/add/domain', 'POST', '192.0.2.20', ['attr' => ['domain' => 'example.org'], 'items' => ['example.org']]);

@@ -249,8 +249,8 @@ on stdout (`ok`, `renders[{html, text}]` or `reason`, `line`, `message`).
 | `quarantineSettingsUpdate` | `quarantineSettings` / null / null | `changes` {field: {old, new}}; `notificationTemplate` as {`changed`, `oldSize`, `newSize`} |
 | `quarantineNotificationSettingsUpdate` | `quarantineNotificationSettings` / username / username | `changes`, `bulkRequestId` |
 | `spamScoreUpdate`, `spamScoreReset` | `spamScore` / username / username | `changes` {`junkScore`, `rejectScore`} |
-| `spamPolicyEntryCreation`, `spamPolicyEntryRemoval` | `spamPolicyEntry` / prefid / pattern | `owner`, `ownerKind`, `list`, `pattern` |
-| `rateLimitUpdate`, `rateLimitRemoval` | `rateLimit` / object / object | `kind`, `old`, `new` |
+| `spamPolicyEntryCreation`, `spamPolicyEntryRemoval` | the owner (G15, FR-073): `domain`, `aliasDomain` or `mailbox` / owner name / owner name | `entryId`, `list`, `pattern` |
+| `rateLimitUpdate`, `rateLimitRemoval` | `rateLimit` / object / object | `kind`, `old`, `new` (stored texts; `null` when not set) |
 | `rateLimitBucketReset` | `rateLimitBucket` / bucket id / bucket id | `countersExisted`, `logEntriesRemoved` |
 
 Failures (every refusal of an authenticated caller on a state-changing route, research R19) carry

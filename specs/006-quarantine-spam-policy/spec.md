@@ -1014,6 +1014,17 @@ filtered by target.
   The values MUST reflect the server's current configuration and MUST NOT include any secret or
   connection detail. The read MUST change nothing, and read-only keys MAY use it.
 
+#### Gaps found after planning (`docs/api-gaps.md`)
+
+- **FR-073** (G15): The audit records of allow and block list entries MUST target the entry's
+  owner (`domain`, `aliasDomain` or `mailbox`, with its name as the identifier), so that the audit
+  log can be filtered to one owner's lists (FR-064). The entry's identifier, list and pattern MUST
+  be recorded in the details.
+- **FR-074** (G10): The bucket identifier of a rate-limited log entry (feature 011's
+  `RateLimitLogEntry.rateLimitHash`) MUST follow the pattern and length of the bucket identifier
+  that FR-057 accepts (`RL` followed by letters, digits and `=`, at most 128 characters). A stored
+  text that does not, like legacy's `err`, MUST be reported as no identifier.
+
 ### Legacy Coverage
 
 Every legacy capability allocated to feature 006 in `docs/roadmap.md` maps to requirements as

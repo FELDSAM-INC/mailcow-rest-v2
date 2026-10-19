@@ -755,7 +755,7 @@ target type and identifier (spec US8).
 - [x] T094 [P] Write `tests/Feature/Settings/SettingsPerformanceTest.php` (SC-013, informational
   budget, skipped in CI unless `RESTV2_PERF=1`): 100 reads of each settings resource, of a page of 25
   rules and of 25 recipients with 10,000 rows stay under 1 s at the 95th percentile.
-- [ ] T095 (FR-090) Run `composer contract:lint`, `composer test` (including the contract coverage check for the
+- [x] T095 (FR-090) Run `composer contract:lint`, `composer test` (including the contract coverage check for the
   45 operations), `vendor/bin/pint --test` and `vendor/bin/phpstan analyse`; fix every finding.
 - [x] T096 [P] Update `specs/013-system-settings/quickstart.md` if a command or output changed, and add
   the 013 settings to the operator notes in `deploy/README.md` (if 001 created it) or the
@@ -989,3 +989,9 @@ duplicate it"), recorded as they were made:
   waiting on a real one). The runner now stores `next_attempt_at` with microseconds, computes waits
   and the rate gap in microseconds and always waits at least one millisecond;
   `MassMailRunnerTest::test_retries_become_due_whatever_the_start_time` pins four start fractions.
+- **T095 (2026-10-19, commit `67f2762`)**: `composer test` passed with 9,785 tests and 78,684
+  assertions in 31m 10s, covering all 379 registered operations (including all 45 of feature 013),
+  with none pending. The completed run was recovered from the previous session's log; it was not
+  repeated. Contract lint, Pint (1,841 files) and PHPStan were rerun successfully on the same clean
+  commit before fast-forwarding `main`. T097 still requires deployment and checks on maildev;
+  this local validation does not establish the live mailcow side effects.

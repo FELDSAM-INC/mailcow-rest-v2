@@ -494,6 +494,10 @@ Contract changes made while implementing feature 013:
   the full representations (gap G17).
 - `ValidationRuleCode` also names `tooFew` for an empty list of CORS methods.
 
+Development checks of feature 013 passed on 2026-10-19 at `67f2762`: 9,785 tests, 78,684
+assertions, all 379 registered operations covered (45 for this feature), contract lint, Pint and
+PHPStan. This includes the mass-mail retry timing regression tests.
+
 Release checks of feature 013 (quickstart Part C: SC-001, SC-002, SC-005, SC-007, SC-008): not run
 yet. The timing checks (SC-009's 10,000-recipient run and SC-013: `composer test:performance`) are
 pending an otherwise idle machine.

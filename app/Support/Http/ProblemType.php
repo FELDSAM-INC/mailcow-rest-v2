@@ -105,6 +105,12 @@ enum ProblemType: string
     case NotAllowedWhileImpersonating = 'not-allowed-while-impersonating';
     case WebmailOnBehalfDisabled = 'webmail-on-behalf-disabled';
     case AccountInactive = 'account-inactive';
+    // Feature 006 (quarantine, spam policy and rate limits; permission-flag-required,
+    // attribute-not-permitted and temporary-failure are feature 002's).
+    case QuarantineItemBusy = 'quarantine-item-busy';
+    case QuarantineDeliveryRefused = 'quarantine-delivery-refused';
+    case QuarantineMessageTooLarge = 'quarantine-message-too-large';
+    case SpamPolicyEntryExists = 'spam-policy-entry-exists';
 
     public function uri(): string
     {
@@ -137,6 +143,7 @@ enum ProblemType: string
             self::SyncJobExists => 409,
             self::RoutingEntryExists, self::NextHopCredentialsDiffer, self::NextHopInterferes => 409,
             self::LastSecondFactor, self::PushNotificationsNotConfigured => 409,
+            self::QuarantineItemBusy, self::QuarantineDeliveryRefused, self::QuarantineMessageTooLarge, self::SpamPolicyEntryExists => 409,
             self::MailboxRenameIncomplete => 500,
             self::OutcomeUnknown => 504,
             self::AttributeNotPermitted, self::PermissionFlagRequired, self::DkimPrivateKeyExportDisabled,
@@ -230,6 +237,10 @@ enum ProblemType: string
             self::NotAllowedWhileImpersonating => 'Not allowed while impersonating',
             self::WebmailOnBehalfDisabled => 'Webmail login on behalf disabled',
             self::AccountInactive => 'Account inactive',
+            self::QuarantineItemBusy => 'Quarantine item is being processed',
+            self::QuarantineDeliveryRefused => 'Delivery refused',
+            self::QuarantineMessageTooLarge => 'Quarantine message too large',
+            self::SpamPolicyEntryExists => 'List entry already exists',
         };
     }
 
@@ -315,6 +326,10 @@ enum ProblemType: string
             self::NotAllowedWhileImpersonating => 'This operation is not available while impersonating another account.',
             self::WebmailOnBehalfDisabled => 'Opening a mailbox\'s webmail on the user\'s behalf is disabled on this server.',
             self::AccountInactive => 'The account is inactive.',
+            self::QuarantineItemBusy => 'Another request is processing this quarantine item. Nothing was changed.',
+            self::QuarantineDeliveryRefused => 'The mail server refused the released message. The item was kept and nothing was learned.',
+            self::QuarantineMessageTooLarge => 'The stored message is larger than the content size limit.',
+            self::SpamPolicyEntryExists => 'The owner already has this pattern on its allow or block list.',
         };
     }
 

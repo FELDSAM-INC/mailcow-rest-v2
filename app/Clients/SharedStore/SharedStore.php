@@ -4,8 +4,10 @@ namespace App\Clients\SharedStore;
 
 use Closure;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
+use Illuminate\Support\Facades\DB;
 use Redis;
 use RedisException;
+use Throwable;
 
 /**
  * mailcow's own Redis keys (connection `mailcow`, database 0, no prefix), shared by every feature
@@ -109,6 +111,77 @@ class SharedStore
     public function hasField(string $key, string $field): bool
     {
         return $this->run(fn (Redis $redis): bool => (bool) $redis->hExists($key, $field));
+    }
+
+    /**
+     * An optimistic transaction over plain keys (feature 006 research R8): WATCH the keys, let the
+     * plan read them and decide, then MULTI with the plan's writes and EXEC. When another client
+     * changed a watched key meanwhile, EXEC fails and the plan runs again on the fresh values, at
+     * most $attempts times in all; then SharedStoreUnavailable. The plan returns `[writes, result]`,
+     * where `writes` (null: nothing to write) queues commands on the MULTI client. An optional
+     * record (an audit record) is written in a database transaction before EXEC and committed after
+     * it; a failed EXEC rolls it back, and a failed record writes nothing.
+     *
+     * @template TResult
+     *
+     * @param  list<string>  $keys
+     * @param  Closure(Redis): array{0: (Closure(Redis): mixed)|null, 1: TResult}  $plan
+     * @param  (Closure(TResult): void)|null  $record
+     * @return array{0: TResult, 1: bool} the plan's result, and whether the record's commit succeeded
+     */
+    public function transactionWatching(array $keys, Closure $plan, ?Closure $record = null, int $attempts = 2): array
+    {
+        return $this->run(function (Redis $redis) use ($keys, $plan, $record, $attempts): array {
+            for ($attempt = 1; $attempt <= max(1, $attempts); $attempt++) {
+                $redis->watch($keys);
+
+                try {
+                    [$writes, $result] = $plan($redis);
+                } catch (Throwable $e) {
+                    $redis->unwatch();
+
+                    throw $e;
+                }
+
+                if ($writes === null) {
+                    $redis->unwatch();
+
+                    return [$result, true];
+                }
+
+                $multi = $redis->multi();
+                $writes($multi);
+                DB::beginTransaction();
+
+                try {
+                    if ($record !== null) {
+                        $record($result);
+                    }
+                } catch (Throwable $e) {
+                    DB::rollBack();
+                    $redis->discard();
+
+                    throw $e;
+                }
+
+                if (! is_array($redis->exec())) {
+                    DB::rollBack();
+
+                    continue;
+                }
+
+                try {
+                    DB::commit();
+                    $committed = true;
+                } catch (Throwable) {
+                    $committed = false;
+                }
+
+                return [$result, $committed];
+            }
+
+            throw new SharedStoreUnavailable('mailcow\'s shared store kept changing while the change was saved.');
+        });
     }
 
     /**

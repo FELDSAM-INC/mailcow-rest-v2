@@ -154,6 +154,19 @@ enum AuditEventType: string
     case ImpersonationStart = 'impersonationStart';
     case ImpersonationEnd = 'impersonationEnd';
     case WebmailSignInOnBehalf = 'webmailSignInOnBehalf';
+    // Feature 006: quarantine, spam policy and rate limits.
+    case QuarantineItemRelease = 'quarantineItemRelease';
+    case QuarantineItemSpamLearning = 'quarantineItemSpamLearning';
+    case QuarantineItemDeletion = 'quarantineItemDeletion';
+    case QuarantineSettingsUpdate = 'quarantineSettingsUpdate';
+    case QuarantineNotificationSettingsUpdate = 'quarantineNotificationSettingsUpdate';
+    case SpamScoreUpdate = 'spamScoreUpdate';
+    case SpamScoreReset = 'spamScoreReset';
+    case SpamPolicyEntryCreation = 'spamPolicyEntryCreation';
+    case SpamPolicyEntryRemoval = 'spamPolicyEntryRemoval';
+    case RateLimitUpdate = 'rateLimitUpdate';
+    case RateLimitRemoval = 'rateLimitRemoval';
+    case RateLimitBucketReset = 'rateLimitBucketReset';
 
     /**
      * Keys of refusal records written by App\Services\Audit\RefusalAuditor (docs/conventions.md
@@ -200,6 +213,18 @@ enum AuditEventType: string
 
     /** Keys of a connection test record (feature 009 FR-085): never the transcript. */
     private const CONNECTION_TEST = ['sender', 'recipient', 'accepted', 'step', 'failureReason'];
+
+    /**
+     * Refusal keys of feature 006's events: those of REFUSAL plus the flags a refused change needed
+     * (`permission-flag-required`, `attribute-not-permitted`).
+     */
+    private const SPAM_FILTER_REFUSAL = ['problemType', 'status', 'errors', 'requiredFlags'];
+
+    /**
+     * Feature 006: keys of a quarantine item action; never the subject, the content, an attachment
+     * or the quick-action hash (FR-063, SC-010).
+     */
+    private const QUARANTINE_ITEM = ['queueId', 'recipient', 'sender'];
 
     /**
      * The `details` keys this event may record (docs/audit-events.md). Every other key is dropped,
@@ -315,6 +340,14 @@ enum AuditEventType: string
             self::ImpersonationStart => ['targetRole', ...self::ACCOUNT_SWITCH_REFUSAL],
             self::ImpersonationEnd => ['endedBy', 'endReason', 'durationSeconds', ...self::REFUSAL],
             self::WebmailSignInOnBehalf => [...self::ACCOUNT_SWITCH_REFUSAL],
+            self::QuarantineItemRelease, self::QuarantineItemSpamLearning => [...self::QUARANTINE_ITEM, 'action', 'steps', ...self::BULK, ...self::SPAM_FILTER_REFUSAL],
+            self::QuarantineItemDeletion => [...self::QUARANTINE_ITEM, ...self::BULK, ...self::SPAM_FILTER_REFUSAL],
+            self::QuarantineSettingsUpdate => ['changes', ...self::REFUSAL],
+            self::QuarantineNotificationSettingsUpdate => ['changes', ...self::BULK, ...self::SPAM_FILTER_REFUSAL],
+            self::SpamScoreUpdate, self::SpamScoreReset => ['changes', ...self::SPAM_FILTER_REFUSAL],
+            self::SpamPolicyEntryCreation, self::SpamPolicyEntryRemoval => ['entryId', 'list', 'pattern', ...self::SPAM_FILTER_REFUSAL],
+            self::RateLimitUpdate, self::RateLimitRemoval => ['kind', 'old', 'new', ...self::SPAM_FILTER_REFUSAL],
+            self::RateLimitBucketReset => ['countersExisted', 'logEntriesRemoved', ...self::REFUSAL],
         };
     }
 }

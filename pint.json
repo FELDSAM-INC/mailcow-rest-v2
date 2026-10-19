@@ -2,6 +2,7 @@
     "preset": "laravel",
     "exclude": [
         "tests/fixtures",
-        "resources/legacy"
+        "resources/legacy",
+        "scripts/legacy/harness"
     ]
 }

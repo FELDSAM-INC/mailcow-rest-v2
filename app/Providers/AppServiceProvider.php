@@ -22,6 +22,8 @@ use App\Clients\Ispconfig\IspconfigDnsClient;
 use App\Clients\Ispconfig\JsonIspconfigDnsClient;
 use App\Clients\Keycloak\HttpKeycloakAdminClient;
 use App\Clients\Keycloak\KeycloakAdminClient;
+use App\Clients\Mail\QuarantineReleaseMailer;
+use App\Clients\Mail\SmtpQuarantineReleaseMailer;
 use App\Clients\Ldap\ExtLdapDirectory;
 use App\Clients\Ldap\LdapDirectory;
 use App\Clients\Memcached\MemcachedFlusher;
@@ -77,6 +79,7 @@ use App\Services\Oauth2\Oauth2ClientAuditTargetResolver;
 use App\Services\Oauth2\Oauth2ClientService;
 use App\Services\Routing\RoutingAuditTargets;
 use App\Services\SelfService\SelfServiceAuditTargets;
+use App\Services\Quarantine\SpamFilterAuditTargets;
 use App\Services\SyncJobs\SyncJobAuditTargets;
 use App\Services\Webmail\WebmailHandOffService;
 use App\Support\Clock\Clock;
@@ -116,6 +119,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MemcachedFlusher::class, SocketMemcachedFlusher::class);
         $this->app->bind(IspconfigDnsClient::class, JsonIspconfigDnsClient::class);
         $this->app->bind(RspamdController::class, UnixSocketRspamdController::class);
+        // Feature 006: releases to Postfix's quarantine submission (faked in tests).
+        $this->app->bind(QuarantineReleaseMailer::class, SmtpQuarantineReleaseMailer::class);
         $this->app->bind(ReleaseSource::class, GitHubReleaseSource::class);
         $this->app->bind(PublicAddressLookup::class, HttpPublicAddressLookup::class);
         $this->app->when(UpdateCheckService::class)->needs(Repository::class)->give(fn ($app) => $app->make(CacheFactory::class)->store('restv2'));
@@ -171,6 +176,8 @@ class AppServiceProvider extends ServiceProvider
         SelfServiceAuditTargets::register($this->app->make(RefusalAuditor::class));
         // Feature 007: accounts, single sign-on tokens, impersonations and webmail on behalf.
         AccountAuditTargets::register($this->app->make(RefusalAuditor::class));
+        // Feature 006: quarantine, spam policy and rate limits.
+        SpamFilterAuditTargets::register($this->app->make(RefusalAuditor::class));
 
         // Feature 011: administrators only (research R26).
         Gate::define('operate-monitoring', [MonitoringPolicy::class, 'operate']);

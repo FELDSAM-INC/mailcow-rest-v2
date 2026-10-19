@@ -74,17 +74,17 @@ final class ScriptedSmtpServer
     }
 
     /**
-     * Everything the client sent, after the session ended: lines, and `['data' => lines]` for the
-     * message data.
+     * Everything the client sent, after the session ended: lines, `['data' => lines]` for the
+     * message data and `['rawData' => base64]` for the exact data bytes (feature 006).
      *
-     * @return list<string|array{data: list<string>}>
+     * @return list<string|array{data?: list<string>, rawData?: string}>
      */
     public function received(): array
     {
         $this->process->wait();
         $json = @file_get_contents($this->directory.'/received.json');
 
-        /** @var list<string|array{data: list<string>}> */
+        /** @var list<string|array{data?: list<string>, rawData?: string}> */
         return is_string($json) ? (array) json_decode($json, true) : [];
     }
 

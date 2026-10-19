@@ -9,6 +9,7 @@ use App\Auth\Role;
 use App\Clients\Dns\DnsResolver;
 use App\Clients\DockerApi\DockerApiClient;
 use App\Clients\Ispconfig\IspconfigDnsClient;
+use App\Clients\Mail\QuarantineReleaseMailer;
 use App\Clients\Memcached\MemcachedFlusher;
 use App\Clients\PublicAddress\PublicAddressLookup;
 use App\Clients\Releases\ReleaseSource;
@@ -37,6 +38,7 @@ use Tests\Support\Fakes\FakeIspconfigDnsClient;
 use Tests\Support\Fakes\FakeMemcachedFlusher;
 use Tests\Support\Fakes\FakePublicAddressLookup;
 use Tests\Support\Fakes\FakeReleaseSource;
+use Tests\Support\Mail\FakeQuarantineReleaseMailer;
 use Tests\Support\Mailcow\MailcowFactory;
 use Tests\Support\Rspamd\FakeRspamdController;
 use Tests\Support\Smtp\FakeSmtpProbe;
@@ -56,7 +58,9 @@ use Tests\Support\Smtp\FakeSmtpProbe;
  *    (`clock()`). Feature 011 adds the Rspamd controller (`rspamd()`), the update check's release
  *    source (`releases()`) and the IP check service (`publicAddresses()`). DNS and the SMTP
  *    connection test of feature 009 are faked as well, so that no test resolves a real name or
- *    opens an SMTP connection (Tests\Support\Routing\RoutingTestHelpers).
+ *    opens an SMTP connection (Tests\Support\Routing\RoutingTestHelpers). Feature 006 extends the
+ *    Rspamd fake with the learning calls (`useFakeSpamFilter()`) and fakes Postfix's quarantine
+ *    submission (`useFakeReleaseMailer()`), so that no release reaches a mail server.
  */
 abstract class TestCase extends BaseTestCase
 {
@@ -84,6 +88,8 @@ abstract class TestCase extends BaseTestCase
 
     private FakePublicAddressLookup $publicAddresses;
 
+    private FakeQuarantineReleaseMailer $releaseMailer;
+
     /** @var array<string, string> */
     private array $cookieJar = [];
 
@@ -104,6 +110,7 @@ abstract class TestCase extends BaseTestCase
         $this->app->instance(RspamdController::class, $this->rspamd = new FakeRspamdController);
         $this->app->instance(ReleaseSource::class, $this->releases = new FakeReleaseSource);
         $this->app->instance(PublicAddressLookup::class, $this->publicAddresses = new FakePublicAddressLookup);
+        $this->app->instance(QuarantineReleaseMailer::class, $this->releaseMailer = new FakeQuarantineReleaseMailer);
         $this->app->instance(DnsResolver::class, new FakeDnsResolver($this->clock));
         $this->app->instance(SmtpProbe::class, new FakeSmtpProbe);
         DkimDnsPublisher::resetWarnings();
@@ -132,6 +139,23 @@ abstract class TestCase extends BaseTestCase
     protected function rspamd(): FakeRspamdController
     {
         return $this->rspamd;
+    }
+
+    /**
+     * The Rspamd controller fake bound for the test (feature 006: learning, fuzzy hashes, the
+     * action thresholds and the statistics).
+     */
+    protected function useFakeSpamFilter(): FakeRspamdController
+    {
+        return $this->rspamd;
+    }
+
+    /**
+     * The fake of Postfix's quarantine submission bound for the test (feature 006 releases).
+     */
+    protected function useFakeReleaseMailer(): FakeQuarantineReleaseMailer
+    {
+        return $this->releaseMailer;
     }
 
     protected function releases(): FakeReleaseSource

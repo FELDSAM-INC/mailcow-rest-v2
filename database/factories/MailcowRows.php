@@ -427,10 +427,42 @@ class MailcowRows
         DB::table('spamalias')->insert(['address' => $address, 'goto' => $goto, 'description' => '', 'validity' => time() + 3600]);
     }
 
-    /** A spam filter entry (`filterconf`, for example `whitelist_from`). */
-    public function filterconf(string $object, string $option, string $value): void
+    /**
+     * A spam filter entry (`filterconf`, for example `whitelist_from`), as legacy policy('add')
+     * inserts it (`created` by default). Returns its `prefid`.
+     */
+    public function filterconf(string $object, string $option, string $value): int
     {
-        DB::table('filterconf')->insert(['object' => $object, 'option' => $option, 'value' => $value]);
+        return (int) DB::table('filterconf')->insertGetId(['object' => $object, 'option' => $option, 'value' => $value]);
+    }
+
+    /**
+     * A custom spam score as legacy mailbox('edit', 'spam_score') stores it: `highspamlevel` first,
+     * then `lowspamlevel` (feature 006). A null value leaves its row out.
+     */
+    public function spamScore(string $username, ?string $low, ?string $high): void
+    {
+        if ($high !== null) {
+            $this->filterconf($username, 'highspamlevel', $high);
+        }
+
+        if ($low !== null) {
+            $this->filterconf($username, 'lowspamlevel', $low);
+        }
+    }
+
+    /**
+     * Sets a mailbox's quarantine notification attributes as legacy mailbox('edit',
+     * 'quarantine_notification' / 'quarantine_category') does (`JSON_SET`); a null value removes the
+     * key (a mailbox created before the attribute existed).
+     */
+    public function mailboxAttributes(string $username, ?string $quarantineNotification, ?string $quarantineCategory): void
+    {
+        foreach (['quarantine_notification' => $quarantineNotification, 'quarantine_category' => $quarantineCategory] as $key => $value) {
+            $value === null
+                ? DB::update("UPDATE `mailbox` SET `attributes` = JSON_REMOVE(`attributes`, '$.{$key}') WHERE `username` = ?", [$username])
+                : DB::update("UPDATE `mailbox` SET `attributes` = JSON_SET(`attributes`, '$.{$key}', ?) WHERE `username` = ?", [$value, $username]);
+        }
     }
 
     /** A BCC map (`bcc_maps`); `local_dest` is `@domain` for domain maps, as legacy stores them. */
@@ -827,19 +859,53 @@ class MailcowRows
         ], $overrides));
     }
 
-    /** A quarantine item for a recipient (`quarantine`). Returns its ID. */
-    public function quarantineItem(string $rcpt): int
-    {
-        return (int) DB::table('quarantine')->insertGetId([
-            'qid' => strtoupper(bin2hex(random_bytes(5))),
-            'subject' => 'Spam',
-            'score' => 15.5,
-            'action' => 'reject',
-            'sender' => 'spammer@example.net',
+    /**
+     * A quarantine item for a recipient as the legacy ingestion (`pipe.php`) stores it: the insert
+     * of its columns, then `qhash = SHA2(CONCAT(id, qid), 256)` (feature 006). `symbols` and
+     * `fuzzyHashes` are stored as JSON; `created` (mailcow local time) defaults to NOW(). Returns
+     * its ID.
+     *
+     * @param  list<array<string, mixed>>  $symbols
+     * @param  list<string>  $fuzzyHashes
+     */
+    public function quarantineItem(
+        string $rcpt,
+        ?string $msg = 'Subject: Spam',
+        ?string $qid = null,
+        ?string $subject = 'Spam',
+        ?float $score = 15.5,
+        string $action = 'reject',
+        array $symbols = [],
+        array $fuzzyHashes = [],
+        string $sender = 'spammer@example.net',
+        ?string $ip = null,
+        string $user = 'unknown',
+        int $notified = 0,
+        DateTimeInterface|string|null $created = null,
+    ): int {
+        $row = [
+            'qid' => $qid ?? strtoupper(bin2hex(random_bytes(5))),
+            'subject' => $subject,
+            'score' => $score,
+            'sender' => $sender,
             'rcpt' => $rcpt,
-            'msg' => 'Subject: Spam',
-            'domain' => substr((string) strrchr($rcpt, '@'), 1),
-        ]);
+            'symbols' => json_encode($symbols),
+            'user' => $user,
+            'ip' => $ip,
+            'msg' => $msg,
+            'action' => $action,
+            'fuzzy_hashes' => json_encode($fuzzyHashes),
+            'notified' => $notified,
+        ];
+
+        if ($created !== null) {
+            $row['created'] = $created instanceof DateTimeInterface ? $created->format('Y-m-d H:i:s') : $created;
+        }
+
+        $id = (int) DB::table('quarantine')->insertGetId($row);
+        DB::update('UPDATE `quarantine` SET `qhash` = SHA2(CONCAT(`id`, `qid`), 256) WHERE `id` = ?', [$id]);
+
+        return $id;
     }
 
     /** A recipient map (`recipient_maps`). Returns its ID. */

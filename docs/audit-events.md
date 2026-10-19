@@ -2069,3 +2069,219 @@ identifier is never recorded.
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
 | `requiredFlags` | array of strings | See "Refusal records of feature 007". | on `permission-flag-required` failures |
+
+## Refusal records of feature 006
+
+The state-changing operations of feature 006 (quarantine, spam policy and rate limits) declare
+refusal auditing like those of feature 002 onwards ("Refusal records" above), with the same keys
+plus `requiredFlags` (array of strings: the permission flags a refused change needed, named as in
+`PermissionFlags`, on `permission-flag-required` and `attribute-not-permitted` refusals). Feature
+006 maps `quarantine-delivery-refused` to the failure reason `serviceFailure`; a busy item and an
+existing list entry are `conflict`, a `503 temporary-failure` is `temporaryFailure`. A request with
+`validateOnly=true` and a template preview write no record, also not when refused. No record of
+this feature ever holds a message subject, body, attachment, quick-action hash (`qhash`) or
+notification template text (SC-010).
+
+Targets: a quarantine item is `{type: quarantineItem, id: <item id>, name: <queue id>}`; the
+quarantine settings `{type: quarantineSettings}`; a mailbox's notification settings and spam score
+`{type: quarantineNotificationSettings | spamScore, id: <mailbox>}`; an allow or block list entry is
+recorded on its owner, `{type: domain | aliasDomain | mailbox, id: <owner>}` (G15), with the entry
+in `details`; a rate limit `{type: rateLimit, id: <object>}`; a bucket `{type: rateLimitBucket, id:
+<bucket id>}`.
+
+## quarantineItemRelease
+
+Feature 006. Written for every release of a quarantine item (`POST /quarantine/{itemId}/release`),
+every `release` or `releaseWithoutLearning` item of a bulk action
+(`POST /quarantine/bulk-actions`) and every refusal. The record is written after the delivery,
+which cannot be taken back; when it cannot be written, the answer is `500` and the complete record
+is logged at error level instead.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `queueId` | string | The mail server's queue identifier of the item. | always when the item exists |
+| `recipient` | string | The item's recipient mailbox. | always when the item exists |
+| `sender` | string | The stored envelope sender. | always when the item exists |
+| `action` | string | `release` (with ham learning) or `releaseWithoutLearning`. | on success |
+| `steps` | object | `delivery` (`done`), `learning` (`done`, `alreadyLearned`, `failed`, `notRequested`) and `fuzzy` (`done`, `skipped`, `failed`, `notRequested`). | on success |
+| `bulkRequestId` | string | The bulk request the item belongs to. | on records of bulk items |
+| `targetIds` | array of strings | See "Refusal records". | on a refused bulk request |
+| `bulkAction` | string | See "Refusal records". | on a refused bulk request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 006". | on `permission-flag-required` failures |
+
+## quarantineItemSpamLearning
+
+Feature 006. Written for every learning of a quarantine item as spam
+(`POST /quarantine/{itemId}/spam-learning`), every `learnAsSpam` item of a bulk action and every
+refusal, including a spam filter that could not learn (`503`, the item kept). On success the record
+is written in the transaction that removes the item.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `queueId` | string | The mail server's queue identifier of the item. | always when the item exists |
+| `recipient` | string | The item's recipient mailbox. | always when the item exists |
+| `sender` | string | The stored envelope sender. | always when the item exists |
+| `action` | string | Always `learnAsSpam`. | on success |
+| `steps` | object | `delivery` (`notApplicable`), `learning` (`done`, `alreadyLearned`) and `fuzzy` (`done`, `skipped`, `failed`). | on success |
+| `bulkRequestId` | string | The bulk request the item belongs to. | on records of bulk items |
+| `targetIds` | array of strings | See "Refusal records". | on a refused bulk request |
+| `bulkAction` | string | See "Refusal records". | on a refused bulk request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 006". | on `permission-flag-required` failures |
+
+## quarantineItemDeletion
+
+Feature 006. Written for every deletion of a quarantine item (`DELETE /quarantine/{itemId}`), every
+`delete` item of a bulk action and every refusal, in the transaction that removes the item.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `queueId` | string | The mail server's queue identifier of the item. | always when the item exists |
+| `recipient` | string | The item's recipient mailbox. | always when the item exists |
+| `sender` | string | The stored envelope sender. | always when the item exists |
+| `bulkRequestId` | string | The bulk request the item belongs to. | on records of bulk items |
+| `targetIds` | array of strings | See "Refusal records". | on a refused bulk request |
+| `bulkAction` | string | See "Refusal records". | on a refused bulk request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 006". | on `permission-flag-required` failures |
+
+## quarantineSettingsUpdate
+
+Feature 006. Written for every change of the quarantine settings (`PATCH /quarantine/settings`,
+not with `validateOnly=true`) and every refusal. The target is `{type: quarantineSettings}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Each changed setting as `{old, new}` in its API form (for example `maxMessageSize` in bytes); `notificationTemplate` only as `{changed: true, oldSize, newSize}` (bytes), never its text. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## quarantineNotificationSettingsUpdate
+
+Feature 006. Written for every change of a mailbox's quarantine notification settings
+(`PATCH /mailboxes/{mailbox}/quarantine-notification-settings`), every item of a bulk change
+(`POST /quarantine-notification-settings/bulk-actions`) and every refusal. A change with the stored
+values is recorded with empty `changes`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `frequency` and `category` as `{old, new}` (API values), each when it changed. | on success |
+| `bulkRequestId` | string | The bulk request the item belongs to. | on records of bulk items |
+| `targetIds` | array of strings | See "Refusal records". | on a refused bulk request |
+| `bulkAction` | string | See "Refusal records". | on a refused bulk request |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 006". | on `attribute-not-permitted` failures |
+
+## spamScoreUpdate
+
+Feature 006. Written for every change of a mailbox's custom spam score
+(`PUT /mailboxes/{mailbox}/spam-score`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `junkScore` and `rejectScore` as `{old, new}`; `old` is `null` for a value that was not custom. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 006". | on `permission-flag-required` failures |
+
+## spamScoreReset
+
+Feature 006. Written for every reset of a mailbox's custom spam score
+(`DELETE /mailboxes/{mailbox}/spam-score`) that removed custom values, and every refusal. A reset
+without custom values writes no record.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `junkScore` and `rejectScore` as `{old, new: null}`, each that was custom. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 006". | on `permission-flag-required` failures |
+
+## spamPolicyEntryCreation
+
+Feature 006. Written for every addition of an allow or block list entry
+(`POST /domains/{domain}/spam-policy-entries`, `/alias-domains/{aliasDomain}/…`,
+`/mailboxes/{mailbox}/…`) and every refusal. The target is the entry's owner (G15).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `entryId` | integer | The entry's identifier (`filterconf.prefid`). | on success; on `409` failures the existing entry is in the problem only |
+| `list` | string | `allow` or `block`. | on success; on failures when sent |
+| `pattern` | string | The pattern, trimmed and lower-cased. | on success; on failures when sent |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 006". | on `permission-flag-required` failures |
+
+## spamPolicyEntryRemoval
+
+Feature 006. Written for every removal of an allow or block list entry through its owner
+(`DELETE …/spam-policy-entries/{entryId}`) and every refusal. The target is the owner named in the
+path (G15).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `entryId` | integer | The entry's identifier. | always |
+| `list` | string | `allow` or `block`. | on success |
+| `pattern` | string | The removed pattern. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 006". | on `permission-flag-required` failures |
+
+## rateLimitUpdate
+
+Feature 006. Written for every change of a rate limit (`PUT /domains/{domain}/rate-limit`,
+`/alias-domains/{aliasDomain}/rate-limit`, `/mailboxes/{mailbox}/rate-limit`) and every refusal.
+The target is `{type: rateLimit, id: <object>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `kind` | string | `domain`, `aliasDomain` or `mailbox`. | always |
+| `old` | string or null | The stored value before (`<n> / 1<s|m|h|d>`, also an invalid one), `null` when none was set. | on success |
+| `new` | string | The stored value after. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 006". | on `permission-flag-required` failures |
+
+## rateLimitRemoval
+
+Feature 006. Written for every removal of a set rate limit (`DELETE …/rate-limit`) and every
+refusal. Removing a limit that is not set writes no record.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `kind` | string | `domain`, `aliasDomain` or `mailbox`. | always |
+| `old` | string | The removed stored value. | on success |
+| `new` | null | Always `null`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+| `requiredFlags` | array of strings | See "Refusal records of feature 006". | on `permission-flag-required` failures |
+
+## rateLimitBucketReset
+
+Feature 006. Written for every reset of a rate-limit bucket (`DELETE /rate-limit-buckets/{bucketId}`)
+and every refusal, including a bucket with neither counters nor log entries (`404`). The target is
+`{type: rateLimitBucket, id: <bucket id>}`.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `countersExisted` | boolean | Whether the bucket's counters (a Redis hash) existed and were deleted. | on success |
+| `logEntriesRemoved` | integer | The rate-limited log entries of the bucket that were removed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |

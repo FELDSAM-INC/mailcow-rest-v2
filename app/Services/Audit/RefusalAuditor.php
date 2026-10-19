@@ -30,6 +30,10 @@ use Throwable;
  * Bulk actions record their per-item refusals through record(). A service that writes its own
  * refusal record marks the request (markRecorded()) so that no second record is written.
  *
+ * Feature 006: a route whose `restv2.audit` names a query flag in `skipWhenQueryTrue` (the
+ * quarantine settings' `validateOnly`) is not audited when the request sets that flag: a
+ * validate-only request writes no record, also not when it is refused.
+ *
  * Feature 003: an exception that carries audit details (App\Exceptions\CarriesAuditDetails, for
  * example a rename's steps) adds them to the record, and such an exception is recorded also when it
  * ends in a `5xx` answer (`outcome-unknown`, `mailbox-rename-incomplete`, an unexpected failure
@@ -92,6 +96,12 @@ class RefusalAuditor
             $principal = RequestContext::principal($request);
 
             if (! is_array($config) || $principal === null || $request->attributes->get(self::RECORDED) === true) {
+                return;
+            }
+
+            $skipFlag = $config['skipWhenQueryTrue'] ?? null;
+
+            if (is_string($skipFlag) && in_array($request->query($skipFlag), ['true', '1'], true)) {
                 return;
             }
 

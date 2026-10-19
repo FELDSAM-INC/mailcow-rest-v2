@@ -8,6 +8,9 @@
  *   {"send": "220 mx.example ESMTP"}       one reply line (CRLF added)
  *   {"expect": "EHLO"}                     read one line and record it
  *   {"data": true}                         read the message data up to "." and record it
+ *   {"rawData": true}                      read the message data up to CRLF "." CRLF and record its
+ *                                          exact bytes, base64-encoded (feature 006: line endings
+ *                                          and dot-stuffing)
  *   {"starttls": true}                     switch the connection to TLS (server side)
  *   {"garbage": true}                      write bytes that are not TLS, then close
  *   {"sleep": 1.5}                         wait (seconds)
@@ -77,6 +80,14 @@ foreach ($script as $step) {
         }
 
         $received[] = ['data' => $lines];
+    } elseif (isset($step['rawData'])) {
+        $raw = '';
+
+        while (! str_ends_with($raw, "\r\n.\r\n") && ($chunk = fread($client, 8192)) !== false && $chunk !== '') {
+            $raw .= $chunk;
+        }
+
+        $received[] = ['rawData' => base64_encode($raw)];
     } elseif (isset($step['starttls'])) {
         stream_set_blocking($client, true);
 

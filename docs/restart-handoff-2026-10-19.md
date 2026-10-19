@@ -2,19 +2,20 @@
 
 The owner asked to continue work in both `mailcow-rest-v2` and `../mailcowui-ng` after the
 system-restart checkpoint. The first continuation was local. The owner subsequently authorized
-committing, pushing and deploying completed work; the API deployment below is complete. No
-subagents were used.
+committing, pushing and deploying completed work. The API is deployed, and the owner then
+explicitly requested the monitoring UI deployment despite the recorded Lighthouse failures.
+Both deployments below are complete. No subagents were used.
 
 ## Current checkpoints
 
 | Repository/worktree | Branch | Checkpoint | State |
 |---|---|---|---|
-| `mailcow-rest-v2` | `main` | `a517a25` plus this handoff update | API through `b3dc2ab` deployed; later handoff notes pushed |
+| `mailcow-rest-v2` | `main` | `c92d89e` plus this handoff update | API through `b3dc2ab` deployed; later handoff notes pushed |
 | `../mailcow-rest-v2-wt/013` | `wt/013` | `67f2762` | Clean; implementation already on API main |
-| `../mailcowui-ng` | `main` | `a9333d85` | Owner's performance threshold of 80 committed and pushed; deployed UI still `990830e7` |
+| `../mailcowui-ng` | `main` | `6a3ee2ca` | Monitoring merged and pushed; `5e3c1e89` deployed to maildev, followed by deployment notes |
 | `../mailcowui-ng-wt/005` | `wt/005` | `9ac9f886` | Reset/recovery fixes committed; broader account work unfinished |
 | `../mailcowui-ng-wt/006` | `wt/006` | `a239986f` | Quarantine list and stale-action refresh checked; broader feature unfinished |
-| `../mailcowui-ng-wt/011` | `wt/011` | `50a001dd` | Tested fixes and performance-80 policy; full Lighthouse recheck recorded, three assertions still fail |
+| `../mailcowui-ng-wt/011` | `wt/011` | `5e3c1e89` | Clean; monitoring integrated into main and deployed with an owner-approved staging exception |
 
 The UI worktrees are clean. Temporary worktree branches remain local: do not push them or use
 git stash. There is no rebase in progress. The new policy commit was merged into `wt/011` without
@@ -57,7 +58,7 @@ Logs: `a013/resume-performance.log` (original), `resume-composer-install.log`,
 
 T097 (full live mailcow Part C parity) remains open. After the owner's explicit deployment
 authorization, API main through `b3dc2ab` was pushed and deployed to `maildev.feldhost.cz`.
-UI staging remains `990830e7` until monitoring's performance gate passes.
+UI staging is now `5e3c1e89`, deployed with the owner's explicit exception described below.
 
 API 013 host configuration was synchronized before deployment: four additional mounts, five
 environment entries (including `RESTV2_LICENSE_VERIFICATION=false` for FeldHost), mass-mail
@@ -74,7 +75,7 @@ Deployment logs are `a013/deploy-main.log` and `a013/deploy-postflight.log`; the
 Host rollback copies are `/root/mailhosting/restv2/{override.previous-013.yml,nginx.previous-013.conf}`.
 This deployment verification does not replace the remaining feature-specific Part C parity checks.
 
-## Monitoring: rebase complete, performance gate open
+## Monitoring: deployed with an owner-approved performance exception
 
 UI 011 was rebased once onto `990830e7`, preserving routing and operations routes, navigation,
 translations, mock state/handlers, smoke cleanup and Lighthouse collections. Three test fixes:
@@ -153,10 +154,24 @@ Chromium and mobile WebKit, covering the dashboard and delayed loading, shell bo
 password sign-in, sign-in screens, SSO round trips, preferences and legacy translations including
 hostile markup. Log: `u011/final-browser.log`; artifacts: `u011/final-browser-results/`.
 
-**Do not fast-forward UI main until T146 passes under the revised performance-80/accessibility-90 policy.**
-T149 (real phones, VoiceOver/TalkBack) and live-host parity still need the owner/environment.
-The earlier six local smoke tests at API `4be8653` remain recorded in the feature quickstart;
-monitoring has not been deployed to staging. The API deployment is recorded above.
+After these failures were reported, the owner explicitly requested **"so, deploy to maildev"**.
+This authorizes this staging release with the known failures; the configured thresholds and
+T146's open status remain unchanged. The exception is recorded in the monitoring plan's
+Complexity Tracking and quickstart. UI main was fast-forwarded to `5e3c1e89` and pushed, and the
+standard deployment script built and installed **`mailcowui-ng:5e3c1e89`** on maildev. Only
+`ng-mailcow` was recreated; API `b3dc2ab` was not replaced. Compose validation passed, the new
+container is healthy, and `/ng/` answers HTTP 200 with the required CSP. Previous UI image
+`mailcowui-ng:990830e7` remains on the host for rollback.
+
+A browser check against the real administrator sign-in page at 360 px passed: visible username
+and password fields, enabled submit button, HTTP 200, no JavaScript errors and no CSP violations.
+No credentials were submitted. API readiness confirms database, schema, Redis and migrations
+healthy. Logs: `u011/deploy-maildev.log` and `u011/deploy-maildev-browser.log`. UI deployment notes
+are committed and pushed as `6a3ee2ca`; that documentation-only follow-up needs no redeployment.
+
+T149 (real phones, VoiceOver/TalkBack) and T150 Part D (authenticated live-host parity) remain
+open. The earlier six local smoke tests at API `4be8653` remain recorded in the feature quickstart.
+Deployment health and public sign-in checks do not replace these feature-specific checks.
 
 ## UI 005: reset and recovery hardening
 

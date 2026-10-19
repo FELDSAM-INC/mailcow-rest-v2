@@ -3,6 +3,7 @@
 namespace App\Services\Quarantine;
 
 use App\Auth\Principal;
+use App\Auth\Role;
 use App\Casts\MailcowDateTime;
 use App\Models\Mailcow\QuarantineItem;
 use App\Services\Access\SpamFilterScope;
@@ -13,10 +14,10 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * The quarantine items in a caller's scope (feature 006 research R16, FR-007 to FR-011): one
- * `SELECT` and one `COUNT(*)` with the same predicates, never selecting the stored message in a
- * list (only `LENGTH(msg)` and, for actions and downloads, the message of one item). The virus
- * flag is `LOCATE('VIRUS_FOUND', symbols) > 0`. Lists are newest first by default; ties are always
- * broken by the identifier, newest first.
+ * `SELECT` and one `COUNT(*)` with the same predicates, or a window count for search/domain scope.
+ * Lists never select the stored message (only `LENGTH(msg)` and, for actions and downloads,
+ * the message of one item). The virus flag is `LOCATE('VIRUS_FOUND', symbols) > 0`.
+ * Lists are newest first by default; ties are always broken by the identifier, newest first.
  */
 class QuarantineQuery
 {
@@ -65,8 +66,22 @@ class QuarantineQuery
         $query = $this->base($principal);
         $this->filter($query, $filters);
         $list->applySearch($query, ['quarantine.subject', 'quarantine.sender', 'quarantine.rcpt', 'quarantine.qid']);
-        $total = (clone $query)->count();
+        $countQuery = clone $query;
         $query->orderBy($list->sortColumn(), $list->order)->orderBy('quarantine.id', 'desc');
+
+        if ($list->search !== null || $principal->role === Role::DomainAdmin) {
+            // Search and domain scope scan the upstream table. Count the filtered rows in that
+            // same scan instead of repeating it for each page; never materialize stored messages.
+            $rows = $query->selectRaw('COUNT(*) OVER () AS matched_total')
+                ->offset($list->offset)->limit($list->limit)->get()->all();
+            // A page beyond the last match has no row carrying the window count.
+            $total = isset($rows[0]) ? (int) $rows[0]->getRawOriginal('matched_total')
+                : ($list->offset === 0 ? 0 : $countQuery->count());
+
+            return ['rows' => array_values($rows), 'total' => $total];
+        }
+
+        $total = $countQuery->count();
 
         return ['rows' => array_values($query->offset($list->offset)->limit($list->limit)->get()->all()), 'total' => $total];
     }

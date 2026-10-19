@@ -404,16 +404,22 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
 
 ### R16. Quarantine list query and performance (FR-008 to FR-011, SC-007)
 
-- **Decision**: One `SELECT` and one `COUNT(*)` with the same predicates over `quarantine`, never
-  selecting `msg` (except `LENGTH(msg)` in the single-item read). Columns: `id, qid, subject,
+- **Decision**: For administrators and mailbox users without search, one `SELECT` and one
+  `COUNT(*)` with the same predicates over `quarantine`. With search or domain-admin scope,
+  `COUNT(*) OVER ()` counts the matches in the page query so substring and domain-scope
+  predicates need only one table scan. An empty first page has total zero; an empty later page
+  falls back to a count with the same scope and filters. Never select `msg` (except `LENGTH(msg)`
+  in the single-item read). Columns: `id, qid, subject,
   score, sender, rcpt, action, created, notified, IFNULL(LOCATE('VIRUS_FOUND', symbols), 0) > 0 AS
   virus`. Filters: `rcpt = ?`; `SUBSTRING_INDEX(rcpt,'@',-1) = ?`; `action IN (…)` (`other` =
   `NOT IN ('reject','add header','rewrite subject')`); virus; `notified = ?`; `created >= ?` and
   `< ?` (UTC converted to `TZ`); `score >= ?`/`<= ?`. `q`: escaped `LIKE` over `subject`, `sender`,
   `rcpt`, `qid` (case-insensitive collation). Sort map: `arrivedAt` → `created`, `queueId` → `qid`,
   `recipient` → `rcpt`, `virus` → the computed flag; always `, id DESC` as tie-breaker. No index
-  can be added to the upstream table (constitution III): a full scan of 100,000 rows without the
-  `LONGTEXT` column (stored off-page) plus a filesort of the narrow rows takes well under a second.
+  can be added to the upstream table (constitution III). The list scans only the narrow columns,
+  excluding the stored message. The 2026-10-19 checks found the two-scan search at p95 1.261 s
+  and domain-admin listing at 1.484 s; the window count avoids those duplicate scans without
+  changing the upstream schema.
   `tests/Feature/Quarantine/Performance/QuarantineListLatencyTest.php` (group `performance`) seeds
   100,000 rows and asserts p95 < 1 s for a page of 25.
 - **Rationale**: Legacy loads every row into PHP; the API pages in SQL.

@@ -72,6 +72,10 @@ class QuarantineScopeAndFilterTest extends TestCase
 
         $this->assertSame(6, $response->json('meta.total'));
         $this->assertEqualsCanonicalizing($this->expected(['annaReject', 'annaJunk', 'room', 'gone', 'bertVirus', 'bertOther']), $this->idsOf());
+        $this->getJson('/api/v2/quarantine?limit=2&offset=2')->assertOk()
+            ->assertJsonPath('meta.total', 6)->assertJsonCount(2, 'data');
+        $this->getJson('/api/v2/quarantine?limit=2&offset=6')->assertOk()
+            ->assertJsonPath('meta.total', 6)->assertJsonPath('data', []);
     }
 
     public function test_an_admin_gets_every_item(): void
@@ -112,28 +116,57 @@ class QuarantineScopeAndFilterTest extends TestCase
         $this->assertSame([], $this->idsOf('?q=old%25mail'));
     }
 
+    public function test_search_totals_cover_all_matches_even_beyond_the_last_page(): void
+    {
+        $this->asAdmin();
+
+        foreach ([0 => ['carl'], 1 => ['annaReject'], 2 => []] as $offset => $names) {
+            $response = $this->getJson('/api/v2/quarantine?q=PILLS&limit=1&offset='.$offset)->assertOk();
+            $response->assertJsonPath('meta', ['total' => 2, 'limit' => 1, 'offset' => $offset]);
+            $this->assertSame($this->expected($names), array_column((array) $response->json('data'), 'id'));
+        }
+
+        foreach ([0, 50] as $offset) {
+            $this->getJson('/api/v2/quarantine?q=absent&offset='.$offset)->assertOk()
+                ->assertJsonPath('meta.total', 0)->assertJsonPath('data', []);
+        }
+    }
+
+    public function test_search_totals_respect_scope_and_filters_on_empty_pages(): void
+    {
+        $this->signInAs('reseller', Role::DomainAdmin);
+
+        $this->getJson('/api/v2/quarantine?q=PILLS')->assertOk()
+            ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $this->ids['annaReject']);
+        $this->getJson('/api/v2/quarantine?q=PILLS&offset=1')->assertOk()
+            ->assertJsonPath('meta.total', 1)->assertJsonPath('data', []);
+        $this->getJson('/api/v2/quarantine?q=PILLS&domain=b.example&offset=1')->assertOk()
+            ->assertJsonPath('meta.total', 0)->assertJsonPath('data', []);
+    }
+
     /**
-     * @return array<string, array{string}>
+     * @return array<string, array{string, string}>
      */
     public static function sortFields(): array
     {
         $fields = [];
 
         foreach (['arrivedAt', 'id', 'queueId', 'score', 'sender', 'recipient', 'subject', 'action', 'virus', 'notified'] as $field) {
-            $fields[$field] = [$field];
+            $fields[$field] = [$field, ''];
+            $fields[$field.' with search'] = [$field, '&q=example'];
         }
 
         return $fields;
     }
 
     #[DataProvider('sortFields')]
-    public function test_every_sort_field_in_both_orders_with_ties_by_id_newest_first(string $field): void
+    public function test_every_sort_field_in_both_orders_with_ties_by_id_newest_first(string $field, string $search): void
     {
         $this->asAdmin();
         $column = ['arrivedAt' => 'arrivedAt', 'id' => 'id', 'queueId' => 'queueId', 'score' => 'score', 'sender' => 'sender', 'recipient' => 'recipient', 'subject' => 'subject', 'action' => 'filterAction', 'virus' => 'virus', 'notified' => 'notified'][$field];
 
         foreach (['asc', 'desc'] as $order) {
-            $data = (array) $this->getJson("/api/v2/quarantine?sort={$field}&order={$order}&limit=100")->assertOk()->json('data');
+            $data = (array) $this->getJson("/api/v2/quarantine?sort={$field}&order={$order}&limit=100{$search}")->assertOk()->json('data');
             $expected = $data;
             usort($expected, function (array $a, array $b) use ($column, $order): int {
                 $x = $a[$column];

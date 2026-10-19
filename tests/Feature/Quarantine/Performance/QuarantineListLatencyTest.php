@@ -137,8 +137,11 @@ class QuarantineListLatencyTest extends TestCase
         $this->signInAs('perf-admin', Role::Admin);
         $this->assertGreaterThanOrEqual(self::ITEMS, $this->getJson('/api/v2/quarantine?limit=1')->assertOk()->json('meta.total'));
 
-        foreach (['' => 'default page', '&q=invoice' => 'search', '&sort=score&order=desc' => 'sorted by score'] as $query => $label) {
+        foreach (['' => 'default page', '&q=invoice' => 'search', '&q=spam.example' => 'search matching every item', '&sort=score&order=desc' => 'sorted by score'] as $query => $label) {
             $p95 = self::p95($this->twenty($query));
+            if (getenv('RESTV2_PERF_DEBUG')) {
+                fwrite(STDERR, sprintf("%s: p95 %.3f s\n", $label, $p95));
+            }
             $this->assertLessThan(1.0, $p95, sprintf('listQuarantineItems (%s): p95 %.3f s', $label, $p95));
         }
 
@@ -146,6 +149,9 @@ class QuarantineListLatencyTest extends TestCase
         $this->signInAs('perf-reseller', Role::DomainAdmin);
         $this->getJson('/api/v2/quarantine?limit=1')->assertOk()->assertJsonPath('meta.total', self::ITEMS * 2 / self::DOMAINS);
         $p95 = self::p95($this->twenty(''));
+        if (getenv('RESTV2_PERF_DEBUG')) {
+            fwrite(STDERR, sprintf("domain administrator: p95 %.3f s\n", $p95));
+        }
         $this->assertLessThan(1.0, $p95, sprintf('listQuarantineItems as a domain administrator: p95 %.3f s', $p95));
     }
 }

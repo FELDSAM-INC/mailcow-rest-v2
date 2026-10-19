@@ -179,3 +179,17 @@ Deviations from the commands above (the guide is kept as written; read it with t
    through the API and send again at once.
 7. **Statistics**: `GET /spam-filter-action-statistics` equals the legacy dashboard chart counts;
    `spamFilterRunningSince` matches the Rspamd container's start time.
+
+## Local performance follow-up — 2026-10-19
+
+The deferred performance run found a search p95 of 1.261 s on 100,000 items. After combining the
+search count and page into one scan, the benchmark reached the domain-admin case and found it at
+1.484 s. Both search and domain-admin lists now use a window count (research R16); empty later
+pages retain their scoped total through a fallback count. No upstream table or index changed.
+
+The final quiet-machine benchmark passed (1 test, 111 assertions), including a new search that
+matches every item. p95: default 0.801 s, selective search 0.579 s, broad search 0.801 s,
+score sort 0.712 s, domain administrator 0.854 s; each budget remains 1 s. The focused list/scope
+suite passed 31 tests and 196 assertions, including searched and unsearched pagination, scope,
+empty pages, and every sort in both directions. Targeted Pint and PHPStan passed. Logs are in
+`storage/app/restart-2026-10-19/a013/resume-{search,domain,quarantine}-*.log`.

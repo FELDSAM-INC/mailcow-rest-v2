@@ -494,9 +494,6 @@
         }
     },
     "pendingOperations": [
-        "getQuarantineSettings",
-        "updateQuarantineSettings",
-        "previewQuarantineTemplate",
         "applyQuarantineNotificationBulkAction",
         "getMailboxQuarantineNotificationSettings",
         "updateMailboxQuarantineNotificationSettings",

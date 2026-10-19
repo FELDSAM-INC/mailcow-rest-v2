@@ -406,7 +406,10 @@ return [
         'python' => (string) Env::get('RESTV2_PYTHON', 'python3'),
         // Seconds an item lock lives at most (research R4); it exceeds the worst case of a release
         // (delivery, learning and fuzzy hashes, 30 s each). Tests lower it.
-        'lock_ttl' => max(1, (int) Env::get('RESTV2_QUARANTINE_LOCK_TTL', 300)),
+        'lock_ttl' => 300,
+        // Bytes the template check may print (the renderings of both datasets); more is refused as
+        // a render error. Not a setting: tests lower it.
+        'output_limit' => 8388608,
     ],
 
     /*

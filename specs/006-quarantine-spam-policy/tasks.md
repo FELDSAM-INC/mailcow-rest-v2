@@ -483,14 +483,14 @@ with the legacy settings tab.
 
 ### Tests for User Story 3 (write first, observe failing) ⚠️
 
-- [ ] T051 [P] [US3] Write `tests/Unit/Quarantine/QuarantineTemplateRendererTest.php` (R7, FR-070,
+- [X] T051 [P] [US3] Write `tests/Unit/Quarantine/QuarantineTemplateRendererTest.php` (R7, FR-070,
   SC-011): for every template fixture of T009 the outcome equals `goldens.json` (accepted with the
   same `html` and `text` for both datasets, or refused with the same reason class and line); the
   reasons map to `syntax`, `security`, `render`; `endless.tpl` → `timeout` after 5 s (1 s in the
   test via config); the subprocess gets an empty environment and `-I -B`; output above 8 MiB is
   refused as `render`; a missing `python3` binary (configurable path) → an exception that becomes
   `500`.
-- [ ] T052 [P] [US3] Write `tests/Feature/Quarantine/QuarantineSettingsTest.php` for
+- [X] T052 [P] [US3] Write `tests/Feature/Quarantine/QuarantineSettingsTest.php` for
   `getQuarantineSettings` and `updateQuarantineSettings` (FR-029 to FR-034, FR-059 to FR-061,
   AS-3.1 to AS-3.7):
   - empty Redis → `active: false`, retention 0, size 0, `notificationScoreLimit: null`,
@@ -518,7 +518,7 @@ with the legacy settings tab.
     `retentionPerMailbox`, `maxMessageSize`, `etag`; their `PATCH` → `403 forbidden`; read-only
     keys may read, not write;
   - one audit record with `changes` old/new, the template only as `changed`, `oldSize`, `newSize`.
-- [ ] T053 [P] [US3] Write `tests/Feature/Quarantine/QuarantineTemplateTest.php` (FR-070, FR-071,
+- [X] T053 [P] [US3] Write `tests/Feature/Quarantine/QuarantineTemplateTest.php` (FR-070, FR-071,
   AS-3.8 to AS-3.10): saving `unclosed-for.tpl` → `422 invalidTemplate` `reason: syntax`, `line`;
   `unsafe-attribute.tpl` and `sandbox-call.tpl` → `security` or `render` as in the goldens;
   `acl-branch-error.tpl` → refused (the `quarantine_acl` 1 dataset); nothing stored, a failure audit
@@ -533,26 +533,26 @@ with the legacy settings tab.
 
 ### Implementation for User Story 3
 
-- [ ] T054 [US3] Create `resources/bin/quarantine-template.py` (stdin JSON → `SandboxedEnvironment`
+- [X] T054 [US3] Create `resources/bin/quarantine-template.py` (stdin JSON → `SandboxedEnvironment`
   `from_string` and `render` per dataset → `html2text.html2text`; exceptions mapped to `syntax`
   (`TemplateSyntaxError.lineno`), `security`, `render`, with the line from the traceback when
   available; stdout JSON) and `app/Services/Quarantine/QuarantineTemplateRenderer.php` plus
   `TemplateCheckResult.php` (R7: `Process(['python3', '-I', '-B', …])`, empty environment, timeout
   from config, 8 MiB output cap, datasets A and B with the fixed sample values, `check()` and
   `preview(bool $quarantineAcl)`). This makes T051 pass.
-- [ ] T055 [US3] Create `app/Services/Quarantine/QuarantineSettingsService.php` (R8: `MGET` of the
+- [X] T055 [US3] Create `app/Services/Quarantine/QuarantineSettingsService.php` (R8: `MGET` of the
   eleven keys through 002's `SharedStore`, conversions and defaults, default template from
   `config('restv2.quarantine.default_template')` with the bundled fallback, ETag over the raw
   values, `update()` with `WATCH`/`MULTI`/`EXEC` writing only changed keys in legacy formats, one
   retry, audit record inserted in the transaction before `EXEC`, `validateOnly` path that stops
   before writing).
-- [ ] T056 [US3] Create `app/Rules/MailboxSize.php` (multiple of 1048576), `app/Rules/NotificationTemplate.php`
+- [X] T056 [US3] Create `app/Rules/MailboxSize.php` (multiple of 1048576), `app/Rules/NotificationTemplate.php`
   (byte length, then `QuarantineTemplateRenderer::check()` → `invalidTemplate` with `reason` and
   `line`) and `app/Http/Requests/Api/V2/UpdateQuarantineSettingsRequest.php` (every rule of
   data-model.md "Quarantine settings", excluded domains through 002's normaliser and existence in
   `domain`/`alias_domain` or the stored list) and `PreviewQuarantineTemplateRequest.php`
   (`template` string ≥ 1 or `null`, ≤ 1048576 bytes, `quarantineAcl` boolean).
-- [ ] T057 [US3] Create `app/Http/Resources/Api/V2/QuarantineSettingsResource.php` (full or public
+- [X] T057 [US3] Create `app/Http/Resources/Api/V2/QuarantineSettingsResource.php` (full or public
   visibility), `app/Http/Controllers/Api/V2/QuarantineSettingsController.php` (`show`, `update`
   with `validateOnly` → `200` `{"data": {"valid": true}}`) and `QuarantineTemplatePreviewController.php` (`store`); register
   `GET|PATCH /quarantine/settings` and `POST /quarantine/settings/template-preview` before

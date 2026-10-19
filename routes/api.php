@@ -116,6 +116,8 @@ use App\Http\Controllers\Api\V2\QuarantineItemController;
 use App\Http\Controllers\Api\V2\QuarantineItemDownloadController;
 use App\Http\Controllers\Api\V2\QuarantineItemReleaseController;
 use App\Http\Controllers\Api\V2\QuarantineItemSpamLearningController;
+use App\Http\Controllers\Api\V2\QuarantineSettingsController;
+use App\Http\Controllers\Api\V2\QuarantineTemplatePreviewController;
 use App\Http\Controllers\Api\V2\ReadinessController;
 use App\Http\Controllers\Api\V2\RecentLoginController;
 use App\Http\Controllers\Api\V2\RecipientMapController;
@@ -1144,6 +1146,7 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
         Route::get('/quarantine', [QuarantineItemController::class, 'index'])->name('quarantine.index');
         Route::get('/capabilities/quarantine', [QuarantineCapabilitiesController::class, 'show'])->name('quarantine-capabilities.show');
+        Route::get('/quarantine/settings', [QuarantineSettingsController::class, 'show'])->name('quarantine-settings.show');
         Route::get('/quarantine/{itemId}', [QuarantineItemController::class, 'show'])
             ->where('itemId', '[1-9][0-9]{0,9}')
             ->name('quarantine.show');
@@ -1160,6 +1163,12 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::post('/quarantine/bulk-actions', [QuarantineBulkActionController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'quarantineItem'])
             ->name('quarantine-bulk-actions.store');
+        Route::patch('/quarantine/settings', [QuarantineSettingsController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'quarantineSettingsUpdate', 'target' => 'quarantineSettings', 'skipWhenQueryTrue' => 'validateOnly'])
+            ->name('quarantine-settings.update');
+        // A preview changes nothing and is not audited.
+        Route::post('/quarantine/settings/template-preview', [QuarantineTemplatePreviewController::class, 'store'])
+            ->name('quarantine-template-preview.store');
         Route::delete('/quarantine/{itemId}', [QuarantineItemController::class, 'destroy'])
             ->where('itemId', '[1-9][0-9]{0,9}')
             ->defaults('restv2.audit', ['event' => 'quarantineItemDeletion', 'target' => 'quarantineItem'])

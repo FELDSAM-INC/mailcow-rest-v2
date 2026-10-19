@@ -75,7 +75,6 @@ use App\Services\MtaSts\MtaStsAuditTargets;
 use App\Services\Oauth2\Oauth2ClientAuditTargetResolver;
 use App\Services\Oauth2\Oauth2ClientService;
 use App\Services\Routing\RoutingAuditTargets;
-use App\Services\SyncJobs\SyncJobAuditTargets;
 use App\Services\SelfService\SelfServiceAuditTargets;
 use App\Services\SyncJobs\SyncJobAuditTargets;
 use App\Services\Webmail\WebmailHandOffService;

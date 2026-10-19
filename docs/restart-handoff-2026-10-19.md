@@ -1,19 +1,20 @@
 # Resumed work handoff — 2026-10-19
 
 The owner asked to continue work in both `mailcow-rest-v2` and `../mailcowui-ng` after the
-system-restart checkpoint. The changes below are local. No push, staging deployment or reboot
-was performed. No subagents were used.
+system-restart checkpoint. The first continuation was local. The owner subsequently authorized
+committing, pushing and deploying completed work; the API deployment below is complete. No
+subagents were used.
 
 ## Current checkpoints
 
 | Repository/worktree | Branch | Checkpoint | State |
 |---|---|---|---|
-| `mailcow-rest-v2` | `main` | `cba8fe1` plus this handoff update | API 013 integrated; seeder and quarantine performance fixed |
+| `mailcow-rest-v2` | `main` | `b3dc2ab` plus this handoff update | API 013 integrated; seeder and quarantine performance fixed; pushed and deployed |
 | `../mailcow-rest-v2-wt/013` | `wt/013` | `67f2762` | Clean; implementation already on API main |
 | `../mailcowui-ng` | `main` | `990830e7` | Clean; unchanged because monitoring's performance gate fails |
 | `../mailcowui-ng-wt/005` | `wt/005` | `9ac9f886` | Reset/recovery fixes committed; broader account work unfinished |
 | `../mailcowui-ng-wt/006` | `wt/006` | `a239986f` | Quarantine list and stale-action refresh checked; broader feature unfinished |
-| `../mailcowui-ng-wt/011` | `wt/011` | `810df633` | Rebased onto main, regression checks recorded; Lighthouse failed |
+| `../mailcowui-ng-wt/011` | `wt/011` | `8a87b7af` | Rebased; retained loading/rendering fixes tested and committed locally; Lighthouse gate open |
 
 The UI worktrees are clean. Temporary worktree branches remain local: do not push them or use
 git stash. There is no rebase in progress. The old `wt/011-rebase-checkpoint-20261019` branch is
@@ -53,10 +54,24 @@ Logs: `a013/resume-performance.log` (original), `resume-composer-install.log`,
 `resume-quarantine-performance.log` (all quarantine cases pass), and
 `resume-{search,domain}-{functional,format,analyse}*.log`, under the artifact directory below.
 
-T097 (live mailcow Part C) remains open. Staging remains API `4be8653`, UI `990830e7`. API 013
-requires deployment mount, environment, ofelia and nginx changes that the deploy script alone
-does not install. Prepare those host configuration changes before requesting deployment approval;
-read the existing staging notes and never print credentials.
+T097 (full live mailcow Part C parity) remains open. After the owner's explicit deployment
+authorization, API main through `b3dc2ab` was pushed and deployed to `maildev.feldhost.cz`.
+UI staging remains `990830e7` until monitoring's performance gate passes.
+
+API 013 host configuration was synchronized before deployment: four additional mounts, five
+environment entries (including `RESTV2_LICENSE_VERIFICATION=false` for FeldHost), mass-mail
+runner/purge scheduler labels, and the 16 MiB logo upload nginx location. Other services and
+existing API `env_file`, image/pull settings were preserved. Compose validation and nginx syntax
+checks passed. The deploy script recreated only `restv2-mailcow`; nginx was reloaded and ofelia
+restarted to register the new jobs. Readiness reports database, schema, Redis and migrations all
+healthy. UID 82 has write access to the regex map and both Sieve mounts, and can read the language
+files. Scheduler logs show the new runner completing without errors. The old API image
+`4be8653` remains available for rollback.
+
+Deployment logs are `a013/deploy-main.log` and `a013/deploy-postflight.log`; the protected local
+`a013/deploy-preparation/` directory holds the reviewed configuration candidates and originals.
+Host rollback copies are `/root/mailhosting/restv2/{override.previous-013.yml,nginx.previous-013.conf}`.
+This deployment verification does not replace the remaining feature-specific Part C parity checks.
 
 ## Monitoring: rebase complete, performance gate open
 
@@ -90,18 +105,37 @@ Validation on the rebased code:
   LCP **3.2 s**, TBT **120 ms**; the largest element is the announcement after startup.
   Thresholds/throttling were not relaxed.
 
-The saved dashboard report attributes its largest shift (0.266) to the container section moving.
-Source inspection found that `HostSection.vue` initially omits three overview rows and the entire
-CPU/memory section, then inserts them above the containers. Its first two rows also have only one
-placeholder pair. Those mismatched loading states are a concrete next investigation; the report's
-unsized-logo suggestion alone does not establish the cause. Startup also awaits bootstrap before
-loading the first route's lazy component. These observations have not yet been tested as fixes.
+UI checkpoint `8a87b7af` now reserves the dashboard's overview rows and CPU/memory area during loading, and downloads
+the first route while the existing authenticated bootstrap runs. A delayed-response browser
+regression verifies that the container list moves less than 4 px when the overview arrives. An
+isolated diagnostic with these changes improved dashboard CLS from **0.294 to 0.0225** and its
+performance score to **86**; sign-in scored **88**. These are individual diagnostics, not a passed
+Lighthouse gate or a measurement of the final checkpoint.
 
-**Do not fast-forward UI main until T146 passes.** Use the preserved reports to investigate
-layout movement on the dashboard and startup delay across routes. Do not repeat unchanged
-Lighthouse runs hoping for a green score. T149 (real phones, VoiceOver/TalkBack) and live-host
-parity still need the owner/environment. The earlier six local smoke tests at API `4be8653`
-remain recorded in the feature quickstart; no staging deployment occurred.
+Two small rendering fixes remain: number/list/relative-time formatting no longer constructs a
+calendar formatter merely to check the time zone, and repeated short legacy HTML translations
+reuse sanitized strings in a bounded cache. Calendar dates still account for time-zone changes;
+the HTML allowlist and sanitization rules are unchanged. Regression tests failed before each fix.
+
+After the owner questioned the effort spent optimizing for slow mobile connections, further
+startup, bootstrap-request, lazy-menu and bundler experiments were removed. The retained patch
+uses the original authentication request order and build configuration. Experiments are preserved
+in `u011/perf-experiments-before-trim.{tgz,patch}`; do not resume tuning or repeatedly rerun
+Lighthouse without a new reason. The owner did not explicitly waive the performance gate.
+
+The final retained patch passes **3,267 unit tests / 369 files**, with **88.98% line coverage**
+(`u011/final-unit.log`). Lint, type checking, formatting, i18n, contract consistency, licenses,
+build and bundle budgets pass. Initial JavaScript is **186,760 bytes gzipped** (limit 204,800).
+Dependencies and the lockfile are unchanged; the previously recorded audit remains applicable.
+The final production-build browser run passes **231 tests** across mobile Chromium, desktop
+Chromium and mobile WebKit, covering the dashboard and delayed loading, shell bootstrap,
+password sign-in, sign-in screens, SSO round trips, preferences and legacy translations including
+hostile markup. Log: `u011/final-browser.log`; artifacts: `u011/final-browser-results/`.
+
+**Do not fast-forward UI main until T146 passes or the owner explicitly changes that gate.**
+T149 (real phones, VoiceOver/TalkBack) and live-host parity still need the owner/environment.
+The earlier six local smoke tests at API `4be8653` remain recorded in the feature quickstart;
+monitoring has not been deployed to staging. The API deployment is recorded above.
 
 ## UI 005: reset and recovery hardening
 
@@ -153,7 +187,8 @@ Durable logs and helpers are under the API checkout's ignored directory:
 
 `/home/feldsam/Projects/mailcow-rest-v2/storage/app/restart-2026-10-19/`
 
-Subdirectories are `a013/`, `u005/`, `u006/`, `u011/`. This continuation's logs use `resume-*`.
+Subdirectories are `a013/`, `u005/`, `u006/`, `u011/`. Continuation logs use `resume-*`; the later
+UI diagnostics use `perf-*`, and the retained patch's final checks use `final-*`.
 Monitoring's original failure artifacts are in `u011/original-browser-failures/`, its focused
 regression artifacts in `u011/resume-regression-results/`, and quiet-machine Lighthouse JSON/HTML
 reports plus assertion results in `u011/resume-lighthouse-reports/`. Older helper scripts retain

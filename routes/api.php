@@ -145,6 +145,7 @@ use App\Http\Controllers\Api\V2\SieveFilterController;
 use App\Http\Controllers\Api\V2\SingleSignOnCompletionController;
 use App\Http\Controllers\Api\V2\SingleSignOnController;
 use App\Http\Controllers\Api\V2\SingleSignOnProviderErrorController;
+use App\Http\Controllers\Api\V2\SpamFilterStatisticsController;
 use App\Http\Controllers\Api\V2\SpamPolicyEntryController;
 use App\Http\Controllers\Api\V2\SpamScoreController;
 use App\Http\Controllers\Api\V2\SsoTokenSessionController;
@@ -1177,6 +1178,7 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where(['mailbox' => '[^/]+', 'entryId' => '[1-9][0-9]{0,9}'])
             ->defaults('restv2.ownerKind', 'mailbox')
             ->name('mailboxes-spam-policy-entries.show');
+        Route::get('/spam-filter-action-statistics', [SpamFilterStatisticsController::class, 'show'])->name('spam-filter-action-statistics.show');
         Route::get('/rate-limits', [RateLimitController::class, 'index'])->name('rate-limits.index');
         Route::get('/domains/{domain}/rate-limit', [RateLimitController::class, 'show'])
             ->where('domain', '[^/]+')

@@ -10,14 +10,16 @@ namespace App\Clients\Rspamd;
 interface RspamdController
 {
     /**
-     * The controller's statistics (`GET /stat`), decoded.
+     * The controller's statistics (`GET /stat`), decoded. Feature 011 reads them with the
+     * adapter's short default timeout; feature 006's action statistics pass legacy's 30 seconds
+     * (FR-062).
      *
      * @return array<string, mixed>
      *
      * @throws RspamdUnavailable when the controller cannot be reached, times out, answers with an
      *                           error status or with a document that is not JSON
      */
-    public function stat(): array;
+    public function stat(?int $timeout = null): array;
 
     /**
      * The scan history (`GET /history`, `{"version": 2, "rows": [...]}`), decoded (feature 011

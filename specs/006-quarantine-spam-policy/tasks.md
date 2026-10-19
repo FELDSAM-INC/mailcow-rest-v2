@@ -753,7 +753,7 @@ reset existing and missing buckets; confirm `RL_VALUE` and `RL_LOG`.
 
 ### Tests for User Story 7 (write first, observe failing) ⚠️
 
-- [ ] T075 [P] [US7] Write `tests/Feature/SpamPolicy/SpamFilterStatisticsTest.php` for
+- [X] T075 [P] [US7] Write `tests/Feature/SpamPolicy/SpamFilterStatisticsTest.php` for
   `getSpamFilterActionStatistics` (FR-058, AS-7.1 to AS-7.4): `stat` with `actions` `{reject: 10,
   "soft reject": 2, greylist: 3, "rewrite subject": 1, "add header": 4, "no action": 80}` and
   `uptime` 3600 → `rejected` 10, `softRejected` 5, `subjectRewritten` 1, `movedToJunk` 4,
@@ -764,7 +764,7 @@ reset existing and missing buckets; confirm `RL_VALUE` and `RL_LOG`.
 
 ### Implementation for User Story 7
 
-- [ ] T076 [US7] Create `app/Services/SpamPolicy/SpamFilterStatisticsService.php` (R14) and
+- [X] T076 [US7] Create `app/Services/SpamPolicy/SpamFilterStatisticsService.php` (R14) and
   `app/Http/Controllers/Api/V2/SpamFilterStatisticsController.php` (`show`); register `GET
   /spam-filter-action-statistics`. This makes T075 pass.
 

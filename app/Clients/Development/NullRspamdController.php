@@ -14,7 +14,7 @@ use App\Clients\Rspamd\RspamdUnavailable;
  */
 final class NullRspamdController implements RspamdController
 {
-    public function stat(): array
+    public function stat(?int $timeout = null): array
     {
         return self::fixture('rspamd-stat.json');
     }

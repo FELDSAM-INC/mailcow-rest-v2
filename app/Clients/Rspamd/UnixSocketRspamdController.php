@@ -17,9 +17,9 @@ use Throwable;
  */
 class UnixSocketRspamdController implements RspamdController
 {
-    public function stat(): array
+    public function stat(?int $timeout = null): array
     {
-        return $this->read('/stat', $this->request());
+        return $this->read('/stat', $this->request($timeout));
     }
 
     public function history(): array

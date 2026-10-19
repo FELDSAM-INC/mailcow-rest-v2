@@ -87,6 +87,18 @@ class UnixSocketRspamdControllerTest extends TestCase
         $this->assertEquals(7, $this->options[0]['timeout']);
     }
 
+    public function test_stat_takes_a_timeout_and_keeps_the_short_default_without(): void
+    {
+        $this->answer(['actions' => []]);
+
+        $this->client()->stat();
+        $this->client()->stat(30);
+
+        $this->assertEquals(10, $this->options[0]['timeout']);
+        $this->assertEquals(30, $this->options[1]['timeout']);
+        Http::assertSent(fn (Request $r): bool => $r->method() === 'GET' && $r->url() === 'http://rspamd/stat');
+    }
+
     public function test_status_208_is_already_learned(): void
     {
         $this->answer(['error' => '<abc@example.net> has been already learned as ham, ignore it'], 208);

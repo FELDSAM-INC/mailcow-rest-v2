@@ -56,7 +56,7 @@ final class FakeRspamdController implements RspamdController
 
     private ?string $logFile = null;
 
-    public function stat(): array
+    public function stat(?int $timeout = null): array
     {
         $this->record('/stat');
         $this->failIfUnreachable();

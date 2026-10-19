@@ -442,8 +442,6 @@
         }
     },
     "pendingOperations": [
-        "issueDomainAdminSsoToken",
-        "createSessionWithSsoToken",
         "createWebmailSignInOnBehalf"
     ]
 }

@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\V2\DnsCapabilitiesController;
 use App\Http\Controllers\Api\V2\DnsDiagnosticsController;
 use App\Http\Controllers\Api\V2\DomainAdminController;
 use App\Http\Controllers\Api\V2\DomainAdminSecondFactorSuspensionController;
+use App\Http\Controllers\Api\V2\DomainAdminSsoTokenController;
 use App\Http\Controllers\Api\V2\DomainBulkActionController;
 use App\Http\Controllers\Api\V2\DomainCapabilitiesController;
 use App\Http\Controllers\Api\V2\DomainController;
@@ -131,6 +132,7 @@ use App\Http\Controllers\Api\V2\SieveFilterController;
 use App\Http\Controllers\Api\V2\SingleSignOnCompletionController;
 use App\Http\Controllers\Api\V2\SingleSignOnController;
 use App\Http\Controllers\Api\V2\SingleSignOnProviderErrorController;
+use App\Http\Controllers\Api\V2\SsoTokenSessionController;
 use App\Http\Controllers\Api\V2\SyncJobBulkActionController;
 use App\Http\Controllers\Api\V2\SyncJobCapabilitiesController;
 use App\Http\Controllers\Api\V2\SyncJobController;
@@ -184,6 +186,8 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::delete('/session/single-sign-on', [SingleSignOnController::class, 'destroy'])->name('single-sign-on.destroy');
         Route::post('/session/single-sign-on/completion', [SingleSignOnCompletionController::class, 'store'])->name('single-sign-on-completion.store');
         Route::post('/session/single-sign-on/provider-error', [SingleSignOnProviderErrorController::class, 'store'])->name('single-sign-on-provider-error.store');
+        // Feature 007: a domain administrator's single sign-on token (failures are audited as sign-ins).
+        Route::post('/session/sso-token', [SsoTokenSessionController::class, 'store'])->name('sso-token-session.store');
     });
 
     // Feature 007: the session's impersonation (login-as). Signed-in browser sessions only;
@@ -1096,6 +1100,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     });
 
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::post('/domain-admins/{username}/sso-token', [DomainAdminSsoTokenController::class, 'store'])
+            ->where('username', '[A-Za-z0-9._-]+')
+            ->defaults('restv2.audit', ['event' => 'ssoTokenIssue', 'target' => 'ssoToken'])
+            ->name('domain-admin-sso-token.store');
         Route::post('/domain-admins/bulk-actions', [AccountBulkActionController::class, 'store'])
             ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'domainAdmin'])
             ->name('domain-admin-bulk-actions.store');

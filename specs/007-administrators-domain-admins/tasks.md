@@ -673,7 +673,7 @@ writes them, consumed here and by a simulated legacy consumer.
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T078 [P] [US5] Write `tests/Feature/SsoTokens/IssueSsoTokenTest.php` for
+- [X] T078 [P] [US5] Write `tests/Feature/SsoTokens/IssueSsoTokenTest.php` for
   `issueDomainAdminSsoToken` (AS US5-1, US5-5, FR-057 to FR-059, R20): with an administrator
   read-write key → `200`, `Cache-Control: no-store`, `token` matching
   `^[0-9A-F]{6}(-[0-9A-F]{6}){4}$`, `username`, `expiresAt` = the `da_sso.created` (UTC) + 30 s; the
@@ -681,7 +681,7 @@ writes them, consumed here and by a simulated legacy consumer.
   account-inactive` and no row; an unknown username and an administrator's username → `404`; an
   account without assignments → `200`; audit `ssoTokenIssue` with `expiresAt` and no token anywhere
   (`assertNoSecretIn($token)`).
-- [ ] T079 [P] [US5] Write `tests/Feature/SsoTokens/SsoTokenSignInTest.php` for
+- [X] T079 [P] [US5] Write `tests/Feature/SsoTokens/SsoTokenSignInTest.php` for
   `createSessionWithSsoToken` (AS US5-2, US5-4, US5-6, FR-060 to FR-063, FR-036): `201` with
   `SessionCreated`, `role: domainAdmin`, `authMethod: ssoToken`, without a second factor even with an
   active TOTP entry, and the `tfa` rows unchanged; the row is consumed; the same token again, a
@@ -695,13 +695,13 @@ writes them, consumed here and by a simulated legacy consumer.
   every success and failure is audited as `signIn` with `authMethod: ssoToken`; the session cookie
   changes at sign-in (FR-061); creating a domain administrator, issuing a token with the key and
   signing in with it completes in well under a minute (SC-006, asserted below 5 s).
-- [ ] T080 [P] [US5] Write `tests/Feature/SsoTokens/SsoTokenConcurrencyTest.php` (edge case "same
+- [X] T080 [P] [US5] Write `tests/Feature/SsoTokens/SsoTokenConcurrencyTest.php` (edge case "same
   token twice at the same moment"): 200 rounds of two parallel processes
   (`tests/bin/sso-token-race.php`), one consuming through `SsoTokenService` and one running legacy's
   `domain_admin_sso('check')` statements (`SELECT … AND created > DATE_SUB(NOW(), INTERVAL 30
   SECOND)` then `DELETE` with `rowCount`), each with its own connection; exactly one succeeds in
   every round.
-- [ ] T081 [P] [US5] Write `tests/Feature/SsoTokens/SsoTokenAuthorizationTest.php` (AS US5-7,
+- [X] T081 [P] [US5] Write `tests/Feature/SsoTokens/SsoTokenAuthorizationTest.php` (AS US5-7,
   FR-005): issue with a domain administrator session or key → `403 forbidden`; with a read-only
   administrator key → `403 insufficient-key-scope`; with a mailbox user → `403 forbidden`; with an
   administrator session → `200`; token sign-in with an `X-API-Key` header → `403
@@ -710,15 +710,15 @@ writes them, consumed here and by a simulated legacy consumer.
 
 ### Implementation for User Story 5
 
-- [ ] T082 [P] [US5] Create `app/Models/Mailcow/DaSsoToken.php` (`$table = 'da_sso'`, no
+- [X] T082 [P] [US5] Create `app/Models/Mailcow/DaSsoToken.php` (`$table = 'da_sso'`, no
   incrementing key, read-only).
-- [ ] T083 [US5] Create `app/Services/Auth/SsoTokenService.php` (R20): `issue(username, Principal
+- [X] T083 [US5] Create `app/Services/Auth/SsoTokenService.php` (R20): `issue(username, Principal
   $actor)` and `consume(string $token): ?array` with the statements of data-model.md "da_sso", and
   `signIn()` through 001's `SessionManager` (replace, renew, principal with `AuthMethod::SsoToken`
   and `accountCreatedAt`, registration in 005's `SessionRegistry`) and 001's
   `PendingActionEvaluator`. Add the throttle key kind
   `ssotoken:<sha256(ip)>` with 001's limits to `app/Services/Auth/SignInThrottle.php`.
-- [ ] T084 [US5] Create `app/Http/Requests/Api/V2/SsoTokenSignInRequest.php` ("`token`: required
+- [X] T084 [US5] Create `app/Http/Requests/Api/V2/SsoTokenSignInRequest.php` ("`token`: required
   string 1–255"), `app/Http/Resources/Api/V2/DomainAdminSsoTokenResource.php`,
   `app/Http/Controllers/Api/V2/DomainAdminSsoTokenController.php` (`store`, `DomainAdminPolicy`,
   `Cache-Control: no-store`) and `SsoTokenSessionController.php` (`store`). Register

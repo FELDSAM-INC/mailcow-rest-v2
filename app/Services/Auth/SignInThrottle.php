@@ -110,6 +110,14 @@ class SignInThrottle
     }
 
     /**
+     * Feature 007 (FR-062): failed single sign-on token sign-ins per client address.
+     */
+    public function ssoTokenKey(string $ip): string
+    {
+        return 'ssotoken:'.hash('sha256', $ip);
+    }
+
+    /**
      * Ends the window when its end has passed.
      */
     private function expireIfDue(string $key): void

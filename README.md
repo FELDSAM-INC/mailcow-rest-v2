@@ -313,3 +313,9 @@ and `mlocati/idna` (both MIT): RFC 7208 evaluation with the lookup limits and an
 instead of a hand-written evaluator (feature 010 research R25). The development image adds BIND's
 `named-checkzone` (`bind-tools`, MPL-2.0) for the zone-file test; it is not part of the production
 image.
+
+Quarantine inspection (feature 006) parses messages with legacy's own libraries:
+`php-mime-mail-parser/php-mime-mail-parser` 10.0 (MIT) on PECL `mailparse` 3.2 (PHP-3.01) and
+`soundasleep/html2text` 2.1 (MIT). The notification template check runs the legacy notifier's
+engine: Alpine's `python3` (PSF-2.0) with `py3-jinja2`, `py3-markupsafe` (BSD-3-Clause) and
+`py3-html2text` (GPL-3.0) (feature 006 research R23).

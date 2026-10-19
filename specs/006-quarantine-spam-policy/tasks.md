@@ -51,7 +51,7 @@ class has another name in the merged code, that name replaces the one used below
 **Purpose**: Verify the code of earlier features, add the runtime pieces, configuration, legacy
 extracts and fixtures. No business logic.
 
-- [ ] T001 Verify the prerequisites of R1 and record any differing class name at the top of this
+- [X] T001 Verify the prerequisites of R1 and record any differing class name at the top of this
   file (a "Resolved names" note): 001's classes listed above; 002's `app/Support/Domain/DomainName.php`,
   `app/Services/Domains/DomainScope.php`, `app/Clients/SharedStore/SharedStore.php`,
   `app/Services/RateLimits/RateLimitStore.php`, `ProblemType::TemporaryFailure`, the generic
@@ -62,14 +62,14 @@ extracts and fixtures. No business logic.
   is in `docs/problems.md`). If `SharedStore` has no optimistic `WATCH` variant, add
   `SharedStore::transactionWatching(array $keys, Closure $build)` with its unit test. If no earlier
   feature created the refusal hook, T023 creates it.
-- [ ] T002 Extend `docker/php/Dockerfile` (stage `base`): `pecl install mailparse` (3.2.x) plus
+- [X] T002 Extend `docker/php/Dockerfile` (stage `base`): `pecl install mailparse` (3.2.x) plus
   `docker-php-ext-enable mailparse`; `apk add --no-cache python3 py3-jinja2 py3-markupsafe
   py3-html2text`. Rebuild and check `php -m | grep mailparse` and
   `python3 -I -c 'import jinja2.sandbox, html2text'` in the `dev` and `production` targets (R7, R23).
-- [ ] T003 Run `composer require php-mime-mail-parser/php-mime-mail-parser soundasleep/html2text`
+- [X] T003 Run `composer require php-mime-mail-parser/php-mime-mail-parser soundasleep/html2text`
   (the current majors that support PHP 8.4; MIT). Record the versions and licences in the
   dependency table of `README.md` (or `docs/dependencies.md` if 001 created it) (R23).
-- [ ] T004 Extend `config/restv2.php` and `.env.example` with the server settings of R20:
+- [X] T004 Extend `config/restv2.php` and `.env.example` with the server settings of R20:
   `rspamd.socket` (`RESTV2_RSPAMD_SOCKET`, `/var/lib/rspamd/rspamd.sock`), `rspamd.timeout`
   (`RESTV2_RSPAMD_TIMEOUT`, 30), `release_smtp.host` (`RESTV2_RELEASE_SMTP_HOST`, `postfix`),
   `release_smtp.port` (`RESTV2_RELEASE_SMTP_PORT`, 590), `release_smtp.timeout` (30),
@@ -78,20 +78,20 @@ extracts and fixtures. No business logic.
   `/mailcow/assets/templates/quarantine.tpl`), `quarantine.template_timeout`
   (`RESTV2_TEMPLATE_RENDER_TIMEOUT`, 5), `skip_clamd` (`SKIP_CLAMD`, `n`). The bulk limit is the
   API-wide constant 100 (conventions), not a setting.
-- [ ] T005 [P] Deployment (R2, R7, R18, R20): in `deploy/docker-compose.override.yml` add the volumes
+- [X] T005 [P] Deployment (R2, R7, R18, R20): in `deploy/docker-compose.override.yml` add the volumes
   `rspamd-vol-1:/var/lib/rspamd:ro` and `./data/assets/templates:/mailcow/assets/templates:ro,z`
   and the variable `SKIP_CLAMD=${SKIP_CLAMD:-n}` to `restv2-mailcow`; in
   `deploy/nginx/site.restv2.custom` set `fastcgi_read_timeout 300s;` in `location ^~ /api/v2/`; in
   `docker/php/php-fpm.conf` set `request_terminate_timeout = 300s`. Add an optional `mailpit`
   service (`axllent/mailpit`, MIT, profile `mail`, ports 1025 and 8025) to `compose.yaml` as the
   dev SMTP sink for releases (quickstart Part B).
-- [ ] T006 [P] Create `scripts/legacy/extract-quarantine-release-strings.sh <tag>`: for every
+- [X] T006 [P] Create `scripts/legacy/extract-quarantine-release-strings.sh <tag>`: for every
   `data/web/lang/lang.*.json` of the tag (`git -C "$MAILCOW_REPO" show <tag>:<path>`), extract
   `quarantine.release_subject` and `quarantine.release_body` into
   `resources/legacy/quarantine-release-strings.json` (`{"en-gb": {"subject": …, "body": …}, …}`,
   sorted, with the tag in a `_source` member). Copy `data/assets/templates/quarantine.tpl` of the
   tag to `resources/legacy/quarantine.tpl`. Run it for `2026-09a` and commit both files.
-- [ ] T007 [P] Create the message fixtures `tests/fixtures/quarantine/messages/*.eml` (R22):
+- [X] T007 [P] Create the message fixtures `tests/fixtures/quarantine/messages/*.eml` (R22):
   `plain.eml`, `html-only.eml`, `multipart-two-attachments.eml` (a PDF and a PNG),
   `html-attachment.eml`, `svg-attachment.eml`, `path-name-attachment.eml` (file name
   `../../etc/passwd`), `unnamed-attachment.eml`, `encoded-subject.eml` (RFC 2047 UTF-8 and
@@ -100,13 +100,13 @@ extracts and fixtures. No business logic.
   (body lines starting with `.`), `lf-only.eml` (LF line endings), `cc-bcc.eml` (To, Cc, Bcc and an
   invalid address). Add `tests/Support/Quarantine/LargeMessage.php`, which builds a message of
   10 MiB + 1 byte at runtime.
-- [ ] T008 [P] Create `scripts/legacy/generate-qitem-goldens.sh <tag>`: in the tag's
+- [X] T008 [P] Create `scripts/legacy/generate-qitem-goldens.sh <tag>`: in the tag's
   `ghcr.io/mailcow/phpfpm:8.2.29-3` image with the tag's `data/web/inc/lib/vendor`, run a harness
   that applies the parsing part of `inc/ajax/qitem_details.php` (recipients, `header_from`,
   `text_plain`, `text_html`, subject, attachments with name, type, size and SHA-256) to each fixture
   of T007 and writes `tests/fixtures/quarantine/legacy/<name>.json`. Run it for `2026-09a` and
   commit the goldens.
-- [ ] T009 [P] Create the template fixtures `tests/fixtures/quarantine/templates/*.tpl` (SC-011):
+- [X] T009 [P] Create the template fixtures `tests/fixtures/quarantine/templates/*.tpl` (SC-011):
   `default.tpl` (copy of `resources/legacy/quarantine.tpl`), `valid-simple.tpl`,
   `unclosed-for.tpl`, `unknown-tag.tpl`, `unsafe-attribute.tpl` (`{{ ''.__class__.__mro__ }}`),
   `sandbox-call.tpl` (`{{ meta.__init__.__globals__ }}`), `undefined-attribute.tpl`
@@ -130,7 +130,7 @@ plumbing that every story needs.
 
 ### Test support and tests for the foundation (write first, observe failing) ⚠️
 
-- [ ] T010 [P] Extend `database/factories/MailcowRows.php` (and the `MailcowFactory` wrapper) with
+- [X] T010 [P] Extend `database/factories/MailcowRows.php` (and the `MailcowFactory` wrapper) with
   rows exactly as legacy writes them:
   - `quarantineItem(rcpt, msg = fixture, qid, subject, score, action = 'reject', symbols = [],
     fuzzyHashes = [], sender, ip, user = 'unknown', notified = 0, created = now)`, which inserts
@@ -138,22 +138,22 @@ plumbing that every story needs.
   - `filterconf(object, option, value)`; `spamScore(username, low, high)`;
   - `aliasDomain(alias, target, active = 1)` if 004 did not add it;
   - `mailboxAttributes(username, quarantine_notification, quarantine_category)`.
-- [ ] T011 [P] Create `tests/Support/Rspamd/FakeRspamdController.php` implementing
+- [X] T011 [P] Create `tests/Support/Rspamd/FakeRspamdController.php` implementing
   `App\Clients\Rspamd\RspamdController`: records `calls` (`endpoint`, `flag`, `sha256` of the body,
   order); scripted results per endpoint (`done`, `alreadyLearned`, `noFuzzyContent`,
   `failed(<text>)`, `actions([...])`, `stat([...])`, `unreachable`); helpers `assertCalls([...])` and
   `assertNoCalls()`. Bind it in `tests/TestCase.php` through a `useFakeSpamFilter()` helper that
   every 006 feature test calls in `setUp()`.
-- [ ] T012 [P] Create `tests/Support/Mail/FakeQuarantineReleaseMailer.php` implementing
+- [X] T012 [P] Create `tests/Support/Mail/FakeQuarantineReleaseMailer.php` implementing
   `App\Clients\Mail\QuarantineReleaseMailer`: records envelope sender, recipient and the exact bytes;
   scripted outcomes `accepted`, `refused(550, '550 5.1.1 …')`, `temporaryFailure('timeout')`, an
   optional delay for concurrency tests; `assertDelivered(count)`, `assertNothingDelivered()`. Bind
   it through `useFakeReleaseMailer()` in `tests/TestCase.php`.
-- [ ] T013 [P] Create `tests/Support/Smtp/ScriptedSmtpServer.php` and the process script
+- [X] T013 [P] Create `tests/Support/Smtp/ScriptedSmtpServer.php` and the process script
   `tests/Support/Smtp/scripted-smtp-server.php`: listens on `127.0.0.1:<random port>`, answers a
   scripted reply per command (multi-line `250-` replies supported), records the full dialogue to a
   file, and stops on `QUIT` or after a timeout.
-- [ ] T014 [P] Write `tests/Unit/Clients/UnixSocketRspamdControllerTest.php` with `Http::fake()`
+- [X] T014 [P] Write `tests/Unit/Clients/UnixSocketRspamdControllerTest.php` with `Http::fake()`
   (R2): `learnHam` posts to `http://rspamd/learnham` with `Content-Type: text/plain` and the exact
   body, and the cURL option `CURLOPT_UNIX_SOCKET_PATH` = `config('restv2.rspamd.socket')`;
   `fuzzyAdd($m, 13)` sends header `Flag: 13`; classification: `{"success":true}` → `done`; HTTP 208
@@ -161,13 +161,13 @@ plumbing that every story needs.
   `{"error":"No content to generate fuzzy"}` → `noFuzzyContent`; `{"error":"x"}` with 500, a
   connection exception and a timeout (30 s configured) → `failed` with the text; `actions()` and
   `stat()` decode JSON and fail on invalid JSON.
-- [ ] T015 [P] Write `tests/Unit/Clients/SmtpQuarantineReleaseMailerTest.php` against
+- [X] T015 [P] Write `tests/Unit/Clients/SmtpQuarantineReleaseMailerTest.php` against
   `ScriptedSmtpServer` (R3): the dialogue is `EHLO quarantine`, `MAIL FROM:<sender>`,
   `RCPT TO:<rcpt>`, `DATA`, message, `.`, `QUIT`; no `STARTTLS` even when the server offers it; a
   message with LF line endings is sent with CRLF; a line starting with `.` is sent as `..`;
   `550` at `RCPT` → `refused` with code 550 and the full reply; `451` → `temporaryFailure`;
   connection refused and a server that never answers (timeout 1 s in the test) → `temporaryFailure`.
-- [ ] T016 [P] Write `tests/Unit/Quarantine/SpamFilterAccessTest.php` (R15, FR-001 to FR-006,
+- [X] T016 [P] Write `tests/Unit/Quarantine/SpamFilterAccessTest.php` (R15, FR-001 to FR-006,
   FR-069) for `App\Policies\QuarantinePolicy`, `SpamPolicyPolicy` and `RateLimitPolicy` with
   principals built from `MailcowFactory` rows:
   - admin: every ability; domain admin: `quarantine`, `spam_policy`, `ratelimit` from `da_acl`, the
@@ -179,7 +179,7 @@ plumbing that every story needs.
   - role refusals (mailbox user and rate limits, domain admin and settings) are `forbidden`, not
     `permission-flag-required`;
   - the flags of the target mailbox never restrict admins or domain admins (FR-005).
-- [ ] T017 [P] Write `tests/Unit/Support/SpamFilterProblemTest.php`: `ProblemType` has the cases
+- [X] T017 [P] Write `tests/Unit/Support/SpamFilterProblemTest.php`: `ProblemType` has the cases
   `QuarantineItemBusy` (409), `QuarantineDeliveryRefused` (409), `QuarantineMessageTooLarge` (409),
   `SpamPolicyEntryExists` (409); `temporaryFailure(dependency, step)` renders `dependency`, `step`
   and `Retry-After: 30`; `quarantine-item-busy` renders `Retry-After: 5`; every rendered problem
@@ -187,23 +187,23 @@ plumbing that every story needs.
 
 ### Implementation of the foundation
 
-- [ ] T018 Create `app/Clients/Rspamd/RspamdController.php` (interface: `learnHam`, `learnSpam`,
+- [X] T018 Create `app/Clients/Rspamd/RspamdController.php` (interface: `learnHam`, `learnSpam`,
   `fuzzyAdd(string $message, int $flag)`, `actions()`, `stat()`), `LearnOutcome.php` (enum-backed
   value with the error text) and `UnixSocketRspamdController.php` (R2). Bind the adapter in
   `app/Providers/AppServiceProvider.php`. This makes T014 pass.
-- [ ] T019 Create `app/Clients/Mail/QuarantineReleaseMailer.php` (interface:
+- [X] T019 Create `app/Clients/Mail/QuarantineReleaseMailer.php` (interface:
   `deliver(RawMessage $message, string $sender, string $recipient): DeliveryOutcome`),
   `DeliveryOutcome.php` and `SmtpQuarantineReleaseMailer.php` on Symfony Mailer's `EsmtpTransport`
   with local domain `quarantine`, auto-TLS off, the configured host, port and timeout, CRLF
   normalisation of `RawMessage` content, and the outcome classification of R3. Bind it in
   `AppServiceProvider`. This makes T015 pass.
-- [ ] T020 [P] Create `app/Models/Mailcow/QuarantineItem.php` (`$table = 'quarantine'`, `$primaryKey
+- [X] T020 [P] Create `app/Models/Mailcow/QuarantineItem.php` (`$table = 'quarantine'`, `$primaryKey
   = 'id'`, `$timestamps = false`, `$guarded = ['*']`, casts: `created` → `MailcowDateTime`,
   `symbols` and `fuzzy_hashes` → array, `notified` → bool, `score` → float; `msg` and `qhash` in
   `$hidden`; a scope `withoutMessage()` selecting every column except `msg`) and
   `app/Models/Mailcow/FilterPreference.php` (`$table = 'filterconf'`, `$primaryKey = 'prefid'`,
   `$timestamps = false`, `created` cast).
-- [ ] T021 Add the four problem types to `app/Support/Http/ProblemType.php` with their English
+- [X] T021 Add the four problem types to `app/Support/Http/ProblemType.php` with their English
   titles ("Quarantine item is being processed", "Delivery refused", "Quarantine message too large",
   "List entry already exists"), and factory methods in `app/Exceptions/ProblemException.php`:
   `permissionFlagRequired(array $requiredFlags)`, `attributeNotPermitted(array $attributes, array
@@ -211,7 +211,7 @@ plumbing that every story needs.
   $code, string $reply)`, `quarantineMessageTooLarge(int $size, int $limit)`,
   `spamPolicyEntryExists(string $list, int $entryId)`, `temporaryFailure(string $dependency, ?string
   $step = null)` (on top of 002's case). This makes T017 pass.
-- [ ] T022 Create `app/Policies/QuarantinePolicy.php`, `app/Policies/SpamPolicyPolicy.php` and
+- [X] T022 Create `app/Policies/QuarantinePolicy.php`, `app/Policies/SpamPolicyPolicy.php` and
   `app/Policies/RateLimitPolicy.php` with the abilities of FR-006 (role check → `forbidden`, flag
   check → `permissionFlagRequired(requiredFlags)`, or `attributeNotPermitted(attributes, requiredFlags)` for a
   mailbox user's notification members that would change), using 001's effective flags, and
@@ -220,7 +220,7 @@ plumbing that every story needs.
   `rcpt = <username>`) and `mailbox()`, `domain()`, `aliasDomain()` resolvers that normalise the
   path value, apply 002–004's reachability and resource exclusion (`kind NOT REGEXP
   'location|thing|group'`) and throw `404` otherwise. Register the policies. This makes T016 pass.
-- [ ] T023 Register the 006 audit event types and `details` whitelists of data-model.md "Audit
+- [X] T023 Register the 006 audit event types and `details` whitelists of data-model.md "Audit
   records" in `app/Services/Audit/AuditLogger.php` (or its event registry). Refusal auditing
   (R19, conventions "Refusal auditing"): reuse the route-declared hook
   `App\Services\Audit\RefusalAuditor` (called from 001's problem rendering in `bootstrap/app.php`
@@ -251,19 +251,19 @@ for a mailbox user; compare deliveries, remaining rows and Rspamd calls with leg
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T024 [P] [US1] Write `tests/Unit/Quarantine/QuarantineMessageParserTest.php` (R5, FR-013,
+- [X] T024 [P] [US1] Write `tests/Unit/Quarantine/QuarantineMessageParserTest.php` (R5, FR-013,
   SC-001): for every fixture of T007, the parsed content equals the legacy golden of T008 modulo
   the stated deviations (`""` for legacy `-`, `textPlain` `null` instead of `-` or "Parser failed,
   assuming HTML", `parserFallback: true` for `unparseable.eml`, safe names, no VirusTotal URL);
   `cc-bcc.eml` lists To, Cc, Bcc and the envelope recipient last, without the invalid address;
   invalid UTF-8 is scrubbed; no HTML tag appears in any text; attachments carry position, name,
   declared type, decoded size and SHA-256; nothing is written to disk.
-- [ ] T025 [P] [US1] Write `tests/Unit/Quarantine/DownloadFileNameTest.php` (R6, FR-016, FR-017):
+- [X] T025 [P] [US1] Write `tests/Unit/Quarantine/DownloadFileNameTest.php` (R6, FR-016, FR-017):
   attachment `../../etc/passwd` → `....etcpasswd` without separators; control characters removed;
   empty name → `attachment-3` for position 3; message file name from the subject with tags removed,
   cut to 30 characters (multi-byte safe), `.eml` appended; empty subject → `<qid>.eml`; the
   `Content-Disposition` has an ASCII `filename` and a UTF-8 `filename*`.
-- [ ] T026 [P] [US1] Write `tests/Unit/Quarantine/ReleaseMessageFactoryTest.php` (R3, FR-020):
+- [X] T026 [P] [US1] Write `tests/Unit/Quarantine/ReleaseMessageFactoryTest.php` (R3, FR-020):
   `original`: only lines matching `^X-Spam-Flag: ` are renamed `X-Pre-Release-Spam-Flag: ` (header
   and the body line of `spam-flag.eml`, legacy regex), the rest is byte-identical; `attachment`: a
   message from the sender to the recipient with subject `Potentially damaging quarantine item
@@ -271,7 +271,7 @@ for a mailbox user; compare deliveries, remaining rows and Rspamd calls with leg
   German strings for a user whose preference is `de-de`, `DEFAULT_LANG` for an API key, English for
   a language without a translation, and one `message/rfc822` attachment named `<qid>.eml` whose
   content is the stored message; sender fallback: empty, `unknown` → `sender-unknown@rspamd`.
-- [ ] T027 [P] [US1] Write `tests/Feature/Quarantine/ListOwnQuarantineTest.php` for
+- [X] T027 [P] [US1] Write `tests/Feature/Quarantine/ListOwnQuarantineTest.php` for
   `listQuarantineItems` as a mailbox user (FR-001, FR-007, FR-008, AS-1.1): 30 items for alice and
   5 for bob → alice gets 25, newest first, `meta.total` 30, none of bob's; `offset=25` gives 5;
   each entry has every member of `QuarantineItem` with `subject` `""` for NULL, `score` `null`,
@@ -279,7 +279,7 @@ for a mailbox user; compare deliveries, remaining rows and Rspamd calls with leg
   `subjectRewritten`, `foo` → `other` with `filterAction: "foo"`), `virus` from `VIRUS_FOUND`,
   `arrivedAt` in UTC for `TZ=Europe/Prague`, `etag`; the JSON never contains `qhash` or `msg`;
   listing works without the `quarantine` flag.
-- [ ] T028 [P] [US1] Write `tests/Feature/Quarantine/InspectQuarantineItemTest.php` for
+- [X] T028 [P] [US1] Write `tests/Feature/Quarantine/InspectQuarantineItemTest.php` for
   `getQuarantineItem` (FR-012 to FR-015, AS-1.2, AS-1.7, AS-1.8, AS-1.9): a virus item returns
   score, `action: rejected`, `virus: true`, symbols with name/score/options, `fuzzyHashes`,
   `sourceAddress`, `size` = `LENGTH(msg)`, `contentStatus: available`, `from`, `subject`,
@@ -288,7 +288,7 @@ for a mailbox user; compare deliveries, remaining rows and Rspamd calls with leg
   user (and present for an admin); a >10 MiB item → `contentStatus: tooLarge`, `content: null`,
   symbols still present; an item without `msg` → `missing`; bob's item and an unknown id → the same
   `404`; the `ETag` header equals `data.etag`; reading writes no audit record.
-- [ ] T029 [P] [US1] Write `tests/Feature/Quarantine/DownloadQuarantineFilesTest.php` for
+- [X] T029 [P] [US1] Write `tests/Feature/Quarantine/DownloadQuarantineFilesTest.php` for
   `downloadQuarantineMessage` and `downloadQuarantineAttachment` (FR-006, FR-016 to FR-018,
   AS-1.6, AS-1.7, AS-2.4): the message download returns the stored bytes as `message/rfc822`;
   attachments return the decoded bytes as `application/octet-stream`, also for the HTML and SVG
@@ -299,7 +299,7 @@ for a mailbox user; compare deliveries, remaining rows and Rspamd calls with leg
   `quarantineAttachments` → `requiredFlags: ["quarantineAttachments"]` for both downloads; position 9 → `404`; >10 MiB →
   `409 quarantine-message-too-large` with `size` and `limit`; a read-only key of an admin may
   download; not audited.
-- [ ] T030 [P] [US1] Write `tests/Feature/Quarantine/ReleaseQuarantineItemTest.php` for
+- [X] T030 [P] [US1] Write `tests/Feature/Quarantine/ReleaseQuarantineItemTest.php` for
   `releaseQuarantineItem` (FR-019 to FR-022, FR-025, FR-028, AS-1.3, AS-1.4, edge cases):
   - release format `raw` and with no `Q_RELEASE_FORMAT` → the fake mailer received the renamed
     original from the stored sender to `rcpt`; `attachment` → the wrapper of T026;
@@ -324,38 +324,38 @@ for a mailbox user; compare deliveries, remaining rows and Rspamd calls with leg
     (`permissionDenied` for a missing flag, an admin read-only key — `403 insufficient-key-scope` —
     and a restricted session; `serviceFailure` for a refused delivery); a CSRF failure and an
     unauthenticated request write none.
-- [ ] T031 [P] [US1] Write `tests/Feature/Quarantine/LearnQuarantineItemAsSpamTest.php` for
+- [X] T031 [P] [US1] Write `tests/Feature/Quarantine/LearnQuarantineItemAsSpamTest.php` for
   `learnQuarantineItemAsSpam` (FR-023, FR-025, AS-1.5, AS-2.7): Rspamd calls `learnspam`, then
   `fuzzyadd` with `Flag: 11`; the row is removed only afterwards; `alreadyLearned` counts as success;
   learning `failed` or unreachable → `503 temporary-failure` (`spamFilter`, `learning`), the row
   kept, no fuzzy call, a failure audit record; fuzzy `failed` → `200` with `fuzzy: failed`,
   `fuzzyError`, the row removed; nothing is delivered (`delivery: notApplicable`); the audit record
   `quarantineItemSpamLearning` has the steps.
-- [ ] T032 [P] [US1] Write `tests/Feature/Quarantine/DeleteQuarantineItemTest.php` for
+- [X] T032 [P] [US1] Write `tests/Feature/Quarantine/DeleteQuarantineItemTest.php` for
   `deleteQuarantineItem` (FR-024): `204` with no body, the row gone, no Rspamd call, nothing
   delivered; without `quarantine` → `403`; another mailbox's item → `404`; `If-Match` mismatch →
   `412`; audit `quarantineItemDeletion` without subject; a second delete → `404`.
 
 ### Implementation for User Story 1
 
-- [ ] T033 [US1] Create `app/Services/Quarantine/QuarantineMessageParser.php` and `ParsedMessage.php`
+- [X] T033 [US1] Create `app/Services/Quarantine/QuarantineMessageParser.php` and `ParsedMessage.php`
   (R5): parse only when `strlen($msg) <= config('restv2.quarantine.content_limit')`; recipients,
   `from`, `subject` (`mb_convert_encoding(..., 'UTF-8', 'auto')`), `textPlain` (`null` when empty),
   `textFromHtml` (`Html2Text::convert`), raw-body fallback with `parserFallback`, `mb_scrub` on every
   text, attachments from `getAttachments(true)` in memory with position, safe name, declared type,
   decoded size and SHA-256. This makes T024 pass.
-- [ ] T034 [P] [US1] Create `app/Services/Quarantine/DownloadFileName.php` (`forAttachment(string
+- [X] T034 [P] [US1] Create `app/Services/Quarantine/DownloadFileName.php` (`forAttachment(string
   $name, int $position)`, `forMessage(?string $subject, string $qid)`, `disposition(string $name)` via
   `HeaderUtils::makeDisposition`). This makes T025 pass.
-- [ ] T035 [P] [US1] Create `app/Services/Quarantine/ReleaseMessageFactory.php` (R3): `original()`
+- [X] T035 [P] [US1] Create `app/Services/Quarantine/ReleaseMessageFactory.php` (R3): `original()`
   with the legacy regex, `attachment()` building a Symfony `Email` with the strings of
   `resources/legacy/quarantine-release-strings.json` for the acting principal's effective language,
   and `envelopeSender()` with the fallback. This makes T026 pass.
-- [ ] T036 [US1] Create `app/Services/Quarantine/QuarantineItemLock.php` (R4: Laravel cache lock on
+- [X] T036 [US1] Create `app/Services/Quarantine/QuarantineItemLock.php` (R4: Laravel cache lock on
   the `restv2` store, key `quarantine-item:<id>`, TTL 300 s, non-blocking `acquire(int $id):
   ?Lock`, `release()` in `finally`, Redis errors → `temporaryFailure('sharedStore')`) and
   `app/Services/Quarantine/ActionReport.php`.
-- [ ] T037 [US1] Create `app/Services/Quarantine/QuarantineActionService.php` with `release(Principal,
+- [X] T037 [US1] Create `app/Services/Quarantine/QuarantineActionService.php` with `release(Principal,
   int $id, bool $learnAsHam, ?string $ifMatch)`, `learnAsSpam(...)` and `delete(...)` (R3, R4, R19):
   policy check → scoped lookup (`404`) → `If-Match` (`412`) → lock (busy: re-check → `404` or
   `409` with `Retry-After: 5`) → re-read the row with `msg` → steps in the order of FR-021 to
@@ -364,18 +364,18 @@ for a mailbox user; compare deliveries, remaining rows and Rspamd calls with leg
   → fuzzy 11 → transaction {`DELETE`, audit}; delete: transaction {`DELETE`, audit}), reading
   `Q_RELEASE_FORMAT` on the `mailcow` connection (`503 sharedStore` on failure), refusals through
   `RefusalAuditor`. It never touches `notified` or `Q_LAST_NOTIFIED`.
-- [ ] T038 [US1] Create `app/Services/Quarantine/QuarantineQuery.php` with the scoped base query
+- [X] T038 [US1] Create `app/Services/Quarantine/QuarantineQuery.php` with the scoped base query
   (`withoutMessage()`, the `virus` expression, `SpamFilterScope::itemScope`), pagination through
   `ListQuery` and the default sort `created DESC, id DESC`, and `findInScope(Principal, int $id,
   bool $withMessage = false)`.
-- [ ] T039 [US1] Create `app/Http/Resources/Api/V2/QuarantineItemResource.php`,
+- [X] T039 [US1] Create `app/Http/Resources/Api/V2/QuarantineItemResource.php`,
   `QuarantineItemDetailsResource.php` (contract shapes; `authenticatedSender` only for admins;
   `content.attachments` `null` without the attachment right; `etag` over `id|qid|rcpt|created`) and
   `QuarantineActionReportResource.php`.
-- [ ] T040 [US1] Create `app/Http/Requests/Api/V2/ListQuarantineItemsRequest.php` (pagination, `q`,
+- [X] T040 [US1] Create `app/Http/Requests/Api/V2/ListQuarantineItemsRequest.php` (pagination, `q`,
   `sort`, `order`) and `ReleaseQuarantineItemRequest.php` (`learnAsHam` optional boolean, default
   `true`, body optional, unknown members → `unknownField` or `invalidType`).
-- [ ] T041 [US1] Create the controllers `app/Http/Controllers/Api/V2/QuarantineItemController.php`
+- [X] T041 [US1] Create the controllers `app/Http/Controllers/Api/V2/QuarantineItemController.php`
   (`index`, `show`, `destroy`), `QuarantineItemReleaseController.php` (`store`),
   `QuarantineItemSpamLearningController.php` (`store`) and `QuarantineItemDownloadController.php`
   (`message`, `attachment`, headers of R6, `409` for too-large messages), and register in

@@ -1,0 +1,30 @@
+{
+    "recipients": [
+        {
+            "address": "alice@example.org",
+            "type": "to"
+        },
+        {
+            "address": "alice@example.org",
+            "type": "smtp"
+        }
+    ],
+    "header_from": "Sender <sender@example.net>",
+    "text_plain": "Please find the invoice attached.\r\r\nTotal: 42 €",
+    "text_html": "Please find the invoice attached.\n\nTotal: 42 €",
+    "subject": "Invoice and logo",
+    "attachments": [
+        {
+            "name": "invoice.pdf",
+            "type": "application/pdf",
+            "size": 77,
+            "sha256": "56c2ac043c28d3543275a6f50b593a6beb0b6888ed8159ac02e3e7f4a32ccb26"
+        },
+        {
+            "name": "logo.png",
+            "type": "image/png",
+            "size": 70,
+            "sha256": "6b7fa434f92a8b80aab02d9bf1a12e49ffcae424e4013a1c4f68b67e3d2bbcd0"
+        }
+    ]
+}

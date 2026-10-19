@@ -1,0 +1,17 @@
+{
+    "recipients": [
+        {
+            "address": "alice@example.org",
+            "type": "to"
+        },
+        {
+            "address": "alice@example.org",
+            "type": "smtp"
+        }
+    ],
+    "header_from": "Sender <sender@example.net>",
+    "text_plain": "Parser failed, assuming HTML",
+    "text_html": "Claim your prize\n\nClick [here](https://evil.example.net) now.",
+    "subject": "Broken structure",
+    "attachments": []
+}

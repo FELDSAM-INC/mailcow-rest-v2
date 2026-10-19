@@ -1,0 +1,111 @@
+{
+    "_source": "2026-09a",
+    "bg-bg": {
+        "subject": "Потенциално вреден елемент в карантина %s",
+        "body": "Прикаченото съобщение е добавено към това съобщение."
+    },
+    "ca-es": {
+        "subject": "Element potencialment perillós %s en quarantena",
+        "body": "Hem adjuntat el teu missatge com a eml en aquest missatge."
+    },
+    "cs-cz": {
+        "subject": "Potenciálně škodlivá položka v karanténě %s",
+        "body": "Zpráva připojena jako příloha EML k této zprávě."
+    },
+    "da-dk": {
+        "subject": "Potentielt skadelig karantæneartikel %s",
+        "body": "Vi har vedhæftet din besked som eml-fil til denne besked."
+    },
+    "de-de": {
+        "subject": "Potentiell schädliche Nachricht aus Quarantäne: %s",
+        "body": "Die ursprüngliche Nachricht wurde als EML-Datei im Anhang hinterlegt."
+    },
+    "en-gb": {
+        "subject": "Potentially damaging quarantine item %s",
+        "body": "We have attached your message as eml file to this message."
+    },
+    "es-es": {
+        "subject": "Mensaje de cuarentena potencialmente dañino %s",
+        "body": "Adjuntamos el mensaje en formato eml a este correo."
+    },
+    "fi-fi": {
+        "subject": "Mahdollisesti vahingoittava karanteeni aihe %s",
+        "body": "Olemme liittäneet viestisi eml-tiedostona tähän viestiin."
+    },
+    "fr-fr": {
+        "subject": "Article de quarantaine potentiellement dommageable %s",
+        "body": "Nous avons joint votre message comme fichier eml à ce message."
+    },
+    "hu-hu": {
+        "subject": "Potenciálisan kártékony karantén-tétel %s",
+        "body": "A levelét eml fájlként csatoltuk ehhez az üzenethez."
+    },
+    "it-it": {
+        "subject": "Potentially damaging quarantine item %s",
+        "body": "Abbiamo allegato il tuo messaggio come file eml a questo messaggio."
+    },
+    "ja-jp": {
+        "subject": "潜在的に危険な隔離項目 %s",
+        "body": "メッセージを.emlファイルとして添付しました。"
+    },
+    "ko-kr": {
+        "subject": "시스템에 영향을 줄 수 있는 격리 항목 %s",
+        "body": "이 메세지에 당신의 메세지가 eml 파일로 첨부되어 있습니다."
+    },
+    "lv-lv": {
+        "subject": "Potenciāli kaitīgs karantīnas vienums %s",
+        "body": "Mēs pievienojām Tavu ziņojumu kā .eml datni šim ziņojumam."
+    },
+    "nl-nl": {
+        "subject": "Mogelijk schadelijk quarantaine-item %s",
+        "body": "We hebben het oorspronkelijke bericht als los bestand bijgevoegd. Open dit bestand om het bericht weer te geven."
+    },
+    "pl-pl": {
+        "subject": "Potencjalnie szkodliwa pozycja kwarantanny %s",
+        "body": "Dołączyliśmy Twoją wiadomość jako plik eml do tej wiadomości."
+    },
+    "pt-br": {
+        "subject": "Item de quarentena potencialmente prejudicial %s",
+        "body": "Anexamos sua mensagem como arquivo eml a esta mensagem."
+    },
+    "ro-ro": {
+        "subject": "Element în carantină potențial dăunător %s",
+        "body": "Am atașat mesajul tău ca fișier eml la acest mesaj."
+    },
+    "ru-ru": {
+        "subject": "Потенциально опасное письмо %s",
+        "body": "Мы приложили ваше сообщение как файл eml к этому сообщению."
+    },
+    "si-si": {
+        "subject": "Potencialno škodljiv predmet v karanteni %s",
+        "body": "Vaše sporočilo smo priložili kot datoteko eml temu sporočilu."
+    },
+    "sk-sk": {
+        "subject": "Potenciálne nebezpečná položka v karanténne %s",
+        "body": "Priložili sme vašu správu ako .eml súbor viz. príloha."
+    },
+    "sv-se": {
+        "subject": "Potentiellt skadlig karantänsmeddelande %s",
+        "body": "Det ursprungliga meddelandet har bifogats som en EML-fil till detta meddelande."
+    },
+    "tr-tr": {
+        "subject": "Potansiyel olarak zarar veren karantina öğesi %s",
+        "body": "Mesajınızı eml dosyası olarak bu mesaja ekledik."
+    },
+    "uk-ua": {
+        "subject": "Потенційно небезпечний лист %s",
+        "body": "Ми додали повідомлення як файл .eml до цього повідомлення."
+    },
+    "uz-uz": {
+        "subject": "Potensial xavfli karantin elementi %s",
+        "body": "Xabaringizni ushbu xabarga eml fayl sifatida ilova qildik."
+    },
+    "zh-cn": {
+        "subject": "存在潜在危险的隔离文件 %s",
+        "body": "我们已将你的消息作为 eml 文件附在此消息中。"
+    },
+    "zh-tw": {
+        "subject": "有風險的隔離項目 %s",
+        "body": "我們已在此郵件中將你的郵件附檔為 eml 檔案"
+    }
+}

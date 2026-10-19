@@ -9,3 +9,6 @@
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
+
+# Feature 006: quarantined message fixtures keep their exact bytes (CRLF and LF line endings).
+tests/fixtures/quarantine/messages/*.eml -text

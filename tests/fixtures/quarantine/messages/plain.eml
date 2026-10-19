@@ -1,0 +1,18 @@
+Return-Path: <sender@example.net>
+Received: from mx.example.net (mx.example.net [192.0.2.25])
+	by mail.example.org (Postfix) with ESMTPS id 4XyZ1q2w3eR
+	for <alice@example.org>; Mon, 05 Oct 2026 10:00:00 +0200 (CEST)
+Date: Mon, 05 Oct 2026 10:00:00 +0200
+Message-ID: <fixture-plain@example.net>
+From: Sender <sender@example.net>
+To: Alice <alice@example.org>
+Subject: Plain text offer
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hello Alice,
+
+this is a plain text message with an umlaut: Grüße.
+
+Bye

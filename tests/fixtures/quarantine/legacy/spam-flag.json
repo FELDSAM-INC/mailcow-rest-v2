@@ -1,0 +1,17 @@
+{
+    "recipients": [
+        {
+            "address": "alice@example.org",
+            "type": "to"
+        },
+        {
+            "address": "alice@example.org",
+            "type": "smtp"
+        }
+    ],
+    "header_from": "Sender <sender@example.net>",
+    "text_plain": "Buy now.\r\nX-Spam-Flag: this body line looks like a header\r\n  X-Spam-Flag: indented, not renamed\r\n",
+    "text_html": "",
+    "subject": "Cheap pills",
+    "attachments": []
+}

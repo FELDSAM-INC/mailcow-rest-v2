@@ -1,0 +1,24 @@
+{
+    "recipients": [
+        {
+            "address": "alice@example.org",
+            "type": "to"
+        },
+        {
+            "address": "alice@example.org",
+            "type": "smtp"
+        }
+    ],
+    "header_from": "Sender <sender@example.net>",
+    "text_plain": "See the attachment.",
+    "text_html": "",
+    "subject": "Passwords",
+    "attachments": [
+        {
+            "name": "_._.._etc_passwd",
+            "type": "text/plain",
+            "size": 30,
+            "sha256": "79492b90d473e2387338ef1518dfbceb9e3392ae5740235a6696621e42218efa"
+        }
+    ]
+}

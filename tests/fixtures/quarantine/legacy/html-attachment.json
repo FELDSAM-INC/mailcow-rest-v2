@@ -1,0 +1,24 @@
+{
+    "recipients": [
+        {
+            "address": "alice@example.org",
+            "type": "to"
+        },
+        {
+            "address": "alice@example.org",
+            "type": "smtp"
+        }
+    ],
+    "header_from": "Sender <sender@example.net>",
+    "text_plain": "See the attachment.",
+    "text_html": "",
+    "subject": "Your document",
+    "attachments": [
+        {
+            "name": "document.html",
+            "type": "text/html",
+            "size": 108,
+            "sha256": "310545be1d27e1c2f2a27e48c7272ee96bdbdd1308f2a85ea93ff043fde52847"
+        }
+    ]
+}

@@ -1,0 +1,23 @@
+Return-Path: <sender@example.net>
+Received: from mx.example.net (mx.example.net [192.0.2.25])
+	by mail.example.org (Postfix) with ESMTPS id 4XyZ1q2w3eR
+	for <alice@example.org>; Mon, 05 Oct 2026 10:00:00 +0200 (CEST)
+Date: Mon, 05 Oct 2026 10:00:00 +0200
+Message-ID: <fixture-path@example.net>
+From: Sender <sender@example.net>
+To: Alice <alice@example.org>
+Subject: Passwords
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="----=_Part_fixture_path"
+
+------=_Part_fixture_path
+Content-Type: text/plain; charset=utf-8
+
+See the attachment.
+------=_Part_fixture_path
+Content-Type: text/plain; name="../../etc/passwd"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="../../etc/passwd"
+
+cm9vdDp4OjA6MDpyb290Oi9yb290Oi9iaW4vc2gK
+------=_Part_fixture_path--

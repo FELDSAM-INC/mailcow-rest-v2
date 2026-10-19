@@ -1,0 +1,24 @@
+{
+    "recipients": [
+        {
+            "address": "alice@example.org",
+            "type": "to"
+        },
+        {
+            "address": "alice@example.org",
+            "type": "smtp"
+        }
+    ],
+    "header_from": "Sender <sender@example.net>",
+    "text_plain": "See the attachment.",
+    "text_html": "",
+    "subject": "Data",
+    "attachments": [
+        {
+            "name": "noname1",
+            "type": "application/octet-stream",
+            "size": 256,
+            "sha256": "40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880"
+        }
+    ]
+}

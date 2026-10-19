@@ -1,0 +1,43 @@
+Return-Path: <sender@example.net>
+Received: from mx.example.net (mx.example.net [192.0.2.25])
+	by mail.example.org (Postfix) with ESMTPS id 4XyZ1q2w3eR
+	for <alice@example.org>; Mon, 05 Oct 2026 10:00:00 +0200 (CEST)
+Date: Mon, 05 Oct 2026 10:00:00 +0200
+Message-ID: <fixture-two@example.net>
+From: Sender <sender@example.net>
+To: Alice <alice@example.org>
+Subject: Invoice and logo
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="----=_Part_fixture_two"
+
+This is a multi-part message in MIME format.
+------=_Part_fixture_two
+Content-Type: multipart/alternative; boundary="----=_Alt_fixture_two"
+
+------=_Alt_fixture_two
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+Please find the invoice attached.=0D
+Total: 42 =E2=82=AC
+------=_Alt_fixture_two
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<p>Please find the <b>invoice</b> attached.</p><p>Total: 42 =E2=82=AC</p>
+------=_Alt_fixture_two--
+------=_Part_fixture_two
+Content-Type: application/pdf; name="invoice.pdf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="invoice.pdf"
+
+JVBERi0xLjQKMSAwIG9iaiA8PCAvVHlwZSAvQ2F0YWxvZyA+PiBlbmRvYmoKdHJhaWxlciA8PCAv
+Um9vdCAxIDAgUiA+PgolJUVPRgo=
+------=_Part_fixture_two
+Content-Type: image/png; name="logo.png"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="logo.png"
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9
+awAAAABJRU5ErkJggg==
+------=_Part_fixture_two--

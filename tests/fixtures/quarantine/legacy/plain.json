@@ -1,0 +1,17 @@
+{
+    "recipients": [
+        {
+            "address": "alice@example.org",
+            "type": "to"
+        },
+        {
+            "address": "alice@example.org",
+            "type": "smtp"
+        }
+    ],
+    "header_from": "Sender <sender@example.net>",
+    "text_plain": "Hello Alice,\r\n\r\nthis is a plain text message with an umlaut: Grüße.\r\n\r\nBye\r\n",
+    "text_html": "",
+    "subject": "Plain text offer",
+    "attachments": []
+}

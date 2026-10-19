@@ -1,0 +1,29 @@
+{
+    "recipients": [
+        {
+            "address": "alice@example.org",
+            "type": "to"
+        },
+        {
+            "address": "bob@example.org",
+            "type": "to"
+        },
+        {
+            "address": "carol@example.org",
+            "type": "cc"
+        },
+        {
+            "address": "dave@example.net",
+            "type": "bcc"
+        },
+        {
+            "address": "alice@example.org",
+            "type": "smtp"
+        }
+    ],
+    "header_from": "Sender <sender@example.net>",
+    "text_plain": "See you at ten.\r\n",
+    "text_html": "",
+    "subject": "Meeting",
+    "attachments": []
+}

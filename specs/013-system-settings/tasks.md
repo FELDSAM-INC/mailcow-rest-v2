@@ -478,7 +478,7 @@ restart, and check the files and the dockerapi calls (spec US4).
 
 ### Tests for User Story 4 (write first, observe failing)
 
-- [ ] T059 [P] [US4] Write `tests/Feature/GlobalFilters/GlobalSieveFilterTest.php` (FR-062–FR-065, FR-093, SC-006,
+- [x] T059 [P] [US4] Write `tests/Feature/GlobalFilters/GlobalSieveFilterTest.php` (FR-062–FR-065, FR-093, SC-006,
   AS-4.1–4.6): list returns pre-filter then post-filter with their `etag`; GET each; PUT a valid
   pre-filter → file written (CRLF normalised, bytes exact, inode unchanged),
   `FakeDockerApiClient` recorded exactly one `restart('dovecot-mailcow')`, `meta.dovecotRestart.outcome =
@@ -493,7 +493,7 @@ restart, and check the files and the dockerapi calls (spec US4).
 
 ### Implementation for User Story 4
 
-- [ ] T060 [US4] Create `app/Services/GlobalFilters/GlobalSieveFilterService.php` (R14: normalise,
+- [x] T060 [US4] Create `app/Services/GlobalFilters/GlobalSieveFilterService.php` (R14: normalise,
   validate with 005's `SieveValidator` unless empty or comments only, `SharedFileWriter`, restart via
   002's `DockerApiClient` unless deferred, audit with the outcome, rollback of the file on commit
   failure; the restart outcome goes to the response's `meta.dovecotRestart`),
@@ -915,3 +915,8 @@ duplicate it"), recorded as they were made:
 - **T052 to T058**: the structure and line checks are also rule objects (`App\Rules\UclStructure`,
   `App\Rules\RegexMapLines`) used by the Form Requests; the settings map endpoint's failure is
   feature 006's `ProblemException::temporaryFailure()` with `dependency: settingsMap`.
+- **T060**: the restart goes to feature 011's configurable Dovecot service
+  (`restv2.monitoring.dovecot_container`, `dovecot-mailcow` by default) and raises the time limit
+  with `TimeLimit::raise(DOCKER_TIMEOUT + 20)`. The script check is the rule object
+  `App\Rules\GlobalSieveScript` around 005's `SieveValidator`; the size limit applies to the
+  normalised script, as stored.

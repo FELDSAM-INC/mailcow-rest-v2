@@ -111,6 +111,10 @@ class SettingsAuthorizationMatrixTest extends TestCase
             'replaceRspamdRegexMap' => ['PUT', '/api/v2/settings/rspamd-regex-maps/bad_words.map', ['content' => '/x/i'], 200, self::ADMIN_ONLY, []],
             'getEffectiveRspamdSettingsMap' => ['GET', '/api/v2/settings/rspamd-settings-map', null, 200, self::ADMIN_ONLY, []],
             'listPresets' => ['GET', '/api/v2/presets/sieve', null, 200, self::ADMIN_AND_DOMAIN_ADMIN, []],
+            // US4: the global Sieve filters.
+            'listGlobalSieveFilters' => ['GET', '/api/v2/settings/global-sieve-filters', null, 200, self::ADMIN_ONLY, []],
+            'getGlobalSieveFilter' => ['GET', '/api/v2/settings/global-sieve-filters/prefilter', null, 200, self::ADMIN_ONLY, []],
+            'replaceGlobalSieveFilter' => ['PUT', '/api/v2/settings/global-sieve-filters/postfilter', ['script' => "keep;\n", 'deferRestart' => true], 200, self::ADMIN_ONLY, []],
         ];
     }
 

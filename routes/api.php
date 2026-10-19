@@ -54,6 +54,7 @@ use App\Http\Controllers\Api\V2\Fail2BanRulesController;
 use App\Http\Controllers\Api\V2\Fail2BanRulesResetController;
 use App\Http\Controllers\Api\V2\Fail2BanSettingsController;
 use App\Http\Controllers\Api\V2\ForwardingHostController;
+use App\Http\Controllers\Api\V2\GlobalSieveFilterController;
 use App\Http\Controllers\Api\V2\GroupwareResetController;
 use App\Http\Controllers\Api\V2\HostOverviewController;
 use App\Http\Controllers\Api\V2\IdentityController;
@@ -1347,6 +1348,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('mapId', '[A-Za-z0-9_.-]{1,128}')
             ->name('settings-rspamd-regex-maps.show');
         Route::get('/settings/rspamd-settings-map', [RspamdSettingsMapController::class, 'show'])->name('settings-rspamd-settings-map.show');
+        Route::get('/settings/global-sieve-filters', [GlobalSieveFilterController::class, 'index'])->name('settings-global-sieve-filters.index');
+        Route::get('/settings/global-sieve-filters/{filterId}', [GlobalSieveFilterController::class, 'show'])
+            ->where('filterId', 'prefilter|postfilter')
+            ->name('settings-global-sieve-filters.show');
         Route::get('/presets/{presetKind}', [PresetController::class, 'index'])
             ->where('presetKind', 'rspamd|sieve')
             ->name('presets.index');
@@ -1395,6 +1400,10 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('mapId', '[A-Za-z0-9_.-]{1,128}')
             ->defaults('restv2.audit', ['event' => 'rspamdRegexMapReplacement', 'target' => 'rspamdRegexMap', 'skipWhenQueryTrue' => 'validateOnly'])
             ->name('settings-rspamd-regex-maps.update');
+        Route::put('/settings/global-sieve-filters/{filterId}', [GlobalSieveFilterController::class, 'update'])
+            ->where('filterId', 'prefilter|postfilter')
+            ->defaults('restv2.audit', ['event' => 'globalSieveFilterReplacement', 'target' => 'globalSieveFilter', 'skipWhenQueryTrue' => 'validateOnly'])
+            ->name('settings-global-sieve-filters.update');
     });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])

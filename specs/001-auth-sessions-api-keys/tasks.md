@@ -1619,7 +1619,12 @@ record for secrets.
     ban it on the tenth (`max_attempts` 10 in 600 s), as for the legacy UI; the queued unban removed
     the rule. Failed sign-ins from the checking host were avoided, since they would ban it.
 
-  Still open: the passkey stopwatch in a real browser and the change half of SC-008 (skipped to leave the shared
+  - SC-002's browser stopwatch passes (2026-10-19): on the owner's iPhone (iOS 18.7, Safari), the
+    passkey button flow took about 2 s from the challenge to the signed-in session
+    (`passkey-challenge` 08:15:45, `passkey-assertion` 201 at 08:15:47 in the staging nginx log).
+    The autofill (conditional) flow had a UI bug, fixed in UI 001.
+
+  Still open: the change half of SC-008 (skipped to leave the shared
   announcement alone). A host on plain upstream `2026-09a` was waived by the owner on 2026-10-18
   (none is available). Deployment gap: `mcuadros/ofelia` reads labels only when it starts, so
   `restv2_audit_purge` is not registered until `ofelia-mailcow` restarts. Part C step 7 expects the

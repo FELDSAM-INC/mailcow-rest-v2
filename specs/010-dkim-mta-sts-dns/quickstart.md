@@ -39,11 +39,18 @@ docker compose run --rm app vendor/bin/phpstan analyse
 ## Part B: Manual checks against the dev stack
 
 Reset and seed as in 001 (`scripts/dev/reset-dev-database.sh`). The seeder also creates the alias
-domain `example.com` → `example.org`, a DKIM key for `example.org` and an unused key for
-`old.example`. Sign in as `admin` and keep the CSRF token, as in 001 Part B.
+domain `example.com` → `example.org`, a 2,048-bit DKIM key for `example.org` and an unused key for
+`old.example`. Sign in as `admin` and keep the CSRF token, as in 001 Part B. The session cookie is
+`Secure`, so use the HTTPS listener (`curl -k`). The dev `.env` declares documentation addresses as
+the public addresses (`RESTV2_PUBLIC_IPV4`, `RESTV2_PUBLIC_IPV6`), so diagnostics never asks the
+echo service; its lookups go to the app container's resolver.
+
+In a parallel worktree without host ports, run the commands inside the `app` container against
+`php artisan serve --host=127.0.0.1 --port=8000` (`B=http://127.0.0.1:8000/api/v2`) with an
+administrator's API key instead of the session: replace `$C … $H` by `-H "X-API-Key: <key>"`.
 
 ```bash
-B=http://localhost:8080/api/v2; J='-H Content-Type:application/json'; C='-c jar -b jar'
+B=https://127.0.0.1:18443/api/v2; J='-H Content-Type:application/json'; C='-k -c jar -b jar'
 T=$(curl -s $C $B/csrf-token | jq -r .data.token); H="-H X-CSRF-Token:$T"
 
 # Capabilities (US1, US4): host name, DKIM, MTA-STS and diagnostics limits.
@@ -85,9 +92,11 @@ curl -s $C $H -H 'Content-Type: application/merge-patch+json' -X PATCH $B/mta-st
   -d '{"active":false}' | jq .data.policyId                                            # unchanged
 curl -s $C $B/mta-sts-policies/example.com -o /dev/null -w '%{http_code}\n'             # -> 404 (alias)
 
-# US3: diagnostics with rate-limit headers (the dev stack resolves through the app container's DNS).
+# US3: diagnostics with rate-limit headers (the dev stack resolves through the app container's DNS,
+# so the checks of example.org report the real zone, mostly `mismatch` and `missing` for localhost).
 curl -s $C $B/dns-diagnostics/example.org -D headers.txt | jq '.data | {summary, checks: [.checks[] | {id, status}]}'
 grep -i '^ratelimit' headers.txt
+#   -> RateLimit-Limit: 10, RateLimit-Remaining: 9, RateLimit-Reset: 60
 
 # US8: audit history of a name (target filters from feature 002).
 curl -s $C "$B/audit-events?targetType=dkimKey&targetId=example.com" | jq '[.data[] | {eventType, outcome, details}]'

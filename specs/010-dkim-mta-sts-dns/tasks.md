@@ -913,7 +913,7 @@ target.
 - [X] T103 [P] Extend `database/seeders/DevelopmentSeeder.php`: alias domain `example.com` →
   `example.org`, a 2,048-bit DKIM key for `example.org`, an unused key for `old.example`, as
   quickstart Part B expects.
-- [ ] T104 Run `composer test` and confirm that `build/contract/coverage.json` lists the 15 operations
+- [X] T104 Run `composer test` and confirm that `build/contract/coverage.json` lists the 15 operations
   of this feature (`listDkimKeys`, `generateDkimKey`, `getDkimKey`, `deleteDkimKey`, `applyDkimKeyBulkAction`,
   `importDkimKey`, `copyDkimKey`, `exportDkimPrivateKey`, `publishDkimDnsRecord`,
   `getDnsCapabilities`, `listMtaStsPolicies`, `createMtaStsPolicy`, `getMtaStsPolicy`,
@@ -923,7 +923,7 @@ target.
 - [X] T106 [P] Update `docs/legacy-inventory.md`: mark the DKIM, MTA-STS and DNS diagnostics rows as
   covered by `/api/v2` with links to the operations, and note the deviations of the spec's parity
   table and the plan's parity notes.
-- [ ] T107 Walk through `specs/010-dkim-mta-sts-dns/quickstart.md` Part A and Part B against the dev
+- [X] T107 Walk through `specs/010-dkim-mta-sts-dns/quickstart.md` Part A and Part B against the dev
   stack and correct the guide where the output differs.
 
 ---
@@ -1111,3 +1111,21 @@ tasks that differ from what exists map as listed.
 - **G3, G4**: the eight event types are documented in `docs/audit-events.md`
   (`AuditEventDetailsDocumentedTest::$notYetDocumented` is empty); `DnsCapabilities.dkim.bulkLimit`
   closes G4.
+- **T104**: the first full runs ended at about 36 % with "Maximum execution time of 80 seconds
+  exceeded": feature 011's dockerapi actions called `set_time_limit(DOCKER_TIMEOUT + 20)`
+  unconditionally, which left an 80-second limit on the whole test process, and this feature's tests
+  between the container and the Fail2Ban tests take longer than that. The new shared
+  `App\Support\Runtime\TimeLimit::raise()` raises only a finite limit (php-fpm) and leaves an
+  unlimited one alone, as 009's SMTP probe does; the seven 011 controllers use it
+  (`tests/Unit/Support/TimeLimitTest.php`). Then `composer test` was green on 2026-10-19 (6,520
+  tests; contract coverage 220 of 220 operations, the 15 of this feature included, none pending),
+  with Pint, PHPStan and the contract lint clean; the three timing tests pass with
+  `composer test:performance`.
+- **T107**: Part A ran as above. Part B ran on 2026-10-19 against the worktree's dev database
+  (compose project `restv2-010`, no host ports) with an administrator's API key over `php artisan
+  serve` inside the `app` container (with `jq` added to that throwaway container): every command
+  printed its expected value, no response held `PRIVATE KEY`, and the eleventh diagnostics run
+  answered `429` with `Retry-After` and `RateLimit-Remaining: 0`. The guide now uses the HTTPS
+  listener (the session cookie is `Secure`), describes the API-key route for parallel worktrees, and
+  states what diagnostics shows on the dev stack. Part C (a mailcow host) is open; its ISPConfig step
+  on staging is skipped by the owner.

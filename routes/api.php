@@ -143,6 +143,8 @@ use App\Http\Controllers\Api\V2\SieveFilterController;
 use App\Http\Controllers\Api\V2\SingleSignOnCompletionController;
 use App\Http\Controllers\Api\V2\SingleSignOnController;
 use App\Http\Controllers\Api\V2\SingleSignOnProviderErrorController;
+use App\Http\Controllers\Api\V2\SpamPolicyEntryController;
+use App\Http\Controllers\Api\V2\SpamScoreController;
 use App\Http\Controllers\Api\V2\SsoTokenSessionController;
 use App\Http\Controllers\Api\V2\SyncJobBulkActionController;
 use App\Http\Controllers\Api\V2\SyncJobCapabilitiesController;
@@ -1149,6 +1151,33 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/quarantine', [QuarantineItemController::class, 'index'])->name('quarantine.index');
         Route::get('/capabilities/quarantine', [QuarantineCapabilitiesController::class, 'show'])->name('quarantine-capabilities.show');
         Route::get('/quarantine/settings', [QuarantineSettingsController::class, 'show'])->name('quarantine-settings.show');
+        Route::get('/domains/{domain}/spam-policy-entries', [SpamPolicyEntryController::class, 'index'])
+            ->where('domain', '[^/]+')
+            ->defaults('restv2.ownerKind', 'domain')
+            ->name('domains-spam-policy-entries.index');
+        Route::get('/domains/{domain}/spam-policy-entries/{entryId}', [SpamPolicyEntryController::class, 'show'])
+            ->where(['domain' => '[^/]+', 'entryId' => '[1-9][0-9]{0,9}'])
+            ->defaults('restv2.ownerKind', 'domain')
+            ->name('domains-spam-policy-entries.show');
+        Route::get('/alias-domains/{aliasDomain}/spam-policy-entries', [SpamPolicyEntryController::class, 'index'])
+            ->where('aliasDomain', '[^/]+')
+            ->defaults('restv2.ownerKind', 'aliasDomain')
+            ->name('alias-domains-spam-policy-entries.index');
+        Route::get('/alias-domains/{aliasDomain}/spam-policy-entries/{entryId}', [SpamPolicyEntryController::class, 'show'])
+            ->where(['aliasDomain' => '[^/]+', 'entryId' => '[1-9][0-9]{0,9}'])
+            ->defaults('restv2.ownerKind', 'aliasDomain')
+            ->name('alias-domains-spam-policy-entries.show');
+        Route::get('/mailboxes/{mailbox}/spam-policy-entries', [SpamPolicyEntryController::class, 'index'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.ownerKind', 'mailbox')
+            ->name('mailboxes-spam-policy-entries.index');
+        Route::get('/mailboxes/{mailbox}/spam-policy-entries/{entryId}', [SpamPolicyEntryController::class, 'show'])
+            ->where(['mailbox' => '[^/]+', 'entryId' => '[1-9][0-9]{0,9}'])
+            ->defaults('restv2.ownerKind', 'mailbox')
+            ->name('mailboxes-spam-policy-entries.show');
+        Route::get('/mailboxes/{mailbox}/spam-score', [SpamScoreController::class, 'show'])
+            ->where('mailbox', '[^/]+')
+            ->name('spam-score.show');
         Route::get('/mailboxes/{mailbox}/quarantine-notification-settings', [QuarantineNotificationSettingsController::class, 'show'])
             ->where('mailbox', '[^/]+')
             ->name('quarantine-notification-settings.show');
@@ -1178,6 +1207,44 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('mailbox', '[^/]+')
             ->defaults('restv2.audit', ['event' => 'quarantineNotificationSettingsUpdate', 'target' => 'quarantineNotificationSettings'])
             ->name('quarantine-notification-settings.update');
+        Route::post('/domains/{domain}/spam-policy-entries', [SpamPolicyEntryController::class, 'store'])
+            ->where('domain', '[^/]+')
+            ->defaults('restv2.ownerKind', 'domain')
+            ->defaults('restv2.audit', ['event' => 'spamPolicyEntryCreation', 'target' => 'spamPolicyEntry', 'ownerKind' => 'domain'])
+            ->name('domains-spam-policy-entries.store');
+        Route::delete('/domains/{domain}/spam-policy-entries/{entryId}', [SpamPolicyEntryController::class, 'destroy'])
+            ->where(['domain' => '[^/]+', 'entryId' => '[1-9][0-9]{0,9}'])
+            ->defaults('restv2.ownerKind', 'domain')
+            ->defaults('restv2.audit', ['event' => 'spamPolicyEntryRemoval', 'target' => 'spamPolicyEntry', 'ownerKind' => 'domain'])
+            ->name('domains-spam-policy-entries.destroy');
+        Route::post('/alias-domains/{aliasDomain}/spam-policy-entries', [SpamPolicyEntryController::class, 'store'])
+            ->where('aliasDomain', '[^/]+')
+            ->defaults('restv2.ownerKind', 'aliasDomain')
+            ->defaults('restv2.audit', ['event' => 'spamPolicyEntryCreation', 'target' => 'spamPolicyEntry', 'ownerKind' => 'aliasDomain'])
+            ->name('alias-domains-spam-policy-entries.store');
+        Route::delete('/alias-domains/{aliasDomain}/spam-policy-entries/{entryId}', [SpamPolicyEntryController::class, 'destroy'])
+            ->where(['aliasDomain' => '[^/]+', 'entryId' => '[1-9][0-9]{0,9}'])
+            ->defaults('restv2.ownerKind', 'aliasDomain')
+            ->defaults('restv2.audit', ['event' => 'spamPolicyEntryRemoval', 'target' => 'spamPolicyEntry', 'ownerKind' => 'aliasDomain'])
+            ->name('alias-domains-spam-policy-entries.destroy');
+        Route::post('/mailboxes/{mailbox}/spam-policy-entries', [SpamPolicyEntryController::class, 'store'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.ownerKind', 'mailbox')
+            ->defaults('restv2.audit', ['event' => 'spamPolicyEntryCreation', 'target' => 'spamPolicyEntry', 'ownerKind' => 'mailbox'])
+            ->name('mailboxes-spam-policy-entries.store');
+        Route::delete('/mailboxes/{mailbox}/spam-policy-entries/{entryId}', [SpamPolicyEntryController::class, 'destroy'])
+            ->where(['mailbox' => '[^/]+', 'entryId' => '[1-9][0-9]{0,9}'])
+            ->defaults('restv2.ownerKind', 'mailbox')
+            ->defaults('restv2.audit', ['event' => 'spamPolicyEntryRemoval', 'target' => 'spamPolicyEntry', 'ownerKind' => 'mailbox'])
+            ->name('mailboxes-spam-policy-entries.destroy');
+        Route::put('/mailboxes/{mailbox}/spam-score', [SpamScoreController::class, 'update'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'spamScoreUpdate', 'target' => 'spamScore'])
+            ->name('spam-score.update');
+        Route::delete('/mailboxes/{mailbox}/spam-score', [SpamScoreController::class, 'destroy'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'spamScoreReset', 'target' => 'spamScore'])
+            ->name('spam-score.destroy');
         // A preview changes nothing and is not audited.
         Route::post('/quarantine/settings/template-preview', [QuarantineTemplatePreviewController::class, 'store'])
             ->name('quarantine-template-preview.store');

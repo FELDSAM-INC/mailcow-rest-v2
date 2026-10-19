@@ -619,7 +619,7 @@ and `spam_policy`; confirm the `filterconf` rows the settings map reads.
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T062 [P] [US5] Write `tests/Feature/SpamPolicy/SpamScoreTest.php` for `getMailboxSpamScore`,
+- [X] T062 [P] [US5] Write `tests/Feature/SpamPolicy/SpamScoreTest.php` for `getMailboxSpamScore`,
   `setMailboxSpamScore` and `resetMailboxSpamScore` (FR-039 to FR-042, AS-5.1 to AS-5.4, edge
   cases): Rspamd `actions` with `add header` 8 and `reject` 15 → `8`, `15`, `custom: false`,
   `defaults.fallback: false`; Rspamd unreachable or `add header` missing or `0` → `5`, `15`,
@@ -631,7 +631,7 @@ and `spam_policy`; confirm the `filterconf` rows the settings map reads.
   no audit; a mailbox user without `spam_score` → `403 permission-flag-required` `requiredFlags: ["spamScore"]`; a
   domain admin always may within scope; another domain's mailbox → `404`; a resource → `404`;
   `If-Match` mismatch → `412`; audit with old and new values.
-- [ ] T063 [P] [US5] Write `tests/Feature/SpamPolicy/MailboxSpamPolicyEntryTest.php` for the mailbox
+- [X] T063 [P] [US5] Write `tests/Feature/SpamPolicy/MailboxSpamPolicyEntryTest.php` for the mailbox
   list operations (FR-044 to FR-049, AS-5.5, AS-5.6, AS-5.9): `POST {"list":"block","pattern":"
   *@SPAM.example "}` → `201`, `Location` `/api/v2/mailboxes/alice@example.org/spam-policy-entries/<id>`,
   `ETag`, row `(alice@example.org, blacklist_from, *@spam.example)`; the same pattern on `allow` →
@@ -644,28 +644,28 @@ and `spam_policy`; confirm the `filterconf` rows the settings map reads.
   permission-flag-required` on create and delete; two concurrent identical creations from two
   processes (separate database connections) → one `201`, one `409`, one row (`GET_LOCK`); a resource in the mailbox path → `404` (FR-069); a mailbox of another domain for a
   domain admin → `404`; audit with owner, list and pattern.
-- [ ] T064 [P] [US5] Write `tests/Feature/SpamPolicy/DomainSpamPolicyEntryTest.php` for the domain
+- [X] T064 [P] [US5] Write `tests/Feature/SpamPolicy/DomainSpamPolicyEntryTest.php` for the domain
   list operations (FR-043, FR-045 to FR-048, AS-5.8): the list contains the domain's entries
   (`own: true`, kind `domain`) and the mailbox entries of the domain (`own: false`, kind
   `mailbox`); a domain admin with `spam_policy` adds and removes; without it → `403
   permission-flag-required` `requiredFlags: ["spamPolicy"]` (reads allowed); a mailbox user → `403 forbidden` for
   read and write; a domain outside the scope → `404`; an alias domain name in the domain path →
   `404`; the same pattern may exist for another owner.
-- [ ] T065 [P] [US5] Write `tests/Feature/SpamPolicy/AliasDomainSpamPolicyEntryTest.php` (FR-043,
+- [X] T065 [P] [US5] Write `tests/Feature/SpamPolicy/AliasDomainSpamPolicyEntryTest.php` (FR-043,
   AS-5.7): a domain admin with `spam_policy` adds an allow entry for an alias domain of their domain
   → row with `object` = the alias domain, kind `aliasDomain`; an alias domain of another domain →
   `404`; a mailbox user → `403 forbidden`; removal through the target domain's path → `404`.
 
 ### Implementation for User Story 5
 
-- [ ] T066 [US5] Create `app/Services/SpamPolicy/SpamScoreService.php` (R10: rows, defaults via
+- [X] T066 [US5] Create `app/Services/SpamPolicy/SpamScoreService.php` (R10: rows, defaults via
   `RspamdController::actions()` with fallback, integer tenths, legacy insert order, mailbox row lock,
   `If-Match`, audit), `app/Rules/OneDecimal.php`, `app/Http/Requests/Api/V2/SetSpamScoreRequest.php`
   (`junkScore`/`rejectScore` numbers 0–5000, one decimal, junk ≤ reject → `mustNotExceed`),
   `app/Http/Resources/Api/V2/SpamScoreResource.php` and
   `app/Http/Controllers/Api/V2/SpamScoreController.php` (`show`, `update`, `destroy`); register
   `GET|PUT|DELETE /mailboxes/{mailbox}/spam-score`. This makes T062 pass.
-- [ ] T067 [US5] Create `app/Services/SpamPolicy/SpamPolicyEntryService.php` (R11: views per owner
+- [X] T067 [US5] Create `app/Services/SpamPolicy/SpamPolicyEntryService.php` (R11: views per owner
   kind, filters, search, sort, paging in SQL; create with `GET_LOCK('restv2:filterconf:<object>',
   10)` around the uniqueness check and the insert;
   remove by owner; ETag over `prefid|object|option|value`; audit), `app/Rules/SenderPattern.php`,

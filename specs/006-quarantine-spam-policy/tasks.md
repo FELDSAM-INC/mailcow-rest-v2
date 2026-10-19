@@ -835,10 +835,14 @@ filtered by target.
 - [X] T084 Extend `database/seeders/DevelopmentSeeder.php` with the data of quickstart Part B
   (quarantine items from the T007 fixtures for alice and bob, a domain block entry, a domain rate
   limit, quarantine settings retention 20 and size 15 MiB).
-- [ ] T085 Run `composer test` (contract coverage lists all 42 operations of 006),
+- [X] T085 Run `composer test` (contract coverage lists all 42 operations of 006),
   `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` and the 006 performance group; fix
   findings. Run quickstart Part B against the dev stack and record any deviation in
-  `quickstart.md`.
+  `quickstart.md`. (2026-10-19, rebased on feature 007: `composer test` 8,858 tests green,
+  contract coverage 334 of 334 operations with none pending; Pint, PHPStan, the contract lint and
+  the breaking-change check against `main` clean; Part B recorded in `quickstart.md`. The
+  performance group, T081 and T082, is deferred to an otherwise idle machine: other agents shared
+  the host.)
 - [X] T086 Add the feature's contract changes to the release notes (`CHANGELOG.md`, section
   "Unreleased"): the 42 operations, the four problem types and the appended enum values, so that
   mailcowui-ng can bump its pinned contract.

@@ -112,7 +112,7 @@ class MailcowConfigSelfServiceTest extends TestCase
         $this->assertSame(3, $config->pwResetTokenLimit());
         $this->assertSame('MCSESSID', $config->sessionName());
 
-        $autodiscover = $config->autodiscoverConfig($this->request('mail.example.org'));
+        $autodiscover = $config->autodiscoverSettings($this->request('mail.example.org'));
         $this->assertSame(['server' => 'mail.example.org', 'port' => 993, 'tlsport' => 143], $autodiscover['imap']);
         $this->assertSame(['server' => 'mail.example.org', 'port' => 465, 'tlsport' => 587], $autodiscover['smtp']);
         $this->assertSame(['server' => 'mail.example.org', 'port' => 443], $autodiscover['caldav']);
@@ -125,43 +125,44 @@ class MailcowConfigSelfServiceTest extends TestCase
     {
         $config = $this->config();
 
-        $standard = $config->autodiscoverConfig($this->request('mail.example.org'));
+        $standard = $config->autodiscoverSettings($this->request('mail.example.org'));
         $this->assertSame(443, $standard['caldav']['port']);
         $this->assertSame(443, $standard['carddav']['port']);
         $this->assertSame('https://mail.example.org/Microsoft-Server-ActiveSync', $standard['activesync']['url']);
         $this->assertSame(['server' => 'mail.example.org', 'port' => 993, 'tlsport' => 143], $standard['imap']);
 
-        $custom = $config->autodiscoverConfig($this->request('mail.example.org:8443'));
+        $custom = $config->autodiscoverSettings($this->request('mail.example.org:8443'));
         $this->assertSame(8443, $custom['caldav']['port']);
         $this->assertSame('https://mail.example.org:8443/Microsoft-Server-ActiveSync', $custom['activesync']['url']);
     }
 
-    public function test_ports_keep_the_port_of_an_address_and_an_unset_port_is_null(): void
+    /** The mail services are feature 010's resolution (App\Services\Mailcow\AutodiscoverConfig). */
+    public function test_ports_keep_the_port_of_an_address_and_an_unset_port_takes_mailcows_default(): void
     {
         $this->setEnv('IMAPS_PORT', '127.0.0.1:10993');
         $this->setEnv('POP_PORT', '');
         $config = $this->config();
 
-        $autodiscover = $config->autodiscoverConfig($this->request('mail.example.org'));
+        $autodiscover = $config->autodiscoverSettings($this->request('mail.example.org'));
         $this->assertSame(10993, $autodiscover['imap']['port']);
-        $this->assertNull($autodiscover['pop3']['tlsport']);
+        $this->assertSame(110, $autodiscover['pop3']['tlsport']);
 
-        config(['restv2.mailcow_inc_dir' => '/nonexistent/mailcow/web/inc', 'restv2.ports.IMAPS_PORT' => '127.0.0.1:10993', 'restv2.ports.POP_PORT' => '']);
-        $defaults = $this->config()->autodiscoverConfig($this->request('mail.example.org'));
+        config(['restv2.mailcow_inc_dir' => '/nonexistent/mailcow/web/inc', 'restv2.mailcow_ports.IMAPS_PORT' => 10993]);
+        $defaults = $this->config()->autodiscoverSettings($this->request('mail.example.org'));
         $this->assertSame(10993, $defaults['imap']['port']);
-        $this->assertNull($defaults['pop3']['tlsport']);
+        $this->assertSame(110, $defaults['pop3']['tlsport']);
     }
 
     public function test_an_operator_override_of_the_autodiscover_settings_wins(): void
     {
         $this->copyFixtures("<?php\n\$autodiscover_config['useEASforOutlook'] = 'yes';\n\$autodiscover_config['imap']['server'] = 'imap.example.org';\n");
 
-        $autodiscover = $this->config()->autodiscoverConfig($this->request('mail.example.org'));
+        $autodiscover = $this->config()->autodiscoverSettings($this->request('mail.example.org'));
         $this->assertSame('yes', $autodiscover['useEASforOutlook']);
         $this->assertSame('imap.example.org', $autodiscover['imap']['server']);
 
         config(['restv2.vars_overrides.autodiscover_config' => json_encode(['autodiscoverType' => 'imap', 'imap' => ['server' => 'x.example.org', 'port' => 993, 'tlsport' => 143]])]);
-        $override = $this->config()->autodiscoverConfig($this->request('mail.example.org'));
+        $override = $this->config()->autodiscoverSettings($this->request('mail.example.org'));
         $this->assertSame('imap', $override['autodiscoverType']);
         $this->assertSame('x.example.org', $override['imap']['server']);
     }

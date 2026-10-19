@@ -23,7 +23,7 @@ class ClientConfigurationService
      */
     public function forMailbox(string $mailbox, Request $request): array
     {
-        $autodiscover = $this->config->autodiscoverConfig($request);
+        $autodiscover = $this->config->autodiscoverSettings($request);
         $name = (string) DB::table('mailbox')->where('username', $mailbox)->value('name');
         $groupware = ! config('restv2.skip_sogo');
         $outlookEas = ($autodiscover['useEASforOutlook'] ?? 'no') === 'yes';

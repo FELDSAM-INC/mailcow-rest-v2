@@ -67,7 +67,7 @@ class ClientConfigurationTest extends TestCase
 
     public function test_ports_of_addresses_and_the_request_port(): void
     {
-        config(['restv2.ports.IMAPS_PORT' => '127.0.0.1:10993']);
+        config(['restv2.mailcow_ports.IMAPS_PORT' => 10993]);
 
         $data = $this->getJson('http://mail.example.org:8443'.self::URL)->assertOk()->json('data');
 

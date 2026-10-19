@@ -2,6 +2,7 @@
 
 namespace App\Services\Config;
 
+use App\Services\Mailcow\AutodiscoverConfig;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -37,7 +38,7 @@ class MailcowConfig
     /**
      * The HTTPS port in the exported autodiscover settings (feature 005 research R18): the export
      * runs with `HTTP_HOST = <MAILCOW_HOSTNAME>:<this>`, so legacy's `$https_port` is this
-     * placeholder, which autodiscoverConfig() replaces with the request's port.
+     * placeholder, which autodiscoverSettings() replaces with the request's port.
      */
     public const HTTPS_PORT_PLACEHOLDER = '__RESTV2_HTTPS_PORT__';
 
@@ -409,11 +410,13 @@ class MailcowConfig
     }
 
     /**
-     * Legacy's `$autodiscover_config` (feature 005 research R18), after its merge with the
-     * operator's vars.local.inc.php, or built from MAILCOW_HOSTNAME and the mail ports of
-     * mailcow.conf when the files are not mounted. The HTTPS port (CalDAV, CardDAV, ActiveSync)
-     * follows the request's port as legacy's auto-detection does; ports are parsed as vars.inc.php
-     * parses them (an `ip:port` value keeps the port), and an unset port is null.
+     * Legacy's whole `$autodiscover_config` for mail clients (feature 005 research R18): the
+     * operator's settings (server setting or mounted files, after vars.local.inc.php), else the
+     * upstream structure built from MAILCOW_HOSTNAME. The IMAP, POP3 and SMTP entries are feature
+     * 010's resolution (App\Services\Mailcow\AutodiscoverConfig: the operator's hosts and ports,
+     * else the server host name and mailcow.conf's port variables), so DNS diagnostics and client
+     * setup announce the same services. The HTTPS port (CalDAV, CardDAV, ActiveSync) follows the
+     * request's port, as legacy's auto-detection does.
      *
      * @return array<string, mixed>
      *
@@ -424,8 +427,13 @@ class MailcowConfig
         $value = $this->value('autodiscover_config');
 
         if (! is_array($value) || $value === [] || array_is_list($value)) {
-            $value = $this->defaultAutodiscoverConfig();
+            $value = $this->defaultAutodiscoverSettings();
         }
+
+        $mail = AutodiscoverConfig::resolve($this);
+        $value['imap'] = ['server' => $mail->imapHost, 'port' => $mail->imapsPort, 'tlsport' => $mail->imapPort];
+        $value['pop3'] = ['server' => $mail->pop3Host, 'port' => $mail->pop3sPort, 'tlsport' => $mail->pop3Port];
+        $value['smtp'] = ['server' => $mail->smtpHost, 'port' => $mail->smtpsPort, 'tlsport' => $mail->submissionPort];
 
         return self::resolvePorts($value, self::requestPort($request));
     }
@@ -445,33 +453,19 @@ class MailcowConfig
     }
 
     /**
-     * A mail port of mailcow.conf as vars.inc.php reads it:
-     * `(int) filter_var(substr($v, strrpos($v, ':')), FILTER_SANITIZE_NUMBER_INT)`.
-     */
-    public static function legacyPort(string $value): int
-    {
-        $position = strrpos($value, ':');
-
-        return (int) filter_var(substr($value, $position === false ? 0 : $position), FILTER_SANITIZE_NUMBER_INT);
-    }
-
-    /**
      * @return array<string, mixed>
      */
-    private function defaultAutodiscoverConfig(): array
+    private function defaultAutodiscoverSettings(): array
     {
         $host = $this->hostname();
-        $port = fn (string $name): int => self::legacyPort((string) config("restv2.ports.{$name}", ''));
         $https = self::HTTPS_PORT_PLACEHOLDER;
 
+        // The mail service entries come from AutodiscoverConfig (autodiscoverSettings()).
         return [
             'displayName' => 'A mailcow mail server',
             'displayShortName' => 'mail server',
             'autodiscoverType' => 'activesync',
             'useEASforOutlook' => 'no',
-            'imap' => ['server' => $host, 'port' => $port('IMAPS_PORT'), 'tlsport' => $port('IMAP_PORT')],
-            'pop3' => ['server' => $host, 'port' => $port('POPS_PORT'), 'tlsport' => $port('POP_PORT')],
-            'smtp' => ['server' => $host, 'port' => $port('SMTPS_PORT'), 'tlsport' => $port('SUBMISSION_PORT')],
             'activesync' => ['url' => 'https://'.$host.':'.$https.'/Microsoft-Server-ActiveSync'],
             'caldav' => ['server' => $host, 'port' => $https],
             'carddav' => ['server' => $host, 'port' => $https],

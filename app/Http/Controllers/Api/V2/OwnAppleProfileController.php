@@ -86,7 +86,7 @@ class OwnAppleProfileController extends Controller
     private function profile(Principal $principal, Request $request, bool $withDav, ?string $password, int $status): Response
     {
         $name = (string) DB::table('mailbox')->where('username', $principal->username)->value('name');
-        $plist = $this->builder->build($principal->username, $name, $this->config->autodiscoverConfig($request), $withDav, $password);
+        $plist = $this->builder->build($principal->username, $name, $this->config->autodiscoverSettings($request), $withDav, $password);
 
         return response($plist, $status, [
             'Content-Type' => 'application/x-apple-aspen-config',

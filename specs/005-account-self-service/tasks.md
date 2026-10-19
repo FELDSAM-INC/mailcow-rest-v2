@@ -1260,3 +1260,10 @@ that differ from what exists map as listed.
   come from the seeder; the token is fetched again after the password change; the comments name
   `mailServerCacheSeconds` and the reset answer. No migration was added. Part C stays open (it needs
   a mailcow host).
+- **Rebase onto feature 010 (2026-10-19)**: 010 added `MailcowConfig::autodiscoverConfig()` (the
+  mail service entries) and `App\Services\Mailcow\AutodiscoverConfig` (their resolution with
+  mailcow.conf's port variables, `restv2.mailcow_ports`). 005's whole-array read is now
+  `MailcowConfig::autodiscoverSettings(Request)` and takes its IMAP, POP3 and SMTP entries from
+  010's resolution, so client setup and DNS diagnostics announce the same services; 005's own port
+  parsing (`restv2.ports`, `legacyPort()`) and its port variables in `.env.testing` and the deploy
+  example were removed. An unset port now takes mailcow's default instead of `null` (010's rule).

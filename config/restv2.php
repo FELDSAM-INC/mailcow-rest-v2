@@ -296,17 +296,6 @@ return [
     // Pushover's credential validation endpoint.
     'pushover_validate_url' => (string) Env::get('RESTV2_PUSHOVER_VALIDATE_URL', 'https://api.pushover.net/1/users/validate.json'),
 
-    // mailcow.conf mail ports, which legacy's autodiscover settings read (an `ip:port` value keeps
-    // the port).
-    'ports' => [
-        'IMAP_PORT' => (string) Env::get('IMAP_PORT', '143'),
-        'IMAPS_PORT' => (string) Env::get('IMAPS_PORT', '993'),
-        'POP_PORT' => (string) Env::get('POP_PORT', '110'),
-        'POPS_PORT' => (string) Env::get('POPS_PORT', '995'),
-        'SMTPS_PORT' => (string) Env::get('SMTPS_PORT', '465'),
-        'SUBMISSION_PORT' => (string) Env::get('SUBMISSION_PORT', '587'),
-    ],
-
     // Development only (APP_ENV=local): binds the dockerapi, memcached and ISPConfig fakes, because
     // the dev stack runs none of these services. Ignored in every other environment. Feature 011
     // adds its stand-ins (Rspamd, release source, IP check) and recorded monitoring payloads.

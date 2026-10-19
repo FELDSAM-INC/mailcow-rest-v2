@@ -781,7 +781,7 @@ filtered by target.
 
 ### Tests for User Story 8 (write first, observe failing) ⚠️
 
-- [ ] T077 [P] [US8] Write `tests/Feature/Quarantine/SpamFilterAuditTrailTest.php` (FR-063,
+- [X] T077 [P] [US8] Write `tests/Feature/Quarantine/SpamFilterAuditTrailTest.php` (FR-063,
   FR-064, AS-8.1 to AS-8.3): after a release, `GET /audit-events?targetType=quarantineItem&
   targetId=<id>` returns one record with actor, time, client address, `queueId`, `recipient`,
   `sender` and the steps, and no subject, body, attachment or `qhash`; a template change is listed
@@ -791,7 +791,7 @@ filtered by target.
   412, 422, 503, a read-only key, a restricted session) are listed with `outcome: failure`,
   `failureReason` and `details.problemType`; CSRF failures and `401`s are not listed; a domain
   admin → `403 forbidden`.
-- [ ] T078 [P] [US8] Write `tests/Feature/Quarantine/AuditContentScanTest.php` (SC-010): runs every
+- [X] T078 [P] [US8] Write `tests/Feature/Quarantine/AuditContentScanTest.php` (SC-010): runs every
   state-changing operation of this feature once (single and bulk, success and refusal) with
   fixtures whose subjects, bodies, attachment names and `qhash` are known marker strings, plus a
   template containing a marker; asserts exactly one record per affected object and that no
@@ -799,7 +799,7 @@ filtered by target.
 
 ### Implementation for User Story 8
 
-- [ ] T079 [US8] Make T077 and T078 pass: complete the `details` whitelists of T023 where a test
+- [X] T079 [US8] Make T077 and T078 pass: complete the `details` whitelists of T023 where a test
   shows a gap, and check that every state-changing 006 route declares `restv2.audit`. The generic
   `targetType`/`targetId` filters are 002's (conventions "History": no feature adds its own audit
   filter); if T001 found them missing, implement exactly those generic filters in

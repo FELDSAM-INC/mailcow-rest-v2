@@ -6,15 +6,19 @@ committing, pushing and deploying completed work. The API is deployed, and the o
 explicitly requested the monitoring UI deployment despite the recorded Lighthouse failures.
 Both deployments below are complete. No subagents were used.
 
+On 2026-10-20 the owner also asked to adjust the roughly 4 KiB sign-in transfer warning and
+continue implementation. The transfer allowance is pushed to UI main; quarantine bulk actions
+are tested and committed locally, with the rest of UI 006 still pending.
+
 ## Current checkpoints
 
 | Repository/worktree | Branch | Checkpoint | State |
 |---|---|---|---|
-| `mailcow-rest-v2` | `main` | `c92d89e` plus this handoff update | API through `b3dc2ab` deployed; later handoff notes pushed |
+| `mailcow-rest-v2` | `main` | `c6b02d4` plus this handoff update | API through `b3dc2ab` deployed; later handoff notes pushed |
 | `../mailcow-rest-v2-wt/013` | `wt/013` | `67f2762` | Clean; implementation already on API main |
-| `../mailcowui-ng` | `main` | `6a3ee2ca` | Monitoring merged and pushed; `5e3c1e89` deployed to maildev, followed by deployment notes |
+| `../mailcowui-ng` | `main` | `8431c4eb` | Monitoring deployed as `5e3c1e89`; deployment notes and 210 KiB shell script-transfer policy pushed |
 | `../mailcowui-ng-wt/005` | `wt/005` | `9ac9f886` | Reset/recovery fixes committed; broader account work unfinished |
-| `../mailcowui-ng-wt/006` | `wt/006` | `a239986f` | Quarantine list and stale-action refresh checked; broader feature unfinished |
+| `../mailcowui-ng-wt/006` | `wt/006` | `7effcca1` | Quarantine bulk actions checked and committed; broader feature unfinished, not merged/deployed |
 | `../mailcowui-ng-wt/011` | `wt/011` | `5e3c1e89` | Clean; monitoring integrated into main and deployed with an owner-approved staging exception |
 
 The UI worktrees are clean. Temporary worktree branches remain local: do not push them or use
@@ -137,13 +141,21 @@ aliases **74–75**, DKIM **80–84**, mailboxes **80–84**, relayhosts **78–
 Accessibility remains **99–100**, passing throughout. The configured aggregation passes six
 performance checks; domains and aliases still fail. Sign-in also fails the separate script-transfer
 limit at **208,974 bytes** versus **204,800**, although the manifest-based initial gzip budget
-still passes at **186,760 bytes**. The owner changed neither size limit.
+still passes at **186,760 bytes**. At this stage the owner had changed neither size limit; the
+subsequent transfer-limit adjustment is recorded below.
 
 The command exited 1 on those three assertions. T146 remains open; monitoring was not merged,
 pushed or deployed. No more tuning or repeated benchmark was started. Results are recorded in
 UI checkpoint `50a001dd`. Log: `u011/policy-80-lighthouse.log`; all 24 JSON/HTML reports and
 assertion results: `u011/policy-80-lighthouse-reports/`. The threshold change itself is already
 pushed to UI main as `a9333d85`; no application redeployment is needed for this CI/docs-only commit.
+
+On 2026-10-20, UI main commit `8431c4eb` raises Lighthouse's shell-page script-transfer ceiling
+to **215,040 bytes (210 KiB)** at the owner's request. The manifest-based initial bundle remains
+**204,800 bytes gzipped**, performance remains **80**, and accessibility remains **90**. Reasserting
+the saved 24 reports clears the sign-in size failure; only domains and aliases still fail their
+performance assertions. No new Lighthouse measurements or application redeployment were needed.
+Log: `u011/transfer-210-assert.log` under the 2026-10-19 artifact root.
 
 The final retained patch passes **3,267 unit tests / 369 files**, with **88.98% line coverage**
 (`u011/final-unit.log`). Lint, type checking, formatting, i18n, contract consistency, licenses,
@@ -210,12 +222,33 @@ the mutation finishes, so the next confirmation submits the current version tag.
 failed first, then the page/action suites passed together (**19 tests**). Lint and type checking
 also passed after this change.
 
-The full i18n gate still fails on the saved unused `quarantineUi.bulk.virusCount` key, whose bulk
-UI remains unfinished. This is not a finished UI 006: continue bulk selection/actions, remaining
-item/download/hostile-content tests, entry-point integration, smoke and performance checks. T053
-is recorded as implemented; other story tasks remain open. Do not rebase this branch repeatedly
-while monitoring is unresolved. See its tasks and quickstart; the legacy-form adjustments at the
-start of `tasks.md` override older task wording.
+Continuation `7effcca1` adds explicit bulk selection with the server limit, first-N select-all,
+view-change resets (including browser history), 44 px controls, and the shared sticky action bar.
+The four actions confirm subjects/recipients and listed version tags; deletion/learning require
+the typed count, and virus deliveries require acknowledgement. Per-message results preserve
+learning warnings. Only refused/failed/outdated IDs remain selected, and a retry refreshes and
+confirms again without including unrelated new selections. A lost response refreshes the list
+and never resends; a whole-request refusal preserves selection.
+
+The quarantine feature suites pass **94 tests in 13 files**, with **21** existing mock-handler
+tests passing. Typecheck, changed-file lint/format, production build, and bundle budget pass
+(**188,897 / 204,800 bytes gzipped**). The full i18n gate now passes because the bulk dialog uses
+the saved virus-count translation; no new strings were added.
+
+All **45 distinct browser checks** pass across the initial and focused runs: nine bulk scenarios
+and six list scenarios on mobile Chromium, desktop Chromium and mobile WebKit. The initial run
+passed 37/42; the failures were three incorrect fixture-subject expectations and two WebKit
+dark-dialog contrast failures, fixed with explicit text colors. The follow-up passed 29/30; the
+remaining test raced the search debounce and used an absent fixture phrase. Synchronizing on
+URL/list transitions with a matching phrase passed in all three projects (3/3). Accessibility in
+both themes, reflow, touch targets and CSP checks remain enabled; no timeout/retry was increased.
+
+T059, T061, T063, T065–T067 and T069 are recorded as implemented. This is not a finished UI 006:
+continue remaining item/download/hostile-content tests, scope/recipient integration, smoke and
+final feature checks. T060, T062 and T064 remain open. Do not repeatedly rebase the unfinished
+worktree. On eventual integration, preserve main's performance-80 and transfer-210-KiB policies
+instead of restoring the older worktree's limits. See its tasks and quickstart; legacy-form
+adjustments at the start of `tasks.md` override older task wording.
 
 ## Artifacts and operating rules
 
@@ -229,6 +262,11 @@ Monitoring's original failure artifacts are in `u011/original-browser-failures/`
 regression artifacts in `u011/resume-regression-results/`, and quiet-machine Lighthouse JSON/HTML
 reports plus assertion results in `u011/resume-lighthouse-reports/`. Older helper scripts retain
 obsolete `/tmp` paths: adapt them before use. Preserve all existing volumes and fixtures.
+
+The 2026-10-20 bulk continuation logs and retained failure artifacts are under
+`storage/app/restart-2026-10-20/u006/`: `u006-bulk-{unit,mocks,type2,lint*,build2,budget,i18n}.log`,
+the red-test logs, and the three browser logs. `browser-first-results/` and
+`browser-second-results/` retain the failure screenshots/traces; the final focused run passed.
 
 All tests started by this continuation have finished. The `restv2-013` MariaDB and Redis
 containers are stopped, with their volumes preserved; the UI test/Lighthouse containers have

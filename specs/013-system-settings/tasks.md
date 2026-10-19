@@ -716,7 +716,7 @@ target type and identifier (spec US8).
 
 ### Tests for User Story 8 (write first, observe failing)
 
-- [ ] T089 [P] [US8] Write `tests/Feature/Settings/SettingsAuditTest.php` (FR-086–FR-088, AS-8.1–8.3,
+- [x] T089 [P] [US8] Write `tests/Feature/Settings/SettingsAuditTest.php` (FR-086–FR-088, AS-8.1–8.3,
   SC-012, conventions "Refusal auditing"): for every write operation, one success → exactly one record
   with the event type, target type and id of data-model.md section 7, actor, client address,
   `requestId` and the whitelisted details; one refusal per reason (`permissionDenied` by a domain
@@ -729,13 +729,13 @@ target type and identifier (spec US8).
   filters) lists the map change with old and new sizes; a mass mail job yields a creation and a
   completion record; an audit insert failure makes the change fail and leaves Redis, files and rows
   unchanged.
-- [ ] T090 [P] [US8] Write `tests/Feature/Settings/SecretScanTest.php` (SC-012, R16): after the suite's
+- [x] T090 [P] [US8] Write `tests/Feature/Settings/SecretScanTest.php` (SC-012, R16): after the suite's
   Rspamd password tests, scan the captured log channel, every audit row and every recorded response
   body of the run for the test passphrases; none is found.
 
 ### Implementation for User Story 8
 
-- [ ] T091 [US8] Close the gaps T089 and T090 reveal in the services and in `AuditLogger`'s
+- [x] T091 [US8] Close the gaps T089 and T090 reveal in the services and in `AuditLogger`'s
   whitelists (refusal records written in their own transaction, 001-R22; `details.errors` without
   values), without changing the contract.
 
@@ -743,16 +743,16 @@ target type and identifier (spec US8).
 
 ## Phase 11: Polish and cross-cutting concerns
 
-- [ ] T092 [P] Write `tests/Feature/Settings/LegacyCoexistenceTest.php` (SC-001, FR-010): for each
+- [x] T092 [P] Write `tests/Feature/Settings/LegacyCoexistenceTest.php` (SC-001, FR-010): for each
   Redis-backed setting, values written by "legacy" (raw keys exactly as legacy's functions write them)
   are returned by the API, and values written by the API are read back by ports of legacy's `get`
   branches in the test (`customize('get', …)`, `quota_notification('get')`, `cors('get')`,
   `password_complexity('get')`) with identical results; the tag changes after each legacy write.
-- [ ] T093 [P] Write `tests/Feature/Settings/SharedStoreUnavailableTest.php` (FR-091): with the
+- [x] T093 [P] Write `tests/Feature/Settings/SharedStoreUnavailableTest.php` (FR-091): with the
   `mailcow` Redis connection pointed at a closed port, every Redis-backed read and write of this
   feature answers 503 `temporary-failure` with `Retry-After`, no audit success record and no file or
   row change.
-- [ ] T094 [P] Write `tests/Feature/Settings/SettingsPerformanceTest.php` (SC-013, informational
+- [x] T094 [P] Write `tests/Feature/Settings/SettingsPerformanceTest.php` (SC-013, informational
   budget, skipped in CI unless `RESTV2_PERF=1`): 100 reads of each settings resource, of a page of 25
   rules and of 25 recipients with 10,000 rows stay under 1 s at the 95th percentile.
 - [ ] T095 (FR-090) Run `composer contract:lint`, `composer test` (including the contract coverage check for the
@@ -958,3 +958,21 @@ duplicate it"), recorded as they were made:
   check is a customisation write, refused in demo mode.
 - **T088**: `SettingsAuthorizationMatrixTest` also asserts that it covers exactly the 45 operations
   the feature registry lists for 013; the license operations run against `Http::fake()`.
+- **T089**: the test takes the request ID from a `traceparent` header and checks each record's
+  details against `AuditEventType::detailKeys()`. A `502 container-action-failed` and a
+  `504 outcome-unknown` are recorded by 008's `RefusalAuditor` (they are `ProblemException`s, which
+  carry audit details), so the services write no failure records of their own.
+- **T090, T091**: besides the test's own scan (responses, the log written during the test, the audit
+  table, every Redis key and value, the API's tables), `Tests\TestCase::call()` checks every response
+  of the suite for the test passphrases (`Tests\Support\Settings\SecretScan`), and
+  `RspamdUiPasswordService::change()` marks the password `#[\SensitiveParameter]`, so that a stack
+  trace of an unexpected error never shows it. T089 and T090 revealed no gap in the services or in
+  `AuditLogger`'s whitelists.
+- **T092**: the legacy writes and reads are ports of the `edit` and `get` branches in the test; for
+  each setting, legacy's read after the API's change equals legacy's read after the same change made
+  as legacy makes it.
+- **T093**: also covers the license operations: the verification reads the shared store before it
+  contacts the license service, so that a `503` never follows an outbound request.
+- **T094**: in the `performance` group (`composer test:performance`) rather than behind
+  `RESTV2_PERF=1`, as the other timing tests; it passed once on the shared machine, which is not a
+  measurement.

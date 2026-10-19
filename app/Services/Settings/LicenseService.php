@@ -90,6 +90,8 @@ class LicenseService
      */
     public function verify(Principal $actor): array
     {
+        // Fails with `503` before the service is contacted when the shared store is down.
+        $this->store->strings([self::CACHE_KEY]);
         [$result, $customer, $service, $level] = $this->ask((string) self::guid());
 
         $cache = (string) json_encode(match ($result) {

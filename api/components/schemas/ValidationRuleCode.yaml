@@ -109,7 +109,7 @@ description: |
     `message`, the legacy parser's message, and `line`); `unbalancedStructure` (params `line` and `construct`: `unclosedBrace`,
     `unexpectedBrace`, `unclosedBracket`, `unexpectedBracket` or `unclosedString`);
     `mutuallyExclusive` (param `with`, the other field); `tooFew` (param `min`) for a mass mail
-    selection without recipients.
+    selection without recipients and for an empty list of the legacy API's CORS methods.
   - Aliases, alias domains, resources and sender settings (feature 004): `invalidFormat` also uses
     `format: aliasAddress` (an address or `@domain`), `emailOrDomain` (an external sender address
     or domain), `senderPermission` (an address, a domain or `*`) and `resourceDescription` (a

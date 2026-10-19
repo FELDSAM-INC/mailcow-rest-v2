@@ -2285,3 +2285,275 @@ and every refusal, including a bucket with neither counters nor log entries (`40
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
+
+## Refusal records of feature 013
+
+The state-changing operations of feature 013 (system settings) declare refusal auditing like those
+of feature 002 onwards ("Refusal records" above), with the same keys. Feature 013 maps `demo-mode`
+to the failure reason `demoMode`, `feature-disabled` to `featureDisabled`,
+`regex-map-unavailable` and `global-sieve-filter-unavailable` to `fileUnavailable`,
+`mass-mail-already-running` and `mass-mail-recipient-count-changed` to `conflict`; a
+`503 temporary-failure` is `temporaryFailure`, a `502 container-action-failed` is `serviceFailure`
+and a `504 outcome-unknown` is `outcomeUnknown`. A request with `validateOnly=true` writes no
+record, also not when refused; reads, the mass mail recipient preview and changes of the Redis-backed
+settings that change nothing write none either. No record of this feature holds a password, a template or HTML text, a
+regex map, a Sieve script, a settings rule's content or a mass mail body: texts are recorded as
+`{changed, oldBytes, newBytes}` (SC-012).
+
+Targets: a logo is `{type: logo, id: light | dark}`; a settings rule `{type: rspamdSettingsRule, id:
+<rule id>, name: <description>}`; a regex map `{type: rspamdRegexMap, id: <file name>, name:
+<configured name>}`; a global Sieve filter `{type: globalSieveFilter, id: prefilter | postfilter}`;
+a domain's quota notification copy recipients `{type: quotaNotificationRecipients, id: <domain>,
+name: <domain>}`; a mass mail job `{type: massMailJob, id: <job id>, name: <subject>}`. The
+singleton settings have no identifier: `{type: uiTexts | loginPage | appLinks | brandColors |
+ipCheck | passwordPolicy | passwordResetNotification | quotaNotification | rspamdUiPassword |
+legacyApiCors | license}`.
+
+## logoReplacement
+
+Feature 013. Written for every replacement of a logo (`PUT /settings/logos/{variant}`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `old` | object or null | The replaced logo as `{mediaType, sizeBytes, width, height}`, `null` when none was set. | on success |
+| `new` | object | The new logo as `{mediaType, sizeBytes, width, height}`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## logoDeletion
+
+Feature 013. Written for every deletion of a set logo (`DELETE /settings/logos/{variant}`) and every refusal. Deleting a logo that is not set writes no record.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `old` | object | The deleted logo as `{mediaType, sizeBytes, width, height}`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## uiTextsUpdate
+
+Feature 013. Written for every change of the UI texts (`PATCH /settings/ui-texts`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `pageTitle`, `productName`, `appsHeading`, `announcement.type` and `announcement.active` as `{old, new}`; `loginHelpHtml`, `footerHtml` and `announcement.text` as `{changed: true, oldBytes, newBytes}`, never their text. Each when it changed. | on success |
+| `footerMigrated` | boolean | Whether a footer stored under legacy's old key `UI_IMPRESS` was moved to `UI_FOOTER` with this change. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## loginPageUpdate
+
+Feature 013. Written for every change of the login page options (`PATCH /settings/login-page`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `hideAdminLogin`, `hideDomainAdminLogin`, `hideMailboxUserLogin` and `forceSingleSignOn` as `{old, new}`, each when it changed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## appLinksUpdate
+
+Feature 013. Written for every change of the custom app links (`PATCH /settings/app-links`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `links` as `{old, new}`: the full lists of entries (`name`, `url`, `signedInUrl`, `showOnLoginPage`), at most 50 each. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## brandColorsUpdate
+
+Feature 013. Written for every change of the brand colours (`PATCH /settings/brand-colors`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `light` and `dark` as `{old, new}` (`#rrggbb` or `null`), each when it changed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## ipCheckUpdate
+
+Feature 013. Written for every change of the IP check opt-in (`PATCH /settings/ip-check`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `enabled` as `{old, new}`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## passwordPolicyUpdate
+
+Feature 013. Written for every change of feature 003's password policy (`PATCH /password-policy`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `minLength`, `requireLetters`, `requireDigits`, `requireSpecialCharacters` and `requireMixedCase` as `{old, new}`, each when it changed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## passwordResetNotificationUpdate
+
+Feature 013. Written for every change of the password reset notification (`PATCH /settings/password-reset-notification`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `sender` and `subject` as `{old, new}`; `textTemplate` and `htmlTemplate` as `{changed: true, oldBytes, newBytes}`, never their text. Each when it changed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## quotaNotificationUpdate
+
+Feature 013. Written for every change of the quota notification (`PATCH /settings/quota-notification`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `sender` and `subject` as `{old, new}`; `htmlTemplate` as `{changed: true, oldBytes, newBytes}`, never its text. Each when it changed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## quotaNotificationRecipientsUpdate
+
+Feature 013. Written for every change of a domain's quota notification copy recipients (`PATCH /domains/{domain}/quota-notification-recipients`) and every refusal, also by domain administrators.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `recipients` (the lists) and `active` as `{old, new}`, each when it changed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## rspamdSettingsRuleCreation
+
+Feature 013. Written for every creation of an Rspamd settings rule (`POST /settings/rspamd-rules`, not with `validateOnly=true`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `description` and `active` as `{old: null, new}`; `content` as `{changed: true, oldBytes: 0, newBytes}`, never the content. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## rspamdSettingsRuleUpdate
+
+Feature 013. Written for every change of an Rspamd settings rule (`PATCH /settings/rspamd-rules/{ruleId}`, not with `validateOnly=true`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `description` and `active` as `{old, new}`; `content` as `{changed: true, oldBytes, newBytes}`. Each when it changed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## rspamdSettingsRuleDeletion
+
+Feature 013. Written for every deletion of an Rspamd settings rule (`DELETE /settings/rspamd-rules/{ruleId}`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `description` as `{old, new: null}` and `content` as `{changed: true, oldBytes, newBytes: 0}`. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## rspamdRegexMapReplacement
+
+Feature 013. Written for every replacement of a global Rspamd regex map (`PUT /settings/rspamd-regex-maps/{mapId}`, not with `validateOnly=true`) and every refusal, also when the content is unchanged (the file is rewritten as legacy does).
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `oldBytes` | integer | The size of the replaced map file. | on success |
+| `newBytes` | integer | The size of the written map file. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## globalSieveFilterReplacement
+
+Feature 013. Written for every replacement of the global Sieve pre- or post-filter (`PUT /settings/global-sieve-filters/{filterId}`, not with `validateOnly=true`) and every refusal.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `oldBytes` | integer | The size of the replaced script. | on success |
+| `newBytes` | integer | The size of the written (normalised) script. | on success |
+| `dovecotRestart` | string | `done`, `failed` or `deferred` (the request deferred it). | on success |
+| `restartDetail` | string | Why the restart failed, from mailcow's container service. | when `dovecotRestart` is `failed` |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## rspamdUiPasswordChange
+
+Feature 013. Written for every change of the Rspamd web interface password (`PUT /settings/rspamd-ui-password`) and every refusal. The password itself is never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `passwordChanged` | boolean | Always `true`. | on success |
+| `rspamdConfirmed` | boolean | Always `true`: mailcow's container service confirmed the change. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## legacyApiCorsUpdate
+
+Feature 013. Written for every change of the legacy API's CORS settings (`PATCH /settings/legacy-api-cors`) and every refusal. A change that changes neither list writes no record.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | `allowedOrigins` and `allowedMethods` as `{old, new}` (lists), each when it changed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## massMailJobCreation
+
+Feature 013. Written for every creation of a mass mail job (`POST /mass-mail-jobs`) and every refusal, in the transaction that stores the job and its recipients. The bodies are never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `sender` | string | The sender address. | on success |
+| `subject` | string | The subject. | on success |
+| `selection` | object | `domains` (at most 20 names), `domainCount`, `includeCount` and `excludeCount`. | on success |
+| `recipientCount` | integer | The number of recipients fixed at creation. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## massMailJobCompletion
+
+Feature 013. Written once when the background runner finds no recipient of a running job left. It has no actor; its request ID and client address are those of the job's creation, so that both records are found together.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `counts` | object | `pending`, `delivered`, `failed` and `skipped` at completion. | always |
+
+## massMailJobCancellation
+
+Feature 013. Written for every cancellation of a running job (`POST /mass-mail-jobs/{jobId}/cancellation`) and every refusal. Cancelling a cancelled job writes no record.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `counts` | object | `pending`, `delivered`, `failed` and `skipped` when the cancellation was confirmed. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## licenseVerification
+
+Feature 013. Written for every verification of the GUID (`POST /license/verification`) and every refusal, including `feature-disabled`. Reading the status writes none.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `result` | string | `valid`, `invalid` or `unreachable` (the service could not be asked or answered unreadably). | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |

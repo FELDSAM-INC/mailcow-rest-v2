@@ -45,6 +45,7 @@ use Tests\Support\Fakes\FakeSettingsMapClient;
 use Tests\Support\Mail\FakeQuarantineReleaseMailer;
 use Tests\Support\Mailcow\MailcowFactory;
 use Tests\Support\Rspamd\FakeRspamdController;
+use Tests\Support\Settings\SecretScan;
 use Tests\Support\Smtp\FakeSmtpProbe;
 
 /**
@@ -228,6 +229,13 @@ abstract class TestCase extends BaseTestCase
 
         if ($violations !== []) {
             $this->fail("Contract violation:\n  - ".implode("\n  - ", $violations)."\nResponse body: ".substr((string) $response->baseResponse->getContent(), 0, 2000));
+        }
+
+        // Feature 013 SC-012: no response ever contains a test passphrase of the Rspamd password.
+        $leaked = SecretScan::find((string) $response->baseResponse->getContent().json_encode($response->baseResponse->headers->all()));
+
+        if ($leaked !== null) {
+            $this->fail("The response of {$method} {$uri} contains the test passphrase \"{$leaked}\".");
         }
 
         return $response;

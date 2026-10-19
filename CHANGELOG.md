@@ -451,3 +451,49 @@ Contract changes made while implementing feature 006:
 
 Release checks of feature 006 (quickstart Part C): not run yet. The timing checks (SC-007, SC-008:
 `composer test:performance`) are pending an otherwise idle machine.
+
+Contract: the 45 operations of feature 013 (system settings), administrators only unless noted:
+
+- Capabilities: `getSettingsCapabilities`.
+- Branding: `getLogoSetting`, `replaceLogo`, `deleteLogo`, `getUiTexts`, `updateUiTexts`,
+  `getLoginPageSettings`, `updateLoginPageSettings`, `getAppLinkSettings`, `updateAppLinkSettings`,
+  `getBrandColors`, `updateBrandColors`, `getIpCheckSetting`, `updateIpCheckSetting`; the additive
+  member `PublicConfig.brandColors` (`getPublicConfig`) carries the brand colours to the web app.
+- Passwords and notifications: `updatePasswordPolicy` (the change of feature 003's resource),
+  `getPasswordResetNotification`, `updatePasswordResetNotification`,
+  `getQuotaNotificationSettings`, `updateQuotaNotificationSettings`,
+  `getQuotaNotificationRecipients`, `updateQuotaNotificationRecipients` (also domain
+  administrators, for their domains).
+- Rspamd: `listRspamdSettingsRules`, `createRspamdSettingsRule`, `getRspamdSettingsRule`,
+  `updateRspamdSettingsRule`, `deleteRspamdSettingsRule`, `listRspamdRegexMaps`,
+  `getRspamdRegexMap`, `replaceRspamdRegexMap`, `getEffectiveRspamdSettingsMap`,
+  `setRspamdUiPassword` (signed-in administrators only).
+- Global Sieve filters and presets: `listGlobalSieveFilters`, `getGlobalSieveFilter`,
+  `replaceGlobalSieveFilter`, `listPresets` (also domain administrators).
+- The legacy API's CORS settings: `getLegacyApiCorsSettings`, `updateLegacyApiCorsSettings`.
+- Mass mail: `listMassMailJobs`, `createMassMailJob` and `cancelMassMailJob` (signed-in
+  administrators only), `previewMassMailRecipients`, `getMassMailJob`, `listMassMailJobRecipients`.
+- License: `getLicenseStatus`, `verifyLicense` (both refused with `feature-disabled` when the
+  operator sets `RESTV2_LICENSE_VERIFICATION=false`).
+
+Problem types: `demo-mode`, `feature-disabled`, `regex-map-unavailable`,
+`global-sieve-filter-unavailable`, `mass-mail-already-running`,
+`mass-mail-recipient-count-changed`; the operations also use `container-action-failed`,
+`outcome-unknown` and `temporary-failure` (dependencies `sharedStore` and `settingsMap`). The shared
+enumerations gain feature 013's twenty-two audit event types (`logoReplacement` …
+`licenseVerification`), its audit targets and its rule codes (`ValidationRuleCode`, "System
+settings").
+
+Contract changes made while implementing feature 013:
+
+- `MassMailRecipient.failureCode` (`MassMailRecipientFailureCode`: `overQuota`,
+  `mailboxUnavailable`, `rejected`, `temporaryFailurePersisted`, `connectionFailed`,
+  `interrupted`) next to the free-text `failureReason` (gap G16).
+- `listRspamdRegexMaps` returns `RspamdRegexMapSummary` (with `sizeBytes`, without the content) and
+  `listMassMailJobs` returns `MassMailJobSummary` (without the bodies); the single-item reads keep
+  the full representations (gap G17).
+- `ValidationRuleCode` also names `tooFew` for an empty list of CORS methods.
+
+Release checks of feature 013 (quickstart Part C: SC-001, SC-002, SC-005, SC-007, SC-008): not run
+yet. The timing checks (SC-009's 10,000-recipient run and SC-013: `composer test:performance`) are
+pending an otherwise idle machine.

@@ -3,6 +3,8 @@
 namespace App\Models\Mailcow;
 
 use App\Casts\MailcowDateTime;
+use App\Support\Http\ETag;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -23,7 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
  * @property string|null $rcpt
  * @property string|null $msg
  * @property bool $notified
- * @property \Carbon\CarbonImmutable|null $created
+ * @property CarbonImmutable|null $created
  */
 class QuarantineItem extends MailcowModel
 {
@@ -45,6 +47,16 @@ class QuarantineItem extends MailcowModel
             'notified' => 'bool',
             'score' => 'float',
         ];
+    }
+
+    /**
+     * The item's version tag (feature 006 research R17): over its identifying stored values
+     * (`id|qid|rcpt|created`), never over `notified` (runtime state) or `qhash` (a secret). It stays
+     * the same for as long as the item exists.
+     */
+    public function versionTag(): string
+    {
+        return ETag::of(['quarantineItem', (int) $this->getAttribute('id'), (string) $this->getRawOriginal('qid'), $this->getRawOriginal('rcpt'), $this->getRawOriginal('created')]);
     }
 
     /**

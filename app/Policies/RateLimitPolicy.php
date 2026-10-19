@@ -45,7 +45,6 @@ class RateLimitPolicy extends SpamFilterFlags
             self::VIEW => null,
             self::CHANGE => $this->require($principal, [PermissionFlag::Ratelimit], 'Changing rate limits needs the ratelimit permission.'),
             self::RESET_BUCKET => throw new ProblemException(ProblemType::Forbidden, 'Only administrators reset rate-limit buckets.'),
-            default => null,
         };
     }
 }

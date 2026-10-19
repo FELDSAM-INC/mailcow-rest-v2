@@ -7,6 +7,7 @@ use App\Exceptions\ProblemRenderer;
 use App\Support\Http\ProblemType;
 use Illuminate\Http\Request;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Contract\OpenApiContract;
 use Tests\TestCase;
 
@@ -40,7 +41,7 @@ class SpamFilterProblemTest extends TestCase
     }
 
     /**
-     * @return array{0: int, 1: array<string, mixed>, 2: \Symfony\Component\HttpFoundation\Response}
+     * @return array{0: int, 1: array<string, mixed>, 2: Response}
      */
     private function render(ProblemException $e): array
     {

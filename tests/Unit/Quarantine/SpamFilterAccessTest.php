@@ -11,6 +11,7 @@ use App\Policies\RateLimitPolicy;
 use App\Policies\SpamPolicyPolicy;
 use App\Support\Http\ProblemType;
 use Closure;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -172,10 +173,10 @@ class SpamFilterAccessTest extends TestCase
 
         $this->assertFlagRequired(['quarantine'], fn () => $q->authorize($none, QuarantinePolicy::DOWNLOAD_MESSAGE));
 
-        \Illuminate\Support\Facades\DB::table('user_acl')->where('username', 'alice@example.org')->update(['quarantine' => 1]);
+        DB::table('user_acl')->where('username', 'alice@example.org')->update(['quarantine' => 1]);
         $this->assertFlagRequired(['quarantineAttachments'], fn () => $q->authorize($none, QuarantinePolicy::DOWNLOAD_MESSAGE));
 
-        \Illuminate\Support\Facades\DB::table('user_acl')->where('username', 'alice@example.org')->update(['quarantine_attachments' => 1]);
+        DB::table('user_acl')->where('username', 'alice@example.org')->update(['quarantine_attachments' => 1]);
         $this->assertAllowed(fn () => $q->authorize($none, QuarantinePolicy::DOWNLOAD_MESSAGE));
     }
 
@@ -223,7 +224,7 @@ class SpamFilterAccessTest extends TestCase
         $q = $this->app->make(QuarantinePolicy::class);
         $this->assertTrue($q->allows($da, QuarantinePolicy::ACT));
 
-        \Illuminate\Support\Facades\DB::table('da_acl')->where('username', 'reseller')->update(['quarantine' => 0]);
+        DB::table('da_acl')->where('username', 'reseller')->update(['quarantine' => 0]);
 
         $this->assertFalse($q->allows($da, QuarantinePolicy::ACT));
     }

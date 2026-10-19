@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Auth\PermissionFlag;
 use App\Auth\Principal;
 use App\Exceptions\PermissionFlagRequiredException;
+use App\Exceptions\ProblemException;
 use App\Services\Identity\IdentityService;
 
 /**
@@ -46,7 +47,7 @@ abstract class SpamFilterFlags
             $this->authorize($principal, $ability);
 
             return true;
-        } catch (\App\Exceptions\ProblemException) {
+        } catch (ProblemException) {
             return false;
         }
     }

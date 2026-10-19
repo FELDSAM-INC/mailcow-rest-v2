@@ -110,6 +110,10 @@ use App\Http\Controllers\Api\V2\PublicAddressesController;
 use App\Http\Controllers\Api\V2\PublicConfigController;
 use App\Http\Controllers\Api\V2\PublicConfigLogoController;
 use App\Http\Controllers\Api\V2\PushNotificationSettingsController;
+use App\Http\Controllers\Api\V2\QuarantineItemController;
+use App\Http\Controllers\Api\V2\QuarantineItemDownloadController;
+use App\Http\Controllers\Api\V2\QuarantineItemReleaseController;
+use App\Http\Controllers\Api\V2\QuarantineItemSpamLearningController;
 use App\Http\Controllers\Api\V2\ReadinessController;
 use App\Http\Controllers\Api\V2\RecentLoginController;
 use App\Http\Controllers\Api\V2\RecipientMapController;
@@ -1131,6 +1135,37 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         ->where('mailbox', '[^/]+')
         ->defaults('restv2.audit', ['event' => 'webmailSignInOnBehalf', 'target' => 'webmailOnBehalf'])
         ->name('mailbox-webmail-sign-in.store');
+
+    // Feature 006: quarantine, spam policy and rate limits. Literal paths (settings, bulk actions,
+    // capabilities) come before the parameterised ones; item IDs are digits only. State-changing
+    // routes declare `restv2.audit` (research R19).
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/quarantine', [QuarantineItemController::class, 'index'])->name('quarantine.index');
+        Route::get('/quarantine/{itemId}', [QuarantineItemController::class, 'show'])
+            ->where('itemId', '[1-9][0-9]{0,9}')
+            ->name('quarantine.show');
+        Route::get('/quarantine/{itemId}/message', [QuarantineItemDownloadController::class, 'message'])
+            ->where('itemId', '[1-9][0-9]{0,9}')
+            ->name('quarantine-message.show');
+        Route::get('/quarantine/{itemId}/attachments/{position}', [QuarantineItemDownloadController::class, 'attachment'])
+            ->where(['itemId' => '[1-9][0-9]{0,9}', 'position' => '[0-9]{1,4}'])
+            ->name('quarantine-attachments.show');
+    });
+
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::delete('/quarantine/{itemId}', [QuarantineItemController::class, 'destroy'])
+            ->where('itemId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'quarantineItemDeletion', 'target' => 'quarantineItem'])
+            ->name('quarantine.destroy');
+        Route::post('/quarantine/{itemId}/release', [QuarantineItemReleaseController::class, 'store'])
+            ->where('itemId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'quarantineItemRelease', 'target' => 'quarantineItem'])
+            ->name('quarantine-release.store');
+        Route::post('/quarantine/{itemId}/spam-learning', [QuarantineItemSpamLearningController::class, 'store'])
+            ->where('itemId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'quarantineItemSpamLearning', 'target' => 'quarantineItem'])
+            ->name('quarantine-spam-learning.store');
+    });
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])
         ->middleware(['restv2.auth:authenticated', 'restv2.pending'])

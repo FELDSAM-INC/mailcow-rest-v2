@@ -494,17 +494,10 @@
         }
     },
     "pendingOperations": [
-        "listQuarantineItems",
         "applyQuarantineBulkAction",
         "getQuarantineSettings",
         "updateQuarantineSettings",
         "previewQuarantineTemplate",
-        "getQuarantineItem",
-        "deleteQuarantineItem",
-        "releaseQuarantineItem",
-        "learnQuarantineItemAsSpam",
-        "downloadQuarantineMessage",
-        "downloadQuarantineAttachment",
         "getQuarantineCapabilities",
         "applyQuarantineNotificationBulkAction",
         "getMailboxQuarantineNotificationSettings",

@@ -61,7 +61,6 @@ class SpamPolicyPolicy extends SpamFilterFlags
                 : $this->require($principal, [PermissionFlag::SpamPolicy], 'Changing allow and block lists needs the spamPolicy permission.'),
             self::CHANGE_MAILBOX_ENTRIES => $this->require($principal, [PermissionFlag::SpamPolicy], 'Changing allow and block lists needs the spamPolicy permission.'),
             self::VIEW_STATISTICS => throw new ProblemException(ProblemType::Forbidden, 'Only administrators read the spam filter statistics.'),
-            default => null,
         };
     }
 }

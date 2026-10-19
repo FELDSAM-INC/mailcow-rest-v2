@@ -3,6 +3,7 @@
 namespace App\Models\Mailcow;
 
 use App\Casts\MailcowDateTime;
+use Carbon\CarbonImmutable;
 
 /**
  * mailcow `filterconf`: the spam filter preferences of domains, alias domains and mailboxes, read
@@ -14,7 +15,7 @@ use App\Casts\MailcowDateTime;
  * @property string $object
  * @property string $option
  * @property string $value
- * @property \Carbon\CarbonImmutable|null $created
+ * @property CarbonImmutable|null $created
  */
 class FilterPreference extends MailcowModel
 {

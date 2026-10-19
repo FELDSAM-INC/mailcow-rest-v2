@@ -28,7 +28,7 @@ class UnixSocketRspamdControllerTest extends TestCase
     }
 
     /**
-     * @param  array<string, mixed>|string  $body
+     * @param  array<int|string, mixed>|string  $body
      */
     private function answer(array|string $body, int $status = 200): void
     {

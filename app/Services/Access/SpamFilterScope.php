@@ -9,7 +9,6 @@ use App\Services\Domains\DomainScope;
 use App\Services\SelfService\MailboxAccess;
 use Closure;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -37,11 +36,11 @@ class SpamFilterScope
     /**
      * The item predicate of a caller, applied to a query on `quarantine`.
      *
-     * @return Closure(Builder|EloquentBuilder<\Illuminate\Database\Eloquent\Model>): void
+     * @return Closure(Builder): void
      */
     public function itemScope(Principal $principal, string $table = 'quarantine'): Closure
     {
-        return function (Builder|EloquentBuilder $query) use ($principal, $table): void {
+        return function (Builder $query) use ($principal, $table): void {
             match ($principal->role) {
                 Role::Admin => null,
                 Role::DomainAdmin => $query->whereRaw("SUBSTRING_INDEX(`{$table}`.`rcpt`, '@', -1) IN (SELECT `domain`.`domain` FROM `domain` WHERE `domain`.`domain` IN (SELECT `domain_admins`.`domain` FROM `domain_admins` WHERE `domain_admins`.`active` = 1 AND `domain_admins`.`username` = ?))", [$principal->username]),

@@ -82,7 +82,6 @@ class QuarantinePolicy extends SpamFilterFlags
                 $principal->role === Role::MailboxUser ? [PermissionFlag::Quarantine, PermissionFlag::QuarantineAttachments] : [PermissionFlag::Quarantine],
                 'Downloading the whole message needs the quarantine permission'.($principal->role === Role::MailboxUser ? ' and the quarantineAttachments permission.' : '.'),
             ),
-            default => null,
         };
     }
 

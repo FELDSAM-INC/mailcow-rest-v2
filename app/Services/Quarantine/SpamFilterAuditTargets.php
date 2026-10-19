@@ -151,7 +151,7 @@ final class SpamFilterAuditTargets
             return null;
         }
 
-        $address = MailboxAddress::normalize($raw)?->address ?? mb_substr($raw, 0, 255);
+        $address = MailboxAddress::normalize($raw)->address ?? mb_substr($raw, 0, 255);
 
         return ['type' => $type, 'id' => $address, 'name' => $address];
     }

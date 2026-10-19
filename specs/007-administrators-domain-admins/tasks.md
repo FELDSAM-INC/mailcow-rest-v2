@@ -740,7 +740,7 @@ writes them, consumed here and by a simulated legacy consumer.
 
 ### Tests for User Story 6 (write first, observe failing) ⚠️
 
-- [ ] T085 [P] [US6] Write `tests/Feature/Webmail/WebmailSignInOnBehalfTest.php` for
+- [X] T085 [P] [US6] Write `tests/Feature/Webmail/WebmailSignInOnBehalfTest.php` for
   `createWebmailSignInOnBehalf` (AS US6-1 to US6-5, FR-054 to FR-056, R21): setting on, an
   administrator → `200` with `Set-Cookie` (feature 005's hand-off cookie) and `Cache-Control:
   no-store`, `url`, a `sasl_log` row (`service = 'SSO'`, the mailbox, the client address), the
@@ -756,7 +756,7 @@ writes them, consumed here and by a simulated legacy consumer.
 
 ### Implementation for User Story 6
 
-- [ ] T086 [US6] Create `app/Services/Webmail/WebmailOnBehalfService.php` (R21: the order of checks,
+- [X] T086 [US6] Create `app/Services/Webmail/WebmailOnBehalfService.php` (R21: the order of checks,
   eligibility of the mailbox, then feature 005's `WebmailHandOffService::handOff()` for the target
   mailbox, which writes the `SSO` recent-login entry and sets the cookie; audit for success and
   refusals),

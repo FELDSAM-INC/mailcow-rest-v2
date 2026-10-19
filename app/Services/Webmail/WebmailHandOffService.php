@@ -41,7 +41,8 @@ use Symfony\Component\HttpFoundation\Cookie;
  * session ends it (SessionEndListener), and within a minute after an idle expiry (the sweeper,
  * restv2:webmail-handoffs:sweep). One hand-off per session: a new one replaces the previous.
  * Records: `restv2:webmail-handoff:<id>` (handle, owner, mailbox, createdAt) and
- * `restv2:session-handoffs:<handle>`. Feature 007 reuses handOff() for webmail on behalf of a user.
+ * `restv2:session-handoffs:<handle>`. Feature 007 reuses handOff() for webmail on behalf of a user
+ * (App\Services\Webmail\WebmailOnBehalfService).
  */
 class WebmailHandOffService implements SessionEndListener
 {
@@ -65,10 +66,13 @@ class WebmailHandOffService implements SessionEndListener
 
     /**
      * Hands webmail for $mailbox to the browser of $request, on behalf of $creator's session.
+     * Feature 007 audits a webmail sign-in on a user's behalf under its own event and target.
+     *
+     * @param  array{type: string, id?: string|null, name?: string|null}|null  $auditTarget
      *
      * @throws ProblemException groupware-disabled
      */
-    public function handOff(Principal $creator, string $mailbox, Request $request): WebmailHandOff
+    public function handOff(Principal $creator, string $mailbox, Request $request, AuditEventType $auditEvent = AuditEventType::WebmailHandOff, ?array $auditTarget = null): WebmailHandOff
     {
         if (config('restv2.skip_sogo')) {
             throw new ProblemException(ProblemType::GroupwareDisabled);
@@ -97,13 +101,13 @@ class WebmailHandOffService implements SessionEndListener
             return $id;
         });
 
-        DB::transaction(function () use ($creator, $mailbox, $request): void {
+        DB::transaction(function () use ($creator, $mailbox, $request, $auditEvent, $auditTarget): void {
             $this->recentLogins->record($mailbox, (string) $request->ip(), 'SSO');
             $this->audit->record(
-                AuditEventType::WebmailHandOff,
+                $auditEvent,
                 true,
                 $creator,
-                ['type' => 'webmailHandOff', 'id' => $mailbox, 'name' => null],
+                $auditTarget ?? ['type' => 'webmailHandOff', 'id' => $mailbox, 'name' => null],
                 $creator->authMethod->value,
                 null,
                 [],

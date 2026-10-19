@@ -72,6 +72,7 @@ use App\Http\Controllers\Api\V2\MailboxSenderSettingsController;
 use App\Http\Controllers\Api\V2\MailboxTagController;
 use App\Http\Controllers\Api\V2\MailboxTemplateBulkActionController;
 use App\Http\Controllers\Api\V2\MailboxTemplateController;
+use App\Http\Controllers\Api\V2\MailboxWebmailSignInController;
 use App\Http\Controllers\Api\V2\MailQueueBulkActionController;
 use App\Http\Controllers\Api\V2\MailQueueFlushController;
 use App\Http\Controllers\Api\V2\MailQueueMessageContentController;
@@ -1123,6 +1124,13 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->defaults('restv2.audit', ['event' => 'domainAdminSecondFactorSuspension', 'target' => 'domainAdmin'])
             ->name('domain-admin-second-factor-suspension.store');
     });
+
+    // Feature 007: webmail on a user's behalf. Full browser sessions only, never while impersonating.
+    Route::post('/mailboxes/{mailbox}/webmail-sign-in', [MailboxWebmailSignInController::class, 'store'])
+        ->middleware(['restv2.auth:session', 'restv2.csrf', 'restv2.not-impersonating', 'restv2.pending'])
+        ->where('mailbox', '[^/]+')
+        ->defaults('restv2.audit', ['event' => 'webmailSignInOnBehalf', 'target' => 'webmailOnBehalf'])
+        ->name('mailbox-webmail-sign-in.store');
 
     Route::get('/audit-events', [AuditEventController::class, 'index'])
         ->middleware(['restv2.auth:authenticated', 'restv2.pending'])

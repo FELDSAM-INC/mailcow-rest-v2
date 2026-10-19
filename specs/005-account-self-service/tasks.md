@@ -1267,3 +1267,6 @@ that differ from what exists map as listed.
   010's resolution, so client setup and DNS diagnostics announce the same services; 005's own port
   parsing (`restv2.ports`, `legacyPort()`) and its port variables in `.env.testing` and the deploy
   example were removed. An unset port now takes mailcow's default instead of `null` (010's rule).
+- **Test memory limit**: `phpunit.xml` raises `memory_limit` from 512M to 1G. With feature 010
+  merged, the single PHPUnit process of the full suite (7,534 tests) peaked at exactly 512 MB and
+  died with `Premature end of PHP process`; the run now passes with that peak.

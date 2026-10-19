@@ -9,15 +9,16 @@ subagents were used.
 
 | Repository/worktree | Branch | Checkpoint | State |
 |---|---|---|---|
-| `mailcow-rest-v2` | `main` | `b3dc2ab` plus this handoff update | API 013 integrated; seeder and quarantine performance fixed; pushed and deployed |
+| `mailcow-rest-v2` | `main` | `a517a25` plus this handoff update | API through `b3dc2ab` deployed; later handoff notes pushed |
 | `../mailcow-rest-v2-wt/013` | `wt/013` | `67f2762` | Clean; implementation already on API main |
-| `../mailcowui-ng` | `main` | `990830e7` | Clean; unchanged because monitoring's performance gate fails |
+| `../mailcowui-ng` | `main` | `a9333d85` | Owner's performance threshold of 80 committed and pushed; deployed UI still `990830e7` |
 | `../mailcowui-ng-wt/005` | `wt/005` | `9ac9f886` | Reset/recovery fixes committed; broader account work unfinished |
 | `../mailcowui-ng-wt/006` | `wt/006` | `a239986f` | Quarantine list and stale-action refresh checked; broader feature unfinished |
-| `../mailcowui-ng-wt/011` | `wt/011` | `8a87b7af` | Rebased; retained loading/rendering fixes tested and committed locally; Lighthouse gate open |
+| `../mailcowui-ng-wt/011` | `wt/011` | `50a001dd` | Tested fixes and performance-80 policy; full Lighthouse recheck recorded, three assertions still fail |
 
 The UI worktrees are clean. Temporary worktree branches remain local: do not push them or use
-git stash. There is no rebase in progress. The old `wt/011-rebase-checkpoint-20261019` branch is
+git stash. There is no rebase in progress. The new policy commit was merged into `wt/011` without
+another rebase. The old `wt/011-rebase-checkpoint-20261019` branch is
 only a historical partial-rebase checkpoint; do not merge it.
 
 ## API results
@@ -121,7 +122,27 @@ After the owner questioned the effort spent optimizing for slow mobile connectio
 startup, bootstrap-request, lazy-menu and bundler experiments were removed. The retained patch
 uses the original authentication request order and build configuration. Experiments are preserved
 in `u011/perf-experiments-before-trim.{tgz,patch}`; do not resume tuning or repeatedly rerun
-Lighthouse without a new reason. The owner did not explicitly waive the performance gate.
+Lighthouse without a new reason.
+
+The owner subsequently requested a performance threshold of **80 instead of 90**. UI main
+`a9333d85` records this in constitution **2.0.0**, CI assertions and normative feature documents.
+Accessibility remains **90**, mobile settings and three runs per URL are unchanged, and the
+initial JavaScript budget remains 204,800 bytes. Historical measurements were preserved.
+The policy was merged into monitoring as `8f016219`, including its additional dashboard assertion.
+One complete Lighthouse run under this new policy collected all eight URLs three times, with
+no concurrent build/test workload. No application code changed since the already tested
+`8a87b7af` build. Performance ranges: sign-in **87–89**, home **81–82**, domains **76–78**,
+aliases **74–75**, DKIM **80–84**, mailboxes **80–84**, relayhosts **78–81**, dashboard **83–84**.
+Accessibility remains **99–100**, passing throughout. The configured aggregation passes six
+performance checks; domains and aliases still fail. Sign-in also fails the separate script-transfer
+limit at **208,974 bytes** versus **204,800**, although the manifest-based initial gzip budget
+still passes at **186,760 bytes**. The owner changed neither size limit.
+
+The command exited 1 on those three assertions. T146 remains open; monitoring was not merged,
+pushed or deployed. No more tuning or repeated benchmark was started. Results are recorded in
+UI checkpoint `50a001dd`. Log: `u011/policy-80-lighthouse.log`; all 24 JSON/HTML reports and
+assertion results: `u011/policy-80-lighthouse-reports/`. The threshold change itself is already
+pushed to UI main as `a9333d85`; no application redeployment is needed for this CI/docs-only commit.
 
 The final retained patch passes **3,267 unit tests / 369 files**, with **88.98% line coverage**
 (`u011/final-unit.log`). Lint, type checking, formatting, i18n, contract consistency, licenses,
@@ -132,7 +153,7 @@ Chromium and mobile WebKit, covering the dashboard and delayed loading, shell bo
 password sign-in, sign-in screens, SSO round trips, preferences and legacy translations including
 hostile markup. Log: `u011/final-browser.log`; artifacts: `u011/final-browser-results/`.
 
-**Do not fast-forward UI main until T146 passes or the owner explicitly changes that gate.**
+**Do not fast-forward UI main until T146 passes under the revised performance-80/accessibility-90 policy.**
 T149 (real phones, VoiceOver/TalkBack) and live-host parity still need the owner/environment.
 The earlier six local smoke tests at API `4be8653` remain recorded in the feature quickstart;
 monitoring has not been deployed to staging. The API deployment is recorded above.

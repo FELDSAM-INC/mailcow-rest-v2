@@ -7,6 +7,7 @@ use App\Models\AuditEvent;
 use App\Rules\IpNetwork;
 use App\Rules\MatchesFormat;
 use App\Rules\Rfc3339DateTime;
+use App\Services\Mailboxes\MailboxAddress;
 use App\Support\Http\ListQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Gate;
@@ -109,9 +110,18 @@ class ListAuditEventsRequest extends ApiFormRequest
             'clientAddress' => ($address = $string('clientAddress')) === null ? null : IpNetwork::normalize($address),
             'targetType' => $string('targetType'),
             'targetId' => $string('targetId'),
-            'impersonatedAccount' => $string('impersonatedAccount'),
+            'impersonatedAccount' => ($account = $string('impersonatedAccount')) === null ? null : self::account($account),
             'requestId' => $string('requestId'),
         ];
+    }
+
+    /**
+     * An impersonated account as recorded (feature 007): a mailbox address normalised as feature 003
+     * does, otherwise a username trimmed and lower-cased.
+     */
+    private static function account(string $value): string
+    {
+        return MailboxAddress::normalize($value)?->address ?? mb_strtolower(trim($value));
     }
 
     /**

@@ -54,9 +54,9 @@ class AuditEventController extends Controller
             self::whereClientAddress($query, $filters['clientAddress']);
         }
 
-        // Records are written during impersonations only from feature 007 on.
+        // Feature 007 (FR-069): the records written while the account was impersonated.
         if ($filters['impersonatedAccount'] !== null) {
-            $query->whereRaw('1 = 0');
+            $query->where('impersonated_username', $filters['impersonatedAccount']);
         }
 
         $list = $request->listQuery();

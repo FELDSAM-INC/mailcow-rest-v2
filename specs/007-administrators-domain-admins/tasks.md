@@ -779,7 +779,7 @@ behalf in the audit log, without secrets.
 
 ### Tests for User Story 7 (write first, observe failing) ⚠️
 
-- [ ] T087 [P] [US7] Write `tests/Feature/Audit/AccountAuditTest.php` (AS US7-1, FR-066, FR-068,
+- [X] T087 [P] [US7] Write `tests/Feature/Audit/AccountAuditTest.php` (AS US7-1, FR-066, FR-068,
   FR-069): changing `reseller1`'s domains and password gives one `domainAdminUpdate` record with
   `domainsAdded`, `domainsRemoved` and `passwordChanged: true` and no password;
   `GET /audit-events?targetType=domainAdmin&targetId=reseller1` returns every record of that
@@ -788,19 +788,19 @@ behalf in the audit log, without secrets.
   account with the failure reason and `details.problemType`, including refusals of read-only keys,
   keys on session-only operations and restricted sessions (refusal auditing of
   `docs/conventions.md`); CSRF failures, `401`s and reads write none.
-- [ ] T088 [P] [US7] Write `tests/Feature/Audit/AuditImpersonationFilterTest.php` (AS US7-2,
+- [X] T088 [P] [US7] Write `tests/Feature/Audit/AuditImpersonationFilterTest.php` (AS US7-2,
   FR-069): impersonations of `bob@a.example` by `alice` and by `reseller1`, with a change each;
   `GET /audit-events?impersonatedAccount=bob@a.example` returns both starts, both ends and both
   changes with their impersonators; `impersonatedAccount` is `null` in records outside
   impersonations.
-- [ ] T089 [P] [US7] Write `tests/Feature/Audit/AccountSecretScanTest.php` (AS US7-3, FR-074,
+- [X] T089 [P] [US7] Write `tests/Feature/Audit/AccountSecretScanTest.php` (AS US7-3, FR-074,
   SC-009): run every operation of the feature with known passwords (plain and pre-hashed) and
   tokens, then assert that no audit record, no response after the token's issue response and no
   captured log line contains a password, a password hash or a token.
 
 ### Implementation for User Story 7
 
-- [ ] T090 [US7] Change 001's `app/Http/Requests/Api/V2/ListAuditEventsRequest.php` (`impersonatedAccount`:
+- [X] T090 [US7] Change 001's `app/Http/Requests/Api/V2/ListAuditEventsRequest.php` (`impersonatedAccount`:
   optional string, max 255, lower-cased) and `app/Http/Controllers/Api/V2/AuditEventController.php`
   (`impersonated_username = ?`). Fix any event of the feature that T087 or T089 finds missing or
   leaking. This makes T087–T089 pass.

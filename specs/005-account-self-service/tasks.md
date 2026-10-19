@@ -1006,7 +1006,7 @@ them with legacy `mobileconfig.php`; read the client configuration with the grou
 
 ## Phase 15: Polish and cross-cutting concerns
 
-- [ ] T123 [P] Write `tests/Feature/Performance/SelfServiceListLatencyTest.php` (`@group
+- [X] T123 [P] Write `tests/Feature/Performance/SelfServiceListLatencyTest.php` (`@group
   performance`, SC-010): 25-entry pages of app passwords, temporary aliases, filters and recent
   logins (with 200,000 `sasl_log` rows) answer within 1 s at p95 over 50 runs; a recent-login page
   needing lookups (fake lookup with 1.8 s latency) within 2 s.
@@ -1240,7 +1240,7 @@ that differ from what exists map as listed.
   element after replacing UUIDs, since XMLWriter's whitespace differs from the template's. The
   embedded app password's name is cut so that its stored (HTML-encoded) form fits 255 characters.
   The documentation link's `ui` is the request's host, as legacy's `HTTP_HOST`.
-- **T123**: run with `composer test:performance`.
+- **T123**: run with `composer test:performance`. One test seeds the data once (200,000 `sasl_log` rows take minutes to insert on a loaded machine) and checks both budgets; it passed on 2026-10-19.
 - **T124**: callers are anonymous, a restricted mailbox session, administrator, domain
   administrator in and out of scope, the mailbox user and a foreign mailbox user, and read-only and
   read-write keys of an administrator and of the domain administrator (plus a foreign domain

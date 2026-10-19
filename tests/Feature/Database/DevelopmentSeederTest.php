@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Database;
 
+use App\Auth\Role;
 use App\Clients\SharedStore\DkimKeyStore;
 use App\Services\Dkim\DkimPublicKey;
 use Database\Seeders\DevelopmentSeeder;
@@ -20,6 +21,28 @@ class DevelopmentSeederTest extends TestCase
         $this->expectException(RuntimeException::class);
 
         (new DevelopmentSeeder)->run();
+    }
+
+    public function test_seeded_mailboxes_are_available_as_sender_permission_candidates(): void
+    {
+        $this->app['env'] = 'local';
+        (new DevelopmentSeeder)->run();
+        $this->signInAs('admin', Role::Admin);
+
+        $response = $this->getJson('/api/v2/sender-permission-candidates?mailbox=alice@example.org&type=address')
+            ->assertOk()->assertJsonPath('meta.total', 3);
+
+        $this->assertSame(['bob@example.org', 'carol@example.net', 'dave@example.org'], array_column($response->json('data'), 'value'));
+        $this->assertSame(['mailbox', 'mailbox', 'mailbox'], array_column($response->json('data'), 'kind'));
+
+        foreach (DB::table('mailbox')->get() as $mailbox) {
+            $this->assertDatabaseHas('alias', [
+                'address' => $mailbox->username,
+                'goto' => $mailbox->username,
+                'domain' => $mailbox->domain,
+                'active' => $mailbox->active,
+            ]);
+        }
     }
 
     public function test_it_seeds_the_quickstart_accounts_locally(): void

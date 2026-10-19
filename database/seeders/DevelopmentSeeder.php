@@ -75,6 +75,11 @@ class DevelopmentSeeder extends Seeder
         // Feature 008: sync jobs #1 to #3 (quickstart Part B).
         $rows->mailbox('carol@example.net', self::PASSWORD, userAcl: ['syncjobs' => 1]);
         $rows->mailbox('dave@example.org', self::PASSWORD);
+        // Legacy mailbox creation also inserts an alias from the address to itself. Sender
+        // permission candidates read these aliases, including the other seeded mailboxes.
+        foreach (['alice@example.org', 'bob@example.org', 'carol@example.net', 'dave@example.org'] as $mailbox) {
+            $rows->alias($mailbox, $mailbox);
+        }
         $rows->syncJob('alice@example.org', ['host1' => 'imap.old-provider.example', 'user1' => 'alice.old', 'password1' => 'old-provider-secret']);
         $rows->syncJob('alice@example.org', [
             'host1' => 'imap.old-provider.example',

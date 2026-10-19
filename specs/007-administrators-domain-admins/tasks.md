@@ -920,3 +920,98 @@ Each story ends with its checkpoint green and the contract coverage growing to 2
 - Every upstream write goes through `app/Services/Accounts/`, `SsoTokenService` or feature 005's
   hand-off service. Controllers never write.
 - Commit after each task or logical group, with short imperative subjects and no AI attribution.
+
+## Implementation notes (2026-10-19)
+
+Deviations and decisions made while implementing, with the reason. Names in tasks that differ from
+what exists map as listed.
+
+- **Names**: the shared account writes are the abstract `App\Services\Accounts\AccountService`,
+  extended by `AdminAccountService` (last-administrator guard, own-account rule) and
+  `DomainAdminAccountService` (assignments, permission record). One `AccountResource` builds every
+  single-account response from `AccountRepresentation` (which also presents the assignments), in
+  place of `AdminResource`, `DomainAdminResource` and `DomainAdminAssignmentResource`;
+  `ImpersonationResource` is a static presenter; the capabilities controller returns the service's
+  array (as 005's small reads do), so there is no `AccountCapabilitiesResource`. One
+  `AccountBulkActionController` serves both bulk operations (the role is the route's collection)
+  and `AccountBulkActionRunner` builds on 002's `BulkActionRunner`. `AdminPolicy` and
+  `DomainAdminPolicy` are plain classes like 009's `RoutingPolicy` (the Gate cannot answer the
+  documented problems), so nothing is registered in `AppServiceProvider` for them; the provider
+  registers `AccountAuditTargets` (refusal targets `admin`, `domainAdmin`, `ssoToken`,
+  `impersonation`, `webmailOnBehalf`, and `account-inactive` → `accountInactive`). The 19 flags and
+  their columns live in `DomainAdminFlags`. `ImpersonationAudit` writes the start and every end.
+- **T015, T017, T059 (impersonation model)**: `SessionManager::principal()` still returns the
+  signed-in account (the impersonator); `effectivePrincipal()` returns the target with
+  `impersonator` attached, and `EnforceImpersonation` puts it into the request context. Research
+  R16 had `principal()` itself return the target; keeping it the signed-in account leaves 001's
+  integrity check, 005's registry and the pending-action evaluation untouched (they must see the
+  impersonator), with the same outcome. `PendingActionEvaluator` uses `actingAccount()`;
+  `IdentityService::permissions()` of an impersonating principal is the impersonator's own
+  computation (R18), so a domain administrator without a `da_acl` row gets the schema defaults as
+  in its own identity (001's decision), not "all false" as R18's parenthesis said.
+  `rebindPrincipal()` takes the session (`rebindPrincipal(Session, string)`); no
+  `SessionRegistry::rename()` was needed (forget and register). A new sign-in on an impersonating
+  session audits `sessionReplaced` from `SessionManager::promote()`/`beginPending()`.
+- **T017 binding**: `promote()` writes `accountCreatedAt`, looking it up when the principal does
+  not carry it, so every sign-in path (password, passkey, single sign-on, token, tests' `signInAs`)
+  is bound without changes; `AccountResolver::accountStillActive()` compares it. Sessions signed in
+  before this feature carry no binding and keep working until they end.
+- **T014, T018 key binding**: a key whose `owner_created_at` is NULL (only keys inserted directly,
+  as test helpers do) is unbound. The migration binds every existing key to its owner, a key whose
+  owner no longer exists to `1000-01-01 00:00:00` (it can never match a later account), and marks
+  keys revoked before this feature `manual`. mailcow's tables use `utf8mb4_general_ci`, this API's
+  `utf8mb4_unicode_ci`, so the back-fill join names the collation.
+- **T061, R17**: ending the impersonation and signing out continue past `EnforceImpersonation`
+  with the end reason in a request attribute, and their controllers end and audit it: renewing the
+  anti-forgery token in the middleware, before the route's CSRF check, would refuse them.
+- **T063 (R19)**: `restv2.own` stays empty; `restv2.not-impersonating` is attached to the twelve
+  credential and webmail routes of 001 and 005 one by one, so that reads, the mailbox overview, the
+  client configuration and the Apple profile (an app password, FR-049) follow the effective
+  identity. Order per route: auth, csrf, not-impersonating, pending.
+- **T044, T077 validation**: unknown members are `unknownField`, as the contract says (003 uses
+  `immutable` for its own bodies). An alias domain in a domain set is `notEligible` with
+  `kind: aliasDomain` (`ValidationRuleCode`); `DomainAdminCreateRequest`'s text, which said
+  `expected: primaryDomain`, was corrected.
+- **T075**: `LastAdminGuard` locks every administrator row in username order, applies the change
+  and counts the active administrators again, refusing only when the change took the last one: the
+  same atomicity as precomputing the outcome, and it covers a rename combined with a deactivation
+  without special cases.
+- **T042, T076 FR-036**: a creation also removes orphaned `tfa`, `fido2` and preference rows of the
+  name (legacy's domain-deletion cleanup leaves `tfa` and `fido2` rows behind), and a rename removes
+  rows that no account owns under the new name.
+- **T038**: the suspension counts every active `tfa` entry (legacy `disable_tfa` disables every
+  type); `docs/audit-events.md` says so.
+- **T046**: `OrphanedDomainAdminRemover::remove()` takes the actor and the deleted domain; the
+  cascade's `domains` detail includes that domain, already removed by the domain deletion. 002's
+  `DeleteDomainAuditTest` (now a `domainAdminDeletion` record too) and `DeleteDomainCleanupTest`
+  (`api-key-revoked` instead of `api-key-invalid`) were updated to FR-032.
+- **001 tests**: `AuditEventListTest` expects the additive `impersonatedAccount`, `IdentityTest`
+  the now present `webmailOnBehalfEnabled`; the contract matcher falls back to the templated path
+  (T005).
+- **T060**: `webmailOnBehalfEnabled` is present when the identity's role is administrator or
+  domain administrator (during an impersonation, the target's role).
+- **T074**: a domain administrator's key on an administrator write gets `session-required`, not
+  `forbidden`: the pipeline refuses keys on session-only routes before the role check, as 001's key
+  creation does (research R24 names the route mode `session`).
+- **T086**: `WebmailHandOffService::handOff()` gained an optional audit event and target, so the
+  sign-in on behalf is recorded as `webmailSignInOnBehalf` on the mailbox.
+- **T072, T080**: the races use long-lived workers (`tests/bin/admin-race.php`,
+  `tests/bin/sso-token-race.php`) driven through Redis lists, each with its own database connection
+  on rows committed through an observer connection; they poll in 2-second steps because Redis reads
+  time out after 5 s. 1,000 administrator rounds take about 40 s, 200 token rounds a few seconds;
+  both are in the `concurrency` group, which `composer test` runs (as 003's).
+- **T092**: passes alone (p95 under 1 s); measured during the final run under a load average of
+  about 60 from other worktrees, it reported 2.1 s. It is in the `performance` group.
+- **Tests**: `AccountTestHelpers` registers the `TestResponse` macros `assertViolation()` and
+  `assertViolationParams()` (field errors by exact key, also with dots); `phpstan.neon` ignores
+  Larastan's undefined-method report for them.
+- **G38** (optional non-consuming token read) was not implemented; the reason is in
+  `docs/api-gaps.md`. G3 is done for this feature.
+- **T098**: Part B ran on 2026-10-19 in compose project `restv2-007` with `ports: !reset []` on
+  `web` and `ALLOW_ADMIN_EMAIL_LOGIN=y` on `app`, curl running in the `app` container with
+  `--connect-to localhost:443:web:443`; every command printed the value of its comment and the logs
+  held no password or token. Fixed drift: the HTTPS listener with `-k`, the key creation command,
+  the expected outputs, the timing test's group. Part C (mailcow host) is not run.
+- **Deployment**: `ALLOW_ADMIN_EMAIL_LOGIN=${ALLOW_ADMIN_EMAIL_LOGIN:-n}` in
+  `deploy/docker-compose.override.yml`; two migrations of API-owned tables
+  (`restv2_audit_events`, `restv2_api_keys`). The production image is unchanged.

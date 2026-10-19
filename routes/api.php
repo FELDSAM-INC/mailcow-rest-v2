@@ -116,6 +116,8 @@ use App\Http\Controllers\Api\V2\QuarantineItemController;
 use App\Http\Controllers\Api\V2\QuarantineItemDownloadController;
 use App\Http\Controllers\Api\V2\QuarantineItemReleaseController;
 use App\Http\Controllers\Api\V2\QuarantineItemSpamLearningController;
+use App\Http\Controllers\Api\V2\QuarantineNotificationBulkActionController;
+use App\Http\Controllers\Api\V2\QuarantineNotificationSettingsController;
 use App\Http\Controllers\Api\V2\QuarantineSettingsController;
 use App\Http\Controllers\Api\V2\QuarantineTemplatePreviewController;
 use App\Http\Controllers\Api\V2\ReadinessController;
@@ -1147,6 +1149,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::get('/quarantine', [QuarantineItemController::class, 'index'])->name('quarantine.index');
         Route::get('/capabilities/quarantine', [QuarantineCapabilitiesController::class, 'show'])->name('quarantine-capabilities.show');
         Route::get('/quarantine/settings', [QuarantineSettingsController::class, 'show'])->name('quarantine-settings.show');
+        Route::get('/mailboxes/{mailbox}/quarantine-notification-settings', [QuarantineNotificationSettingsController::class, 'show'])
+            ->where('mailbox', '[^/]+')
+            ->name('quarantine-notification-settings.show');
         Route::get('/quarantine/{itemId}', [QuarantineItemController::class, 'show'])
             ->where('itemId', '[1-9][0-9]{0,9}')
             ->name('quarantine.show');
@@ -1166,6 +1171,13 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
         Route::patch('/quarantine/settings', [QuarantineSettingsController::class, 'update'])
             ->defaults('restv2.audit', ['event' => 'quarantineSettingsUpdate', 'target' => 'quarantineSettings', 'skipWhenQueryTrue' => 'validateOnly'])
             ->name('quarantine-settings.update');
+        Route::post('/quarantine-notification-settings/bulk-actions', [QuarantineNotificationBulkActionController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fromBulkAction', 'target' => 'quarantineNotificationSettings'])
+            ->name('quarantine-notification-bulk-actions.store');
+        Route::patch('/mailboxes/{mailbox}/quarantine-notification-settings', [QuarantineNotificationSettingsController::class, 'update'])
+            ->where('mailbox', '[^/]+')
+            ->defaults('restv2.audit', ['event' => 'quarantineNotificationSettingsUpdate', 'target' => 'quarantineNotificationSettings'])
+            ->name('quarantine-notification-settings.update');
         // A preview changes nothing and is not audited.
         Route::post('/quarantine/settings/template-preview', [QuarantineTemplatePreviewController::class, 'store'])
             ->name('quarantine-template-preview.store');

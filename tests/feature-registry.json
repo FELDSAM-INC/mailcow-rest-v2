@@ -494,9 +494,6 @@
         }
     },
     "pendingOperations": [
-        "applyQuarantineNotificationBulkAction",
-        "getMailboxQuarantineNotificationSettings",
-        "updateMailboxQuarantineNotificationSettings",
         "listDomainSpamPolicyEntries",
         "createDomainSpamPolicyEntry",
         "getDomainSpamPolicyEntry",

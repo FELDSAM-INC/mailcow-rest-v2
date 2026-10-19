@@ -572,7 +572,7 @@ singly and in bulk; confirm the stored attributes the legacy pages and the notif
 
 ### Tests for User Story 4 (write first, observe failing) ⚠️
 
-- [ ] T058 [P] [US4] Write `tests/Feature/Quarantine/QuarantineNotificationSettingsTest.php` for
+- [X] T058 [P] [US4] Write `tests/Feature/Quarantine/QuarantineNotificationSettingsTest.php` for
   `getMailboxQuarantineNotificationSettings` and `updateMailboxQuarantineNotificationSettings`
   (FR-035, FR-036, FR-038, FR-069, AS-4.1, AS-4.2, AS-4.4): read returns `frequency`, `category`,
   `etag`; a mailbox without the attributes → `never`, `null`; stored `add_header` → `junk`;
@@ -585,7 +585,7 @@ singly and in bulk; confirm the stored attributes the legacy pages and the notif
   and an admin may always change; another mailbox → `404`; a resource → `404`; `{"frequency":
   "monthly"}` → `notInList`; `{}` → `required` on `body`; `If-Match` mismatch → `412`; audit with
   old and new values.
-- [ ] T059 [P] [US4] Write `tests/Feature/Quarantine/QuarantineNotificationBulkTest.php` for
+- [X] T059 [P] [US4] Write `tests/Feature/Quarantine/QuarantineNotificationBulkTest.php` for
   `applyQuarantineNotificationBulkAction` (FR-037, AS-4.3): a domain admin sets `weekly` on 30
   mailboxes of their domains and one of another domain → 30 `done` with the new `version`, one
   `notFound`; an outdated `version` → `outdated`; a duplicate target → once; a resource → `notFound`;
@@ -594,11 +594,11 @@ singly and in bulk; confirm the stored attributes the legacy pages and the notif
 
 ### Implementation for User Story 4
 
-- [ ] T060 [US4] Create `app/Services/Quarantine/QuarantineNotificationService.php` (R9: read with
+- [X] T060 [US4] Create `app/Services/Quarantine/QuarantineNotificationService.php` (R9: read with
   `JSON_VALUE`, mapping, ETag; `update()` in a transaction with `SELECT … FOR UPDATE`, `If-Match`,
   legacy `JSON_SET` statements, audit) and
   `app/Http/Resources/Api/V2/QuarantineNotificationSettingsResource.php`.
-- [ ] T061 [US4] Create `app/Http/Requests/Api/V2/UpdateQuarantineNotificationSettingsRequest.php`
+- [X] T061 [US4] Create `app/Http/Requests/Api/V2/UpdateQuarantineNotificationSettingsRequest.php`
   and `QuarantineNotificationBulkRequest.php`, and the controllers
   `app/Http/Controllers/Api/V2/QuarantineNotificationSettingsController.php` (`show`, `update`,
   flag checks per member), `app/Services/Quarantine/QuarantineNotificationBulkActions.php` (R18)

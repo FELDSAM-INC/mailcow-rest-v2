@@ -4,5 +4,5 @@ required: false
 description: Sort field. Default `mailbox`, then `description` as the second key.
 schema:
   type: string
-  enum: [description, mailbox, kind, active, createdAt, modifiedAt]
+  enum: [id, description, mailbox, kind, active, createdAt, modifiedAt]
   default: mailbox

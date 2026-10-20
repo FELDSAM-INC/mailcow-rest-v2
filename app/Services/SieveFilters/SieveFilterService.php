@@ -35,6 +35,7 @@ class SieveFilterService
 {
     /** Contract sort value => column. */
     public const SORT_COLUMNS = [
+        'id' => 'sieve_filters.id',
         'description' => 'sieve_filters.script_desc',
         'mailbox' => 'sieve_filters.username',
         'kind' => 'sieve_filters.filter_type',

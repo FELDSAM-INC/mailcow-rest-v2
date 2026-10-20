@@ -105,6 +105,42 @@ class SieveFilterListTest extends TestCase
         $this->assertSame(0, $this->getJson(self::URL.'?id='.$foreign)->json('meta.total'));
     }
 
+    public function test_numeric_id_sorting_applies_before_pagination_and_respects_scope(): void
+    {
+        $this->seedFilters();
+        $ids = DB::table('sieve_filters')->orderBy('id')->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $this->asAdmin();
+
+        $this->assertSame(array_slice($ids, 8, 5), array_column(
+            $this->getJson(self::URL.'?sort=id&order=asc&offset=8&limit=5')->assertOk()->json('data'),
+            'id',
+        ));
+        $this->assertSame(array_slice(array_reverse($ids), 4, 5), array_column(
+            $this->getJson(self::URL.'?sort=id&order=desc&offset=4&limit=5')->assertOk()->json('data'),
+            'id',
+        ));
+
+        $this->asDomainAdmin(['example.org'], 'reseller', ['filters' => 0]);
+        $expected = DB::table('sieve_filters')->where('username', 'like', '%@example.org')->orderByDesc('id')->limit(3)->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $this->assertSame($expected, array_column(
+            $this->getJson(self::URL.'?sort=id&order=desc&limit=3')->assertOk()->json('data'),
+            'id',
+        ));
+    }
+
+    public function test_mailbox_list_supports_id_sorting_in_both_directions(): void
+    {
+        $this->mailcow()->mailboxWithDomain('anna@example.org');
+        $this->mailcow()->sieveFilterRow('anna@example.org', 'Zulu', 'prefilter');
+        $this->mailcow()->sieveFilterRow('anna@example.org', 'Alpha', 'postfilter');
+        $this->asSelfServiceUser();
+
+        $url = '/api/v2/mailboxes/anna@example.org/sieve-filters?sort=id&limit=1';
+        $this->assertSame('Alpha', $this->getJson($url.'&order=desc')->assertOk()->json('data.0.description'));
+        $this->assertSame('Zulu', $this->getJson($url.'&order=asc')->assertOk()->json('data.0.description'));
+        $this->assertSame('Zulu', $this->getJson($url.'&order=desc&offset=1')->assertOk()->json('data.0.description'));
+    }
+
     public function test_a_mailbox_user_uses_the_mailbox_list(): void
     {
         $this->mailcow()->mailboxWithDomain('anna@example.org');

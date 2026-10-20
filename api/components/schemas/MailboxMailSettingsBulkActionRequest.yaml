@@ -23,6 +23,14 @@ properties:
     items:
       $ref: './BulkTarget.yaml'
 anyOf:
-  - required: [tlsEnforceInbound]
-  - required: [tlsEnforceOutbound]
+  - type: object
+    properties:
+      tlsEnforceInbound:
+        type: boolean
+    required: [tlsEnforceInbound]
+  - type: object
+    properties:
+      tlsEnforceOutbound:
+        type: boolean
+    required: [tlsEnforceOutbound]
 additionalProperties: false

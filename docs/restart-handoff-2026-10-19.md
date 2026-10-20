@@ -1,29 +1,31 @@
-# Resumed work handoff — 2026-10-19
+# Resumed work handoff — updated 2026-10-20
 
 The owner asked to continue work in both `mailcow-rest-v2` and `../mailcowui-ng` after the
 system-restart checkpoint. The first continuation was local. The owner subsequently authorized
 committing, pushing and deploying completed work. The API is deployed, and the owner then
 explicitly requested the monitoring UI deployment despite the recorded Lighthouse failures.
-Both deployments below are complete. No subagents were used.
+The API and the later quarantine UI release below are deployed. No subagents were used.
 
-On 2026-10-20 the owner also asked to adjust the roughly 4 KiB sign-in transfer warning and
-continue implementation. The transfer allowance is pushed to UI main; quarantine bulk actions
-are tested and committed locally, with the rest of UI 006 still pending.
+On 2026-10-20 the owner asked to adjust the roughly 4 KiB sign-in transfer warning and continue
+unfinished features. UI 006's implemented quarantine, spam-policy, notification and rate-limit
+flows are now merged, pushed and deployed as `mailcowui-ng:3de1d64a`. Sign-in transfers 208,730
+script bytes, below the approved 215,040-byte allowance. UI 005 remains unfinished. The current
+table and latest release section supersede the earlier chronological checkpoints below.
 
 ## Current checkpoints
 
 | Repository/worktree | Branch | Checkpoint | State |
 |---|---|---|---|
-| `mailcow-rest-v2` | `main` | `c6b02d4` plus this handoff update | API through `b3dc2ab` deployed; later handoff notes pushed |
+| `mailcow-rest-v2` | `main` | `8ae22afa` plus this handoff update | API `b3dc2ab` remains deployed and healthy; later commits are handoff notes |
 | `../mailcow-rest-v2-wt/013` | `wt/013` | `67f2762` | Clean; implementation already on API main |
-| `../mailcowui-ng` | `main` | `8431c4eb` | Monitoring deployed as `5e3c1e89`; deployment notes and 210 KiB shell script-transfer policy pushed |
+| `../mailcowui-ng` | `main` | `d3a669bb` | UI `3de1d64a` deployed; documentation-only release notes pushed |
 | `../mailcowui-ng-wt/005` | `wt/005` | `9ac9f886` | Reset/recovery fixes committed; broader account work unfinished |
-| `../mailcowui-ng-wt/006` | `wt/006` | `7effcca1` | Quarantine bulk actions checked and committed; broader feature unfinished, not merged/deployed |
-| `../mailcowui-ng-wt/011` | `wt/011` | `5e3c1e89` | Clean; monitoring integrated into main and deployed with an owner-approved staging exception |
+| `../mailcowui-ng-wt/006` | `wt/006` | `d3a669bb` | Integrated and deployed; remaining acceptance/manual cases are documented |
+| `../mailcowui-ng-wt/011` | `wt/011` | `5e3c1e89` | Clean historical monitoring checkpoint; current UI deployment includes it |
 
 The UI worktrees are clean. Temporary worktree branches remain local: do not push them or use
-git stash. There is no rebase in progress. The new policy commit was merged into `wt/011` without
-another rebase. The old `wt/011-rebase-checkpoint-20261019` branch is
+git stash. There is no rebase in progress. UI 006 was rebased once onto `8431c4eb` before final
+integration, then main was fast-forwarded. The old `wt/011-rebase-checkpoint-20261019` branch is
 only a historical partial-rebase checkpoint; do not merge it.
 
 ## API results
@@ -62,7 +64,7 @@ Logs: `a013/resume-performance.log` (original), `resume-composer-install.log`,
 
 T097 (full live mailcow Part C parity) remains open. After the owner's explicit deployment
 authorization, API main through `b3dc2ab` was pushed and deployed to `maildev.feldhost.cz`.
-UI staging is now `5e3c1e89`, deployed with the owner's explicit exception described below.
+UI staging is now `3de1d64a`; its release and the two retained staging exceptions are recorded below.
 
 API 013 host configuration was synchronized before deployment: four additional mounts, five
 environment entries (including `RESTV2_LICENSE_VERIFICATION=false` for FeldHost), mass-mail
@@ -243,12 +245,80 @@ remaining test raced the search debounce and used an absent fixture phrase. Sync
 URL/list transitions with a matching phrase passed in all three projects (3/3). Accessibility in
 both themes, reflow, touch targets and CSP checks remain enabled; no timeout/retry was increased.
 
-T059, T061, T063, T065–T067 and T069 are recorded as implemented. This is not a finished UI 006:
-continue remaining item/download/hostile-content tests, scope/recipient integration, smoke and
-final feature checks. T060, T062 and T064 remain open. Do not repeatedly rebase the unfinished
-worktree. On eventual integration, preserve main's performance-80 and transfer-210-KiB policies
-instead of restoring the older worktree's limits. See its tasks and quickstart; legacy-form
-adjustments at the start of `tasks.md` override older task wording.
+At this earlier checkpoint T059, T061, T063, T065–T067 and T069 were recorded as implemented,
+with item/download/hostile-content coverage, host integration, smoke and final release checks
+still pending. The release continuation below supersedes that local checkpoint. The task file
+remains authoritative for acceptance gaps; its legacy-form adjustments override older wording.
+The performance-80 and transfer-210-KiB policies were preserved during integration.
+
+## UI 006: integrated and deployed on 2026-10-20
+
+UI main through `3de1d64a` is pushed and deployed at **https://maildev.feldhost.cz/ng/**.
+Documentation follow-up `d3a669bb` is pushed and also fast-forwarded into `wt/006`. The release
+includes:
+
+- Quarantine list, filtering/sorting/paging, explicit selection, confirmed single and bulk
+  actions, version conflicts, per-message outcomes and safe retry handling.
+- Item details, inert message text, byte-preserving attachments and `.eml` downloads, bounded
+  previews for very long metadata, and permission-sensitive controls.
+- Mailbox notification fields saved through the existing mailbox Save action, a bulk notification
+  menu and history; mailbox/domain/alias-domain spam scores, policies and rate-limit sections.
+- Quarantine settings, template validation, statistics, and the rate-limit overview/reset flow.
+
+The rebase preserves monitoring's shared plain-text element handling, bounded audit details,
+and reset-bucket behavior. Confirmation paragraphs and notification list items have explicit
+colors in both themes. Host browser tests now scope Save and History to the correct sections.
+
+Final validation is recorded in UI 006's quickstart. The full integration unit run passed
+**3,633 tests in 415 files**, with **85.07% line coverage**. The later final component/budget run
+passes **19 tests**. Earlier integration runs cover **518 distinct selected browser checks**
+with four skips; the final repackaged production build separately passes **259 checks** with
+two viewport-specific skips. The final Docker image passes all **three real-API smoke cases**
+together, covering message bytes/delivery, saved notification/score/policy/rate settings,
+invalid-template rejection and API-matching dev statistics. Type checking, lint, formatting,
+contract, i18n, licenses, configured dependency audit and bundle checks pass. The full unit,
+contract and security checks were not needlessly repeated after packaging/layout-only changes.
+
+The initial integrated measurement exposed a 217,621-byte sign-in transfer and quarantine
+performance 71–73. Direct declarative route entries keep form exports out of the initial shell;
+shared collection controls, form feedback and the four co-loaded feature message files now have
+appropriate lazy bundles. The quarantine notice reserves its loading space, the footer stays
+below the viewport, and collapsed mobile metadata mounts on disclosure. Initial JavaScript is
+**189,635 / 204,800 bytes gzipped**. Final Lighthouse ran nine scenarios three times:
+
+- Sign-in **88/88/88**, accessibility 100, script transfer **208,730 / 215,040 bytes**.
+- Quarantine **80/79/79**, accessibility 100, layout shift **0.001** (initially 0.112). The existing
+  LHCI aggregation passes its performance-80 gate; two individual runs remain at 79.
+- Home, dashboard, relayhosts, mailboxes and DKIM pass their configured assertions.
+- The only failures remain **domains 76/77/78** and **aliases 77/75/74**. Every accessibility
+  and shell-transfer assertion passes. The already authorized maildev staging exception for
+  these two list pages is retained; no threshold or aggregation was changed. Do not describe
+  the full Lighthouse run as green.
+
+The standard deployment script built a clean archive of `3de1d64a`, recreated only `ng-mailcow`,
+and verified compose, container health, HTTP 200 and CSP. API image `b3dc2ab` remains healthy.
+Previous UI image `5e3c1e89` is retained on maildev for rollback. Live public administrator sign-in
+checks pass on mobile Chromium, desktop Chromium and mobile WebKit: visible fields, enabled
+submit, reflow, CSP recorder, no JavaScript errors and API readiness. No live credentials were
+submitted or mailboxes/messages changed. The standalone probe was aligned with the existing
+CSP fixture's WebKit native-control handling and token-aware `username webauthn` autofill;
+its initial helper failures are preserved. No application change was required for them.
+
+Physical-device, VoiceOver/TalkBack, moderated-user and live authenticated parity checks remain
+open, as do the acceptance cases still unchecked in the original task list. This is an
+implemented-feature release, not a claim that every checklist item or UI feature is complete.
+Continue next with `../mailcowui-ng-wt/005` (`9ac9f886`): account/self-service stories beyond the
+saved password-reset/recovery fixes, including the unresolved upstream reset-token logging
+observation AG7. Preserve the shared confirmation, plaintext and host integrations now on main,
+and the performance-80 policy when that older worktree is eventually integrated.
+
+Logs and reports are under `storage/app/restart-2026-10-20/u006/`: `integrated-*`,
+`host-regression.log`, `final-focused-browser.log`, `release-*`, `release-lighthouse-reports/`,
+`deploy-maildev*.log` and `cleanup-smoke.log`. Earlier failing runs and experimental measurements
+are retained for evidence; the failed prefetch and offscreen CSS experiments are not in the
+source. The isolated `u006-smoke` fixture stack and its clone/volumes are removed after validation.
+No test containers remain running; unrelated `crew-*` services and existing dev volumes remain
+untouched.
 
 ## Artifacts and operating rules
 

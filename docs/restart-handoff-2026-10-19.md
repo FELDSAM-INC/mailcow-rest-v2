@@ -84,6 +84,24 @@ checks passed on mobile Chromium, desktop Chromium and mobile WebKit, with no Ja
 errors or horizontal overflow. No live credentials were submitted. UI documentation follow-up
 `dbf920db` is pushed; it does not require another deployment.
 
+### Live reset availability correction (2026-10-20)
+
+The owner's missing-login-link report exposed an omitted deployment check: maildev's public
+self-service capabilities returned `passwordReset.available=false`. Both `PW_RESET_FROM` and
+`PW_RESET_SUBJ` were absent in the shared store. The templates were readable and the existing
+`postfix-mailcow:25` connection answered ready. The missing settings were configured as
+`no-reply@maildev.feldhost.cz` and `Password reset for {{username}}`, retaining the default
+templates and the fragment-token URL. The write used the settings service's optimistic transaction,
+with a `passwordResetNotificationUpdate` audit record naming the SSH deployment operator
+`deployment:root@maildev.feldhost.cz`; no mailbox account was impersonated and no email was sent.
+
+The public capability now returns true. Live mobile Chromium, desktop Chromium and mobile WebKit
+checks confirmed the reset link on both `/ng/sign-in` and `/ng/sign-in/mailbox-user`, navigation to
+the enabled request form, invalid-token handling, CSP, reflow and API readiness. This is a server
+configuration correction; it does not change the deployed UI/API image tags or establish external
+email delivery. Evidence: `u005/configure-maildev-reset.php` and
+`u005/deploy-reset-availability-browser.log` in the artifact directory.
+
 The rest of UI 005 remains open: US5–US12, the complete mailbox self-service section group
 (T024/T036), whole-feature secrets/visibility/parity acceptance and physical-device/screen-reader
 validation. The two new app-password message keys are listed for language review in the feature

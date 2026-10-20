@@ -22,15 +22,16 @@ properties:
     maxItems: 100
     items:
       $ref: './BulkTarget.yaml'
-anyOf:
-  - type: object
-    properties:
-      tlsEnforceInbound:
-        type: boolean
-    required: [tlsEnforceInbound]
-  - type: object
-    properties:
-      tlsEnforceOutbound:
-        type: boolean
-    required: [tlsEnforceOutbound]
+allOf:
+  - anyOf:
+      - type: object
+        properties:
+          tlsEnforceInbound:
+            type: boolean
+        required: [tlsEnforceInbound]
+      - type: object
+        properties:
+          tlsEnforceOutbound:
+            type: boolean
+        required: [tlsEnforceOutbound]
 additionalProperties: false

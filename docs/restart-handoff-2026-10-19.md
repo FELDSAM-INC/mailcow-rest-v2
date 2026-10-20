@@ -4,29 +4,95 @@ The owner asked to continue work in both `mailcow-rest-v2` and `../mailcowui-ng`
 system-restart checkpoint. The first continuation was local. The owner subsequently authorized
 committing, pushing and deploying completed work. The API is deployed, and the owner then
 explicitly requested the monitoring UI deployment despite the recorded Lighthouse failures.
-The API and the later quarantine UI release below are deployed. No subagents were used.
+The API and the later quarantine UI release below are deployed. UI 006 used no subagents;
+the owner then explicitly requested parallel agents for UI 005, and three workers were used.
 
 On 2026-10-20 the owner asked to adjust the roughly 4 KiB sign-in transfer warning and continue
 unfinished features. UI 006's implemented quarantine, spam-policy, notification and rate-limit
 flows are now merged, pushed and deployed as `mailcowui-ng:3de1d64a`. Sign-in transfers 208,730
-script bytes, below the approved 215,040-byte allowance. UI 005 remains unfinished. The current
-table and latest release section supersede the earlier chronological checkpoints below.
+script bytes, below the approved 215,040-byte allowance. The subsequent UI 005 increment delivers
+US1–US4; later account features remain unfinished. The current table and latest release section
+supersede the earlier chronological checkpoints below.
 
 ## Current checkpoints
 
 | Repository/worktree | Branch | Checkpoint | State |
 |---|---|---|---|
-| `mailcow-rest-v2` | `main` | `8ae22afa` plus this handoff update | API `b3dc2ab` remains deployed and healthy; later commits are handoff notes |
+| `mailcow-rest-v2` | `main` | `2e10681` plus this handoff update | API `b3dc2ab` remains deployed and healthy; later commits are handoff notes |
 | `../mailcow-rest-v2-wt/013` | `wt/013` | `67f2762` | Clean; implementation already on API main |
-| `../mailcowui-ng` | `main` | `d3a669bb` | UI `3de1d64a` deployed; documentation-only release notes pushed |
-| `../mailcowui-ng-wt/005` | `wt/005` | `9ac9f886` | Reset/recovery fixes committed; broader account work unfinished |
+| `../mailcowui-ng` | `main` | `dbf920db` | UI `ddf44e59` deployed; documentation-only release notes pushed |
+| `../mailcowui-ng-wt/005` | `wt/005` | `dbf920db` | US1–US4 integrated; US5–US12 and feature-wide/manual acceptance remain open |
 | `../mailcowui-ng-wt/006` | `wt/006` | `d3a669bb` | Integrated and deployed; remaining acceptance/manual cases are documented |
 | `../mailcowui-ng-wt/011` | `wt/011` | `5e3c1e89` | Clean historical monitoring checkpoint; current UI deployment includes it |
 
 The UI worktrees are clean. Temporary worktree branches remain local: do not push them or use
 git stash. There is no rebase in progress. UI 006 was rebased once onto `8431c4eb` before final
 integration, then main was fast-forwarded. The old `wt/011-rebase-checkpoint-20261019` branch is
-only a historical partial-rebase checkpoint; do not merge it.
+only a historical partial-rebase checkpoint; do not merge it. UI 005 was rebased once onto
+`d3a669bb`, then fast-forwarded after its final checks; local worktree branches remain unpushed.
+
+## UI 005: account security, recovery and app passwords
+
+Release `ddf44e59` completes the implemented US1–US4 increment: own and forced password
+changes, second-factor management and forced setup, recovery/reset, and app-password management
+in own/mailbox contexts. App passwords include one-time generated secrets, protocol/status/name
+editing, regeneration, deletion, bulk actions, URL state, version conflicts and read-only domain
+administrator access. The approved D3/D13 legacy form map is preserved.
+
+Independent workers implemented app passwords, exercised the real API, and reviewed security
+lifecycle/reset behavior. Regressions first failed for late secret responses, security-key
+cancellation, context changes during secret generation, silent Yubico errors and invisible dialog
+focus. The fixes keep secrets out of caches/storage and prevent completed requests from displaying
+an old secret on a newly visited mailbox page. The reset page now shows account/expiry, captures
+same-route links, handles every factor's error text, and hides recovery after failed capabilities
+refreshes. AG7 is resolved for generated links: both API default and maildev runtime use
+`/ng/reset-password#token={token}`; legacy query links still need appropriate upstream logging.
+
+Validation:
+
+- **3,861 unit tests / 441 files passed**, **83.83% line coverage**. The first full run collected
+  the focus regression before its source fix and failed only that case; the stable full rerun
+  passed. A later unchanged query move passed another **95 focused unit checks**.
+- **389 integrated browser checks**, **36 app-password checks**, and **12 final focus/navigation
+  checks** passed across mobile Chromium, desktop Chromium and mobile WebKit, without retries.
+  A final **68 checks** passed after moving the shared capability query out of the account barrel.
+- **7 real API smoke tests passed**, followed by **2 focused checks** on the final bundle. Own
+  password, emailed reset with TOTP, forced password, TOTP enrollment/removal, app-password
+  creation/deletion, administrator views and an actual read-only domain-admin API refusal were
+  exercised. Credentials/settings were restored and temporary records removed. Limited fixed
+  password/generatedPassword marker counts were zero in app, web and storage logs. The isolated
+  `u005-smoke` stack and its worktree were removed.
+- Typecheck, lint, formatting, translations, contract consistency, licenses and configured audit
+  pass. Runtime audit has no findings; the existing 21 noncritical development advisories remain.
+  Initial JavaScript: **193,343 / 204,800 bytes gzipped**.
+- Lighthouse collected **10 URLs × 3 runs**: My account **87–90 performance / 100 accessibility**,
+  sign-in **86–87 / 100**, with **213,656 / 215,040 script bytes**. Nine URL assertions pass,
+  including domains under the configured aggregation. **Aliases still fails at 74–77 / required
+  80** under the existing owner-authorized staging exception. The command exits 1; do not call
+  the full gate green. All accessibility checks pass (99–100).
+
+The first Lighthouse attempt found sign-in above the unchanged script-transfer cap at 216,139
+bytes. Collection was stopped early. Sharing the unchanged capability query directly between
+account/auth removed unused account wrappers and password-change code from sign-in. No budget,
+score threshold, network or CPU throttling was relaxed.
+
+The standard deployment script installed **`mailcowui-ng:ddf44e59`** on
+**https://maildev.feldhost.cz/ng/**. Only `ng-mailcow` was recreated; it is healthy, and the public
+URL returns 200 with CSP. API `b3dc2ab` remains healthy (database/schema/Redis/migrations OK).
+Previous UI image `3de1d64a` remains available for rollback. Live sign-in and invalid reset-link
+checks passed on mobile Chromium, desktop Chromium and mobile WebKit, with no JavaScript/CSP
+errors or horizontal overflow. No live credentials were submitted. UI documentation follow-up
+`dbf920db` is pushed; it does not require another deployment.
+
+The rest of UI 005 remains open: US5–US12, the complete mailbox self-service section group
+(T024/T036), whole-feature secrets/visibility/parity acceptance and physical-device/screen-reader
+validation. The two new app-password message keys are listed for language review in the feature
+quickstart. Do not mark the entire feature done. T042/T052/T065/T072–T080 and T149 are verified.
+
+Artifacts: `storage/app/restart-2026-10-20/u005/` (ignored), especially `unit-final-stable.log`,
+`final-integrated-browser.log`, `app-passwords/browser-focus-final.log`,
+`lazy-capabilities-browser.log`, `account-release-smoke.log`, `account-shared-smoke.log`,
+`lighthouse-final.log` and the final deployment logs.
 
 ## API results
 
@@ -187,7 +253,7 @@ T149 (real phones, VoiceOver/TalkBack) and T150 Part D (authenticated live-host 
 open. The earlier six local smoke tests at API `4be8653` remain recorded in the feature quickstart.
 Deployment health and public sign-in checks do not replace these feature-specific checks.
 
-## UI 005: reset and recovery hardening
+## UI 005: reset and recovery hardening (earlier checkpoint)
 
 Commit `9ac9f886` builds on the saved WIP `e71cbef8`:
 

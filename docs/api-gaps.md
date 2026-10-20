@@ -51,3 +51,23 @@ then marks the entry done here. Gaps that are a contract-wide rule are also reco
 | G42 | UI 012 (forms 1:1) | 012 | Legacy renews the secrets of several OAuth2 clients at once (`edit_selected` with `renew_secret` on `tab-config-oauth2.twig`); the contract has no bulk operation for it. | A bulk action `renewSecret` on `POST /oauth2-clients/bulk-actions`, returning each new secret once in its item result. | done (012 FR-066: `renewSecret`, `Oauth2ClientBulkResult`) |
 | G43 | UI 005 (decision D22) | 005 | The legacy filter list sorts by descending numeric ID, but `SieveFilterSort` cannot request ID ordering before pagination. | Add `id` to `SieveFilterSort` for both the global and mailbox-scoped lists; retain the existing API default. | done (005: numeric `sort=id` with either `order`, applied before pagination and within the caller's mailbox scope) |
 | G44 | UI 005 | 005 | Bulk TLS request `anyOf` branches declare only `required`, producing `unknown` client types and failing strict required-property schema checks. | Declare the existing boolean property in each branch, preserving the accepted request bodies. | done (`MailboxMailSettingsBulkActionRequest` branches explicitly type their required TLS field; no runtime or validation behavior change) |
+
+## UI 013 follow-up observations
+
+Recorded during the UI implementation on 2026-10-21, corresponding to O1–O3 in
+`mailcowui-ng/specs/013-system-settings/plan.md`. These observations do not block the current UI.
+
+- **O1 — list payloads: resolved by G17.** Both regex-map and mass-mail lists now return
+  summaries. Regex-map summaries carry `sizeBytes`; only individual map reads carry content.
+  Mass-mail job summaries exclude text and HTML bodies. The original UI planning note about
+  downloading every body on list entry is obsolete for the pinned `dd9a44e` contract.
+- **O2 — parser and restart diagnostics: retained as a future localization observation.**
+  `sieveSyntax.message` and `DovecotRestartOutcome.detail` are free text. The UI quotes the Sieve
+  parser message with the available line information and translates the structured restart
+  outcome instead of displaying its raw detail. Stable diagnostic codes/parameters could improve
+  future localization; arbitrary upstream parser prose cannot be translated reliably by clients.
+- **O3 — generated audit target naming: proposed schema cleanup.** `AuditTarget.type` has an
+  inline enum, which the current bundler exposes as the generic component `type`/generated `Type`.
+  A named `AuditTargetType` component would give generated clients a clearer public name without
+  changing wire values. The UI currently aliases the generated type at its API boundary. This is
+  optional naming work and is not a claim that the schema has already changed.

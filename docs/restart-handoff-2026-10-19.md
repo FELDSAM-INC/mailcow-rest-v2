@@ -18,14 +18,15 @@ supersede the earlier chronological checkpoints below.
 
 | Repository/worktree | Branch | Checkpoint | State |
 |---|---|---|---|
-| `mailcow-rest-v2` | `main` | `2e10681` plus this handoff update | API `b3dc2ab` remains deployed and healthy; later commits are handoff notes |
+| `mailcow-rest-v2` | `main` | `dd9a44e` plus this handoff update | API `dd9a44e` deployed and healthy; Sieve ID sorting and bulk TLS schema corrections included |
 | `../mailcow-rest-v2-wt/013` | `wt/013` | `67f2762` | Clean; implementation already on API main |
 | `../mailcowui-ng` | `main` | `dbf920db` | UI `ddf44e59` deployed; documentation-only release notes pushed |
-| `../mailcowui-ng-wt/005` | `wt/005` | `dbf920db` | US1–US4 integrated; US5–US12 and feature-wide/manual acceptance remain open |
+| `../mailcowui-ng-wt/005` | `wt/005` | `dbf920db` plus coordinated working changes | US5–US12 implementation/validation in progress; three agents active, contract pinned to `dd9a44e` |
 | `../mailcowui-ng-wt/006` | `wt/006` | `d3a669bb` | Integrated and deployed; remaining acceptance/manual cases are documented |
 | `../mailcowui-ng-wt/011` | `wt/011` | `5e3c1e89` | Clean historical monitoring checkpoint; current UI deployment includes it |
 
-The UI worktrees are clean. Temporary worktree branches remain local: do not push them or use
+The UI 005 worktree contains the current coordinated feature work; the other UI worktrees are
+historical checkpoints. Temporary worktree branches remain local: do not push them or use
 git stash. There is no rebase in progress. UI 006 was rebased once onto `8431c4eb` before final
 integration, then main was fast-forwarded. The old `wt/011-rebase-checkpoint-20261019` branch is
 only a historical partial-rebase checkpoint; do not merge it. UI 005 was rebased once onto
@@ -113,6 +114,35 @@ Artifacts: `storage/app/restart-2026-10-20/u005/` (ignored), especially `unit-fi
 `lighthouse-final.log` and the final deployment logs.
 
 ## API results
+
+### UI 005 contract completion (2026-10-20)
+
+API `dd9a44e` is pushed and deployed on maildev, with readiness returning 200 and all health
+checks passing. The previous image is `d58f64c`; `b3dc2ab` is also retained.
+
+- G43 adds numeric `sort=id` to global and mailbox-scoped Sieve lists without changing their
+  default sort. Both new regression tests failed with 422 before the service accepted ID.
+  The complete focused Sieve suite then passed **30 tests, 238 assertions**, with Pint,
+  PHPStan and contract lint passing.
+- G44 makes bulk TLS's existing “at least one TLS field” schema generate the required base
+  fields intersected with the two alternatives. Each branch explicitly types its property,
+  and the alternatives sit inside `allOf`; accepted request bodies are unchanged.
+  **5 bulk TLS tests, 34 assertions** and contract lint pass after the final composition.
+  Generated output was inspected before the final contract pin.
+- The UI 005 pin is `dd9a44ec76b39d6aaaceacbb9512409494a19cdb`; its schema hash is
+  `d7a259a5cda61863deccfa8a98622caaf499a0f2eb81118f0cca63ba6f06edd6`.
+
+Four new isolated real-API smoke tests passed for overview/webmail, temporary aliases,
+recent connections/client setup, and mail-settings changes with restoration. The UI smoke
+sign-in helper now requests an explicit app landing so the seeded webmail-forwarding preference
+does not send these tests to SOGo. No live user credentials were used for these checks.
+
+Artifacts are in `storage/app/restart-2026-10-20/u005/`: `sieve-id-sort-{red,green}.log`,
+`bulk-tls-composition-green.log`, `contract-bump-dd9a44e.log`, `deploy-api-dd9a44e.log`,
+and `next-smoke-rerun.log`. UI 005 browser validation continues against frozen `dist-u005-batch3`;
+its newer features are not deployed yet.
+
+### Earlier complete API verification
 
 The already recovered full suite at implementation commit `67f2762` passed **9,785 tests,
 78,684 assertions, 379/379 operations covered, none pending**, in 31m 10s. Contract lint, Pint

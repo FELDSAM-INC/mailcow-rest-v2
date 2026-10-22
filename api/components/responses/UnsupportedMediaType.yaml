@@ -1,0 +1,8 @@
+description: |
+  A non-empty request body was sent without a JSON content type (type `about:blank`).
+  Send the media type documented by the operation, normally `application/json` or
+  `application/merge-patch+json`. No resource changes are applied.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/Problem.yaml'

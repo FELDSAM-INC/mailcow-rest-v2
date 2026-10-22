@@ -291,10 +291,10 @@ class MailcowConfig
 
     /**
      * The custom imapsync parameter lists (legacy `$IMAPSYNC_OPTIONS`, feature 008 research R7):
-     * `whitelist` (the options a sync job's custom parameters may use) and `blacklist` (exported but
-     * not consulted, as in legacy). A value that is not an object with a `whitelist` list falls
-     * back to upstream 2026-09a's lists; a missing `blacklist` is empty. `showpasswords` is still
-     * part of the result: App\Services\SyncJobs\CustomParametersValidator removes it.
+     * `whitelist` (the options a sync job's custom parameters may use) and `blacklist` (denied even
+     * if also whitelisted). A value that is not an object with a `whitelist` list falls back to
+     * upstream 2026-09a's lists; a missing `blacklist` is empty. The validator additionally removes
+     * immutable unsafe options, including `showpasswords`, from the effective allow-list.
      *
      * @return array{whitelist: list<string>, blacklist: list<string>}
      *

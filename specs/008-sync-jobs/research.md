@@ -1,5 +1,13 @@
 # Research: Sync Jobs
 
+Security update (2026-10-22): R7's legacy option split is supplemented with the actual runner's
+argument boundaries. Alternate plus-prefixed arguments, immutable execution/password-disclosure
+options (including abbreviations), and configured blacklisted options are denied, including when
+sent unchanged. R5's unchanged-value exception applies only to safe stored parameters. Creation,
+active edits, activation and rescheduling enforce the safety check in the service; updates check
+the effective parameters under the row lock. Deactivation and deletion remain available so users
+can disable or remove unsafe legacy jobs. The upstream runner itself is unchanged.
+
 **Feature**: `specs/008-sync-jobs` | **Date**: 2026-10-18 | **Plan**: [plan.md](./plan.md)
 
 This document settles only the decisions that feature 008 adds. Everything shared is decided in

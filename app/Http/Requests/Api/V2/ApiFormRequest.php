@@ -10,6 +10,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\InvokableValidationRule;
 use Illuminate\Validation\Validator as LaravelValidator;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\UnsupportedMediaTypeHttpException;
 
 /**
  * Base of every Form Request (FR-055, R26). A failed validation becomes a `validation-failed`
@@ -39,8 +40,14 @@ abstract class ApiFormRequest extends FormRequest
     {
         $content = (string) $this->getContent();
 
-        if ($content === '' || ! $this->isJson()) {
+        if ($content === '') {
             return;
+        }
+
+        // Services consume the JSON body, so validation must consume that same body. Otherwise
+        // text/plain JSON can bypass optional field rules while still reaching members()/patch().
+        if (! $this->isJson()) {
+            throw new UnsupportedMediaTypeHttpException('The request body must use a JSON content type.');
         }
 
         $decoded = json_decode($content, true);

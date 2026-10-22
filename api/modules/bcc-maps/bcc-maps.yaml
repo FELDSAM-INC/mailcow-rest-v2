@@ -86,6 +86,8 @@ post:
       $ref: '../../components/responses/RoutingForbidden.yaml'
     '409':
       $ref: '../../components/responses/RoutingConflict.yaml'
+    '415':
+      $ref: '../../components/responses/UnsupportedMediaType.yaml'
     '422':
       $ref: '../../components/responses/ValidationFailed.yaml'
     '500':

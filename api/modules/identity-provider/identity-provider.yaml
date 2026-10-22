@@ -79,6 +79,8 @@ put:
       $ref: '../../components/responses/IdentityProviderInUse.yaml'
     '412':
       $ref: '../../components/responses/PreconditionFailed.yaml'
+    '415':
+      $ref: '../../components/responses/UnsupportedMediaType.yaml'
     '422':
       $ref: '../../components/responses/ValidationFailed.yaml'
     '500':
@@ -119,6 +121,8 @@ patch:
       $ref: '../../components/responses/IdentityProviderNotConfigured.yaml'
     '412':
       $ref: '../../components/responses/PreconditionFailed.yaml'
+    '415':
+      $ref: '../../components/responses/UnsupportedMediaType.yaml'
     '422':
       $ref: '../../components/responses/ValidationFailed.yaml'
     '500':

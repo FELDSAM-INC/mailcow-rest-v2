@@ -23,8 +23,12 @@ extension members.
   an unknown `type` by its status code.
 - `about:blank` is used for `400` (malformed request, for example invalid JSON), `404` (unknown
   resource or path, including objects outside the caller's scope), `405` (method not allowed),
-  `409` (conflict described in `detail`), `412` (`If-Match` mismatch) and `500` (unexpected
-  failure).
+  `409` (conflict described in `detail`), `412` (`If-Match` mismatch), `415` (unsupported request
+  body media type) and `500` (unexpected failure).
+- For JSON-body operations, a non-empty body with a non-JSON or missing `Content-Type` is rejected
+  with `415 about:blank` before field validation and resource changes. Use the operation's
+  documented media type (`application/json` or `application/merge-patch+json`). An empty body still
+  follows the operation's required-field rules. Raw uploads retain their documented media types.
 
 ## validation-failed
 

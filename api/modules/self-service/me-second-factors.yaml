@@ -61,6 +61,8 @@ post:
       $ref: '../../components/responses/Unauthorized.yaml'
     '403':
       $ref: '../../components/responses/SelfServiceForbidden.yaml'
+    '415':
+      $ref: '../../components/responses/UnsupportedMediaType.yaml'
     '422':
       $ref: '../../components/responses/ValidationFailed.yaml'
     '429':

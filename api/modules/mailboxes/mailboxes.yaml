@@ -118,6 +118,8 @@ post:
       $ref: '../../components/responses/MailboxForbidden.yaml'
     '409':
       $ref: '../../components/responses/MailboxConflict.yaml'
+    '415':
+      $ref: '../../components/responses/UnsupportedMediaType.yaml'
     '422':
       $ref: '../../components/responses/ValidationFailed.yaml'
     '500':

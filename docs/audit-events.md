@@ -1056,7 +1056,7 @@ a provider token.
 | Key | Type | Meaning | Present |
 |---|---|---|---|
 | `identityProvider` | string | The provider type of the session. | always |
-| `reason` | string | `providerRefused` (the renewal or the user details were refused), `providerUnavailable` (the provider could not be reached), `emailChanged` (the renewed details carry another e-mail address), `configurationChanged` (the configuration was removed, changed to another type or is incomplete) or `authSourceChanged` (the mailbox no longer authenticates against the provider). | always |
+| `reason` | string | `providerRefused` (the renewal or the user details were refused), `providerUnavailable` (the provider could not be reached), `providerLinkMissing` (the session's encrypted provider link is missing or unreadable), `emailChanged` (the renewed details carry another e-mail address), `configurationChanged` (the configuration was removed, changed to another type or is incomplete) or `authSourceChanged` (the mailbox no longer authenticates against the provider). | always |
 
 ## oauth2ClientCreation
 

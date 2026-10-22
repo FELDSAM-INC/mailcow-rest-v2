@@ -35,6 +35,7 @@ class IdentityProviderSessionGuard
         'emailChanged' => 'providerRefused',
         'configurationChanged' => 'singleSignOnNotAvailable',
         'authSourceChanged' => 'mailboxNotLinked',
+        'providerLinkMissing' => 'identityProviderUnavailable',
     ];
 
     public function __construct(
@@ -67,14 +68,18 @@ class IdentityProviderSessionGuard
         $link = $linkId === null ? null : $this->links->get($linkId);
 
         if ($linkId === null || $link === null) {
-            return;
+            $this->end($request, $principal, 'providerLinkMissing');
         }
 
         if ($link['refreshToken'] !== null && $this->due($link)) {
             Cache::lock('lock:sso-link:'.$linkId, 10)->block(10, function () use ($request, $principal, $config, $linkId): void {
                 $link = $this->links->get($linkId);
 
-                if ($link === null || $link['refreshToken'] === null || ! $this->due($link)) {
+                if ($link === null) {
+                    $this->end($request, $principal, 'providerLinkMissing');
+                }
+
+                if ($link['refreshToken'] === null || ! $this->due($link)) {
                     return;
                 }
 

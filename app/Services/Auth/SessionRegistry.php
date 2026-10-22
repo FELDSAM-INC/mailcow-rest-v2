@@ -15,8 +15,9 @@ use SessionHandlerInterface;
  * Every signed-in session has a stable handle (a ULID in its data, `restv2.handle`) that survives
  * identifier renewals. `restv2:account-sessions:<accountKind>:<username>` is a Redis hash
  * `handle → current session ID`, written at sign-in and after every renewal, refreshed with the
- * session's idle lifetime on every request, and pruned of sessions that no longer exist when it is
- * read. Ending a session also ends what is tied to it (SessionEndListener, the webmail hand-off).
+ * session's idle lifetime on every request. This mapping is authoritative: a stale in-flight
+ * request may save a deleted payload, but cannot recreate a revoked mapping. Ending a session
+ * also ends what is tied to it (SessionEndListener, the webmail hand-off).
  */
 class SessionRegistry
 {
@@ -29,7 +30,7 @@ class SessionRegistry
     ) {}
 
     /**
-     * Records the session's current identifier under its handle and refreshes the entry's lifetime.
+     * Registers a newly authenticated session. Existing sessions must use refresh() or move().
      */
     public function register(AccountKind $kind, string $username, string $handle, string $sessionId): void
     {
@@ -48,6 +49,45 @@ class SessionRegistry
     public function forget(AccountKind $kind, string $username, string $handle): void
     {
         $this->redis->connection('restv2')->command('hdel', [self::key($kind, $username), $handle]);
+    }
+
+    public function refresh(AccountKind $kind, string $username, string $handle, string $sessionId): bool
+    {
+        return $this->move($kind, $username, $handle, $sessionId, $sessionId);
+    }
+
+    /**
+     * Atomically moves an existing mapping, or refreshes it when the identifier is unchanged.
+     * A concurrent revocation or renewal must never be overwritten by a stale request.
+     */
+    public function move(AccountKind $kind, string $username, string $handle, string $previousId, string $sessionId, ?string $newUsername = null): bool
+    {
+        $script = <<<'LUA'
+            if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[2] then
+              return 0
+            end
+            if KEYS[1] ~= KEYS[2] then
+              redis.call('HDEL', KEYS[1], ARGV[1])
+            end
+            redis.call('HSET', KEYS[2], ARGV[1], ARGV[3])
+            redis.call('EXPIRE', KEYS[2], ARGV[4])
+            return 1
+            LUA;
+        $lifetime = $this->config->sessionLifetime();
+        $updated = $this->redis->connection('restv2')->command('eval', [$script, [
+            self::key($kind, $username), self::key($kind, $newUsername ?? $username),
+            $handle, $previousId, $sessionId, $lifetime,
+        ], 2]);
+
+        if ((int) $updated !== 1) {
+            return false;
+        }
+
+        foreach ($this->listeners() as $listener) {
+            $listener->sessionTouched($handle, $lifetime);
+        }
+
+        return true;
     }
 
     /**
@@ -78,15 +118,27 @@ class SessionRegistry
     {
         $key = self::key($kind, $username);
         $connection = $this->redis->connection('restv2');
-        $entries = $connection->command('hgetall', [$key]);
+        // Remove authorization before touching payloads. A concurrent renewal either precedes
+        // this operation and is included, or follows it and fails its compare-and-swap.
+        $script = <<<'LUA'
+            local entries = redis.call('HGETALL', KEYS[1])
+            local ended = {}
+            for i = 1, #entries, 2 do
+              if entries[i] ~= ARGV[1] then
+                redis.call('HDEL', KEYS[1], entries[i])
+                table.insert(ended, entries[i])
+                table.insert(ended, entries[i + 1])
+              end
+            end
+            return ended
+            LUA;
+        $entries = $connection->command('eval', [$script, [$key, $exceptHandle ?? ''], 1]);
+        $entries = is_array($entries) ? array_values($entries) : [];
         $ended = 0;
 
-        foreach (is_array($entries) ? $entries : [] as $handle => $sessionId) {
-            $handle = (string) $handle;
-
-            if ($handle === $exceptHandle) {
-                continue;
-            }
+        for ($i = 0; $i < count($entries); $i += 2) {
+            $handle = (string) $entries[$i];
+            $sessionId = (string) $entries[$i + 1];
 
             if ($this->exists((string) $sessionId)) {
                 $this->handler()->destroy((string) $sessionId);
@@ -94,7 +146,6 @@ class SessionRegistry
             }
 
             $this->ended($handle);
-            $connection->command('hdel', [$key, $handle]);
         }
 
         return $ended;

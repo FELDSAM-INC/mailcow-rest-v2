@@ -65,6 +65,8 @@ post:
       $ref: '../../components/responses/SelfServiceForbidden.yaml'
     '404':
       $ref: '../../components/responses/NotFound.yaml'
+    '415':
+      $ref: '../../components/responses/UnsupportedMediaType.yaml'
     '422':
       $ref: '../../components/responses/ValidationFailed.yaml'
     '500':

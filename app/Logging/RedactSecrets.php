@@ -2,8 +2,10 @@
 
 namespace App\Logging;
 
+use Illuminate\Database\QueryException;
 use Monolog\LogRecord;
 use Monolog\Processor\ProcessorInterface;
+use Throwable;
 
 /**
  * Removes secrets from the log context (FR-050, R24): every key, at any depth, whose name matches
@@ -19,7 +21,30 @@ class RedactSecrets implements ProcessorInterface
 
     public function __invoke(LogRecord $record): LogRecord
     {
-        return $record->with(context: $this->redact($record->context));
+        return $record->with(
+            message: $this->containsQueryFailure($record->context) || $this->containsQueryFailure($record->extra) ? 'Database query failed.' : $record->message,
+            context: $this->redact($record->context),
+            extra: $this->redact($record->extra),
+        );
+    }
+
+    private function containsQueryFailure(mixed $value): bool
+    {
+        if ($value instanceof Throwable) {
+            do {
+                if ($value instanceof QueryException) {
+                    return true;
+                }
+            } while (($value = $value->getPrevious()) !== null);
+        } elseif (is_array($value)) {
+            foreach ($value as $entry) {
+                if ($this->containsQueryFailure($entry)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -31,6 +56,10 @@ class RedactSecrets implements ProcessorInterface
         foreach ($values as $key => $value) {
             if (is_string($key) && preg_match(self::PATTERN, $key) === 1) {
                 unset($values[$key]);
+            } elseif ($value instanceof Throwable && $this->containsQueryFailure($value)) {
+                // SQL, bindings, PDO messages and previous-exception traces can all contain
+                // credentials. Keep the diagnostic location and type, never the exception object.
+                $values[$key] = ['class' => $value::class, 'code' => $value->getCode(), 'file' => $value->getFile(), 'line' => $value->getLine()];
             } elseif (is_array($value)) {
                 $values[$key] = $this->redact($value);
             }

@@ -287,7 +287,11 @@ Each entry has a **Decision**, its **Rationale** and the **Alternatives consider
     only the local checks run (FR-026).
   - **Ending**: `SessionManager::end()`, delete the link, audit `identityProviderSessionEnd`
     (`details.reason`: `providerRefused`, `providerUnavailable`, `emailChanged`,
-    `configurationChanged`, `authSourceChanged`), answer `401 identity-provider-session-ended`.
+    `configurationChanged`, `authSourceChanged`, `providerLinkMissing`), answer `401 identity-provider-session-ended`.
+  - **Security hardening (2026-10-22)**: a missing or unreadable provider link ends the session
+    rather than disabling renewal. This is distinct from a valid stored link with no refresh
+    token, whose existing local-check-only behavior is preserved. Browser-only heartbeat requests
+    refresh the stored link's idle lifetime with the browser session without contacting the IdP.
   - `GET /session`, `DELETE /session` and public routes skip the guard, so a sign-out never
     depends on the provider and `GET /session` keeps 001's "never fails" rule.
 - **Rationale**: Legacy refreshes on every page load of the user area; a 5-minute interval keeps the

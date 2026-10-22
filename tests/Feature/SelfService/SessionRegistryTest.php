@@ -139,4 +139,73 @@ class SessionRegistryTest extends TestCase
         $this->assertGreaterThan(7000, $ttl);
         $this->assertLessThanOrEqual(7200, $ttl);
     }
+
+    public function test_a_request_loaded_before_revocation_cannot_restore_its_session(): void
+    {
+        $this->mailcow()->mailboxWithDomain('anna@example.org');
+        $sessionId = $this->signInAs('anna@example.org', Role::MailboxUser);
+        $pending = $this->loadedSession($sessionId);
+
+        $this->registry()->endAll(AccountKind::Mailbox, 'anna@example.org');
+        // Model StartSession saving a request that loaded its data before the revocation.
+        $pending->save();
+
+        $this->useSessionCookie($sessionId);
+        $this->getJson('/api/v2/me')->assertUnauthorized();
+        $this->assertSame([], $this->entries('mailbox', 'anna@example.org'));
+    }
+
+    public function test_a_request_loaded_before_sign_out_cannot_restore_its_session(): void
+    {
+        $this->mailcow()->mailboxWithDomain('anna@example.org');
+        $sessionId = $this->signInAs('anna@example.org', Role::MailboxUser);
+        $pending = $this->loadedSession($sessionId);
+
+        $this->deleteJson('/api/v2/session', [], ['X-CSRF-Token' => $this->csrfToken()])->assertNoContent();
+        $pending->save();
+
+        $this->useSessionCookie($sessionId);
+        $this->getJson('/api/v2/me')->assertUnauthorized();
+        $this->assertSame([], $this->entries('mailbox', 'anna@example.org'));
+    }
+
+    public function test_a_renewal_loaded_before_revocation_cannot_register_itself_again(): void
+    {
+        $this->mailcow()->mailboxWithDomain('anna@example.org');
+        $sessionId = $this->signInAs('anna@example.org', Role::MailboxUser);
+        $pending = $this->loadedSession($sessionId);
+
+        $this->registry()->endAll(AccountKind::Mailbox, 'anna@example.org');
+        $this->app->make(SessionManager::class)->renew($pending);
+        $pending->save();
+
+        $this->useSessionCookie($pending->getId());
+        $this->getJson('/api/v2/me')->assertUnauthorized();
+        $this->assertSame([], $this->entries('mailbox', 'anna@example.org'));
+    }
+
+    public function test_a_stale_identifier_cannot_replace_or_end_its_renewed_session(): void
+    {
+        $this->mailcow()->mailboxWithDomain('anna@example.org');
+        $sessionId = $this->signInAs('anna@example.org', Role::MailboxUser);
+        $pending = $this->loadedSession($sessionId);
+        $renewed = $this->loadedSession($sessionId);
+        $this->app->make(SessionManager::class)->renew($renewed);
+        $renewed->save();
+        $pending->save();
+
+        $this->useSessionCookie($sessionId);
+        $this->getJson('/api/v2/me')->assertUnauthorized();
+        $this->useSessionCookie($renewed->getId());
+        $this->getJson('/api/v2/me')->assertOk();
+        $this->assertSame([$this->handleOf($renewed->getId()) => $renewed->getId()], $this->entries('mailbox', 'anna@example.org'));
+    }
+
+    private function loadedSession(string $sessionId): Store
+    {
+        $store = new Store($this->sessionCookieName(), $this->app['session']->driver()->getHandler(), $sessionId, 'json');
+        $store->start();
+
+        return $store;
+    }
 }

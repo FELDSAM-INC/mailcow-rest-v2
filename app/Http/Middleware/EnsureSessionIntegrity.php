@@ -41,6 +41,14 @@ class EnsureSessionIntegrity
         $boundUserAgent = $this->sessions->boundUserAgentHash($session);
         $principal = $this->sessions->principal($session);
 
+        if ($principal !== null && ! $this->sessions->register($session)) {
+            // A delayed save may restore data that has been revoked or superseded. Do not end
+            // the shared handle here: a newer valid identifier may already own it.
+            $session->invalidate();
+            RequestContext::setLiveSession($request, false);
+            $principal = null;
+        }
+
         $expired = $lastActivity !== null && CarbonImmutable::now()->getTimestamp() - $lastActivity > $this->config->sessionLifetime();
         $otherAgent = $boundUserAgent !== null && ! hash_equals($boundUserAgent, SessionManager::userAgentHash($request->userAgent()));
 
@@ -53,7 +61,6 @@ class EnsureSessionIntegrity
         $this->sessions->touch($session);
 
         if ($principal !== null) {
-            $this->sessions->register($session);
             RequestContext::setPrincipal($request, $principal);
         }
 

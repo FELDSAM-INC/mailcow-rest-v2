@@ -77,6 +77,8 @@ post:
       $ref: '../../components/responses/SignInRejected.yaml'
     '403':
       $ref: '../../components/responses/SignInForbidden.yaml'
+    '415':
+      $ref: '../../components/responses/UnsupportedMediaType.yaml'
     '422':
       $ref: '../../components/responses/ValidationFailed.yaml'
     '429':

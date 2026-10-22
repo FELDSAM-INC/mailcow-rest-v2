@@ -6,6 +6,7 @@ use App\Auth\Role;
 use App\Clients\Yubico\YubicoOtpVerifier;
 use App\Clients\Yubico\YubicoVerificationResult;
 use App\Support\Hashing\LegacyPasswordVerifier;
+use Illuminate\Session\Store;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Testing\TestResponse;
@@ -86,6 +87,25 @@ class PasswordResetCompletionTest extends TestCase
         $this->forgetCookies();
         $this->passwordSignIn('anna@example.org', self::NEW_PASSWORD)->assertCreated()->assertJsonPath('data.state', 'active');
         $this->complete()->assertStatus(400)->assertJsonPath('type', '/api/v2/problems/invalid-reset-token');
+    }
+
+    public function test_a_delayed_request_cannot_restore_a_session_ended_by_a_password_reset(): void
+    {
+        $this->mailcow()->mailboxWithDomain('anna@example.org');
+        $sessionId = $this->signInAs('anna@example.org', Role::MailboxUser);
+        $pending = new Store($this->sessionCookieName(), $this->app['session']->driver()->getHandler(), $sessionId, 'json');
+        $pending->start();
+        $this->forgetCookies();
+        $this->mailcow()->resetToken('anna@example.org', self::TOKEN);
+
+        $this->complete()->assertOk();
+        $pending->save();
+
+        $this->useSessionCookie($sessionId);
+        $this->getJson('/api/v2/me')->assertUnauthorized();
+        $this->forgetCookies();
+        $this->passwordSignIn('anna@example.org', self::NEW_PASSWORD)->assertCreated();
+        $this->getJson('/api/v2/me')->assertOk();
     }
 
     public function test_a_totp_account_needs_a_valid_code(): void

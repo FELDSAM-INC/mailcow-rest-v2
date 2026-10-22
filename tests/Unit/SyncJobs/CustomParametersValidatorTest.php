@@ -15,8 +15,8 @@ require_once __DIR__.'/../../fixtures/legacy/syncjob_validation.php';
 /**
  * Feature 008 T031 (research R7, FR-006, FR-019, SC-004): custom imapsync parameters are checked
  * exactly as legacy's mailbox('add', 'syncjob') checks them, against the upstream allow-list, with
- * one hardening: `showpasswords` is always refused. Every bad option is reported, in order and
- * once. The server setting that restricts custom parameters to administrators refuses any changed
+ * additional safety checks for runner argument boundaries and immutable unsafe options. The
+ * server setting that restricts custom parameters to administrators refuses any changed
  * value of another role with `customParamsNotPermitted`.
  */
 class CustomParametersValidatorTest extends TestCase
@@ -60,6 +60,28 @@ class CustomParametersValidatorTest extends TestCase
     private function validator(): CustomParametersValidator
     {
         return $this->app->make(CustomParametersValidator::class);
+    }
+
+    public function test_alternate_option_prefixes_in_runner_arguments_are_refused_for_every_role(): void
+    {
+        foreach ([self::user(), self::domainAdmin(), self::admin()] as $caller) {
+            foreach (['--folder=INBOX +debug', '--folder=INBOX  +showpasswords', '--folder=INBOX +pipemess=unused', '--folder=INBOX +maxsize=1'] as $value) {
+                $this->assertNotEmpty($this->validator()->violations($value, null, $caller, true));
+                $this->assertNotEmpty($this->validator()->violations($value, $value, $caller, false));
+            }
+            $this->assertSame([], $this->validator()->violations('--folder=INBOX+archive', null, $caller, true));
+        }
+    }
+
+    public function test_unsafe_options_cannot_be_allowed_by_configuration_or_unchanged_storage(): void
+    {
+        config(['restv2.vars_overrides.IMAPSYNC_OPTIONS' => '{"whitelist":["folder","pipemess","regexmess","showpasswords"],"blacklist":[]}']);
+        $this->app->forgetInstance(MailcowConfig::class);
+        $this->assertSame(['folder'], $this->validator()->allowedOptions());
+        foreach (['--pipemess=unused', '--regexmess=unused', '--showpasswords', '--showpass', '--pipeme=unused'] as $value) {
+            $this->assertNotEmpty($this->validator()->violations($value, null, self::admin(), true));
+            $this->assertNotEmpty($this->validator()->violations($value, $value, self::admin(), false));
+        }
     }
 
     #[DataProvider('corpus')]

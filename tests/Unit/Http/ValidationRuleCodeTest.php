@@ -178,6 +178,27 @@ class ValidationRuleCodeTest extends TestCase
         $this->assertViolation($this->errors([], '/api/v2/__testing/validation-body'), 'body', 'required');
     }
 
+    public function test_non_json_media_types_cannot_bypass_optional_json_field_validation(): void
+    {
+        foreach (['text/plain', 'application/x-www-form-urlencoded', 'application/octet-stream', ''] as $contentType) {
+            $this->call('POST', '/api/v2/__testing/validation-body', [], [], [], [
+                'CONTENT_TYPE' => $contentType,
+                'HTTP_ACCEPT' => 'application/json',
+            ], '{"theme":123}')->assertStatus(415);
+        }
+
+        foreach (['application/json', 'application/merge-patch+json'] as $contentType) {
+            $this->call('POST', '/api/v2/__testing/validation-body', [], [], [], [
+                'CONTENT_TYPE' => $contentType,
+                'HTTP_ACCEPT' => 'application/json',
+            ], '{"theme":123}')->assertStatus(422);
+            $this->call('POST', '/api/v2/__testing/validation-body', [], [], [], [
+                'CONTENT_TYPE' => $contentType,
+                'HTTP_ACCEPT' => 'application/json',
+            ], '{"theme":"dark"}')->assertNoContent();
+        }
+    }
+
     public function test_a_valid_request_passes(): void
     {
         $this->postJson('/api/v2/__testing/validation', [

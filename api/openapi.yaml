@@ -21,6 +21,9 @@ info:
       `204`. Non-CRUD actions are sub-resources (for example `POST /api-keys/{apiKeyId}/revocation`)
       and return `200` with the affected resource or the ceremony data.
     - `PATCH` takes JSON Merge Patch (RFC 7396, `application/merge-patch+json`).
+    - Operations with JSON request bodies require a JSON `Content-Type` for every non-empty
+      body. A non-JSON or missing content type answers `415` before field validation or resource
+      changes. Raw uploads use the media types documented by their operation.
     - Mutable resources carry a version tag: a strong ETag over their stored settings, never over
       usage data. A single read returns it in the `ETag` header, and every representation,
       including each list entry, carries the same value in `etag`. Writes accept `If-Match` and
@@ -35,7 +38,7 @@ info:
     as HTML by `GET /problems/{problemType}`. Compare `type` as an exact string. Other problems
     use `about:blank` and are identified by their status (`400` malformed request, `404` unknown
     resource or path, `405` method not allowed, `409` conflict described in `detail`, `412`
-    precondition failed, `500` unexpected failure).
+    precondition failed, `415` unsupported request body media type, `500` unexpected failure).
 
     Errors are never localised: the API ignores `Accept-Language`. `title` and `detail` are
     English and meant for logs and scripts. A validation problem (`422`) carries an `errors` map

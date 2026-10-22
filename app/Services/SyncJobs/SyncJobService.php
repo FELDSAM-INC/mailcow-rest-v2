@@ -4,6 +4,7 @@ namespace App\Services\SyncJobs;
 
 use App\Audit\AuditEventType;
 use App\Auth\Principal;
+use App\Exceptions\ValidationProblemException;
 use App\Http\Resources\Api\V2\SyncJobResource;
 use App\Models\Mailcow\SyncJob;
 use App\Services\Audit\AuditLogger;
@@ -67,6 +68,7 @@ class SyncJobService
         $values = array_merge(SyncJobDefaults::VALUES, array_intersect_key($members, SyncJobDefaults::VALUES));
         $flag = fn (string $member): int => $values[$member] === true ? 1 : 0;
         $customParameters = trim((string) $values['customParameters']);
+        $this->assertSafeParameters($customParameters);
         $subfolder = (string) $values['destinationSubfolder'];
 
         // Legacy's INSERT column list and order (functions.mailbox.inc.php, mailbox('add', 'syncjob')).
@@ -134,6 +136,10 @@ class SyncJobService
             $before = SyncJobAuditDetails::configuration($job);
             $columns = self::changedColumns($job, $patch);
 
+            if ((int) ($columns['active'] ?? $job->active) !== 0) {
+                $this->assertSafeParameters((string) ($columns['custom_params'] ?? $job->custom_params));
+            }
+
             if ($columns !== []) {
                 DB::table('imapsync')->where('id', $id)->update($columns);
             }
@@ -165,6 +171,7 @@ class SyncJobService
     {
         return DB::transaction(function () use ($principal, $id, $bulkRequestId): SyncJob {
             $job = $this->locked($principal, $id, null);
+            $this->assertSafeParameters((string) $job->custom_params);
             $previous = SyncJobResource::runStatus($job, false);
 
             DB::table('imapsync')->where('id', $id)->update(['last_run' => null, 'success' => null]);
@@ -212,6 +219,14 @@ class SyncJobService
     private static function load(int $id): SyncJob
     {
         return SyncJob::query()->select(SyncJobQuery::columns())->whereKey($id)->firstOrFail();
+    }
+
+    private function assertSafeParameters(string $value): void
+    {
+        $violations = app(CustomParametersValidator::class)->safetyViolations($value);
+        if ($violations !== []) {
+            throw new ValidationProblemException(['customParameters' => $violations]);
+        }
     }
 
     /**

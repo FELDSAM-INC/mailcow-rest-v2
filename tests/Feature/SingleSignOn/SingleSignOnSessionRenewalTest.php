@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\SingleSignOn;
 
+use App\Services\Auth\SessionManager;
 use App\Services\IdentityProvider\SsoLinkStore;
 use Carbon\CarbonImmutable;
+use Illuminate\Session\Store;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Tests\Support\IdentityProvider\FakeOidcProvider;
@@ -175,6 +177,50 @@ class SingleSignOnSessionRenewalTest extends TestCase
         $this->getJson('/api/v2/session')->assertOk()->assertJsonPath('data.state', 'active');
         $this->deleteJson('/api/v2/session', [], ['X-CSRF-Token' => $this->csrfToken()])->assertNoContent();
 
+        $this->idp->assertSentCount('token:refresh_token', 0);
+    }
+
+    public function test_a_missing_provider_link_ends_the_session_without_contacting_the_provider(): void
+    {
+        $this->signIn();
+        Redis::connection('mailcow')->del($this->linkKey());
+
+        $this->assertEnded('providerLinkMissing');
+        $this->idp->assertSentCount('token:refresh_token', 0);
+    }
+
+    public function test_browser_heartbeats_keep_the_provider_link_alive_without_renewing_tokens(): void
+    {
+        $this->signIn();
+        $key = $this->linkKey();
+        Redis::connection('mailcow')->expire($key, 5);
+
+        $this->getJson('/api/v2/session')->assertOk()->assertJsonPath('data.state', 'active');
+
+        $this->assertGreaterThan(7000, (int) Redis::connection('mailcow')->ttl($key));
+        $this->idp->assertSentCount('token:refresh_token', 0);
+    }
+
+    public function test_a_single_sign_on_session_without_a_link_identifier_is_refused(): void
+    {
+        $this->signIn();
+        $sessionId = (string) $this->sessionCookie();
+        $store = new Store($this->sessionCookieName(), $this->app['session']->driver()->getHandler(), $sessionId, 'json');
+        $store->start();
+        $store->forget(SessionManager::PRINCIPAL.'.ssoLinkId');
+        $store->save();
+
+        $this->getJson('/api/v2/me')->assertUnauthorized()->assertJsonPath('type', '/api/v2/problems/identity-provider-session-ended');
+        $this->getJson('/api/v2/session')->assertOk()->assertJsonPath('data.state', 'anonymous');
+        $this->idp->assertSentCount('token:refresh_token', 0);
+    }
+
+    public function test_an_unreadable_provider_link_ends_the_session(): void
+    {
+        $this->signIn();
+        Redis::connection('mailcow')->set($this->linkKey(), 'unreadable-test-link');
+
+        $this->assertEnded('providerLinkMissing');
         $this->idp->assertSentCount('token:refresh_token', 0);
     }
 }

@@ -12,7 +12,7 @@ post:
 
     Rescheduling changes only the run status, so it neither requires nor checks `If-Match` and does
     not change the version tag. Audited. Refusals: `403` (no sync-jobs permission, or a read-only
-    key) and `404` (unknown or out of scope).
+    key), `404` (unknown or out of scope), and `422` (unsafe stored custom parameters).
   security:
     - sessionCookie: []
       csrfToken: []
@@ -26,5 +26,7 @@ post:
       $ref: '../../components/responses/SyncJobForbidden.yaml'
     '404':
       $ref: '../../components/responses/NotFound.yaml'
+    '422':
+      $ref: '../../components/responses/SyncJobValidationFailed.yaml'
     '500':
       $ref: '../../components/responses/InternalError.yaml'

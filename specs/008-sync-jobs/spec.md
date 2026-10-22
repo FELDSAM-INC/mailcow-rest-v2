@@ -596,8 +596,12 @@ time, source address and changed attributes, and that no record contains the rem
   a space (rule code `optionContainsSpace`, with the token as parameter). Every option on the legacy
   blacklist (`skipmess`, `pipemess`, `regexmess`, `regexflag`, `regextrans2`, `maxlinelengthcmd`,
   `delete2foldersonly`, `delete2foldersbutnot`) is absent from the allow-list and is therefore
-  refused. In addition, `showpasswords` MUST be refused even if the configured allow-list contains
-  it, so that the remote password can never be written into the run log (**Deviation**, hardening).
+  refused. These options and `showpasswords` MUST remain refused even if the configured allow-list
+  contains them. The configured blacklist also takes precedence over the allow-list. Actual runner
+  arguments MUST be checked for alternate plus-prefixed options and abbreviations of denied options,
+  including unchanged stored values. Active edits, activation and rescheduling MUST recheck the
+  effective stored parameters under the row lock; deactivation and deletion remain available.
+  These safety checks override the unchanged-value exception (**Deviation**, hardening).
   Every refusal MUST be a field validation error on the custom-parameter field. The server setting
   of FR-006 MAY further restrict who may set custom parameters.
 

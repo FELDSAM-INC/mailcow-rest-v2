@@ -61,4 +61,12 @@ location ^~ /ng/ {
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_pass $ng_upstream;
+
+    # Credentials may arrive in a callback/query URL. The inner UI container's log settings
+    # cannot redact this outer proxy's access log. Match Vue's case-insensitive, optional-slash routes.
+    location ~* ^/ng/(?:reset-password|sso/return)/?$ {
+        set $ng_upstream http://ng-mailcow:8080;
+        proxy_pass $ng_upstream;
+        access_log off;
+    }
 }

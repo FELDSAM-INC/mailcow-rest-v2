@@ -189,10 +189,11 @@ class SessionManager
      */
     public function startImpersonation(Session $session, array $impersonation): void
     {
+        $previousId = $session->getId();
         $session->put(self::IMPERSONATION, $impersonation);
         $session->migrate(true);
         $session->regenerateToken();
-        $this->register($session);
+        $this->moveRegistration($session, $previousId);
     }
 
     /**
@@ -202,10 +203,11 @@ class SessionManager
      */
     public function endImpersonation(Session $session): void
     {
+        $previousId = $session->getId();
         $session->forget(self::IMPERSONATION);
         $session->migrate(true);
         $session->regenerateToken();
-        $this->register($session);
+        $this->moveRegistration($session, $previousId);
     }
 
     /**
@@ -298,9 +300,10 @@ class SessionManager
             // Feature 007 (FR-036): the account's raw creation time, compared on every request.
             'accountCreatedAt' => $principal->accountCreatedAt ?? $this->accounts()->createdAt($principal->accountKind, $principal->username),
         ], fn (mixed $value): bool => $value !== null));
-        $session->put(self::HANDLE, (string) Str::ulid());
+        $handle = (string) Str::ulid();
+        $session->put(self::HANDLE, $handle);
         $this->touch($session);
-        $this->register($session);
+        $this->registry->register($principal->accountKind, $principal->username, $handle, $session->getId());
     }
 
     /**
@@ -311,18 +314,12 @@ class SessionManager
     public function rebindPrincipal(Session $session, string $newUsername): void
     {
         $principal = $this->principal($session);
-        $handle = $this->handle($session);
-
         if ($principal === null) {
             return;
         }
 
-        if ($handle !== null) {
-            $this->registry->forget($principal->accountKind, $principal->username, $handle);
-        }
-
         $session->put(self::PRINCIPAL.'.username', $newUsername);
-        $this->register($session);
+        $this->moveRegistration($session, $session->getId(), $principal->username);
     }
 
     /**
@@ -331,8 +328,9 @@ class SessionManager
      */
     public function renew(Session $session): void
     {
+        $previousId = $session->getId();
         $session->migrate(true);
-        $this->register($session);
+        $this->moveRegistration($session, $previousId);
     }
 
     /**
@@ -356,26 +354,44 @@ class SessionManager
     }
 
     /**
-     * Records the signed-in session in the account's registry entry, under its handle (one is
-     * given to a session signed in before feature 005), and refreshes the entry's lifetime. Called
-     * on every request of a signed-in session.
+     * Refreshes an existing authorization. Missing or superseded mappings require a new sign-in;
+     * request middleware must not recreate them from a potentially stale session payload.
      */
-    public function register(Session $session): void
+    public function register(Session $session): bool
     {
         $principal = $this->principal($session);
 
-        if ($principal === null) {
-            return;
-        }
-
         $handle = $this->handle($session);
 
-        if ($handle === null) {
-            $handle = (string) Str::ulid();
-            $session->put(self::HANDLE, $handle);
+        if ($principal === null || $handle === null || ! $this->registry->refresh($principal->accountKind, $principal->username, $handle, $session->getId())) {
+            return false;
         }
 
-        $this->registry->register($principal->accountKind, $principal->username, $handle, $session->getId());
+        // Browser-only heartbeat routes also renew the provider link's idle lifetime, without
+        // contacting the provider. Protected routes still verify the link and refresh tokens.
+        if ($principal->ssoLinkId !== null) {
+            app(SsoLinkStore::class)->touch($principal->ssoLinkId);
+        }
+
+        return true;
+    }
+
+    private function moveRegistration(Session $session, string $previousId, ?string $previousUsername = null): void
+    {
+        $principal = $this->principal($session);
+        $handle = $this->handle($session);
+
+        if ($principal === null || $handle === null || ! $this->registry->move(
+            $principal->accountKind,
+            $previousUsername ?? $principal->username,
+            $handle,
+            $previousId,
+            $session->getId(),
+            $principal->username,
+        )) {
+            // Discard only this stale request, not a newer session sharing the stable handle.
+            $session->invalidate();
+        }
     }
 
     /**

@@ -87,6 +87,13 @@ feature did not deliver a piece, the 005 Foundational phase creates it at the na
   - A password change by the account ends its other sessions unless `endOtherSessions: false`
     (FR-011). A completed reset ends all of them (FR-025). The current session is renewed with
     `migrate(true)`.
+  - **Security hardening (2026-10-22)**: the handle-to-ID mapping is authoritative. Ordinary
+    requests only refresh an existing matching entry; renewal, impersonation and an account
+    rename move it atomically with a compare-and-swap. Only a completed sign-in creates an entry.
+    `endAll` removes the selected mappings atomically before destroying their payloads, so a
+    delayed request save cannot restore authorization. An unregistered session must sign in
+    again, including an old session without a stable handle. An obsolete identifier is discarded
+    locally without ending a newer valid identifier for the same handle.
 - **Rationale**: The spec assumes "the session store of feature 001 can find and end all sessions
   of an account". Laravel's Redis session driver keys sessions only by ID, so an index is needed. A
   hash per account keeps the cost at one command per sign-in and one `EXPIRE` per request, and the

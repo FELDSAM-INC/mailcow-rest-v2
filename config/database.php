@@ -44,6 +44,8 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // Query exceptions must never interpolate passwords, tokens or other bound values.
+            'mask_bindings_in_exception_messages' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => Env::get('MYSQL_ATTR_SSL_CA'),

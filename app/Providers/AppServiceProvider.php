@@ -69,6 +69,7 @@ use App\Services\Accounts\AccountAuditTargets;
 use App\Services\Aliases\AliasAuditTargets;
 use App\Services\Audit\RefusalAuditor;
 use App\Services\Auth\SessionRegistry;
+use App\Services\Config\LegacyConfigLoader;
 use App\Services\Config\MailcowConfig;
 use App\Services\Dkim\DkimAuditTargets;
 use App\Services\Domains\DomainAuditTargets;
@@ -103,7 +104,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(MailcowConfig::class, fn ($app) => new MailcowConfig($app->make(CacheFactory::class)->store('restv2')));
+        $this->app->bind(LegacyConfigLoader::class, fn ($app) => new LegacyConfigLoader($app->make(CacheFactory::class)->store('restv2')));
+        $this->app->singleton(MailcowConfig::class);
         $this->app->bind(Fail2BanReporter::class, RedisFail2BanReporter::class);
         $this->app->bind(Sleeper::class, UsleepSleeper::class);
         $this->app->bind(YubicoOtpVerifier::class, HttpYubicoOtpVerifier::class);

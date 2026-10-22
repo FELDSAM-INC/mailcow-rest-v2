@@ -2,15 +2,25 @@
 
 A standards-compliant REST API for [mailcow-dockerized](https://github.com/mailcow/mailcow-dockerized),
 served at `/api/v2`. It runs next to the legacy mailcow UI and `/api/v1`, which keep working
-unchanged, and it is the only backend of the separate [mailcowui-ng](../mailcowui-ng) web app.
+unchanged, and it is the only backend of the separate [mailcowui-ng](https://github.com/FELDSAM-INC/mailcowui-ng) web app.
 
 The OpenAPI 3.1 contract in [`api/`](api/openapi.yaml) is the source of truth. A running server
 serves it at `/api/v2/openapi.yaml` and renders it at `/api/v2/docs`. Problem types are documented
 in [`docs/problems.md`](docs/problems.md) and served at `/api/v2/problems/{name}`.
 
-Feature 001 (this release) covers password and passkey sign-in with legacy second factors,
-sessions, "who am I" and preferences, administrator-managed API keys (`X-API-Key`), the public
-branding configuration and the audit log. The roadmap is in [`docs/roadmap.md`](docs/roadmap.md).
+The current implementation includes the feature areas 001–013: authentication and account
+self-service; domains, mailboxes, aliases and resources; quarantine and spam policy;
+administrators; sync jobs; routing; DKIM, MTA-STS and DNS diagnostics; operations and logs;
+identity providers and OAuth2; and system settings. This is broader than the original Feature 001
+release. See the [roadmap](docs/roadmap.md) for the scope map,
+[`tests/feature-registry.json`](tests/feature-registry.json) for registered operations, and each
+feature's `specs/NNN-*/tasks.md` and `quickstart.md` for remaining work and validation evidence.
+Registration is not a claim that every release or manual acceptance check has passed.
+
+For contributors, start with [Development](#development), the
+[constitution](.specify/memory/constitution.md) and [conventions](docs/conventions.md).
+Deployment is separate from local development; see [Installation](#installation) and
+[Deploying a committed revision to maildev](#deploying-a-committed-revision-to-maildev).
 
 ## Supported mailcow releases
 
@@ -34,8 +44,8 @@ version. A new upstream release is supported once the test suite passes on its s
 - **Data**: mailcow's MariaDB and Redis. Upstream tables are never migrated; the API reads them and
   writes only through services in `app/Services/`, reproducing legacy's side effects (second-factor
   re-activation, `sasl_log` recent logins, `fido2` passkeys, the fail2ban channel). The API's own
-  tables (`restv2_api_keys`, `restv2_audit_events`, `restv2_preferences`, `restv2_migrations`) and
-  Redis keys (`restv2:`) have their own prefix.
+  tables and Redis keys have the `restv2_` and `restv2:` prefixes respectively; only API-owned
+  tables have migrations in [`database/migrations/`](database/migrations).
 - **Sessions** are Redis sessions with a `__Host-` cookie and CSRF protection on every
   state-changing request. **API keys** are stored as SHA-256 hashes, act as their owner and can be
   read-only, expiring and network-restricted.
@@ -271,38 +281,131 @@ The dev stack's `idp` profile (`docker compose --profile idp up -d`) adds OpenLD
 `tests/fixtures/ldap/bootstrap.ldif`, used by `vendor/bin/phpunit --group idp`) and Keycloak with
 the realm of `docker/keycloak/example-realm.json` on `http://localhost:8081` (admin `admin`/`admin`).
 
+## Project structure
+
+| Path                                                             | Purpose                                                                      |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| [`api/`](api/openapi.yaml)                                       | OpenAPI source: module paths and shared schemas, parameters and responses    |
+| [`routes/api.php`](routes/api.php)                               | Registered HTTP routes and middleware                                        |
+| `app/Http/`, `app/Policies/`                                     | Request validation, controllers, resources and access checks                 |
+| `app/Services/`                                                  | Business rules, upstream writes and their side effects                       |
+| `app/Clients/`                                                   | Adapters for mailcow and external services, faked in tests                   |
+| `app/Services/Config/`, [`config/restv2.php`](config/restv2.php) | Legacy configuration reader and API settings                                 |
+| `database/`, `tests/fixtures/schema/`                            | API-owned migrations and supported upstream schema fixtures                  |
+| `tests/{Unit,Feature,Integration,Support}`                       | Tests, contract validation and fake dependencies                             |
+| `docker/`, [`compose.yaml`](compose.yaml), `deploy/`             | Local toolchain, production image and mailcow integration                    |
+| `scripts/`, `docs/`, `specs/`                                    | Maintenance tools, shared guidance and feature plans/evidence                |
+| `source_code/`                                                   | Optional, untracked, read-only checkout/symlink for legacy source inspection |
+
+Request JSON parsing is centralized in
+[`ApiFormRequest`](app/Http/Requests/Api/V2/ApiFormRequest.php); endpoint requests supply validation
+and any field-specific normalization. Legacy configuration consumers use the typed
+[`MailcowConfig`](app/Services/Config/MailcowConfig.php) facade; subprocess loading, cache and
+fingerprint handling live in [`LegacyConfigLoader`](app/Services/Config/LegacyConfigLoader.php).
+Extend these boundaries rather than introducing another body decoder or configuration loader.
+
 ## Development
 
-The host needs only Docker with Compose v2; every PHP, Composer and Node command runs in the dev
-container.
+The supported development path needs Docker with Compose v2 and Git. PHP, Composer, Node and the
+required extensions run in the `app` container; the current image uses PHP 8.4. Run commands from
+this repository's root. [`compose.yaml`](compose.yaml) binds source into the container and uses
+`RESTV2_UID`/`RESTV2_GID` (default 1000) for generated-file ownership.
 
 ```bash
-docker compose up -d --build                                    # app, web, mariadb, redis
+docker compose up -d --build
 docker compose run --rm app composer install
-docker compose run --rm app cp .env.example .env
+docker compose run --rm app sh -c 'test -f .env || cp .env.example .env'
 docker compose run --rm app php artisan key:generate
-docker compose run --rm app scripts/dev/reset-dev-database.sh   # dev database and accounts
+```
 
-docker compose run --rm app composer contract:lint              # Redocly lint
-docker compose run --rm app composer test                       # bundle, MariaDB schema, PHPUnit, coverage
-docker compose run --rm app composer test:performance           # timing tests alone, on an idle machine
+Generate the key once for a new local environment; retain an existing environment's key. To
+populate a **disposable local database**, run:
+
+```bash
+docker compose run --rm app scripts/dev/reset-dev-database.sh
+```
+
+That reset recreates the dev database and seeds the accounts documented in
+[Feature 001's quickstart](specs/001-auth-sessions-api-keys/quickstart.md#part-b-manual-end-to-end-checks-against-the-dev-stack).
+Do not use it on a shared or deployed mailcow database. The dev API is served at
+`https://127.0.0.1:18443/api/v2` with a self-signed certificate (`curl -k` locally);
+`http://127.0.0.1:18080/api/v2` is also available for health checks. Session cookies are Secure,
+so use HTTPS for browser authentication. Ports are configurable in `compose.yaml`.
+
+Optional Compose profiles supply OpenLDAP/Keycloak (`idp`) and Mailpit (`mail` or `routing`).
+Their feature quickstarts explain the required fixtures and settings.
+
+### Build and checks
+
+```bash
+docker compose run --rm app composer contract:lint
+docker compose run --rm app composer test
 docker compose run --rm app vendor/bin/pint --test
-docker compose run --rm app vendor/bin/phpstan analyse
-docker compose run --rm app composer docs:assets                # Swagger UI assets for /api/v2/docs
+docker compose run --rm app composer analyse
 docker build -f docker/php/Dockerfile --target production -t mailcow-rest-v2:local .
 ```
 
-The dev stack serves `https://127.0.0.1:18443/api/v2` (self-signed certificate, generated at stack
-start into a Docker volume; use `curl -k`) and `http://127.0.0.1:18080/api/v2` for health checks.
-Tests run on MariaDB with the upstream schema fixture and on a real Redis, and validate every
-request and response against the contract.
+`composer test` bundles the contract, **recreates `restv2_test`**, loads the supported upstream
+schema and API migrations, runs PHPUnit, and checks operation coverage. It uses MariaDB and Redis,
+not SQLite. Coordinate runs sharing that database/Redis instance; a concurrent reset invalidates
+another run. After preparation, a focused test can run directly:
 
-`scripts/dev/verify-nginx-snippet.sh [tag]` checks `deploy/nginx/site.restv2.custom` inside
-mailcow's own nginx image: it renders the tag's `nginx.conf.j2` and `sites-default.conf.j2` with
-the image's `bootstrap.py`, as its entrypoint does, with the snippet in place, and runs `nginx -t`.
+```bash
+docker compose run --rm app vendor/bin/phpunit tests/Unit/Logging/RedactSecretsTest.php
+```
 
-The project follows Spec Kit (`specs/NNN-*/`) and the constitution in
-`.specify/memory/constitution.md`; cross-feature rules are in `docs/conventions.md`.
+That particular test is database-free. Many tests under `tests/Unit/` extend the application's
+`Tests\TestCase` and still use MariaDB/Redis; the directory name alone does not imply isolation.
+A focused run is not a replacement for full contract-operation coverage.
+
+Timing tests are a separate category: `composer test:performance` runs the `performance` group
+on an otherwise idle machine. The default suite excludes it and the `idp` group; run the latter
+with `vendor/bin/phpunit --group idp` after starting its profile. See
+[CI](.github/workflows/ci.yml) for the automated checks.
+
+`composer docs:assets` installs the bundled Swagger UI assets for local `/api/v2/docs`.
+[`scripts/dev/verify-nginx-snippet.sh`](scripts/dev/verify-nginx-snippet.sh) checks the integration
+snippet in mailcow's nginx image without changing a deployed host.
+
+### API contract workflow
+
+1. Read the feature's `spec.md`, `plan.md`, legacy form/action mapping and the shared conventions.
+2. Change the OpenAPI source in `api/` first. Keep changes within `/api/v2` additive; document new
+   problem types in [`docs/problems.md`](docs/problems.md).
+3. Write failing validation, authorization and side-effect tests, then implement the request,
+   policy and service behavior. Update [`tests/feature-registry.json`](tests/feature-registry.json)
+   when operations become implemented.
+4. Run contract lint, the relevant tests and the full applicable gates. `composer contract:bundle`
+   produces `build/contract/openapi.yaml` and `openapi.json`; do not edit these outputs by hand.
+   CI checks breaking changes against the latest `v*` release tag when one exists.
+5. After the API contract revision is committed, pin that explicit revision in the frontend with
+   its `scripts/contract/bump.sh <tag-or-commit>`. Generated frontend types must follow the pin.
+
+The [legacy inventory](docs/legacy-inventory.md), [API gap record](docs/api-gaps.md),
+[audit event reference](docs/audit-events.md), and `specs/NNN-*/quickstart.md` provide the detailed
+behavior and validation recipes. Old quickstart counts and planning prompts describe their
+original checkpoint, not the current whole-project test count.
+
+## Deploying a committed revision to maildev
+
+The host must already have the API service and nginx include installed as described above.
+The checked-in deployment helper accepts an SSH host/alias and the mailcow directory:
+
+```bash
+REF='<reviewed-commit-or-tag>' scripts/deploy/push-to-mailcow.sh '<maildev-ssh-host>' '<mailcow-directory>'
+```
+
+[`push-to-mailcow.sh`](scripts/deploy/push-to-mailcow.sh) exports the selected Git revision
+(`REF` defaults to `main`), builds a production image, streams it over SSH, updates only the
+`restv2-mailcow` image and runs `docker compose up -d --no-deps restv2-mailcow`. It waits for
+container health and `/api/v2/health/ready`. Uncommitted files are excluded. `PUBLIC_URL` overrides
+the public check URL and `HEALTH_TIMEOUT` changes the container wait (default 180 seconds).
+For locally loaded images, configure `pull_policy: never` on the service.
+
+This command changes the target host; it is not a test or dry run. It does not run the test suite,
+install the initial nginx integration, or deploy the UI. The old image is retained and its tag is
+printed for manual rollback; there is no automatic rollback. Keep SSH access and host settings
+outside the repository. Deploy a compatible API before a UI revision that requires its operations.
 
 ## Licence
 

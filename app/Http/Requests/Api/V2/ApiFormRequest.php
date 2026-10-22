@@ -25,6 +25,9 @@ abstract class ApiFormRequest extends FormRequest
     /** Refuse an empty JSON object (for example an empty merge patch) with `required` on `body`. */
     protected bool $requiresNonEmptyBody = false;
 
+    /** @var array<string, mixed> Raw JSON members, captured before endpoint input normalisation. */
+    private array $jsonMembers = [];
+
     /** @var array<string, list<array{code: string, params: array<string, mixed>, message: string}>> */
     private array $bodyViolations = [];
 
@@ -38,6 +41,7 @@ abstract class ApiFormRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->jsonMembers = [];
         $content = (string) $this->getContent();
 
         if ($content === '') {
@@ -61,10 +65,24 @@ abstract class ApiFormRequest extends FormRequest
         } elseif ($this->requiresNonEmptyBody && $decoded === []) {
             $this->bodyViolations['body'][] = self::make('required', [], 'The request body must contain at least one member.');
         } else {
+            $this->jsonMembers = $decoded;
             foreach ($this->memberViolations($decoded) as $field => $violation) {
                 $this->bodyViolations[$field][] = $violation;
             }
         }
+    }
+
+    /**
+     * The JSON members captured during preparation, available to authorisation, validation and
+     * service input builders. Preserves omitted versus null members and raw values for merge
+     * semantics; query parameters and later input normalisation never enter this snapshot.
+     * Endpoint-specific filtering and normalisation still belong to each request.
+     *
+     * @return array<string, mixed>
+     */
+    protected function jsonBody(): array
+    {
+        return $this->jsonMembers;
     }
 
     /**

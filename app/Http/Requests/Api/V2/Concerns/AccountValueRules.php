@@ -111,7 +111,7 @@ trait AccountValueRules
      */
     protected function accountValues(): array
     {
-        $body = (array) json_decode((string) $this->getContent(), true);
+        $body = $this->jsonBody();
         $values = [];
 
         if (array_key_exists('username', $body)) {

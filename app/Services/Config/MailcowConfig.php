@@ -3,12 +3,8 @@
 namespace App\Services\Config;
 
 use App\Services\Mailcow\AutodiscoverConfig;
-use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\Process\PhpExecutableFinder;
-use Symfony\Component\Process\Process;
-use Throwable;
 
 /**
  * Values of mailcow's PHP configuration, vars.inc.php and vars.local.inc.php (research R14,
@@ -16,25 +12,16 @@ use Throwable;
  *
  * Precedence per value: the API server setting RESTV2_<NAME> (`restv2.vars_overrides`), then the
  * operator's files in the mounted data/web/inc (`restv2.mailcow_inc_dir`), then the upstream
- * default of 2026-09a (`restv2.vars_defaults`). The files are evaluated by
- * resources/bin/export-mailcow-vars.php in a subprocess and the result is cached in Redis under
- * `restv2:mailcow-vars:<fingerprint>`, where the fingerprint covers path, size, modification time
- * and inode of the files (feature 011 adds app_info.inc.php, which update.sh rewrites): any change
- * is picked up by the next call, with no time-based staleness.
- * When the files are missing or cannot be evaluated, the defaults apply and one warning is logged
- * per fingerprint.
+ * default of 2026-09a (`restv2.vars_defaults`). LegacyConfigLoader owns file fingerprinting,
+ * subprocess execution and caching; this facade owns override parsing, typed feature settings
+ * and request-dependent autodiscover values. Missing or unreadable legacy files leave defaults
+ * in effect, with the loader warning once per fingerprint.
  *
  * Later features add their variables to config/restv2.php (`vars_overrides`, `vars_defaults`) and
  * read them with value(); none writes its own reader.
  */
 class MailcowConfig
 {
-    private const CACHE_PREFIX = 'mailcow-vars:';
-
-    private const CACHE_TTL = 86400;
-
-    private const TIMEOUT = 5.0;
-
     /**
      * The HTTPS port in the exported autodiscover settings (feature 005 research R18): the export
      * runs with `HTTP_HOST = <MAILCOW_HOSTNAME>:<this>`, so legacy's `$https_port` is this
@@ -45,12 +32,7 @@ class MailcowConfig
     /** Variables that are a boolean or one of the strings required/preferred/discouraged. */
     private const FLAG_OR_STRING = ['FIDO2_UV_FLAG_REGISTER', 'FIDO2_UV_FLAG_LOGIN', 'WEBAUTHN_UV_FLAG_LOGIN', 'WEBAUTHN_UV_FLAG_REGISTER'];
 
-    private ?string $memoFingerprint = null;
-
-    /** @var array<string, mixed> */
-    private array $memo = [];
-
-    public function __construct(private readonly Repository $cache) {}
+    public function __construct(private readonly LegacyConfigLoader $legacy) {}
 
     /**
      * @phpstan-impure
@@ -573,7 +555,7 @@ class MailcowConfig
             }
         }
 
-        $exported = $this->exported();
+        $exported = $this->legacy->load();
 
         if (array_key_exists($name, $exported)) {
             return $exported[$name];
@@ -617,138 +599,8 @@ class MailcowConfig
         return $parsed;
     }
 
-    /**
-     * The variables evaluated from the mounted files, or [] when they are missing or invalid.
-     *
-     * @return array<string, mixed>
-     */
-    private function exported(): array
-    {
-        $dir = $this->directory();
-        $fingerprint = $this->fingerprint($dir);
-
-        if ($fingerprint === $this->memoFingerprint) {
-            return $this->memo;
-        }
-
-        $key = self::CACHE_PREFIX.$fingerprint;
-        $cached = $this->cacheGet($key);
-
-        if (is_array($cached) && array_key_exists('ok', $cached)) {
-            $values = $cached['ok'] === true && is_array($cached['values'] ?? null) ? $cached['values'] : [];
-        } else {
-            [$ok, $values, $reason] = $this->export($dir);
-
-            if (! $ok) {
-                Log::warning("mailcow configuration not read ({$reason}); upstream defaults apply. Mount mailcow's data/web/inc at RESTV2_MAILCOW_INC_DIR or set RESTV2_* server settings.");
-            }
-
-            $this->cachePut($key, ['ok' => $ok, 'values' => $values]);
-        }
-
-        $this->memoFingerprint = $fingerprint;
-
-        return $this->memo = $values;
-    }
-
-    private function directory(): ?string
-    {
-        $dir = trim((string) config('restv2.mailcow_inc_dir'));
-
-        if ($dir === '') {
-            return null;
-        }
-
-        return str_starts_with($dir, '/') ? rtrim($dir, '/') : base_path(rtrim($dir, '/'));
-    }
-
-    private function fingerprint(?string $dir): string
-    {
-        $names = $this->names();
-        $parts = ['dir' => $dir, 'names' => $names, 'host' => $this->hostname()];
-
-        if ($dir !== null) {
-            clearstatcache(true);
-
-            foreach (['vars.inc.php', 'vars.local.inc.php', 'app_info.inc.php'] as $file) {
-                $stat = @stat($dir.'/'.$file);
-                $parts[$file] = $stat === false ? null : [$stat['size'], $stat['mtime'], $stat['ino']];
-            }
-        }
-
-        return hash('sha256', (string) json_encode($parts));
-    }
-
-    /**
-     * @return array{bool, array<string, mixed>, string}
-     */
-    private function export(?string $dir): array
-    {
-        if ($dir === null || ! is_file($dir.'/vars.inc.php')) {
-            return [false, [], 'directory '.($dir ?? '(not set)').' has no vars.inc.php'];
-        }
-
-        $php = (new PhpExecutableFinder)->find(false) ?: 'php';
-        $process = new Process([
-            $php, '-n', '-d', 'display_errors=stderr',
-            resource_path('bin/export-mailcow-vars.php'),
-            $dir,
-            $this->hostname(),
-            ...$this->names(),
-        ]);
-        $process->setTimeout(self::TIMEOUT);
-
-        try {
-            $process->run();
-        } catch (Throwable $e) {
-            return [false, [], 'the export failed: '.$e->getMessage()];
-        }
-
-        if (! $process->isSuccessful()) {
-            return [false, [], 'the export exited with '.$process->getExitCode().': '.trim(substr($process->getErrorOutput(), 0, 300))];
-        }
-
-        $values = json_decode($process->getOutput(), true);
-
-        return is_array($values)
-            ? [true, $values, '']
-            : [false, [], 'the export printed no JSON object'];
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function names(): array
-    {
-        return array_values(array_unique([
-            ...array_keys((array) config('restv2.vars_overrides')),
-            ...array_keys((array) config('restv2.vars_defaults')),
-        ]));
-    }
-
     private function hostname(): string
     {
         return (string) (config('restv2.mailcow_hostname') ?: 'localhost');
-    }
-
-    private function cacheGet(string $key): mixed
-    {
-        try {
-            return $this->cache->get($key);
-        } catch (Throwable) {
-            return null;
-        }
-    }
-
-    /**
-     * @param  array<string, mixed>  $value
-     */
-    private function cachePut(string $key, array $value): void
-    {
-        try {
-            $this->cache->put($key, $value, self::CACHE_TTL);
-        } catch (Throwable) {
-            // Redis unavailable: the next call evaluates the files again.
-        }
     }
 }

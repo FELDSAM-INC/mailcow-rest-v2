@@ -70,7 +70,7 @@ class UpdateSyncJobRequest extends ApiFormRequest
     {
         $rules = $this->valueRules();
         $stored = $this->job === null ? [] : SyncJobResource::present($this->job, false);
-        $body = $this->body();
+        $body = $this->jsonBody();
 
         foreach ($rules as $member => $memberRules) {
             if (array_key_exists($member, $body) && array_key_exists($member, $stored) && $body[$member] === $stored[$member]) {
@@ -83,7 +83,7 @@ class UpdateSyncJobRequest extends ApiFormRequest
 
     protected function additionalViolations(Validator $validator): array
     {
-        $body = $this->body();
+        $body = $this->jsonBody();
         $violations = [];
 
         if (array_key_exists('mailbox', $body)) {
@@ -115,7 +115,7 @@ class UpdateSyncJobRequest extends ApiFormRequest
      */
     public function members(): array
     {
-        return array_intersect_key($this->body(), $this->valueRules());
+        return array_intersect_key($this->jsonBody(), $this->valueRules());
     }
 
     /**
@@ -130,15 +130,5 @@ class UpdateSyncJobRequest extends ApiFormRequest
             in_array($member, SyncJobLimits::FLAGS, true) => ['bail', new StrictBoolean],
             default => ['bail', 'string'],
         };
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function body(): array
-    {
-        $body = json_decode((string) $this->getContent(), true);
-
-        return is_array($body) && ! array_is_list($body) ? $body : [];
     }
 }

@@ -1,5 +1,17 @@
 # mailcow-rest-v2 roadmap
 
+## Current implementation and remaining scope
+
+This is a scope map, not a release-completion checklist. The current
+[`tests/feature-registry.json`](../tests/feature-registry.json) registers features 001–013,
+with no pending operation entries; [`routes/api.php`](../routes/api.php) and the tests implement
+those areas. Read each `specs/NNN-*/tasks.md` and `quickstart.md` for outstanding work and the
+revision actually validated. Contract presence alone is not proof of implementation or deployment.
+Feature 014 remains the optional internal-endpoint takeover, not a consequence of deploying the
+new UI. The legacy UI, `/api/v1` and internal mailcow endpoints continue to coexist.
+
+For setup, checks and maildev deployment, use the [contributor README](../README.md).
+
 ## Architecture
 
 ```
@@ -11,9 +23,11 @@
               └────────────────────────────────────────────────┘
 ```
 
-The UI and the API share one origin, so the browser can use a cookie session with CSRF
-protection. The exact routing (an nginx include versus the API container proxying for itself)
-is decided in the plan of feature 001.
+The UI and API share one origin for cookie sessions with CSRF protection. This routing is
+implemented by [`deploy/nginx/site.restv2.custom`](../deploy/nginx/site.restv2.custom):
+`/api/v2` goes to the API's FastCGI service, and `/ng/` goes to the `ng-mailcow` static service.
+The [Compose override](../deploy/docker-compose.override.yml) adds the API alongside mailcow;
+legacy routes remain on php-fpm-mailcow. These paths are no longer planning placeholders.
 
 ## Features (one Spec Kit feature each)
 
@@ -27,9 +41,9 @@ implementation is finished.
 | 002 | Domains | Domain CRUD, limits, quotas, tags, domain templates |
 | 003 | Mailboxes | Mailbox CRUD, quota, protocol access, password, ACL flags, custom attributes, rename, mailbox templates |
 | 004 | Aliases, alias domains, resources | Aliases, alias domains, sender ACL / send-as, resources |
-| 005 | Mailbox self-service | Password, 2FA/FIDO2 enrolment, app passwords, temporary aliases, recovery e-mail, user settings |
+| 005 | Account and mailbox self-service | Password, 2FA/FIDO2 enrolment, app passwords, temporary aliases, recovery e-mail, user settings |
 | 006 | Quarantine & spam policy | Quarantine items, release/learn, notifications, spam score, allow/block lists |
-| 007 | Domain administrators | Domain-admin accounts, `da_acl`, login-as |
+| 007 | Administrators and domain administrators | Account lifecycle, `da_acl`, login-as and domain-admin SSO tokens |
 | 008 | Sync jobs | imapsync jobs |
 | 009 | Routing & address rewriting | Relayhosts, transports, TLS policy maps, BCC maps, recipient maps, forwarding hosts |
 | 010 | DKIM, MTA-STS, DNS | DKIM keys (incl. ISPConfig DNS push), MTA-STS, DNS diagnostics |
@@ -38,7 +52,11 @@ implementation is finished.
 | 013 | System settings | Branding, UI texts, password policy, quota notifications, Rspamd settings maps, global filters, CORS, mass mail |
 | 014 | Internal endpoints (optional) | Taking over php-fpm internal endpoints, each with a parity suite |
 
-## Input for the first `/speckit-specify`
+## Historical input for the first `/speckit-specify`
+
+The following prompt is preserved as the original Feature 001 planning record. Its narrow scope
+and exclusions do not describe the current implementation; use the scope table above and the
+feature specifications for present behavior.
 
 ```
 /speckit-specify Authentication, sessions, API keys, identity and branding configuration for

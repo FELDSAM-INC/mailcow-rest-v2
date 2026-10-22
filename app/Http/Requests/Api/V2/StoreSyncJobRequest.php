@@ -27,7 +27,7 @@ class StoreSyncJobRequest extends ApiFormRequest
     {
         $principal = RequestContext::requirePrincipal($this);
         app(SyncJobPolicy::class)->authorize($principal);
-        $this->target = app(SyncJobTargetResolver::class)->resolve($this->body()['mailbox'] ?? null, $principal);
+        $this->target = app(SyncJobTargetResolver::class)->resolve($this->jsonBody()['mailbox'] ?? null, $principal);
 
         return true;
     }
@@ -54,7 +54,7 @@ class StoreSyncJobRequest extends ApiFormRequest
             $violations['mailbox'] = [$this->target['violation']];
         }
 
-        $custom = $this->body()['customParameters'] ?? null;
+        $custom = $this->jsonBody()['customParameters'] ?? null;
 
         if (is_string($custom) && ! $validator->errors()->has('customParameters')) {
             $violations['customParameters'] = app(CustomParametersValidator::class)->violations($custom, null, RequestContext::requirePrincipal($this), true);
@@ -76,16 +76,6 @@ class StoreSyncJobRequest extends ApiFormRequest
      */
     public function members(): array
     {
-        return array_intersect_key($this->body(), $this->rules());
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function body(): array
-    {
-        $body = json_decode((string) $this->getContent(), true);
-
-        return is_array($body) && ! array_is_list($body) ? $body : [];
+        return array_intersect_key($this->jsonBody(), $this->rules());
     }
 }

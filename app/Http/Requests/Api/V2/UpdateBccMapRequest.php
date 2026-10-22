@@ -74,8 +74,6 @@ class UpdateBccMapRequest extends ApiFormRequest
      */
     public function members(): array
     {
-        $body = json_decode((string) $this->getContent(), true);
-
-        return is_array($body) ? $body : [];
+        return $this->jsonBody();
     }
 }

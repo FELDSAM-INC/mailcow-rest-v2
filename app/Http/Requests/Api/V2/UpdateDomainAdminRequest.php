@@ -77,7 +77,7 @@ class UpdateDomainAdminRequest extends ApiFormRequest
     public function values(): array
     {
         $values = $this->accountValues();
-        $body = (array) json_decode((string) $this->getContent(), true);
+        $body = $this->jsonBody();
 
         if (array_key_exists('domains', $body)) {
             $values['domains'] = $this->assignable()->normalised();

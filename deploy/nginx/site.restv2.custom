@@ -68,5 +68,7 @@ location ^~ /ng/ {
         set $ng_upstream http://ng-mailcow:8080;
         proxy_pass $ng_upstream;
         access_log off;
+        # Upstream errors include the original request URI and cannot redact its credentials.
+        error_log /dev/null;
     }
 }

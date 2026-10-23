@@ -52,41 +52,7 @@ class QuotaNotificationService
             $ifMatch,
             fn (Redis $redis): array => RedisSettingsStore::stringsFrom($redis, self::KEYS),
             fn (array $raw): string => ETag::of(['quotaNotification', ...array_values($raw)]),
-            function (array $raw) use ($patch): ?SettingsWrite {
-                $writes = [];
-                $changes = [];
-
-                foreach (self::MEMBERS as $member => $key) {
-                    $old = (string) ($raw[$key] ?? '');
-
-                    if (! array_key_exists($member, $patch) || $patch[$member] === $old) {
-                        continue;
-                    }
-
-                    $writes[$key] = $patch[$member];
-                    $changes[$member] = $member === 'htmlTemplate'
-                        ? ['changed' => true, 'oldBytes' => strlen($old), 'newBytes' => strlen($patch[$member])]
-                        : ['old' => $old, 'new' => $patch[$member]];
-                }
-
-                if ($writes === []) {
-                    return null;
-                }
-
-                return new SettingsWrite(
-                    function (Redis $multi) use ($writes): void {
-                        foreach ($writes as $key => $value) {
-                            $multi->set($key, $value);
-                        }
-                    },
-                    function (Redis $multi) use ($raw): void {
-                        foreach ($raw as $key => $value) {
-                            $value === null ? $multi->del($key) : $multi->set($key, $value);
-                        }
-                    },
-                    $changes,
-                );
-            },
+            fn (array $raw): ?SettingsWrite => StringSettingsPatch::plan($raw, $patch, self::MEMBERS, ['htmlTemplate']),
             fn (mixed $changes) => $this->audit->record(AuditEventType::QuotaNotificationUpdate, true, $actor, ['type' => 'quotaNotification', 'id' => null, 'name' => null], null, null, ['changes' => $changes]),
         );
 

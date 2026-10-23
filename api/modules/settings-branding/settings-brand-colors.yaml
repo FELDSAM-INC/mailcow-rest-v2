@@ -24,10 +24,11 @@ patch:
   tags: [Branding settings]
   summary: Change the brand colours
   description: |
-    Sets or clears (`null`) the light and dark brand colours. A light colour needs a WCAG 2.2
-    contrast ratio of at least 4.5:1 against `#ffffff`, a dark colour against `#1d2939`; a colour that
-    fails is refused with `insufficientContrast` and its measured ratio. Colours are stored in lower
-    case. Clearing both returns the web app to its own palette. Refused in demo mode. Audited with the
+    Sets or clears (`null`) the light and dark brand colours. Any six-digit sRGB colour is accepted
+    and stored in lower case without adjusting its hue or brightness. Each effective colour includes
+    a black or white foreground for readable button text. Clients derive a separate text-only accent
+    against the reference surfaces in settings capabilities; surface contrast does not block saving.
+    Clearing both returns the web app to its own palette. Refused in demo mode. Audited with the
     old and new colours. The colours in effect appear in the public configuration on its next read.
   security:
     - sessionCookie: []

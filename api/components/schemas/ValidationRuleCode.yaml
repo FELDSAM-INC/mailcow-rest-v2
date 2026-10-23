@@ -103,7 +103,7 @@ description: |
     `maxWidth`, `maxHeight`, `width`, `height`); `unsafeSvgContent` (params `construct`, for example
     `scriptElement`, `eventHandlerAttribute`, `scriptUrl`, `foreignContent`, `externalReference`,
     `styleImport`, `doctype`, `notWellFormed` or `rootNotSvg`, and `line` when known);
-    `insufficientContrast` (params `ratio`, rounded down to two decimals, `minimum` and `surface`);
+    `insufficientContrast` (legacy brand-colour validation, retained for older clients; no longer emitted by brand-colour updates; params `ratio`, `minimum` and `surface`);
     `invalidRegexLine` (params `line`, 1-based, and `reason`: `notSlashDelimited`, `tooManyFlags`,
     `innerSlash` or `doesNotCompile`); feature 005's `sieveSyntax` for global Sieve filters (params
     `message`, the legacy parser's message, and `line`); `unbalancedStructure` (params `line` and `construct`: `unclosedBrace`,

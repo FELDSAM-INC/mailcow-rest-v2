@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Feature 013 T025 (research R5; FR-029 to FR-031, SC-004): WCAG 2.2 relative luminance and contrast
- * ratios, the 4.5:1 rule against the light (`#ffffff`) and dark (`#1d2939`) reference surfaces, the
+ * ratios, text contrast against reference surfaces, the
  * effective colours per theme and their black or white foreground.
  */
 class WcagContrastTest extends TestCase
@@ -52,28 +52,14 @@ class WcagContrastTest extends TestCase
         $this->assertSame('#ffffff', WcagContrast::foreground('#000000'));
     }
 
-    public function test_effective_colours_follow_fr_031(): void
+    public function test_effective_colours_preserve_fills_and_inherit_the_light_accent(): void
     {
-        $blue = '#1d4ed8';      // passes on white only
-        $sky = '#93c5fd';       // passes on the dark surface only
-        $lightAndDark = null;
-
-        foreach (['#757575', '#6b7280', '#0f766e', '#7c7c7c'] as $candidate) {
-            if (WcagContrast::passes($candidate, WcagContrast::LIGHT_SURFACE) && WcagContrast::passes($candidate, WcagContrast::DARK_SURFACE)) {
-                $lightAndDark = $candidate;
-            }
-        }
-
+        $blue = ['color' => '#1d4ed8', 'foreground' => '#ffffff'];
+        $yellow = ['color' => '#febc23', 'foreground' => '#000000'];
         $this->assertSame(['light' => null, 'dark' => null], WcagContrast::effective(null, null));
-        $this->assertSame(['light' => ['color' => $blue, 'foreground' => '#ffffff'], 'dark' => null], WcagContrast::effective($blue, null));
-        $this->assertSame(['light' => null, 'dark' => ['color' => $sky, 'foreground' => '#000000']], WcagContrast::effective(null, $sky));
-        $this->assertSame(['light' => ['color' => $blue, 'foreground' => '#ffffff'], 'dark' => ['color' => $sky, 'foreground' => '#000000']], WcagContrast::effective($blue, $sky));
-
-        if ($lightAndDark !== null) {
-            $effective = WcagContrast::effective($lightAndDark, null);
-            $this->assertSame($lightAndDark, $effective['dark']['color'] ?? null, 'A light colour that passes the dark rule applies to the dark theme too.');
-        }
-
+        $this->assertSame(['light' => $blue, 'dark' => $blue], WcagContrast::effective('#1d4ed8', null));
+        $this->assertSame(['light' => null, 'dark' => $yellow], WcagContrast::effective(null, '#febc23'));
+        $this->assertSame(['light' => $yellow, 'dark' => $blue], WcagContrast::effective('#febc23', '#1d4ed8'));
     }
 
     public function test_every_accepted_colour_reaches_4_5_with_its_foreground(): void
@@ -83,14 +69,8 @@ class WcagContrastTest extends TestCase
         for ($i = 0; $i < 1000; $i++) {
             $color = sprintf('#%06x', mt_rand(0, 0xFFFFFF));
 
-            foreach ([WcagContrast::LIGHT_SURFACE, WcagContrast::DARK_SURFACE] as $surface) {
-                if (! WcagContrast::passes($color, $surface)) {
-                    continue;
-                }
-
-                $foreground = WcagContrast::foreground($color);
-                $this->assertGreaterThanOrEqual(4.5, WcagContrast::ratio($color, $foreground), "{$color} with {$foreground}");
-            }
+            $foreground = WcagContrast::foreground($color);
+            $this->assertGreaterThanOrEqual(4.5, WcagContrast::ratio($color, $foreground), "{$color} with {$foreground}");
         }
     }
 }

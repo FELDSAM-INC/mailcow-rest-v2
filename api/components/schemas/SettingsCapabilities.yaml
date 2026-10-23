@@ -65,7 +65,7 @@ properties:
     properties:
       minimumContrastRatio:
         type: number
-        description: Minimum WCAG 2.2 contrast ratio a brand colour needs against its reference surface.
+        description: Minimum WCAG 2.2 contrast for button text and derived text-only accents. This does not restrict the chosen brand fill.
         examples: [4.5]
       lightReferenceSurface:
         type: string
@@ -74,7 +74,7 @@ properties:
       darkReferenceSurface:
         type: string
         pattern: '^#[0-9a-f]{6}$'
-        examples: ['#1d2939']
+        examples: ['#222932']
   limits:
     $ref: './SettingsLimits.yaml'
   massMail:

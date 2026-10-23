@@ -4,15 +4,9 @@ namespace App\Http\Requests\Api\V2\Settings;
 
 use App\Auth\Principal;
 use App\Policies\SettingsPolicy;
-use App\Rules\BrandColorContrast;
 use App\Rules\HexColor;
-use App\Support\Color\WcagContrast;
 
-/**
- * Body of `updateBrandColors` (`BrandColorsPatch`, feature 013 FR-029, FR-030): each colour `#RRGGBB`
- * in either case, or null to clear it; a light colour needs 4.5:1 against `#ffffff`, a dark colour
- * against `#1d2939` (`insufficientContrast`).
- */
+/** Any six-digit sRGB accent, or null to clear it. Foreground text is chosen separately. */
 class UpdateBrandColorsRequest extends SettingsRequest
 {
     protected const MEMBERS = ['light', 'dark'];
@@ -30,8 +24,8 @@ class UpdateBrandColorsRequest extends SettingsRequest
     public function rules(): array
     {
         return [
-            'light' => ['bail', 'nullable', 'string', new HexColor, new BrandColorContrast(WcagContrast::LIGHT_SURFACE)],
-            'dark' => ['bail', 'nullable', 'string', new HexColor, new BrandColorContrast(WcagContrast::DARK_SURFACE)],
+            'light' => ['bail', 'nullable', 'string', new HexColor],
+            'dark' => ['bail', 'nullable', 'string', new HexColor],
         ];
     }
 }

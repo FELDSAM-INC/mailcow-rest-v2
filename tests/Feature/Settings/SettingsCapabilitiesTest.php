@@ -30,7 +30,7 @@ class SettingsCapabilitiesTest extends TestCase
             ->assertJsonPath('data.licenseVerificationEnabled', true)
             ->assertJsonPath('data.rspamdWebInterfaceUrl', '/rspamd/')
             ->assertJsonPath('data.logos', ['maxBytes' => 15728640, 'maxWidth' => 1920, 'maxHeight' => 1920, 'acceptedMediaTypes' => ['image/png', 'image/jpeg', 'image/gif', 'image/svg+xml']])
-            ->assertJsonPath('data.brandColors', ['minimumContrastRatio' => 4.5, 'lightReferenceSurface' => '#ffffff', 'darkReferenceSurface' => '#1d2939'])
+            ->assertJsonPath('data.brandColors', ['minimumContrastRatio' => 4.5, 'lightReferenceSurface' => '#ffffff', 'darkReferenceSurface' => '#222932'])
             ->assertJsonPath('data.limits', SettingsLimits::toArray())
             ->assertJsonPath('data.massMail', [
                 'suggestedSender' => 'noreply@mail.example.org',

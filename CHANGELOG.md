@@ -5,6 +5,13 @@ released contract; every release lists its contract changes.
 
 ## 0.1.0 — unreleased
 
+Brand colour correction (2026-10-23): `updateBrandColors` accepts all valid six-digit colours,
+including bright yellow, without a contrast rejection. Effective colours retain their exact fill
+and select black or white foreground text. Dark mode inherits the light accent when unset. Clients
+adapt text-only links separately using the minimum text contrast and theme surfaces from settings
+capabilities; the dark surface now matches the UI palette (`#222932`). Response shapes are unchanged.
+
+
 Contract: the 31 operations of feature 001 (authentication, sessions, API keys, identity and
 branding configuration):
 

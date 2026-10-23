@@ -1,9 +1,8 @@
 type: object
 description: |
-  JSON Merge Patch of the brand colours. A colour is a six-digit hexadecimal sRGB colour
-  (`#RRGGBB`, either letter case); `null` clears it. A colour below the minimum contrast is refused
-  with the rule code `insufficientContrast` and the parameters `ratio` (measured, rounded down to
-  two decimals), `minimum` and `surface`.
+  JSON Merge Patch of the brand colours. Any six-digit hexadecimal sRGB colour
+  (`#RRGGBB`, either letter case) is accepted without adjustment; `null` clears it.
+  Contrast against a theme's surface does not restrict the chosen accent.
 minProperties: 1
 additionalProperties: false
 properties:

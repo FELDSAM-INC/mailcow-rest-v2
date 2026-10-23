@@ -8,8 +8,8 @@ use Tests\TestCase;
 
 /**
  * Feature 013 T030 (FR-029 to FR-034, AS-1.7, AS-1.8): the API-owned brand colours, stored in the
- * Redis hash `restv2:brand-colors`, contrast-checked against the light and dark reference
- * surfaces, and published with their foregrounds in the public configuration.
+ * Redis hash `restv2:brand-colors`, preserved as fills, and published with their
+ * contrasting foregrounds in the public configuration.
  */
 class BrandColorsTest extends TestCase
 {
@@ -35,27 +35,27 @@ class BrandColorsTest extends TestCase
         $response->assertHeader('ETag', (string) $response->json('data.etag'));
     }
 
-    public function test_a_colour_below_the_minimum_contrast_is_refused_with_its_ratio(): void
+    public function test_bright_accents_are_preserved_with_readable_foregrounds(): void
     {
         $this->asAdmin();
-
-        $this->send('PATCH', '/api/v2/settings/brand-colors', ['light' => '#FFD700'])->assertStatus(422)
-            ->assertJsonPath('errors.light.0.code', 'insufficientContrast')
-            ->assertJsonPath('errors.light.0.params', ['ratio' => 1.4, 'minimum' => 4.5, 'surface' => '#ffffff']);
-        $this->send('PATCH', '/api/v2/settings/brand-colors', ['dark' => '#1d4ed8'])->assertStatus(422)
-            ->assertJsonPath('errors.dark.0.params', ['ratio' => 2.19, 'minimum' => 4.5, 'surface' => '#1d2939']);
-
-        $this->assertSame([], $this->storedColors());
+        $this->send('PATCH', '/api/v2/settings/brand-colors', ['light' => '#FEBC23', 'dark' => '#1D4ED8'])->assertOk()
+            ->assertJsonPath('data.light', '#febc23')
+            ->assertJsonPath('data.effective.light', ['color' => '#febc23', 'foreground' => '#000000'])
+            ->assertJsonPath('data.effective.dark', ['color' => '#1d4ed8', 'foreground' => '#ffffff']);
+        $this->assertSame(['light' => '#febc23', 'dark' => '#1d4ed8'], $this->storedColors());
+        $this->forgetCookies();
+        $this->getJson('/api/v2/public-config')->assertOk()
+            ->assertJsonPath('data.brandColors.light', ['color' => '#febc23', 'foreground' => '#000000']);
     }
 
-    public function test_a_light_colour_is_stored_in_lower_case_and_applies_to_the_light_theme_only_when_too_dark(): void
+    public function test_a_light_colour_is_stored_in_lower_case_and_inherited_by_the_dark_theme(): void
     {
         $this->asAdmin();
 
         $this->send('PATCH', '/api/v2/settings/brand-colors', ['light' => '#1D4ED8'])->assertOk()
             ->assertJsonPath('data.light', '#1d4ed8')
             ->assertJsonPath('data.effective.light', ['color' => '#1d4ed8', 'foreground' => '#ffffff'])
-            ->assertJsonPath('data.effective.dark', null);
+            ->assertJsonPath('data.effective.dark', ['color' => '#1d4ed8', 'foreground' => '#ffffff']);
 
         $this->assertSame(['light' => '#1d4ed8'], $this->storedColors());
         $this->assertSame('#1d4ed8', Redis::connection('restv2')->hget('brand-colors', 'light'));

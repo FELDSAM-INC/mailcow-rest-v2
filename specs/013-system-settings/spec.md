@@ -62,15 +62,10 @@
   administrator session. (agent decision: legacy offers both only as browser forms, never through
   `/api/v1`. A leaked key must not be able to mail every user or lock administrators out of the
   Rspamd interface. This follows 001's rule for key management.)
-- Q: Which branding colours exist and when is a colour accepted? → A: One optional brand colour for
-  the light theme and one for the dark theme, each a six-digit hexadecimal sRGB colour. The light
-  colour needs a contrast ratio of at least 4.5:1 against white (`#FFFFFF`), the dark colour at
-  least 4.5:1 against the dark reference surface `#1D2939`. When no dark colour is set, the light
-  colour is used in the dark theme if it passes the dark rule. Each effective colour comes with a
-  foreground colour (black or white) that reaches at least 4.5:1 on it. (agent decision: the UI
-  constitution requires WCAG 2.2 AA contrast in both themes and colours from the API. 4.5:1 is the
-  AA minimum for normal text and also covers the 3:1 rule for controls. One colour per theme is
-  the smallest useful set.)
+- Q: Which branding colours exist and when is a colour accepted? → A: One optional six-digit
+  sRGB accent per theme. Any valid colour is accepted unchanged, with black or white foreground
+  text. The dark theme inherits the light accent when unset. The UI derives readable text-only
+  links separately. (Owner correction, 2026-10-23: bright yellow must not be replaced by brown.)
 - Q: How are logos validated, and what happens to an SVG with scripts? → A: The type is detected
   from the file content, not from what the client declares. PNG, JPEG, GIF and SVG are accepted, as
   in legacy. The legacy size and dimension limits apply (15 MiB, 1,920 × 1,920 pixels for raster
@@ -190,13 +185,10 @@ shows for the same stored data.
    public configuration returns "Acme & Co Mail" and the legacy UI shows exactly the same text.
 6. **Given** an active announcement of type "warning", **When** the administrator deactivates it,
    **Then** the public configuration reports it inactive and the legacy UI no longer shows it.
-7. **Given** a light brand colour `#FFD700` (contrast about 1.4:1 against white), **When** it is
-   saved, **Then** the request is refused with a validation error that carries the measured ratio,
-   the required 4.5:1 and the reference surface.
+7. **Given** a light brand colour `#FEBC23`, **When** it is saved, **Then** the API preserves
+   `#febc23` and returns a black foreground. The UI keeps yellow fills and adapts text-only links.
 8. **Given** a light brand colour `#1D4ED8` and no dark colour, **When** a client reads the public
-   configuration, **Then** it receives `#1D4ED8` with a white foreground for the light theme and no
-   brand colour for the dark theme, because `#1D4ED8` does not reach 4.5:1 against the dark
-   reference surface.
+   configuration, **Then** both themes receive `#1d4ed8` with a white foreground.
 9. **Given** an app link "Helpdesk" with a user link `https://help.example.org/?u=%u` that is not
    hidden on the login page, **When** an administrator saves it and a signed-out client reads the
    public configuration of feature 001, **Then** the app links contain "Helpdesk", shown on the
@@ -684,16 +676,12 @@ filtered by target type and identifier.
 - **FR-029**: Administrators MUST be able to read, set and clear a brand colour for the light theme
   and one for the dark theme. Each is optional and MUST be a six-digit hexadecimal sRGB colour
   (`#RRGGBB`), accepted in either letter case and stored in lower case.
-- **FR-030**: A light-theme colour MUST have a contrast ratio of at least 4.5:1 against `#FFFFFF`,
-  and a dark-theme colour at least 4.5:1 against the dark reference surface `#1D2939`, computed with
-  the WCAG 2.2 contrast formula. A colour that fails MUST be refused with a validation error whose
-  parameters are the measured ratio, the minimum and the reference surface. The contract MUST
-  document both reference surfaces.
+- **FR-030**: Any valid six-digit colour MUST be accepted without changing its hue or brightness.
+  Surface contrast MUST NOT reject brand fills. The UI MUST derive text-only accents separately
+  with at least 4.5:1 contrast against the theme surface (`#ffffff` light, `#222932` dark).
 - **FR-031**: The effective light-theme colour MUST be the light colour, or none when it is not set.
-  The effective dark-theme colour MUST be the dark colour when set, otherwise the light colour if it
-  passes the dark-theme rule of FR-030, otherwise none. Each effective colour MUST come with a
-  foreground colour, black or white, whichever has the higher contrast on it, which is then at
-  least 4.5:1.
+  The effective dark-theme colour MUST be the dark colour when set, otherwise the light colour.
+  Each effective colour MUST come with black or white foreground text, whichever has higher contrast.
 - **FR-032**: The colours MUST be stored by this API. They are not visible in the legacy UI, and
   clearing them returns the web app to its own palette.
 
@@ -1161,8 +1149,8 @@ differs in four ways that touch this feature:
 - **SC-003**: 100% of the logos in the hostile test set (SVGs with scripts, event handlers, script
   URLs, embedded HTML, external references or entity declarations, mislabelled files, oversized
   files) are refused, and none of them is stored.
-- **SC-004**: Every brand colour the API accepts reaches at least 4.5:1 against its reference surface,
-  and every effective colour reaches at least 4.5:1 with its foreground, in 100% of tests.
+- **SC-004**: Every effective colour reaches at least 4.5:1 with its black or white foreground;
+  the chosen brand fill remains unchanged.
 - **SC-005**: After a regex map or settings rule is saved, a test message is filtered according to the
   new content within 2 minutes, without restarting Rspamd.
 - **SC-006**: 100% of invalid Sieve scripts, regex lines and unbalanced settings rules are refused
@@ -1197,9 +1185,8 @@ differs in four ways that touch this feature:
   as feature 001 assumes for its settings. The plan decides how.
 - Dovecot's local delivery, mailcow's container service and mailcow's generated settings map
   are reachable from the API container on the mailcow network.
-- The reference surfaces for branding colours (`#FFFFFF` and `#1D2939`) are agreed with mailcowui-ng,
-  which shows brand colours only on surfaces at least as contrasting. A change of the references is
-  a contract change.
+- The reference surfaces for text-only branding accents (`#FFFFFF` and `#222932`) match mailcowui-ng.
+  They guide link rendering without restricting the brand fill.
 - Feature 003 provides the password policy read (FR-063 there) and carries the version tag defined
   here. Features 003, 005 and 007 enforce the policy when they set passwords.
 - Feature 005 implements password reset and the mailbox Sieve filters; feature 006 the quarantine

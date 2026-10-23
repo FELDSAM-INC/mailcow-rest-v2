@@ -2,18 +2,12 @@
 
 namespace App\Support\Color;
 
-/**
- * WCAG 2.2 contrast of the brand colours (feature 013 research R5; FR-030, FR-031). A colour is
- * accepted when its exact contrast ratio against its theme's reference surface (`#ffffff` light,
- * `#1d2939` dark) is at least 4.5:1; a refused colour reports its ratio rounded down to two
- * decimals, so that it never reads as 4.50. The foreground of a colour is black or white, whichever
- * contrasts more (black on a tie).
- */
+/** WCAG arithmetic for text colours. Brand fills are preserved with black or white foregrounds. */
 final class WcagContrast
 {
     public const LIGHT_SURFACE = '#ffffff';
 
-    public const DARK_SURFACE = '#1d2939';
+    public const DARK_SURFACE = '#222932';
 
     public const MINIMUM = 4.5;
 
@@ -61,7 +55,7 @@ final class WcagContrast
     public static function effective(?string $light, ?string $dark): array
     {
         $entry = fn (string $color): array => ['color' => $color, 'foreground' => self::foreground($color)];
-        $darkColor = $dark ?? ($light !== null && self::passes($light, self::DARK_SURFACE) ? $light : null);
+        $darkColor = $dark ?? $light;
 
         return [
             'light' => $light === null ? null : $entry($light),

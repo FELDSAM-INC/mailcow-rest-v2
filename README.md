@@ -55,6 +55,9 @@ version. A new upstream release is supported once the test suite passes on its s
 
 ## Installation
 
+**Start here:** [Install the API and new UI, one command at a time](docs/installation.md).
+The guide covers a first installation from source on an existing mailcow server.
+
 On a mailcow-dockerized host (see also `specs/001-auth-sessions-api-keys/quickstart.md` Part C):
 
 1. Merge [`deploy/docker-compose.override.yml`](deploy/docker-compose.override.yml) into the

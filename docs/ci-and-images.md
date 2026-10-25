@@ -2,54 +2,83 @@
 
 ## Codex Security
 
-The [Codex Security workflow](../.github/workflows/codex-security.yml) uses the
-[official OpenAI Action](https://learn.chatgpt.com/docs/security/cli/ci/github).
-It scans changes in same-repository pull requests and scans the full repository every Monday.
-Changes to the scanner workflow on `main` also trigger a full scan to validate its configuration.
-A maintainer can also run it from **Actions → Codex Security → Run workflow**, selecting `main`.
-The optional `max_cost` input overrides the estimated USD stop threshold for that run.
-Fork, Dependabot and draft pull requests are excluded; a skipped job is not a security review.
+Full repository scans run locally using ChatGPT sign-in and plan usage. The
+[GitHub workflow](../.github/workflows/codex-security.yml) uses the paid API only for changes in
+trusted, non-draft pull requests from this repository. Fork and Dependabot PRs are excluded.
+There are no scheduled, push-triggered or manual full-repository API scans.
+Historical Actions runs retain their original workflow revision: rerunning an old full scan can
+still charge the API. Use the local helper for full scans.
 
-In **Settings → Secrets and variables → Actions**, add `CODEX_SECURITY_API_KEY` using an OpenAI
-API key with Codex Security access. The workflow fails with a setup message if it is missing.
-The key is available only to the scan step; publishing runs in a separate job without it.
-Checkout credentials are not persisted, and the scanner runs with the documented Ubuntu sandbox.
+### Full scans with your subscription
 
-Find results in the job summary, its downloadable reports (seven days), and **Security → Code
-scanning**. Reports can include source excerpts and vulnerability details. Private repositories
-also need GitHub Code Security enabled for SARIF uploads. Scans are initially advisory:
-findings do not block publishing, but execution and reporting errors fail the scan workflow.
-After reviewing coverage and findings, change `fail-on-severity` to `high` and configure the
-required status check if enforcement is wanted. The official guide explains how to require a
-completed scan rather than accepting excluded or empty scans.
+Install Node 22.13+ (or Node 24/26) and Python 3.10+. The helper selects an available supported
+Python version; use `--python /path/to/python` to select one explicitly.
+Sign in with your ChatGPT account once:
 
-Optional Actions variables:
+```bash
+npx --yes @openai/codex-security@0.6.0 login
+```
 
-| Variable | Default | Purpose |
+From either repository, run:
+
+```bash
+node scripts/security/scan-local.mjs
+```
+
+The helper pins CLI 0.6.0, passes `--auth chatgpt --provider openai`, and removes
+`OPENAI_API_KEY` and `CODEX_API_KEY` from the scanner environment. It never falls back to API
+billing. Scans consume your plan's usage and remain subject to plan/model limits and Codex
+Security access. ChatGPT sign-in for local scans is different from Codex Security Cloud:
+[Cloud scans are billed separately](https://learn.chatgpt.com/docs/security/faq).
+See the [authentication reference](https://learn.chatgpt.com/docs/security/cli/reference#select-scan-authentication).
+
+The default model is `gpt-6-sol`, with high reasoning effort. Choose a model available to your
+account with `--model MODEL`. Check the local configuration without a scan or model call:
+
+```bash
+node scripts/security/scan-local.mjs --dry-run
+```
+
+A dry run does not validate account access or consume scan quota. Real scans write their report
+and each attempt's JSON output to the private temporary directory printed by the helper.
+Review the findings and coverage there; copy reports elsewhere if they need to survive temporary
+file cleanup. Reports may contain source code and vulnerability details.
+
+### Waiting for a rate limit
+
+The CLI already retries model connections. If it still exits with a structured rate-limit
+failure, the local helper waits 60 seconds, then 120 seconds, with a small random delay before
+restarting. It respects a longer `retryAfterSeconds` hint when the CLI exposes one. There are at
+most three attempts and a shared 900-second wait budget. Set `--max-wait-seconds 0` to disable
+restarts, or choose a value up to 7200. A server hint that exceeds the remaining budget stops the
+helper instead of retrying too early.
+
+A restarted scan is a new scan and consumes more subscription usage; it does not resume the
+interrupted analysis. Authentication, explicit billing/budget failures, findings-policy failures,
+malformed output and cancellations are not retried. Persisting throttling still exits nonzero.
+CI keeps the official Action's connection retries, without paid whole-scan restart loops.
+
+### Paid CI checks for PR changes
+
+Add `CODEX_SECURITY_API_KEY` in **Settings → Secrets and variables → Actions**, using an OpenAI
+API key with Codex Security access. The key is available only to the scan step. Checkout
+credentials are not persisted, and the scanner uses the documented Ubuntu sandbox.
+
+| Actions variable | Default | Purpose |
 | --- | --- | --- |
 | `CODEX_SECURITY_MODEL` | `gpt-6-sol` | Model available to the scan API key |
-| `CODEX_SECURITY_MAX_COST` | `25` for repository scans; `5` for PR diffs | Override the estimated USD stop threshold for all scans |
+| `CODEX_SECURITY_PR_MAX_COST` | `5` | Estimated USD stop threshold for each PR scan |
 
-The cost threshold requires CLI pricing support for the model and is not a hard spending cap;
-requests already running can exceed it. Review `coverage.json` when evaluating the result.
-Budget precedence is the manual `max_cost` input, then the repository/organisation Actions
-variable, then the scope-specific default. The job prints the selected scope and threshold
-before starting the scanner. The repository default is higher because a full scan reviews much
-more code than a pull-request diff.
+The old `CODEX_SECURITY_MAX_COST` variable is no longer used, so a former full-scan allowance
+cannot silently raise the PR allowance. The cost threshold is an estimate, not a hard spending
+cap; requests already running can exceed it. If the scan stops before producing a valid final
+report, "no validated artifacts" is expected. Do not upload the raw temporary results directory.
 
-### A scan stops at its cost threshold
-
-`Scan stopped ... exceeded ... limit` means the scanner exhausted its configured cost allowance.
-If it stops before producing a valid final report, the Action also reports that no validated
-artifacts are available. This is a consequence of the incomplete scan, not an artifact permission
-failure. Do not upload the raw temporary results directory: it can contain unvalidated output
-and sensitive diagnostics.
-
-Start a new manual run on `main` and set `max_cost` to the intended threshold. Do not rerun an
-older job expecting newly committed workflow defaults to apply: the rerun uses its original
-revision. An existing `CODEX_SECURITY_MAX_COST=5` variable still overrides the new repository
-default, so update that variable or use the manual input. A larger allowance gives the scan
-more room, but does not guarantee completion or complete security coverage.
+Results appear in the job summary, downloadable validated reports (seven days), and **Security →
+Code scanning**. Private repositories also need GitHub Code Security for SARIF uploads. Scans
+remain advisory: findings do not block publishing, but execution/reporting errors fail the scan
+workflow. A skipped or failed scan is not a clean security result. See the
+[official Action guide](https://learn.chatgpt.com/docs/security/cli/ci/github).
 
 ## Public container images
 

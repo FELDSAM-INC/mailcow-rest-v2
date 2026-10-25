@@ -1,19 +1,8 @@
 name: Codex Security
 
 on:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/codex-security.yml']
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-  workflow_dispatch:
-    inputs:
-      max_cost:
-        description: 'Estimated USD stop threshold (not a hard cap); blank uses configured defaults'
-        type: string
-        required: false
-  schedule:
-    - cron: '23 7 * * 1'
 
 permissions:
   contents: read
@@ -25,17 +14,16 @@ concurrency:
 jobs:
   security:
     # Never execute a fork's checkout with the scan credential, including via
-    # pull_request_target or workflow_run. Manual scans use main only.
+    # pull_request_target or workflow_run. Full scans use local ChatGPT sign-in.
     if: >-
-      (github.event_name != 'pull_request' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.head.repo.full_name == github.repository &&
-       github.actor != 'dependabot[bot]' && !github.event.pull_request.draft)
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]' && !github.event.pull_request.draft
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
-      SCAN_SCOPE: ${{ github.event_name == 'pull_request' && 'diff' || 'repository' }}
-      SCAN_MAX_COST: ${{ inputs.max_cost || vars.CODEX_SECURITY_MAX_COST || (github.event_name == 'pull_request' && '5' || '25') }}
+      SCAN_SCOPE: diff
+      SCAN_MAX_COST: ${{ vars.CODEX_SECURITY_PR_MAX_COST || '5' }}
     permissions:
       contents: read
       actions: read
@@ -80,4 +68,4 @@ jobs:
           sarif_file: ${{ steps.security.outputs.sarif-path }}
           sha: ${{ steps.security.outputs.scanned-sha }}
           ref: ${{ steps.security.outputs.analysis-ref }}
-          category: codex-security-${{ github.event_name == 'pull_request' && 'pr' || 'repository' }}
+          category: codex-security-pr

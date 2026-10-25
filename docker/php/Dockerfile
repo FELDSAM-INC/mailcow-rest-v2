@@ -90,7 +90,7 @@ USER 82
 
 # ---------------------------------------------------------------------------------------------
 # The bundled contract served at /api/v2/openapi.yaml and the Swagger UI assets of /api/v2/docs.
-FROM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS assets
+FROM node:26-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS assets
 
 ARG REDOCLY_CLI=@redocly/cli@2.64.1
 ARG SWAGGER_UI_DIST=5.33.0

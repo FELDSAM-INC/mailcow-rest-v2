@@ -5,7 +5,9 @@
 The [Codex Security workflow](../.github/workflows/codex-security.yml) uses the
 [official OpenAI Action](https://learn.chatgpt.com/docs/security/cli/ci/github).
 It scans changes in same-repository pull requests and scans the full repository every Monday.
+Changes to the scanner workflow on `main` also trigger a full scan to validate its configuration.
 A maintainer can also run it from **Actions → Codex Security → Run workflow**, selecting `main`.
+The optional `max_cost` input overrides the estimated USD stop threshold for that run.
 Fork, Dependabot and draft pull requests are excluded; a skipped job is not a security review.
 
 In **Settings → Secrets and variables → Actions**, add `CODEX_SECURITY_API_KEY` using an OpenAI
@@ -26,10 +28,28 @@ Optional Actions variables:
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `CODEX_SECURITY_MODEL` | `gpt-6-sol` | Model available to the scan API key |
-| `CODEX_SECURITY_MAX_COST` | `5` | Estimated USD stop threshold per scan |
+| `CODEX_SECURITY_MAX_COST` | `25` for repository scans; `5` for PR diffs | Override the estimated USD stop threshold for all scans |
 
 The cost threshold requires CLI pricing support for the model and is not a hard spending cap;
 requests already running can exceed it. Review `coverage.json` when evaluating the result.
+Budget precedence is the manual `max_cost` input, then the repository/organisation Actions
+variable, then the scope-specific default. The job prints the selected scope and threshold
+before starting the scanner. The repository default is higher because a full scan reviews much
+more code than a pull-request diff.
+
+### A scan stops at its cost threshold
+
+`Scan stopped ... exceeded ... limit` means the scanner exhausted its configured cost allowance.
+If it stops before producing a valid final report, the Action also reports that no validated
+artifacts are available. This is a consequence of the incomplete scan, not an artifact permission
+failure. Do not upload the raw temporary results directory: it can contain unvalidated output
+and sensitive diagnostics.
+
+Start a new manual run on `main` and set `max_cost` to the intended threshold. Do not rerun an
+older job expecting newly committed workflow defaults to apply: the rerun uses its original
+revision. An existing `CODEX_SECURITY_MAX_COST=5` variable still overrides the new repository
+default, so update that variable or use the manual input. A larger allowance gives the scan
+more room, but does not guarantee completion or complete security coverage.
 
 ## Public container images
 

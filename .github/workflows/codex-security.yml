@@ -1,9 +1,17 @@
 name: Codex Security
 
 on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/codex-security.yml']
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
+    inputs:
+      max_cost:
+        description: 'Estimated USD stop threshold (not a hard cap); blank uses configured defaults'
+        type: string
+        required: false
   schedule:
     - cron: '23 7 * * 1'
 
@@ -25,6 +33,9 @@ jobs:
        github.actor != 'dependabot[bot]' && !github.event.pull_request.draft)
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    env:
+      SCAN_SCOPE: ${{ github.event_name == 'pull_request' && 'diff' || 'repository' }}
+      SCAN_MAX_COST: ${{ inputs.max_cost || vars.CODEX_SECURITY_MAX_COST || (github.event_name == 'pull_request' && '5' || '25') }}
     permissions:
       contents: read
       actions: read
@@ -38,6 +49,7 @@ jobs:
             echo '::error::Set the CODEX_SECURITY_API_KEY Actions secret to an OpenAI API key with Codex Security access.'
             exit 1
           fi
+          echo "::notice::Codex Security $SCAN_SCOPE scan; estimated cost stop threshold USD $SCAN_MAX_COST (not a hard spending cap)."
       - name: Set up the Ubuntu sandbox
         run: |
           sudo apt-get update
@@ -53,10 +65,10 @@ jobs:
         id: security
         uses: openai/codex-security@3f61e5150981a5087c32e4395bbaa8ce5ce0c3e3 # action-v0.3.0
         with:
-          scope: ${{ github.event_name == 'pull_request' && 'diff' || 'repository' }}
+          scope: ${{ env.SCAN_SCOPE }}
           model: ${{ vars.CODEX_SECURITY_MODEL || 'gpt-6-sol' }}
           effort: high
-          max-cost: ${{ vars.CODEX_SECURITY_MAX_COST || '5' }}
+          max-cost: ${{ env.SCAN_MAX_COST }}
           fail-on-severity: none
           upload-artifacts: 'true'
         env:

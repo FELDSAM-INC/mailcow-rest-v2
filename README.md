@@ -56,7 +56,8 @@ version. A new upstream release is supported once the test suite passes on its s
 ## Installation
 
 **Start here:** [Install the API and new UI, one command at a time](docs/installation.md).
-The guide covers a first installation from source on an existing mailcow server.
+The guide uses prebuilt public GHCR images on an existing mailcow server; no local build is needed.
+See [security scans and image publishing](docs/ci-and-images.md) for CI setup, tags and package visibility.
 
 On a mailcow-dockerized host (see also `specs/001-auth-sessions-api-keys/quickstart.md` Part C):
 

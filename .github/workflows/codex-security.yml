@@ -1,0 +1,71 @@
+name: Codex Security
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+  schedule:
+    - cron: '23 7 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codex-security-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security:
+    # Never execute a fork's checkout with the scan credential, including via
+    # pull_request_target or workflow_run. Manual scans use main only.
+    if: >-
+      (github.event_name != 'pull_request' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor != 'dependabot[bot]' && !github.event.pull_request.draft)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    steps:
+      - name: Check scan credentials
+        env:
+          HAS_SCAN_KEY: ${{ secrets.CODEX_SECURITY_API_KEY != '' }}
+        run: |
+          if [ "$HAS_SCAN_KEY" != true ]; then
+            echo '::error::Set the CODEX_SECURITY_API_KEY Actions secret to an OpenAI API key with Codex Security access.'
+            exit 1
+          fi
+      - name: Set up the Ubuntu sandbox
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes bubblewrap apparmor-profiles
+          sudo apparmor_parser -r /usr/share/apparmor/extra-profiles/bwrap-userns-restrict
+      - name: Check out the scan revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan
+        id: security
+        uses: openai/codex-security@3f61e5150981a5087c32e4395bbaa8ce5ce0c3e3 # action-v0.3.0
+        with:
+          scope: ${{ github.event_name == 'pull_request' && 'diff' || 'repository' }}
+          model: ${{ vars.CODEX_SECURITY_MODEL || 'gpt-6-sol' }}
+          effort: high
+          max-cost: ${{ vars.CODEX_SECURITY_MAX_COST || '5' }}
+          fail-on-severity: none
+          upload-artifacts: 'true'
+        env:
+          OPENAI_API_KEY: ${{ secrets.CODEX_SECURITY_API_KEY }}
+      - name: Upload security findings
+        if: ${{ always() && steps.security.outputs.sarif-upload-ready == 'true' }}
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          sarif_file: ${{ steps.security.outputs.sarif-path }}
+          sha: ${{ steps.security.outputs.scanned-sha }}
+          ref: ${{ steps.security.outputs.analysis-ref }}
+          category: codex-security-${{ github.event_name == 'pull_request' && 'pr' || 'repository' }}

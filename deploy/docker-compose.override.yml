@@ -21,7 +21,7 @@
 # mounted data/web/inc/vars{,.local}.inc.php.
 services:
   restv2-mailcow:
-    image: ${RESTV2_IMAGE:-ghcr.io/feldsam-inc/mailcow-rest-v2:0.1.0}
+    image: ${RESTV2_IMAGE:-ghcr.io/feldsam-inc/mailcow-rest-v2:latest}
     restart: always
     # Option: keep APP_KEY and RESTV2_* in ./restv2/restv2.env (mode 600, with ./restv2/.gitignore
     # containing `*`), because mailcow's update.sh runs `git add -A` on its merge-conflict path and

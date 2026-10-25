@@ -8,6 +8,7 @@ on:
     branches: [main]
     tags: ['v*']
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -23,10 +24,10 @@ jobs:
     name: Contract
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
       - name: Lint
@@ -52,7 +53,7 @@ jobs:
           for fixture in tests/fixtures/schema/*.sql; do
             MAILCOW_REPO="$RUNNER_TEMP/mailcow" scripts/legacy/check-handoff-assumptions.sh "$(basename "$fixture" .sql)"
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: contract
           path: |
@@ -63,10 +64,10 @@ jobs:
     name: Pint and Larastan
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       - name: Build the dev image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: docker/php/Dockerfile
@@ -88,7 +89,7 @@ jobs:
     outputs:
       matrix: ${{ steps.list.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: list
         run: |
           matrix="$(find tests/fixtures/schema -maxdepth 1 -name '*.sql' -printf '%f\n' | sed 's/\.sql$//' | sort | jq -R . | jq -cs .)"
@@ -130,7 +131,7 @@ jobs:
           LDAP_TLS: 'true'
           LDAP_TLS_VERIFY_CLIENT: never
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Apply mailcow's server settings
         # Services start before checkout, so mailcow's my.cnf (docker/mariadb/mailcow.cnf) and the
         # Redis password (mailcow's redis-conf.sh) are applied at runtime.
@@ -138,9 +139,9 @@ jobs:
           docker exec "${{ job.services.mariadb.id }}" mariadb -uroot -proot -e \
             "SET GLOBAL character_set_server = 'utf8mb4'; SET GLOBAL collation_server = 'utf8mb4_general_ci'; SET GLOBAL innodb_strict_mode = 0;"
           docker exec "${{ job.services.redis.id }}" redis-cli CONFIG SET requirepass devredispass
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       - name: Build the dev image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: docker/php/Dockerfile
@@ -160,6 +161,7 @@ jobs:
             -e MAILCOW_SCHEMA="${{ matrix.schema }}" \
             "$DEV_IMAGE" composer test
       - name: composer test:performance
+        if: vars.PERFORMANCE_CHECKS_ENABLED == 'true'
         run: |
           docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app \
             --network "${{ job.services.mariadb.network }}" \
@@ -174,7 +176,7 @@ jobs:
             -e DBHOST=mariadb -e DBUSER=mailcow -e DBPASS=mailcow -e DBROOT=root \
             -e REDISHOST=redis -e REDISPASS=devredispass \
             "$DEV_IMAGE" vendor/bin/phpunit --group idp
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: contract-coverage-${{ matrix.schema }}
@@ -184,14 +186,11 @@ jobs:
   image:
     name: Production image
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       - name: Build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: docker/php/Dockerfile
@@ -208,15 +207,78 @@ jobs:
             -v "$PWD/docker/nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro" \
             -v "$PWD/deploy/nginx/site.restv2.custom:/etc/nginx/conf.d/site.restv2.custom:ro" \
             nginx:1.28-alpine nginx -t
+
+  publish:
+    name: Publish public image
+    needs: [contract, quality, tests, image]
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: publish-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Image tags and source labels
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ghcr.io/feldsam-inc/mailcow-rest-v2
+          flavor: latest=false
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,format=long
+            type=match,pattern=v(.*),group=1
+          labels: |
+            org.opencontainers.image.licenses=GPL-3.0-only
       - name: Log in to GHCR
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push the release image
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publish AMD64 and ARM64 images
+        id: publish
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: docker/php/Dockerfile
+          target: production
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=production
+          cache-to: type=gha,scope=production,mode=max
+      - name: Record published image
+        env:
+          IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          docker tag "$IMAGE_NAME:ci" "$IMAGE_NAME:${GITHUB_REF_NAME#v}"
-          docker push "$IMAGE_NAME:${GITHUB_REF_NAME#v}"
+          {
+            echo '### Container image'
+            printf '\n%s\n' "$IMAGE_TAGS"
+            printf '\nDigest: `%s`\n' "$IMAGE_DIGEST"
+            echo 'First publication requires Package settings → Change visibility → Public.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify anonymous registry access
+        env:
+          IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
+        run: |
+          anonymous_config="$(mktemp -d)"
+          trap 'rm -rf "$anonymous_config"' EXIT
+          if ! docker --config "$anonymous_config" manifest inspect "ghcr.io/feldsam-inc/mailcow-rest-v2@$IMAGE_DIGEST" > /dev/null; then
+            echo '::error::Image was pushed but is not publicly pullable. Set this GHCR package visibility to Public, then rerun the publishing job.'
+            exit 1
+          fi

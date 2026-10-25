@@ -127,3 +127,7 @@ local image builds. Until visibility is public and these checks pass, publicatio
 Performance and Lighthouse checks are opt-in with the Actions variable
 `PERFORMANCE_CHECKS_ENABLED=true`. Automated browser accessibility checks are opt-in with
 `ACCESSIBILITY_CHECKS_ENABLED=true`, following the maintainer's current testing preference.
+
+## Security checks
+
+See [automated security checks](security-checks.md) for scanners, release gates, isolated runtime testing and repository settings.

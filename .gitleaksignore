@@ -1,0 +1,78 @@
+# Reviewed 2026-10-25: exact historical test fixtures and public metadata only.
+# New secrets, even in the same file, must still fail.
+# tests/Feature/Mailboxes/DeleteMailboxReuseTest.php — non-production fixture or documented placeholder
+4fcb788a52bed4243bdccfe684d35f5d30f64bb0:tests/Feature/Mailboxes/DeleteMailboxReuseTest.php:generic-api-key:19
+# tests/Feature/SsoTokens/SsoTokenAuthorizationTest.php — non-production fixture or documented placeholder
+60718b033912c5281478ce2d4badb8512789c1b0:tests/Feature/SsoTokens/SsoTokenAuthorizationTest.php:generic-api-key:51
+# tests/Feature/SsoTokens/SsoTokenAuthorizationTest.php — non-production fixture or documented placeholder
+60718b033912c5281478ce2d4badb8512789c1b0:tests/Feature/SsoTokens/SsoTokenAuthorizationTest.php:generic-api-key:53
+# tests/Feature/SsoTokens/SsoTokenSignInTest.php — non-production fixture or documented placeholder
+60718b033912c5281478ce2d4badb8512789c1b0:tests/Feature/SsoTokens/SsoTokenSignInTest.php:generic-api-key:21
+# tests/Feature/PasswordReset/PasswordResetCompletionTest.php — non-production fixture or documented placeholder
+8b130772cc8577c6ab4ef15eeb71df54218f6284:tests/Feature/PasswordReset/PasswordResetCompletionTest.php:generic-api-key:29
+# tests/Feature/Security/SelfServiceSecretLeakTest.php — non-production fixture or documented placeholder
+1256585ef2c5fb102080832afa1538187f331445:tests/Feature/Security/SelfServiceSecretLeakTest.php:generic-api-key:47
+# tests/Feature/PasswordReset/PasswordResetTokenCheckTest.php — non-production fixture or documented placeholder
+8b130772cc8577c6ab4ef15eeb71df54218f6284:tests/Feature/PasswordReset/PasswordResetTokenCheckTest.php:generic-api-key:21
+# tests/Unit/DnsDiagnostics/ZoneFileRendererTest.php — non-production fixture or documented placeholder
+66e4ab0ef3c73d4a50beaf0b040f891aec2dd34a:tests/Unit/DnsDiagnostics/ZoneFileRendererTest.php:generic-api-key:20
+# tests/fixtures/cron-log/2026-09a-messages.json — non-production fixture or documented placeholder
+0cdb22f75c6679462242ad00295432f2a5de00d0:tests/fixtures/cron-log/2026-09a-messages.json:generic-api-key:5
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:281
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:299
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:329
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:371
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:425
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:527
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:542
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:659
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:680
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:701
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:709
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:751
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+cfc831318956429313344a6fd11bc8e846f892f5:tests/Support/Dkim/DkimFixtures.php:private-key:767
+# tests/Feature/Logs/LegacyLogMaskingTest.php — non-production fixture or documented placeholder
+3f411876e35a2fb05edcb654ba6ba56e80c3d9aa:tests/Feature/Logs/LegacyLogMaskingTest.php:private-key:20
+# tests/Feature/Logs/LegacyLogMaskingTest.php — non-production fixture or documented placeholder
+3f411876e35a2fb05edcb654ba6ba56e80c3d9aa:tests/Feature/Logs/LegacyLogMaskingTest.php:private-key:69
+# tests/fixtures/legacy/dkim/generated-2048.pem — non-production fixture or documented placeholder
+7236327b627394fce9e70724fac8a2feeeed3625:tests/fixtures/legacy/dkim/generated-2048.pem:private-key:1
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+7236327b627394fce9e70724fac8a2feeeed3625:tests/Support/Dkim/DkimFixtures.php:private-key:13
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+7236327b627394fce9e70724fac8a2feeeed3625:tests/Support/Dkim/DkimFixtures.php:private-key:34
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+7236327b627394fce9e70724fac8a2feeeed3625:tests/Support/Dkim/DkimFixtures.php:private-key:67
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+7236327b627394fce9e70724fac8a2feeeed3625:tests/Support/Dkim/DkimFixtures.php:private-key:112
+# tests/Support/Dkim/DkimFixtures.php — non-production fixture or documented placeholder
+7236327b627394fce9e70724fac8a2feeeed3625:tests/Support/Dkim/DkimFixtures.php:private-key:169
+# tests/Feature/ApiKeys/ApiKeyAuthenticationTest.php — non-production fixture or documented placeholder
+a04a2508a955b41751b10cfccdf95900ea737e9d:tests/Feature/ApiKeys/ApiKeyAuthenticationTest.php:generic-api-key:266
+# tests/Feature/ApiKeys/ApiKeyAuthenticationTest.php — non-production fixture or documented placeholder
+a04a2508a955b41751b10cfccdf95900ea737e9d:tests/Feature/ApiKeys/ApiKeyAuthenticationTest.php:generic-api-key:271
+# tests/Unit/Clients/HttpYubicoOtpVerifierTest.php — non-production fixture or documented placeholder
+7f0af280d5225e73db5b11f12420fa0d89a45389:tests/Unit/Clients/HttpYubicoOtpVerifierTest.php:generic-api-key:20
+# tests/Feature/Auth/SecondFactorYubicoTest.php — non-production fixture or documented placeholder
+7f0af280d5225e73db5b11f12420fa0d89a45389:tests/Feature/Auth/SecondFactorYubicoTest.php:generic-api-key:20
+# tests/Feature/Auth/SecondFactorYubicoTest.php — non-production fixture or documented placeholder
+7f0af280d5225e73db5b11f12420fa0d89a45389:tests/Feature/Auth/SecondFactorYubicoTest.php:generic-api-key:22
+# resources/webauthn/rootCertificates/microsoftTpmCollection.pem — public certificate false positive
+78093bda33c1004b20ca7b02679de6accec335c8:resources/webauthn/rootCertificates/microsoftTpmCollection.pem:square-access-token:8175
+# Documented synthetic API key in development walkthrough
+5b9e537cc57815b046ed29b068a2303cd861bd78:specs/001-auth-sessions-api-keys/quickstart.md:mailcow-api-key:145
+# Documented synthetic API key in development walkthrough
+f1caac7d72882d01d57506faa1c601f31ec05a59:specs/001-auth-sessions-api-keys/quickstart.md:mailcow-api-key:127

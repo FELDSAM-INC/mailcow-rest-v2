@@ -20,6 +20,9 @@ env:
   DEV_IMAGE: restv2-dev:ci
 
 jobs:
+  security:
+    uses: ./.github/workflows/security.yml
+
   contract:
     name: Contract
     runs-on: ubuntu-24.04
@@ -201,6 +204,15 @@ jobs:
           tags: ${{ env.IMAGE_NAME }}:ci
           cache-from: type=gha,scope=production
           cache-to: type=gha,scope=production,mode=max
+      - name: Scan production image
+        run: python3 scripts/security/check.py image --image "$IMAGE_NAME:ci"
+      - name: Retain image scan and SBOM
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: production-image-security
+          path: security-reports/
+          retention-days: 7
       - name: Liveness inside the container
         run: docker run --rm "$IMAGE_NAME:ci" php /app/artisan restv2:health --live
       - name: nginx snippet
@@ -212,7 +224,7 @@ jobs:
 
   publish:
     name: Publish public image
-    needs: [contract, quality, tests, image]
+    needs: [contract, quality, tests, image, security]
     if: >-
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -259,10 +271,35 @@ jobs:
           target: production
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ghcr.io/feldsam-inc/mailcow-rest-v2:scan-${{ github.sha }}-${{ github.run_id }}
+          sbom: true
+          provenance: mode=max
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=production
           cache-to: type=gha,scope=production,mode=max
+      - name: Scan both candidate architectures before promoting release tags
+        env:
+          IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
+        run: |
+          python3 scripts/security/check.py image --image "ghcr.io/feldsam-inc/mailcow-rest-v2@$IMAGE_DIGEST" --platform linux/amd64
+          python3 scripts/security/check.py image --image "ghcr.io/feldsam-inc/mailcow-rest-v2@$IMAGE_DIGEST" --platform linux/arm64
+      - name: Promote verified image to public release tags
+        env:
+          IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          args=()
+          while IFS= read -r tag; do
+            [ -z "$tag" ] || args+=(--tag "$tag")
+          done <<< "$IMAGE_TAGS"
+          docker buildx imagetools create "${args[@]}" "ghcr.io/feldsam-inc/mailcow-rest-v2@$IMAGE_DIGEST"
+      - name: Retain release scans and SBOMs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-image-security
+          path: security-reports/
+          retention-days: 14
       - name: Record published image
         env:
           IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}

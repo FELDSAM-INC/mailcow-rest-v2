@@ -45,7 +45,26 @@ class ApiKey extends Model
 
     protected $table = 'restv2_api_keys';
 
-    protected $guarded = [];
+    // Explicit service-owned fields: future columns are not mass assignable by default.
+    protected $fillable = [
+        'id',
+        'name',
+        'prefix',
+        'secret_hash',
+        'owner_username',
+        'access_level',
+        'allowed_networks',
+        'expires_at',
+        'created_by',
+        'last_used_at',
+        'last_used_from',
+        'revoked_at',
+        'revoked_by',
+        'revocation_reason',
+        'owner_created_at',
+        'created_at',
+        'updated_at',
+    ];
 
     protected $hidden = ['secret_hash'];
 

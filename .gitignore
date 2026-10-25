@@ -42,3 +42,7 @@ Thumbs.db
 # Untracked legacy reference (mailcow-dockerized checkout, read-only)
 /source_code
 /storage/dev-mailcow/
+
+# Local security reports may include source and vulnerability details.
+/security-reports/
+__pycache__/

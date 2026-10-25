@@ -10,7 +10,7 @@
 #
 # Build context: the repository root (`docker build -f docker/php/Dockerfile .`).
 
-ARG PHP_IMAGE=php:8.4-fpm-alpine
+ARG PHP_IMAGE=php:8.4-fpm-alpine@sha256:93aa3f61216b73cc6f878235c9772849449f4efc18dfe3d6678eed645076c00d
 
 FROM ${PHP_IMAGE} AS base
 
@@ -20,6 +20,7 @@ ARG MAILPARSE_VERSION=3.2.0
 # ldap (feature 012, research R2): the LDAP identity provider. libldap and the CA bundle stay at
 # runtime; openldap-dev is only needed to compile the extension.
 RUN set -eux; \
+    apk upgrade --no-cache; \
     apk add --no-cache icu-libs libldap ca-certificates; \
     # Feature 011 (research R20, R29): ban rules must compile in the ban service's dialect,
     # Python `re`, which only Python decides reliably (PSF-2.0, GPL-compatible).
@@ -78,7 +79,7 @@ RUN set -eux; \
     mkdir -p /home/dev; \
     chmod 1777 /home/dev
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2@sha256:b6dcd72ca98fa19d0e5b8476de179859704891fad06dd9e0b96833d4c430a5fc /usr/bin/composer /usr/bin/composer
 
 ENV HOME=/home/dev \
     COMPOSER_HOME=/home/dev/.composer \
@@ -89,7 +90,7 @@ USER 82
 
 # ---------------------------------------------------------------------------------------------
 # The bundled contract served at /api/v2/openapi.yaml and the Swagger UI assets of /api/v2/docs.
-FROM node:22-alpine AS assets
+FROM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS assets
 
 ARG REDOCLY_CLI=@redocly/cli@2.64.1
 ARG SWAGGER_UI_DIST=5.33.0

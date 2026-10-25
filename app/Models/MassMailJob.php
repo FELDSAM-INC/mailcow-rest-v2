@@ -44,7 +44,25 @@ class MassMailJob extends Model
 
     public $timestamps = false;
 
-    protected $guarded = [];
+    // Explicit service-owned fields: future columns are not mass assignable by default.
+    protected $fillable = [
+        'id',
+        'status',
+        'running_slot',
+        'sender',
+        'subject',
+        'text_body',
+        'html_body',
+        'selection',
+        'recipient_count',
+        'created_by',
+        'created_request_id',
+        'created_client_address',
+        'created_at',
+        'started_at',
+        'finished_at',
+        'cancelled_by',
+    ];
 
     protected function casts(): array
     {

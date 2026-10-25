@@ -1,0 +1,38 @@
+name: Runtime security
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '29 3 * * 3'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-security-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  zap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: api
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: FELDSAM-INC/mailcowui-ng
+          path: ui
+          persist-credentials: false
+      - name: Authenticated scans and role boundaries in an isolated disposable stack
+        run: python3 api/scripts/security/runtime.py --ui-dir ui
+      - name: Upload sanitized runtime report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: runtime-security
+          path: api/security-reports/runtime/
+          retention-days: 7
+          if-no-files-found: error

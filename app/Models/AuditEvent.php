@@ -41,7 +41,27 @@ class AuditEvent extends Model
 
     public $timestamps = false;
 
-    protected $guarded = [];
+    // Explicit service-owned fields: future columns are not mass assignable by default.
+    protected $fillable = [
+        'id',
+        'occurred_at',
+        'event_type',
+        'outcome',
+        'actor_username',
+        'actor_role',
+        'actor_api_key_id',
+        'target_type',
+        'target_id',
+        'target_name',
+        'client_address',
+        'user_agent',
+        'auth_method',
+        'failure_reason',
+        'request_id',
+        'details',
+        'impersonated_username',
+        'impersonated_role',
+    ];
 
     protected $dateFormat = 'Y-m-d H:i:s.u';
 

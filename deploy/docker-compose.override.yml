@@ -30,6 +30,8 @@ services:
     # env_file: ./restv2/restv2.env
     # pull_policy: never    # image loaded with docker load, not pulled
     read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
     tmpfs:
       - /app/storage:uid=82,gid=82,mode=0755
       - /app/bootstrap/cache:uid=82,gid=82,mode=0755

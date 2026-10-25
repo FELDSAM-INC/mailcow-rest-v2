@@ -22,3 +22,5 @@ storage/framework/testing/*
 storage/framework/views/*
 bootstrap/cache/*.php
 tests/fixtures/schema
+
+security-reports

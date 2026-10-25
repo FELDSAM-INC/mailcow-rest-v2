@@ -94,9 +94,16 @@ def main():
             run('docker', 'network', 'disconnect', project + '_default', project + '-ng')
             run('docker', 'run', '-d', '--name', zap, '--network', network,
                 '--user', f'{os.getuid()}:{os.getgid()}', '--cap-drop=ALL',
-                '--security-opt=no-new-privileges', '-e', 'JAVA_OPTS=-Xmx1536m',
+                '--security-opt=no-new-privileges',
+                '-e', 'SE_OFFLINE=true', '-e', 'SE_AVOID_STATS=true',
+                '-e', 'SE_CACHE_PATH=/zap/wrk/selenium',
                 '-v', str(scan) + ':/zap/wrk', '-v', str(reports) + ':/reports', image,
-                'zap.sh', '-daemon', '-dir', '/zap/wrk/state', '-host', '0.0.0.0', '-port', '8080',
+                'java', '-Xmx1536m', '-Duser.home=/zap/wrk', '-jar', '/zap/zap-2.17.0.jar',
+                '-daemon', '-dir', '/zap/wrk/state', '-host', '0.0.0.0', '-port', '8080',
+                # Browser client integration is unused by the HTTP/API scans and initializes a
+                # Firefox profile in the image user's home, which an arbitrary CI uid cannot write.
+                '-config', 'extensions.extension(0).name=ExtensionClientIntegration',
+                '-config', 'extensions.extension(0).enabled=false',
                 '-config', 'api.disablekey=true', '-config', 'ascan.threadPerHost=2')
             run('docker', 'exec', zap, 'python3', '/zap/wrk/driver.py')
         finally:

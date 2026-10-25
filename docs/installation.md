@@ -5,6 +5,10 @@ images from GHCR; you do not need PHP, Node.js, a compiler or a GitHub account.
 The default `latest` tags track tested builds of `main`, not a stable release.
 For fixed versions, choose the tags or digests listed on the package pages.
 
+Use **mailcow 2026-09a or newer**, including **2026-10**. Older releases are expected
+to work, but have not been tested yet. See the
+[supported releases and database schema check](../README.md#supported-mailcow-releases).
+
 The examples use `mailcow-dev.feldhost.cz` and `/root/mailcow-dockerized`. Change these two values
 if your server is different. You need Git, OpenSSL and Docker Compose with `--wait` support.
 

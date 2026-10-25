@@ -24,12 +24,18 @@ Deployment is separate from local development; see [Installation](#installation)
 
 ## Supported mailcow releases
 
+Use **mailcow `2026-09a` or newer**, including **`2026-10`**.
+Older releases are expected to work, but have not been tested yet; they must pass the
+same database schema readiness check.
+
 | mailcow-dockerized | `versions.db_schema` | Schema fixture |
 |---|---|---|
 | `2026-09a` (and the FeldHost fork `feldhost-202609a`) | `18082026_1200` | `tests/fixtures/schema/2026-09a.sql` |
+| `2026-10` | `18082026_1200` | Same accepted schema; live installation verified on `2026-10` |
 
+Compatibility is checked by database schema rather than an exact mailcow release name.
 The readiness check (`/api/v2/health/ready`, `restv2:health --ready`) fails on any other schema
-version. A new upstream release is supported once the test suite passes on its schema
+version. A future upstream release that changes the schema needs validation against that schema
 (`scripts/schema/generate-fixture.sh <tag>`, then add its `db_version` to
 `config/restv2.php` `supported_schema_versions`).
 

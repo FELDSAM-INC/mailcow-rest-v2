@@ -5,8 +5,9 @@ images from GHCR; you do not need PHP, Node.js, a compiler or a GitHub account.
 The default `latest` tags track tested builds of `main`, not a stable release.
 For fixed versions, choose the tags or digests listed on the package pages.
 
-Use **mailcow 2026-09a or newer**, including **2026-10**. Older releases are expected
-to work, but have not been tested yet. See the
+Use **mailcow 2026-09a or newer**, including **2026-10**. Older releases remain untested:
+`2026-09` shares the accepted schema, while releases through `2026-07b` currently fail
+the API's schema check. See the
 [supported releases and database schema check](../README.md#supported-mailcow-releases).
 
 The examples use `mailcow-dev.feldhost.cz` and `/root/mailcow-dockerized`. Change these two values

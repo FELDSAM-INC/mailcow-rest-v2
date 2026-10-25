@@ -25,8 +25,10 @@ Deployment is separate from local development; see [Installation](#installation)
 ## Supported mailcow releases
 
 Use **mailcow `2026-09a` or newer**, including **`2026-10`**.
-Older releases are expected to work, but have not been tested yet; they must pass the
-same database schema readiness check.
+Older releases remain untested. `2026-09` has the same schema definition as `2026-09a`
+and `2026-10`; releases through `2026-07b` currently fail the database schema readiness
+check and lack the `da_acl.alias_external_goto` column used by domain-administrator
+permission queries and writes. See the [schema history](https://github.com/FELDSAM-INC/mailcow-modern-ui/blob/main/docs/compatibility.md#schema-history).
 
 | mailcow-dockerized | `versions.db_schema` | Schema fixture |
 |---|---|---|

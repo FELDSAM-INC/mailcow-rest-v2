@@ -26,6 +26,12 @@ class NativeDnsResolver implements DnsResolver
     public function __construct(?Closure $lookup = null)
     {
         $this->lookup = $lookup ?? function (string $name, int $type, bool $raw = false): array|false {
+            // Additional records trigger an extra ANY query in PHP. Its failure can discard
+            // a valid answer, so omit those arguments unless raw mode (TLSA) requires them.
+            if (! $raw) {
+                return dns_get_record($name, $type);
+            }
+
             $authoritative = null;
             $additional = null;
 

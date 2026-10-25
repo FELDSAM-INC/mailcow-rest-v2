@@ -4,6 +4,8 @@ namespace Tests\Unit\Clients;
 
 use App\Clients\Dns\DnsTemporaryFailure;
 use App\Clients\Dns\NativeDnsResolver;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -18,6 +20,17 @@ class NativeDnsResolverTest extends TestCase
 
     /** @var list<bool> raw mode of each call (feature 010: TLSA) */
     private array $raw = [];
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function test_a_valid_txt_answer_survives_a_server_that_fails_any_queries(): void
+    {
+        require __DIR__.'/../../fixtures/dns/native-with-broken-any.php';
+
+        $resolver = new NativeDnsResolver;
+
+        $this->assertSame(['v=spf1 ip4:192.0.2.7 -all'], $resolver->txt('spf.example'));
+    }
 
     /**
      * @param  array<string, array<int, mixed>|false>  $answers  "name|type" => records, or false

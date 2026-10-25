@@ -96,7 +96,7 @@ def main():
                 '--user', f'{os.getuid()}:{os.getgid()}', '--cap-drop=ALL',
                 '--security-opt=no-new-privileges', '-e', 'JAVA_OPTS=-Xmx1536m',
                 '-v', str(scan) + ':/zap/wrk', '-v', str(reports) + ':/reports', image,
-                'zap.sh', '-daemon', '-host', '0.0.0.0', '-port', '8080',
+                'zap.sh', '-daemon', '-dir', '/zap/wrk/state', '-host', '0.0.0.0', '-port', '8080',
                 '-config', 'api.disablekey=true', '-config', 'ascan.threadPerHost=2')
             run('docker', 'exec', zap, 'python3', '/zap/wrk/driver.py')
         finally:

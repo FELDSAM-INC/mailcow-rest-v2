@@ -5,7 +5,11 @@ namespace Tests\Feature\PasswordReset;
 use App\Auth\Role;
 use App\Clients\Yubico\YubicoOtpVerifier;
 use App\Clients\Yubico\YubicoVerificationResult;
+use App\Services\Mailboxes\AddressLock;
+use App\Services\Passwords\MailboxPasswordHasher;
+use App\Support\Database\NamedLock;
 use App\Support\Hashing\LegacyPasswordVerifier;
+use Illuminate\Database\Connection;
 use Illuminate\Session\Store;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
@@ -54,6 +58,47 @@ class PasswordResetCompletionTest extends TestCase
     private function tokenValid(string $token = self::TOKEN): bool
     {
         return DB::table('reset_password')->where('token', $token)->exists();
+    }
+
+    public function test_a_token_revoked_while_waiting_cannot_complete_a_reset(): void
+    {
+        $this->mailcow()->mailboxWithDomain('anna@example.org');
+        $this->mailcow()->resetToken('anna@example.org', self::TOKEN);
+        $password = $this->mailboxRow('anna@example.org')->password;
+        $this->mock(NamedLock::class)->shouldReceive('run')->once()->andReturnUsing(function ($names, $code) {
+            DB::table('reset_password')->where('username', 'anna@example.org')->delete();
+
+            return $code();
+        });
+
+        $this->complete()->assertStatus(400)->assertJsonPath('type', '/api/v2/problems/invalid-reset-token');
+
+        $this->assertSame($password, $this->mailboxRow('anna@example.org')->password);
+    }
+
+    public function test_a_competing_mailbox_change_cannot_acquire_the_address_during_a_reset(): void
+    {
+        $this->mailcow()->mailboxWithDomain('anna@example.org');
+        $this->mailcow()->resetToken('anna@example.org', self::TOKEN);
+        $hasher = new MailboxPasswordHasher;
+        $this->mock(MailboxPasswordHasher::class)->shouldReceive('hash')->once()->andReturnUsing(function ($password) use ($hasher) {
+            // A separate MariaDB connection models another API worker's address reservation.
+            $probe = DB::build(config('database.connections.'.config('database.default')));
+            $this->assertInstanceOf(Connection::class, $probe);
+            $name = AddressLock::name('anna@example.org');
+
+            try {
+                $result = $probe->selectOne('SELECT GET_LOCK(?, 0) AS acquired', [$name]);
+                $this->assertSame(0, (int) $result->acquired);
+            } finally {
+                $probe->selectOne('SELECT RELEASE_LOCK(?)', [$name]);
+                $probe->disconnect();
+            }
+
+            return $hasher->hash($password);
+        });
+
+        $this->complete()->assertOk();
     }
 
     public function test_a_reset_without_second_factor_sets_the_password_and_ends_every_session(): void

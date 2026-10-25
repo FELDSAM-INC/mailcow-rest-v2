@@ -161,6 +161,7 @@ class MailboxDeleter
         DB::table('quota2')->where('username', $address)->delete();
         DB::table('quota2replica')->where('username', $address)->delete();
         DB::table('mailbox')->where('username', $address)->delete();
+        DB::table('reset_password')->where('username', $address)->delete();
         DB::table('sender_acl')->where('logged_in_as', $address)->orWhere('send_as', $address)->delete();
         DB::table('user_acl')->where('username', $address)->delete();
         DB::table('spamalias')->where('goto', $address)->delete();

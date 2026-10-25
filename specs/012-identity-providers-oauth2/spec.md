@@ -697,6 +697,10 @@ each filter.
     read the user's details from the provider's user info endpoint, as legacy does;
   - take the user's e-mail address from those details, trimmed and lower-cased. A missing or invalid
     address MUST fail the sign-in;
+  - require the user info claim `email_verified` to be the JSON boolean `true` before mailbox
+    lookup, creation or template updates. Missing, false and non-boolean values MUST fail with
+    the generic sign-in error, audited as `providerRefused`. **Security deviation**: legacy
+    accepts an unverified address, allowing a provider user to claim another user's mailbox;
   - take the mapping attribute from the `mailcow_template` value of the details, using the first
     value when there are several.
 
@@ -733,6 +737,8 @@ each filter.
   The session MUST end, and that request MUST be answered with "identity provider session ended",
   when:
   - the provider refuses the renewal or cannot be reached, as in legacy;
+  - the renewed details no longer contain boolean `email_verified: true`, audited as
+    `providerRefused`. **Security deviation**: ownership must remain verified at renewal;
   - the renewed details carry another e-mail address. **Deviation**: legacy switches the session to
     that address;
   - the configuration has been deleted, its type changed, or it is no longer complete;

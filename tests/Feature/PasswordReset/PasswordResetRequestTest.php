@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\PasswordReset;
 
+use App\Support\Database\NamedLock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -77,6 +78,25 @@ class PasswordResetRequestTest extends TestCase
         $this->assertSame('anna@example.org', $record->target_id);
         $this->assertNull($record->actor_username);
         $this->assertStringNotContainsString($token, (string) json_encode($record));
+    }
+
+    public function test_issuance_uses_the_recovery_address_current_when_the_lock_is_acquired(): void
+    {
+        $this->configureResetMessage();
+        $this->eligible();
+        $this->mock(NamedLock::class)->shouldReceive('run')->once()->andReturnUsing(function ($names, $code) {
+            // A mailbox change committed while this request waited for the address lock.
+            DB::table('mailbox')->where('username', 'anna@example.org')->update([
+                'attributes->recovery_email' => 'new-owner@example.net',
+            ]);
+
+            return $code();
+        });
+
+        $this->request('anna@example.org')->assertOk();
+
+        $this->assertCount(1, $this->sentMessages());
+        $this->assertSame('new-owner@example.net', $this->sentMessages()[0]->getTo()[0]->getAddress());
     }
 
     public function test_without_stored_bodies_the_template_files_are_used(): void

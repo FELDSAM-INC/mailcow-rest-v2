@@ -81,6 +81,20 @@ class SingleSignOnProvisioningTest extends TestCase
         unset($response);
     }
 
+    public function test_an_unverified_email_cannot_provision_a_mailbox(): void
+    {
+        $this->mailcow()->keycloakConfig();
+        $claims = IdentityProviderFixtures::userInfo('ben@example.org', 'Ben', 'staff');
+        $claims['email_verified'] = false;
+        $this->keycloakSignIn($claims);
+
+        $this->completeSso($this->startSso()['state'])->assertUnauthorized();
+
+        $this->assertFalse(DB::table('mailbox')->where('username', 'ben@example.org')->exists());
+        $this->assertFalse(DB::table('alias')->where('address', 'ben@example.org')->exists());
+        $this->assertSame('providerRefused', $this->signInAudit()[0]->failure_reason);
+    }
+
     public function test_the_default_template_applies_and_without_one_no_mapping_matches(): void
     {
         $this->mailcow()->keycloakConfig(['default_template' => 'Staff']);

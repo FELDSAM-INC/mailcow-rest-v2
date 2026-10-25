@@ -852,6 +852,12 @@ configuration with the groupware enabled and disabled and compare it with the le
   - at most 3 outstanding per account, a server setting with the legacy default;
   - stored where legacy stores them, so that a token issued by either UI works in both;
   - expired tokens removed whenever a new one is requested.
+
+  **Security deviation**: issuance and completion MUST share the API's mailbox address lock
+  with deletion and creation. Eligibility and the recovery address MUST be read after acquiring
+  that lock; completion MUST revalidate its token after acquiring it and keep the lock through
+  the password change and token removal. A concurrent deletion or successful reset cannot leave
+  a pending request able to reset a replacement mailbox or reuse a consumed token.
 - **FR-022**: The reset message MUST be built from the operator's existing template and sender (the
   defaults legacy ships when none is saved), replacing the placeholders `{{link}}`, `{{username}}`,
   `{{username2}}` (the recovery address), `{{date}}`, `{{token_lifetime}}` and `{{hostname}}` as

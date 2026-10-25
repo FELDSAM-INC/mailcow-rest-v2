@@ -3,6 +3,8 @@
 namespace Tests\Feature\DnsDiagnostics;
 
 use App\Auth\Role;
+use App\Services\Dkim\DkimNameResolver;
+use App\Services\DnsDiagnostics\DiagnosticsRateLimiter;
 use Illuminate\Support\Facades\Redis;
 use Tests\Support\DnsDiagnostics\DiagnosticsTestHelpers;
 use Tests\TestCase;
@@ -58,6 +60,30 @@ class DnsDiagnosticsRateLimitTest extends TestCase
 
         $this->diagnose('nothing.example')->assertNotFound();
         $this->diagnose('example.org')->assertOk()->assertHeader('RateLimit-Remaining', '9');
+    }
+
+    public function test_a_competing_run_consuming_the_last_slot_refuses_before_any_dns_lookup(): void
+    {
+        config(['restv2.dns.runs_per_minute' => 1]);
+        $this->signInAs('admin', Role::Admin);
+        $resolver = $this->app->make(DkimNameResolver::class);
+        $limiter = $this->app->make(DiagnosticsRateLimiter::class);
+        $this->mock(DkimNameResolver::class)->shouldReceive('resolve')->once()
+            ->andReturnUsing(function ($principal, $name) use ($resolver, $limiter) {
+                $resolved = $resolver->resolve($principal, $name);
+                // Another request wins the last slot after this request's preflight check.
+                $limiter->hit($principal);
+
+                return $resolved;
+            });
+
+        $this->diagnose('example.org')->assertStatus(429)
+            ->assertHeader('RateLimit-Limit', '1')
+            ->assertHeader('RateLimit-Remaining', '0')
+            ->assertHeader('Retry-After', '60');
+
+        $this->assertSame(0, $this->dns()->lookupCount());
+        $this->assertSame('1', Redis::connection('restv2')->hget('dns-diagnostics:'.hash('sha256', 'user:admin'), 'count'));
     }
 
     public function test_a_session_and_an_api_key_of_the_same_owner_count_separately_and_the_window_ends(): void

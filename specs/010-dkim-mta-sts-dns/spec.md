@@ -868,6 +868,10 @@ filtered by target.
   checks still open at that point MUST report "lookup failed" with a timeout reason. A run whose
   checks failed MUST still succeed as a request and return every result.
 - **FR-049**: Each caller (user or API key) MUST be able to start at most 10 runs per minute.
+  A run MUST atomically reserve capacity before any DNS lookup. Parallel requests that passed an
+  earlier quota check MUST still be refused when the last slot has since been consumed; refusals
+  MUST NOT increment the counter or extend its window. Names outside the caller's scope or not
+  found MUST NOT consume capacity.
   Further runs MUST be refused with the "too many requests" error of feature 001 and the retry time.
   Every diagnostics result and every "too many requests" refusal MUST carry the rate-limit headers
   `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (IETF HTTPAPI rate-limit headers

@@ -13,6 +13,7 @@ use App\Services\Auth\SessionRegistry;
 use App\Services\Config\MailcowConfig;
 use App\Services\Groupware\GroupwareCacheFlush;
 use App\Services\Groupware\SogoDirectory;
+use App\Services\Mailboxes\AddressLock;
 use App\Services\Mailboxes\MailboxAddress;
 use App\Services\Passwords\MailboxPasswordHasher;
 use App\Services\Passwords\PasswordPolicyReader;
@@ -106,28 +107,30 @@ class PasswordResetService
         DB::delete('DELETE FROM `reset_password` WHERE `created` < DATE_SUB(NOW(), INTERVAL ? MINUTE)', [$lifetime]);
 
         $username = MailboxAddress::normalize($address)->address ?? mb_strtolower(trim($address));
-        $mailbox = DB::table('mailbox')->where('username', $username)->first(['username', 'active', 'kind', 'authsource', 'attributes']);
-        [$reason, $recovery] = $this->eligibility($mailbox);
+        $reason = $this->locks->run(self::lockNames($username), function () use ($username, $host): ?string {
+            // Resolve the recipient only after excluding concurrent deletion/recreation.
+            $mailbox = DB::table('mailbox')->where('username', $username)->first(['username', 'active', 'kind', 'authsource', 'attributes']);
+            [$reason, $recovery] = $this->eligibility($mailbox);
 
-        if ($reason === null && $mailbox !== null) {
-            $username = (string) $mailbox->username;
-            $reason = $this->locks->run(['restv2_pwreset_'.sha1($username)], function () use ($username, $recovery, $host): ?string {
-                if (DB::table('reset_password')->where('username', $username)->count() >= $this->config->pwResetTokenLimit()) {
-                    return 'tokenLimitReached';
-                }
+            if ($reason !== null) {
+                return $reason;
+            }
 
-                $token = self::newToken();
-                DB::insert('INSERT INTO `reset_password` (`username`, `token`) VALUES (?, ?)', [$username, $token]);
+            if (DB::table('reset_password')->where('username', $username)->count() >= $this->config->pwResetTokenLimit()) {
+                return 'tokenLimitReached';
+            }
 
-                if (! $this->mailer->send($username, (string) $recovery, $this->links->link($host, $token))) {
-                    DB::delete('DELETE FROM `reset_password` WHERE `username` = ? AND `token` = ?', [$username, $token]);
+            $token = self::newToken();
+            DB::insert('INSERT INTO `reset_password` (`username`, `token`) VALUES (?, ?)', [$username, $token]);
 
-                    return 'messageNotSent';
-                }
+            if (! $this->mailer->send($username, (string) $recovery, $this->links->link($host, $token))) {
+                DB::delete('DELETE FROM `reset_password` WHERE `username` = ? AND `token` = ?', [$username, $token]);
 
-                return null;
-            });
-        }
+                return 'messageNotSent';
+            }
+
+            return null;
+        });
 
         $this->audit->record(
             AuditEventType::PasswordResetRequest,
@@ -181,8 +184,23 @@ class PasswordResetService
      */
     public function complete(Request $request, string $token, string $newPassword, ?array $secondFactor): array
     {
+        $username = $this->find($token)['username'];
+
+        return $this->locks->run(self::lockNames($username), fn (): array => $this->completeLocked($request, $username, $token, $newPassword, $secondFactor));
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $secondFactor
+     * @return array{address: string}
+     */
+    private function completeLocked(Request $request, string $username, string $token, string $newPassword, ?array $secondFactor): array
+    {
+        // A deletion or another reset may have consumed the token while we waited.
         $found = $this->find($token);
-        $username = $found['username'];
+
+        if ($found['username'] !== $username) {
+            throw new ProblemException(ProblemType::InvalidResetToken);
+        }
 
         $violations = new FieldViolations;
         $this->rules->validate($newPassword, $violations);
@@ -217,6 +235,12 @@ class PasswordResetService
         $this->cacheFlush->flush();
 
         return ['address' => $username];
+    }
+
+    /** @return list<string> */
+    private static function lockNames(string $username): array
+    {
+        return [AddressLock::name($username), 'restv2_pwreset_'.sha1($username)];
     }
 
     /**

@@ -29,8 +29,24 @@ class DnsDiagnosticsController extends Controller
         $gate = Gate::forUser($principal);
         $gate->authorize('dnsDiagnostics.run');
 
-        $window = $limiter->check($principal);
+        self::requireCapacity($limiter->check($principal));
 
+        $name = $names->resolve($principal, $diagnosticsName);
+
+        if ($name === null || ! $name->isMailDomain()) {
+            throw new NotFoundHttpException('The name is neither a domain nor an alias domain.');
+        }
+
+        $counted = $limiter->hit($principal);
+        self::requireCapacity($counted);
+        $report = $diagnostics->run($name, $gate->allows('dnsDiagnostics.serverChecks'), self::httpsPort($request));
+
+        return NoStore::apply(response()->json(['data' => $report->toArray()], 200, self::headers($counted['limit'], $counted['remaining'], $counted['reset']), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }
+
+    /** @param array{allowed: bool, limit: int, remaining: int, reset: int} $window */
+    private static function requireCapacity(array $window): void
+    {
         if (! $window['allowed']) {
             $retryAfter = max(1, $window['reset']);
 
@@ -41,17 +57,6 @@ class DnsDiagnosticsController extends Controller
                 ['Retry-After' => (string) $retryAfter] + self::headers($window['limit'], 0, $window['reset']),
             );
         }
-
-        $name = $names->resolve($principal, $diagnosticsName);
-
-        if ($name === null || ! $name->isMailDomain()) {
-            throw new NotFoundHttpException('The name is neither a domain nor an alias domain.');
-        }
-
-        $counted = $limiter->hit($principal);
-        $report = $diagnostics->run($name, $gate->allows('dnsDiagnostics.serverChecks'), self::httpsPort($request));
-
-        return NoStore::apply(response()->json(['data' => $report->toArray()], 200, self::headers($counted['limit'], $counted['remaining'], $counted['reset']), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 
     /**

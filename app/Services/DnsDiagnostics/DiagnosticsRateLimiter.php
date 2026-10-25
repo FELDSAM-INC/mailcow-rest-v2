@@ -5,6 +5,7 @@ namespace App\Services\DnsDiagnostics;
 use App\Auth\Principal;
 use App\Support\Clock\Clock;
 use Illuminate\Support\Facades\Redis;
+use RuntimeException;
 
 /**
  * The run limit of DNS diagnostics (feature 010 FR-049, research R20): RESTV2_DNS_DIAGNOSTICS_PER_MINUTE
@@ -18,10 +19,10 @@ class DiagnosticsRateLimiter
     private const WINDOW = 60;
 
     /**
-     * One atomic hit: a new window when the stored one has ended, then one more run.
+     * Atomically reserves a slot only when the current window has capacity.
      */
     private const HIT = <<<'LUA'
-        local now, window = tonumber(ARGV[1]), tonumber(ARGV[2])
+        local now, window, limit = tonumber(ARGV[1]), tonumber(ARGV[2]), tonumber(ARGV[3])
         local reset = tonumber(redis.call('HGET', KEYS[1], 'resetAt') or '0')
         local count = tonumber(redis.call('HGET', KEYS[1], 'count') or '0')
         if reset <= now then
@@ -29,10 +30,13 @@ class DiagnosticsRateLimiter
           reset = now + window
           redis.call('HSET', KEYS[1], 'resetAt', tostring(reset))
         end
+        if count >= limit then
+          return {0, count, tostring(reset)}
+        end
         count = count + 1
         redis.call('HSET', KEYS[1], 'count', tostring(count))
         redis.call('EXPIRE', KEYS[1], window * 2)
-        return {count, tostring(reset)}
+        return {1, count, tostring(reset)}
         LUA;
 
     public function __construct(private readonly Clock $clock) {}
@@ -64,20 +68,25 @@ class DiagnosticsRateLimiter
     }
 
     /**
-     * Counts a run that starts.
+     * Reserves a run. Callers must check allowed even after a successful check().
      *
-     * @return array{limit: int, remaining: int, reset: int}
+     * @return array{allowed: bool, limit: int, remaining: int, reset: int}
      */
     public function hit(Principal $principal): array
     {
         $now = $this->now();
-        $client = Redis::connection('restv2')->client();
-        $answer = $client instanceof \Redis ? $client->eval(self::HIT, [self::key($principal), (string) $now, (string) self::WINDOW], 1) : false;
-        $count = is_array($answer) ? (int) ($answer[0] ?? 1) : 1;
-        $reset = is_array($answer) ? (float) ($answer[1] ?? $now + self::WINDOW) : $now + self::WINDOW;
         $limit = self::limit();
+        $client = Redis::connection('restv2')->client();
+        $answer = $client instanceof \Redis ? $client->eval(self::HIT, [self::key($principal), (string) $now, (string) self::WINDOW, (string) $limit], 1) : false;
 
-        return ['limit' => $limit, 'remaining' => max(0, $limit - $count), 'reset' => max(0, (int) ceil($reset - $now))];
+        if (! is_array($answer) || count($answer) !== 3) {
+            throw new RuntimeException('The DNS diagnostics quota could not be reserved.');
+        }
+
+        $count = (int) $answer[1];
+        $reset = (float) $answer[2];
+
+        return ['allowed' => (int) $answer[0] === 1, 'limit' => $limit, 'remaining' => max(0, $limit - $count), 'reset' => max(0, (int) ceil($reset - $now))];
     }
 
     private static function limit(): int

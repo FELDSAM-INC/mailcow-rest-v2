@@ -264,6 +264,11 @@ generic OIDC) or with their LDAP or Keycloak (mailpassword flow) password throug
 - **Synchronisation**: the user import and the periodic full synchronisation stay in mailcow's
   php-fpm container (`crons/keycloak-sync.php`, `crons/ldap-sync.php`, run every minute by ofelia).
   The API never runs them; it derives their status from mailcow's scheduled-job log (`CRON_LOG`).
+- **Verified SSO email**: Keycloak and generic OIDC must return the JSON boolean
+  `email_verified: true` from UserInfo, both at sign-in and token renewal. Missing, false or
+  string values are refused before selecting or creating a mailbox. Configure the provider's
+  email verification and claim mapping before enabling SSO; an unverified address cannot be
+  used to claim an existing mailbox.
 - **LDAP with a private certificate authority**: mount the CA certificate into the API container and
   set `LDAPTLS_CACERT` to its path (the container uses its system bundle otherwise), or set
   "ignore TLS certificate errors" in the configuration.

@@ -61,7 +61,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Scan
+      - name: Scan ${{ env.SCAN_SCOPE }} (USD ${{ env.SCAN_MAX_COST }} estimated limit)
         id: security
         uses: openai/codex-security@3f61e5150981a5087c32e4395bbaa8ce5ce0c3e3 # action-v0.3.0
         with:

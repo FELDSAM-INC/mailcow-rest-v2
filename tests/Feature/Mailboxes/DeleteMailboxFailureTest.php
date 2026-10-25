@@ -27,12 +27,14 @@ class DeleteMailboxFailureTest extends TestCase
 
         $this->mailcow()->domain('example.org');
         $this->mailcow()->legacyMailbox('anna@example.org');
+        $this->mailcow()->resetToken('anna@example.org', '3F9A1C-0B7E22-9D4F10-A6C3E8-51B2D7');
         $this->redis()->hSet('RL_VALUE', 'anna@example.org', '10 / 1h');
     }
 
     private function assertNothingRemoved(): void
     {
         $this->assertNotNull($this->mailboxRow('anna@example.org'));
+        $this->assertTrue(DB::table('reset_password')->where('username', 'anna@example.org')->exists());
         $this->assertTrue(DB::table('alias')->where('address', 'anna@example.org')->exists());
         $this->assertSame('10 / 1h', $this->redis()->hGet('RL_VALUE', 'anna@example.org'));
     }

@@ -877,7 +877,9 @@ into each external step and check that the mailbox is left as it was.
   - its rate limit in the shared store.
 
   It MUST also remove what legacy leaves behind: its tagged-mail handling in the shared store and
-  its recent-login records, so that a later mailbox with the same address inherits nothing.
+  its recent-login records and password-reset tokens, so that a later mailbox with the same
+  address inherits nothing. **Security deviation**: reset tokens are removed in the same
+  transaction as the mailbox; a token for the deleted owner cannot reset a replacement mailbox.
 - **FR-042**: The database part of a deletion MUST succeed or fail as a whole. After it, the system
   MUST remove the mailbox from the groupware directory view and flush the groupware cache (unless
   webmail is disabled).

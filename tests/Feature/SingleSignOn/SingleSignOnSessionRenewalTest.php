@@ -110,6 +110,17 @@ class SingleSignOnSessionRenewalTest extends TestCase
         $this->assertEnded('emailChanged');
     }
 
+    public function test_an_unverified_email_ends_the_session_on_renewal(): void
+    {
+        $this->signIn();
+        $claims = IdentityProviderFixtures::userInfo('anna@example.org');
+        $claims['email_verified'] = false;
+        $this->idp->tokenIssued('refresh_token')->userInfo($claims);
+        $this->travel(6)->minutes();
+
+        $this->assertEnded('providerRefused');
+    }
+
     public function test_a_removed_or_changed_configuration_ends_the_session_at_the_next_request(): void
     {
         $this->signIn();

@@ -87,9 +87,14 @@ class IdentityProviderSessionGuard
 
                 try {
                     $tokens = $this->oidc->refresh($endpoints, $link['refreshToken']);
-                    $email = SingleSignOnService::email($this->oidc->userInfo($endpoints, $tokens->accessToken)['email'] ?? null);
+                    $details = $this->oidc->userInfo($endpoints, $tokens->accessToken);
+                    $email = SingleSignOnService::email($details['email'] ?? null);
                 } catch (OidcFailure $e) {
                     $this->end($request, $principal, $e->isUnavailable() ? 'providerUnavailable' : 'providerRefused');
+                }
+
+                if (($details['email_verified'] ?? null) !== true) {
+                    $this->end($request, $principal, 'providerRefused');
                 }
 
                 if ($email !== $principal->username) {

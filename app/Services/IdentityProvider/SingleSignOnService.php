@@ -115,6 +115,13 @@ class SingleSignOnService
             throw new ProblemException(ProblemType::SignInFailed);
         }
 
+        // Mailbox selection is by address, so the provider must attest to its ownership.
+        if (($details['email_verified'] ?? null) !== true) {
+            $this->fail($email, $config->type, 'providerRefused', []);
+
+            throw new ProblemException(ProblemType::SignInFailed);
+        }
+
         $mappingValue = self::firstValue($details['mailcow_template'] ?? null);
         $name = is_string($details['name'] ?? null) ? $details['name'] : null;
         $requestId = RequestContext::requestId($request);

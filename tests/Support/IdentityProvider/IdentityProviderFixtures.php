@@ -82,7 +82,7 @@ final class IdentityProviderFixtures
      */
     public static function userInfo(string $email, ?string $name = null, string|array|null $template = null): array
     {
-        $claims = ['sub' => 'sub-'.sha1($email), 'email' => $email, 'email_verified' => false, 'preferred_username' => explode('@', $email)[0]];
+        $claims = ['sub' => 'sub-'.sha1($email), 'email' => $email, 'email_verified' => true, 'preferred_username' => explode('@', $email)[0]];
 
         if ($name !== null) {
             $claims['name'] = $name;

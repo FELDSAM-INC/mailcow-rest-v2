@@ -17,6 +17,44 @@ class CompleteSingleSignOnTest extends TestCase
 {
     use SingleSignOnTestHelpers;
 
+    /** @return iterable<string, array{string, mixed}> */
+    public static function unverifiedEmails(): iterable
+    {
+        foreach (['keycloak', 'generic-oidc'] as $provider) {
+            foreach (['missing' => 'missing', 'false' => false, 'null' => null, 'zero' => 0, 'one' => 1, 'string true' => 'true', 'string false' => 'false'] as $name => $claim) {
+                yield $provider.' '.$name => [$provider, $claim];
+            }
+        }
+    }
+
+    #[DataProvider('unverifiedEmails')]
+    public function test_only_a_boolean_true_email_verification_can_sign_in(string $provider, mixed $claim): void
+    {
+        if ($provider === 'keycloak') {
+            $this->mailcow()->keycloakConfig();
+        } else {
+            $this->mailcow()->genericOidcConfig();
+        }
+
+        $this->externalMailbox('anna@example.org', $provider);
+        $before = DB::table('mailbox')->where('username', 'anna@example.org')->first();
+        $claims = IdentityProviderFixtures::userInfo('anna@example.org');
+        $claims['email_verified'] = $claim;
+
+        if ($claim === 'missing') {
+            unset($claims['email_verified']);
+        }
+
+        FakeOidcProvider::install()->tokenIssued()->userInfo($claims);
+        $this->completeSso($this->startSso()['state'])->assertUnauthorized()
+            ->assertJsonPath('type', '/api/v2/problems/sign-in-failed');
+
+        $this->getJson('/api/v2/me')->assertUnauthorized();
+        $this->assertEquals($before, DB::table('mailbox')->where('username', 'anna@example.org')->first());
+        $this->assertSame('providerRefused', $this->signInAudit()[0]->failure_reason);
+        $this->assertSame(0, DB::table('sasl_log')->where('username', 'anna@example.org')->count());
+    }
+
     public function test_a_keycloak_mailbox_signs_in_without_a_mailcow_second_factor(): void
     {
         $this->mailcow()->keycloakConfig(['mappers' => '[]', 'templates' => '[]']);

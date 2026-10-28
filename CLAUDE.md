@@ -1,5 +1,7 @@
 # mailcow REST API v2
 
+@AGENTS.md
+
 Contract-first REST API for mailcow-dockerized. Laravel 13 (PHP 8.3+), MariaDB (upstream mailcow
 schema), Redis. Base path `/api/v2`. The Vue web app lives in a separate repo
 (`../mailcowui-ng`) and consumes this API's released contract.

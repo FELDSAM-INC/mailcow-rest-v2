@@ -24,7 +24,8 @@ RUN set -eux; \
     apk add --no-cache icu-libs libldap ca-certificates; \
     # Feature 011 (research R20, R29): ban rules must compile in the ban service's dialect,
     # Python `re`, which only Python decides reliably (PSF-2.0, GPL-compatible).
-    apk add --no-cache python3; \
+    # Require the CVE-2026-115557 fix in both dev and production images.
+    apk add --no-cache 'python3>=3.14.10-r0'; \
     python3 -c "import re, json"; \
     # Feature 006 (research R7, R23): the legacy quarantine notifier's template engine, sandbox and
     # HTML-to-text converter (Jinja2 and MarkupSafe BSD-3-Clause, html2text GPL-3.0), so that a

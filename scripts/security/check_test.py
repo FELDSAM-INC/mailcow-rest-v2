@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+import tarfile
 import unittest
 from unittest.mock import patch
 
@@ -17,6 +18,38 @@ class SecurityRunnerTests(unittest.TestCase):
         with patch.object(checker.urllib.request, 'urlopen', return_value=io.BytesIO(b'tampered')):
             with self.assertRaisesRegex(RuntimeError, 'Checksum mismatch'):
                 checker.download('https://example.invalid/tool', '0' * 64)
+
+    def test_arm64_uses_its_pinned_archive_and_a_separate_binary_cache(self):
+        archive = io.BytesIO()
+        with tarfile.open(fileobj=archive, mode='w') as output:
+            member = tarfile.TarInfo('trivy')
+            payload = b'arm64 executable'
+            member.size = len(payload)
+            output.addfile(member, io.BytesIO(payload))
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(checker, 'CACHE', Path(directory)), \
+                patch.object(checker.platform, 'system', return_value='Linux'), \
+                patch.object(checker.platform, 'machine', return_value='aarch64'), \
+                patch.object(checker, 'download', return_value=archive.getvalue()) as download:
+            amd64 = Path(directory) / ('trivy-' + checker.LOCK['trivy']['version']) / 'trivy'
+            amd64.parent.mkdir()
+            amd64.write_bytes(b'amd64 executable')
+            target = Path(checker.binary('trivy'))
+            pinned = checker.LOCK['trivy']['platforms']['linux/arm64']
+            download.assert_called_once_with(pinned['url'], pinned['sha256'])
+            self.assertEqual(target.read_bytes(), payload)
+            self.assertEqual(target.stat().st_mode & 0o777, 0o755)
+            self.assertEqual(amd64.read_bytes(), b'amd64 executable')
+            self.assertEqual(checker.binary('trivy'), str(target))
+            self.assertEqual(download.call_count, 1)
+
+    def test_unpinned_arm64_tool_cannot_fall_back_to_an_amd64_binary(self):
+        with patch.object(checker.platform, 'system', return_value='Linux'), \
+                patch.object(checker.platform, 'machine', return_value='arm64'), \
+                patch.object(checker, 'download') as download:
+            with self.assertRaisesRegex(RuntimeError, 'no verified Linux ARM64 binary'):
+                checker.binary('gitleaks')
+            download.assert_not_called()
 
     def test_secret_reports_redact_values_and_scan_all_history(self):
         with patch.object(checker, 'binary', return_value='gitleaks'), patch.object(checker, 'run') as run:

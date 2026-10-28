@@ -24,3 +24,9 @@ bootstrap/cache/*.php
 tests/fixtures/schema
 
 security-reports
+resources/contract
+resources/docs/*
+!resources/docs/.gitkeep
+public/hot
+public/storage
+storage/dev-mailcow

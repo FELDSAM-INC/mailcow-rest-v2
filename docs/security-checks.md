@@ -128,3 +128,36 @@ A repository administrator should verify these settings in each public repositor
 
 Workflow files cannot enable these repository settings. They require authenticated GitHub administrator
 access. Independent human review remains a separate release requirement; see the review brief.
+
+## Build cache and image promotion
+
+Production images are built and checked on native `ubuntu-24.04` (AMD64) and
+`ubuntu-24.04-arm` (ARM64) runners. Each platform has its own BuildKit GHA cache,
+exported with `mode=max` so intermediate dependency and compilation layers survive.
+The scopes are stable across commits; BuildKit hashes each layer's actual inputs
+rather than discarding the whole cache whenever the Dockerfile or a lockfile changes.
+
+- `api-production-linux-amd64` and `api-production-linux-arm64`: production builds.
+- `api-dev-linux-amd64`: the development image, built once and passed as a Docker
+  archive to formatting/static analysis and all schema-test jobs. Development and
+  production builds can import their common PHP layers from each other's platform cache.
+
+PHP compilation, PECL extensions, and the Python runtime have separate layers. A Python
+security-floor update does not recompile PHP extensions. Composer installs depend on
+`composer.json` and `composer.lock`; production builds do not install the dev toolchain.
+Only runtime source files are copied into the application image. OpenAPI/Swagger assets
+run on the build host's architecture, and their tools are cached before contract inputs.
+
+Trusted main/tag runs first push provisional `scan-*` images. Each native image job scans
+and exercises its exact digest, then uploads that digest as a platform-specific workflow
+artifact. The publishing job assembles those existing platform images; it does not build
+again. All existing application/security gates must pass, and both architectures of the
+assembled index are scanned again before `latest`, SHA, or version tags are promoted.
+Pull requests and non-publishing runs load and check images locally without registry login
+or pushes. ARM64 uses the separately checksum-pinned Trivy binary; severity policy and
+complete reports/SBOMs are unchanged.
+
+The first run after changing cache scopes is cold. Later runs reuse unchanged layers.
+npm/Composer cache mounts also help on a reused local builder; their mutable download
+contents are not themselves exported by the GHA layer cache. To inspect actual cache hits,
+use `docker build --progress=plain` and look for `CACHED` on the expensive steps.

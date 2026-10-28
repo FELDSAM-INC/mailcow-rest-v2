@@ -5,7 +5,7 @@
 #   base        php-fpm 8.4 with the runtime extensions, non-root (uid 82)
 #   dev         base plus the toolchain (Composer, Node, database and Redis clients, pcov)
 #   assets      the bundled contract and the Swagger UI assets (Node)
-#   vendor      the application with its production dependencies (built in the dev stage)
+#   vendor      the application with its production dependencies (without the dev toolchain)
 #   production  the deployable image: read-only root filesystem, php-fpm on port 9000
 #
 # Build context: the repository root (`docker build -f docker/php/Dockerfile .`).
@@ -14,24 +14,11 @@ ARG PHP_IMAGE=php:8.4-fpm-alpine@sha256:93aa3f61216b73cc6f878235c9772849449f4efc
 
 FROM ${PHP_IMAGE} AS base
 
-ARG PHPREDIS_VERSION=6.2.0
-ARG MAILPARSE_VERSION=3.2.0
-
 # ldap (feature 012, research R2): the LDAP identity provider. libldap and the CA bundle stay at
 # runtime; openldap-dev is only needed to compile the extension.
 RUN set -eux; \
     apk upgrade --no-cache; \
     apk add --no-cache icu-libs libldap ca-certificates; \
-    # Feature 011 (research R20, R29): ban rules must compile in the ban service's dialect,
-    # Python `re`, which only Python decides reliably (PSF-2.0, GPL-compatible).
-    # Require the CVE-2026-115557 fix in both dev and production images.
-    apk add --no-cache 'python3>=3.14.10-r0'; \
-    python3 -c "import re, json"; \
-    # Feature 006 (research R7, R23): the legacy quarantine notifier's template engine, sandbox and
-    # HTML-to-text converter (Jinja2 and MarkupSafe BSD-3-Clause, html2text GPL-3.0), so that a
-    # notification template is checked exactly as quarantine_notify.py renders it.
-    apk add --no-cache py3-jinja2 py3-markupsafe py3-html2text; \
-    python3 -I -c "import jinja2.sandbox, html2text"; \
     # Feature 013 (research R3, R27): GD decodes uploaded raster logos to check that they are valid
     # images (legacy uses Imagick). Only libpng and libjpeg-turbo stay at runtime.
     apk add --no-cache libpng libjpeg-turbo; \
@@ -41,15 +28,33 @@ RUN set -eux; \
     php -m | grep -qi '^gd$'; \
     # OPcache is compiled into the official PHP 8.4 images; install it only where it is not.
     if ! php -m | grep -qi '^Zend OPcache$'; then docker-php-ext-install opcache; fi; \
+    apk del .build-deps
+
+# Keep extension versions in separate layers: updating one does not recompile the core extensions.
+ARG PHPREDIS_VERSION=6.2.0
+RUN set -eux; \
+    apk add --no-cache --virtual .build-deps $PHPIZE_DEPS linux-headers; \
     pecl install "redis-${PHPREDIS_VERSION}"; \
     docker-php-ext-enable redis; \
-    # Feature 006 (research R5, R23): PECL mailparse (PHP-3.01), required by legacy's MIME parser
-    # php-mime-mail-parser, which parses quarantined messages exactly as the legacy detail view.
+    apk del .build-deps; \
+    rm -rf /tmp/pear ~/.pearrc
+
+# Feature 006: the legacy MIME parser needs mailparse (PHP-3.01).
+ARG MAILPARSE_VERSION=3.2.0
+RUN set -eux; \
+    apk add --no-cache --virtual .build-deps $PHPIZE_DEPS; \
     pecl install "mailparse-${MAILPARSE_VERSION}"; \
     docker-php-ext-enable mailparse; \
     php -m | grep -qi '^mailparse$'; \
     apk del .build-deps; \
     rm -rf /tmp/pear ~/.pearrc
+
+# Python validates Fail2Ban regexes and quarantine templates. Updating its security floor must
+# not invalidate the expensive PHP compilation layers above (CVE-2026-115557).
+ARG PYTHON_MIN_VERSION=3.14.10-r0
+RUN set -eux; \
+    apk add --no-cache "python3>=${PYTHON_MIN_VERSION}" py3-jinja2 py3-markupsafe py3-html2text; \
+    python3 -I -c "import re, json, jinja2.sandbox, html2text"
 
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-restv2.ini
 COPY docker/php/php-fpm.conf /usr/local/etc/php-fpm.d/zz-restv2.conf
@@ -91,39 +96,53 @@ USER 82
 
 # ---------------------------------------------------------------------------------------------
 # The bundled contract served at /api/v2/openapi.yaml and the Swagger UI assets of /api/v2/docs.
-FROM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS assets
+FROM --platform=$BUILDPLATFORM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS assets
 
 ARG REDOCLY_CLI=@redocly/cli@2.64.1
-ARG SWAGGER_UI_DIST=5.33.0
 
 WORKDIR /build
-COPY api/ api/
-COPY redocly.yaml .redocly.lint-ignore.yaml ./
-
-RUN set -eux; \
-    npx --yes "${REDOCLY_CLI}" bundle api/openapi.yaml --output resources/contract/openapi.yaml; \
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --prefix /tools --no-audit --no-fund "${REDOCLY_CLI}"
+ARG SWAGGER_UI_DIST=5.33.0
+RUN --mount=type=cache,target=/root/.npm set -eux; \
     mkdir -p swagger resources/docs; \
     cd swagger; \
     npm pack --silent "swagger-ui-dist@${SWAGGER_UI_DIST}" > /dev/null; \
     tar -xzf "swagger-ui-dist-${SWAGGER_UI_DIST}.tgz"; \
     cp package/swagger-ui.css package/swagger-ui-bundle.js package/LICENSE /build/resources/docs/
 
+COPY api/ api/
+COPY redocly.yaml .redocly.lint-ignore.yaml ./
+RUN /tools/node_modules/.bin/redocly bundle api/openapi.yaml --output resources/contract/openapi.yaml
+
 # ---------------------------------------------------------------------------------------------
-# The application with its production dependencies, installed with the dev stage's toolchain.
-FROM dev AS vendor
+# Composer needs neither pcov nor Node, database clients, or the other development tools.
+FROM base AS vendor
 
 USER root
 WORKDIR /app
+RUN apk add --no-cache git unzip
+COPY --from=composer:2@sha256:b6dcd72ca98fa19d0e5b8476de179859704891fad06dd9e0b96833d4c430a5fc /usr/bin/composer /usr/bin/composer
 
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --no-progress --prefer-dist
+ARG TARGETARCH
+RUN --mount=type=cache,id=api-composer-${TARGETARCH},target=/tmp/composer-cache \
+    COMPOSER_CACHE_DIR=/tmp/composer-cache composer install --no-dev --no-scripts --no-autoloader --no-interaction --no-progress --prefer-dist
 
-COPY . .
+# Only runtime inputs invalidate application assembly; tests, workflows and release notes do not.
+COPY artisan LICENSE ./
+COPY app/ app/
+COPY bootstrap/ bootstrap/
+COPY config/ config/
+COPY database/ database/
+COPY public/ public/
+COPY resources/ resources/
+COPY routes/ routes/
+COPY docs/problems.md docs/problems.md
 RUN set -eux; \
-    composer dump-autoload --no-dev --classmap-authoritative --no-interaction; \
-    rm -rf tests docker scripts phpunit.xml phpstan.neon pint.json \
-        .env.example .editorconfig .gitattributes .gitignore .dockerignore redocly.yaml .redocly.lint-ignore.yaml \
-        compose.yaml CLAUDE.md storage/logs/* bootstrap/cache/*.php
+    mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views \
+        storage/app/private storage/app/public storage/logs; \
+    composer dump-autoload --no-dev --classmap-authoritative --no-interaction
 
 # ---------------------------------------------------------------------------------------------
 # The deployable image (R23). It runs as www-data (uid 82) with a read-only root filesystem:

@@ -13,7 +13,12 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 env:
+  PUBLISH_IMAGES: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
   REDOCLY_CLI: '@redocly/cli@2.64.1'
   OASDIFF_IMAGE: tufin/oasdiff:v1.32.1
   IMAGE_NAME: ghcr.io/feldsam-inc/mailcow-rest-v2
@@ -65,22 +70,50 @@ jobs:
             build/contract/openapi.yaml
             build/contract/openapi.json
 
-  quality:
-    name: Pint and Larastan
+  dev-image:
+    name: Shared development image (AMD64)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - name: Build the dev image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+      - name: Build the dev image once for quality and schema tests
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
           context: .
           file: docker/php/Dockerfile
           target: dev
+          platforms: linux/amd64
           load: true
           tags: ${{ env.DEV_IMAGE }}
-          cache-from: type=gha,scope=dev
-          cache-to: type=gha,scope=dev,mode=max
+          cache-from: |
+            type=gha,scope=api-dev-linux-amd64
+            type=gha,scope=api-production-linux-amd64
+          cache-to: type=gha,scope=api-dev-linux-amd64,mode=max
+      - name: Export the dev image
+        run: |
+          mkdir -p "$RUNNER_TEMP/dev-image"
+          docker save --output "$RUNNER_TEMP/dev-image/image.tar" "$DEV_IMAGE"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: dev-image-linux-amd64
+          path: ${{ runner.temp }}/dev-image/image.tar
+          compression-level: 1
+          retention-days: 1
+
+  quality:
+    needs: dev-image
+    name: Pint and Larastan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: dev-image-linux-amd64
+          path: ${{ runner.temp }}/dev-image
+      - name: Load the shared dev image
+        run: docker load --input "$RUNNER_TEMP/dev-image/image.tar"
       - name: Composer install
         run: docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app "$DEV_IMAGE" composer install --no-interaction --no-progress
       - name: Pint
@@ -102,7 +135,7 @@ jobs:
 
   tests:
     name: Tests (schema ${{ matrix.schema }})
-    needs: schemas
+    needs: [schemas, dev-image]
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -144,17 +177,12 @@ jobs:
           docker exec "${{ job.services.mariadb.id }}" mariadb -uroot -proot -e \
             "SET GLOBAL character_set_server = 'utf8mb4'; SET GLOBAL collation_server = 'utf8mb4_general_ci'; SET GLOBAL innodb_strict_mode = 0;"
           docker exec "${{ job.services.redis.id }}" redis-cli CONFIG SET requirepass devredispass
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - name: Build the dev image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          context: .
-          file: docker/php/Dockerfile
-          target: dev
-          load: true
-          tags: ${{ env.DEV_IMAGE }}
-          cache-from: type=gha,scope=dev
-          cache-to: type=gha,scope=dev,mode=max
+          name: dev-image-linux-amd64
+          path: ${{ runner.temp }}/dev-image
+      - name: Load the shared dev image
+        run: docker load --input "$RUNNER_TEMP/dev-image/image.tar"
       - name: Composer install
         run: docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app "$DEV_IMAGE" composer install --no-interaction --no-progress
       - name: composer test
@@ -189,38 +217,112 @@ jobs:
           if-no-files-found: ignore
 
   image:
-    name: Production image
-    runs-on: ubuntu-24.04
+    name: Production image (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - name: Build
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+      - name: Image tags and source labels
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ghcr.io/feldsam-inc/mailcow-rest-v2
+          flavor: latest=false
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,format=long
+            type=match,pattern=v(.*),group=1
+          labels: |
+            org.opencontainers.image.licenses=GPL-3.0-only
+      - name: Log in to GHCR
+        if: env.PUBLISH_IMAGES == 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build the native platform image once
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
           context: .
           file: docker/php/Dockerfile
           target: production
-          load: true
-          tags: ${{ env.IMAGE_NAME }}:ci
-          cache-from: type=gha,scope=production
-          cache-to: type=gha,scope=production,mode=max
-      - name: Scan production image
-        run: python3 scripts/security/check.py image --image "$IMAGE_NAME:ci"
+          platforms: linux/${{ matrix.arch }}
+          push: ${{ env.PUBLISH_IMAGES == 'true' }}
+          load: ${{ env.PUBLISH_IMAGES != 'true' }}
+          tags: ${{ env.IMAGE_NAME }}:scan-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.arch }}
+          sbom: ${{ env.PUBLISH_IMAGES == 'true' }}
+          provenance: ${{ env.PUBLISH_IMAGES == 'true' && 'mode=max' || 'false' }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=api-production-linux-${{ matrix.arch }}
+            type=gha,scope=api-dev-linux-${{ matrix.arch }}
+          cache-to: type=gha,scope=api-production-linux-${{ matrix.arch }},mode=max
+      - name: Select the exact image to test
+        id: reference
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_ARCH: ${{ matrix.arch }}
+        run: |
+          if [ "$PUBLISH_IMAGES" = 'true' ]; then
+            [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+            reference="$IMAGE_NAME@$IMAGE_DIGEST"
+          else
+            reference="$IMAGE_NAME:scan-$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$IMAGE_ARCH"
+          fi
+          echo "image=$reference" >> "$GITHUB_OUTPUT"
+      - name: Scan the platform image
+        env:
+          IMAGE_REFERENCE: ${{ steps.reference.outputs.image }}
+          IMAGE_ARCH: ${{ matrix.arch }}
+        run: python3 scripts/security/check.py image --image "$IMAGE_REFERENCE" --platform "linux/$IMAGE_ARCH"
       - name: Retain image scan and SBOM
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: production-image-security
+          name: production-image-security-linux-${{ matrix.arch }}
           path: security-reports/
           retention-days: 7
       - name: Liveness inside the container
-        run: docker run --rm "$IMAGE_NAME:ci" php /app/artisan restv2:health --live
+        env:
+          IMAGE_REFERENCE: ${{ steps.reference.outputs.image }}
+        run: docker run --rm "$IMAGE_REFERENCE" php /app/artisan restv2:health --live
       - name: nginx snippet
         run: |
           docker run --rm \
             -v "$PWD/docker/nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro" \
             -v "$PWD/deploy/nginx/site.restv2.custom:/etc/nginx/conf.d/site.restv2.custom:ro" \
             nginx:1.28-alpine nginx -t
+      - name: Record the verified platform digest
+        if: env.PUBLISH_IMAGES == 'true'
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          printf '%s\n' "$IMAGE_DIGEST" > "$RUNNER_TEMP/digests/linux-$IMAGE_ARCH.txt"
+      - if: env.PUBLISH_IMAGES == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: image-digest-linux-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/linux-${{ matrix.arch }}.txt
+          overwrite: true
+          retention-days: 1
 
   publish:
     name: Publish public image
@@ -240,9 +342,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-        with:
-          platforms: arm64
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Image tags and source labels
         id: meta
@@ -262,21 +361,25 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish AMD64 and ARM64 images
-        id: publish
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          context: .
-          file: docker/php/Dockerfile
-          target: production
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ghcr.io/feldsam-inc/mailcow-rest-v2:scan-${{ github.sha }}-${{ github.run_id }}
-          sbom: true
-          provenance: mode=max
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=production
-          cache-to: type=gha,scope=production,mode=max
+          pattern: image-digest-linux-*
+          path: ${{ runner.temp }}/digests
+          merge-multiple: true
+      - name: Assemble the already tested platform images
+        id: publish
+        run: |
+          sources=()
+          for architecture in amd64 arm64; do
+            digest="$(cat "$RUNNER_TEMP/digests/linux-$architecture.txt")"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+            sources+=("$IMAGE_NAME@$digest")
+          done
+          candidate="$IMAGE_NAME:scan-$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          docker buildx imagetools create --tag "$candidate" "${sources[@]}"
+          digest="$(docker buildx imagetools inspect "$candidate" --format '{{json .Manifest}}' | jq -r '.digest')"
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
       - name: Scan both candidate architectures before promoting release tags
         env:
           IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}

@@ -27,10 +27,18 @@ def download(url, digest):
 
 
 def binary(name):
-    if platform.system() != 'Linux' or platform.machine() not in ('x86_64', 'AMD64'):
-        raise RuntimeError('The pinned CLI binaries require Linux x86_64 (including CI).')
+    machine = platform.machine()
+    if platform.system() != 'Linux' or machine not in ('x86_64', 'AMD64', 'aarch64', 'arm64'):
+        raise RuntimeError('The pinned CLI binaries require Linux AMD64 or ARM64.')
     spec = LOCK[name]
-    target = CACHE / (name + '-' + spec['version']) / name
+    suffix = ''
+    if machine in ('aarch64', 'arm64'):
+        architecture = spec.get('platforms', {}).get('linux/arm64')
+        if architecture is None:
+            raise RuntimeError(name + ': no verified Linux ARM64 binary is pinned.')
+        spec = {**spec, **architecture}
+        suffix = '-arm64'
+    target = CACHE / (name + '-' + spec['version'] + suffix) / name
     # Validate the downloaded archive on every installation; never execute a remote script.
     if not target.exists():
         data = download(spec['url'], spec['sha256'])

@@ -4,6 +4,7 @@ namespace Tests\Feature\SingleSignOn;
 
 use App\Services\IdentityProvider\TemplateMarker;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\IdentityProvider\IdentityProviderFixtures;
 use Tests\Support\IdentityProvider\SingleSignOnTestHelpers;
 use Tests\TestCase;
@@ -28,6 +29,26 @@ class TemplateUpdateOnSignInTest extends TestCase
     private function marker(): string
     {
         return TemplateMarker::for((string) DB::table('templates')->where('template', 'Staff')->value('attributes'));
+    }
+
+    /** @return iterable<string, array{int}> */
+    public static function suspendedStatuses(): iterable
+    {
+        yield 'inactive' => [0];
+        yield 'login disabled' => [2];
+    }
+
+    #[DataProvider('suspendedStatuses')]
+    public function test_a_mapped_template_cannot_reactivate_a_suspended_mailbox(int $status): void
+    {
+        DB::table('mailbox')->where('username', 'anna@example.org')->update(['active' => $status]);
+        $before = (array) DB::table('mailbox')->where('username', 'anna@example.org')->first();
+        $this->keycloakSignIn(IdentityProviderFixtures::userInfo('anna@example.org', 'Anna Example', 'staff'));
+
+        $this->completeSso($this->startSso()['state'])->assertUnauthorized();
+
+        $this->assertEquals($before, (array) DB::table('mailbox')->where('username', 'anna@example.org')->first());
+        $this->assertSame('accountInactive', $this->signInAudit()[0]->failure_reason);
     }
 
     /**

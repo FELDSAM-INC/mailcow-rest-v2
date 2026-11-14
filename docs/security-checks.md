@@ -32,6 +32,22 @@ alias recipients in other domains (mailbox specification FR-041/FR-045). This do
 arbitrary edits to those aliases. Deletion previews retain the cascade counts but disclose alias
 addresses only within the caller's alias scope, including aliases of assigned domains.
 
+## Identity-provider session and suspension policy
+
+A provider template cannot reactivate an existing inactive or login-disabled mailbox during
+sign-in. The mailbox updater checks its current state under the write lock before applying
+any template fields. An administrator must explicitly reactivate it; active mailboxes still
+receive mapped-template updates, including a template that disables them.
+
+Provider access-token expiry and the local browser session have separate lifetimes. As required
+by feature 012 FR-026, a provider that supplies a refresh token is revalidated after five minutes;
+failure ends the session. Without a refresh token, the local session follows the ordinary session
+policy and is not revalidated with the provider. Provider-side logout or access-token expiry alone
+does not revoke that session. Local account/domain deactivation, account replacement, authentication
+source changes, removal of the provider configuration, and local session revocation still end access.
+Operators requiring provider-driven revocation must configure refresh-token issuance. This legacy
+compatibility rule does not permit an expired token to authenticate a new session.
+
 ## Sieve parser isolation
 
 Sieve validation runs the unmodified upstream parser in a PHP child with a one-second wall

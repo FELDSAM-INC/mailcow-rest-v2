@@ -177,10 +177,11 @@ class PasskeySignInTest extends TestCase
         $this->mailcow()->ensureDomain('example.org');
         $this->mailcow()->ensureDomain('inactive.example', 0);
         $this->mailcow()->mailbox('inactive@example.org', active: 0);
+        $this->mailcow()->mailbox('disabled@example.org', active: 2);
         $this->mailcow()->mailbox('user@inactive.example');
         $this->mailcow()->mailbox('room@example.org', kind: 'location');
 
-        foreach (['inactive@example.org', 'user@inactive.example', 'room@example.org'] as $username) {
+        foreach (['inactive@example.org', 'disabled@example.org', 'user@inactive.example', 'room@example.org'] as $username) {
             $this->signInWith($this->passkeyFor($username))->assertUnauthorized()->assertJsonPath('type', '/api/v2/problems/sign-in-failed');
         }
 

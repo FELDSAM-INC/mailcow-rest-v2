@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
  * @property string $kind
  * @property int $multiple_bookings
  * @property string|null $authsource
- * @property bool $active
+ * @property int $active
  */
 class Mailbox extends MailcowModel
 {
@@ -44,7 +44,8 @@ class Mailbox extends MailcowModel
     protected function casts(): array
     {
         return [
-            'active' => 'boolean',
+            // mailcow distinguishes active (1), login-disabled (2), and inactive (0).
+            'active' => 'integer',
             'quota' => 'integer',
             'attributes' => 'array',
             'custom_attributes' => 'array',

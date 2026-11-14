@@ -732,6 +732,9 @@ each filter.
   FR-034). It acts for the system and is not limited by any domain administrator's flags. The
   default template MUST NOT be used for updates. A failed update MUST NOT stop the sign-in and MUST
   be audited.
+  **Security deviation**: an existing inactive or login-disabled mailbox MUST NOT be updated by
+  provider sign-in, even when its mapped template is active. Check the current status under the
+  mailbox write lock; only an explicit administrator update may clear a local suspension.
 - **FR-026**: When the provider issued a renewal token at sign-in, the system MUST renew the
   provider tokens on the first request that arrives more than 5 minutes after the last renewal.
   The session MUST end, and that request MUST be answered with "identity provider session ended",

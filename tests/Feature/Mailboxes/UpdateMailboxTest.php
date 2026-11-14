@@ -11,6 +11,7 @@ use App\Services\PasswordReset\PasswordResetService;
 use App\Support\Hashing\LegacyPasswordVerifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Tests\Support\Mailboxes\MailboxTestHelpers;
 use Tests\TestCase;
 
@@ -261,5 +262,22 @@ class UpdateMailboxTest extends TestCase
         $this->assertFalse($updater->update($system, 'anna@example.org', ['displayName' => 'Anna Example'], null, null, false, ['templateMarker' => 'newer-marker'] + $options));
         $this->assertSame('newer-marker', $this->mailboxAttributes('anna@example.org')['attribute_hash'], 'a changed marker alone is recorded');
         $this->assertCount(1, $this->auditOf('mailboxUpdate'), 'and not audited');
+    }
+
+    public function test_only_an_explicit_admin_update_can_clear_a_local_suspension(): void
+    {
+        $this->asAdmin();
+        $this->patchMailbox('anna@example.org', ['status' => 'inactive'])->assertOk();
+        $system = new Principal('identity-provider-sign-in', Role::Admin, AccountKind::Admin, AuthMethod::SingleSignOn);
+
+        try {
+            $this->app->make(MailboxUpdater::class)->update($system, 'anna@example.org', ['status' => 'active'], null, options: ['templateMarker' => 'active-template']);
+            $this->fail('A template must not clear the locked mailbox suspension.');
+        } catch (AccessDeniedHttpException) {
+            $this->assertSame(0, (int) DB::table('mailbox')->where('username', 'anna@example.org')->value('active'));
+        }
+
+        $this->patchMailbox('anna@example.org', ['status' => 'active'])->assertOk();
+        $this->assertSame(1, (int) DB::table('mailbox')->where('username', 'anna@example.org')->value('active'));
     }
 }

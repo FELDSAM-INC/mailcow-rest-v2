@@ -16,6 +16,7 @@ use App\Support\Http\FieldViolations;
 use App\Support\Tags\TagSet;
 use Illuminate\Support\Facades\DB;
 use stdClass;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 
@@ -74,6 +75,12 @@ class MailboxUpdater
 
             if (! $row instanceof stdClass) {
                 throw new NotFoundHttpException('The mailbox does not exist.');
+            }
+
+            // Provider templates must not undo a local suspension. Check the locked row so
+            // an administrator's concurrent deactivation also wins over sign-in sync.
+            if (isset($options['templateMarker']) && (int) $row->active !== 1) {
+                throw new AccessDeniedHttpException('A provider template cannot update a disabled mailbox.');
             }
 
             $acl = DB::table('user_acl')->where('username', $address)->lockForUpdate()->first();

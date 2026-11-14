@@ -136,4 +136,14 @@ class GetSessionTest extends TestCase
 
         $this->getJson('/api/v2/session')->assertOk()->assertJsonPath('data.state', 'anonymous');
     }
+
+    public function test_disabling_mailbox_login_ends_an_existing_session(): void
+    {
+        $this->mailcow()->mailboxWithDomain('dave@example.org');
+        $this->signInAs('dave@example.org', Role::MailboxUser);
+        DB::table('mailbox')->where('username', 'dave@example.org')->update(['active' => 2]);
+
+        $this->getJson('/api/v2/me')->assertUnauthorized();
+        $this->getJson('/api/v2/session')->assertOk()->assertJsonPath('data.state', 'anonymous');
+    }
 }

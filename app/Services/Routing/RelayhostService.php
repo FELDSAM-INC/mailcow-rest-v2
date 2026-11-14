@@ -16,8 +16,9 @@ use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
  * FR-018–FR-021, FR-083, research R4, R12), each in one transaction with its audit record:
  *
  *  - credentials are trimmed and stored verbatim, without legacy's colon escaping; an omitted
- *    password is kept, `""` removes it, an empty username without a password removes both, and a
- *    password with an empty resulting username is refused;
+ *    password is kept only for the same destination and username; `""` removes it. An empty
+ *    username without a password removes both, and a password with an empty resulting username
+ *    is refused;
  *  - an edit writes only the columns that change, so legacy credentials with escaped colons stay
  *    byte-identical when neither is sent;
  *  - a deletion also clears every domain and mailbox assignment to the relayhost (legacy clears the
@@ -176,6 +177,10 @@ class RelayhostService implements RoutingBulkHandler
             'password' => ['password', $password],
             'active' => ['active', array_key_exists('active', $patch) && is_bool($patch['active']) ? (int) $patch['active'] : (int) $row->active],
         ];
+        SmtpCredentialRetention::validate(
+            (string) $row->hostname, $new['hostname'][1], (string) $row->username, $username, $password,
+            isset($patch['password']) && is_string($patch['password']), $violations,
+        );
         $changes = [];
 
         foreach ($new as $column => [$member, $value]) {

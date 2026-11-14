@@ -15,7 +15,8 @@ use Throwable;
  *    instead of legacy's `-`;
  *  - the plain-text part (`null` when empty) and the HTML part converted to text; when neither
  *    exists, the raw body after the first blank line converted to text, with `parserFallback`
- *    (legacy "Parser failed, assuming HTML");
+ *    (legacy "Parser failed, assuming HTML") only with attachment permission; otherwise only
+ *    recognized non-attachment body parts are eligible for display;
  *  - every text scrubbed of invalid UTF-8 (legacy blanks it), so that JSON never breaks;
  *  - the attachments of getAttachments(true) (inline parts included), in order, with the declared
  *    name made safe (`attachment-<position>` when unnamed), the declared type, the decoded size and
@@ -40,13 +41,14 @@ class QuarantineMessageParser
 
         $recipients[] = ['address' => $recipient, 'source' => 'envelope'];
 
-        $plain = self::text(self::body($parser, 'text'));
-        $fromHtml = self::text(self::html2text(self::body($parser, 'html')));
+        $plain = self::text(self::body($parser, 'text', $withAttachments));
+        $fromHtml = self::text(self::html2text(self::body($parser, 'html', $withAttachments)));
         $fallback = false;
 
         if ($plain === '' && $fromHtml === '') {
             $fallback = true;
-            $fromHtml = self::text(self::html2text(self::rawBody($message)));
+            // Raw MIME can contain encoded attachments even when no body part was recognized.
+            $fromHtml = $withAttachments ? self::text(self::html2text(self::rawBody($message))) : '';
         }
 
         $subject = $parser->getHeader('subject');
@@ -85,10 +87,10 @@ class QuarantineMessageParser
         return $valid;
     }
 
-    private static function body(QuarantineMimeParser $parser, string $type): string
+    private static function body(QuarantineMimeParser $parser, string $type, bool $withAttachments): string
     {
         try {
-            return (string) $parser->getMessageBody($type);
+            return $withAttachments ? (string) $parser->getMessageBody($type) : $parser->bodyWithoutAttachments($type);
         } catch (Throwable) {
             return '';
         }

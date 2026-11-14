@@ -54,9 +54,37 @@ class QuarantineMimeParser extends Parser
      */
     public function attachmentNames(): array
     {
+        return array_values($this->attachmentNamesByPart());
+    }
+
+    /** Select body text using the same attachment classification as attachment downloads. */
+    public function bodyWithoutAttachments(string $type): string
+    {
+        $attachmentIds = array_keys($this->attachmentNamesByPart());
+        foreach ($this->getParts() as $id => $part) {
+            if ($this->getPart('content-type', $part) !== ($type === 'html' ? 'text/html' : 'text/plain')) {
+                continue;
+            }
+            foreach ($attachmentIds as $attachmentId) {
+                if ((string) $id === (string) $attachmentId || $this->partIdIsChildOfPart($id, $attachmentId)) {
+                    continue 2;
+                }
+            }
+            $headers = $this->getPart('headers', $part);
+            $body = $this->decodeContentTransfer($this->getPartBody($part), $headers['content-transfer-encoding'] ?? '');
+
+            return $this->charset->decodeCharset($body, $this->getPartCharset($part));
+        }
+
+        return '';
+    }
+
+    /** @return array<int|string, string|null> */
+    private function attachmentNamesByPart(): array
+    {
         $names = [];
 
-        foreach ($this->getParts() as $part) {
+        foreach ($this->getParts() as $id => $part) {
             $disposition = $this->getPart('content-disposition', $part);
             $name = null;
 
@@ -77,7 +105,7 @@ class QuarantineMimeParser extends Parser
             }
 
             if (in_array($disposition, ['attachment', 'inline'], true)) {
-                $names[] = $name;
+                $names[$id] = $name;
             }
         }
 

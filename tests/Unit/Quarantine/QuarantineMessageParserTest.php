@@ -20,6 +20,35 @@ use Tests\TestCase;
  */
 class QuarantineMessageParserTest extends TestCase
 {
+    public function test_preview_text_never_includes_attachment_content_without_attachment_access(): void
+    {
+        foreach ([['application/octet-stream', true], ['text/plain', false], ['text/html', false]] as [$type, $disposition]) {
+            $message = MultipartMessage::attachmentOnly($type, $disposition);
+            $preview = $this->parser()->parse($message, 'alice@example.org', false);
+            $this->assertNull($preview->textPlain);
+            $this->assertSame('', $preview->textFromHtml);
+            $this->assertSame([], $preview->attachments);
+
+            $complete = $this->parser()->parse($message, 'alice@example.org', true);
+            $this->assertCount(1, $complete->attachments);
+            $this->assertSame('PRIVATE_ATTACHMENT_SENTINEL', $complete->attachments[0]->content);
+        }
+    }
+
+    public function test_body_selection_skips_an_attached_messages_children_and_named_text_parts(): void
+    {
+        $nested = "From: sender@example.net\r\nContent-Type: message/rfc822\r\n\r\n".
+            "From: private@example.net\r\nContent-Type: text/plain\r\n\r\nPRIVATE_ATTACHMENT_SENTINEL\r\n";
+        $preview = $this->parser()->parse($nested, 'alice@example.org', false);
+        $this->assertNull($preview->textPlain);
+        $this->assertSame('', $preview->textFromHtml);
+
+        $message = str_replace('--outer--', "--outer\r\nContent-Type: text/plain\r\n\r\nVisible message body.\r\n--outer--", MultipartMessage::attachmentOnly('text/plain', false));
+        $preview = $this->parser()->parse($message, 'alice@example.org', false);
+        $this->assertStringContainsString('Visible message body.', (string) $preview->textPlain);
+        $this->assertStringNotContainsString('PRIVATE_ATTACHMENT_SENTINEL', (string) $preview->textPlain);
+    }
+
     public function test_nested_messages_cannot_exceed_the_global_mime_part_budget(): void
     {
         $this->expectException(ProblemException::class);

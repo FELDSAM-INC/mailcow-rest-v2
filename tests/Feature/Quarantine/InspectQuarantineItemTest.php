@@ -98,6 +98,22 @@ class InspectQuarantineItemTest extends TestCase
         $this->assertNull($this->getJson("/api/v2/quarantine/{$none}")->assertOk()->json('data.authenticatedSender'));
     }
 
+    public function test_attachment_only_messages_do_not_leak_through_the_text_preview(): void
+    {
+        $this->asQuarantineUser('alice@example.org', ['quarantine' => 1, 'quarantine_attachments' => 0]);
+        $id = $this->item('alice@example.org', overrides: ['msg' => MultipartMessage::attachmentOnly()]);
+
+        $this->getJson("/api/v2/quarantine/{$id}")->assertOk()
+            ->assertJsonPath('data.content.textPlain', null)
+            ->assertJsonPath('data.content.textFromHtml', '')
+            ->assertJsonPath('data.content.attachments', null);
+        $this->getJson("/api/v2/quarantine/{$id}/attachments/0")->assertForbidden();
+        $this->getJson("/api/v2/quarantine/{$id}/message")->assertForbidden();
+
+        $this->asAdmin();
+        $this->assertSame('PRIVATE_ATTACHMENT_SENTINEL', $this->get("/api/v2/quarantine/{$id}/attachments/0")->assertOk()->getContent());
+    }
+
     public function test_a_message_above_the_content_limit_is_not_parsed(): void
     {
         $this->asQuarantineUser('alice@example.org');

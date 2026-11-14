@@ -24,7 +24,9 @@ use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
  *  - credentials belong to the next hop (letter case ignored, as Postfix's lookup compares them): a
  *    creation without credentials inherits them, one with another username is refused, one with a
  *    password replaces every password of the next hop; an edit that sends credentials applies them
- *    to the whole resulting next hop, and a move without credentials adopts the target's. Legacy
+ *    to the whole resulting next hop, and a move without credentials adopts the target's. Moving
+ *    to an unused next hop requires explicit password re-entry or removal; a stored password is
+ *    never carried to a different endpoint or username. Legacy
  *    instead wiped the shared password and overwrote the target's credentials.
  *
  * The other transports whose stored credentials changed are returned (for `meta`) and audited.
@@ -134,11 +136,13 @@ class TransportService implements RoutingBulkHandler
             $credentialsSent = array_key_exists('username', $patch) || array_key_exists('password', $patch);
             $username = (string) $row->username;
             $password = (string) $row->password;
+            $credentialSource = $row;
 
             if ($plan['nextHopChanged'] && $others->isNotEmpty()) {
                 $source = self::credentialSource($others);
                 $username = (string) $source->username;
                 $password = (string) $source->password;
+                $credentialSource = $source;
             }
 
             if (array_key_exists('username', $patch) && is_string($patch['username'])) {
@@ -151,10 +155,15 @@ class TransportService implements RoutingBulkHandler
                 $password = '';
             }
 
+            SmtpCredentialRetention::validate(
+                (string) $credentialSource->nexthop, $plan['values']['nexthop'],
+                (string) $credentialSource->username, $username, $password,
+                isset($patch['password']) && is_string($patch['password']), $violations,
+            );
             if ($credentialsSent) {
                 RelayhostService::credentialViolations($username, $password, $violations);
-                $violations->throwIfAny();
             }
+            $violations->throwIfAny();
 
             $values = $plan['values'] + ['username' => $username, 'password' => $password];
             $columns = [];

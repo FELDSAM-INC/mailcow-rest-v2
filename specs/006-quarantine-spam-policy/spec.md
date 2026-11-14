@@ -478,8 +478,8 @@ filtered by target.
 - **Item without a score or subject**: reported with no score and an empty subject.
 - **Item larger than 10 MiB**: summary and filter results only. Content, attachment and whole
   message downloads are refused with the "message too large" error.
-- **Message whose parts cannot be extracted**: the text derived from the raw body is returned, and
-  the plain-text part is reported as unavailable.
+- **Message whose parts cannot be extracted**: the text derived from the raw body is returned only
+  with attachment permission; otherwise preview text is empty. The plain-text part is unavailable.
 - **Attachment with a dangerous type** (HTML, SVG, script, executable): delivered only as a file to
   save, never displayed or run in the web app's origin.
 - **Attachment name with path separators, control characters or no name**: the name is made safe,
@@ -640,8 +640,10 @@ filtered by target.
     recipient, marked as such;
   - the plain-text part;
   - the HTML part converted to plain text. HTML MUST NOT be returned;
-  - when neither part can be extracted, the raw body converted to text, with the plain-text part
-    reported as unavailable, as legacy does;
+  - when neither part can be extracted, the raw body converted to text only for callers with
+    attachment permission; otherwise empty preview text, with the plain-text part unavailable.
+    Without attachment permission, text selection MUST also exclude attachment parts and their
+    descendants, including named text parts;
   - only for callers who may download attachments (FR-006): each attachment's position, file name,
     declared content type, size in bytes and SHA-256 hash. The contract MUST document that clients
     can build an external reputation lookup from the hash, as legacy links to VirusTotal.

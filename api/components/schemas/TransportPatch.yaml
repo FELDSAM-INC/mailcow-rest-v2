@@ -5,10 +5,12 @@ description: |
   - sending `username` or `password` applies the resulting credentials to every transport with the
     resulting next hop;
   - moving the transport to a next hop used by other transports without sending credentials makes
-    it adopt their credentials; moved to an unused next hop, it keeps its own.
+    it adopt credentials already bound to that next hop; moving to an unused endpoint requires
+    explicit password re-entry or removal when the transport has a stored password.
 
-  An omitted `password` is kept, `""` removes it, and an empty `username` without a password also
-  removes the password. `id`, `nextHopSharedWith`, `passwordSet` and `etag` are read-only
+  An omitted `password` is kept only at its existing destination and username; a change to either
+  requires explicit password re-entry or removal (`required` field error when omitted). `""` removes
+  it, and an empty `username` without a password also removes the password. `id`, `nextHopSharedWith`, `passwordSet` and `etag` are read-only
   (accepted with their current value only, refused with `immutable` otherwise); any other member is
   refused (`immutable`). The response's `meta.affectedTransports` names the other transports whose
   credentials changed.

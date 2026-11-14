@@ -106,7 +106,7 @@ class TransportCredentialSharingTest extends TestCase
         $this->assertSame(['changes' => ['password' => 'changed'], 'affectedTransportIds' => [$b]], $record->details);
     }
 
-    public function test_a_moved_transport_adopts_or_keeps_or_applies_credentials(): void
+    public function test_a_moved_transport_adopts_target_credentials_but_requires_reentry_for_a_new_endpoint(): void
     {
         $f = $this->mailcow();
         $a = $f->transport('a.example', self::H, 'u1', 'p1');
@@ -117,7 +117,8 @@ class TransportCredentialSharingTest extends TestCase
         $this->assertSame(['u1', 'p1'], $this->credentials($a));
 
         $d = $f->transport('d.example', '[k.example]:25', 'own', 'secret');
-        $this->send('PATCH', '/api/v2/transports/'.$d, ['nextHop' => '[unused.example]:25'])->assertOk();
+        $this->send('PATCH', '/api/v2/transports/'.$d, ['nextHop' => '[unused.example]:25'])->assertStatus(422);
+        $this->send('PATCH', '/api/v2/transports/'.$d, ['nextHop' => '[unused.example]:25', 'password' => 'secret'])->assertOk();
         $this->assertSame(['own', 'secret'], $this->credentials($d));
 
         $response = $this->send('PATCH', '/api/v2/transports/'.$d, ['nextHop' => self::H, 'username' => 'u1', 'password' => 'new'])->assertOk();

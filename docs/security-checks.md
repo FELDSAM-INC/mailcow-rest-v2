@@ -279,3 +279,17 @@ PR/non-publishing image jobs request only `contents: read`. Separate main/releas
 `packages: write`, and publication still waits for quality, contract/build, image and security
 gates. Both jobs reuse the same native-platform matrix and build/check steps through YAML
 anchors, retaining per-platform caches without duplicating the build implementation.
+
+### Quarantine text and SMTP credential boundaries
+
+A quarantine preview without `quarantineAttachments` uses the same MIME attachment
+classification as downloads and excludes attachment parts and their descendants from text.
+The raw MIME fallback requires attachment permission; a bodyless or malformed message returns
+empty preview text without it. Authorized attachment and whole-message downloads are unchanged.
+
+Stored relayhost and transport passwords stay bound to their destination host, effective port,
+MX-lookup mode and username. Changing any of these requires password re-entry or explicit
+removal, checked under the existing transaction and routing locks. Transports may still inherit
+credentials already bound to the target next hop; they cannot carry those credentials onward
+to a new endpoint without supplying or removing them. Same-endpoint formatting changes and
+ordinary edits retain the stored bytes.

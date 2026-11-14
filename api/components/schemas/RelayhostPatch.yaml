@@ -1,6 +1,9 @@
 type: object
 description: |
-  JSON Merge Patch of a relayhost. Omitted members stay unchanged. An omitted `password` is kept;
+  JSON Merge Patch of a relayhost. Omitted members stay unchanged. An omitted `password` is kept only
+  when its destination (host, port and MX lookup mode) and username stay the same; otherwise supply
+  the password again or explicitly remove it. A missing password in that case is a `required` field
+  error.
   `""` removes it. Setting `username` to `""` without a password also removes the password. A
   password together with an empty resulting username is refused. `id`, `usage`, `passwordSet` and
   `etag` are read-only: they are accepted with their current value and refused (`immutable`)

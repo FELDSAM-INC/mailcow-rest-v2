@@ -689,7 +689,9 @@ audit log filtered by target.
   contract MUST explain that brackets turn off the mail exchanger lookup. Several relayhosts MAY have
   the same host.
 - **FR-020**: Administrators MUST be able to change a relayhost's host, username, password and active
-  state (FR-009, FR-013, FR-014). The identifier and the usage counts MUST NOT be changeable.
+  state (FR-009, FR-013, FR-014). Changing a stored password's host, effective port, MX-lookup
+  mode or username MUST require password re-entry or explicit removal, checked against the locked
+  current row. The identifier and the usage counts MUST NOT be changeable.
 - **FR-021**: Administrators MUST be able to delete a relayhost, whether or not it is in use. The
   deletion MUST remove the relayhost and clear every domain and mailbox assignment that refers to it,
   together and atomically. A successful deletion MUST respond with no body.
@@ -775,8 +777,9 @@ audit log filtered by target.
   - an edit that sends a username or a password MUST apply the resulting credentials to every transport
     with the resulting next hop;
   - an edit that moves a transport to a next hop used by other transports, without sending credentials,
-    MUST make it adopt their credentials. Moved to a next hop no other transport uses, it MUST keep its
-    credentials.
+    MUST make it adopt credentials already bound to that endpoint. Moving to an unused endpoint
+    with a stored password MUST require explicit password re-entry or removal. A stored password
+    MUST NOT move to a different host, effective port, MX-lookup mode or username implicitly.
 
   All changes of one request MUST be stored together. The response MUST name the other transports
   whose credentials changed.

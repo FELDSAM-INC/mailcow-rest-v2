@@ -25,14 +25,15 @@ properties:
   textFromHtml:
     type: string
     description: |
-      The HTML part converted to plain text. With `parserFallback`, the raw body converted to text.
-      Empty when there is no HTML part.
+      The HTML part converted to plain text. With `parserFallback`, the raw body converted to text
+      only when the caller has attachment permission; otherwise empty. Without that permission,
+      attachment parts and their children are excluded from both text fields.
   parserFallback:
     type: boolean
     description: |
       `true` when neither a plain-text nor an HTML part could be extracted, so `textFromHtml` holds
-      the raw body converted to text and `textPlain` is `null` (legacy "Parser failed, assuming
-      HTML").
+      the raw body converted to text only with attachment permission, or an empty string without it.
+      `textPlain` is `null` (legacy "Parser failed, assuming HTML").
   attachments:
     description: |
       The attachments, or `null` when the caller may not see attachment details (a mailbox user

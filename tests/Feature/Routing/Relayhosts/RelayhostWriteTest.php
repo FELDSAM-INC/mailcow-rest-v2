@@ -123,9 +123,9 @@ class RelayhostWriteTest extends TestCase
     {
         $id = $this->mailcow()->relayhost(null, 'r.example', 'u\:x', 'x\:y');
 
-        $this->send('PATCH', '/api/v2/relayhosts/'.$id, ['host' => 'other.example', 'active' => false])->assertOk();
+        $this->send('PATCH', '/api/v2/relayhosts/'.$id, ['active' => false])->assertOk();
 
-        $this->assertSame(['u\:x', 'x\:y', 'other.example'], [$this->relayhostRow($id)?->username, $this->relayhostRow($id)?->password, $this->relayhostRow($id)?->hostname]);
+        $this->assertSame(['u\:x', 'x\:y', 'r.example'], [$this->relayhostRow($id)?->username, $this->relayhostRow($id)?->password, $this->relayhostRow($id)?->hostname]);
     }
 
     public function test_read_only_members_are_accepted_unchanged_and_refused_otherwise(): void
@@ -152,10 +152,10 @@ class RelayhostWriteTest extends TestCase
         $id = $this->mailcow()->relayhost(null, 'r.example', 'acct', 's3cret');
         $etag = (string) $this->getJson('/api/v2/relayhosts/'.$id)->headers->get('ETag');
 
-        $fresh = $this->send('PATCH', '/api/v2/relayhosts/'.$id, ['host' => 'new.example'], ['If-Match' => $etag])->assertOk();
+        $fresh = $this->send('PATCH', '/api/v2/relayhosts/'.$id, ['host' => 'new.example', 'password' => 's3cret'], ['If-Match' => $etag])->assertOk();
         $this->assertNotSame($etag, $fresh->headers->get('ETag'));
 
-        $this->send('PATCH', '/api/v2/relayhosts/'.$id, ['host' => 'stale.example'], ['If-Match' => $etag])->assertStatus(412);
+        $this->send('PATCH', '/api/v2/relayhosts/'.$id, ['host' => 'stale.example', 'password' => 's3cret'], ['If-Match' => $etag])->assertStatus(412);
         $this->send('DELETE', '/api/v2/relayhosts/'.$id, null, ['If-Match' => $etag])->assertStatus(412);
         $this->assertSame('new.example', $this->relayhostRow($id)?->hostname);
     }

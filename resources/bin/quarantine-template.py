@@ -11,13 +11,18 @@ item becomes a datetime, as MySQLdb hands it to the notifier.
 
 Reasons: `syntax` (TemplateSyntaxError, with its line), `security` (the sandbox's SecurityError),
 `render` (any other exception; the notifier crashes on some of them). The caller bounds the run in
-time and output and starts it as `python3 -I -B` with an empty environment.
+time and output and starts it as `python3 -I -B` with an empty environment. This child applies a
+128 MiB address-space limit before reading input, compiling, rendering or serializing output.
 """
 
 import datetime
 import json
+import resource
 import sys
 import traceback
+
+MEMORY_LIMIT = 128 * 1024 * 1024
+resource.setrlimit(resource.RLIMIT_AS, (MEMORY_LIMIT, MEMORY_LIMIT))
 
 import html2text
 from jinja2.exceptions import SecurityError, TemplateSyntaxError
@@ -71,5 +76,10 @@ def run(request):
     return {'ok': True, 'renders': renders}
 
 
-result = run(json.loads(sys.stdin.buffer.read().decode('utf-8')))
-sys.stdout.buffer.write(json.dumps(result).encode('ascii'))
+try:
+    result = run(json.loads(sys.stdin.buffer.read().decode('utf-8')))
+    output = json.dumps(result).encode('ascii')
+except MemoryError:
+    # A fixed response also covers input and JSON allocation outside run().
+    output = b'{"ok":false,"reason":"render","line":null,"message":"The template exceeded the memory limit."}'
+sys.stdout.buffer.write(output)

@@ -7,6 +7,7 @@ use App\Auth\PermissionFlag;
 use App\Auth\Principal;
 use App\Auth\Role;
 use App\Clients\SharedStore\SharedStore;
+use App\Exceptions\PermissionFlagRequiredException;
 use App\Exceptions\ProblemException;
 use App\Services\Audit\AuditContext;
 use App\Services\Audit\AuditLogger;
@@ -16,6 +17,7 @@ use App\Services\Dkim\DkimKeyService;
 use App\Services\Domains\DomainRules;
 use App\Services\Groupware\SogoDirectory;
 use App\Services\Identity\IdentityService;
+use App\Services\Mailboxes\MailboxScope;
 use App\Services\RateLimits\RateLimitStore;
 use App\Support\Domain\DomainName;
 use App\Support\Http\FieldViolations;
@@ -55,6 +57,7 @@ class AliasDomainCreator
         private readonly DkimKeyService $dkim,
         private readonly SogoDirectory $sogo,
         private readonly AuditLogger $audit,
+        private readonly MailboxScope $mailboxes,
     ) {}
 
     /**
@@ -126,7 +129,22 @@ class AliasDomainCreator
                     throw self::exists($name, 'domain');
                 }
 
-                $removed = DB::table('sender_acl')->where('external', 1)->where('send_as', 'like', DomainName::addressPattern($name))->delete();
+                $grants = DB::table('sender_acl')->where('external', 1)->where('send_as', 'like', DomainName::addressPattern($name));
+                if ($principal->role === Role::DomainAdmin) {
+                    $owned = $this->mailboxes->restrict(DB::table('mailbox')->select('username')->where('kind', ''), $principal);
+                    if ((clone $grants)->whereNotIn('logged_in_as', clone $owned)->lockForUpdate()->exists()) {
+                        throw new ProblemException(ProblemType::Forbidden, 'An administrator must create this alias domain because its sender-permission cleanup exceeds your scope.');
+                    }
+                    if (! ($this->identity->permissions($principal)[PermissionFlag::ExtendSenderAcl->value] ?? false)) {
+                        if ((clone $grants)->exists()) {
+                            throw new PermissionFlagRequiredException([PermissionFlag::ExtendSenderAcl]);
+                        }
+                        $grants->whereRaw('1 = 0');
+                    }
+                    // Keep the write scoped as well, including a grant added concurrently.
+                    $grants->whereIn('logged_in_as', $owned);
+                }
+                $removed = $grants->delete();
 
                 try {
                     DB::table('alias_domain')->insert(['alias_domain' => $name, 'target_domain' => $values['targetDomain'], 'active' => (int) $values['active']]);

@@ -13,7 +13,8 @@ use Throwable;
  * Jinja2's SandboxedEnvironment and html2text exactly as quarantine_notify.py does, as
  * `python3 -I -B` (isolated, no bytecode on the read-only root filesystem) with an empty
  * environment, a time limit (`restv2.quarantine.template_timeout`, 5 s → `timeout`) and an output
- * cap (8 MiB → `render`).
+ * cap (8 MiB → `render`). The Python child also limits its address space to 128 MiB before
+ * compilation/rendering, so expansion cannot exhaust container memory before producing output.
  *
  * The check renders validation dataset A (one rejected item, `quarantine_acl` 0) and B (three
  * items, `quarantine_acl` 1); the preview renders B with the chosen `quarantine_acl`. The sample

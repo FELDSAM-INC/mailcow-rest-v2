@@ -241,3 +241,28 @@ The first run after changing cache scopes is cold. Later runs reuse unchanged la
 npm/Composer cache mounts also help on a reused local builder; their mutable download
 contents are not themselves exported by the GHA layer cache. To inspect actual cache hits,
 use `docker build --progress=plain` and look for `CACHED` on the expensive steps.
+
+## Alias-domain sender cleanup and template rendering
+
+A delegated alias-domain creation is refused if its conversion of external sender addresses
+would affect a mailbox outside the caller's current domains. Cleanup inside those domains also
+requires `extendSenderAcl`; full administrators retain the existing global cleanup behavior.
+The transaction checks ownership before creating the alias domain and scopes the deletion itself.
+
+The quarantine template helper applies a 128 MiB OS address-space limit before reading input,
+compiling Jinja, rendering HTML/text, or serializing JSON. The existing wall-clock and output
+limits remain in force. A large expansion returns the existing render validation failure.
+
+## Internal service trust boundary
+
+The supported Compose integration joins the existing mailcow network. MariaDB, Redis, Postfix
+and the Docker API are trusted mailcow services; network isolation is part of that deployment's
+security boundary. Reset messages use mailcow's internal Postfix on port 25 with the upstream
+opportunistic STARTTLS policy, without certificate verification. The SMTP destination comes only
+from operator environment configuration, never from an API request or account preference.
+
+This setup does not protect tokens or mail contents from a compromised host or an attacker able
+to impersonate services inside that trusted network. Do not attach untrusted workloads or route
+these connections across an untrusted network. Setting a remote `RESTV2_SMTP_HOST` does not add
+TLS authentication; it must remain within an independently protected trusted network. Extending
+the trust boundary requires a separately reviewed transport/network configuration.

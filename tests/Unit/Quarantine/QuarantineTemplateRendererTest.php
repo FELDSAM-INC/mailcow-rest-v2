@@ -146,6 +146,17 @@ class QuarantineTemplateRendererTest extends TestCase
         $this->renderer()->check('{{ username }}');
     }
 
+    public function test_large_expansion_is_refused_before_emitting_output(): void
+    {
+        $result = $this->renderer()->preview("{{ 'x' * (1024 * 1024 * 512) }}", false);
+
+        $this->assertFalse($result->ok);
+        $this->assertSame('render', $result->reason);
+        $this->assertStringContainsString('MemoryError', (string) $result->message);
+        $this->assertSame([], $result->renders);
+        $this->assertTrue($this->renderer()->preview('{{ username }}', false)->ok);
+    }
+
     public function test_the_preview_renders_dataset_b_with_the_chosen_links(): void
     {
         $template = (string) file_get_contents(dirname(__DIR__, 2).'/fixtures/quarantine/templates/default.tpl');

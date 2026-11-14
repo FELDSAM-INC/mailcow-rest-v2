@@ -789,7 +789,9 @@ log filtered by target.
   - store the alias domain;
   - add it to mailcow's domain map in the shared store, which the mail filter uses to recognise
     local domains;
-  - remove every mailbox's external sender addresses that lie in the new alias domain, because the
+  - for delegated creation, refuse before writing if sender cleanup would cross domain scope,
+    and require `extendSenderAcl` when cleanup is needed inside scope (security hardening);
+  - remove every authorized mailbox's external sender addresses that lie in the new alias domain, because the
     domain is now local;
   - apply the initial rate limit, when one is given;
   - generate a DKIM key, unless a key already exists for the name or the selector is explicitly

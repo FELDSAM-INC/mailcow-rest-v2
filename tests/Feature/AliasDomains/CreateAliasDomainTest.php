@@ -138,6 +138,42 @@ class CreateAliasDomainTest extends TestCase
         $this->assertSame(2, $this->auditOf('aliasDomainCreation')[0]->details['values']['removedExternalSenderAddresses']);
     }
 
+    public function test_delegated_creation_cannot_remove_another_tenants_sender_grants(): void
+    {
+        $this->mailbox('victim@foreign.example');
+        $this->mailcow()->senderAcl('victim@foreign.example', '@example.net', 1);
+        $this->mailcow()->senderAcl('anna@example.org', 'sender@example.net', 1);
+        $before = $this->senderAcls();
+        $this->asDomainAdmin(['example.org'], 'reseller', ['alias_domains' => 1, 'extend_sender_acl' => 1]);
+
+        $this->postJson('/api/v2/alias-domains', ['name' => 'example.net', 'targetDomain' => 'example.org', 'dkimSelector' => ''], $this->csrf())
+            ->assertForbidden();
+        $this->assertSame($before, $this->senderAcls());
+        $this->assertSame(0, DB::table('alias_domain')->count());
+        $this->assertFalse($this->redis()->hGet('DOMAIN_MAP', 'example.net'));
+
+        $this->asAdmin();
+        $this->postJson('/api/v2/alias-domains', ['name' => 'example.net', 'targetDomain' => 'example.org', 'dkimSelector' => ''], $this->csrf())
+            ->assertCreated();
+        $this->assertSame([], $this->senderAcls());
+    }
+
+    public function test_delegated_sender_cleanup_requires_the_sender_permission_and_stays_in_scope(): void
+    {
+        $this->mailcow()->senderAcl('anna@example.org', '@example.net', 1);
+        $this->asDomainAdmin(['example.org'], 'reseller', ['alias_domains' => 1, 'extend_sender_acl' => 0]);
+
+        $this->postJson('/api/v2/alias-domains', ['name' => 'example.net', 'targetDomain' => 'example.org', 'dkimSelector' => ''], $this->csrf())
+            ->assertForbidden()->assertJsonPath('requiredFlags', ['extendSenderAcl']);
+        $this->assertSame(['anna@example.org @example.net external'], $this->senderAcls());
+        $this->assertSame(0, DB::table('alias_domain')->count());
+
+        DB::table('da_acl')->where('username', 'reseller')->update(['extend_sender_acl' => 1]);
+        $this->postJson('/api/v2/alias-domains', ['name' => 'example.net', 'targetDomain' => 'example.org', 'dkimSelector' => ''], $this->csrf())
+            ->assertCreated();
+        $this->assertSame([], $this->senderAcls());
+    }
+
     public function test_dkim_options(): void
     {
         $this->mailcow()->redisHash('DKIM_PUB_KEYS', 'kept.example', 'MIIB');

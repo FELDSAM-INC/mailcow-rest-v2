@@ -8,6 +8,7 @@ use App\Exceptions\ProblemException;
 use App\Services\Account\AccountCapabilities;
 use App\Services\Account\CurrentPasswordCheck;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Support\Database\NamedLock;
 use App\Support\Http\ProblemType;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ class SecondFactorRemovalService
         private readonly CurrentPasswordCheck $currentPassword,
         private readonly NamedLock $locks,
         private readonly AuditLogger $audit,
+        private readonly LegacyFactorAccountGuard $owners,
     ) {}
 
     public function removeOne(Principal $principal, int $id): void
@@ -43,6 +45,7 @@ class SecondFactorRemovalService
         }
 
         $this->locks->run([SecondFactorEnrolmentService::lockName($principal->username)], fn () => DB::transaction(function () use ($principal, $id): void {
+            $this->owners->assertUnambiguous($principal->username);
             $row = DB::table('tfa')->where('username', $principal->username)->where('id', $id)->first(['id', 'key_id', 'authmech', 'active']);
 
             if ($row === null) {
@@ -86,6 +89,7 @@ class SecondFactorRemovalService
         }
 
         $this->locks->run([SecondFactorEnrolmentService::lockName($principal->username)], fn () => DB::transaction(function () use ($principal): void {
+            $this->owners->assertUnambiguous($principal->username);
             $ids = DB::table('tfa')->where('username', $principal->username)->orderBy('id')->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
             DB::table('tfa')->where('username', $principal->username)->delete();
 

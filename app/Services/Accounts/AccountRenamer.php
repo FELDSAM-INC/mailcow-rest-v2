@@ -6,6 +6,7 @@ use App\Auth\AccountKind;
 use App\Auth\Principal;
 use App\Exceptions\ProblemException;
 use App\Services\ApiKeys\ApiKeyService;
+use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Auth\SessionManager;
 use App\Services\Auth\SessionRegistry;
 use App\Services\Preferences\PreferencesService;
@@ -43,6 +44,9 @@ class AccountRenamer
      */
     public function rename(string $old, string $new, Principal $actor, ?Session $callerSession): void
     {
+        app(LegacyFactorAccountGuard::class)->assertUnambiguous($old);
+        app(LegacyFactorAccountGuard::class)->assertAdminNameAvailable($new);
+
         if (DB::table('admin')->where('username', $new)->lockForUpdate()->exists()) {
             throw new ProblemException(ProblemType::AccountExists, "An administrator or domain administrator named {$new} already exists.");
         }

@@ -17,6 +17,10 @@ get:
     A stored message larger than the content size limit (10 MiB by default) is not parsed:
     `contentStatus` is `tooLarge` and `content` is `null`. Reading an item changes nothing and is
     not audited.
+
+    MIME parsing is limited to 256 total parts across the entire message tree. A message that
+    exceeds that budget or the parser's nesting limit is refused with
+    `409 quarantine-message-too-complex`, before attachment streams are opened.
   security:
     - sessionCookie: []
     - apiKeyAuth: []
@@ -29,6 +33,8 @@ get:
       $ref: '../../components/responses/Forbidden.yaml'
     '404':
       $ref: '../../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../../components/responses/QuarantineConflict.yaml'
     '500':
       $ref: '../../components/responses/InternalError.yaml'
 delete:

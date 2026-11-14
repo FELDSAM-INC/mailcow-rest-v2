@@ -69,6 +69,7 @@ class SecondFactorService
         private readonly WebAuthnServerFactory $webauthn,
         private readonly YubicoOtpVerifier $yubico,
         private readonly RedisFactory $redis,
+        private readonly LegacyFactorAccountGuard $owners,
     ) {}
 
     /**
@@ -78,6 +79,10 @@ class SecondFactorService
      */
     public function usableMethods(string $username): Collection
     {
+        if ($this->owners->ambiguous($username)) {
+            return new Collection;
+        }
+
         return TfaEntry::query()
             ->where('username', $username)
             ->where('active', 1)
@@ -88,10 +93,16 @@ class SecondFactorService
     }
 
     /**
-     * Whether the account has any active `tfa` row, usable or not (legacy `get_tfa()`).
+     * Whether verification is required: active rows (legacy `get_tfa()`) and ambiguously owned
+     * suspended rows. The latter must never enable the password-only reactivation path.
      */
     public function hasActiveEntries(string $username): bool
     {
+        // Even suspended rows cannot be reactivated for an ambiguous account at password sign-in.
+        if ($this->owners->ambiguous($username) && TfaEntry::query()->where('username', $username)->exists()) {
+            return true;
+        }
+
         return TfaEntry::query()->where('username', $username)->where('active', 1)->exists();
     }
 
@@ -109,6 +120,7 @@ class SecondFactorService
         }
 
         $username = (string) $this->sessions->pending($session)['username'];
+        $this->owners->assertUnambiguous($username);
         $credentialIds = TfaEntry::query()
             ->where('username', $username)
             ->where('authmech', 'webauthn')
@@ -143,6 +155,7 @@ class SecondFactorService
      */
     public function issueWebAuthnChallengeFor(Request $request, string $username, string $sessionKey, array $extra = []): ?array
     {
+        $this->owners->assertUnambiguous($username);
         $credentialIds = TfaEntry::query()
             ->where('username', $username)
             ->where('authmech', 'webauthn')
@@ -182,6 +195,10 @@ class SecondFactorService
      */
     public function verifyForAccount(Request $request, string $username, array $proof, string $webauthnChallengeKey): SecondFactorOutcome
     {
+        if ($this->owners->ambiguous($username)) {
+            return SecondFactorOutcome::MethodVanished;
+        }
+
         $key = $this->throttle->secondFactorKey($username, (string) $request->ip());
         $this->throttle->assertNotThrottled($key);
 
@@ -226,6 +243,13 @@ class SecondFactorService
         $key = $this->throttle->secondFactorKey($username, (string) $request->ip());
         $details['requestedRole'] = $pending['requestedRole']?->value;
         $fail = fn (string $reason) => $this->audit->failure($username, $pending['role'], AuthMethod::PasswordAndSecondFactor, $reason, $details);
+
+        if ($this->owners->ambiguous($username)) {
+            $this->sessions->cancelPending($session);
+            $fail('secondFactorFailed');
+
+            throw new ProblemException(ProblemType::SecondFactorFailed);
+        }
 
         try {
             $this->throttle->assertNotThrottled($key);

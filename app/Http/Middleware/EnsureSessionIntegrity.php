@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Http\RequestContext;
 use App\Services\Auth\AccountResolver;
+use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Auth\SessionManager;
 use App\Services\Config\MailcowConfig;
 use Carbon\CarbonImmutable;
@@ -40,6 +41,11 @@ class EnsureSessionIntegrity
         $lastActivity = $this->sessions->lastActivity($session);
         $boundUserAgent = $this->sessions->boundUserAgentHash($session);
         $principal = $this->sessions->principal($session);
+
+        $pending = $this->sessions->pending($session);
+        if ($pending !== null && app(LegacyFactorAccountGuard::class)->ambiguous($pending['username'])) {
+            $this->sessions->cancelPending($session);
+        }
 
         if ($principal !== null && ! $this->sessions->register($session)) {
             // A delayed save may restore data that has been revoked or superseded. Do not end

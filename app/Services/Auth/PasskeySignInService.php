@@ -9,7 +9,6 @@ use App\Exceptions\ProblemException;
 use App\Models\Mailcow\Admin;
 use App\Models\Mailcow\Mailbox;
 use App\Services\Config\MailcowConfig;
-use App\Services\Passkeys\PasskeyAccountGuard;
 use App\Support\Http\Base64Url;
 use App\Support\Http\ProblemType;
 use App\Support\WebAuthn\OptionsJson;
@@ -36,7 +35,7 @@ class PasskeySignInService
         private readonly RecentLoginRecorder $recentLogins,
         private readonly MailcowConfig $config,
         private readonly WebAuthnServerFactory $webauthn,
-        private readonly PasskeyAccountGuard $owners,
+        private readonly LegacyFactorAccountGuard $owners,
     ) {}
 
     /**

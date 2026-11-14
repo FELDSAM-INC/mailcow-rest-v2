@@ -4,6 +4,7 @@ namespace Tests\Feature\Quarantine;
 
 use Illuminate\Support\Facades\DB;
 use Tests\Support\Quarantine\LargeMessage;
+use Tests\Support\Quarantine\MultipartMessage;
 use Tests\Support\Quarantine\QuarantineTestHelpers;
 use Tests\TestCase;
 
@@ -108,6 +109,20 @@ class InspectQuarantineItemTest extends TestCase
         $this->assertNull($data['content']);
         $this->assertSame(LargeMessage::LIMIT + 1, $data['size']);
         $this->assertCount(3, $data['symbols']);
+    }
+
+    public function test_complex_mime_is_refused_before_attachment_extraction_but_raw_download_is_available(): void
+    {
+        $this->asQuarantineUser('alice@example.org');
+        $message = MultipartMessage::nested();
+        $this->assertLessThan(LargeMessage::LIMIT, strlen($message));
+        $id = $this->item('alice@example.org', overrides: ['msg' => $message]);
+
+        $this->getJson("/api/v2/quarantine/{$id}")->assertStatus(409)
+            ->assertJsonPath('type', '/api/v2/problems/quarantine-message-too-complex');
+        $this->getJson("/api/v2/quarantine/{$id}/attachments/0")->assertStatus(409)
+            ->assertJsonPath('type', '/api/v2/problems/quarantine-message-too-complex');
+        $this->assertSame($message, $this->get("/api/v2/quarantine/{$id}/message")->assertOk()->getContent());
     }
 
     public function test_an_item_without_a_stored_message_is_missing(): void

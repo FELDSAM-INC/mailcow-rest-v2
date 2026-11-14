@@ -3,6 +3,7 @@
 namespace App\Services\SecondFactors;
 
 use App\Auth\Principal;
+use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Support\Http\ListQuery;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\DB;
  */
 class SecondFactorQueryService
 {
+    public function __construct(private readonly LegacyFactorAccountGuard $owners) {}
+
     /** Contract `OwnSecondFactorType` by `tfa.authmech`. */
     public const TYPES = ['totp' => 'totp', 'webauthn' => 'webauthn', 'yubi_otp' => 'yubiOtp', 'u2f' => 'u2f', 'hotp' => 'hotp'];
 
@@ -61,6 +64,8 @@ class SecondFactorQueryService
 
     private function query(string $username): Builder
     {
+        $this->owners->assertUnambiguous($username);
+
         return DB::table('tfa')
             ->where('username', $username)
             ->select(['id', 'key_id', 'authmech', 'active'])

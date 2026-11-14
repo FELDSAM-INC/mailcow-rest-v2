@@ -7,6 +7,7 @@ use App\Auth\Principal;
 use App\Auth\Role;
 use App\Exceptions\ProblemException;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Passwords\MailboxPasswordHasher;
 use App\Support\Http\ETag;
 use App\Support\Http\ProblemType;
@@ -68,6 +69,8 @@ abstract class AccountService
                 if (DB::table('admin')->where('username', $username)->lockForUpdate()->exists()) {
                     throw new ProblemException(ProblemType::AccountExists, "An administrator or domain administrator named {$username} already exists.");
                 }
+
+                app(LegacyFactorAccountGuard::class)->assertAdminNameAvailable($username);
 
                 // Rows that no account owns under this name (left by legacy) are removed, so that
                 // the new account inherits nothing (FR-036).

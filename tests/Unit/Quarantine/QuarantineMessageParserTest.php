@@ -2,9 +2,11 @@
 
 namespace Tests\Unit\Quarantine;
 
+use App\Exceptions\ProblemException;
 use App\Services\Quarantine\QuarantineMessageParser;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\Quarantine\LargeMessage;
+use Tests\Support\Quarantine\MultipartMessage;
 use Tests\TestCase;
 
 /**
@@ -18,6 +20,24 @@ use Tests\TestCase;
  */
 class QuarantineMessageParserTest extends TestCase
 {
+    public function test_nested_messages_cannot_exceed_the_global_mime_part_budget(): void
+    {
+        $this->expectException(ProblemException::class);
+        $this->expectExceptionMessage('Quarantine message too complex');
+        $this->parser()->parse(MultipartMessage::nested(), 'alice@example.org');
+    }
+
+    public function test_a_preview_can_omit_attachment_processing(): void
+    {
+        $message = MultipartMessage::nested(2, 3);
+        $preview = $this->parser()->parse($message, 'alice@example.org', false);
+        $complete = $this->parser()->parse($message, 'alice@example.org');
+        $this->assertSame([], $preview->attachments);
+        $this->assertCount(6, $complete->attachments);
+        $this->assertSame($complete->textPlain, $preview->textPlain);
+        $this->assertSame($complete->subject, $preview->subject);
+    }
+
     /** Legacy's escaped attachment names => the API's safe names (spec FR-016). */
     private const SAFE_NAMES = ['_._.._etc_passwd' => '....etcpasswd', 'noname1' => 'attachment-0'];
 

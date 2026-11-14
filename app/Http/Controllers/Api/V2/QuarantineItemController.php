@@ -39,12 +39,13 @@ class QuarantineItemController extends Controller
         $policy->authorize($principal, QuarantinePolicy::VIEW_ITEMS);
         $item = $query->find($principal, (int) $itemId) ?? throw new NotFoundHttpException('The quarantine item does not exist.');
         $status = $content->status($item);
+        $withAttachments = $policy->allows($principal, QuarantinePolicy::VIEW_ATTACHMENTS);
 
         return QuarantineItemDetailsResource::response(
             $item,
             $status,
-            $status === QuarantineContent::AVAILABLE ? $content->parse($item) : null,
-            $policy->allows($principal, QuarantinePolicy::VIEW_ATTACHMENTS),
+            $status === QuarantineContent::AVAILABLE ? $content->parse($item, $withAttachments) : null,
+            $withAttachments,
             $principal->role === Role::Admin,
         );
     }

@@ -48,6 +48,30 @@ source changes, removal of the provider configuration, and local session revocat
 Operators requiring provider-driven revocation must configure refresh-token issuance. This legacy
 compatibility rule does not permit an expired token to authenticate a new session.
 
+## Legacy factor ownership
+
+Upstream `tfa` and `fido2` rows identify their owner by username, without an account kind.
+API v2 refuses second-factor and passkey management when an administrator and an authenticating
+mailbox share that name. Shared factors cannot complete sign-in or password-reset verification;
+pending sign-ins are cancelled if a collision appears. A suspended shared set cannot enable a
+password-only login that reactivates another account's factors.
+
+Mailbox creation and rename cannot claim an administrator name. Rename, deletion and factor
+suspension refuse ambiguous existing accounts before moving or deleting shared credentials.
+Legacy collisions require operator repair: establish distinct account names and verify factor
+ownership before re-enrolment. API v2 does not guess which account owns legacy credentials or
+alter the upstream schema. Legacy UI/API v1 remain separate implementations.
+
+## Quarantine MIME limits
+
+Quarantine MIME parsing has a global budget of 256 parts, checked incrementally before creating
+attachment streams. The pinned mailparse extension's per-parent and nesting limits alone do not
+bound a nested message's total part count. Preview and attachment extraction refuse excessive
+complexity with `409 quarantine-message-too-complex`; authorized raw-message downloads still
+follow their existing byte limit. A detail view without attachment permission skips attachment
+decoding. Regression tests cover nested multipart input below the raw-byte limit, ordinary MIME
+fixtures, permission-limited previews, and unchanged raw downloads.
+
 ## Sync-job credential destinations
 
 API v2 requires a non-empty remote password in the same request when an edit changes the IMAP

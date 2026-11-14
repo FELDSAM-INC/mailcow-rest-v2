@@ -13,6 +13,7 @@ use App\Exceptions\MailStoreUnreachable;
 use App\Exceptions\OutcomeUnknown;
 use App\Services\Accounts\AccountGeneration;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Groupware\SogoDirectory;
 use App\Services\RateLimits\RateLimitStore;
 use App\Support\Http\ETag;
@@ -91,6 +92,8 @@ class MailboxDeleter
         if (ETag::preconditionFails($ifMatch, $this->version->forMailbox($row, $acl, $tags))) {
             throw new PreconditionFailedHttpException('The mailbox was changed since it was read.');
         }
+
+        app(LegacyFactorAccountGuard::class)->assertUnambiguous($address);
 
         return $row;
     }

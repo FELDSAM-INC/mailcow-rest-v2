@@ -2,6 +2,8 @@
 
 namespace App\Services\Quarantine;
 
+use App\Exceptions\ProblemException;
+use App\Support\Http\ProblemType;
 use PhpMimeMailParser\Parser;
 
 /**
@@ -13,6 +15,37 @@ use PhpMimeMailParser\Parser;
  */
 class QuarantineMimeParser extends Parser
 {
+    public const MAX_PARTS = 256;
+
+    /**
+     * Bound the entire MIME tree before the parent creates part objects or attachment streams.
+     * mailparse's own MAXPARTS limit applies to siblings, so nested messages can exceed it.
+     *
+     * @param  string  $data
+     * @return $this
+     */
+    public function setText($data)
+    {
+        if (! str_ends_with($data, "\n")) {
+            $data .= "\n";
+        }
+
+        $this->resource = mailparse_msg_create();
+        $length = strlen($data);
+        for ($offset = 0; $offset < $length; $offset += 8192) {
+            $valid = @mailparse_msg_parse($this->resource, substr($data, $offset, 8192));
+            $parts = mailparse_msg_get_structure($this->resource);
+            if (! $valid || count($parts) > self::MAX_PARTS) {
+                throw new ProblemException(ProblemType::QuarantineMessageTooComplex);
+            }
+        }
+
+        $this->data = $data;
+        $this->parse();
+
+        return $this;
+    }
+
     /**
      * The declared (decoded) file name of each attachment of getAttachments(true), or null for an
      * unnamed one.

@@ -2,6 +2,7 @@
 
 namespace App\Services\Mailboxes;
 
+use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Groupware\SogoDirectory;
 use Illuminate\Support\Facades\DB;
 
@@ -57,6 +58,10 @@ class MailboxDataMover
 
     public function move(string $from, string $to, bool $forward, ?string $aliasComment): void
     {
+        $owners = app(LegacyFactorAccountGuard::class);
+        $owners->assertUnambiguous($from);
+        $owners->assertMailboxNameAvailable($to);
+
         DB::statement('SET FOREIGN_KEY_CHECKS = 0');
 
         try {

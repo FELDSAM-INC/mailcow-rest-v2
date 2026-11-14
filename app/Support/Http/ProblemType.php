@@ -110,6 +110,7 @@ enum ProblemType: string
     case QuarantineItemBusy = 'quarantine-item-busy';
     case QuarantineDeliveryRefused = 'quarantine-delivery-refused';
     case QuarantineMessageTooLarge = 'quarantine-message-too-large';
+    case QuarantineMessageTooComplex = 'quarantine-message-too-complex';
     case SpamPolicyEntryExists = 'spam-policy-entry-exists';
 
     // Feature 013 (system settings; temporary-failure, container-action-failed and
@@ -152,7 +153,7 @@ enum ProblemType: string
             self::SyncJobExists => 409,
             self::RoutingEntryExists, self::NextHopCredentialsDiffer, self::NextHopInterferes => 409,
             self::LastSecondFactor, self::PushNotificationsNotConfigured => 409,
-            self::QuarantineItemBusy, self::QuarantineDeliveryRefused, self::QuarantineMessageTooLarge, self::SpamPolicyEntryExists => 409,
+            self::QuarantineItemBusy, self::QuarantineDeliveryRefused, self::QuarantineMessageTooLarge, self::QuarantineMessageTooComplex, self::SpamPolicyEntryExists => 409,
             self::MailboxRenameIncomplete => 500,
             self::OutcomeUnknown => 504,
             self::AttributeNotPermitted, self::PermissionFlagRequired, self::DkimPrivateKeyExportDisabled,
@@ -252,6 +253,7 @@ enum ProblemType: string
             self::QuarantineItemBusy => 'Quarantine item is being processed',
             self::QuarantineDeliveryRefused => 'Delivery refused',
             self::QuarantineMessageTooLarge => 'Quarantine message too large',
+            self::QuarantineMessageTooComplex => 'Quarantine message too complex',
             self::SpamPolicyEntryExists => 'List entry already exists',
             self::DemoMode => 'Demo mode',
             self::FeatureDisabled => 'Feature disabled',
@@ -347,6 +349,7 @@ enum ProblemType: string
             self::QuarantineItemBusy => 'Another request is processing this quarantine item. Nothing was changed.',
             self::QuarantineDeliveryRefused => 'The mail server refused the released message. The item was kept and nothing was learned.',
             self::QuarantineMessageTooLarge => 'The stored message is larger than the content size limit.',
+            self::QuarantineMessageTooComplex => 'The message exceeds the MIME parsing complexity limit. Its original message can still be downloaded if permitted.',
             self::SpamPolicyEntryExists => 'The owner already has this pattern on its allow or block list.',
             self::DemoMode => 'Customisation changes are disabled in demo mode.',
             self::FeatureDisabled => 'This operation is disabled on this server.',

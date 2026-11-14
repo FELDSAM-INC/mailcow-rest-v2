@@ -57,8 +57,8 @@ class QuarantineContent
         return (string) DB::table('quarantine')->where('id', $item->getKey())->value('msg');
     }
 
-    public function parse(QuarantineItem $item): ParsedMessage
+    public function parse(QuarantineItem $item, bool $withAttachments = true): ParsedMessage
     {
-        return $this->parser->parse($this->stored($item), (string) $item->getRawOriginal('rcpt'));
+        return $this->parser->parse($this->stored($item), (string) $item->getRawOriginal('rcpt'), $withAttachments);
     }
 }

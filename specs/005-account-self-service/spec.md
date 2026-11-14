@@ -896,6 +896,10 @@ configuration with the groupware enabled and disabled and compare it with the le
   key handle, public key, certificate or Yubico credential MUST ever be returned.
 - **FR-028**: Second factors MUST be managed only by administrators, domain administrators and
   mailcow-source mailboxes. A mailbox with an external authentication source MUST be refused.
+  **Security deviation**: an administrator and authenticating mailbox sharing a username MUST
+  NOT list, enrol, remove, suspend or authenticate with username-only legacy factors. Ambiguous
+  credentials MUST NOT be moved or deleted by account lifecycle operations. Operators must
+  resolve the collision and verify ownership; the API must not infer an owner from the username.
 - **FR-029**: Enrolling a second factor and removing all second factors MUST require the current
   password (FR-012), except during a forced second-factor setup (FR-016).
 - **FR-030**: TOTP enrolment MUST work in two steps:

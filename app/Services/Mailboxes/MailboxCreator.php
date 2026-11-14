@@ -9,6 +9,7 @@ use App\Exceptions\ProblemException;
 use App\Exceptions\ValidationProblemException;
 use App\Http\Requests\Api\V2\ApiFormRequest;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Config\MailcowConfig;
 use App\Services\Domains\DomainUsageCalculator;
 use App\Services\Groupware\GroupwareOutcome;
@@ -215,6 +216,7 @@ class MailboxCreator
     private function store(Principal $principal, MailboxAddress $address, array $values, ?HashedPassword $password, ?int $templateId, array $options = []): string
     {
         return DB::transaction(function () use ($principal, $address, $values, $password, $templateId, $options): string {
+            app(LegacyFactorAccountGuard::class)->assertMailboxNameAvailable($address->address);
             $domain = DB::table('domain')->where('domain', $address->domain)->lockForUpdate()->first();
 
             if (! $domain instanceof stdClass) {

@@ -61,8 +61,9 @@ class PendingActionEvaluator
         }
 
         if ($this->flag($attributes, 'force_tfa')
-            && ! TfaEntry::query()->where('username', $username)->exists()
-            && ! Fido2Credential::query()->where('username', $username)->where('active', 1)->exists()) {
+            && (app(LegacyFactorAccountGuard::class)->ambiguous($username)
+                || (! TfaEntry::query()->where('username', $username)->exists()
+                    && ! Fido2Credential::query()->where('username', $username)->where('active', 1)->exists()))) {
             $actions[] = PendingAction::SecondFactorSetup;
         }
 

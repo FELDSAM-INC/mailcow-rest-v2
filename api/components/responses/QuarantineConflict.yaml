@@ -7,6 +7,9 @@ description: |
     released message (extensions `smtpCode`, `smtpResponse`). The item is kept, nothing was learned.
   - `/api/v2/problems/quarantine-message-too-large`: the stored message is larger than the content
     size limit, so it is not downloaded (extensions `size`, `limit`).
+  - `/api/v2/problems/quarantine-message-too-complex`: MIME parsing exceeds the global 256-part
+    budget or the parser's nesting limit. Preview and attachment extraction are refused; the
+    original message download remains available within its byte limit and authorization rules.
 headers:
   Retry-After:
     description: Present for `quarantine-item-busy` (5 seconds).

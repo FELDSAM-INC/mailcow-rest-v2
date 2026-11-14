@@ -25,7 +25,7 @@ use Throwable;
  */
 class QuarantineMessageParser
 {
-    public function parse(string $message, string $recipient): ParsedMessage
+    public function parse(string $message, string $recipient, bool $withAttachments = true): ParsedMessage
     {
         $parser = new QuarantineMimeParser;
         $parser->setText($message);
@@ -59,7 +59,7 @@ class QuarantineMessageParser
             textPlain: $fallback || $plain === '' ? null : $plain,
             textFromHtml: $fromHtml,
             parserFallback: $fallback,
-            attachments: self::attachments($parser),
+            attachments: $withAttachments ? self::attachments($parser) : [],
         );
     }
 

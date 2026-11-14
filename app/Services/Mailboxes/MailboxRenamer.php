@@ -13,6 +13,7 @@ use App\Exceptions\OutcomeUnknown;
 use App\Exceptions\ProblemException;
 use App\Services\Accounts\AccountGeneration;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Domains\DomainUsageCalculator;
 use App\Support\Http\ETag;
 use App\Support\Http\FieldViolations;
@@ -104,6 +105,9 @@ class MailboxRenamer
 
     private function preflight(string $address, MailboxAddress $new, bool $keepOldAddress, ?string $ifMatch): stdClass
     {
+        $owners = app(LegacyFactorAccountGuard::class);
+        $owners->assertUnambiguous($address);
+        $owners->assertMailboxNameAvailable($new->address);
         $row = DB::table('mailbox')->where('username', $address)->where('kind', '')->first();
 
         if (! $row instanceof stdClass) {

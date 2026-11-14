@@ -8,6 +8,7 @@ use App\Auth\Principal;
 use App\Exceptions\ProblemException;
 use App\Models\Mailcow\Fido2Credential;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Auth\PendingActionEvaluator;
 use App\Services\Auth\SessionManager;
 use App\Services\Config\MailcowConfig;
@@ -45,7 +46,7 @@ class PasskeyService
         private readonly AuditLogger $audit,
         private readonly MailcowConfig $config,
         private readonly WebAuthnServerFactory $webauthn,
-        private readonly PasskeyAccountGuard $owners,
+        private readonly LegacyFactorAccountGuard $owners,
     ) {}
 
     /**

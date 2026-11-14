@@ -2,6 +2,7 @@
 
 namespace App\Services\Accounts;
 
+use App\Services\Auth\LegacyFactorAccountGuard;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -12,11 +13,15 @@ use Illuminate\Support\Facades\DB;
  */
 class SecondFactorSuspender
 {
+    public function __construct(private readonly LegacyFactorAccountGuard $owners) {}
+
     /**
      * Returns the number of entries that were active.
      */
     public function suspend(string $username): int
     {
+        $this->owners->assertUnambiguous($username);
+
         $active = DB::table('tfa')->where('username', $username)->where('active', 1)->lockForUpdate()->count();
 
         if ($active > 0) {

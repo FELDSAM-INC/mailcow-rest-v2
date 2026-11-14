@@ -846,6 +846,15 @@ started is `outcome-unknown`.
 - **Extension members**: `size` and `limit`, in bytes.
 - **Client action**: Explain that the message is too large to inspect. Offer release or deletion.
 
+## quarantine-message-too-complex
+
+- **Type**: `/api/v2/problems/quarantine-message-too-complex`
+- **Status**: 409
+- **Meaning**: The message exceeds the global 256-part MIME budget or the parser's nesting
+  limit. Preview and attachment extraction stop before attachment streams are opened.
+- **Client action**: Explain that this message cannot be previewed safely. The original message
+  can still be downloaded when its byte size and the caller's permissions allow it.
+
 ## spam-policy-entry-exists
 
 - **Type**: `/api/v2/problems/spam-policy-entry-exists`

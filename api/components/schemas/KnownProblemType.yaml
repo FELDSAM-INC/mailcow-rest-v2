@@ -70,6 +70,7 @@ enum:
   - /api/v2/problems/ip-check-disabled
   - /api/v2/problems/spam-policy-entry-exists
   - /api/v2/problems/quarantine-message-too-large
+  - /api/v2/problems/quarantine-message-too-complex
   - /api/v2/problems/quarantine-item-busy
   - /api/v2/problems/quarantine-delivery-refused
   - /api/v2/problems/demo-mode

@@ -21,6 +21,8 @@ class RenameMailboxTest extends TestCase
 
     private const NEW = 'anna.smith@example.org';
 
+    private const DOMAIN_ADMIN = 'anna-domain-admin';
+
     /** @var list<array<string, mixed>> */
     private const ACL = [
         ['user' => self::OLD, 'id' => 'bob@example.org', 'mailbox' => 'Projects', 'rights' => ['lookup', 'read']],
@@ -67,7 +69,7 @@ class RenameMailboxTest extends TestCase
         $f->quarantineItem(self::OLD);
         $f->saslLog(self::OLD, 'imap', '2026-10-01 10:00:00');
         $f->oauthTokens(self::OLD);
-        $f->domainAdmin(self::OLD, ['example.org'], ['syncjobs' => 1]);
+        $f->domainAdmin(self::DOMAIN_ADMIN, ['example.org'], ['syncjobs' => 1]);
         DB::table('restv2_preferences')->insert(['account_kind' => 'mailbox', 'username' => self::OLD, 'theme' => 'dark', 'created_at' => now(), 'updated_at' => now()]);
         $this->redis()->hSet('RL_VALUE', self::OLD, '10 / 1h');
         $this->redis()->hSet('RCPT_WANTS_SUBJECT_TAG', self::OLD, '1');
@@ -105,7 +107,7 @@ class RenameMailboxTest extends TestCase
         $this->assertSame(1, DB::table('sender_acl')->where('send_as', self::NEW)->count());
         $this->assertSame(1, DB::table('restv2_preferences')->where('username', self::NEW)->count());
         $this->assertSame(0, DB::table('oauth_access_tokens')->count() + DB::table('oauth_refresh_tokens')->count() + DB::table('oauth_authorization_codes')->count());
-        $this->assertSame(1, (int) DB::table('da_acl')->where('username', self::OLD)->value('syncjobs'), 'The domain administrator account keeps its flags.');
+        $this->assertSame(1, (int) DB::table('da_acl')->where('username', self::DOMAIN_ADMIN)->value('syncjobs'), 'The domain administrator account keeps its flags.');
         $this->assertSame('10 / 1h', $this->redis()->hGet('RL_VALUE', self::NEW));
         $this->assertFalse($this->redis()->hExists('RL_VALUE', self::OLD));
         $this->assertSame('1', $this->redis()->hGet('RCPT_WANTS_SUBJECT_TAG', self::NEW));

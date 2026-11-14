@@ -11,6 +11,7 @@ use App\Exceptions\ProblemException;
 use App\Services\Account\AccountCapabilities;
 use App\Services\Account\CurrentPasswordCheck;
 use App\Services\Audit\AuditLogger;
+use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Auth\PendingActionEvaluator;
 use App\Services\Auth\SecondFactorService;
 use App\Services\Auth\SessionManager;
@@ -64,6 +65,7 @@ class SecondFactorEnrolmentService
         private readonly NamedLock $locks,
         private readonly AuditLogger $audit,
         private readonly SecondFactorQueryService $query,
+        private readonly LegacyFactorAccountGuard $owners,
     ) {}
 
     /**
@@ -79,6 +81,8 @@ class SecondFactorEnrolmentService
      */
     public function assertEligible(Principal $principal): void
     {
+        $this->owners->assertUnambiguous($principal->username);
+
         if (! $this->accounts->managedHere($principal)) {
             throw new ProblemException(ProblemType::PasswordManagedExternally);
         }

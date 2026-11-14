@@ -5,6 +5,7 @@ namespace App\Http\Resources\Api\V2;
 use App\Auth\PendingAction;
 use App\Auth\Principal;
 use App\Auth\Role;
+use App\Services\Auth\SessionManager;
 use App\Services\Identity\IdentityService;
 use App\Services\Preferences\PreferencesService;
 use Illuminate\Http\Request;
@@ -56,6 +57,12 @@ class IdentityResource extends JsonResource
 
         if (! $principal->isApiKey()) {
             $data['preferences'] = app(PreferencesService::class)->effective($principal);
+            // The registry handle is a non-authenticating reference, stable across cookie
+            // renewal but different for every sign-in, including the same account.
+            $handle = app(SessionManager::class)->handle($request->session());
+            if ($handle !== null) {
+                $data['sessionId'] = $handle;
+            }
         }
 
         if ($principal->impersonator !== null) {

@@ -25,6 +25,17 @@ properties:
   preferences:
     description: Present for sessions only.
     $ref: './Preferences.yaml'
+  sessionId:
+    type: string
+    minLength: 26
+    maxLength: 26
+    pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
+    description: |
+      Present for browser sessions. A non-authenticating registry reference that changes on every
+      sign-in, even for the same account, and stays stable across cookie renewal and lifted
+      restrictions. This is not the session cookie and cannot authenticate a request. Clients
+      must discard private state and pending writes when it changes, together with identity or
+      impersonation changes. Omitted for API keys.
   impersonation:
     $ref: './Impersonation.yaml'
     description: |

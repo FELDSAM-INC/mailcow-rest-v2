@@ -36,7 +36,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Test subscription scan runner (no model calls)
-        run: node --test scripts/security/scan-local.test.mjs
+        run: node --test scripts/security/scan-local.test.mjs scripts/security/ci-image.test.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
@@ -218,12 +218,13 @@ jobs:
 
   image:
     name: Production image (${{ matrix.arch }})
+    if: >-
+      !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')))
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     permissions:
       contents: read
-      packages: write
-    strategy:
+    strategy: &image_strategy
       fail-fast: false
       matrix:
         include:
@@ -231,7 +232,7 @@ jobs:
             runner: ubuntu-24.04
           - arch: arm64
             runner: ubuntu-24.04-arm
-    steps:
+    steps: &image_steps
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
@@ -324,9 +325,21 @@ jobs:
           overwrite: true
           retention-days: 1
 
+  image-publish:
+    name: Production image publish (${{ matrix.arch }})
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy: *image_strategy
+    steps: *image_steps
+
   publish:
     name: Publish public image
-    needs: [contract, quality, tests, image, security]
+    needs: [contract, quality, tests, image-publish, security]
     if: >-
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))

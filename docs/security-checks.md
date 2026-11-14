@@ -266,3 +266,16 @@ to impersonate services inside that trusted network. Do not attach untrusted wor
 these connections across an untrusted network. Setting a remote `RESTV2_SMTP_HOST` does not add
 TLS authentication; it must remain within an independently protected trusted network. Extending
 the trust boundary requires a separately reviewed transport/network configuration.
+
+## Session replacement and image-job permissions
+
+Browser `/me` identities carry a non-authenticating `sessionId` registry reference. It changes
+on each sign-in, including two sign-ins as the same account within one second, while cookie
+renewal and lifted restrictions preserve it. The UI includes it in cache and pending-write
+ownership, so another tab's replacement session clears earlier private state and cannot replay
+an earlier session's write. API-key identities omit this browser-session reference.
+
+PR/non-publishing image jobs request only `contents: read`. Separate main/release-tag jobs hold
+`packages: write`, and publication still waits for quality, contract/build, image and security
+gates. Both jobs reuse the same native-platform matrix and build/check steps through YAML
+anchors, retaining per-platform caches without duplicating the build implementation.

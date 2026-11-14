@@ -7,6 +7,7 @@ use App\Auth\PermissionFlag;
 use App\Auth\Role;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
+use Tests\Support\ApiKeys\ApiKeys;
 use Tests\Support\Auth\AuthRequests;
 use Tests\TestCase;
 
@@ -16,6 +17,7 @@ use Tests\TestCase;
  */
 class IdentityTest extends TestCase
 {
+    use ApiKeys;
     use AuthRequests;
 
     public function test_a_domain_admin_sees_the_domains_of_active_assignments(): void
@@ -115,6 +117,30 @@ class IdentityTest extends TestCase
         $response->assertJsonPath('data.preferences.language', 'cs-cz')
             ->assertJsonPath('data.preferences.theme', 'system');
         $this->assertIsString($response->json('data.preferences.etag'));
+    }
+
+    public function test_the_session_reference_distinguishes_same_account_sign_ins_even_in_the_same_second(): void
+    {
+        $this->freezeTime();
+        $this->mailcow()->admin('admin', 'x');
+        $cookie = $this->signInAs('admin', Role::Admin);
+        $first = $this->getJson('/api/v2/me')->assertOk()->json('data.sessionId');
+
+        $this->assertMatchesRegularExpression('/^[0-9A-HJKMNP-TV-Z]{26}$/', $first);
+        $this->assertNotSame($cookie, $first, 'The reference must never expose the authentication cookie.');
+        $this->getJson('/api/v2/me')->assertJsonPath('data.sessionId', $first);
+
+        $this->signInAs('admin', Role::Admin);
+        $this->assertNotSame($first, $this->getJson('/api/v2/me')->assertOk()->json('data.sessionId'));
+    }
+
+    public function test_an_api_key_does_not_receive_a_browser_session_reference(): void
+    {
+        $this->mailcow()->admin('admin', 'x');
+        $this->signInAs('admin', Role::Admin);
+
+        $this->getJson('/api/v2/me', $this->keyHeader($this->apiKey('admin')))
+            ->assertOk()->assertJsonMissingPath('data.sessionId');
     }
 
     public function test_changes_in_mailcow_apply_to_the_next_request(): void

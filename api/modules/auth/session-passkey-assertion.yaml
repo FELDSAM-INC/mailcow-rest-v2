@@ -8,9 +8,10 @@ post:
     legacy UI ("FIDO2", "Touch ID") work unchanged.
 
     The credential must be active and its account must be able to sign in (active account, active
-    mailbox and domain, not a resource mailbox). Without `role`, the account type is resolved in
-    mailcow's order (administrator or domain administrator, then mailbox user); with `role`, an
-    account of another type fails. Forced password change and second-factor setup restrict the
+    mailbox and domain, not a resource mailbox). A username present in both administrator and
+    mailbox tables is rejected regardless of `role`: legacy credentials do not identify which
+    account kind enrolled them. Otherwise the unique account type is resolved, and a requested
+    `role` must match it. Forced password change and second-factor setup restrict the
     session as after a password sign-in. A mailbox user's sign-in records a recent-login entry.
 
     Failures return the generic `sign-in-failed` error, are audited and count towards throttling

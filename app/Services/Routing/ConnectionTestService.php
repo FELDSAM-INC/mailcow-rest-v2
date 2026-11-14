@@ -70,6 +70,8 @@ class ConnectionTestService
         $total = (float) $this->settings->totalTimeout();
         $notes = new SmtpTranscript;
         [$host, $port, $bracketed] = self::target($nextHop);
+        // MX lookup selects a connection address, not a new identity trusted with credentials.
+        $credentialHost = $host;
         $hostSource = 'nextHop';
         $login = $username === '' ? 'notConfigured' : 'notReached';
 
@@ -127,6 +129,7 @@ class ConnectionTestService
             recipient: $recipient,
             stepTimeout: (float) $this->settings->stepTimeout(),
             totalTimeout: max(0.1, $total - (microtime(true) - $started)),
+            tlsPeerName: $username === '' ? null : $credentialHost,
         ));
 
         return $base + [

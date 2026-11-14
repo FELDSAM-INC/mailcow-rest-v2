@@ -7,6 +7,7 @@ use App\Auth\AuthMethod;
 use App\Auth\Principal;
 use App\Auth\Role;
 use App\Services\Mailboxes\MailboxUpdater;
+use App\Services\PasswordReset\PasswordResetService;
 use App\Support\Hashing\LegacyPasswordVerifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -141,6 +142,29 @@ class UpdateMailboxTest extends TestCase
         $this->asAdmin();
 
         $this->patchMailbox('anna@example.org', ['authSource' => 'genericOidc'])->assertOk()->assertJsonPath('data.forceSecondFactorSetup', false);
+    }
+
+    public function test_admin_recovery_address_changes_revoke_outstanding_tokens(): void
+    {
+        $this->asAdmin();
+        $this->patchMailbox('anna@example.org', ['recoveryEmail' => 'old@example.net'])->assertOk();
+        $other = PasswordResetService::newToken();
+        DB::table('reset_password')->insert(['username' => 'other@example.org', 'token' => $other]);
+
+        foreach (['new@example.net', null] as $address) {
+            $token = PasswordResetService::newToken();
+            $password = DB::table('mailbox')->where('username', 'anna@example.org')->value('password');
+            DB::table('reset_password')->insert(['username' => 'anna@example.org', 'token' => $token]);
+            $this->patchMailbox('anna@example.org', ['displayName' => 'Anna'])->assertOk();
+            $this->assertTrue(DB::table('reset_password')->where('token', $token)->exists());
+            $this->patchMailbox('anna@example.org', ['recoveryEmail' => $address])->assertOk();
+            $this->assertFalse(DB::table('reset_password')->where('token', $token)->exists());
+            $this->postJson('/api/v2/password-resets/completion', ['token' => $token, 'newPassword' => self::PASSWORD], $this->csrf())
+                ->assertStatus(400)->assertJsonPath('type', '/api/v2/problems/invalid-reset-token');
+            $this->assertSame($password, DB::table('mailbox')->where('username', 'anna@example.org')->value('password'));
+        }
+
+        $this->assertSame([$other], DB::table('reset_password')->pluck('token')->all());
     }
 
     public function test_the_recovery_email(): void

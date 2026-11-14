@@ -1,6 +1,7 @@
 description: |
   Whole LDAP configuration. `bindPassword` is required when no LDAP configuration is stored and when
-  `hosts` differ from the stored ones (rule code `secretRequired`); otherwise an omitted password
+  `hosts`, the effective port, TLS mode or certificate-verification policy differ from the stored
+  ones (rule code `secretRequired`); otherwise an omitted password
   keeps the stored one. When both `useSsl` and `useStartTls` are `true`, StartTLS is stored off.
 allOf:
   - $ref: './IdentityProviderCommonInput.yaml'

@@ -42,6 +42,25 @@ class PasskeyManagementTest extends TestCase
         return hash('sha256', $credential->id);
     }
 
+    public function test_colliding_account_kinds_cannot_read_or_change_each_others_passkeys(): void
+    {
+        $this->mailcow()->mailboxWithDomain('alice@example.org');
+        $this->mailcow()->admin('alice@example.org', 'different-password');
+        $credential = $this->passkey('alice@example.org', 'Existing key');
+        $path = '/api/v2/me/passkeys/'.$this->id($credential);
+
+        foreach ([Role::MailboxUser, Role::Admin] as $role) {
+            $this->signInAs('alice@example.org', $role);
+            $headers = ['X-CSRF-Token' => $this->csrfToken()];
+            $this->getJson('/api/v2/me/passkeys')->assertForbidden();
+            $this->getJson($path)->assertForbidden();
+            $this->patchMerge($path, ['name' => 'Changed'], $headers)->assertForbidden();
+            $this->deleteJson($path, [], $headers)->assertForbidden();
+        }
+
+        $this->assertSame('Existing key', DB::table('fido2')->where('credentialId', $credential->id)->value('friendlyName'));
+    }
+
     public function test_the_list_shows_legacy_and_api_passkeys(): void
     {
         $this->mailcow()->mailboxWithDomain('alice@example.org');

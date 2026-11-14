@@ -26,7 +26,8 @@ put:
     Sets the recovery address (a valid e-mail address of at most 255 characters) or removes it
     (`null` or `""`), stored where legacy stores it. Needs the current password, and the `pwReset`
     permission unless the address stays the same. Same access rules as `getOwnRecoveryEmail`.
-    Audited.
+    A changed or removed address atomically revokes outstanding password-reset tokens; an
+    unchanged address keeps them. Serialized with reset issuance and completion. Audited.
   security:
     - sessionCookie: []
       csrfToken: []

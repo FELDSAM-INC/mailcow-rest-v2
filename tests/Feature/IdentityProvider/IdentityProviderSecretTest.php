@@ -78,6 +78,11 @@ class IdentityProviderSecretTest extends TestCase
         yield 'keycloak server url' => ['keycloak', ['serverUrl' => 'https://evil.example.net'], 'clientSecret', 'serverUrl'];
         yield 'generic oidc token endpoint' => ['genericOidc', ['tokenEndpoint' => 'https://evil.example.net/token'], 'clientSecret', 'tokenEndpoint'];
         yield 'ldap hosts' => ['ldap', ['hosts' => ['evil.example.net']], 'bindPassword', 'hosts'];
+        yield 'ldap port' => ['ldap', ['port' => 1389], 'bindPassword', 'port'];
+        yield 'ldap SSL mode' => ['ldap', ['useSsl' => true], 'bindPassword', 'useSsl'];
+        yield 'ldap STARTTLS mode' => ['ldap', ['useStartTls' => true], 'bindPassword', 'useStartTls'];
+        yield 'ldap certificate verification' => ['ldap', ['ignoreTlsErrors' => true], 'bindPassword', 'ignoreTlsErrors'];
+        yield 'oidc certificate verification' => ['genericOidc', ['ignoreTlsErrors' => true], 'clientSecret', 'ignoreTlsErrors'];
     }
 
     /**
@@ -107,6 +112,22 @@ class IdentityProviderSecretTest extends TestCase
         $this->assertSecretRequired((array) $patch->json('errors.'.$secretField.'.0'), 'addressChanged', $addressField);
 
         $this->assertSame($before, $this->providerRows(), 'nothing changed');
+    }
+
+    public function test_disabling_ldap_tls_requires_reentry_of_the_stored_password(): void
+    {
+        $this->asAdmin();
+        $this->putProvider(IdentityProviderFixtures::ldap(['useSsl' => true]))->assertCreated();
+        $this->patchProvider(['useSsl' => false])->assertUnprocessable()
+            ->assertJsonPath('errors.bindPassword.0.params.field', 'useSsl');
+        $this->patchProvider(['useSsl' => false, 'bindPassword' => 'new-secret'])->assertOk();
+    }
+
+    public function test_equivalent_effective_ldap_ports_keep_the_secret(): void
+    {
+        $this->asAdmin();
+        $this->putProvider(IdentityProviderFixtures::ldap(['useSsl' => true, 'port' => 389]))->assertCreated();
+        $this->patchProvider(['port' => 636])->assertOk()->assertJsonPath('data.bindPasswordSet', true);
     }
 
     public function test_a_trailing_slash_does_not_change_the_server_url(): void

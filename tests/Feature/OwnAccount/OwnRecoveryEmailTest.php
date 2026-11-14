@@ -3,6 +3,7 @@
 namespace Tests\Feature\OwnAccount;
 
 use App\Auth\Role;
+use App\Services\PasswordReset\PasswordResetService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -58,6 +59,40 @@ class OwnRecoveryEmailTest extends TestCase
         $this->replace('anna.private@example.net')->assertOk();
         $this->replace(null)->assertOk()->assertJsonPath('data.address', null);
         $this->assertSame('', $this->mailboxAttributes('anna@example.org')['recovery_email']);
+    }
+
+    public function test_changed_or_removed_recovery_addresses_revoke_only_the_owners_tokens(): void
+    {
+        $this->asSelfServiceUser('anna@example.org', ['recovery_email' => 'old@example.net'], ['pw_reset' => 1]);
+        $other = PasswordResetService::newToken();
+        DB::table('reset_password')->insert(['username' => 'other@example.org', 'token' => $other]);
+
+        foreach (['new@example.net', null] as $address) {
+            $token = PasswordResetService::newToken();
+            $password = DB::table('mailbox')->where('username', 'anna@example.org')->value('password');
+            DB::table('reset_password')->insert(['username' => 'anna@example.org', 'token' => $token]);
+            $this->postJson('/api/v2/password-resets/token-check', ['token' => $token], $this->csrf())->assertOk();
+            $this->replace($address)->assertOk();
+            $this->postJson('/api/v2/password-resets/token-check', ['token' => $token], $this->csrf())
+                ->assertStatus(400)->assertJsonPath('type', '/api/v2/problems/invalid-reset-token');
+            $this->postJson('/api/v2/password-resets/completion', ['token' => $token, 'newPassword' => 'N3w!Passw0rd'], $this->csrf())
+                ->assertStatus(400)->assertJsonPath('type', '/api/v2/problems/invalid-reset-token');
+            $this->assertSame($password, DB::table('mailbox')->where('username', 'anna@example.org')->value('password'));
+        }
+
+        $this->assertSame([$other], DB::table('reset_password')->pluck('token')->all());
+    }
+
+    public function test_unchanged_or_rejected_recovery_updates_preserve_reset_tokens(): void
+    {
+        $this->asSelfServiceUser('anna@example.org', ['recovery_email' => 'old@example.net'], ['pw_reset' => 1]);
+        $token = PasswordResetService::newToken();
+        DB::table('reset_password')->insert(['username' => 'anna@example.org', 'token' => $token]);
+
+        $this->replace('old@example.net')->assertOk();
+        $this->replace('new@example.net', 'wrong-password')->assertForbidden();
+        $this->replace('new@example.net', headers: ['If-Match' => '"outdated"'])->assertStatus(412);
+        $this->postJson('/api/v2/password-resets/token-check', ['token' => $token], $this->csrf())->assertOk();
     }
 
     public function test_the_own_address_is_accepted(): void

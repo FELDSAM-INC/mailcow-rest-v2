@@ -48,6 +48,7 @@ class TransportConnectionTestTest extends TestCase
         $this->dns()->assertNotQueried('MX');
         $request = $this->smtp()->assertProbed();
         $this->assertSame(['mx.partner.net', 2525, 'u1', 'p1'], [$request->host, $request->port, $request->username, $request->password]);
+        $this->assertSame('mx.partner.net', $request->tlsPeerName);
     }
 
     public function test_refusals(): void

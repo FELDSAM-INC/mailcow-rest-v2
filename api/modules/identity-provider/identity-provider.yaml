@@ -41,7 +41,8 @@ put:
     - **Secrets** are write-only. The client secret or bind password must be sent when no
       configuration of the type is stored. Otherwise an omitted secret keeps the stored one, unless
       the address that receives it changes (Keycloak `serverUrl`, generic OIDC `tokenEndpoint`,
-      LDAP `hosts`): then it must be sent again (rule code `secretRequired`) and nothing changes.
+      LDAP `hosts`, effective port or TLS mode), or `ignoreTlsErrors` changes: then it must be sent
+      again (rule code `secretRequired`) and nothing changes.
     - **Type change**: refused with `identity-provider-in-use` while any mailbox authenticates
       against an external source other than the new type.
     - **Mapping**: every mapped template and the default template must exist (rule code
@@ -92,7 +93,8 @@ patch:
   description: |
     Changes only the settings sent (JSON Merge Patch) and keeps the others; the rules of a whole
     save apply to the result. The type cannot change here: use `PUT`. A changed Keycloak
-    `serverUrl`, generic OIDC `tokenEndpoint` or LDAP `hosts` requires the secret in the same
+    `serverUrl`, generic OIDC `tokenEndpoint`, LDAP `hosts`, effective LDAP port or TLS mode, or
+    `ignoreTlsErrors` requires the secret in the same
     request. A successful change clears the cached Keycloak service token, as every save does.
 
     Administrators only, with a session or a read-write key. Audited.

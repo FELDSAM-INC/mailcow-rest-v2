@@ -45,6 +45,7 @@ class PasskeyService
         private readonly AuditLogger $audit,
         private readonly MailcowConfig $config,
         private readonly WebAuthnServerFactory $webauthn,
+        private readonly PasskeyAccountGuard $owners,
     ) {}
 
     /**
@@ -55,6 +56,7 @@ class PasskeyService
      */
     public function issueRegistrationOptions(Request $request, Principal $principal): array
     {
+        $this->owners->assertUnambiguous($principal->username);
         $excluded = DB::table('fido2')->where('username', $principal->username)->pluck('credentialId')->map(fn (mixed $id): string => (string) $id)->all();
         $server = $this->webauthn->make($request);
         $username = $principal->username;
@@ -74,6 +76,7 @@ class PasskeyService
     public function register(Request $request, Principal $principal, array $credential, ?string $name): Fido2Credential
     {
         $options = $this->sessions->consume($request->session(), SessionManager::PASSKEY_REGISTRATION);
+        $this->owners->assertUnambiguous($principal->username);
 
         if ($options === null || ($options['username'] ?? null) !== $principal->username) {
             $this->refuseRegistration($principal);
@@ -212,6 +215,8 @@ class PasskeyService
      */
     private function query(Principal $principal): Builder
     {
+        $this->owners->assertUnambiguous($principal->username);
+
         return Fido2Credential::query()
             ->select(['friendlyName', 'certificateSubject', 'created', 'rpId', 'active'])
             ->selectRaw('SHA2(`credentialId`, 256) AS `cid`')

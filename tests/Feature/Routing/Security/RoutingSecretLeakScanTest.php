@@ -86,13 +86,13 @@ class RoutingSecretLeakScanTest extends TestCase
 
         $this->server = new ScriptedSmtpServer([
             ['send' => '220 mx.test.example ESMTP'], ['expect' => 'EHLO'], ['send' => '250-mx.test.example'], ['send' => '250 AUTH LOGIN'],
-            ['expect' => 'AUTH'], ['send' => '334 VXNlcm5hbWU6'], ['expect' => 'user'], ['send' => '334 UGFzc3dvcmQ6'], ['expect' => 'password'], ['send' => '235 ok'],
-            ['expect' => 'MAIL'], ['send' => '250 ok'], ['expect' => 'RCPT'], ['send' => '250 ok'], ['expect' => 'DATA'], ['send' => '354 go'], ['data' => true], ['send' => '250 queued'],
             ['expect' => 'QUIT'], ['send' => '221 bye'],
         ]);
         $this->app->instance(SmtpProbe::class, new StreamSmtpProbe);
         $tested = $f->relayhost(null, '[127.0.0.1]:'.$this->server->port(), 'probe-user', 'S3cret-Rh!');
-        $this->keep($this->send('POST', '/api/v2/relayhosts/'.$tested.'/connection-test'))->assertOk()->assertJsonPath('data.accepted', true);
+        $this->keep($this->send('POST', '/api/v2/relayhosts/'.$tested.'/connection-test'))->assertOk()
+            ->assertJsonPath('data.accepted', false)->assertJsonPath('data.failure.reason', 'tlsFailed');
+        $this->assertSame(['EHLO mail.example.org', 'QUIT'], $this->server->received());
         $this->keep($this->send('DELETE', '/api/v2/relayhosts/'.$id));
 
         $audit = DB::table('restv2_audit_events')->get()->map(fn (object $row): string => (string) json_encode($row))->implode("\n");

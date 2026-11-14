@@ -3,9 +3,10 @@ description: |
   Result of one connection test. The test connects directly from this API's container, as the legacy
   test does from the web container, without the mail server: TLS policy maps and mailbox TLS
   settings do not apply to it. It looks up the most preferred mail exchanger of a next hop without
-  brackets (the host itself when there is none), uses the next hop's port or 25, uses STARTTLS when
-  offered without verifying the certificate, logs in with the stored credentials (PLAIN or LOGIN,
-  as the mail server does) when a username is stored, and sends a short test message. Each network
+  brackets (the host itself when there is none), uses the next hop's port or 25, and uses STARTTLS
+  when offered. Before sending stored credentials (PLAIN or LOGIN), STARTTLS and a trusted
+  certificate matching the configured next-hop hostname are required; otherwise the test fails at `tls`
+  with `tlsFailed`. Tests without credentials may use opportunistic TLS. It sends a short test message. Each network
   step times out after 15 seconds and the whole test after 60 seconds (server settings). Nothing is
   stored. Credentials never appear: every login argument and server login challenge in the
   transcript is replaced by `[redacted]`.

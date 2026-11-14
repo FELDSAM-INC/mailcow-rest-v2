@@ -8,7 +8,9 @@ use App\Auth\Principal;
 use App\Auth\Role;
 use App\Exceptions\ProblemException;
 use App\Services\Audit\AuditLogger;
+use App\Services\Mailboxes\AddressLock;
 use App\Services\SelfService\PermissionGate;
+use App\Support\Database\NamedLock;
 use App\Support\Http\ETag;
 use App\Support\Http\ProblemType;
 use Illuminate\Http\Request;
@@ -29,6 +31,7 @@ class RecoveryEmailService
         private readonly CurrentPasswordCheck $currentPassword,
         private readonly PermissionGate $gate,
         private readonly AuditLogger $audit,
+        private readonly NamedLock $locks,
     ) {}
 
     /**
@@ -61,6 +64,12 @@ class RecoveryEmailService
      */
     public function replace(Request $request, Principal $principal, string $address, string $currentPassword): array
     {
+        return $this->locks->run([AddressLock::name($principal->username)], fn (): array => $this->replaceLocked($request, $principal, $address, $currentPassword));
+    }
+
+    /** @return array{address: string|null, etag: string} */
+    private function replaceLocked(Request $request, Principal $principal, string $address, string $currentPassword): array
+    {
         $this->assertEligible($principal);
         $old = $this->stored($principal->username);
 
@@ -77,6 +86,7 @@ class RecoveryEmailService
                     "UPDATE `mailbox` SET `attributes` = JSON_SET(`attributes`, '$.recovery_email', ?) WHERE `username` = ? AND `authsource` = 'mailcow'",
                     [$address, $principal->username],
                 );
+                DB::table('reset_password')->where('username', $principal->username)->delete();
             }
 
             $this->audit->record(

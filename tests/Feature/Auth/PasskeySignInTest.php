@@ -221,15 +221,18 @@ class PasskeySignInTest extends TestCase
         $this->assertSame('domainAdmin', $audit->details['requestedRole']);
     }
 
-    public function test_a_username_in_admin_and_mailbox_signs_the_named_mailbox_in(): void
+    public function test_an_ambiguous_legacy_passkey_cannot_select_either_account_kind(): void
     {
         $this->mailcow()->ensureDomain('example.org');
         $this->mailcow()->admin('both@example.org', 'x');
         $this->mailcow()->mailbox('both@example.org');
         $credential = $this->passkeyFor('both@example.org');
 
-        $this->signInWith($credential, 'mailboxUser')->assertCreated()->assertJsonPath('data.role', 'mailboxUser');
-        $this->signInWith($credential)->assertCreated()->assertJsonPath('data.role', 'admin');
+        foreach ([null, 'mailboxUser', 'admin', 'domainAdmin'] as $role) {
+            $this->signInWith($credential, $role)->assertUnauthorized()->assertJsonPath('type', '/api/v2/problems/sign-in-failed');
+        }
+
+        $this->assertSame(['ambiguousAccount'], array_values(array_unique(array_column($this->auditRecords('signIn'), 'failure_reason'))));
     }
 
     public function test_a_mailbox_of_an_external_identity_source_signs_in_with_a_passkey(): void

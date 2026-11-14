@@ -80,6 +80,18 @@ class RelayhostConnectionTestTest extends TestCase
         $this->assertNull($request->username);
     }
 
+    public function test_mx_resolution_keeps_the_configured_credential_recipient(): void
+    {
+        $id = $this->mailcow()->relayhost(null, 'partner.net', 'account', 'stored-secret');
+        $this->dns()->mxRecords('partner.net', ['mx.other.example' => 10])->aRecords('mx.other.example', '192.0.2.1');
+
+        $this->test($id)->assertOk();
+
+        $request = $this->smtp()->assertProbed();
+        $this->assertSame('mx.other.example', $request->host);
+        $this->assertSame('partner.net', $request->tlsPeerName);
+    }
+
     public function test_without_mail_exchangers_or_when_their_lookup_fails_the_host_itself_is_used(): void
     {
         $f = $this->mailcow();

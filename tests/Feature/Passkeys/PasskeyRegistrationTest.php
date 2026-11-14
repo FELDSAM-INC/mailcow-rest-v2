@@ -54,6 +54,19 @@ class PasskeyRegistrationTest extends TestCase
         return $this->postJson(self::HOST.'/api/v2/me/passkeys', $body, ['X-CSRF-Token' => $this->csrfToken()]);
     }
 
+    public function test_a_legacy_account_collision_blocks_registration_even_after_options_were_issued(): void
+    {
+        $this->mailcow()->mailboxWithDomain('alice@example.org');
+        $this->signInAs('alice@example.org', Role::MailboxUser);
+        $options = $this->registrationOptions()->assertOk()->json('data.publicKey');
+        $attestation = $this->authenticator->attest($options, self::HOST);
+        $this->mailcow()->admin('alice@example.org', 'different-password');
+
+        $this->registrationOptions()->assertForbidden();
+        $this->register($attestation)->assertForbidden();
+        $this->assertSame(0, DB::table('fido2')->where('username', 'alice@example.org')->count());
+    }
+
     public function test_the_registration_options(): void
     {
         $this->freezeTime();

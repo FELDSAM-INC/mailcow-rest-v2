@@ -10,6 +10,7 @@ namespace App\Clients\Smtp;
  * Feature 010 (research R19) adds the TLS-only request of the TLSA check: `stopAfterTls` ends the
  * dialogue after the STARTTLS handshake (no login, no `MAIL FROM`) with `QUIT`, and
  * `capturePeerCertificate` returns the server's certificate in the result.
+ * `tlsPeerName` retains the configured credential recipient when MX lookup changes `host`.
  */
 final readonly class SmtpProbeRequest
 {
@@ -29,6 +30,7 @@ final readonly class SmtpProbeRequest
         public float $totalTimeout,
         public bool $stopAfterTls = false,
         public bool $capturePeerCertificate = false,
+        public ?string $tlsPeerName = null,
     ) {}
 
     /**

@@ -70,6 +70,8 @@ class SaveIdentityProviderTest extends TestCase
             'hosts' => ['ldap1.example.org', 'ldap2.example.org'],
             'baseDn' => 'ou=people,dc=example,dc=org',
             'bindDn' => 'cn=admin,dc=example,dc=org',
+            // Omitting useStartTls restores false, so this save changes transport protection.
+            'bindPassword' => 'ldap-secret',
         ])->assertOk();
 
         $response->assertJsonPath('data.syncInterval', 15)
@@ -79,7 +81,7 @@ class SaveIdentityProviderTest extends TestCase
             ->assertJsonPath('data.attributeMapping', [])
             ->assertJsonPath('data.bindPasswordSet', true);
         $rows = $this->providerRows();
-        $this->assertSame('ldap-secret', $rows['bindpass'], 'the omitted secret is kept');
+        $this->assertSame('ldap-secret', $rows['bindpass'], 'the re-entered secret is stored');
         $this->assertSame('', $rows['access_token'], 'the cached service token is cleared');
         $this->assertSame('[]', $rows['mappers']);
         $this->assertSame('', $rows['filter']);

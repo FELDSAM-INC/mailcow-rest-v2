@@ -5,7 +5,8 @@ get:
   description: |
     Lists the signed-in user's passkeys, including those registered in the legacy UI as "FIDO2"
     or "Touch ID" credentials. `q` searches the name and the authenticator description. Not
-    available to API keys or in restricted sessions.
+    available to API keys or in restricted sessions. Passkey operations are forbidden when
+    administrator and mailbox accounts share the username, because credential ownership is ambiguous.
   security:
     - sessionCookie: []
   parameters:
@@ -34,6 +35,7 @@ post:
     passkey where legacy mailcow stores FIDO2 credentials, bound to this host name, so that it
     works for usernameless sign-in in both UIs. User verification and accepted attestation formats
     follow mailcow's `FIDO2_UV_FLAG_REGISTER` and `FIDO2_FORMATS`. The registration is audited.
+    A username shared by administrator and mailbox accounts is refused with `forbidden`.
 
     Needs a full session, or a session restricted only by `secondFactorSetup`, which the
     registration lifts immediately. Not available to API keys or during a pending sign-in.

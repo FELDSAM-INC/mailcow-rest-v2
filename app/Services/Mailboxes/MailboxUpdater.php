@@ -10,6 +10,7 @@ use App\Services\Config\MailcowConfig;
 use App\Services\Groupware\SogoDirectory;
 use App\Services\Passwords\HashedPassword;
 use App\Services\Passwords\MailboxPasswordHasher;
+use App\Support\Database\NamedLock;
 use App\Support\Http\ETag;
 use App\Support\Http\FieldViolations;
 use App\Support\Tags\TagSet;
@@ -47,6 +48,7 @@ class MailboxUpdater
         private readonly MemcachedFlusher $flusher,
         private readonly MailcowConfig $config,
         private readonly AuditLogger $audit,
+        private readonly NamedLock $locks,
     ) {}
 
     /**
@@ -62,7 +64,8 @@ class MailboxUpdater
      */
     public function update(Principal $principal, string $address, array $patch, ?string $ifMatch, ?string $bulkRequestId = null, bool $deferFlush = false, array $options = []): bool
     {
-        $changed = DB::transaction(function () use ($principal, $address, $patch, $ifMatch, $bulkRequestId, $options): bool {
+        // Serialize recovery-address changes with reset issuance and completion.
+        $changed = $this->locks->run([AddressLock::name($address)], fn (): bool => DB::transaction(function () use ($principal, $address, $patch, $ifMatch, $bulkRequestId, $options): bool {
             $domainName = DB::table('mailbox')->where('username', $address)->value('domain');
             $domain = array_key_exists('quota', $patch) && is_string($domainName)
                 ? DB::table('domain')->where('domain', $domainName)->lockForUpdate()->first()
@@ -112,7 +115,7 @@ class MailboxUpdater
             $this->audit->record(AuditEventType::MailboxUpdate, true, $options['auditActor'] ?? $principal, ['type' => 'mailbox', 'id' => $address, 'name' => (string) $values['displayName']], null, null, $details + ($options['auditDetails'] ?? []));
 
             return true;
-        }, 3);
+        }, 3));
 
         if ($changed && ! $deferFlush && ! config('restv2.skip_sogo')) {
             $this->flusher->flush();
@@ -290,6 +293,7 @@ class MailboxUpdater
 
         if ($values['recoveryEmail'] !== $current['recoveryEmail']) {
             $set['recovery_email'] = (string) $values['recoveryEmail'];
+            DB::table('reset_password')->where('username', $address)->delete();
         }
 
         // Legacy clears the identity-provider template marker on every edit (FR-034); the update

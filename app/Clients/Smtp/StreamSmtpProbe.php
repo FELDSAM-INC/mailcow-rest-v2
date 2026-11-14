@@ -7,8 +7,8 @@ use Carbon\CarbonImmutable;
 /**
  * The connection test's SMTP client on PHP streams (feature 009 FR-042, FR-043, research R13),
  * with the connection behaviour of legacy's transport_check.php: the host's addresses tried in
- * order, a `220` greeting, `EHLO` (falling back to `HELO`), STARTTLS when offered without
- * verifying the certificate (never implicit TLS), a login only when a username is given (PLAIN,
+ * order, a `220` greeting, `EHLO` (falling back to `HELO`), STARTTLS (never implicit TLS),
+ * authenticated TLS required before sending stored credentials, a login only when a username is given (PLAIN,
  * then LOGIN, as Postfix's `smtp_sasl_mechanism_filter = plain, login`), `MAIL FROM`, `RCPT TO`
  * and a short test message with legacy's content. Every connect and read waits at most the step
  * timeout and never past the overall deadline. Secrets are redacted as lines are recorded
@@ -109,6 +109,11 @@ class StreamSmtpProbe implements SmtpProbe
             }
 
             if ($this->login !== 'notConfigured') {
+                if (! $this->tls) {
+                    $step = 'tls';
+                    throw new SmtpStepFailure('tlsFailed', 'Stored credentials require STARTTLS with a valid server certificate.');
+                }
+
                 $step = 'login';
                 $this->authenticate($capabilities, (string) $request->username, (string) $request->password);
             }
@@ -148,12 +153,16 @@ class StreamSmtpProbe implements SmtpProbe
 
     private function connect(SmtpProbeRequest $request): void
     {
+        // Certificate capture for DNS diagnostics sends no credentials. Authentication must
+        // validate both trust and the intended host, even though we connect to a resolved IP.
+        $verifyPeer = ! $request->stopAfterTls && $request->username !== null && $request->username !== '';
+        $peerName = $request->tlsPeerName ?? $request->host;
         $context = stream_context_create(['ssl' => [
-            'verify_peer' => false,
-            'verify_peer_name' => false,
-            'allow_self_signed' => true,
-            'SNI_enabled' => filter_var($request->host, FILTER_VALIDATE_IP) === false,
-            'peer_name' => $request->host,
+            'verify_peer' => $verifyPeer,
+            'verify_peer_name' => $verifyPeer,
+            'allow_self_signed' => ! $verifyPeer,
+            'SNI_enabled' => filter_var($peerName, FILTER_VALIDATE_IP) === false,
+            'peer_name' => $peerName,
         ]]);
         $reason = 'connectionFailed';
         $message = 'No address to connect to.';
@@ -228,7 +237,8 @@ class StreamSmtpProbe implements SmtpProbe
         }
 
         $this->tls = true;
-        $this->transcript->info('TLS started (the certificate is not verified).');
+        $verified = stream_context_get_options($stream)['ssl']['verify_peer'] ?? false;
+        $this->transcript->info($verified ? 'TLS started (the server certificate is verified).' : 'TLS started (the certificate is not verified).');
 
         if ($capturePeerCertificate) {
             $certificate = stream_context_get_params($stream)['options']['ssl']['peer_certificate'] ?? null;

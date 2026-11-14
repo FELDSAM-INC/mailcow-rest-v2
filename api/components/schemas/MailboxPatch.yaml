@@ -56,7 +56,7 @@ properties:
       `mailcow` without `password` is refused (`required` on `password`) when the mailbox has no
       stored password.
   recoveryEmail:
-    description: A valid address, or `null` or an empty string to clear it. Only for the `mailcow` authentication source (`conflictsWith`).
+    description: A valid address, or `null` or an empty string to clear it. Only for the `mailcow` authentication source (`conflictsWith`). Changing or removing it revokes outstanding password-reset tokens.
     oneOf:
       - type: string
         maxLength: 255

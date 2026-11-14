@@ -162,6 +162,11 @@ class ConnectionTestTest extends TestCase
             ->assertJsonPath('errors.bindPassword.0.code', 'secretRequired')
             ->assertJsonPath('errors.bindPassword.0.params', ['reason' => 'addressChanged', 'field' => 'hosts']);
 
+        foreach (['port' => 1389, 'useSsl' => true, 'useStartTls' => true, 'ignoreTlsErrors' => true] as $field => $value) {
+            $this->testConnection(array_replace($body, [$field => $value]))->assertUnprocessable()
+                ->assertJsonPath('errors.bindPassword.0.params', ['reason' => 'addressChanged', 'field' => $field]);
+        }
+
         $keycloak = IdentityProviderFixtures::keycloak();
         unset($keycloak['clientSecret']);
         $this->testConnection($keycloak)->assertUnprocessable()

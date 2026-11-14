@@ -21,10 +21,24 @@ class StreamSmtpProbeTest extends TestCase
 
     private ?ScriptedSmtpServer $server = null;
 
+    private ?string $caFile = null;
+
+    private string|false $previousCaFile;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->previousCaFile = getenv('SSL_CERT_FILE');
+    }
+
     protected function tearDown(): void
     {
         $this->server?->stop();
         $this->server = null;
+        putenv($this->previousCaFile === false ? 'SSL_CERT_FILE' : 'SSL_CERT_FILE='.$this->previousCaFile);
+        if ($this->caFile !== null) {
+            unlink($this->caFile);
+        }
 
         parent::tearDown();
     }
@@ -32,17 +46,23 @@ class StreamSmtpProbeTest extends TestCase
     /**
      * @param  list<array<string, mixed>>  $script
      */
-    private function serve(array $script, bool $tls = false): int
+    private function serve(array $script, bool $tls = false, bool $trusted = true): int
     {
         $this->server = new ScriptedSmtpServer($script, $tls);
+
+        if ($tls && $trusted) {
+            $this->caFile ??= tempnam(sys_get_temp_dir(), 'restv2-smtp-ca-');
+            file_put_contents($this->caFile, $this->server->certificatePem());
+            putenv('SSL_CERT_FILE='.$this->caFile);
+        }
 
         return $this->server->port();
     }
 
-    private function probe(int $port, ?string $username = self::USERNAME, float $step = 5, float $total = 20, string $sender = 'relay@example.org'): SmtpProbeResult
+    private function probe(int $port, ?string $username = self::USERNAME, float $step = 5, float $total = 20, string $sender = 'relay@example.org', string $host = 'mx.test.example', ?string $tlsPeerName = null): SmtpProbeResult
     {
         return (new StreamSmtpProbe)->probe(new SmtpProbeRequest(
-            host: 'mx.test.example',
+            host: $host,
             addresses: ['127.0.0.1'],
             port: $port,
             heloName: 'mail.example.org',
@@ -52,6 +72,7 @@ class StreamSmtpProbeTest extends TestCase
             recipient: 'null@hosted.mailcow.de',
             stepTimeout: $step,
             totalTimeout: $total,
+            tlsPeerName: $tlsPeerName,
         ));
     }
 
@@ -82,6 +103,18 @@ class StreamSmtpProbeTest extends TestCase
             ['expect' => 'DATA'], ['send' => '354 End data with <CR><LF>.<CR><LF>'],
             ['data' => true], ['send' => '250 2.0.0 Ok: queued as ABC'],
             ['expect' => 'QUIT'], ['send' => '221 2.0.0 Bye'],
+        ];
+    }
+
+    /** @param list<string> $capabilities
+     * @return list<array<string, mixed>>
+     */
+    private static function tlsGreeting(array $capabilities): array
+    {
+        return [
+            ...self::greeting(['STARTTLS']),
+            ['expect' => 'STARTTLS'], ['send' => '220 Ready'], ['starttls' => true],
+            ...array_slice(self::greeting($capabilities), 1),
         ];
     }
 
@@ -126,22 +159,22 @@ class StreamSmtpProbeTest extends TestCase
         }
     }
 
-    public function test_login_without_starttls_and_with_login_when_plain_is_not_offered(): void
+    public function test_login_with_verified_tls_when_plain_is_not_offered(): void
     {
         $port = $this->serve([
-            ...self::greeting(['AUTH LOGIN']),
+            ...self::tlsGreeting(['AUTH LOGIN']),
             ['expect' => 'AUTH'], ['send' => '334 VXNlcm5hbWU6'],
             ['expect' => 'user'], ['send' => '334 UGFzc3dvcmQ6'],
             ['expect' => 'password'], ['send' => '235 2.7.0 Authentication successful'],
             ...self::rest(),
-        ]);
+        ], tls: true);
 
         $result = $this->probe($port);
         $received = $this->server?->received() ?? [];
 
         $this->assertTrue($result->accepted);
-        $this->assertFalse($result->tls);
-        $this->assertSame(['AUTH LOGIN', base64_encode(self::USERNAME), base64_encode(self::PASSWORD)], array_slice($received, 1, 3));
+        $this->assertTrue($result->tls);
+        $this->assertSame(['AUTH LOGIN', base64_encode(self::USERNAME), base64_encode(self::PASSWORD)], array_slice($received, 3, 3));
         $texts = array_column($result->transcript, 'text');
         $this->assertContains('AUTH LOGIN', $texts);
         $this->assertContains('334 [redacted]', $texts);
@@ -186,24 +219,60 @@ class StreamSmtpProbeTest extends TestCase
 
     public function test_login_not_offered_and_mechanism_not_supported(): void
     {
-        $port = $this->serve(self::greeting(['SIZE 1000']));
+        $port = $this->serve(self::tlsGreeting(['SIZE 1000']), tls: true);
         $result = $this->probe($port);
         $this->assertSame(['login', 'loginNotOffered', false, 'failed'], [$result->step, $result->failureReason, $result->accepted, $result->login]);
         $this->server?->stop();
 
-        $port = $this->serve(self::greeting(['AUTH CRAM-MD5']));
+        $port = $this->serve(self::tlsGreeting(['AUTH CRAM-MD5']), tls: true);
         $result = $this->probe($port);
         $this->assertSame(['login', 'loginMechanismNotSupported'], [$result->step, $result->failureReason]);
     }
 
     public function test_a_refused_login(): void
     {
-        $port = $this->serve([...self::greeting(['AUTH PLAIN']), ['expect' => 'AUTH'], ['send' => '535 5.7.8 Authentication failed']]);
+        $port = $this->serve([...self::tlsGreeting(['AUTH PLAIN']), ['expect' => 'AUTH'], ['send' => '535 5.7.8 Authentication failed']], tls: true);
 
         $result = $this->probe($port);
 
         $this->assertSame(['login', 'rejected', 'failed', 535], [$result->step, $result->failureReason, $result->login, $result->lastReplyCode]);
         $this->assertFalse($result->accepted);
+    }
+
+    public function test_stored_credentials_are_never_sent_without_starttls(): void
+    {
+        $port = $this->serve([...self::greeting(['AUTH PLAIN LOGIN']), ['expect' => 'QUIT'], ['send' => '221 Bye']]);
+        $result = $this->probe($port);
+        $this->assertFalse($result->accepted);
+        $this->assertSame(['tls', 'tlsFailed', 'notReached'], [$result->step, $result->failureReason, $result->login]);
+        $this->assertSame(['EHLO mail.example.org', 'QUIT'], $this->server?->received());
+    }
+
+    public function test_untrusted_certificate_never_receives_credentials(): void
+    {
+        $port = $this->serve(self::tlsGreeting(['AUTH PLAIN']), tls: true, trusted: false);
+        $result = $this->probe($port);
+        $this->assertFalse($result->accepted);
+        $this->assertSame(['tls', 'tlsFailed', 'notReached'], [$result->step, $result->failureReason, $result->login]);
+        $this->assertStringNotContainsString('AUTH', json_encode($this->server?->received(), JSON_THROW_ON_ERROR));
+    }
+
+    public function test_trusted_certificate_for_a_different_hostname_never_receives_credentials(): void
+    {
+        $port = $this->serve(self::tlsGreeting(['AUTH PLAIN']), tls: true);
+        $result = $this->probe($port, host: 'other.example.org');
+        $this->assertFalse($result->accepted);
+        $this->assertSame(['tls', 'tlsFailed', 'notReached'], [$result->step, $result->failureReason, $result->login]);
+        $this->assertStringNotContainsString('AUTH', json_encode($this->server?->received(), JSON_THROW_ON_ERROR));
+    }
+
+    public function test_an_mx_certificate_cannot_replace_the_configured_credential_recipient(): void
+    {
+        $port = $this->serve(self::tlsGreeting(['AUTH PLAIN']), tls: true);
+        $result = $this->probe($port, tlsPeerName: 'configured.example.org');
+        $this->assertFalse($result->accepted);
+        $this->assertSame(['tls', 'tlsFailed', 'notReached'], [$result->step, $result->failureReason, $result->login]);
+        $this->assertStringNotContainsString('AUTH', json_encode($this->server?->received(), JSON_THROW_ON_ERROR));
     }
 
     public function test_refused_sender_recipient_and_message(): void

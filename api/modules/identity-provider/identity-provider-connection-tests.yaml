@@ -6,7 +6,8 @@ post:
     Tests unsaved candidate settings and stores nothing. The settings must meet the rules of a
     whole save, except that mapped templates need not exist. An omitted secret is replaced by the
     stored one only when the stored type is the same and the address that receives the secret is
-    unchanged; otherwise the request is refused (rule code `secretRequired`). Each call to the
+    unchanged, including the effective LDAP port and TLS mode and the `ignoreTlsErrors` policy;
+    otherwise the request is refused (rule code `secretRequired`). Each call to the
     provider times out after 7 seconds, and the TLS certificate is verified unless
     `ignoreTlsErrors` is `true`. Internal addresses are allowed.
 

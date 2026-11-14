@@ -32,6 +32,15 @@ alias recipients in other domains (mailbox specification FR-041/FR-045). This do
 arbitrary edits to those aliases. Deletion previews retain the cascade counts but disclose alias
 addresses only within the caller's alias scope, including aliases of assigned domains.
 
+## Sieve parser isolation
+
+Sieve validation runs the unmodified upstream parser in a PHP child with a one-second wall
+deadline, a one-second CPU execution limit, 64 MiB memory, a one-MiB input ceiling and 16 KiB
+combined output ceiling. The child receives no application environment. Ordinary syntax errors
+retain the upstream message; timeout, memory, and output-limit failures refuse validation.
+This bounds token-dense or deeply nested scripts on validation, mailbox filter writes, and
+global filter writes without changing the vendored parser.
+
 ## Routine checks
 
 The normal CI workflow calls `security.yml` on pull requests, main pushes and release tags.

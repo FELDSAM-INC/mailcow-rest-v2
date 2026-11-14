@@ -67,6 +67,37 @@ class SieveValidatorTest extends TestCase
         $this->assertSame(['message' => 'something else'], SieveValidator::violationParams('something else'));
     }
 
+    public function test_token_dense_input_cannot_run_the_legacy_parser_without_a_deadline(): void
+    {
+        // The original scanner exceeds two seconds on this bounded input. The assertion
+        // checks the isolation deadline with generous scheduling slack, not throughput.
+        $start = hrtime(true);
+        $message = (new SieveValidator)->error(str_repeat(';', 65535));
+        $elapsed = (hrtime(true) - $start) / 1e9;
+
+        $this->assertNotNull($message);
+        $this->assertLessThan(SieveValidator::TIMEOUT_SECONDS + 4, $elapsed);
+    }
+
+    public function test_large_and_deep_scripts_are_refused_without_crashing_the_parent(): void
+    {
+        $validator = new SieveValidator;
+        $this->assertSame(SieveValidator::LIMIT_ERROR, $validator->error(str_repeat(';', 1048577)));
+        $this->assertNotNull($validator->error(str_repeat('if true {', 7000).'keep;'.str_repeat('}', 7000)));
+        $this->assertNull($validator->error('keep;'));
+    }
+
+    public function test_multibyte_comments_and_strings_keep_the_legacy_result(): void
+    {
+        $script = "# Příchozí pošta\nrequire \"fileinto\";\nfileinto \"Příchozí\";\n";
+        $this->assertSame($this->legacyMessage($script), (new SieveValidator)->error($script));
+    }
+
+    public function test_oversized_parser_messages_do_not_escape_the_output_budget(): void
+    {
+        $this->assertSame(SieveValidator::LIMIT_ERROR, (new SieveValidator)->error(str_repeat('a', 32768).';'));
+    }
+
     public function test_the_parser_is_the_unmodified_copy_of_the_tag(): void
     {
         $origin = (string) file_get_contents(self::PARSER.'/ORIGIN');

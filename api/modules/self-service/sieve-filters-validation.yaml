@@ -7,6 +7,7 @@ post:
     says whether it is valid, with the parser's message when it is not. It changes nothing, so it
     counts as a read: read-only keys may use it. Administrators and domain administrators; mailbox
     users get `forbidden`.
+    Scripts exceeding the parser's time, memory, or output limits are reported as invalid.
   security:
     - sessionCookie: []
       csrfToken: []

@@ -53,6 +53,17 @@ class SieveScriptValidationTest extends TestCase
             ->assertJsonPath('type', '/api/v2/problems/forbidden');
     }
 
+    public function test_a_token_dense_read_only_validation_is_refused_without_losing_the_worker(): void
+    {
+        $this->mailcow()->domainAdmin('reseller', ['example.org']);
+        $headers = $this->keyHeader($this->apiKey('reseller', 'readOnly'));
+        $this->postJson(self::URL, ['script' => str_repeat(';', 65535)], $headers)
+            ->assertOk()->assertJsonPath('data.valid', false);
+        $this->postJson(self::URL, ['script' => 'keep;'], $headers)
+            ->assertOk()->assertJsonPath('data.valid', true);
+        $this->assertSame(0, DB::table('sieve_filters')->count());
+    }
+
     public function test_invalid_bodies_are_refused(): void
     {
         $this->asAdmin();

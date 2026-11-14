@@ -2,34 +2,74 @@
 
 namespace App\Support\Sieve;
 
-use Exception;
-use Sieve\SieveParser;
+use App\Services\Settings\SettingsLimits;
+use RuntimeException;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
+use Symfony\Component\Process\PhpExecutableFinder;
+use Symfony\Component\Process\Process;
 
-/**
- * Sieve validation exactly as legacy applies it (feature 005 FR-049, research R13): legacy's own
- * parser (`resources/legacy/sieve/`, copied unmodified from the upstream tag and loaded through
- * Composer's classmap) parses the script, and a refusal carries the parser's exception message.
- *
- * The parser predates PHP 8.4: compiling it raises a compile warning (`continue` targeting a
- * switch) and parsing raises dynamic-property deprecations. Both come from code this project must
- * not change, so they are silenced while the parser runs, and only for its files; anything else
- * reaches the previous error handler.
- */
+/** Runs the unmodified upstream parser in a child with bounded time, memory, input and output. */
 final class SieveValidator
 {
-    /** The legacy parser's message for an invalid script, or null for a valid one. */
+    public const TIMEOUT_SECONDS = 1.0;
+
+    public const LIMIT_ERROR = 'Sieve validation exceeded its resource limits.';
+
+    private const OUTPUT_LIMIT = 16384;
+
+    /** The legacy parser's message, a resource-limit refusal, or null for a valid script. */
     public function error(string $script): ?string
     {
-        return self::silenced(function () use ($script): ?string {
-            try {
-                (new SieveParser)->parse($script);
+        if (strlen($script) > SettingsLimits::SIEVE_SCRIPT_MAX_BYTES) {
+            return self::LIMIT_ERROR;
+        }
 
-                return null;
-            } catch (Exception $e) {
-                // legacy catches Exception and shows its message (mailbox('add', 'filter')).
-                return $e->getMessage();
-            }
-        });
+        $php = (new PhpExecutableFinder)->find(false);
+        if ($php === false) {
+            throw new RuntimeException('The PHP interpreter for Sieve validation was not found.');
+        }
+        $root = dirname(__DIR__, 3);
+        $environment = array_fill_keys(array_filter(array_keys(array_merge(getenv(), $_ENV, $_SERVER)), 'is_string'), false);
+        $process = new Process([
+            $php, '-d', 'memory_limit=64M', '-d', 'max_execution_time=1',
+            '-d', 'display_errors=0', '-d', 'log_errors=0',
+            $root.'/resources/bin/validate-sieve.php',
+        ], $root, $environment);
+        $process->setInput($script);
+        $process->setTimeout(self::TIMEOUT_SECONDS);
+        $output = '';
+        $bytes = 0;
+        $tooLarge = false;
+
+        try {
+            $process->run(function (string $type, string $buffer) use (&$output, &$bytes, &$tooLarge, $process): void {
+                $bytes += strlen($buffer);
+                if ($bytes > self::OUTPUT_LIMIT) {
+                    $tooLarge = true;
+                    $process->stop(0);
+
+                    return;
+                }
+                if ($type === Process::OUT) {
+                    $output .= $buffer;
+                }
+                $process->clearOutput();
+                $process->clearErrorOutput();
+            });
+        } catch (ProcessTimedOutException) {
+            return self::LIMIT_ERROR;
+        }
+
+        if ($tooLarge || ! $process->isSuccessful()) {
+            return self::LIMIT_ERROR;
+        }
+        $result = json_decode($output, true);
+        if (! is_array($result) || ! array_key_exists('error', $result)
+            || ($result['error'] !== null && ! is_string($result['error']))) {
+            throw new RuntimeException('The Sieve validator returned an invalid response.');
+        }
+
+        return $result['error'];
     }
 
     /**
@@ -43,34 +83,5 @@ final class SieveValidator
         return preg_match('/^line (\d+):/', $message, $matches) === 1
             ? ['message' => $message, 'line' => (int) $matches[1]]
             : ['message' => $message];
-    }
-
-    /**
-     * @template T
-     *
-     * @param  callable(): T  $code
-     * @return T
-     */
-    private static function silenced(callable $code): mixed
-    {
-        $directory = dirname(__DIR__, 3).DIRECTORY_SEPARATOR.'resources'.DIRECTORY_SEPARATOR.'legacy'.DIRECTORY_SEPARATOR.'sieve';
-        // A compile warning cannot reach an error handler; it is left out of the reported levels
-        // while the parser's classes are loaded.
-        $reporting = error_reporting(error_reporting() & ~E_COMPILE_WARNING);
-        $previous = null;
-        $previous = set_error_handler(function (int $level, string $message, string $file = '', int $line = 0) use ($directory, &$previous): bool {
-            if (str_starts_with($file, $directory.DIRECTORY_SEPARATOR) && in_array($level, [E_DEPRECATED, E_USER_DEPRECATED, E_NOTICE, E_WARNING], true)) {
-                return true;
-            }
-
-            return is_callable($previous) ? (bool) $previous($level, $message, $file, $line) : false;
-        });
-
-        try {
-            return $code();
-        } finally {
-            restore_error_handler();
-            error_reporting($reporting);
-        }
     }
 }

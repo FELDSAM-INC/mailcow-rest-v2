@@ -17,6 +17,13 @@ updates:
       compatible-packages:
         patterns: ['*']
         update-types: [minor, patch]
+    ignore:
+      # This test fixture must match legacy mailcow's OAuth library and database schema.
+      # Newer releases require PKCE columns absent from the supported upstream fixtures.
+      - dependency-name: bshaffer/oauth2-server-php
+      # Review major test-toolchain migrations separately from compatible updates.
+      - dependency-name: phpunit/phpunit
+        update-types: ['version-update:semver-major']
   - package-ecosystem: docker
     directory: /docker/php
     schedule:

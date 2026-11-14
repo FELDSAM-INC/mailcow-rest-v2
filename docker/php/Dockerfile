@@ -52,8 +52,10 @@ RUN set -eux; \
 # Python validates Fail2Ban regexes and quarantine templates. Updating its security floor must
 # not invalidate the expensive PHP compilation layers above (CVE-2026-115557).
 ARG PYTHON_MIN_VERSION=3.14.10-r0
+ARG LIBEXPAT_MIN_VERSION=2.10.0-r0
 RUN set -eux; \
-    apk add --no-cache "python3>=${PYTHON_MIN_VERSION}" py3-jinja2 py3-markupsafe py3-html2text; \
+    apk add --no-cache "python3>=${PYTHON_MIN_VERSION}" "libexpat>=${LIBEXPAT_MIN_VERSION}" \
+        py3-jinja2 py3-markupsafe py3-html2text; \
     python3 -I -c "import re, json, jinja2.sandbox, html2text"
 
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-restv2.ini

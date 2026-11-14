@@ -33,7 +33,7 @@ class AliasDeleter
     public function delete(Principal $principal, int $id, ?string $ifMatch, ?string $bulkRequestId = null): void
     {
         $outcome = DB::transaction(function () use ($principal, $id, $ifMatch, $bulkRequestId): GroupwareOutcome {
-            $row = AliasUpdater::lockedRow($id);
+            $row = AliasUpdater::lockedRow($principal, $id);
 
             if (ETag::preconditionFails($ifMatch, $this->version->forRow($row))) {
                 throw new PreconditionFailedHttpException('The alias was changed since it was read.');

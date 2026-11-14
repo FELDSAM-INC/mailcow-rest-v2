@@ -6,6 +6,7 @@ use App\Audit\AuditEventType;
 use App\Auth\Principal;
 use App\Services\Aliases\AliasLimit;
 use App\Services\Audit\AuditLogger;
+use App\Services\Domains\DomainAccessLock;
 use App\Services\Domains\DomainPresenter;
 use App\Services\Groupware\SogoDirectory;
 use App\Services\RateLimits\RateLimitStore;
@@ -49,7 +50,7 @@ class AliasDomainUpdater
         $changed = DB::transaction(function () use ($principal, $name, $patch, $ifMatch, $bulkRequestId): bool {
             $row = DB::table('alias_domain')->where('alias_domain', $name)->lockForUpdate()->first();
 
-            if (! $row instanceof stdClass) {
+            if (! $row instanceof stdClass || ! app(DomainAccessLock::class)->primary($principal, (string) $row->target_domain)) {
                 throw new NotFoundHttpException('The alias domain does not exist.');
             }
 
@@ -74,6 +75,10 @@ class AliasDomainUpdater
             $violations->throwIfAny();
 
             if ($values['targetDomain'] !== $current['targetDomain']) {
+                if (! app(DomainAccessLock::class)->primary($principal, $values['targetDomain'])) {
+                    throw new NotFoundHttpException('The target domain does not exist.');
+                }
+
                 $this->limit->lockPrimaryDomain($values['targetDomain']);
                 $this->limit->assertRoom($values['targetDomain'], DB::table('alias')->where('domain', $name)->count());
             }

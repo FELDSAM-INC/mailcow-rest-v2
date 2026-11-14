@@ -62,7 +62,7 @@ class AppPasswordService
      */
     public function list(string $mailbox, ListQuery $query, ?bool $active): array
     {
-        $builder = DB::table('app_passwd')->where('mailbox', $mailbox)->select(self::COLUMNS)->selectRaw($this->hmacColumn());
+        $builder = DB::table('app_passwd')->where('mailbox', $mailbox)->select(self::COLUMNS)->selectRaw($this->passwordDigestColumn());
 
         if ($active !== null) {
             $active ? $builder->where('active', '!=', 0) : $builder->where('active', 0);
@@ -305,18 +305,18 @@ class AppPasswordService
 
     private function row(string $mailbox, int $id, bool $lock = false): ?object
     {
-        $query = DB::table('app_passwd')->where('mailbox', $mailbox)->where('id', $id)->select(self::COLUMNS)->selectRaw($this->hmacColumn());
+        $query = DB::table('app_passwd')->where('mailbox', $mailbox)->where('id', $id)->select(self::COLUMNS)->selectRaw($this->passwordDigestColumn());
 
         return ($lock ? $query->lockForUpdate() : $query)->first();
     }
 
     /**
-     * The HMAC of the stored hash (keyed with the app key), computed by MariaDB so that the hash
-     * itself never leaves the database.
+     * Select only a digest of the stored password hash. Key it in PHP before constructing an
+     * ETag: the application key must never enter SQL text, bindings or database query logs.
      */
-    private function hmacColumn(): string
+    private function passwordDigestColumn(): string
     {
-        return 'SHA2(CONCAT('.DB::getPdo()->quote((string) config('app.key')).', `password`), 256) AS `password_tag`';
+        return 'SHA2(`password`, 256) AS `password_tag`';
     }
 
     /**
@@ -348,6 +348,8 @@ class AppPasswordService
     {
         $flags = array_map(fn (string $column): int => (int) $row->{$column}, array_values(self::PROTOCOLS));
 
-        return ETag::of(['appPassword', (int) $row->id, (string) $row->name, (string) $row->mailbox, ...$flags, (int) $row->active, (string) $row->password_tag]);
+        $passwordTag = hash_hmac('sha256', (string) $row->password_tag, (string) config('app.key'));
+
+        return ETag::of(['appPassword', (int) $row->id, (string) $row->name, (string) $row->mailbox, ...$flags, (int) $row->active, $passwordTag]);
     }
 }

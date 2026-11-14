@@ -5,6 +5,7 @@ namespace App\Services\Aliases;
 use App\Audit\AuditEventType;
 use App\Auth\Principal;
 use App\Services\Audit\AuditLogger;
+use App\Services\Domains\DomainAccessLock;
 use App\Services\Domains\DomainPresenter;
 use App\Services\Groupware\GroupwareCacheFlush;
 use App\Services\Groupware\GroupwareOutcome;
@@ -76,7 +77,7 @@ class AliasUpdater
      */
     private function apply(Principal $principal, int $id, array $patch, ?string $ifMatch, ?string $bulkRequestId): array
     {
-        $row = self::lockedRow($id);
+        $row = self::lockedRow($principal, $id);
 
         if (ETag::preconditionFails($ifMatch, $this->version->forRow($row))) {
             throw new PreconditionFailedHttpException('The alias was changed since it was read.');
@@ -118,6 +119,10 @@ class AliasUpdater
         $this->immutables($patch, $row, $address, $violations);
         $violations->throwIfAny();
         assert($address !== null);
+
+        if ($addressChanged && ! app(DomainAccessLock::class)->includingAliases($principal, $address->domain)) {
+            throw new NotFoundHttpException('The alias domain does not exist.');
+        }
 
         if ($replaced) {
             $this->rules->authorizeExternal($principal, $destination, $storedDestination, $indexes);
@@ -177,11 +182,12 @@ class AliasUpdater
     /**
      * The alias row locked for the change; `404` for a missing row and for a mailbox's own row.
      */
-    public static function lockedRow(int $id): stdClass
+    public static function lockedRow(Principal $principal, int $id): stdClass
     {
         $row = DB::table('alias')->where('id', $id)->lockForUpdate()->first();
 
-        if (! $row instanceof stdClass || DB::table('mailbox')->where('username', $row->address)->exists()) {
+        if (! $row instanceof stdClass || DB::table('mailbox')->where('username', $row->address)->exists()
+            || ! app(DomainAccessLock::class)->includingAliases($principal, (string) $row->domain)) {
             throw new NotFoundHttpException('The alias does not exist.');
         }
 

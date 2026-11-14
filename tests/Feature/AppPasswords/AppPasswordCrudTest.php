@@ -237,4 +237,28 @@ class AppPasswordCrudTest extends TestCase
         $this->assertNotSame($before, $after);
         $this->assertStringNotContainsString(hash('sha256', '{PLAIN}other'), $after);
     }
+
+    public function test_listing_and_reading_versions_never_send_the_application_key_to_the_database(): void
+    {
+        $this->asSelfServiceUser();
+        $id = $this->mailcow()->appPasswd('anna@example.org', 'Phone');
+        $key = 'synthetic-app-password-version-key';
+        config(['app.key' => $key]);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $list = $this->getJson(self::BASE)->assertOk();
+            $detail = $this->getJson(self::BASE.'/'.$id)->assertOk();
+            $queries = DB::getQueryLog();
+        } finally {
+            DB::disableQueryLog();
+            DB::flushQueryLog();
+        }
+
+        $this->assertSame($list->json('data.0.etag'), $detail->json('data.etag'));
+        $this->assertNotEmpty($queries);
+        $this->assertStringNotContainsString($key, json_encode($queries, JSON_THROW_ON_ERROR));
+        $this->assertStringNotContainsString($key, (string) $detail->getContent());
+    }
 }

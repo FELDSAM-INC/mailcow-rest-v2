@@ -6,6 +6,7 @@ use App\Audit\AuditEventType;
 use App\Auth\Principal;
 use App\Clients\SharedStore\SharedStore;
 use App\Services\Audit\AuditLogger;
+use App\Services\Domains\DomainAccessLock;
 use App\Services\Groupware\SogoDirectory;
 use App\Support\Domain\DomainName;
 use App\Support\Http\ETag;
@@ -52,7 +53,7 @@ class AliasDomainDeleter
                 $undo = null;
                 $row = DB::table('alias_domain')->where('alias_domain', $name)->lockForUpdate()->first();
 
-                if (! $row instanceof stdClass) {
+                if (! $row instanceof stdClass || ! app(DomainAccessLock::class)->primary($principal, (string) $row->target_domain)) {
                     throw new NotFoundHttpException('The alias domain does not exist.');
                 }
 

@@ -293,3 +293,34 @@ removal, checked under the existing transaction and routing locks. Transports ma
 credentials already bound to the target next hop; they cannot carry those credentials onward
 to a new endpoint without supplying or removing them. Same-endpoint formatting changes and
 ordinary edits retain the stored bytes.
+
+
+## App-password versions and changing domain ownership
+
+App-password reads select a non-secret digest of the stored password hash. PHP keys that digest
+with HMAC before constructing the version tag. The application encryption key never appears in
+SQL text or bindings, and neither the stored hash nor its unkeyed digest is returned to clients.
+
+Alias, alias-domain and BCC mutations recheck scope after locking the current object. Current
+locking reads retain the active domain assignment and any alias-domain mapping until commit,
+so a transfer or revoked assignment between bulk resolution and a later item cannot authorize
+that item's write. Single-object writes use the same checks; alias-copy source snapshots are
+also resolved under these locks.
+
+## Sync-job network capability
+
+The `syncjobs` permission delegates connections from mailcow's imapsync runner to a caller's
+chosen IMAP host and TCP port, including private IMAP servers used for migrations. Mailbox
+users cannot grant this permission to themselves (the upstream default is disabled for mailbox
+users); administrators control it. Domain administrators have it by upstream default, so review
+that grant when delegating domains to untrusted tenants.
+
+Host validation follows upstream syntax and does not impose a public-address-only policy.
+Only grant sync-job access to accounts trusted with the runner's reachable IMAP destinations.
+Operators needing destination restrictions must enforce egress/allowlists on the actual runner
+network, covering resolved addresses at connection time, including loopback and private service
+access where applicable. An API-only DNS lookup would not enforce this boundary against DNS
+changes or jobs created through the legacy UI. The runner is upstream mailcow code outside this
+repository; these checks do not establish its deployed egress policy. Custom parameters remain
+validated against the allowed options, and changing a stored credential's endpoint requires
+password re-entry.

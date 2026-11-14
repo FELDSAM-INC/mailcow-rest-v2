@@ -12,8 +12,6 @@ use App\Services\Audit\RefusalAuditor;
 use App\Support\Http\ETag;
 use App\Support\Http\ProblemType;
 use Illuminate\Support\Facades\DB;
-use stdClass;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Throwable;
 
@@ -41,11 +39,7 @@ class AliasCopier
      */
     public function copy(Principal $principal, int $id, ?string $ifMatch, ?string $bulkRequestId = null): array
     {
-        $row = DB::table('alias')->where('id', $id)->first();
-
-        if (! $row instanceof stdClass || DB::table('mailbox')->where('username', $row->address)->exists()) {
-            throw new NotFoundHttpException('The alias does not exist.');
-        }
+        $row = DB::transaction(fn () => AliasUpdater::lockedRow($principal, $id), 3);
 
         if (ETag::preconditionFails($ifMatch, $this->version->forRow($row))) {
             throw new PreconditionFailedHttpException('The alias was changed since it was read.');

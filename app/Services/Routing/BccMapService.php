@@ -6,6 +6,7 @@ use App\Audit\AuditEventType;
 use App\Auth\Principal;
 use App\Http\Requests\Api\V2\ApiFormRequest;
 use App\Rules\RoutingEmail;
+use App\Services\Domains\DomainAccessLock;
 use App\Support\Http\ETag;
 use App\Support\Http\FieldViolations;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,7 @@ class BccMapService implements RoutingBulkHandler
         /** @var array{localDestination: string, domain: string} $local */
 
         return $this->lock->run(RoutingLock::BCC_MAPS, function () use ($principal, $local, $type, $bcc, $active): int {
+            $this->lockScope($principal, $local['domain']);
             $this->assertUnique($local['localDestination'], $type, null, 'localDestination');
 
             $id = (int) DB::table('bcc_maps')->insertGetId([
@@ -80,13 +82,14 @@ class BccMapService implements RoutingBulkHandler
     {
         $this->lock->run(RoutingLock::BCC_MAPS, function () use ($principal, $id, $patch, $ifMatch, $bulkRequestId): void {
             $row = DB::table('bcc_maps')->where('id', $id)->lockForUpdate()->first() ?? throw new NotFoundHttpException('The BCC map does not exist.');
+            $this->lockScope($principal, (string) $row->domain);
 
             if (ETag::preconditionFails($ifMatch, BccMapQuery::version($row))) {
                 throw new PreconditionFailedHttpException('The BCC map was changed since it was read.');
             }
 
             $violations = new FieldViolations;
-            $presented = BccMapQuery::present($this->query->find($principal, $id) ?? $row);
+            $presented = BccMapQuery::present($this->query->find($principal, $id) ?? throw new NotFoundHttpException('The BCC map does not exist.'));
             $values = self::values($row, $presented, $patch, $violations);
             $violations->throwIfAny();
 
@@ -124,6 +127,7 @@ class BccMapService implements RoutingBulkHandler
     {
         DB::transaction(function () use ($principal, $id, $ifMatch, $bulkRequestId): void {
             $row = DB::table('bcc_maps')->where('id', $id)->lockForUpdate()->first() ?? throw new NotFoundHttpException('The BCC map does not exist.');
+            $this->lockScope($principal, (string) $row->domain);
 
             if (ETag::preconditionFails($ifMatch, BccMapQuery::version($row))) {
                 throw new PreconditionFailedHttpException('The BCC map was changed since it was read.');
@@ -135,7 +139,14 @@ class BccMapService implements RoutingBulkHandler
                 'localDestination' => (string) $row->local_dest,
                 'type' => (string) $row->type === 'rcpt' ? 'recipient' : 'sender',
             ], $bulkRequestId);
-        });
+        }, 3);
+    }
+
+    private function lockScope(Principal $principal, string $domain): void
+    {
+        if (! app(DomainAccessLock::class)->includingAliases($principal, $domain, requireExistingDomain: true)) {
+            throw new NotFoundHttpException('The BCC map does not exist.');
+        }
     }
 
     /**

@@ -9,7 +9,9 @@ description: |
 
   - `active` activates or deactivates the job; the change takes effect from the runner's next
     cycle and never interrupts a run in progress.
-  - `remotePassword`: a non-empty value replaces the stored password; an empty string keeps it.
+  - `remotePassword`: a non-empty value replaces the stored password; an empty string keeps it
+    only while the remote host, port, encryption and username are unchanged. Changing any of
+    those fields while a password is stored requires password re-entry (`secretRequired`).
   - `mailbox` cannot change: the current address is accepted, any other is refused with the rule
     code `immutable`. To sync into another mailbox, create a new job.
   - `customParameters`: when the server restricts custom parameters to administrators, a value

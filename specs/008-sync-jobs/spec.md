@@ -587,7 +587,10 @@ time, source address and changed attributes, and that no record contains the rem
   appear in any representation, list, log or audit record, and the API MUST NOT offer a mode that
   returns it (the legacy "with password" read is not exposed). Responses MUST say only whether a
   remote password is set. On an edit, an omitted or empty password MUST keep the stored value and a
-  non-empty password MUST replace it.
+  non-empty password MUST replace it. **Security deviation**: changing the remote host (ignoring
+  DNS letter case), port, encryption or remote username while retaining a stored password MUST
+  require a non-empty password in the same request (`remotePassword.secretRequired`). The
+  check MUST use the locked current row and apply equally to individual and bulk edits.
 - **FR-019**: Custom imapsync parameters MUST be validated exactly as legacy validates them, using
   the allow-list. The allow-list MUST be an API server setting whose default is upstream's
   `IMAPSYNC_OPTIONS.whitelist`, which the operator keeps aligned with legacy (`docs/conventions.md`).

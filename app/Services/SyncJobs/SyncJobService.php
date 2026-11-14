@@ -5,6 +5,7 @@ namespace App\Services\SyncJobs;
 use App\Audit\AuditEventType;
 use App\Auth\Principal;
 use App\Exceptions\ValidationProblemException;
+use App\Http\Requests\Api\V2\ApiFormRequest;
 use App\Http\Resources\Api\V2\SyncJobResource;
 use App\Models\Mailcow\SyncJob;
 use App\Services\Audit\AuditLogger;
@@ -135,6 +136,7 @@ class SyncJobService
             $job = $this->locked($principal, $id, $ifMatch);
             $before = SyncJobAuditDetails::configuration($job);
             $columns = self::changedColumns($job, $patch);
+            $this->assertCredentialDestination($job, $patch, $columns);
 
             if ((int) ($columns['active'] ?? $job->active) !== 0) {
                 $this->assertSafeParameters((string) ($columns['custom_params'] ?? $job->custom_params));
@@ -226,6 +228,34 @@ class SyncJobService
         $violations = app(CustomParametersValidator::class)->safetyViolations($value);
         if ($violations !== []) {
             throw new ValidationProblemException(['customParameters' => $violations]);
+        }
+    }
+
+    /**
+     * A write-only password belongs to the connection it was supplied for. Run on the locked
+     * row, including bulk updates, so changing an endpoint cannot reuse somebody else's secret.
+     *
+     * @param  array<string, mixed>  $patch
+     * @param  array<string, string|int|null>  $columns
+     */
+    private function assertCredentialDestination(SyncJob $job, array $patch, array $columns): void
+    {
+        if ((string) $job->password1 === '' || (is_string($patch['remotePassword'] ?? null) && $patch['remotePassword'] !== '')) {
+            return;
+        }
+
+        foreach (['remoteHost' => 'host1', 'remotePort' => 'port1', 'encryption' => 'enc1', 'remoteUser' => 'user1'] as $field => $column) {
+            if (! array_key_exists($column, $columns)) {
+                continue;
+            }
+
+            if ($field === 'remoteHost' && strcasecmp((string) $columns[$column], (string) $job->host1) === 0) {
+                continue;
+            }
+
+            throw new ValidationProblemException(['remotePassword' => [
+                ApiFormRequest::make('secretRequired', ['reason' => 'addressChanged', 'field' => $field], 'The remote password must be supplied again when the connection changes.'),
+            ]]);
         }
     }
 

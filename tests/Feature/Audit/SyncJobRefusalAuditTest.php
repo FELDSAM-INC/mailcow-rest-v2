@@ -150,8 +150,8 @@ class SyncJobRefusalAuditTest extends TestCase
 
     public function test_pipeline_refusals_are_recorded_but_csrf_failures_and_anonymous_requests_are_not(): void
     {
-        $key = $this->keyHeader($this->apiKey('admin', 'readOnly'));
         $this->mailcow()->admin('admin', 'Passw0rd!', 'SSHA256');
+        $key = $this->keyHeader($this->apiKey('admin', 'readOnly'));
         $this->postJson('/api/v2/__testing/sync-jobs/'.$this->job, ['problem' => 'notFound'], $key)->assertForbidden();
 
         $this->mailcow()->admin('restricted', 'Passw0rd!', 'SSHA256', attributes: ['force_pw_update' => '1']);

@@ -5,6 +5,7 @@ namespace Tests\Feature\SyncJobs;
 use App\Auth\Role;
 use App\Models\AuditEvent;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use Tests\Support\ApiKeys\ApiKeys;
 use Tests\Support\SyncJobs\ImapsyncRunnerSimulator;
@@ -59,6 +60,46 @@ class UpdateSyncJobTest extends TestCase
 
         $this->patchSyncJob($this->job, ['remotePassword' => '', 'intervalMinutes' => 25])->assertOk();
         $this->assertSame('new', $this->syncJobRow($this->job)?->password1);
+    }
+
+    /** @return iterable<string, array{string, string|int}> */
+    public static function credentialDestinationChanges(): iterable
+    {
+        yield 'host' => ['remoteHost', 'controlled.example'];
+        yield 'port' => ['remotePort', 1993];
+        yield 'encryption' => ['encryption', 'plain'];
+        yield 'username' => ['remoteUser', 'another-user'];
+    }
+
+    #[DataProvider('credentialDestinationChanges')]
+    public function test_a_user_cannot_redirect_a_retained_password(string $field, string|int $value): void
+    {
+        $this->asSyncUser('a@example.org');
+        $before = (array) $this->syncJobRow($this->job);
+        foreach ([[], ['remotePassword' => '']] as $password) {
+            $this->patchSyncJob($this->job, [$field => $value] + $password)->assertUnprocessable()
+                ->assertJsonPath('errors.remotePassword.0.code', 'secretRequired')
+                ->assertJsonPath('errors.remotePassword.0.params.field', $field);
+            $this->assertEquals($before, (array) $this->syncJobRow($this->job));
+        }
+
+        $this->patchSyncJob($this->job, [$field => $value, 'remotePassword' => 'supplied-again'])->assertOk();
+        $this->assertSame('supplied-again', $this->syncJobRow($this->job)?->password1);
+    }
+
+    public function test_host_letter_case_and_unrelated_edits_can_keep_the_secret(): void
+    {
+        $this->asSyncUser('a@example.org');
+        $host = (string) $this->syncJobRow($this->job)?->host1;
+        $this->patchSyncJob($this->job, ['remoteHost' => strtoupper($host), 'intervalMinutes' => 30])->assertOk();
+        $this->assertSame('remote-secret', $this->syncJobRow($this->job)?->password1);
+    }
+
+    public function test_reentering_the_same_password_authorizes_a_connection_change(): void
+    {
+        $this->asAdmin();
+        $this->patchSyncJob($this->job, ['remotePort' => 1993, 'remotePassword' => 'remote-secret'])->assertOk();
+        $this->assertSame('remote-secret', $this->syncJobRow($this->job)?->password1);
     }
 
     public function test_deactivating_and_activating_change_what_the_runner_selects_without_interrupting_a_run(): void
@@ -158,7 +199,7 @@ class UpdateSyncJobTest extends TestCase
         $this->runner->finishRun($this->job, 'the runner wrote this', 0, 'EXIT_CONNECTION_FAILURE');
         $status = DB::table('imapsync')->where('id', $this->job)->first(['last_run', 'success', 'exit_status', 'returned_text', 'is_running']);
 
-        $this->patchSyncJob($this->job, ['remoteHost' => 'IMAP.New.example'], ['If-Match' => (string) $read->headers->get('ETag')])->assertOk();
+        $this->patchSyncJob($this->job, ['remoteHost' => 'IMAP.New.example', 'remotePassword' => 'remote-secret'], ['If-Match' => (string) $read->headers->get('ETag')])->assertOk();
 
         $this->assertSame('IMAP.New.example', $this->syncJobRow($this->job)?->host1);
         $this->assertEquals($status, DB::table('imapsync')->where('id', $this->job)->first(['last_run', 'success', 'exit_status', 'returned_text', 'is_running']));

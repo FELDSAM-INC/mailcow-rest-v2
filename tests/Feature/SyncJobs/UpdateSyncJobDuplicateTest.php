@@ -29,7 +29,7 @@ class UpdateSyncJobDuplicateTest extends TestCase
             ->assertJsonPath('syncJobId', $other);
         $this->assertSame('one.example', $this->syncJobRow($job)?->host1);
 
-        $this->patchSyncJob($job, ['remoteHost' => 'three.example', 'remoteUser' => 'three'])->assertOk();
+        $this->patchSyncJob($job, ['remoteHost' => 'three.example', 'remoteUser' => 'three', 'remotePassword' => 'supplied-again'])->assertOk();
     }
 
     public function test_an_edit_of_other_members_takes_no_lock(): void

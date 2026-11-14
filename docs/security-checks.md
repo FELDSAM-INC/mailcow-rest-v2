@@ -48,6 +48,18 @@ source changes, removal of the provider configuration, and local session revocat
 Operators requiring provider-driven revocation must configure refresh-token issuance. This legacy
 compatibility rule does not permit an expired token to authenticate a new session.
 
+## Sync-job credential destinations
+
+API v2 requires a non-empty remote password in the same request when an edit changes the IMAP
+host, port, encryption or remote username of a job with a stored password. The check uses the
+locked current row; an omitted or empty password cannot redirect the retained credential.
+Host letter case and unrelated configuration edits can retain it. The UI adds an early check
+and explanation, but the API is authoritative for all callers.
+
+The upstream mailcow runner and legacy UI/API v1 are separate codebases and are not modified by
+this rule. Their stored-credential edit and read policies require a separate upstream review;
+API v2's write-only response and destination checks do not constrain those endpoints.
+
 ## Sieve parser isolation
 
 Sieve validation runs the unmodified upstream parser in a PHP child with a one-second wall

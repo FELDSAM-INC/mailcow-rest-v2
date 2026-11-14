@@ -33,6 +33,10 @@ patch:
     `mailbox` cannot change (`immutable`). Audited with each changed attribute's old and new value;
     the password is recorded only as changed.
 
+    A stored password may be retained only while the remote host, port, encryption and username
+    remain unchanged. Otherwise send a non-empty `remotePassword` in the same request
+    (`422`, `remotePassword.secretRequired`). Hostname letter case alone is not a change.
+
     Interactive clients should always send the version tag they read in `If-Match`: the legacy UI
     and `/api/v1` edit the same rows, and an outdated tag answers `412` without changing anything.
 

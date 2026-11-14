@@ -58,8 +58,8 @@ class MailQueueContentTest extends TestCase
 
     public function test_a_read_only_administrator_key_may_view_and_is_audited(): void
     {
-        $key = $this->apiKey('admin', 'readOnly');
         $this->mailcow()->admin('admin', MailcowFactory::PASSWORD);
+        $key = $this->apiKey('admin', 'readOnly');
 
         $this->getJson('/api/v2/mail-queue/messages/4F0A1C2B3D/content', $this->keyHeader($key))->assertOk();
 

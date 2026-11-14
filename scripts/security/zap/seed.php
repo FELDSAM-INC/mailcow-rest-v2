@@ -1,6 +1,8 @@
 <?php
 
+use App\Auth\AccountKind;
 use App\Models\ApiKey;
+use App\Services\Accounts\AccountInstance;
 use Database\Factories\MailcowRows;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +29,7 @@ foreach (['readonly' => null, 'revoked' => now()] as $label => $revoked) {
         'secret_hash' => hash('sha256', $secret),
         'owner_username' => 'zapadmin',
         'owner_created_at' => DB::table('admin')->where('username', 'zapadmin')->value('created'),
+        'owner_instance_id' => app(AccountInstance::class)->bind(AccountKind::Admin, 'zapadmin'),
         'access_level' => 'ro',
         'allowed_networks' => [],
         'created_by' => 'zapadmin',

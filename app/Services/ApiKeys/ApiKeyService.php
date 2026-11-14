@@ -3,12 +3,15 @@
 namespace App\Services\ApiKeys;
 
 use App\Audit\AuditEventType;
+use App\Auth\AccountKind;
 use App\Auth\Principal;
 use App\Models\ApiKey;
 use App\Models\Mailcow\Admin;
 use App\Rules\IpNetwork;
+use App\Services\Accounts\AccountInstance;
 use App\Services\Audit\AuditLogger;
 use App\Support\Http\ETag;
+use App\Support\Http\FieldViolations;
 use App\Support\Http\ListQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -56,21 +59,26 @@ class ApiKeyService
         array $allowedNetworks,
     ): array {
         $secret = self::generateSecret();
-        // The owner exists (App\Rules\EligibleKeyOwner); keep mailcow's spelling of the username.
-        $ownerRow = Admin::query()->whereKey($ownerUsername)->toBase()->first(['username', 'created']);
-        $owner = (string) ($ownerRow->username ?? $ownerUsername);
-        // Feature 007 (FR-036): the key acts only for this account, never for a later one of the name.
-        $ownerCreatedAt = is_string($ownerRow->created ?? null) ? $ownerRow->created : null;
         $networks = self::normaliseNetworks($allowedNetworks);
 
-        $key = DB::transaction(function () use ($actor, $name, $owner, $ownerCreatedAt, $accessLevel, $expiresAt, $networks, $secret): ApiKey {
+        $key = DB::transaction(function () use ($actor, $name, $ownerUsername, $accessLevel, $expiresAt, $networks, $secret): ApiKey {
+            // Validation happened before this transaction. Re-read and lock the owner so
+            // concurrent deletion cannot issue an unbound key or race its revocation.
+            $ownerRow = Admin::query()->whereKey($ownerUsername)->lockForUpdate()->toBase()->first(['username', 'created']);
+            if ($ownerRow === null || ! is_string($ownerRow->created)) {
+                $violations = new FieldViolations;
+                $violations->add('ownerUsername', 'notFound');
+                $violations->throwIfAny();
+            }
+            $owner = (string) $ownerRow->username;
             $key = new ApiKey;
             $key->forceFill([
                 'name' => $name,
                 'prefix' => substr($secret, 0, 12),
                 'secret_hash' => hash('sha256', $secret),
                 'owner_username' => $owner,
-                'owner_created_at' => $ownerCreatedAt,
+                'owner_created_at' => $ownerRow->created,
+                'owner_instance_id' => app(AccountInstance::class)->bind(AccountKind::Admin, $owner),
                 'access_level' => ApiKey::storedAccessLevel($accessLevel),
                 'allowed_networks' => $networks,
                 'expires_at' => $expiresAt?->utc()->startOfSecond(),

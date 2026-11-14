@@ -7,6 +7,7 @@ use App\Auth\Principal;
 use App\Auth\Role;
 use App\Models\Mailcow\Admin;
 use App\Models\Mailcow\Mailbox;
+use App\Services\Accounts\AccountInstance;
 
 /**
  * Read-only lookups of mailcow accounts (R16, data-model), including the account resolution of a
@@ -88,6 +89,11 @@ class AccountResolver
      */
     public function accountStillActive(Principal $principal): bool
     {
+        if ($principal->accountInstanceId !== null
+            && ! app(AccountInstance::class)->matches($principal->accountKind, $principal->username, $principal->accountInstanceId)) {
+            return false;
+        }
+
         if ($principal->accountKind === AccountKind::Admin) {
             $query = Admin::query()
                 ->whereKey($principal->username)

@@ -31,6 +31,7 @@ use Illuminate\Support\Str;
  * @property string|null $revoked_by
  * @property string|null $revocation_reason feature 007: `manual` or `ownerDeleted`, null while not revoked
  * @property string|null $owner_created_at feature 007: the owner's raw `admin.created` at creation (FR-036)
+ * @property string|null $owner_instance_id Opaque identity of the upstream owner row
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  * @property-read Admin|null $owner
@@ -62,11 +63,12 @@ class ApiKey extends Model
         'revoked_by',
         'revocation_reason',
         'owner_created_at',
+        'owner_instance_id',
         'created_at',
         'updated_at',
     ];
 
-    protected $hidden = ['secret_hash'];
+    protected $hidden = ['secret_hash', 'owner_instance_id'];
 
     protected function casts(): array
     {

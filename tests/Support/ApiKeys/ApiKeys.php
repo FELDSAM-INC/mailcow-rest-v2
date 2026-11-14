@@ -2,6 +2,8 @@
 
 namespace Tests\Support\ApiKeys;
 
+use App\Auth\AccountKind;
+use App\Services\Accounts\AccountInstance;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -37,6 +39,8 @@ trait ApiKeys
             'prefix' => substr($secret, 0, 12),
             'secret_hash' => hash('sha256', $secret),
             'owner_username' => $owner,
+            'owner_created_at' => DB::table('admin')->where('username', $owner)->value('created'),
+            'owner_instance_id' => app(AccountInstance::class)->bind(AccountKind::Admin, $owner),
             'access_level' => $accessLevel === 'readOnly' ? 'ro' : 'rw',
             'allowed_networks' => json_encode($networks),
             'expires_at' => $expiresAt?->utc()->format('Y-m-d H:i:s'),

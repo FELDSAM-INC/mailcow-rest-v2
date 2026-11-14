@@ -2,8 +2,10 @@
 
 namespace App\Services\Mailboxes;
 
+use App\Auth\Principal;
 use App\Clients\SharedStore\SharedStore;
 use App\Clients\SharedStore\SharedStoreUnavailable;
+use App\Services\Aliases\AliasScope;
 use App\Services\RateLimits\RateLimitStore;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -22,9 +24,10 @@ class MailboxDeletionPlanner
         private readonly SharedStore $store,
         private readonly MailStoreCommands $mailStore,
         private readonly MailboxVersion $version,
+        private readonly AliasScope $aliases,
     ) {}
 
-    public function plan(string $address): DeletionPlan
+    public function plan(string $address, ?Principal $viewer = null): DeletionPlan
     {
         $exclusive = DB::table('alias')->where('goto', $address)->where('address', '!=', $address);
         $shared = DB::table('alias')->where('goto', '!=', $address)->whereRaw('`goto` REGEXP ?', [self::gotoPattern($address)]);
@@ -35,8 +38,8 @@ class MailboxDeletionPlanner
         }
 
         return new DeletionPlan(
-            self::sample($exclusive),
-            self::sample($shared),
+            $this->sample($exclusive, $viewer),
+            $this->sample($shared, $viewer),
             [
                 'senderPermissionsHeld' => DB::table('sender_acl')->where('logged_in_as', $address)->count(),
                 'senderPermissionsGranted' => DB::table('sender_acl')->where('send_as', $address)->where('logged_in_as', '!=', $address)->count(),
@@ -61,10 +64,10 @@ class MailboxDeletionPlanner
      *
      * @return array<string, mixed>
      */
-    public function preview(string $address): array
+    public function preview(string $address, Principal $viewer): array
     {
         $row = DB::table('mailbox')->where('username', $address)->where('kind', '')->first() ?? throw new NotFoundHttpException('The mailbox does not exist.');
-        $plan = $this->plan($address);
+        $plan = $this->plan($address, $viewer);
         $blockers = [];
 
         if (! $this->mailStore->mailStoreReachable()) {
@@ -132,10 +135,18 @@ class MailboxDeletionPlanner
     /**
      * @return array{count: int, addresses: list<string>}
      */
-    private static function sample(Builder $query): array
+    private function sample(Builder $query, ?Principal $viewer): array
     {
+        // The cascade maintains all references to this mailbox. Only names the viewer may
+        // read belong in the preview; apply scope before the limit so hidden names cannot
+        // crowd visible aliases out of the sample. Audit counts still cover the full cascade.
+        $count = (clone $query)->count();
+        if ($viewer !== null) {
+            $this->aliases->restrict($query, $viewer, 'alias.domain');
+        }
+
         return [
-            'count' => (clone $query)->count(),
+            'count' => $count,
             'addresses' => $query->orderBy('address')->limit(self::SAMPLE)->pluck('address')->map(fn (mixed $a): string => (string) $a)->all(),
         ];
     }

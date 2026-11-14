@@ -106,4 +106,23 @@ class PreviewMailboxDeletionTest extends TestCase
         $this->getJson('/api/v2/mailboxes/anna@example.org/deletion-preview')->assertStatus(403);
         $this->assertSame(0, DB::table('restv2_audit_events')->count());
     }
+
+    public function test_domain_admin_preview_hides_foreign_alias_names_but_keeps_cascade_counts(): void
+    {
+        $this->mailcow()->domain('other.example');
+        $this->mailcow()->alias('foreign@other.example', 'anna@example.org');
+        $this->mailcow()->alias('shared@other.example', 'anna@example.org,bob@example.org');
+        $this->mailcow()->alias('visible@example.org', 'anna@example.org');
+        $this->mailcow()->domainAdmin('reseller', ['example.org']);
+        $this->signInAs('reseller', Role::DomainAdmin);
+
+        $this->getJson('/api/v2/mailboxes/anna@example.org/deletion-preview')->assertOk()
+            ->assertJsonPath('data.exclusiveAliases', ['count' => 2, 'addresses' => ['visible@example.org']])
+            ->assertJsonPath('data.sharedAliases', ['count' => 1, 'addresses' => []]);
+
+        $this->asAdmin();
+        $this->getJson('/api/v2/mailboxes/anna@example.org/deletion-preview')->assertOk()
+            ->assertJsonPath('data.exclusiveAliases.addresses', ['foreign@other.example', 'visible@example.org'])
+            ->assertJsonPath('data.sharedAliases.addresses', ['shared@other.example']);
+    }
 }

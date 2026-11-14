@@ -11,6 +11,7 @@ use App\Exceptions\PermissionFlagRequiredException;
 use App\Exceptions\ProblemException;
 use App\Rules\AccountUsername;
 use App\Services\Accounts\AccountGeneration;
+use App\Services\Accounts\AccountInstance;
 use App\Services\Identity\IdentityService;
 use App\Services\Mailboxes\MailboxScope;
 use App\Support\Http\ProblemType;
@@ -88,6 +89,7 @@ class ImpersonationService
                 'role' => $role->value,
                 'accountKind' => $kind->value,
                 'accountCreatedAt' => is_string($target->created ?? null) ? $target->created : null,
+                'accountInstanceId' => app(AccountInstance::class)->bind($kind, (string) $target->username),
                 'generation' => $this->generations->current($kind->value, (string) $target->username),
             ],
         ];
@@ -127,6 +129,8 @@ class ImpersonationService
             : DB::table('admin')->where('username', $impersonating->username)->where('superadmin', 0)->first(['username', 'created']);
 
         if (! $row instanceof stdClass
+            || $impersonating->accountInstanceId === null
+            || ! app(AccountInstance::class)->matches($kind, $impersonating->username, $impersonating->accountInstanceId)
             || ($impersonating->accountCreatedAt !== null && (string) $row->created !== $impersonating->accountCreatedAt)
             || $this->generations->current($kind->value, $impersonating->username) !== $generation) {
             return ImpersonationEndReason::TargetDeletedOrRenamed;

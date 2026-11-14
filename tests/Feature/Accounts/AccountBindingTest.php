@@ -104,4 +104,40 @@ class AccountBindingTest extends TestCase
         $this->assertSame(2, $generations->bump('mailbox', 'bob@a.example'));
         $this->assertSame(0, $generations->current('admin', 'bob@a.example'));
     }
+
+    public function test_same_second_legacy_admin_recreation_rejects_the_old_session_and_key(): void
+    {
+        $this->mailcow()->domainAdmin('reseller1', ['a.example']);
+        $this->signInAs('reseller1', Role::DomainAdmin);
+        $key = $this->apiKey('reseller1');
+        $this->getJson('/api/v2/me', $this->keyHeader($key))->assertOk();
+        $row = (array) DB::table('admin')->where('username', 'reseller1')->first();
+        DB::table('admin')->where('username', 'reseller1')->delete();
+        // Even an identical row restored within the same second is a different account.
+        DB::table('admin')->insert($row);
+
+        $this->getJson('/api/v2/me', $this->keyHeader($key))->assertUnauthorized()
+            ->assertJsonPath('type', '/api/v2/problems/api-key-invalid');
+        $this->getJson('/api/v2/me')->assertUnauthorized();
+    }
+
+    public function test_same_second_legacy_mailbox_recreation_rejects_the_old_session(): void
+    {
+        $this->mailcow()->mailboxWithDomain('bob@a.example');
+        $this->signInAs('bob@a.example', Role::MailboxUser);
+        $row = (array) DB::table('mailbox')->where('username', 'bob@a.example')->first();
+        DB::table('mailbox')->where('username', 'bob@a.example')->delete();
+        DB::table('mailbox')->insert($row);
+
+        $this->getJson('/api/v2/me')->assertUnauthorized();
+    }
+
+    public function test_a_key_without_its_owner_binding_is_rejected(): void
+    {
+        $this->mailcow()->domainAdmin('reseller1', ['a.example']);
+        $key = $this->apiKey('reseller1');
+        DB::table('restv2_api_keys')->where('id', $key['id'])->update(['owner_created_at' => null]);
+
+        $this->getJson('/api/v2/me', $this->keyHeader($key))->assertUnauthorized();
+    }
 }

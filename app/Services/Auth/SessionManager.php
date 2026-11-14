@@ -10,6 +10,7 @@ use App\Auth\PendingAction;
 use App\Auth\Principal;
 use App\Auth\Role;
 use App\Auth\SessionState;
+use App\Services\Accounts\AccountInstance;
 use App\Services\IdentityProvider\SsoLinkStore;
 use App\Support\Http\Base64Url;
 use Carbon\CarbonImmutable;
@@ -96,7 +97,8 @@ class SessionManager
         $kind = AccountKind::tryFrom((string) ($data['accountKind'] ?? ''));
         $method = AuthMethod::tryFrom((string) ($data['authMethod'] ?? ''));
 
-        if ($role === null || $kind === null || $method === null || ! is_string($data['username'] ?? null)) {
+        if ($role === null || $kind === null || $method === null || ! is_string($data['username'] ?? null)
+            || ! is_string($data['accountInstanceId'] ?? null)) {
             return null;
         }
 
@@ -108,6 +110,7 @@ class SessionManager
             signedInAt: isset($data['signedInAt']) ? CarbonImmutable::createFromTimestampUTC((int) $data['signedInAt']) : null,
             identityProvider: IdentityProviderType::tryFrom((string) ($data['identityProvider'] ?? '')),
             passwordSource: PasswordSource::tryFrom((string) ($data['passwordSource'] ?? '')),
+            accountInstanceId: $data['accountInstanceId'],
             ssoLinkId: is_string($data['ssoLinkId'] ?? null) ? $data['ssoLinkId'] : null,
             accountCreatedAt: is_string($data['accountCreatedAt'] ?? null) ? $data['accountCreatedAt'] : null,
         );
@@ -116,7 +119,7 @@ class SessionManager
     /**
      * The impersonation of the session (feature 007), or null.
      *
-     * @return array{id: string, startedAt: int, target: array{username: string, role: Role, accountKind: AccountKind, accountCreatedAt: string|null, generation: int}}|null
+     * @return array{id: string, startedAt: int, target: array{username: string, role: Role, accountKind: AccountKind, accountCreatedAt: string|null, accountInstanceId: string|null, generation: int}}|null
      */
     public function impersonation(Session $session): ?array
     {
@@ -137,6 +140,7 @@ class SessionManager
                 'role' => $role,
                 'accountKind' => $kind,
                 'accountCreatedAt' => is_string($target['accountCreatedAt'] ?? null) ? $target['accountCreatedAt'] : null,
+                'accountInstanceId' => is_string($target['accountInstanceId'] ?? null) ? $target['accountInstanceId'] : null,
                 'generation' => (int) ($target['generation'] ?? 0),
             ],
         ];
@@ -162,7 +166,7 @@ class SessionManager
     /**
      * The principal of an impersonation's target, acting for $impersonator (feature 007).
      *
-     * @param  array{id: string, startedAt: int, target: array{username: string, role: Role, accountKind: AccountKind, accountCreatedAt: string|null, generation: int}}  $impersonation
+     * @param  array{id: string, startedAt: int, target: array{username: string, role: Role, accountKind: AccountKind, accountCreatedAt: string|null, accountInstanceId: string|null, generation: int}}  $impersonation
      */
     public static function impersonating(Principal $impersonator, array $impersonation): Principal
     {
@@ -178,6 +182,7 @@ class SessionManager
             impersonationId: $impersonation['id'],
             impersonationStartedAt: CarbonImmutable::createFromTimestampUTC($impersonation['startedAt']),
             accountCreatedAt: $target['accountCreatedAt'],
+            accountInstanceId: $target['accountInstanceId'],
         );
     }
 
@@ -185,7 +190,7 @@ class SessionManager
      * Starts an impersonation (feature 007 FR-045): stores it, renews the session identifier and
      * the anti-forgery token, and keeps the session's registry entry under the impersonator.
      *
-     * @param  array{id: string, startedAt: int, target: array{username: string, role: string, accountKind: string, accountCreatedAt: string|null, generation: int}}  $impersonation
+     * @param  array{id: string, startedAt: int, target: array{username: string, role: string, accountKind: string, accountCreatedAt: string|null, accountInstanceId: string|null, generation: int}}  $impersonation
      */
     public function startImpersonation(Session $session, array $impersonation): void
     {
@@ -299,6 +304,7 @@ class SessionManager
             'secondFactorId' => $secondFactorId,
             // Feature 007 (FR-036): the account's raw creation time, compared on every request.
             'accountCreatedAt' => $principal->accountCreatedAt ?? $this->accounts()->createdAt($principal->accountKind, $principal->username),
+            'accountInstanceId' => app(AccountInstance::class)->bind($principal->accountKind, $principal->username),
         ], fn (mixed $value): bool => $value !== null));
         $handle = (string) Str::ulid();
         $session->put(self::HANDLE, $handle);

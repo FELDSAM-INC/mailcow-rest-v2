@@ -35,6 +35,7 @@ final readonly class Principal
         public ?string $impersonationId = null,
         public ?CarbonImmutable $impersonationStartedAt = null,
         public ?string $accountCreatedAt = null,
+        public ?string $accountInstanceId = null,
     ) {}
 
     public function isApiKey(): bool

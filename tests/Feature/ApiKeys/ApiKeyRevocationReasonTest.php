@@ -2,6 +2,11 @@
 
 namespace Tests\Feature\ApiKeys;
 
+use App\Auth\AccountKind;
+use App\Auth\AuthMethod;
+use App\Auth\Principal;
+use App\Auth\Role;
+use App\Exceptions\ValidationProblemException;
 use App\Services\ApiKeys\ApiKeyService;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\Accounts\AccountTestHelpers;
@@ -78,5 +83,20 @@ class ApiKeyRevocationReasonTest extends TestCase
         $row = DB::table('restv2_api_keys')->where('id', $key['id'])->first();
         $this->assertSame('reseller-one', $row->owner_username);
         $this->assertSame('2026-01-01 10:00:00', $row->owner_created_at);
+    }
+
+    public function test_an_owner_deleted_after_request_validation_cannot_receive_a_key(): void
+    {
+        DB::table('admin')->where('username', 'reseller1')->delete();
+        try {
+            $this->app->make(ApiKeyService::class)->create(
+                new Principal('admin', Role::Admin, AccountKind::Admin, AuthMethod::Password),
+                'billing', 'reseller1', 'readWrite', null, [],
+            );
+            $this->fail('Creation must recheck the owner inside its transaction.');
+        } catch (ValidationProblemException) {
+            $this->assertSame(0, DB::table('restv2_api_keys')->count());
+            $this->assertSame(0, DB::table('restv2_audit_events')->where('event_type', 'apiKeyCreation')->count());
+        }
     }
 }

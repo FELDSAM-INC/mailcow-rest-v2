@@ -3,6 +3,8 @@ description: |
   What deleting the mailbox would currently remove and move, and whether it could proceed, computed
   by the same rules as the deletion. A snapshot: the deletion checks and computes everything again,
   and refuses an outdated version tag. Reading it changes nothing and writes no audit record.
+  Alias counts cover all affected aliases, but address samples contain only aliases visible
+  to the caller. A sample may therefore be empty even when its count is nonzero.
 required:
   - address
   - canProceed

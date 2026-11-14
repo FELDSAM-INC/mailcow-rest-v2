@@ -49,6 +49,7 @@ class ImpersonationValidityTest extends TestCase
             'mailboxDeleted' => $this->deleteJson('/api/v2/mailboxes/bob@a.example', [], $admin)->assertNoContent(),
             'mailboxRowDeleted' => DB::table('mailbox')->where('username', 'bob@a.example')->delete(),
             'mailboxRecreated' => $this->recreateWithinTheSameSecond(),
+            'mailboxRecreatedByLegacy' => $this->recreateWithinTheSameSecond(true),
             'domainAdminDeleted' => $this->deleteJson('/api/v2/domain-admins/reseller1', [], $admin)->assertNoContent(),
             'assignmentDeactivated' => DB::table('domain_admins')->where('username', 'reseller1')->update(['active' => 0]),
             'loginAsRevoked' => $this->patchMerge('/api/v2/domain-admins/reseller1', ['permissions' => ['loginAs' => false]], $admin)->assertOk(),
@@ -62,10 +63,14 @@ class ImpersonationValidityTest extends TestCase
         };
     }
 
-    private function recreateWithinTheSameSecond(): void
+    private function recreateWithinTheSameSecond(bool $legacy = false): void
     {
         $row = (array) DB::table('mailbox')->where('username', 'bob@a.example')->first();
-        $this->deleteJson('/api/v2/mailboxes/bob@a.example', [], $this->keyHeader($this->apiKey('alice')))->assertNoContent();
+        if ($legacy) {
+            DB::table('mailbox')->where('username', 'bob@a.example')->delete();
+        } else {
+            $this->deleteJson('/api/v2/mailboxes/bob@a.example', [], $this->keyHeader($this->apiKey('alice')))->assertNoContent();
+        }
         DB::table('mailbox')->insert($row);
     }
 
@@ -74,7 +79,7 @@ class ImpersonationValidityTest extends TestCase
      */
     public static function causes(): array
     {
-        $causes = ['mailboxDeleted', 'mailboxRowDeleted', 'mailboxRecreated', 'domainAdminDeleted', 'assignmentDeactivated', 'loginAsRevoked'];
+        $causes = ['mailboxDeleted', 'mailboxRowDeleted', 'mailboxRecreated', 'mailboxRecreatedByLegacy', 'domainAdminDeleted', 'assignmentDeactivated', 'loginAsRevoked'];
 
         return array_combine($causes, array_map(fn (string $c): array => [$c], $causes));
     }

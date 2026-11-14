@@ -13,6 +13,25 @@ Codex loads the root rule automatically; Claude Code imports it through
 `CLAUDE.md`. Failed, incomplete, dry-run, or stale scans do not satisfy this rule.
 This requirement is separate from the advisory paid PR scan described below.
 
+## Account lifecycle binding
+
+Sessions, impersonation targets and API keys bind to an opaque identifier in the API-owned
+`restv2_account_instances` table, alongside the upstream creation timestamp. Foreign keys to
+`admin.username` and `mailbox.username` delete that identifier when an account is deleted and
+preserve it on rename. This also covers legacy writes and recreation within the same second,
+without changing upstream tables or password-change behavior. API-key creation locks its owner
+through issuance; missing bindings fail authentication.
+
+The migration binds existing keys only when their current creation-time binding still matches.
+Existing browser sessions require a new sign-in after this upgrade. Operators restoring accounts
+with foreign-key checks disabled must invalidate existing credentials as part of that privileged
+database restore; such writes bypass normal database integrity controls.
+
+Mailbox deletion and rename intentionally maintain all references to that mailbox, including
+alias recipients in other domains (mailbox specification FR-041/FR-045). This does not authorize
+arbitrary edits to those aliases. Deletion previews retain the cascade counts but disclose alias
+addresses only within the caller's alias scope, including aliases of assigned domains.
+
 ## Routine checks
 
 The normal CI workflow calls `security.yml` on pull requests, main pushes and release tags.

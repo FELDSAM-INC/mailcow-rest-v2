@@ -11,6 +11,7 @@ use App\Clients\Fail2Ban\Fail2BanReporter;
 use App\Exceptions\ProblemException;
 use App\Models\ApiKey;
 use App\Models\Mailcow\Admin;
+use App\Services\Accounts\AccountInstance;
 use App\Support\Http\ProblemType;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -67,7 +68,9 @@ class ApiKeyAuthenticator
         // Feature 007 (FR-036): a key bound to its owner's creation time never acts for a later
         // account with the same username (a legacy deletion and re-creation).
         if ($owner === null || (int) $owner->active !== 1
-            || ($key->owner_created_at !== null && $key->owner_created_at !== (string) $owner->created)) {
+            || $key->owner_created_at === null || $key->owner_created_at !== (string) $owner->created
+            || $key->owner_instance_id === null
+            || ! app(AccountInstance::class)->matches(AccountKind::Admin, $key->owner_username, $key->owner_instance_id)) {
             $this->refuse(ProblemType::ApiKeyInvalid, $ip);
         }
 

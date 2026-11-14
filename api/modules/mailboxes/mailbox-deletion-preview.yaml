@@ -9,6 +9,8 @@ get:
     blockers are an unreachable mail store or shared store), the garbage-area retention and the
     current version tag. Changes nothing and writes no audit record. Administrators and domain
     administrators, from a session or a key (read-only keys included).
+    Alias counts cover the full referential cleanup; sampled alias addresses are limited to
+    domains the caller may administer, including their alias domains.
   security:
     - sessionCookie: []
     - apiKeyAuth: []

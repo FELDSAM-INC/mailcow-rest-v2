@@ -24,6 +24,6 @@ class MailboxDeletionPreviewController extends Controller
         Gate::forUser($principal)->authorize('previewDeletion', Mailbox::class);
         $address = $scope->resolve($principal, $mailbox) ?? throw new NotFoundHttpException('The mailbox does not exist.');
 
-        return response()->json(['data' => $planner->preview($address)], 200, [], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        return response()->json(['data' => $planner->preview($address, $principal)], 200, [], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 }

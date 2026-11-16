@@ -22,7 +22,11 @@ post:
     content:
       application/json:
         schema:
-          $ref: '../../components/schemas/IdentityProviderInput.yaml'
+          allOf:
+            - $ref: '../../components/schemas/IdentityProviderInput.yaml'
+            - type: object
+              properties:
+                syncSettings: false
   responses:
     '200':
       $ref: '../../components/responses/IdentityProviderConnectionTestResponse.yaml'

@@ -39,17 +39,19 @@ class IdentityProviderConfigService
         private readonly SecretRetentionPolicy $secrets,
         private readonly AuditLogger $audit,
         private readonly NamedLock $lock,
+        private readonly IdentitySyncService $sync,
     ) {}
 
     /**
      * Creates or replaces the configuration with a whole one of the given type.
      *
      * @param  array<string, mixed>  $input  the sent members, `type` excluded
+     * @param  array<string, mixed>|null  $syncSettings
      * @return array{config: IdentityProviderConfig, created: bool}
      */
-    public function save(IdentityProviderType $type, array $input, ?string $ifMatch, ?string $ifNoneMatch, Principal $actor): array
+    public function save(IdentityProviderType $type, array $input, ?string $ifMatch, ?string $ifNoneMatch, Principal $actor, ?array $syncSettings = null): array
     {
-        return $this->lock->run([self::LOCK], fn (): array => DB::transaction(function () use ($type, $input, $ifMatch, $ifNoneMatch, $actor): array {
+        return $this->lock->run([self::LOCK], fn (): array => DB::transaction(function () use ($type, $input, $ifMatch, $ifNoneMatch, $actor, $syncSettings): array {
             $rows = $this->repository->rows();
             $stored = $this->codec->fromRows($rows);
             $this->assertPreconditions($stored, $rows, $ifMatch, $ifNoneMatch);
@@ -63,6 +65,10 @@ class IdentityProviderConfigService
 
             $this->write($candidate, $stored?->type === $type);
             $this->recordChange($stored, $candidate, $actor);
+            if ($syncSettings !== null) {
+                $this->sync->assertAvailable();
+                $this->sync->applySettings($syncSettings, $this->repository->rows(), $actor);
+            }
 
             return ['config' => $this->repository->current() ?? $candidate, 'created' => $stored === null];
         }));

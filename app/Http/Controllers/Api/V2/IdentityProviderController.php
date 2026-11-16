@@ -40,7 +40,7 @@ class IdentityProviderController extends Controller
     public function save(SaveIdentityProviderRequest $request): JsonResponse
     {
         $type = $request->type() ?? throw new LogicException('The request validated the type.');
-        $result = $this->service->save($type, $request->members(), $request->header('If-Match'), $request->header('If-None-Match'), RequestContext::requirePrincipal($request));
+        $result = $this->service->save($type, $request->members(), $request->header('If-Match'), $request->header('If-None-Match'), RequestContext::requirePrincipal($request), $request->syncSettings());
         $response = $this->single(IdentityProviderResource::fromStored($result['config']), $result['created'] ? 201 : 200);
 
         return $result['created'] ? $response->header('Location', '/api/v2/identity-provider') : $response;

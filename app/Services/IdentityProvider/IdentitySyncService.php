@@ -71,32 +71,41 @@ final class IdentitySyncService
             if (ETag::preconditionFails($ifMatch, $this->repository->etag($rows))) {
                 throw new PreconditionFailedHttpException('The identity provider settings changed since they were read.');
             }
-            $provider = $rows['authsource'];
-            $old = IdentitySyncSettings::read($rows);
-            $changes = [];
-            foreach ($patch as $member => $value) {
-                if (($provider !== 'ldap' && in_array($member, IdentitySyncSettings::LDAP_FIELDS, true))
-                    || ($provider !== 'keycloak' && $member === 'groupPaths')) {
-                    throw new ValidationProblemException([$member => [ApiFormRequest::make('conflictsWith', ['field' => 'type', 'value' => $provider])]]);
-                }
-                if (in_array($member, ['idAttribute', 'groupNameAttribute', 'groupMemberAttribute', 'groupDefaultDomain'], true)) {
-                    $value = strtolower(trim((string) $value));
-                }
-                if ($old[$member] === $value) {
-                    continue;
-                }
-                DB::statement('INSERT INTO identity_provider (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)', [IdentitySyncSettings::KEYS[$member], IdentitySyncSettings::encode($member, $value)]);
-                $changes[$member] = ['old' => $old[$member], 'new' => $value];
-                if ($member === 'idAttribute') {
-                    // Match upstream: preserve offboarding markers, but IDs in another namespace cannot match.
-                    DB::table('identity_link')->where('provider', 'ldap')->update(['external_id' => null]);
-                }
-            }
-            $this->audit->record(AuditEventType::IdentitySyncSettingsUpdate, true, $actor,
-                ['type' => 'identityProvider', 'id' => $provider], null, null, ['changes' => $changes]);
+            $this->applySettings($patch, $rows, $actor);
         }));
 
         return $this->read();
+    }
+
+    /** Write inside the caller's provider lock and transaction, including initial setup.
+     * @param  array<string, mixed>  $patch
+     * @param  array<string, string>  $rows
+     */
+    public function applySettings(array $patch, array $rows, Principal $actor): void
+    {
+        $provider = $rows['authsource'];
+        $old = IdentitySyncSettings::read($rows);
+        $changes = [];
+        foreach ($patch as $member => $value) {
+            if (($provider !== 'ldap' && in_array($member, IdentitySyncSettings::LDAP_FIELDS, true))
+                || ($provider !== 'keycloak' && $member === 'groupPaths')) {
+                throw new ValidationProblemException([$member => [ApiFormRequest::make('conflictsWith', ['field' => 'type', 'value' => $provider])]]);
+            }
+            if (in_array($member, ['idAttribute', 'groupNameAttribute', 'groupMemberAttribute', 'groupDefaultDomain'], true)) {
+                $value = strtolower(trim((string) $value));
+            }
+            if ($old[$member] === $value) {
+                continue;
+            }
+            DB::statement('INSERT INTO identity_provider (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)', [IdentitySyncSettings::KEYS[$member], IdentitySyncSettings::encode($member, $value)]);
+            $changes[$member] = ['old' => $old[$member], 'new' => $value];
+            if ($member === 'idAttribute') {
+                // Match upstream: preserve offboarding markers, but IDs in another namespace cannot match.
+                DB::table('identity_link')->where('provider', 'ldap')->update(['external_id' => null]);
+            }
+        }
+        $this->audit->record(AuditEventType::IdentitySyncSettingsUpdate, true, $actor,
+            ['type' => 'identityProvider', 'id' => $provider], null, null, ['changes' => $changes]);
     }
 
     /** @return array<string, mixed> */

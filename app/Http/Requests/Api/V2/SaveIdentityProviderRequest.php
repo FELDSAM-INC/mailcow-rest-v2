@@ -5,9 +5,13 @@ namespace App\Http\Requests\Api\V2;
 use App\Auth\IdentityProviderType;
 use App\Http\RequestContext;
 use App\Http\Requests\Api\V2\Concerns\IdentityProviderRules;
+use App\Http\Requests\Api\V2\Concerns\IdentitySyncRules;
 use App\Models\Mailcow\IdentityProviderSetting;
+use App\Models\Mailcow\SchemaVersion;
+use App\Rules\PrecomputedViolation;
 use App\Services\IdentityProvider\IdentityProviderConfig;
 use App\Services\IdentityProvider\IdentityProviderRepository;
+use App\Services\IdentityProvider\IdentitySyncSettings;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -18,6 +22,7 @@ use Illuminate\Support\Facades\Gate;
 class SaveIdentityProviderRequest extends ApiFormRequest
 {
     use IdentityProviderRules;
+    use IdentitySyncRules;
 
     /** Whether mapped templates must exist (not for a connection test). */
     protected bool $checkTemplates = true;
@@ -42,15 +47,50 @@ class SaveIdentityProviderRequest extends ApiFormRequest
         }
 
         $input = $this->members();
+        $sent = $this->jsonBody();
+        if (array_key_exists('syncSettings', $sent) && $this->checkTemplates && $type->offersSynchronisation()) {
+            unset($sent['syncSettings']);
+            $rules['syncSettings'] = ['bail', 'required', 'array', 'min:1'];
+            if (! SchemaVersion::hasNovember2026Features()) {
+                $rules['syncSettings'] = [new PrecomputedViolation(self::make('conflictsWith', ['field' => 'mailcowVersion', 'value' => '2026-11'], 'Synchronization settings require mailcow 2026-11.'))];
+            } else {
+                $settings = ($this->jsonBody()['syncSettings'] ?? null);
+                $rules += $this->synchronizationRules(is_array($settings) ? $settings : [], $type, 'syncSettings.');
+            }
+        }
 
         return $rules + $this->configurationRules(
             $type,
             $input,
-            (array) $this->all(),
+            $sent,
             $this->checkTemplates,
             app(IdentityProviderRepository::class)->current(),
             IdentityProviderConfig::fromInput($type, $input),
         );
+    }
+
+    /** @param array<string, mixed> $body
+     * @return array<string, array{code: string, params: array<string, mixed>, message: string}>
+     */
+    protected function memberViolations(array $body): array
+    {
+        if (! array_key_exists('syncSettings', $body)) {
+            return [];
+        }
+        $settings = $body['syncSettings'];
+        if (! is_array($settings) || array_is_list($settings)) {
+            return ['syncSettings' => self::make('invalidType', ['expected' => 'object'])];
+        }
+        $errors = [];
+        foreach ($settings as $member => $value) {
+            if (! array_key_exists($member, IdentitySyncSettings::KEYS)) {
+                $errors['syncSettings.'.$member] = self::make('immutable', []);
+            } elseif ($value === null) {
+                $errors['syncSettings.'.$member] = self::make('invalidType', []);
+            }
+        }
+
+        return $errors;
     }
 
     /**
@@ -60,7 +100,7 @@ class SaveIdentityProviderRequest extends ApiFormRequest
      */
     public function validationData(): array
     {
-        return self::withoutHostSpaces((array) $this->all());
+        return self::withoutHostSpaces($this->jsonBody());
     }
 
     /**
@@ -78,7 +118,7 @@ class SaveIdentityProviderRequest extends ApiFormRequest
 
     public function type(): ?IdentityProviderType
     {
-        $type = $this->input('type');
+        $type = ($this->jsonBody()['type'] ?? null);
 
         return is_string($type) ? IdentityProviderType::tryFrom($type) : null;
     }
@@ -91,9 +131,17 @@ class SaveIdentityProviderRequest extends ApiFormRequest
     public function members(): array
     {
         $input = $this->validationData();
-        unset($input['type']);
+        unset($input['type'], $input['syncSettings']);
 
         return $input;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function syncSettings(): ?array
+    {
+        $settings = ($this->jsonBody()['syncSettings'] ?? null);
+
+        return is_array($settings) ? $settings : null;
     }
 
     public function sentSecret(): ?string

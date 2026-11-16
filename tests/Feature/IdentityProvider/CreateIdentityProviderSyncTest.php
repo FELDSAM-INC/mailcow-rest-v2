@@ -82,13 +82,23 @@ class CreateIdentityProviderSyncTest extends TestCase
         $this->modern();
         $this->putProvider(IdentityProviderFixtures::genericOidc(['syncSettings' => ['groupSync' => true]]))->assertUnprocessable();
         $this->putProvider(IdentityProviderFixtures::keycloak(['syncSettings' => ['idAttribute' => 'entryuuid']]))->assertUnprocessable();
-        $this->testConnection(IdentityProviderFixtures::ldap(['syncSettings' => ['groupSync' => true]]))->assertUnprocessable();
+        $this->testConnection(IdentityProviderFixtures::ldap(['syncSettings' => ['groupSync' => 'true']]))->assertUnprocessable();
         $this->assertSame([], $this->providerRows());
         $this->putProvider(IdentityProviderFixtures::ldap(['syncSettings' => ['groupSync' => true]]), ['If-None-Match' => '*'])->assertCreated();
         $rows = $this->providerRows();
         $this->putProvider(IdentityProviderFixtures::ldap(['syncSettings' => ['groupSync' => false]]), ['If-None-Match' => '*'])->assertStatus(412);
         $this->assertSame($rows, $this->providerRows());
         $this->assertCount(1, $this->providerAudit('identitySyncSettingsUpdate'));
+    }
+
+    public function test_connection_test_accepts_valid_setup_settings_but_persists_nothing(): void
+    {
+        $this->modern();
+        $this->ldapFake();
+        $this->testConnection(IdentityProviderFixtures::ldap(['syncSettings' => ['offboarding' => true, 'groupSync' => true]]))
+            ->assertOk()->assertJsonPath('data.outcome', 'success');
+        $this->assertSame([], $this->providerRows());
+        $this->assertCount(0, $this->providerAudit('identitySyncSettingsUpdate'));
     }
 
     public function test_old_mailcow_rejects_sync_settings_without_creating_the_provider(): void

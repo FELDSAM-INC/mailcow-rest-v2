@@ -10,7 +10,7 @@ allOf:
     properties:
       syncSettings:
         $ref: './IdentitySyncPatch.yaml'
-        description: Optional mailcow 2026-11 offboarding and group settings, validated and saved atomically with the provider. Omit to preserve settings when replacing the same provider type. LDAP fields require LDAP; groupPaths requires Keycloak. Not accepted by connection tests.
+        description: Optional mailcow 2026-11 offboarding and group settings, validated and saved atomically with the provider. Omit to preserve settings when replacing the same provider type. LDAP fields require LDAP; groupPaths requires Keycloak. Connection tests validate these settings without saving them.
       type:
         const: ldap
       hosts:

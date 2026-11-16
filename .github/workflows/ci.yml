@@ -54,11 +54,14 @@ jobs:
             exit 0
           fi
           git worktree add --detach "$RUNNER_TEMP/base" "$base_tag"
-          npx --yes "$REDOCLY_CLI" bundle "$RUNNER_TEMP/base/api/openapi.yaml" --dereferenced --output build/contract/base.json
+          # Keep named refs so optional changes inside oneOf branches retain their identity.
+          # The dereferenced openapi.json above remains the runtime/test contract.
+          npx --yes "$REDOCLY_CLI" bundle "$RUNNER_TEMP/base/api/openapi.yaml" --output build/contract/base.json
+          npx --yes "$REDOCLY_CLI" bundle api/openapi.yaml --output build/contract/current.json
           node scripts/contract/prepare-comparison.mjs build/contract/base.json build/contract/base-comparison.json
-          node scripts/contract/prepare-comparison.mjs build/contract/openapi.json build/contract/current-comparison.json build/contract/base.json
+          node scripts/contract/prepare-comparison.mjs build/contract/current.json build/contract/current-comparison.json build/contract/base.json
           docker run --rm -v "$PWD/build/contract:/specs:ro" "$OASDIFF_IMAGE" \
-            breaking /specs/base-comparison.json /specs/current-comparison.json --fail-on ERR
+            breaking /specs/base-comparison.json /specs/current-comparison.json --flatten-allof --fail-on ERR
       - name: Webmail hand-off assumptions of every supported release (feature 005, R3)
         run: |
           git clone --quiet --bare --filter=blob:none https://github.com/mailcow/mailcow-dockerized.git "$RUNNER_TEMP/mailcow"

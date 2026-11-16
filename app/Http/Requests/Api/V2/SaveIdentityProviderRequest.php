@@ -48,7 +48,7 @@ class SaveIdentityProviderRequest extends ApiFormRequest
 
         $input = $this->members();
         $sent = $this->jsonBody();
-        if (array_key_exists('syncSettings', $sent) && $this->checkTemplates && $type->offersSynchronisation()) {
+        if (array_key_exists('syncSettings', $sent) && $type->offersSynchronisation()) {
             unset($sent['syncSettings']);
             $rules['syncSettings'] = ['bail', 'required', 'array', 'min:1'];
             if (! SchemaVersion::hasNovember2026Features()) {

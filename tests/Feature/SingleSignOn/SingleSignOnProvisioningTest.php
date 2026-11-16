@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\SingleSignOn;
 
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\IdentityProvider\TemplateMarker;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -35,7 +36,7 @@ class SingleSignOnProvisioningTest extends TestCase
     {
         $mailbox = (array) DB::table('mailbox')->where('username', $username)->first();
         $attributes = (array) json_decode((string) $mailbox['attributes'], true);
-        unset($attributes['passwd_update'], $attributes['attribute_hash']);
+        unset($attributes['passwd_update'], $attributes['attribute_hash'], $attributes['template']);
         ksort($attributes);
         $acl = (array) DB::table('user_acl')->where('username', $username)->first();
         unset($acl['username']);
@@ -63,6 +64,9 @@ class SingleSignOnProvisioningTest extends TestCase
         $this->assertSame(['keycloak', '', 'Ben Example', 2147483648], [$mailbox->authsource, $mailbox->password, $mailbox->name, (int) $mailbox->quota]);
         $template = (string) DB::table('templates')->where('template', 'Staff')->value('attributes');
         $this->assertSame(TemplateMarker::for($template), json_decode((string) $mailbox->attributes, true)['attribute_hash']);
+        if (SchemaVersion::hasNovember2026Features()) {
+            $this->assertSame('Staff', json_decode((string) $mailbox->attributes, true)['template']);
+        }
 
         // The same rows as feature 003's creation from the template, apart from the address.
         $this->asAdmin();

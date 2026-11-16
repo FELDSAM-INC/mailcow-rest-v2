@@ -1,0 +1,47 @@
+type: object
+additionalProperties: false
+properties:
+  domain:
+    type: string
+    maxLength: 255
+  name:
+    type: string
+    minLength: 1
+    maxLength: 100
+  description:
+    type: string
+    maxLength: 255
+  address:
+    type:
+    - string
+    - 'null'
+    format: email
+  active:
+    type: boolean
+  templateId:
+    type:
+    - integer
+    - 'null'
+    minimum: 1
+  priority:
+    type: integer
+    minimum: -1000000
+    maximum: 1000000
+  id:
+    type: integer
+  memberCount:
+    type: integer
+    minimum: 0
+  identityManaged:
+    type: boolean
+required:
+- domain
+- name
+- description
+- address
+- active
+- templateId
+- priority
+- id
+- memberCount
+- identityManaged

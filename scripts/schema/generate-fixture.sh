@@ -69,6 +69,8 @@ if [[ -z "$MYSQL_IMAGE" || -z "$PHP_IMAGE" ]]; then
     exit 1
 fi
 SHA256="$(sha256sum "$WORK/init_db.inc.php" | cut -d' ' -f1)"
+# Since 2026-11 the schema version is supplied by Compose rather than a PHP literal.
+COMPOSE_DB_VERSION="$(sed -nE 's/^x-db-version:.* DB_VERSION=([0-9]+_[0-9]+)[[:space:]]*$/\1/p' "$WORK/docker-compose.yml")"
 echo "tag $TAG: $MYSQL_IMAGE, $PHP_IMAGE, init_db.inc.php sha256 $SHA256" >&2
 
 docker network create "$NET" >/dev/null
@@ -95,6 +97,7 @@ if [[ -z "${READY:-}" ]]; then
 fi
 
 docker run --rm --network "$NET" --entrypoint php \
+    -e DB_VERSION="$COMPOSE_DB_VERSION" \
     -e HARNESS_SRC=/src -e DBHOST="$DB" -e DBNAME=mailcow -e DBUSER=mailcow -e DBPASS=mailcow \
     -v "$WORK:/src:ro" \
     -v "$ROOT/scripts/schema/init-db-harness.php:/harness/init-db-harness.php:ro" \

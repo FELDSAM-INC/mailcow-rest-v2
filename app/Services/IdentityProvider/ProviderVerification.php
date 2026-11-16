@@ -24,11 +24,12 @@ final readonly class ProviderVerification
         public string $outcome,
         public ?string $mappingValue = null,
         public ?string $displayName = null,
+        public ?string $externalId = null,
     ) {}
 
-    public static function verified(?string $mappingValue, ?string $displayName): self
+    public static function verified(?string $mappingValue, ?string $displayName, ?string $externalId = null): self
     {
-        return new self(self::VERIFIED, $mappingValue, $displayName);
+        return new self(self::VERIFIED, $mappingValue, $displayName, $externalId);
     }
 
     public static function wrongPassword(): self

@@ -1,0 +1,164 @@
+parameters:
+- in: path
+  name: groupId
+  required: true
+  schema:
+    type: integer
+    minimum: 1
+get:
+  operationId: getMailboxGroup
+  tags:
+  - Mailbox groups
+  summary: Read a mailbox group
+  description: Requires mailcow 2026-11. Administrators and domain administrators
+    with mailboxGroups permission can manage groups in scope. A foreign send-as or
+    sharing grant makes a group read-only for domain administrators. Mailbox membership
+    reads also allow the mailbox itself.
+  security:
+  - sessionCookie: []
+  - apiKeyAuth: []
+  responses:
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../../components/responses/NotFound.yaml
+    '422':
+      $ref: ../../components/responses/ValidationFailed.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '200':
+      description: The requested data.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            properties:
+              data:
+                $ref: ../../components/schemas/MailboxGroup.yaml
+    '409':
+      description: Mailbox groups require mailcow 2026-11.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+patch:
+  operationId: updateMailboxGroup
+  tags:
+  - Mailbox groups
+  summary: Edit a mailbox group
+  description: Requires mailcow 2026-11. Administrators and domain administrators
+    with mailboxGroups permission can manage groups in scope. A foreign send-as or
+    sharing grant makes a group read-only for domain administrators. Mailbox membership
+    reads also allow the mailbox itself.
+  security:
+  - sessionCookie: []
+    csrfToken: []
+  - apiKeyAuth: []
+  responses:
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../../components/responses/NotFound.yaml
+    '422':
+      $ref: ../../components/responses/ValidationFailed.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '200':
+      description: The requested data.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            properties:
+              data:
+                $ref: ../../components/schemas/MailboxGroup.yaml
+    '400':
+      $ref: ../../components/responses/BadRequest.yaml
+    '412':
+      $ref: ../../components/responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../../components/responses/UnsupportedMediaType.yaml
+    '409':
+      description: The schema is unsupported or a unique name or address is already
+        in use.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: ../../components/schemas/MailboxGroupPatch.yaml
+  parameters:
+  - $ref: ../../components/parameters/IfMatch.yaml
+delete:
+  operationId: deleteMailboxGroup
+  tags:
+  - Mailbox groups
+  summary: Delete a mailbox group
+  description: Requires mailcow 2026-11. Administrators and domain administrators
+    with mailboxGroups permission can manage groups in scope. A foreign send-as or
+    sharing grant makes a group read-only for domain administrators. Mailbox membership
+    reads also allow the mailbox itself.
+  security:
+  - sessionCookie: []
+    csrfToken: []
+  - apiKeyAuth: []
+  responses:
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../../components/responses/NotFound.yaml
+    '422':
+      $ref: ../../components/responses/ValidationFailed.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '200':
+      description: The requested data.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            properties:
+              data:
+                type: object
+                additionalProperties: false
+                required:
+                - warnings
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+    '400':
+      $ref: ../../components/responses/BadRequest.yaml
+    '412':
+      $ref: ../../components/responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../../components/responses/UnsupportedMediaType.yaml
+    '409':
+      description: The schema is unsupported or a unique name or address is already
+        in use.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+  parameters:
+  - $ref: ../../components/parameters/IfMatch.yaml

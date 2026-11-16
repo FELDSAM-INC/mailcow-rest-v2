@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\IdentityProvider;
 
+use App\Models\Mailcow\SchemaVersion;
 use Tests\Support\IdentityProvider\IdentityProviderTestHelpers;
 use Tests\TestCase;
 
@@ -17,6 +18,7 @@ class IdentityProviderCapabilitiesTest extends TestCase
         $this->asAdmin();
 
         $this->getJson('/api/v2/capabilities/identity-provider')->assertOk()->assertExactJson(['data' => [
+            'identitySynchronisation' => SchemaVersion::hasNovember2026Features(),
             'configured' => false,
             'configuredType' => null,
             'appReturnUrls' => [

@@ -2,13 +2,13 @@
 
 namespace Tests\Feature\Schema;
 
+use App\Models\Mailcow\SchemaVersion;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
  * Feature 008 T005 (constitution III, data-model.md): the `imapsync` table of the loaded schema has
- * exactly the 34 columns the model, the version tag and the contract are built on, and no index but
- * its primary key (the `(user2, user1, host1)` uniqueness is enforced in code, research R9). When an
+ * the columns and indexes of the selected supported upstream version. When an
  * upstream release changes the table, this test fails, so that the feature is updated deliberately.
  */
 class ImapsyncColumnsTest extends TestCase
@@ -51,7 +51,7 @@ class ImapsyncColumnsTest extends TestCase
         ['active', 'tinyint(1)', 'NO', '0', ''],
     ];
 
-    public function test_the_table_has_exactly_the_34_columns_of_the_data_model(): void
+    public function test_the_table_matches_the_supported_version_of_the_data_model(): void
     {
         $columns = array_map(
             fn (object $c): array => [(string) $c->Field, (string) $c->Type, (string) $c->Null, $c->Default === null ? null : (string) $c->Default, (string) $c->Extra],
@@ -59,16 +59,40 @@ class ImapsyncColumnsTest extends TestCase
         );
 
         $this->assertCount(34, self::COLUMNS);
-        $this->assertSame(self::COLUMNS, $columns);
+        $expected = self::COLUMNS;
+        if (SchemaVersion::hasNovember2026Features()) {
+            $expected = [];
+            foreach (self::COLUMNS as $column) {
+                switch ($column[0]) {
+                    case 'host1': $expected[] = ['source_id', 'int(11)', 'NO', null, ''];
+                        break;
+                    case 'authmech1': case 'port1': case 'enc1': break;
+                    case 'password1': $expected[] = ['password1', 'varchar(255)', 'NO', '', ''];
+                        break;
+                    case 'custom_params':
+                        $expected[] = ['custom_params', 'text', 'YES', null, ''];
+                        $expected[] = ['custom_params_legacy', 'text', 'YES', null, ''];
+                        break;
+                    case 'is_running':
+                        $expected[] = $column;
+                        $expected[] = ['prio', 'int(11)', 'NO', '0', ''];
+                        break;
+                    default: $expected[] = $column;
+                }
+            }
+        }
+        $this->assertSame($expected, $columns);
     }
 
-    public function test_the_only_index_is_the_primary_key(): void
+    public function test_the_indexes_match_the_supported_version(): void
     {
         $indexes = array_map(
             fn (object $i): string => $i->Key_name.'('.$i->Column_name.')',
             DB::select('SHOW INDEX FROM `imapsync`'),
         );
 
-        $this->assertSame(['PRIMARY(id)'], $indexes);
+        $this->assertSame(SchemaVersion::hasNovember2026Features()
+            ? ['PRIMARY(id)', 'idx_source_id(source_id)', 'idx_prio(prio)']
+            : ['PRIMARY(id)'], $indexes);
     }
 }

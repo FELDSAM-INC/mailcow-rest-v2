@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Audit;
 
+use App\Models\Mailcow\SchemaVersion;
+use App\Support\Clock\Sleeper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Tests\Support\Monitoring\MonitoringFixtures;
@@ -32,6 +34,15 @@ class MonitoringAuditTrailTest extends TestCase
         MailcowLogs::activeBan('198.51.100.0/24', time() + 600);
         MailcowLogs::activeBan('192.0.2.0/24', time() + 600);
         $this->sleeper()->advancing($this->clock());
+        if (SchemaVersion::hasNovember2026Features()) {
+            $this->app->instance(Sleeper::class, new class implements Sleeper
+            {
+                public function sleepSeconds(float $seconds): void
+                {
+                    MailcowLogs::f2bRegex(MailcowLogs::defaultRules());
+                }
+            });
+        }
     }
 
     private function recordCount(): int

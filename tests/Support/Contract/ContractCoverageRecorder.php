@@ -11,6 +11,8 @@ final class ContractCoverageRecorder
     /** @var array<string, true> */
     private static array $operations = [];
 
+    public static ?string $schemaVersion = null;
+
     public static function record(string $operationId): void
     {
         self::$operations[$operationId] = true;

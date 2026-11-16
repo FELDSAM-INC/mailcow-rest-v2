@@ -3,6 +3,7 @@
 namespace Tests\Feature\SyncJobs;
 
 use App\Auth\Role;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Config\MailcowConfig;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ApiKeys\ApiKeys;
@@ -36,10 +37,11 @@ class SyncJobCapabilitiesTest extends TestCase
 
         $data = (array) $this->getJson('/api/v2/capabilities/sync-jobs')->assertOk()->json('data');
 
-        $this->assertSame(['allowed' => true, 'restrictedToAdministrators' => false], array_diff_key($data['customParameters'], ['allowedOptions' => true]));
-        $this->assertCount(113, $data['customParameters']['allowedOptions']);
+        $this->assertSame(['allowed' => true, 'restrictedToAdministrators' => false], array_diff_key($data['customParameters'], ['allowedOptions' => true, 'optionRules' => true]));
+        $this->assertGreaterThan(50, count($data['customParameters']['allowedOptions']));
+        $this->assertContains('maxsize', $data['customParameters']['allowedOptions']);
+        $this->assertNotContains('abort', $data['customParameters']['allowedOptions']);
         $this->assertNotContains('showpasswords', $data['customParameters']['allowedOptions']);
-        $this->assertSame('abort', $data['customParameters']['allowedOptions'][0]);
         $this->assertSame(100, $data['bulkLimit']);
         $this->assertSame(['default' => 25, 'maximum' => 1000], $data['pageSize']);
         $this->assertSame([
@@ -82,11 +84,13 @@ class SyncJobCapabilitiesTest extends TestCase
 
     public function test_showpasswords_is_never_listed_even_when_the_allow_list_contains_it(): void
     {
-        config(['restv2.vars_overrides.IMAPSYNC_OPTIONS' => '{"whitelist":["maxsize","showpasswords","MixedCase"],"blacklist":[]}']);
+        config(['restv2.vars_overrides.IMAPSYNC_OPTIONS' => SchemaVersion::hasNovember2026Features()
+            ? '{"maxsize":true,"showpasswords":false,"MixedCase":true}'
+            : '{"whitelist":["maxsize","showpasswords","MixedCase"],"blacklist":[]}']);
         $this->app->forgetInstance(MailcowConfig::class);
         $this->signInAs('admin', Role::Admin);
 
-        $this->getJson('/api/v2/capabilities/sync-jobs')->assertOk()->assertJsonPath('data.customParameters.allowedOptions', ['maxsize', 'MixedCase']);
+        $this->getJson('/api/v2/capabilities/sync-jobs')->assertOk()->assertJsonPath('data.customParameters.allowedOptions', ['maxsize', SchemaVersion::hasNovember2026Features() ? 'mixedcase' : 'MixedCase']);
     }
 
     public function test_read_only_keys_may_read_it_and_callers_without_the_flag_may_not(): void

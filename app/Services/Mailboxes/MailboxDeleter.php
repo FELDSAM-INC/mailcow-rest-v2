@@ -16,6 +16,7 @@ use App\Services\Audit\AuditLogger;
 use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Groupware\SogoDirectory;
 use App\Services\RateLimits\RateLimitStore;
+use App\Services\SyncJobs\SyncSourceAccountLifecycle;
 use App\Support\Http\ETag;
 use Closure;
 use Illuminate\Support\Facades\DB;
@@ -158,17 +159,20 @@ class MailboxDeleter
      */
     private function deleteRows(string $address): void
     {
+        app(GroupDataLifecycle::class)->mailboxDeleted($address);
         DB::table('alias')->where('goto', $address)->delete();
         DB::table('pushover')->where('username', $address)->delete();
         DB::table('quarantine')->where('rcpt', $address)->delete();
         DB::table('quota2')->where('username', $address)->delete();
         DB::table('quota2replica')->where('username', $address)->delete();
         DB::table('mailbox')->where('username', $address)->delete();
+        app(GroupDataLifecycle::class)->cleanupSogoAcl();
         DB::table('reset_password')->where('username', $address)->delete();
         DB::table('sender_acl')->where('logged_in_as', $address)->orWhere('send_as', $address)->delete();
         DB::table('user_acl')->where('username', $address)->delete();
         DB::table('spamalias')->where('goto', $address)->delete();
         DB::table('imapsync')->where('user2', $address)->delete();
+        app(SyncSourceAccountLifecycle::class)->deleted($address);
         DB::table('filterconf')->where('object', $address)->delete();
         DB::table('sogo_user_profile')->where('c_uid', $address)->delete();
         DB::table('sogo_cache_folder')->where('c_uid', $address)->delete();

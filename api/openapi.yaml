@@ -101,6 +101,8 @@ servers:
   - url: /api/v2
     description: Same origin as the mailcow UI.
 tags:
+  - name: Sync sources
+    description: Reusable IMAP and OAuth connections (mailcow 2026-11).
   - name: Authentication
     description: CSRF bootstrap, password and passkey sign-in, second factors and sign-out.
   - name: Identity
@@ -131,6 +133,8 @@ tags:
     description: Groupware resources (rooms, equipment and groups) that are booked through the groupware.
   - name: Sender settings
     description: What a mailbox may send as, through explicit sender permissions and external sender addresses.
+  - name: Mailbox groups
+    description: Distribution groups, sharing and effective templates (mailcow 2026-11).
   - name: Mailboxes
     description: Mailboxes of the caller's domains, their settings, rename, deletion and bulk actions.
   - name: Mailbox templates
@@ -282,6 +286,32 @@ tags:
   - name: Sieve filters
     description: Administrator-managed prefilters and postfilters of mailboxes, and the user's active Sieve script (feature 005).
 paths:
+  /sync-queue/settings:
+    $ref: './modules/sync-jobs/sync-queue-settings.yaml'
+  /legacy-api-keys:
+    $ref: './modules/legacy-api-keys/keys.yaml'
+  /legacy-api-keys/{legacyKeyId}:
+    $ref: './modules/legacy-api-keys/key.yaml'
+  /legacy-api-keys/{legacyKeyId}/regenerate:
+    $ref: './modules/legacy-api-keys/regenerate.yaml'
+  /sync-sources:
+    $ref: './modules/sync-sources/sources.yaml'
+  /sync-sources/{sourceId}:
+    $ref: './modules/sync-sources/source.yaml'
+  /sync-sources/{sourceId}/connections:
+    $ref: './modules/sync-sources/connections.yaml'
+  /sync-sources/{sourceId}/oauth/start:
+    $ref: './modules/sync-sources/oauth-start.yaml'
+  /sync-sources/oauth/complete:
+    $ref: './modules/sync-sources/oauth-complete.yaml'
+  /sync-sources/{sourceId}/oauth/refresh:
+    $ref: './modules/sync-sources/oauth-refresh.yaml'
+  /mailbox-groups:
+    $ref: './modules/mailbox-groups/mailbox-groups.yaml'
+  /mailbox-groups/{groupId}:
+    $ref: './modules/mailbox-groups/mailbox-group.yaml'
+  /mailboxes/{mailbox}/groups:
+    $ref: './modules/mailbox-groups/memberships.yaml'
   /csrf-token:
     $ref: './modules/auth/_index.yaml#/~1csrf-token'
   /session:
@@ -436,6 +466,12 @@ paths:
     $ref: './modules/dns-diagnostics/_index.yaml#/~1dns-diagnostics~1{diagnosticsName}'
   /identity-provider:
     $ref: './modules/identity-provider/_index.yaml#/~1identity-provider'
+  /identity-provider/synchronisation:
+    $ref: './modules/identity-provider/identity-synchronisation.yaml'
+  /identity-provider/synchronisation/runs:
+    $ref: './modules/identity-provider/identity-synchronisation-runs.yaml'
+  /identity-provider/links/{mailbox}:
+    $ref: './modules/identity-provider/identity-link.yaml'
   /identity-provider/connection-tests:
     $ref: './modules/identity-provider/_index.yaml#/~1identity-provider~1connection-tests'
   /session/single-sign-on:
@@ -552,6 +588,8 @@ paths:
     $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1rules~1reset'
   /fail2ban/active-bans:
     $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1active-bans'
+  /fail2ban/active-bans/lift-all:
+    $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1active-bans~1lift-all'
   /fail2ban/active-bans/{network}/lift:
     $ref: './modules/fail2ban/_index.yaml#/~1fail2ban~1active-bans~1{network}~1lift'
   /fail2ban/active-bans/{network}/allowlist:

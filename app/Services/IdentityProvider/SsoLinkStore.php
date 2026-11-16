@@ -29,7 +29,7 @@ class SsoLinkStore
     /**
      * Stores the tokens of a new single sign-on and returns the link's identifier.
      */
-    public function create(OidcTokens $tokens, string $username, IdentityProviderType $type): string
+    public function create(OidcTokens $tokens, string $username, IdentityProviderType $type, ?string $externalId = null): string
     {
         $linkId = bin2hex(random_bytes(16));
         $this->put($linkId, [
@@ -39,13 +39,14 @@ class SsoLinkStore
             'lastRenewedAt' => CarbonImmutable::now()->getTimestamp(),
             'username' => $username,
             'type' => $type->value,
+            'externalId' => $externalId,
         ]);
 
         return $linkId;
     }
 
     /**
-     * @return array{accessToken: string, refreshToken: string|null, expiresAt: int|null, lastRenewedAt: int, username: string, type: string}|null
+     * @return array{accessToken: string, refreshToken: string|null, expiresAt: int|null, lastRenewedAt: int, username: string, type: string, externalId: string|null}|null
      */
     public function get(string $linkId): ?array
     {
@@ -72,11 +73,12 @@ class SsoLinkStore
             'lastRenewedAt' => (int) ($link['lastRenewedAt'] ?? 0),
             'username' => $link['username'],
             'type' => $link['type'],
+            'externalId' => is_string($link['externalId'] ?? null) ? $link['externalId'] : null,
         ];
     }
 
     /**
-     * @param  array{accessToken: string, refreshToken: string|null, expiresAt: int|null, lastRenewedAt: int, username: string, type: string}  $link
+     * @param  array{accessToken: string, refreshToken: string|null, expiresAt: int|null, lastRenewedAt: int, username: string, type: string, externalId?: string|null}  $link
      */
     public function put(string $linkId, array $link): void
     {

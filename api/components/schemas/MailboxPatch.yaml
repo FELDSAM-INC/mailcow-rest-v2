@@ -12,6 +12,9 @@ description: |
   (`attribute-not-permitted`) and nothing changes.
 minProperties: 1
 properties:
+  shared:
+    type: boolean
+    description: Shared mailbox without independent sign-in (requires mailcow 2026-11 for writes). Creation can omit the password; an unexposed random password is stored.
   displayName:
     type: string
     maxLength: 255

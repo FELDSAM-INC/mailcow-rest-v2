@@ -3,6 +3,7 @@
 namespace Tests\Feature\Schema;
 
 use App\Auth\PermissionFlag;
+use App\Services\Accounts\DomainAdminFlags;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -25,12 +26,13 @@ class AclColumnsTest extends TestCase
         $columns = array_values(array_diff(Schema::getColumnListing('da_acl'), ['username']));
         $flags = array_values(array_filter(array_map(fn (PermissionFlag $f): ?string => $f->daAclColumn(), PermissionFlag::cases())));
 
-        $this->assertEqualsCanonicalizing($columns, $flags);
+        $this->assertEqualsCanonicalizing($columns, array_values(DomainAdminFlags::availableColumns()));
+        $this->assertEqualsCanonicalizing(array_values(DomainAdminFlags::COLUMNS), $flags);
     }
 
-    public function test_there_are_29_flags_named_after_their_columns(): void
+    public function test_there_are_30_flags_named_after_their_columns(): void
     {
-        $this->assertCount(29, PermissionFlag::cases());
+        $this->assertCount(30, PermissionFlag::cases());
 
         foreach (PermissionFlag::cases() as $flag) {
             $column = $flag->userAclColumn() ?? $flag->daAclColumn();

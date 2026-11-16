@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\SyncJobs;
 
+use App\Models\Mailcow\SchemaVersion;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\SyncJobs\SyncJobTestHelpers;
 use Tests\TestCase;
@@ -127,10 +128,12 @@ class CreateSyncJobValidationTest extends TestCase
             ->assertJsonPath('errors.exclude.0.code', 'invalidRegex');
 
         $custom = $this->createSyncJob(self::syncJobBody(['customParameters' => '--bogus=1 --maxsize 5']))->assertUnprocessable();
-        $this->assertSame([['optionNotAllowed', ['option' => 'bogus']], ['optionContainsSpace', ['token' => 'maxsize 5']]], array_map(
-            fn (array $v): array => [$v['code'], $v['params']],
-            (array) $custom->json('errors.customParameters'),
-        ));
+        $this->assertSame(SchemaVersion::hasNovember2026Features()
+            ? [['invalidFormat', ['format' => 'imapsyncParameters']]]
+            : [['optionNotAllowed', ['option' => 'bogus']], ['optionContainsSpace', ['token' => 'maxsize 5']]], array_map(
+                fn (array $v): array => [$v['code'], $v['params']],
+                (array) $custom->json('errors.customParameters'),
+            ));
 
         $this->createSyncJob(self::syncJobBody(['customParameters' => '--showpasswords']))->assertUnprocessable()
             ->assertJsonPath('errors.customParameters.0.code', 'optionNotAllowed')
@@ -149,7 +152,7 @@ class CreateSyncJobValidationTest extends TestCase
         ])->assertUnprocessable();
 
         $this->assertEqualsCanonicalizing(['remoteHost', 'remotePort', 'exclude', 'customParameters', 'intervalMinutes'], array_keys((array) $response->json('errors')));
-        $this->assertSame(['optionNotAllowed', 'optionContainsSpace'], array_column((array) $response->json('errors.customParameters'), 'code'));
+        $this->assertSame(SchemaVersion::hasNovember2026Features() ? ['invalidFormat'] : ['optionNotAllowed', 'optionContainsSpace'], array_column((array) $response->json('errors.customParameters'), 'code'));
         $this->assertSame(0, $this->syncJobCount());
     }
 

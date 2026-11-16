@@ -1,22 +1,18 @@
 type: object
-description: |
-  JSON Merge Patch of a sync job. Omitted members keep their values; a body without any of the
-  members below is refused (`required` on `body`). `null` is refused for every member
-  (`invalidType`). A member whose value differs from the stored one is validated with the rules of
-  `SyncJobCreateRequest`; a member sent with its stored value, and every member not sent, is
-  accepted as stored, even if it predates the current rules. Unknown and read-only members (`id`,
-  `runStatus`, `etag`, …) are ignored, so a client may send back what it read.
-
-  - `active` activates or deactivates the job; the change takes effect from the runner's next
-    cycle and never interrupts a run in progress.
-  - `remotePassword`: a non-empty value replaces the stored password; an empty string keeps it
-    only while the remote host, port, encryption and username are unchanged. Changing any of
-    those fields while a password is stored requires password re-entry (`secretRequired`).
-  - `mailbox` cannot change: the current address is accepted, any other is refused with the rule
-    code `immutable`. To sync into another mailbox, create a new job.
-  - `customParameters`: when the server restricts custom parameters to administrators, a value
-    from another role that differs from the stored one is refused with `customParamsNotPermitted`;
-    the stored value sent unchanged is accepted.
+description: "JSON Merge Patch of a sync job. Omitted members keep their values; a body without any of\
+  \ the\nmembers below is refused (`required` on `body`). `null` is refused for every member\n(`invalidType`).\
+  \ A member whose value differs from the stored one is validated with the rules of\n`SyncJobCreateRequest`;\
+  \ a member sent with its stored value, and every member not sent, is\naccepted as stored, even if it\
+  \ predates the current rules. Unknown and read-only members (`id`,\n`runStatus`, `etag`, \u2026) are\
+  \ ignored, so a client may send back what it read.\n\n- `active` activates or deactivates the job; the\
+  \ change takes effect from the runner's next\n  cycle and never interrupts a run in progress.\n- `remotePassword`:\
+  \ a non-empty value replaces the stored password; an empty string keeps it\n  only while the remote\
+  \ host, port, encryption and username are unchanged. Changing any of\n  those fields while a password\
+  \ is stored requires password re-entry (`secretRequired`).\n- `mailbox` cannot change: the current address\
+  \ is accepted, any other is refused with the rule\n  code `immutable`. To sync into another mailbox,\
+  \ create a new job.\n- `customParameters`: when the server restricts custom parameters to administrators,\
+  \ a value\n  from another role that differs from the stored one is refused with `customParamsNotPermitted`;\n\
+  \  the stored value sent unchanged is accepted.\n"
 minProperties: 1
 properties:
   mailbox:
@@ -32,7 +28,7 @@ properties:
     minimum: 1
     maximum: 65535
   encryption:
-    $ref: './SyncJobEncryption.yaml'
+    $ref: ./SyncJobEncryption.yaml
   remoteUser:
     type: string
     minLength: 1
@@ -86,3 +82,15 @@ properties:
     maxLength: 512
   active:
     type: boolean
+  sourceId:
+    type: integer
+    minimum: 1
+    description: Use an existing visible active source (mailcow 2026-11). Connection fields come from
+      that source; password sources require a password. Authorization-code sources require a connected
+      account for the target mailbox.
+  priority:
+    type: integer
+    minimum: -2147483648
+    maximum: 2147483647
+    description: Global queue priority; administrator only. Larger values run first. Requires mailcow
+      2026-11.

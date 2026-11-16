@@ -31,7 +31,7 @@ class SenderSettingsReader
      */
     public function read(Principal $principal, string $mailbox): array
     {
-        $rows = DB::table('sender_acl')->where('logged_in_as', $mailbox)->get(['external', 'send_as']);
+        $rows = ManualSenderPermissions::query()->where('logged_in_as', $mailbox)->get(['external', 'send_as']);
         $explicit = $rows->filter(fn (object $r): bool => (int) $r->external === 0)->map(fn (object $r): SenderEntry => SenderEntry::stored((string) $r->send_as))->values()->all();
         $external = $rows->filter(fn (object $r): bool => (int) $r->external === 1)->map(fn (object $r): string => (string) $r->send_as)->sort(fn (string $a, string $b): int => strcasecmp($a, $b) ?: strcmp($a, $b))->values()->all();
 
@@ -55,7 +55,7 @@ class SenderSettingsReader
      */
     public function etagFor(string $mailbox): string
     {
-        $pairs = DB::table('sender_acl')->where('logged_in_as', $mailbox)->get(['external', 'send_as'])
+        $pairs = ManualSenderPermissions::query()->where('logged_in_as', $mailbox)->get(['external', 'send_as'])
             ->map(fn (object $row): array => [(int) $row->external, (string) $row->send_as])
             ->all();
 

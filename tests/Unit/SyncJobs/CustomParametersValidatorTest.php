@@ -5,6 +5,7 @@ namespace Tests\Unit\SyncJobs;
 use App\Auth\AuthMethod;
 use App\Auth\Principal;
 use App\Auth\Role;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Config\MailcowConfig;
 use App\Services\SyncJobs\CustomParametersValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -21,6 +22,14 @@ require_once __DIR__.'/../../fixtures/legacy/syncjob_validation.php';
  */
 class CustomParametersValidatorTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        if (SchemaVersion::hasNovember2026Features()) {
+            $this->markTestSkipped('Legacy runner grammar; the JSON runner is covered by SyncJobParametersCodecTest.');
+        }
+    }
+
     /**
      * @return array<string, array{string}>
      */

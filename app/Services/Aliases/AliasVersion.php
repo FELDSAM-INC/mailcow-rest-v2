@@ -17,6 +17,7 @@ class AliasVersion
         return ETag::of([
             'alias',
             (int) $row->id,
+            isset($row->group_id) ? (int) $row->group_id : null,
             (string) $row->address,
             (string) $row->goto,
             (string) $row->domain,

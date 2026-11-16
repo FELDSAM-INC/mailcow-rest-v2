@@ -9,6 +9,7 @@ use App\Clients\Oidc\OidcClient;
 use App\Clients\Oidc\OidcEndpoints;
 use App\Clients\Oidc\OidcFailure;
 use App\Exceptions\ProblemException;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Audit\AuditLogger;
 use App\Services\Auth\SessionManager;
 use App\Support\Http\ProblemType;
@@ -71,6 +72,15 @@ class IdentityProviderSessionGuard
             $this->end($request, $principal, 'providerLinkMissing');
         }
 
+        if (SchemaVersion::hasNovember2026Features()) {
+            $identity = DB::table('identity_link')->where('username', $principal->username)->first();
+            if ($identity === null || $identity->provider !== $config->type->legacy()
+                || (int) $identity->idp_disabled !== 0 || $identity->external_id === null
+                || $link['externalId'] === null || ! hash_equals((string) $identity->external_id, $link['externalId'])) {
+                $this->end($request, $principal, 'authSourceChanged');
+            }
+        }
+
         if ($link['refreshToken'] !== null && $this->due($link)) {
             Cache::lock('lock:sso-link:'.$linkId, 10)->block(10, function () use ($request, $principal, $config, $linkId): void {
                 $link = $this->links->get($linkId);
@@ -102,6 +112,11 @@ class IdentityProviderSessionGuard
                     $this->end($request, $principal, 'emailChanged');
                 }
 
+                if (SchemaVersion::hasNovember2026Features() && (! is_string($details['sub'] ?? null)
+                    || $link['externalId'] === null || ! hash_equals($link['externalId'], $details['sub']))) {
+                    $this->end($request, $principal, 'providerRefused');
+                }
+
                 $this->links->put($linkId, [
                     'accessToken' => $tokens->accessToken,
                     // A renewal without a new refresh token keeps the old one (plan parity note 1).
@@ -110,6 +125,7 @@ class IdentityProviderSessionGuard
                     'lastRenewedAt' => CarbonImmutable::now()->getTimestamp(),
                     'username' => $link['username'],
                     'type' => $link['type'],
+                    'externalId' => $link['externalId'],
                 ]);
             });
         }

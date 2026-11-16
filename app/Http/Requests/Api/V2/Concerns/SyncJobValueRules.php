@@ -22,6 +22,8 @@ trait SyncJobValueRules
     protected function valueRules(): array
     {
         $rules = [
+            'sourceId' => ['bail', 'sometimes', new StrictInteger, 'integer', 'min:1'],
+            'priority' => ['bail', 'sometimes', new StrictInteger, 'integer', 'between:-2147483648,2147483647'],
             'remoteHost' => ['bail', 'sometimes', 'string', 'filled', 'max:'.SyncJobLimits::LENGTHS['remoteHost'], new SyncJobHostName],
             'remoteUser' => ['bail', 'sometimes', 'string', 'filled', 'max:'.SyncJobLimits::LENGTHS['remoteUser']],
             'remotePassword' => ['bail', 'sometimes', 'string', 'max:'.SyncJobLimits::LENGTHS['remotePassword']],

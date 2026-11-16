@@ -3,7 +3,6 @@
 namespace Tests\Feature\SyncJobs;
 
 use App\Http\Resources\Api\V2\SyncJobLogResource;
-use App\Models\Mailcow\SyncJob;
 use App\Services\SyncJobs\SyncJobQuery;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\SyncJobs\SyncJobTestHelpers;
@@ -56,7 +55,7 @@ class SyncJobLogTest extends TestCase
         // MariaDB's strict mode refuses invalid UTF-8 in the utf8mb4 column, so such bytes cannot be
         // stored; the representation still never fails on them (research R14).
         $id = $this->mailcow()->syncJob('alice@example.org');
-        $job = SyncJob::query()->select([...SyncJobQuery::columns(), 'imapsync.returned_text'])->findOrFail($id);
+        $job = SyncJobQuery::base()->addSelect('imapsync.returned_text')->findOrFail($id);
         $job->setRawAttributes(['returned_text' => "folder \xC3\x28 and \xFF end"] + $job->getAttributes());
 
         $response = SyncJobLogResource::response($job);

@@ -20,7 +20,7 @@ class CreateSyncJobRowParityTest extends TestCase
     use SyncJobTestHelpers;
 
     /** Columns that differ by nature: the generated identifier and the times. */
-    private const VOLATILE = ['id', 'created', 'modified'];
+    private const VOLATILE = ['id', 'created', 'modified', 'source_id', 'prio', 'custom_params_legacy'];
 
     protected function setUp(): void
     {

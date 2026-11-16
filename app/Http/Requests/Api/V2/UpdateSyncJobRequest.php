@@ -126,7 +126,7 @@ class UpdateSyncJobRequest extends ApiFormRequest
     private static function typeOnly(string $member): array
     {
         return match (true) {
-            array_key_exists($member, SyncJobLimits::RANGES) => ['bail', new StrictInteger],
+            array_key_exists($member, SyncJobLimits::RANGES) || in_array($member, ['sourceId', 'priority'], true) => ['bail', new StrictInteger],
             in_array($member, SyncJobLimits::FLAGS, true) => ['bail', new StrictBoolean],
             default => ['bail', 'string'],
         };

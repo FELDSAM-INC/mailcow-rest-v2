@@ -19,6 +19,9 @@ required:
   - preHashedPasswordSchemes
   - templateDefaults
 properties:
+  sharedMailboxes:
+    type: boolean
+    description: Whether the installed upstream schema supports shared mailboxes.
   identityProviderType:
     type: string
     enum: [none, keycloak, genericOidc, ldap]
@@ -81,3 +84,6 @@ properties:
     allOf:
       - $ref: './MailboxTemplateDefaults.yaml'
     description: The built-in values of new mailboxes and templates (G32).
+  mailboxGroups:
+    type: boolean
+    description: Mailbox groups are supported by this server.

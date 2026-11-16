@@ -20,6 +20,16 @@ class PasswordSignInTest extends TestCase
 
     private const PASSWORD = MailcowFactory::PASSWORD;
 
+    public function test_shared_mailboxes_cannot_sign_in_or_keep_an_existing_session(): void
+    {
+        $this->mailcow()->mailboxWithDomain('shared@example.org', ['shared' => '1']);
+        $this->passwordSignIn('shared@example.org')->assertUnauthorized();
+        $this->mailcow()->mailboxWithDomain('converted@example.org');
+        $this->passwordSignIn('converted@example.org')->assertCreated();
+        DB::table('mailbox')->where('username', 'converted@example.org')->update(['attributes' => '{"shared":"1"}']);
+        $this->getJson('/api/v2/me')->assertUnauthorized();
+    }
+
     public function test_an_admin_without_second_factor_signs_in(): void
     {
         $this->mailcow()->admin('admin', self::PASSWORD);

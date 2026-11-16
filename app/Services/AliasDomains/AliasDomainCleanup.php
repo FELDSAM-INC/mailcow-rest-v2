@@ -2,6 +2,7 @@
 
 namespace App\Services\AliasDomains;
 
+use App\Services\Mailboxes\GroupDataLifecycle;
 use App\Support\Domain\DomainName;
 use Illuminate\Support\Facades\DB;
 
@@ -28,6 +29,7 @@ class AliasDomainCleanup
         DB::table('bcc_maps')->whereIn('local_dest', [$aliasDomain, '@'.$aliasDomain])->delete();
         DB::table('filterconf')->where('object', $aliasDomain)->delete();
         DB::table('alias_domain')->where('alias_domain', $aliasDomain)->delete();
+        app(GroupDataLifecycle::class)->domainDeleted($aliasDomain);
     }
 
     /**

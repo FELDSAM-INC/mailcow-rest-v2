@@ -1,0 +1,81 @@
+get:
+  operationId: getIdentitySynchronisation
+  tags:
+  - Identity provider
+  summary: Get identity sync settings, counts and the ten latest runs
+  description: Administrators only. Requires mailcow 2026-11 for writes. Read-only
+    API keys may read.
+  security:
+  - sessionCookie: []
+  - apiKeyAuth: []
+  responses:
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '200':
+      description: The requested data.
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - data
+            properties:
+              data:
+                $ref: ../../components/schemas/IdentitySyncStatus.yaml
+            additionalProperties: false
+patch:
+  operationId: updateIdentitySynchronisation
+  tags:
+  - Identity provider
+  summary: Change offboarding and group synchronisation settings
+  description: Administrators only. Requires mailcow 2026-11 for writes. Read-only
+    API keys may read.
+  security:
+  - sessionCookie: []
+    csrfToken: []
+  - apiKeyAuth: []
+  responses:
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '400':
+      $ref: ../../components/responses/BadRequest.yaml
+    '412':
+      $ref: ../../components/responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../../components/responses/UnsupportedMediaType.yaml
+    '422':
+      $ref: ../../components/responses/ValidationFailed.yaml
+    '409':
+      description: The configured provider or installed schema does not support synchronisation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '200':
+      description: The requested data.
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - data
+            properties:
+              data:
+                $ref: ../../components/schemas/IdentitySyncStatus.yaml
+            additionalProperties: false
+  parameters:
+  - $ref: ../../components/parameters/IfMatch.yaml
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: ../../components/schemas/IdentitySyncPatch.yaml

@@ -20,3 +20,4 @@ enum:
   - domainRelayhost
   - domainDesc
   - aliasExternalGoto
+  - mailboxGroups

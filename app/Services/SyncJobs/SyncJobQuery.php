@@ -3,8 +3,10 @@
 namespace App\Services\SyncJobs;
 
 use App\Auth\Principal;
+use App\Models\Mailcow\SchemaVersion;
 use App\Models\Mailcow\SyncJob;
 use App\Support\Http\ListQuery;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -47,7 +49,39 @@ class SyncJobQuery
      */
     public static function columns(): array
     {
-        return array_map(fn (string $column): string => 'imapsync.'.$column, self::COLUMNS);
+        $columns = array_map(fn (string $column): string => 'imapsync.'.$column, self::COLUMNS);
+        if (! SchemaVersion::hasNovember2026Features()) {
+            return $columns;
+        }
+
+        $sourceColumns = ['host1', 'port1', 'enc1', 'authmech1'];
+        $columns = array_values(array_filter($columns, fn (string $column): bool => ! in_array(substr($column, 9), $sourceColumns, true)));
+
+        return [...$columns, 'imapsync.source_id', 'imapsync.prio', 'imapsync.custom_params_legacy', 'sync_source.host1', 'sync_source.port1',
+            'sync_source.enc1', 'sync_source.auth_type as authmech1', 'sync_source.verify_cert',
+            'sync_source.active as source_active', 'sync_source.name as source_name'];
+    }
+
+    /** @return Builder<SyncJob> */
+    public static function base(): Builder
+    {
+        $query = SyncJob::query()->select(self::columns());
+        if (SchemaVersion::hasNovember2026Features()) {
+            $query->leftJoin('imapsync_source as sync_source', 'sync_source.id', '=', 'imapsync.source_id');
+        }
+
+        return $query;
+    }
+
+    /** @return array<string, string> */
+    public static function sorts(): array
+    {
+        return array_replace(self::SORTS, ['remoteHost' => self::hostColumn()], SchemaVersion::hasNovember2026Features() ? ['priority' => 'imapsync.prio'] : []);
+    }
+
+    public static function hostColumn(): string
+    {
+        return SchemaVersion::hasNovember2026Features() ? 'sync_source.host1' : 'imapsync.host1';
     }
 
     /**
@@ -81,7 +115,7 @@ class SyncJobQuery
             default => null,
         };
 
-        $list->applySearch($query, ['imapsync.user2', 'imapsync.user1', 'imapsync.host1']);
+        $list->applySearch($query, ['imapsync.user2', 'imapsync.user1', self::hostColumn()]);
         $page = $list->paginate($query, null, 'imapsync.id');
         /** @var list<SyncJob> $jobs */
         $jobs = $page['data'];

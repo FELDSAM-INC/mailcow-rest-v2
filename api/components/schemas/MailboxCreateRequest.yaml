@@ -22,6 +22,9 @@ description: |
   at creation, as in legacy.
 required: [localPart, domain]
 properties:
+  shared:
+    type: boolean
+    description: Shared mailbox without independent sign-in (requires mailcow 2026-11 for writes). Creation can omit the password; an unexposed random password is stored.
   localPart:
     type: string
     minLength: 1

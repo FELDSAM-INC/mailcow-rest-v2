@@ -1,0 +1,63 @@
+type: object
+additionalProperties: false
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 100
+  description:
+    type: string
+    maxLength: 255
+  address:
+    type: &id002
+    - string
+    - 'null'
+    format: email
+  active: &id001
+    type: boolean
+  senderAllowed: *id001
+  sogoVisible: *id001
+  internal: *id001
+  members:
+    type: array
+    items:
+      type: string
+      format: email
+    maxItems: 10000
+    uniqueItems: true
+  sendAs:
+    type: array
+    items:
+      type: string
+    maxItems: 1000
+    uniqueItems: true
+  imapGrants:
+    type: array
+    items:
+      $ref: ./MailboxGroupImapGrantInput.yaml
+    maxItems: 1000
+  sogoGrants:
+    type: array
+    items:
+      $ref: ./MailboxGroupSogoGrantInput.yaml
+    maxItems: 1000
+  templateId:
+    type:
+    - integer
+    - 'null'
+    minimum: 1
+  priority:
+    type: integer
+    minimum: -1000000
+    maximum: 1000000
+  identityReference:
+    type: *id002
+    minLength: 1
+    maxLength: 255
+  reapplyTemplate: *id001
+minProperties: 1
+description: Only administrators can set templateId, priority, identityReference and
+  reapplyTemplate. Members replaces manual members in scope; IdP and foreign members
+  are preserved. Grants are replaced when supplied. Null clears the address, template
+  or identity reference. IMAP removals are retained until Dovecot confirms them; upstream
+  cron initializes SOGo folders and maintains subscriptions.

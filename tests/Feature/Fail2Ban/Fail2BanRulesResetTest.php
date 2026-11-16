@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Fail2Ban;
 
+use App\Models\Mailcow\SchemaVersion;
+use App\Support\Clock\Sleeper;
 use Tests\Support\Audit\FailingAuditProbe;
 use Tests\Support\Monitoring\MonitoringTestHelpers;
 use Tests\Support\Redis\MailcowLogs;
@@ -25,14 +27,28 @@ class Fail2BanRulesResetTest extends TestCase
 
     public function test_the_defaults_restored_by_the_restarted_ban_service_are_returned(): void
     {
-        $this->dockerApi()->onRestart('netfilter-mailcow', fn () => MailcowLogs::f2bRegex(MailcowLogs::defaultRules()));
+        if (SchemaVersion::hasNovember2026Features()) {
+            $this->app->instance(Sleeper::class, new class implements Sleeper
+            {
+                public function sleepSeconds(float $seconds): void
+                {
+                    MailcowLogs::f2bRegex(MailcowLogs::defaultRules());
+                }
+            });
+        } else {
+            $this->dockerApi()->onRestart('netfilter-mailcow', fn () => MailcowLogs::f2bRegex(MailcowLogs::defaultRules()));
+        }
         $this->asAdmin();
 
         $response = $this->postEmpty('/api/v2/fail2ban/rules/reset', $this->csrf())->assertOk();
 
         $this->assertCount(9, $response->json('data.rules'));
         $response->assertHeader('ETag', (string) $response->json('data.etag'));
-        $this->dockerApi()->assertRestarted('netfilter-mailcow');
+        if (SchemaVersion::hasNovember2026Features()) {
+            $this->dockerApi()->assertNotRestarted();
+        } else {
+            $this->dockerApi()->assertRestarted('netfilter-mailcow');
+        }
         $record = $this->onlyAuditRecord('fail2banRulesReset');
         $this->assertSame(['custom (\d+)'], $this->details($record)['oldRules']);
         $this->assertCount(9, $this->details($record)['newRules']);
@@ -47,7 +63,7 @@ class Fail2BanRulesResetTest extends TestCase
             ->assertJsonPath('type', '/api/v2/problems/ban-rules-not-restored');
 
         $this->assertNull(MailcowLogs::get('F2B_REGEX'), 'the stored rules were removed');
-        $this->assertSame(array_fill(0, 10, 1.0), $this->sleeper()->slept);
+        $this->assertSame(array_fill(0, SchemaVersion::hasNovember2026Features() ? 15 : 10, 1.0), $this->sleeper()->slept);
         $record = $this->onlyAuditRecord('fail2banRulesReset');
         $this->assertSame('rulesNotRestored', $record->failure_reason);
         $this->assertNull($this->details($record)['newRules']);
@@ -66,6 +82,9 @@ class Fail2BanRulesResetTest extends TestCase
 
     public function test_a_restart_timeout_or_unreachable_service_after_the_removal_has_an_unknown_outcome(): void
     {
+        if (SchemaVersion::hasNovember2026Features()) {
+            $this->markTestSkipped('November reloads defaults without a restart.');
+        }
         $this->dockerApi()->failNext('restart', 'timeout');
         $this->asAdmin();
         $this->postEmpty('/api/v2/fail2ban/rules/reset', $this->csrf())->assertStatus(504)->assertJsonPath('type', '/api/v2/problems/outcome-unknown')->assertJsonPath('step', 'rulesReset');
@@ -79,6 +98,9 @@ class Fail2BanRulesResetTest extends TestCase
 
     public function test_a_failed_restart_is_a_container_action_failure(): void
     {
+        if (SchemaVersion::hasNovember2026Features()) {
+            $this->markTestSkipped('November reloads defaults without a restart.');
+        }
         $this->dockerApi()->failNext('restart', 'danger:409 Client Error');
         $this->asAdmin();
 

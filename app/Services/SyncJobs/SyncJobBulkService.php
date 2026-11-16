@@ -49,9 +49,11 @@ class SyncJobBulkService
                     return null;
                 }
 
-                $job = $action === SyncJobBulkAction::Reschedule
-                    ? $this->service->reschedule($principal, $id, $bulkRequestId)
-                    : $this->service->update($principal, $id, ['active' => $action === SyncJobBulkAction::Activate], $ifMatch, $bulkRequestId);
+                $job = match ($action) {
+                    SyncJobBulkAction::Reschedule => $this->service->reschedule($principal, $id, $bulkRequestId),
+                    SyncJobBulkAction::Prioritize => $this->service->prioritize($principal, $id, $ifMatch, $bulkRequestId),
+                    default => $this->service->update($principal, $id, ['active' => $action === SyncJobBulkAction::Activate], $ifMatch, $bulkRequestId),
+                };
 
                 return $this->version->of($job);
             },

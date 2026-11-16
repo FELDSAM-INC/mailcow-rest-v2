@@ -5,10 +5,12 @@ namespace App\Services\Mailboxes;
 use App\Audit\AuditEventType;
 use App\Auth\Principal;
 use App\Exceptions\ProblemException;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Audit\AuditLogger;
 use App\Services\Config\MailcowConfig;
 use App\Services\Domains\DomainPresenter;
 use App\Services\Identity\IdentityService;
+use App\Services\MailboxGroups\GroupTemplates;
 use App\Support\Database\NamedLock;
 use App\Support\Http\ETag;
 use App\Support\Http\FieldViolations;
@@ -27,7 +29,7 @@ use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
  * that legacy's forms keep working. Names are unique without regard to letter case, checked under
  * the named lock `restv2_mailbox_template_<sha1 of the lower-cased name>`; the template named
  * Default cannot be renamed or deleted. A change that changes nothing writes and records nothing.
- * Templates only pre-fill new mailboxes: no mailbox ever changes with them.
+ * On 2026-11, changes also apply to members whose effective group template is this template.
  */
 class MailboxTemplateService
 {
@@ -96,6 +98,7 @@ class MailboxTemplateService
             'id' => (int) $row->id,
             'name' => (string) $row->template,
             'isDefault' => self::isDefault((string) $row->template),
+            'applicationWarnings' => $row->applicationWarnings ?? [],
             ...$values,
             'createdAt' => DomainPresenter::time($row->created),
             'modifiedAt' => DomainPresenter::time($row->modified),
@@ -132,7 +135,7 @@ class MailboxTemplateService
         $name = array_key_exists('name', $patch) ? $this->name($patch['name'], $violations) : (string) $row->template;
         $violations->throwIfAny();
 
-        return $this->locks->run([self::lockName($name)], fn (): stdClass => DB::transaction(function () use ($principal, $id, $patch, $ifMatch, $name): stdClass {
+        $updated = $this->locks->run([self::lockName($name)], fn (): stdClass => DB::transaction(function () use ($principal, $id, $patch, $ifMatch, $name): stdClass {
             $row = DB::table('templates')->where('type', 'mailbox')->where('id', $id)->lockForUpdate()->first();
 
             if (! $row instanceof stdClass) {
@@ -168,6 +171,11 @@ class MailboxTemplateService
 
             return $this->find($id) ?? throw new NotFoundHttpException('The mailbox template does not exist.');
         }));
+        if (SchemaVersion::hasNovember2026Features() && ($row->attributes !== $updated->attributes || $row->template !== $updated->template)) {
+            $updated->applicationWarnings = app(GroupTemplates::class)->templateChanged($id, $principal);
+        }
+
+        return $updated;
     }
 
     /**
@@ -175,7 +183,7 @@ class MailboxTemplateService
      */
     public function delete(Principal $principal, int $id, ?string $ifMatch, ?string $bulkRequestId = null): void
     {
-        DB::transaction(function () use ($principal, $id, $ifMatch, $bulkRequestId): void {
+        $snapshot = DB::transaction(function () use ($principal, $id, $ifMatch, $bulkRequestId): array {
             $row = DB::table('templates')->where('type', 'mailbox')->where('id', $id)->lockForUpdate()->first();
 
             if (! $row instanceof stdClass) {
@@ -190,10 +198,16 @@ class MailboxTemplateService
                 throw new ProblemException(ProblemType::MailboxTemplateProtected, 'The Default mailbox template cannot be deleted.');
             }
 
+            $snapshot = SchemaVersion::hasNovember2026Features() ? app(GroupTemplates::class)->snapshotForTemplate($id) : [];
             $values = $this->defaults->templateValues($row->attributes);
             DB::table('templates')->where('id', $id)->delete();
             $this->audit->record(AuditEventType::MailboxTemplateDeletion, true, $principal, self::target($id, (string) $row->template), null, null, ['values' => $values] + ($bulkRequestId === null ? [] : ['bulkRequestId' => $bulkRequestId]));
+
+            return $snapshot;
         });
+        if ($snapshot !== []) {
+            app(GroupTemplates::class)->applyChanged($snapshot, $principal);
+        }
     }
 
     public static function isDefault(string $name): bool

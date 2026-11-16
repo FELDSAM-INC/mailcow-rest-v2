@@ -9,6 +9,8 @@
   $ref: './fail2ban-rules-reset.yaml'
 /fail2ban/active-bans:
   $ref: './fail2ban-active-bans.yaml'
+/fail2ban/active-bans/lift-all:
+  $ref: './fail2ban-all-bans-lift.yaml'
 /fail2ban/active-bans/{network}/lift:
   $ref: './fail2ban-active-ban-lift.yaml'
 /fail2ban/active-bans/{network}/allowlist:

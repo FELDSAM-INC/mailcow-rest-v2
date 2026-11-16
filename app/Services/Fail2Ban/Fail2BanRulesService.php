@@ -7,6 +7,7 @@ use App\Auth\Principal;
 use App\Clients\DockerApi\DockerApiClient;
 use App\Clients\Fail2Ban\Fail2BanStore;
 use App\Exceptions\ProblemException;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Audit\AuditLogger;
 use App\Services\Audit\IrreversibleOperationAudit;
 use App\Services\Audit\RefusalAuditor;
@@ -90,10 +91,11 @@ class Fail2BanRulesService
         }
 
         $this->store->deleteRules();
-        $result = $this->docker->restart($service);
+        $automaticReload = SchemaVersion::hasNovember2026Features();
+        $result = $automaticReload ? null : $this->docker->restart($service);
         $this->containers->forget($service);
 
-        if (! $result->isSuccess()) {
+        if ($result !== null && ! $result->isSuccess()) {
             $unknown = $result->isUnknown() || $result->isUnreachable();
             $this->fail($actor, $old, $unknown ? 'outcomeUnknown' : 'serviceFailure', $deadline, $unknown
                 ? new ProblemException(ProblemType::OutcomeUnknown, "mailcow's container service did not answer the restart of the ban service in time; read the rules again.", ['step' => 'rulesReset'])
@@ -102,7 +104,7 @@ class Fail2BanRulesService
 
         $rules = $this->store->rules();
 
-        for ($poll = 0; $rules === null && $poll < self::POLLS; $poll++) {
+        for ($poll = 0; $rules === null && $poll < ($automaticReload ? 15 : self::POLLS); $poll++) {
             $this->sleeper->sleepSeconds(1.0);
             $rules = $this->store->rules();
         }

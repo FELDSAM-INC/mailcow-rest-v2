@@ -1,44 +1,43 @@
 type: object
-description: |
-  A new sync job. Omitted members take the defaults of the legacy "Add sync job" form, which the
-  capabilities read (`GET /capabilities/sync-jobs`, `defaults`) also lists. The remote host, port,
-  user and password are always required. Unknown members are ignored.
-
-  Every invalid member is reported at once in a `422` problem, with these rule codes besides the
-  common ones (`required`, `invalidType`, `tooShort`, `tooLong`, `outOfRange`, `notInList`,
-  `invalidFormat`):
-
-  - `remoteHost`: `invalidFormat` with `format: hostName`.
-  - `exclude`: `invalidRegex`.
-  - `customParameters`: `optionNotAllowed` (param `option`), `optionContainsSpace` (param `token`)
-    and `customParamsNotPermitted`.
-  - `mailbox`: `notEligible` (param `kind`: `resource`, `alias` or `aliasDomainAddress`) when the
-    address is not a mailbox that can receive synced mail.
-required: [remoteHost, remotePort, remoteUser, remotePassword]
+description: A new sync job. Select an existing source on mailcow 2026-11, or supply remoteHost, remotePort
+  and remotePassword to create a private source automatically. RemoteUser always identifies the remote
+  account. A source with authorization-code OAuth must first be connected for the target mailbox. Omitted
+  settings use the capabilities defaults.
+required:
+- remoteUser
 properties:
   mailbox:
     type: string
     format: email
     maxLength: 255
-    description: |
-      Local mailbox to sync into. Required for administrators and domain administrators. A mailbox
+    description: 'Local mailbox to sync into. Required for administrators and domain administrators. A
+      mailbox
+
       user may omit it or send their own address; their job always targets their own mailbox. An
-      address that does not exist or lies outside the caller's scope answers `404`. A resource, an
+
+      address that does not exist or lies outside the caller''s scope answers `404`. A resource, an
+
       alias or an address of an alias domain is refused with `notEligible`.
+
+      '
   remoteHost:
     type: string
     minLength: 1
     maxLength: 255
-    description: |
-      Host name (letter/digit labels with inner hyphens, at most 253 characters, labels at most
+    description: 'Host name (letter/digit labels with inner hyphens, at most 253 characters, labels at
+      most
+
       63; internationalised names are accepted) or IPv4 address. IPv6 literals are refused, as in
+
       legacy. Stored in lower case.
+
+      '
   remotePort:
     type: integer
     minimum: 1
     maximum: 65535
   encryption:
-    $ref: './SyncJobEncryption.yaml'
+    $ref: ./SyncJobEncryption.yaml
     default: ssl
   remoteUser:
     type: string
@@ -53,11 +52,15 @@ properties:
   exclude:
     type: string
     maxLength: 500
-    default: '(?i)spam|(?i)junk'
-    description: |
-      Regular expression of remote folders to skip. Send an empty string for no exclusion. It must
+    default: (?i)spam|(?i)junk
+    description: 'Regular expression of remote folders to skip. Send an empty string for no exclusion.
+      It must
+
       compile as a PCRE pattern between `/` delimiters, exactly as legacy checks it, so a literal
+
       `/` must be escaped as `\/`.
+
+      '
   destinationSubfolder:
     type: string
     maxLength: 255
@@ -112,18 +115,59 @@ properties:
     type: string
     maxLength: 512
     default: ''
-    description: |
-      Additional imapsync options, written `--option` or `--option=value` and separated by spaces,
+    description: 'Additional imapsync options, written `--option` or `--option=value` and separated by
+      spaces,
+
       for example `--maxsize=10000000 --nofoldersizesatend`. The value is trimmed and checked
-      exactly as legacy checks it: it is split at every hyphen, and each piece's option name (the
-      text before `=`) must be on the server's allow-list (`optionNotAllowed`) and must not contain
+
+      exactly as legacy checks it: it is split at every hyphen, and each piece''s option name (the
+
+      text before `=`) must be on the server''s allow-list (`optionNotAllowed`) and must not contain
+
       a space (`optionContainsSpace`, so `--option value` is refused; write `--option=value`). A
+
       value that itself contains a hyphen is therefore refused unless the text after the hyphen is
+
       an allowed option name. `showpasswords` is always refused, so the remote password can never
+
       be written into the run log. The allow-list in effect is in the capabilities read. When the
+
       server restricts custom parameters to administrators, any non-empty value from another role
+
       is refused with `customParamsNotPermitted`.
+
+      '
   active:
     type: boolean
     default: true
     description: An active job is picked up by the imapsync runner on its next cycle.
+  sourceId:
+    type: integer
+    minimum: 1
+    description: Use an existing visible active source (mailcow 2026-11). Connection fields come from
+      that source; password sources require a password. Authorization-code sources require a connected
+      account for the target mailbox.
+  priority:
+    type: integer
+    minimum: -2147483648
+    maximum: 2147483647
+    description: Global queue priority; administrator only. Larger values run first. Requires mailcow
+      2026-11.
+allOf:
+- anyOf:
+  - type: object
+    required: [sourceId]
+    properties:
+      sourceId:
+        type: integer
+        minimum: 1
+  - type: object
+    required: [remoteHost, remotePort, remotePassword]
+    properties:
+      remoteHost:
+        type: string
+      remotePort:
+        type: integer
+      remotePassword:
+        type: string
+        writeOnly: true

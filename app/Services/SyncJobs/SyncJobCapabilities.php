@@ -3,6 +3,8 @@
 namespace App\Services\SyncJobs;
 
 use App\Auth\Principal;
+use App\Auth\Role;
+use App\Models\Mailcow\SchemaVersion;
 use App\Support\Http\ListQuery;
 
 /**
@@ -36,10 +38,13 @@ class SyncJobCapabilities
         }
 
         return [
+            'sources' => SchemaVersion::hasNovember2026Features(),
+            'queueManagement' => SchemaVersion::hasNovember2026Features() && $principal->role === Role::Admin,
             'customParameters' => [
                 'allowed' => $this->customParameters->allowedFor($principal),
                 'restrictedToAdministrators' => $this->customParameters->restrictedToAdministrators(),
                 'allowedOptions' => $this->customParameters->allowedOptions(),
+                ...(SchemaVersion::hasNovember2026Features() ? ['optionRules' => (object) app(SyncJobParametersCodec::class)->rules()] : []),
             ],
             'bulkLimit' => self::bulkLimit(),
             'pageSize' => ['default' => ListQuery::DEFAULT_LIMIT, 'maximum' => ListQuery::MAX_LIMIT],

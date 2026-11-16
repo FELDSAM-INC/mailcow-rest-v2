@@ -2557,3 +2557,181 @@ Feature 013. Written for every verification of the GUID (`POST /license/verifica
 | `problemType` | string | See "Refusal records". | on failure |
 | `status` | integer | See "Refusal records". | on failure |
 | `errors` | object | See "Refusal records". | on `422` failures |
+
+## syncQueueSettingsUpdate
+
+Feature 014. Updates the global sync concurrency and bandwidth settings.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `fields` | array of strings | Names of changed settings. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## syncSourceCreation
+
+Feature 014. Creates a sync source.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `fields` | array of strings | Submitted field names; no credentials or tokens. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## syncSourceUpdate
+
+Feature 014. Changes a sync source.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `fields` | array of strings | Changed field names; no credentials or tokens. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## syncSourceDeletion
+
+Feature 014. Deletes an unused sync source.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## syncSourceConnection
+
+Feature 014. Connects, disconnects or refreshes OAuth credentials. Tokens are never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `mailbox` | string | Destination mailbox for a personal connection; absent for a shared refresh. | on success |
+| `operation` | string | connect, disconnect or refresh. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailboxGroupCreation
+
+Feature 014. Creates a mailbox group and requests its external follow-ups.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `fields` | array of strings | Submitted field names. | on success |
+| `domain` | string | Primary group domain. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailboxGroupUpdate
+
+Feature 014. Changes a mailbox group and requests its external follow-ups.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `fields` | array of strings | Changed field names. | on success |
+| `domain` | string | Primary group domain. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## mailboxGroupDeletion
+
+Feature 014. Deletes a mailbox group and its managed relations.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## fail2banAllBansLift
+
+Feature 014. Queues removal of all temporary bans; permanent denylist entries remain.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `queuedCount` | integer | Number of queued networks. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## identitySyncSettingsUpdate
+
+Feature 014. Changes identity synchronization configuration.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `changes` | object | Changed configuration values, with old and new values. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## identitySyncRequested
+
+Feature 014. Requests an upstream identity synchronization run.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `mode` | string | Requested normal, preview or forced run mode. | on success |
+| `runId` | integer | The upstream run identifier. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## identityLinkDeletion
+
+Feature 014. Clears a stable provider identity link.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `mailbox` | string | Mailbox whose identity link was cleared. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## legacyApiKeyCreation
+
+Feature 014. Creates a legacy API key. Key values are never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `fields` | array of strings | Changed field names. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## legacyApiKeyUpdate
+
+Feature 014. Changes a legacy API key. Key values are never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `fields` | array of strings | Changed field names. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## legacyApiKeyDeletion
+
+Feature 014. Deletes a legacy API key. Key values are never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `fields` | array of strings | Changed field names. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |
+
+## legacyApiKeyRegeneration
+
+Feature 014. Regenerates a legacy API key. Key values are never recorded.
+
+| Key | Type | Meaning | Present |
+|---|---|---|---|
+| `fields` | array of strings | Changed field names. | on success |
+| `problemType` | string | See "Refusal records". | on failure |
+| `status` | integer | See "Refusal records". | on failure |
+| `errors` | object | See "Refusal records". | on `422` failures |

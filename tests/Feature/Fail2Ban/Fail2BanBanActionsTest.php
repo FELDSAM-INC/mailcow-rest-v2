@@ -49,6 +49,18 @@ class Fail2BanBanActionsTest extends TestCase
         $this->assertArrayHasKey('203.0.113.0/24', MailcowLogs::hash('F2B_QUEUE_UNBAN'));
     }
 
+    public function test_lift_all_queues_automatic_bans_without_changing_allowlist_or_denylist(): void
+    {
+        $this->asAdmin();
+        $before = MailcowLogs::hash('F2B_BLACKLIST');
+        $this->postEmpty('/api/v2/fail2ban/active-bans/lift-all', $this->csrf())
+            ->assertOk()->assertJsonPath('data.queuedCount', 2);
+        $this->assertEqualsCanonicalizing(['203.0.113.0/24', '2001:db8::/64'], array_keys(MailcowLogs::hash('F2B_QUEUE_UNBAN')));
+        $this->assertSame($before, MailcowLogs::hash('F2B_BLACKLIST'));
+        $this->assertArrayHasKey('192.0.2.0/24', MailcowLogs::hash('F2B_WHITELIST'));
+        $this->assertDatabaseHas('restv2_audit_events', ['event_type' => 'fail2banAllBansLift', 'outcome' => 'success']);
+    }
+
     public function test_denylisting_moves_the_network(): void
     {
         MailcowLogs::f2bList('F2B_WHITELIST', ['2001:db8::/64']);

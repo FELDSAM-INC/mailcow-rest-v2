@@ -7,10 +7,14 @@ use App\Auth\Principal;
 use App\Exceptions\ValidationProblemException;
 use App\Http\Requests\Api\V2\ApiFormRequest;
 use App\Http\Resources\Api\V2\SyncJobResource;
+use App\Models\Mailcow\SchemaVersion;
 use App\Models\Mailcow\SyncJob;
 use App\Services\Audit\AuditLogger;
+use App\Support\Database\NamedLock;
 use App\Support\Http\ETag;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 
@@ -25,6 +29,8 @@ class SyncJobService
 {
     /** Contract member => `imapsync` column of the changeable configuration (`mailbox` is fixed). */
     private const COLUMNS = [
+        'sourceId' => 'source_id',
+        'priority' => 'prio',
         'remoteHost' => 'host1',
         'remotePort' => 'port1',
         'encryption' => 'enc1',
@@ -66,6 +72,14 @@ class SyncJobService
      */
     public function create(Principal $principal, array $members, string $mailbox): SyncJob
     {
+        return app(NamedLock::class)->run(SchemaVersion::hasNovember2026Features() ? ['restv2_sync_sources'] : [],
+            fn (): SyncJob => $this->createPrepared($principal, $members, $mailbox));
+    }
+
+    /** @param array<string, mixed> $members */
+    private function createPrepared(Principal $principal, array $members, string $mailbox): SyncJob
+    {
+        $members = app(SyncJobConnection::class)->resolve($principal, $members, $mailbox);
         $values = array_merge(SyncJobDefaults::VALUES, array_intersect_key($members, SyncJobDefaults::VALUES));
         $flag = fn (string $member): int => $values[$member] === true ? 1 : 0;
         $customParameters = trim((string) $values['customParameters']);
@@ -99,10 +113,12 @@ class SyncJobService
             // Legacy: `(empty(trim($custom_params))) ? '' : trim($custom_params)`
             'custom_params' => $customParameters === '0' ? '' : $customParameters,
             'active' => $flag('active'),
+            ...(isset($members['sourceId']) ? ['source_id' => $members['sourceId']] : []),
+            ...(isset($members['priority']) ? ['prio' => $members['priority']] : []),
         ];
 
         $id = $this->duplicates->run($mailbox, $row['user1'], $row['host1'], null, function () use ($row, $principal, $mailbox): int {
-            $id = (int) DB::table('imapsync')->insertGetId($row);
+            $id = (int) DB::table('imapsync')->insertGetId(app(SyncJobStorage::class)->columns($principal, $mailbox, $row));
             $job = self::load($id);
             $this->audit->record(AuditEventType::SyncJobCreation, true, $principal, self::target($job), null, null, [
                 'mailbox' => $mailbox,
@@ -129,24 +145,43 @@ class SyncJobService
      */
     public function update(Principal $principal, int $id, array $patch, ?string $ifMatch = null, ?string $bulkRequestId = null): SyncJob
     {
+        return app(NamedLock::class)->run(SchemaVersion::hasNovember2026Features() ? ['restv2_sync_sources'] : [],
+            fn (): SyncJob => $this->updatePrepared($principal, $id, $patch, $ifMatch, $bulkRequestId));
+    }
+
+    /** @param array<string, mixed> $patch */
+    private function updatePrepared(Principal $principal, int $id, array $patch, ?string $ifMatch, ?string $bulkRequestId): SyncJob
+    {
         $current = $this->scope->findInScope($id, $principal) ?? throw self::notFound();
+        $patch = app(SyncJobConnection::class)->resolve($principal, $patch, (string) $current->user2, $current);
         $columns = self::changedColumns($current, $patch);
 
         $apply = function () use ($principal, $id, $patch, $ifMatch, $bulkRequestId): SyncJob {
             $job = $this->locked($principal, $id, $ifMatch);
             $before = SyncJobAuditDetails::configuration($job);
             $columns = self::changedColumns($job, $patch);
-            $this->assertCredentialDestination($job, $patch, $columns);
+            // Explicit OAuth selection drops the old password rather than forwarding it.
+            if (isset($patch['sourceId']) && DB::table('imapsync_source')->where('id', $patch['sourceId'])->value('auth_type') === 'XOAUTH2') {
+                $columns['password1'] = '';
+            } else {
+                $this->assertCredentialDestination($job, $patch, $columns);
+            }
 
             if ((int) ($columns['active'] ?? $job->active) !== 0) {
                 $this->assertSafeParameters((string) ($columns['custom_params'] ?? $job->custom_params));
             }
 
             if ($columns !== []) {
-                DB::table('imapsync')->where('id', $id)->update($columns);
+                DB::table('imapsync')->where('id', $id)->update(app(SyncJobStorage::class)->columns($principal, (string) $job->user2, $columns, $job));
             }
 
             $after = self::load($id);
+            if ($after->active) {
+                app(SyncJobConnection::class)->assertRunnable($after);
+            }
+            if ($after->user1 !== $job->user1 || $after->getAttribute('source_id') !== $job->getAttribute('source_id')) {
+                $this->pruneToken($job);
+            }
             $details = [
                 'mailbox' => (string) $after->user2,
                 'changes' => SyncJobAuditDetails::changes($before, SyncJobAuditDetails::configuration($after), array_key_exists('password1', $columns)),
@@ -174,6 +209,7 @@ class SyncJobService
         return DB::transaction(function () use ($principal, $id, $bulkRequestId): SyncJob {
             $job = $this->locked($principal, $id, null);
             $this->assertSafeParameters((string) $job->custom_params);
+            app(SyncJobConnection::class)->assertRunnable($job);
             $previous = SyncJobResource::runStatus($job, false);
 
             DB::table('imapsync')->where('id', $id)->update(['last_run' => null, 'success' => null]);
@@ -189,6 +225,34 @@ class SyncJobService
         });
     }
 
+    /** Moves an idle job ahead of the queue; running jobs retain their position. */
+    public function prioritize(Principal $principal, int $id, ?string $ifMatch = null, ?string $bulkRequestId = null): SyncJob
+    {
+        app(SyncQueueSettings::class)->authorize($principal);
+        if ($principal->apiKey?->accessLevel === 'readOnly') {
+            throw new AccessDeniedHttpException;
+        }
+
+        return app(NamedLock::class)->run(['restv2_sync_queue'], fn (): SyncJob => DB::transaction(function () use ($principal, $id, $ifMatch, $bulkRequestId): SyncJob {
+            $job = $this->locked($principal, $id, $ifMatch);
+            if ($job->is_running) {
+                throw new ConflictHttpException('A running job cannot be moved.');
+            }
+            app(SyncJobConnection::class)->assertRunnable($job);
+            $this->assertSafeParameters((string) $job->custom_params);
+            $max = (int) DB::table('imapsync')->max('prio');
+            if ($max >= 2147483647) {
+                throw new ConflictHttpException('Queue priority reached its limit; lower existing priorities first.');
+            }
+            DB::table('imapsync')->where('id', $id)->update(['prio' => $max + 1, 'last_run' => null, 'success' => null]);
+            $this->audit->record(AuditEventType::SyncJobUpdate, true, $principal, self::target($job), null, null, self::withBulk([
+                'mailbox' => (string) $job->user2, 'changes' => ['priority' => ['old' => (int) $job->getAttribute('prio'), 'new' => $max + 1]],
+            ], $bulkRequestId));
+
+            return self::load($id);
+        }));
+    }
+
     /**
      * Deletes a job (FR-016, research R13) after the version check. A run in progress is not
      * interrupted; the runner's final status write then matches no row.
@@ -199,6 +263,7 @@ class SyncJobService
             $job = $this->locked($principal, $id, $ifMatch);
 
             DB::table('imapsync')->where('id', $id)->delete();
+            $this->pruneToken($job);
 
             $this->audit->record(AuditEventType::SyncJobDeletion, true, $principal, self::target($job), null, null, self::withBulk([
                 'mailbox' => (string) $job->user2,
@@ -220,7 +285,7 @@ class SyncJobService
 
     private static function load(int $id): SyncJob
     {
-        return SyncJob::query()->select(SyncJobQuery::columns())->whereKey($id)->firstOrFail();
+        return SyncJobQuery::base()->whereKey($id)->firstOrFail();
     }
 
     private function assertSafeParameters(string $value): void
@@ -284,6 +349,7 @@ class SyncJobService
     private static function changedColumns(SyncJob $job, array $patch): array
     {
         $stored = $job->getAttributes();
+        $stored['custom_params'] = (string) $job->custom_params;
         $columns = [];
 
         foreach (array_intersect_key($patch, self::COLUMNS) as $member => $value) {
@@ -317,6 +383,18 @@ class SyncJobService
     private static function withBulk(array $details, ?string $bulkRequestId): array
     {
         return $bulkRequestId === null ? $details : $details + ['bulkRequestId' => $bulkRequestId];
+    }
+
+    private function pruneToken(SyncJob $job): void
+    {
+        if (! SchemaVersion::hasNovember2026Features()) {
+            return;
+        }
+        $key = ['source_id' => $job->getAttribute('source_id'), 'user2' => $job->user2, 'user1' => $job->user1];
+        if (! DB::table('imapsync')->where($key)->exists()) {
+            DB::table('imapsync_source_oauth_token')->where('source_id', $key['source_id'])
+                ->where('owner', $job->user2)->where('username', $job->user1)->delete();
+        }
     }
 
     private static function notFound(): NotFoundHttpException

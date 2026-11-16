@@ -1,0 +1,104 @@
+type: object
+additionalProperties: false
+required:
+- domain
+- name
+- description
+- address
+- active
+- senderAllowed
+- sogoVisible
+- internal
+- members
+- sendAs
+- imapGrants
+- sogoGrants
+- templateId
+- priority
+- identityReference
+- id
+- editable
+- adminFieldsEditable
+- etag
+- createdAt
+- modifiedAt
+- warnings
+properties:
+  domain:
+    type: string
+    maxLength: 255
+  name:
+    type: string
+    minLength: 1
+    maxLength: 100
+  description:
+    type: string
+    maxLength: 255
+  address:
+    type: &id003
+    - string
+    - 'null'
+    format: email
+  active: &id001
+    type: boolean
+  senderAllowed: *id001
+  sogoVisible: *id001
+  internal: *id001
+  members:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required:
+      - mailbox
+      - source
+      - editable
+      properties:
+        mailbox: &id002
+          type: string
+        source:
+          type: string
+          enum:
+          - manual
+          - idp
+        editable: *id001
+  sendAs:
+    type: array
+    items: *id002
+    maxItems: 1000
+    uniqueItems: true
+  imapGrants:
+    type: array
+    items:
+      $ref: ./MailboxGroupImapGrant.yaml
+  sogoGrants:
+    type: array
+    items:
+      $ref: ./MailboxGroupSogoGrant.yaml
+  templateId:
+    type:
+    - integer
+    - 'null'
+    minimum: 1
+  priority:
+    type: integer
+    minimum: -1000000
+    maximum: 1000000
+  identityReference:
+    type: *id003
+    minLength: 1
+    maxLength: 255
+  id:
+    type: integer
+  editable: *id001
+  adminFieldsEditable: *id001
+  etag: *id002
+  createdAt:
+    type: string
+    format: date-time
+  modifiedAt:
+    type: *id003
+    format: date-time
+  warnings:
+    type: array
+    items: *id002

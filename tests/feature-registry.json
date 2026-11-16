@@ -3,7 +3,8 @@
         "Registry of implemented features. The shared contract (api/) and docs/problems.md also hold features that are only planned; the test gates use this file to tell them apart.",
         "operations: the contract operations of the feature. tests/bin/check-contract-coverage.php requires each of them to be answered by a test with a documented 2xx or 3xx status, unless it is listed in pendingOperations (implemented in a later phase of the feature). RoutesMatchContractTest requires every /api/v2 route to map to one of them.",
         "problemTypes: the docs/problems.md sections of the feature; each needs an App\\Support\\Http\\ProblemType case.",
-        "Remove an operation from pendingOperations when its phase lands, and add a feature when its implementation starts."
+        "Remove an operation from pendingOperations when its phase lands, and add a feature when its implementation starts.",
+        "schemaVersions: when present, successful contract coverage is required only on these database versions; route registration is checked on every version."
     ],
     "features": {
         "001-auth-sessions-api-keys": {
@@ -199,7 +200,8 @@
                 "liftFail2BanBan",
                 "allowlistFail2BanBan",
                 "denylistFail2BanBan",
-                "listFail2BanPermanentBans"
+                "listFail2BanPermanentBans",
+                "liftAllFail2BanBans"
             ],
             "problemTypes": [
                 "container-protected",
@@ -547,6 +549,43 @@
                 "global-sieve-filter-unavailable",
                 "mass-mail-already-running",
                 "mass-mail-recipient-count-changed"
+            ]
+        },
+        "014-mailcow-2026-11": {
+            "operations": [
+                "completeSyncSourceOAuth",
+                "createLegacyApiKey",
+                "createMailboxGroup",
+                "createSyncSource",
+                "deleteLegacyApiKey",
+                "deleteMailboxGroup",
+                "deleteMailboxIdentityLink",
+                "deleteSyncSource",
+                "disconnectSyncSourceOAuth",
+                "getIdentitySynchronisation",
+                "getLegacyApiKey",
+                "getMailboxGroup",
+                "getMailboxGroupMemberships",
+                "getMailboxIdentityLink",
+                "getSyncQueueSettings",
+                "getSyncSource",
+                "listLegacyApiKeys",
+                "listMailboxGroups",
+                "listSyncSourceConnections",
+                "listSyncSources",
+                "refreshSyncSourceOAuth",
+                "regenerateLegacyApiKey",
+                "requestIdentitySyncRun",
+                "startSyncSourceOAuth",
+                "updateIdentitySynchronisation",
+                "updateLegacyApiKey",
+                "updateMailboxGroup",
+                "updateSyncQueueSettings",
+                "updateSyncSource"
+            ],
+            "problemTypes": [],
+            "schemaVersions": [
+                "02112026_1600"
             ]
         }
     },

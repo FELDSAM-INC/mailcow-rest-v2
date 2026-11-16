@@ -1,0 +1,49 @@
+type: object
+required:
+- id
+- provider
+- mode
+- status
+- requestedBy
+- createdAt
+- startedAt
+- finishedAt
+- summary
+properties:
+  id:
+    type: integer
+    minimum: 1
+  provider:
+    type: string
+  mode:
+    type: string
+    enum:
+    - preview
+    - run
+    - force
+  status:
+    type: string
+    enum:
+    - pending
+    - running
+    - ok
+    - blocked
+    - error
+  requestedBy:
+    type: string
+  createdAt:
+    type: string
+  startedAt:
+    type:
+    - string
+    - 'null'
+  finishedAt:
+    type:
+    - string
+    - 'null'
+  summary:
+    type:
+    - object
+    - 'null'
+    additionalProperties: true
+additionalProperties: false

@@ -1,0 +1,133 @@
+get:
+  operationId: listLegacyApiKeys
+  tags:
+  - API keys
+  summary: List legacy API key metadata
+  description: Requires mailcow 2026-11. Administrator only. Writes require a browser
+    session and CSRF. These keys authenticate the legacy /api/v1, independently of
+    REST v2 owner-bound keys. Stored secrets are never returned by reads. Service
+    keys are managed in mailcow.conf; all mutations on them return 409.
+  security:
+  - sessionCookie: []
+  - apiKeyAuth: []
+  responses:
+    '400':
+      $ref: ../../components/responses/BadRequest.yaml
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../../components/responses/NotFound.yaml
+    '412':
+      $ref: ../../components/responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../../components/responses/UnsupportedMediaType.yaml
+    '422':
+      $ref: ../../components/responses/ValidationFailed.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '409':
+      description: Unsupported schema, conflicting source state or unavailable provider.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '503':
+      description: Unsupported schema, conflicting source state or unavailable provider.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '200':
+      description: The requested data.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            - meta
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: ../../components/schemas/LegacyApiKey.yaml
+              meta:
+                $ref: ../../components/schemas/ListMeta.yaml
+  parameters:
+  - $ref: ../../components/parameters/Limit.yaml
+  - $ref: ../../components/parameters/Offset.yaml
+  - $ref: ../../components/parameters/Order.yaml
+  - $ref: ../../components/parameters/Search.yaml
+  - in: query
+    name: sort
+    schema:
+      type: string
+      enum:
+      - id
+      - description
+      - accessLevel
+      - active
+      - service
+      default: id
+post:
+  operationId: createLegacyApiKey
+  tags:
+  - API keys
+  summary: Create a legacy API key
+  description: Requires mailcow 2026-11. Administrator only. Writes require a browser
+    session and CSRF. These keys authenticate the legacy /api/v1, independently of
+    REST v2 owner-bound keys. Stored secrets are never returned by reads. Service
+    keys are managed in mailcow.conf; all mutations on them return 409.
+  security:
+  - sessionCookie: []
+    csrfToken: []
+  responses:
+    '400':
+      $ref: ../../components/responses/BadRequest.yaml
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../../components/responses/NotFound.yaml
+    '412':
+      $ref: ../../components/responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../../components/responses/UnsupportedMediaType.yaml
+    '422':
+      $ref: ../../components/responses/ValidationFailed.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '409':
+      description: Unsupported schema, conflicting source state or unavailable provider.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '503':
+      description: Unsupported schema, conflicting source state or unavailable provider.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '201':
+      description: The requested data.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            properties:
+              data:
+                $ref: ../../components/schemas/LegacyApiKeySecret.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/LegacyApiKeyCreateRequest.yaml

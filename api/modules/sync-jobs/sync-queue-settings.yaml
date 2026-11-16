@@ -1,0 +1,111 @@
+get:
+  operationId: getSyncQueueSettings
+  tags:
+  - Sync jobs
+  summary: Read global sync queue settings
+  description: Administrator only; requires mailcow 2026-11. Limits apply to all sync jobs. The bandwidth
+    limit is bytes per second; zero means unlimited.
+  security:
+  - sessionCookie: []
+  - apiKeyAuth: []
+  responses:
+    '400':
+      $ref: ../../components/responses/BadRequest.yaml
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../../components/responses/NotFound.yaml
+    '412':
+      $ref: ../../components/responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../../components/responses/UnsupportedMediaType.yaml
+    '422':
+      $ref: ../../components/responses/ValidationFailed.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '409':
+      description: Unsupported schema, conflicting source state or unavailable provider.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '503':
+      description: Unsupported schema, conflicting source state or unavailable provider.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '200':
+      description: The requested data.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            properties:
+              data:
+                $ref: ../../components/schemas/SyncQueueSettings.yaml
+patch:
+  operationId: updateSyncQueueSettings
+  tags:
+  - Sync jobs
+  summary: Set global sync queue limits
+  description: Administrator only; requires mailcow 2026-11. Limits apply to all sync jobs. The bandwidth
+    limit is bytes per second; zero means unlimited.
+  security:
+  - sessionCookie: []
+    csrfToken: []
+  - apiKeyAuth: []
+  responses:
+    '400':
+      $ref: ../../components/responses/BadRequest.yaml
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../../components/responses/NotFound.yaml
+    '412':
+      $ref: ../../components/responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../../components/responses/UnsupportedMediaType.yaml
+    '422':
+      $ref: ../../components/responses/ValidationFailed.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '409':
+      description: Unsupported schema, conflicting source state or unavailable provider.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '503':
+      description: Unsupported schema, conflicting source state or unavailable provider.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '200':
+      description: The requested data.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            properties:
+              data:
+                $ref: ../../components/schemas/SyncQueueSettings.yaml
+  requestBody:
+    required: true
+    content:
+      application/merge-patch+json:
+        schema:
+          $ref: ../../components/schemas/SyncQueueSettingsPatch.yaml
+  parameters:
+  - $ref: ../../components/parameters/IfMatch.yaml

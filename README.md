@@ -24,7 +24,9 @@ Deployment is separate from local development; see [Installation](#installation)
 
 ## Supported mailcow releases
 
-Use **mailcow `2026-09a` or newer**, including **`2026-10`**.
+Use **mailcow `2026-09a` or newer**, including **`2026-10`** and **`2026-11`** on `main`.
+The 2026-11 implementation requires updated API/UI images; Preview 5 and earlier are not compatible.
+See [2026-11 features and migration notes](docs/mailcow-2026-11.md).
 Older releases remain untested. `2026-09` has the same schema definition as `2026-09a`
 and `2026-10`; releases through `2026-07b` currently fail the database schema readiness
 check and lack the `da_acl.alias_external_goto` column used by domain-administrator
@@ -34,6 +36,7 @@ permission queries and writes. See the [schema history](https://github.com/FELDS
 |---|---|---|
 | `2026-09a` (and the FeldHost fork `feldhost-202609a`) | `18082026_1200` | `tests/fixtures/schema/2026-09a.sql` |
 | `2026-10` | `18082026_1200` | Same accepted schema; live installation verified on `2026-10` |
+| `2026-11` | `02112026_1600` | `tests/fixtures/schema/2026-11.sql`; upstream Compose `DB_VERSION` |
 
 Compatibility is checked by database schema rather than an exact mailcow release name.
 The readiness check (`/api/v2/health/ready`, `restv2:health --ready`) fails on any other schema

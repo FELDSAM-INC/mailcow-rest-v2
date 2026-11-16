@@ -4,6 +4,7 @@ namespace App\Models\Mailcow;
 
 use App\Casts\MailcowDateTime;
 use App\Services\SyncJobs\SyncJobEncryption;
+use App\Services\SyncJobs\SyncJobParametersCodec;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -51,6 +52,12 @@ class SyncJob extends MailcowModel
     protected $primaryKey = 'id';
 
     protected $hidden = ['password1', 'returned_text'];
+
+    public function getCustomParamsAttribute(?string $value): string
+    {
+        return array_key_exists('source_id', $this->attributes)
+            ? SyncJobParametersCodec::display($value ?? '') : ($value ?? '');
+    }
 
     protected function casts(): array
     {

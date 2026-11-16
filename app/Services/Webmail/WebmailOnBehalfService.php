@@ -63,13 +63,14 @@ class WebmailOnBehalfService
         $row = DB::table('mailbox')
             ->join('domain', 'domain.domain', '=', 'mailbox.domain')
             ->where('mailbox.username', $address)
-            ->first(['mailbox.active', 'domain.active as domain_active']);
+            ->first(['mailbox.active', 'mailbox.attributes', 'domain.active as domain_active']);
 
         if (! $row instanceof stdClass) {
             throw new NotFoundHttpException('The mailbox does not exist.');
         }
 
         $reason = match (true) {
+            (int) (json_decode((string) $row->attributes, true)['shared'] ?? 0) === 1 => 'loginDisabled',
             (int) $row->active === 2 => 'loginDisabled',
             (int) $row->active !== 1 => 'mailboxInactive',
             (int) $row->domain_active !== 1 => 'domainInactive',

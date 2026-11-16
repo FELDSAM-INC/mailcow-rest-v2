@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\DomainAdmins;
 
+use App\Models\Mailcow\SchemaVersion;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\Accounts\AccountTestHelpers;
 use Tests\TestCase;
@@ -64,7 +65,7 @@ class GetDomainAdminTest extends TestCase
 
         $permissions = $this->getJson('/api/v2/domain-admins/reseller1')->assertOk()->json('data.permissions');
 
-        $this->assertCount(19, $permissions);
+        $this->assertCount(SchemaVersion::hasNovember2026Features() ? 20 : 19, $permissions);
         $this->assertSame([false], array_values(array_unique($permissions)));
     }
 }

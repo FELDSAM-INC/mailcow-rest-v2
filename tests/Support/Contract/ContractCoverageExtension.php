@@ -35,6 +35,7 @@ final class ContractCoverageExtension implements Extension
 
                 file_put_contents($this->output, json_encode([
                     'generatedAt' => gmdate('Y-m-d\TH:i:s\Z'),
+                    'schemaVersion' => ContractCoverageRecorder::$schemaVersion,
                     'operations' => ContractCoverageRecorder::operations(),
                 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
             }

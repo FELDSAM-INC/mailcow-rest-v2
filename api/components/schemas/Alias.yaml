@@ -132,3 +132,6 @@ properties:
     description: |
       Version tag over the stored settings of the alias, equal to the `ETag` header of a single
       read. Send it in `If-Match`, or as `version` of a bulk target.
+  groupId:
+    type: [integer, 'null']
+    description: A group-managed distribution alias. When set, edit the mailbox group; alias edits, copy and deletion are refused.

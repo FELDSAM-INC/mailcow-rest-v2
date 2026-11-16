@@ -1,0 +1,44 @@
+parameters:
+- name: mailbox
+  in: path
+  required: true
+  schema:
+    type: string
+    format: email
+get:
+  operationId: getMailboxGroupMemberships
+  tags:
+  - Mailbox groups
+  summary: Read memberships of a mailbox
+  description: Requires mailcow 2026-11. Administrators and domain administrators
+    with mailboxGroups permission can manage groups in scope. A foreign send-as or
+    sharing grant makes a group read-only for domain administrators. Mailbox membership
+    reads also allow the mailbox itself.
+  security:
+  - sessionCookie: []
+  - apiKeyAuth: []
+  responses:
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../../components/responses/NotFound.yaml
+    '422':
+      $ref: ../../components/responses/ValidationFailed.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '200':
+      description: The requested data.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: ../../components/schemas/MailboxGroupMembership.yaml

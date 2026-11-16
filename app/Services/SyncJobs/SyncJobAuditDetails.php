@@ -20,7 +20,7 @@ final class SyncJobAuditDetails
         'mailbox', 'remoteHost', 'remotePort', 'encryption', 'remoteUser', 'exclude', 'destinationSubfolder',
         'intervalMinutes', 'maxAgeDays', 'maxBytesPerSecond', 'remoteTimeoutSeconds', 'localTimeoutSeconds',
         'deleteFromSource', 'deleteFromDestination', 'deleteDuplicatesOnDestination', 'automap',
-        'skipCrossDuplicates', 'subscribeAll', 'dryRun', 'customParameters', 'active',
+        'skipCrossDuplicates', 'subscribeAll', 'dryRun', 'customParameters', 'active', 'sourceId', 'priority',
     ];
 
     /**

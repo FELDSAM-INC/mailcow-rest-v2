@@ -28,6 +28,13 @@ final class SyncJobResource
             'remotePort' => (int) $job->port1,
             'encryption' => $job->enc1?->toApi() ?? 'starttls',
             'authMechanism' => 'plain',
+            ...($job->getAttribute('source_id') === null ? [] : [
+                'sourceAuthMechanism' => strtolower((string) ($job->getAttribute('authmech1') ?? 'PLAIN')),
+                'sourceId' => (int) $job->getAttribute('source_id'), 'sourceName' => (string) $job->getAttribute('source_name'),
+                'sourceActive' => (bool) $job->getAttribute('source_active'), 'verifyCertificate' => (bool) $job->getAttribute('verify_cert'),
+                'legacyCustomParameters' => (string) $job->getAttribute('custom_params_legacy'),
+                'priority' => (int) $job->getAttribute('prio'), 'migrationWarning' => (string) $job->getAttribute('custom_params_legacy') !== '',
+            ]),
             'remoteUser' => (string) $job->user1,
             'remotePasswordSet' => (string) $job->getAttribute('password1') !== '',
             'exclude' => (string) $job->exclude,

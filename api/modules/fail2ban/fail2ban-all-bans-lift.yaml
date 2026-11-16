@@ -1,0 +1,38 @@
+post:
+  operationId: liftAllFail2BanBans
+  tags: [Fail2ban]
+  summary: Queue every automatic ban for lifting
+  description: |
+    Queues a snapshot of active automatic bans for lifting. Permanent bans and denylist entries
+    are retained. Requires an administrator session or an administrator's read-write API key.
+    The operation is audited with the number of queued bans. Supported on older schemas too.
+  security:
+    - sessionCookie: []
+      csrfToken: []
+    - apiKeyAuth: []
+  responses:
+    '200':
+      description: Ban lifts queued
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                type: object
+                required: [queuedCount, banServiceRunning]
+                properties:
+                  queuedCount:
+                    type: integer
+                    minimum: 0
+                  banServiceRunning:
+                    type: boolean
+    '401':
+      $ref: '../../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../../components/responses/InternalError.yaml'
+    '503':
+      $ref: '../../components/responses/MonitoringTemporaryFailure.yaml'

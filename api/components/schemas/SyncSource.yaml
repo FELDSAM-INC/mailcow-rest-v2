@@ -1,0 +1,124 @@
+type: object
+additionalProperties: false
+required:
+- id
+- name
+- description
+- createdBy
+- scope
+- domains
+- users
+- remoteHost
+- remotePort
+- encryption
+- verifyCertificate
+- authMechanism
+- active
+- editable
+- oauth
+- etag
+properties:
+  id:
+    type: integer
+    minimum: 1
+  name:
+    type: string
+    maxLength: 100
+  description:
+    type: string
+    maxLength: 255
+  createdBy:
+    type: string
+  scope:
+    type: string
+    enum:
+    - all
+    - domain
+    - user
+  domains:
+    type: array
+    items:
+      type: string
+  users:
+    type: array
+    items:
+      type: string
+  remoteHost:
+    type: string
+    maxLength: 253
+  remotePort:
+    type: integer
+    minimum: 1
+    maximum: 65535
+  encryption:
+    type: string
+    enum:
+    - ssl
+    - starttls
+    - plain
+  verifyCertificate: &id001
+    type: boolean
+  authMechanism:
+    type: string
+    enum:
+    - plain
+    - login
+    - cram-md5
+    - xoauth2
+  active: *id001
+  editable: *id001
+  oauth:
+    type:
+    - object
+    - 'null'
+    additionalProperties: false
+    required:
+    - flow
+    - tokenEndpoint
+    - authorizationEndpoint
+    - userInfoEndpoint
+    - clientId
+    - scope
+    - extraParameters
+    - clientSecretSet
+    - tokenSet
+    - tokenExpiresAt
+    - refreshFailed
+    - redirectUri
+    properties:
+      flow:
+        type: string
+        enum:
+        - client_credentials
+        - authorization_code
+      tokenEndpoint: &id002
+        type:
+        - string
+        - 'null'
+      authorizationEndpoint: *id002
+      userInfoEndpoint: *id002
+      clientId: *id002
+      scope: *id002
+      extraParameters:
+        type:
+        - object
+        - 'null'
+        additionalProperties:
+          type:
+          - string
+          - number
+          - boolean
+          - 'null'
+      clientSecretSet: *id001
+      tokenSet: *id001
+      tokenExpiresAt:
+        type:
+        - string
+        - 'null'
+        format: date-time
+      refreshFailed: *id001
+      redirectUri:
+        type: string
+        format: uri
+  etag:
+    type: string

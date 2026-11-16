@@ -1,7 +1,20 @@
 type: string
-description: |
-  Action of a sync-job bulk request, as the legacy mass actions offer them. `activate` and
+description: 'Action of a sync-job bulk request, as the legacy mass actions offer them. `activate` and
+
   `deactivate` set the active flag. `reschedule` clears the last run time and last result, so the
+
   runner picks the job up on its next cycle; it ignores version tags, because it changes only run
+
   status. `delete` removes the job.
-enum: [activate, deactivate, reschedule, delete]
+
+
+  `prioritize` (2026-11 administrators only) moves idle jobs ahead of the queue and schedules them next;
+  running jobs return a conflict.
+
+  '
+enum:
+- activate
+- deactivate
+- reschedule
+- delete
+- prioritize

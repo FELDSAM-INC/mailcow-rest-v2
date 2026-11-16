@@ -11,6 +11,7 @@ use App\Services\Audit\AuditLogger;
 use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Auth\SessionRegistry;
 use App\Services\Preferences\PreferencesService;
+use App\Services\SyncJobs\SyncSourceAccountLifecycle;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -41,6 +42,7 @@ class AccountDeleter
     public function delete(Role $role, string $username, Principal $actor, ?string $bulkRequestId = null, string $trigger = 'request', array $removedDomains = []): void
     {
         app(LegacyFactorAccountGuard::class)->assertUnambiguous($username);
+        app(SyncSourceAccountLifecycle::class)->deleted($username);
         $domains = DB::table('domain_admins')->where('username', $username)->pluck('domain')->map(fn (mixed $d): string => (string) $d)->all();
         $secondFactors = DB::table('tfa')->where('username', $username)->count();
         $passkeys = DB::table('fido2')->where('username', $username)->count();

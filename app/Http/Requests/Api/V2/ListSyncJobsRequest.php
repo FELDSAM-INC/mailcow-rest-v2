@@ -48,7 +48,7 @@ class ListSyncJobsRequest extends ApiFormRequest
 
     public function listQuery(): ListQuery
     {
-        return ListQuery::fromRequest($this, SyncJobQuery::SORTS, 'id');
+        return ListQuery::fromRequest($this, SyncJobQuery::sorts(), 'id');
     }
 
     /**

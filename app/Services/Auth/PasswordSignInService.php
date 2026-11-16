@@ -9,6 +9,7 @@ use App\Auth\Role;
 use App\Clients\Fail2Ban\Fail2BanReporter;
 use App\Exceptions\ProblemException;
 use App\Http\RequestContext;
+use App\Services\IdentityProvider\IdentityLinkGuard;
 use App\Services\IdentityProvider\IdentityProviderConfig;
 use App\Services\IdentityProvider\IdentityProviderRepository;
 use App\Services\IdentityProvider\MailboxProvisioner;
@@ -202,6 +203,11 @@ class PasswordSignInService
         $requestId = RequestContext::requestId($request);
         $created = false;
 
+        $links = app(IdentityLinkGuard::class);
+        if (! $links->mayCreate($config->type->legacy(), $username, $verification->externalId)) {
+            return self::failure($source, 'invalidCredentials', true, true, $base);
+        }
+
         if ($candidate === null) {
             $result = $this->provisioner->provision($config, $username, $verification->mappingValue, $verification->displayName, $requestId);
 
@@ -210,6 +216,15 @@ class PasswordSignInService
             }
 
             $created = $result->isCreated();
+        }
+
+        $mailbox = $this->accounts->findMailboxAccount($username);
+        if ($mailbox === null || (int) $mailbox->getAttribute('active') !== 1 || (int) $mailbox->getAttribute('d_active') !== 1) {
+            return self::failure($source, 'accountInactive', true, true, $base);
+        }
+
+        if (! $links->verify($config->type->legacy(), $username, $verification->externalId)) {
+            return self::failure($source, 'invalidCredentials', true, true, $base);
         }
 
         // Legacy's order: the update from the mapped template comes right after the verification,

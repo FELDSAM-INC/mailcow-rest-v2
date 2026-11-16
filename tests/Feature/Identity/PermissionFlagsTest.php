@@ -4,7 +4,9 @@ namespace Tests\Feature\Identity;
 
 use App\Auth\PermissionFlag;
 use App\Auth\Role;
+use App\Models\Mailcow\SchemaVersion;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
@@ -26,7 +28,7 @@ class PermissionFlagsTest extends TestCase
      */
     private function assertFlags(callable $expected, array $actual): void
     {
-        $this->assertCount(29, $actual);
+        $this->assertCount(count(PermissionFlag::cases()), $actual);
 
         foreach (PermissionFlag::cases() as $flag) {
             $this->assertSame($expected($flag), $actual[$flag->value], $flag->value);
@@ -38,10 +40,12 @@ class PermissionFlagsTest extends TestCase
      */
     private static function allZero(string $table): array
     {
-        return array_fill_keys(array_values(array_filter(array_map(
+        $columns = Schema::getColumnListing($table);
+
+        return array_fill_keys(array_values(array_intersect($columns, array_filter(array_map(
             fn (PermissionFlag $flag): ?string => $table === 'da_acl' ? $flag->daAclColumn() : $flag->userAclColumn(),
             PermissionFlag::cases(),
-        ))), 0);
+        )))), 0);
     }
 
     public function test_an_admin_has_every_flag(): void
@@ -49,7 +53,7 @@ class PermissionFlagsTest extends TestCase
         $this->mailcow()->admin('admin', 'x');
         $this->signInAs('admin', Role::Admin);
 
-        $this->assertFlags(fn (): bool => true, $this->flags());
+        $this->assertFlags(fn (PermissionFlag $flag): bool => $flag !== PermissionFlag::MailboxGroups || SchemaVersion::hasNovember2026Features(), $this->flags());
     }
 
     public function test_a_domain_admin_with_every_da_acl_flag_off(): void
@@ -76,7 +80,7 @@ class PermissionFlagsTest extends TestCase
         $flags = $this->flags();
 
         $this->assertFlags(
-            fn (PermissionFlag $flag): bool => $flag->daAclColumn() === null || (int) $defaults[$flag->daAclColumn()] === 1,
+            fn (PermissionFlag $flag): bool => $flag->daAclColumn() === null || (int) ($defaults[$flag->daAclColumn()] ?? 0) === 1,
             $flags,
         );
         // Spot checks against the 2026-09a schema: login_as defaults to 1, pushover and
@@ -114,7 +118,7 @@ class PermissionFlagsTest extends TestCase
         $defaults = (array) DB::table('da_acl')->where('username', 'reseller')->first();
 
         $this->assertFlags(
-            fn (PermissionFlag $flag): bool => $flag->daAclColumn() === null || (int) $defaults[$flag->daAclColumn()] === 1,
+            fn (PermissionFlag $flag): bool => $flag->daAclColumn() === null || (int) ($defaults[$flag->daAclColumn()] ?? 0) === 1,
             $this->flags(),
         );
     }

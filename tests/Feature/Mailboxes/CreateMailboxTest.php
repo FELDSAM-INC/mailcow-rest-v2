@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Mailboxes;
 
+use App\Models\Mailcow\SchemaVersion;
 use App\Support\Hashing\LegacyPasswordVerifier;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\Mailboxes\MailboxTestHelpers;
@@ -50,6 +51,10 @@ class CreateMailboxTest extends TestCase
         $attributes = $this->mailboxAttributes('anna.smith@example.org');
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', (string) $attributes['passwd_update']);
         unset($attributes['passwd_update']);
+        if (SchemaVersion::hasNovember2026Features()) {
+            $this->assertSame('0', $attributes['shared']);
+            unset($attributes['shared']);
+        }
         $this->assertSame([
             'force_pw_update' => '0', 'force_tfa' => '0', 'tls_enforce_in' => '0', 'tls_enforce_out' => '0',
             'sogo_access' => '1', 'imap_access' => '1', 'pop3_access' => '1', 'smtp_access' => '1',

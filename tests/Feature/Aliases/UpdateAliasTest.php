@@ -153,6 +153,7 @@ class UpdateAliasTest extends TestCase
 
         $this->patchAlias($id, ['internal' => true] + $read)->assertOk()->assertJsonPath('data.internal', true);
 
+        $this->patchAlias($id, ['groupId' => 123])->assertStatus(422)->assertJsonPath('errors.groupId.0.code', 'immutable');
         $this->patchAlias($id, ['id' => $id + 1])->assertStatus(422)->assertJsonPath('errors.id.0.code', 'immutable');
         $this->patchAlias($id, ['createdAt' => '2001-01-01T00:00:00Z'])->assertStatus(422)->assertJsonPath('errors.createdAt.0.code', 'immutable');
         $this->patchAlias($id, ['kind' => 'catchAll'])->assertStatus(422)->assertJsonPath('errors.kind.0.code', 'immutable');

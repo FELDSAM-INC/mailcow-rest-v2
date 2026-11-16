@@ -11,3 +11,5 @@
   $ref: './sync-job-log.yaml'
 /sync-jobs/{syncJobId}/schedule-reset:
   $ref: './sync-job-schedule-reset.yaml'
+/sync-queue/settings:
+  $ref: './sync-queue-settings.yaml'

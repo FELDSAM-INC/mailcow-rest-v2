@@ -8,6 +8,7 @@ use App\Auth\Principal;
 use App\Auth\Role;
 use App\Models\Mailcow\DaAcl;
 use App\Models\Mailcow\Mailbox;
+use App\Models\Mailcow\SchemaVersion;
 use App\Models\Mailcow\UserAcl;
 use App\Services\Auth\PendingActionEvaluator;
 use Illuminate\Support\Facades\DB;
@@ -47,7 +48,7 @@ class IdentityService
     }
 
     /**
-     * The 29 effective flags (contract `PermissionFlags`), legacy `acl('to_session')`:
+     * The effective flags (contract `PermissionFlags`), legacy `acl('to_session')`:
      *
      *  - an administrator has every flag;
      *  - a domain administrator has every `user_acl` flag, overridden by its own `da_acl` row where
@@ -71,7 +72,7 @@ class IdentityService
 
         if ($principal->role === Role::Admin) {
             foreach (PermissionFlag::cases() as $flag) {
-                $flags[$flag->value] = true;
+                $flags[$flag->value] = $flag !== PermissionFlag::MailboxGroups || SchemaVersion::hasNovember2026Features();
             }
 
             return $flags;

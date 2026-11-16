@@ -1,0 +1,16 @@
+type: object
+additionalProperties: false
+required:
+- remoteUser
+- expiresAt
+- refreshFailed
+properties:
+  remoteUser:
+    type: string
+  expiresAt:
+    type:
+    - string
+    - 'null'
+    format: date-time
+  refreshFailed:
+    type: boolean

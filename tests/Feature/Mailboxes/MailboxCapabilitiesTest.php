@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Mailboxes;
 
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Passwords\MailboxPasswordHasher;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ApiKeys\ApiKeys;
@@ -30,6 +31,8 @@ class MailboxCapabilitiesTest extends TestCase
         $response = $this->getJson('/api/v2/capabilities/mailboxes')->assertOk();
 
         $this->assertSame([
+            'mailboxGroups' => SchemaVersion::hasNovember2026Features(),
+            'sharedMailboxes' => SchemaVersion::hasNovember2026Features(),
             'identityProviderType' => 'ldap',
             'authSources' => ['mailcow', 'ldap'],
             'groupwareEnabled' => false,

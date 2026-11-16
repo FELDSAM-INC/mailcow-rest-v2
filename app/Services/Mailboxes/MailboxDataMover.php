@@ -2,8 +2,10 @@
 
 namespace App\Services\Mailboxes;
 
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Groupware\SogoDirectory;
+use App\Services\SyncJobs\SyncSourceAccountLifecycle;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -81,6 +83,17 @@ class MailboxDataMover
 
             foreach (self::COLUMNS as [$table, $column]) {
                 DB::table($table)->where($column, $from)->update([$column => $to]);
+            }
+
+            if (SchemaVersion::hasNovember2026Features()) {
+                foreach ([['identity_link', 'username'], ['mailbox_group_member', 'username'],
+                    ['mailbox_group_imap_grant', 'owner'], ['mailbox_group_sogo_grant', 'owner'],
+                    ['mailbox_group_sogo_acl', 'c_uid'], ['mailbox_group_subscription', 'username'],
+                    ['mailbox_group_subscription', 'owner']] as [$table, $column]) {
+                    DB::table($table)->where($column, $from)->update([$column => $to]);
+                }
+                app(GroupDataLifecycle::class)->addressRenamed($from, $to);
+                app(SyncSourceAccountLifecycle::class)->renamed($from, $to);
             }
 
             DB::table('restv2_preferences')->where('account_kind', 'mailbox')->where('username', $from)->update(['username' => $to]);

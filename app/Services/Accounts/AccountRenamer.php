@@ -10,6 +10,7 @@ use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Auth\SessionManager;
 use App\Services\Auth\SessionRegistry;
 use App\Services\Preferences\PreferencesService;
+use App\Services\SyncJobs\SyncSourceAccountLifecycle;
 use App\Support\Http\ProblemType;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +58,7 @@ class AccountRenamer
 
         DB::table('da_sso')->where('username', $old)->delete();
         DB::table('admin')->where('username', $old)->update(['username' => $new]);
+        app(SyncSourceAccountLifecycle::class)->renamed($old, $new);
 
         foreach (['domain_admins', 'da_acl', 'tfa', 'fido2'] as $table) {
             DB::table($table)->where('username', $old)->update(['username' => $new]);

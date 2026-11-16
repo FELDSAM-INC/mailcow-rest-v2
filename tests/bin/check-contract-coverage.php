@@ -52,11 +52,26 @@ foreach ($contract['paths'] ?? [] as $item) {
 $covered = $coverage['operations'] ?? [];
 $failures = [];
 $coveredCount = 0;
+$unavailableCount = 0;
+
+if (! is_string($coverage['schemaVersion'] ?? null)) {
+    fwrite(STDERR, "contract coverage: the report has no tested schema version; rerun PHPUnit\n");
+    exit(2);
+}
 
 foreach ($registry->features as $feature => $definition) {
     foreach ($definition['operations'] as $operationId) {
         if (! in_array($operationId, $contractIds, true)) {
             $failures[] = "{$feature}: {$operationId} is not in the contract";
+
+            continue;
+        }
+
+        // The route and contract exist on every installation, but new-schema-only operations
+        // intentionally refuse writes on old schemas. Their successful responses are required
+        // in the new-schema CI job, not waived globally as pending implementations.
+        if ($definition['schemaVersions'] !== [] && ! in_array($coverage['schemaVersion'], $definition['schemaVersions'], true)) {
+            $unavailableCount++;
 
             continue;
         }
@@ -74,10 +89,11 @@ foreach ($registry->features as $feature => $definition) {
 }
 
 fwrite(STDOUT, sprintf(
-    "contract coverage: %d of %d registered operations covered, %d pending\n",
+    "contract coverage: %d of %d registered operations covered, %d pending, %d unavailable on this schema\n",
     $coveredCount,
     count($registry->operations()),
     count($registry->pendingOperations),
+    $unavailableCount,
 ));
 
 if ($failures !== []) {

@@ -13,6 +13,9 @@ required:
   - providerTimeoutSeconds
   - singleSignOn
 properties:
+  identitySynchronisation:
+    type: boolean
+    description: Whether the upstream schema supports identity links, sync previews, groups and offboarding.
   configured:
     type: boolean
     description: Whether a configuration is stored (`GET /identity-provider` answers `404` otherwise).

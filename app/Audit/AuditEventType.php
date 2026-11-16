@@ -7,6 +7,19 @@ namespace App\Audit;
  */
 enum AuditEventType: string
 {
+    case SyncQueueSettingsUpdate = 'syncQueueSettingsUpdate';
+    case LegacyApiKeyCreation = 'legacyApiKeyCreation';
+    case LegacyApiKeyUpdate = 'legacyApiKeyUpdate';
+    case LegacyApiKeyDeletion = 'legacyApiKeyDeletion';
+    case LegacyApiKeyRegeneration = 'legacyApiKeyRegeneration';
+
+    case SyncSourceCreation = 'syncSourceCreation';
+    case SyncSourceUpdate = 'syncSourceUpdate';
+    case SyncSourceDeletion = 'syncSourceDeletion';
+    case SyncSourceConnection = 'syncSourceConnection';
+    case MailboxGroupCreation = 'mailboxGroupCreation';
+    case MailboxGroupUpdate = 'mailboxGroupUpdate';
+    case MailboxGroupDeletion = 'mailboxGroupDeletion';
     case SignIn = 'signIn';
     case SignOut = 'signOut';
     case PreferencesUpdate = 'preferencesUpdate';
@@ -71,6 +84,7 @@ enum AuditEventType: string
     case Fail2banRulesReplacement = 'fail2banRulesReplacement';
     case Fail2banRulesReset = 'fail2banRulesReset';
     case Fail2banBanLift = 'fail2banBanLift';
+    case Fail2banAllBansLift = 'fail2banAllBansLift';
     case Fail2banBanAllowlisting = 'fail2banBanAllowlisting';
     case Fail2banBanDenylisting = 'fail2banBanDenylisting';
     case Fail2banBanListIdRotation = 'fail2banBanListIdRotation';
@@ -107,6 +121,9 @@ enum AuditEventType: string
     case IdentityProviderUpdate = 'identityProviderUpdate';
     case IdentityProviderDeletion = 'identityProviderDeletion';
     case IdentityProviderConnectionTest = 'identityProviderConnectionTest';
+    case IdentitySyncSettingsUpdate = 'identitySyncSettingsUpdate';
+    case IdentitySyncRequested = 'identitySyncRequested';
+    case IdentityLinkDeletion = 'identityLinkDeletion';
     case IdentityProviderSessionEnd = 'identityProviderSessionEnd';
 
     // Feature 012: OAuth2 clients.
@@ -259,6 +276,10 @@ enum AuditEventType: string
     public function detailKeys(): array
     {
         return match ($this) {
+            self::LegacyApiKeyCreation, self::LegacyApiKeyUpdate, self::LegacyApiKeyDeletion, self::LegacyApiKeyRegeneration => ['fields', ...self::REFUSAL],
+            self::SyncSourceCreation, self::SyncSourceUpdate, self::SyncQueueSettingsUpdate => ['fields', ...self::REFUSAL],
+            self::SyncSourceDeletion => [...self::REFUSAL],
+            self::SyncSourceConnection => ['mailbox', 'operation', ...self::REFUSAL],
             self::SignIn => ['requestedRole', 'secondFactorType', 'restricted', 'step', ...self::PROVIDER_SIGN_IN],
             self::SignOut, self::PasskeyRename, self::PasskeyRemoval => [],
             self::PreferencesUpdate => ['changedFields'],
@@ -302,6 +323,7 @@ enum AuditEventType: string
             self::Fail2banRulesReplacement => ['oldRules', 'newRules', ...self::REFUSAL],
             self::Fail2banRulesReset => ['oldRules', 'newRules', 'serviceMessage', 'step', ...self::REFUSAL],
             self::Fail2banBanLift => ['network', ...self::REFUSAL],
+            self::Fail2banAllBansLift => ['queuedCount', ...self::REFUSAL],
             self::Fail2banBanAllowlisting => ['network', 'allowlistAdded', 'denylistRemoved', ...self::REFUSAL],
             self::Fail2banBanDenylisting => ['network', 'denylistAdded', 'allowlistRemoved', ...self::REFUSAL],
             self::Fail2banBanListIdRotation => self::REFUSAL,
@@ -312,6 +334,11 @@ enum AuditEventType: string
             self::IdentityProviderCreation => ['type', 'changes', 'mailboxCounts', ...self::REFUSAL],
             self::IdentityProviderUpdate => ['type', 'previousType', 'changes', 'mailboxCounts', ...self::REFUSAL],
             self::IdentityProviderDeletion => ['type', 'mailboxCounts', ...self::REFUSAL],
+            self::MailboxGroupCreation, self::MailboxGroupUpdate => ['fields', 'domain', ...self::REFUSAL],
+            self::MailboxGroupDeletion => self::REFUSAL,
+            self::IdentitySyncSettingsUpdate => ['changes', ...self::REFUSAL],
+            self::IdentitySyncRequested => ['mode', 'runId', ...self::REFUSAL],
+            self::IdentityLinkDeletion => ['mailbox', ...self::REFUSAL],
             self::IdentityProviderSessionEnd => ['identityProvider', 'reason'],
             self::IdentityProviderConnectionTest => ['type', 'testedAddress', 'outcome', 'failureCategory', 'providerStatus', ...self::REFUSAL],
             self::Oauth2ClientCreation => ['redirectUris', ...self::REFUSAL],

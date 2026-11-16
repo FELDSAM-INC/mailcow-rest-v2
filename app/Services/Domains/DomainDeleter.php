@@ -11,6 +11,7 @@ use App\Services\AliasDomains\AliasDomainCleanup;
 use App\Services\Audit\AuditLogger;
 use App\Services\DomainAdmins\OrphanedDomainAdminRemover;
 use App\Services\Groupware\SogoDirectory;
+use App\Services\Mailboxes\GroupDataLifecycle;
 use App\Support\Domain\DomainName;
 use App\Support\Http\ETag;
 use App\Support\Http\ProblemType;
@@ -127,6 +128,7 @@ class DomainDeleter
 
         // Legacy's statements (the tags go with the row through their foreign key).
         DB::table('domain')->where('domain', $name)->delete();
+        app(GroupDataLifecycle::class)->domainDeleted($name);
         DB::table('domain_admins')->where('domain', $name)->delete();
         DB::table('alias')->where('domain', $name)->delete();
         DB::table('sender_acl')->where('logged_in_as', 'like', $addresses)->delete();

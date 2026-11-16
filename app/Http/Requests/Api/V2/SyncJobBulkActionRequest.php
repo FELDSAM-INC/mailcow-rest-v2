@@ -6,6 +6,7 @@ use App\Http\RequestContext;
 use App\Policies\SyncJobPolicy;
 use App\Services\SyncJobs\SyncJobBulkAction;
 use App\Services\SyncJobs\SyncJobCapabilities;
+use App\Services\SyncJobs\SyncQueueSettings;
 
 /**
  * Body of `applySyncJobBulkAction` (`SyncJobBulkActionRequest`, feature 008 FR-023, research R15):
@@ -18,6 +19,9 @@ class SyncJobBulkActionRequest extends ApiFormRequest
     public function authorize(): bool
     {
         app(SyncJobPolicy::class)->authorize(RequestContext::requirePrincipal($this));
+        if (($this->jsonBody()['action'] ?? null) === 'prioritize') {
+            app(SyncQueueSettings::class)->authorize(RequestContext::requirePrincipal($this));
+        }
 
         return true;
     }

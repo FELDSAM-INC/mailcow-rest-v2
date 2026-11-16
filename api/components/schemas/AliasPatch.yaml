@@ -11,7 +11,7 @@ description: |
     destinations that the request adds are checked against the external-destination rules;
     destinations already on the alias are kept, so changing any other attribute never needs the
     `aliasExternalGoto` permission.
-  - Read-only members (`id`, `addressUnicode`, `kind`, `domain`, `domainUnicode`, `inAliasDomain`,
+  - Read-only members (`id`, `groupId`, `addressUnicode`, `kind`, `domain`, `domainUnicode`, `inAliasDomain`,
     `primaryDomain`, `primaryDomainUnicode`, `createdAt`, `modifiedAt`, `orphaned`) may be sent with
     their current value, so a client can send back the representation it read. `kind` and the
     domain members are compared with the values that follow from the resulting address. A
@@ -47,6 +47,9 @@ properties:
     type: string
   id:
     type: integer
+  groupId:
+    type: [integer, "null"]
+    description: Group ownership is immutable; only the current value may be sent.
   addressUnicode:
     type: string
   kind:

@@ -8,6 +8,7 @@ use App\Auth\PermissionFlag;
 use App\Auth\Principal;
 use App\Auth\Role;
 use App\Exceptions\PermissionFlagRequiredException;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\SelfService\MailboxAccess;
 use App\Services\SelfService\PermissionGate;
 use Illuminate\Support\Facades\DB;
@@ -154,7 +155,7 @@ class MailboxAccessTest extends TestCase
         $admin = $this->principal('admin', Role::Admin);
 
         foreach (PermissionFlag::cases() as $flag) {
-            $this->assertTrue($this->gate()->has($admin, $flag), $flag->value);
+            $this->assertSame($flag !== PermissionFlag::MailboxGroups || SchemaVersion::hasNovember2026Features(), $this->gate()->has($admin, $flag), $flag->value);
         }
     }
 }

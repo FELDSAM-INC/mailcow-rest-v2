@@ -1,0 +1,77 @@
+parameters:
+- name: mailbox
+  in: path
+  required: true
+  schema:
+    type: string
+    maxLength: 255
+get:
+  operationId: getMailboxIdentityLink
+  tags:
+  - Identity provider
+  summary: Read the stable external identity linked to a mailbox
+  description: Administrators only. Requires mailcow 2026-11 for writes. Read-only
+    API keys may read.
+  security:
+  - sessionCookie: []
+  - apiKeyAuth: []
+  responses:
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '200':
+      description: The link, or null if there is none.
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - data
+            properties:
+              data:
+                oneOf:
+                - $ref: ../../components/schemas/IdentityLink.yaml
+                - type: 'null'
+            additionalProperties: false
+delete:
+  operationId: deleteMailboxIdentityLink
+  tags:
+  - Identity provider
+  summary: Clear a mailbox identity link so the next login or run can link it again
+  description: Administrators only. Requires mailcow 2026-11 for writes. Read-only
+    API keys may read. Does not enable a disabled mailbox. This permits relinking
+    an address to a different provider user.
+  security:
+  - sessionCookie: []
+    csrfToken: []
+  - apiKeyAuth: []
+  responses:
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '400':
+      $ref: ../../components/responses/BadRequest.yaml
+    '412':
+      $ref: ../../components/responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../../components/responses/UnsupportedMediaType.yaml
+    '422':
+      $ref: ../../components/responses/ValidationFailed.yaml
+    '409':
+      description: The configured provider or installed schema does not support synchronisation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '204':
+      description: Link removed.
+    '404':
+      $ref: ../../components/responses/NotFound.yaml
+  parameters:
+  - $ref: ../../components/parameters/IfMatch.yaml

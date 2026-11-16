@@ -24,6 +24,7 @@ class GetAliasTest extends TestCase
 
         $this->assertSame([
             'id' => $id,
+            'groupId' => null,
             'address' => 'Sales@example.org',
             'addressUnicode' => 'Sales@example.org',
             'kind' => 'regular',

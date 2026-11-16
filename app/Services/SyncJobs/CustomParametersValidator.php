@@ -5,6 +5,7 @@ namespace App\Services\SyncJobs;
 use App\Auth\Principal;
 use App\Auth\Role;
 use App\Http\Requests\Api\V2\ApiFormRequest;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Config\MailcowConfig;
 
 /**
@@ -24,9 +25,11 @@ use App\Services\Config\MailcowConfig;
 class CustomParametersValidator
 {
     /** Never pass execution or credential-disclosure options through, even from older jobs. */
-    private const UNSAFE_OPTIONS = [
-        'showpasswords', 'skipmess', 'delete2foldersonly', 'delete2foldersbutnot',
-        'regexflag', 'regexmess', 'pipemess', 'regextrans2', 'maxlinelengthcmd',
+    public const UNSAFE_OPTIONS = [
+        'abort', 'delete2foldersbutnot', 'delete2foldersonly', 'logdir', 'logfile', 'maxlinelengthcmd',
+        'oauthrefreshcmd1', 'oauthrefreshcmd2', 'passfile1', 'passfile2', 'pidfile', 'pipemess',
+        'regexflag', 'regexmess', 'regextrans2', 'showpasswords', 'skipmess', 'tests', 'testsdebug',
+        'testslive', 'testslive6', 'testsunit', 'tmpdir',
     ];
 
     public function __construct(private readonly MailcowConfig $config) {}
@@ -49,6 +52,10 @@ class CustomParametersValidator
      */
     public function allowedOptions(): array
     {
+        if (SchemaVersion::hasNovember2026Features()) {
+            return array_keys(app(SyncJobParametersCodec::class)->rules());
+        }
+
         return array_values(array_filter(
             $this->config->imapsyncOptions()['whitelist'],
             fn (string $option): bool => ! in_array(strtolower($option), $this->deniedOptions(), true),
@@ -67,6 +74,10 @@ class CustomParametersValidator
 
         if (! $this->allowedFor($caller) && ($creating ? $trimmed !== '' : ! $unchanged)) {
             return [ApiFormRequest::make('customParamsNotPermitted', [], 'Only administrators may set custom imapsync parameters on this server.')];
+        }
+
+        if (SchemaVersion::hasNovember2026Features()) {
+            return app(SyncJobParametersCodec::class)->violations($trimmed, ! $unchanged);
         }
 
         // The runner and Getopt::Long recognise argument boundaries differently from legacy's
@@ -102,6 +113,10 @@ class CustomParametersValidator
      */
     public function safetyViolations(string $value): array
     {
+        if (SchemaVersion::hasNovember2026Features()) {
+            return app(SyncJobParametersCodec::class)->violations($value, false);
+        }
+
         $violations = [];
         $denied = $this->deniedOptions();
         foreach (preg_split('/(?=--)/', trim($value)) ?: [] as $piece) {

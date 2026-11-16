@@ -5,6 +5,7 @@ namespace App\Services\Mailboxes;
 use App\Audit\AuditEventType;
 use App\Auth\Principal;
 use App\Clients\Memcached\MemcachedFlusher;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Audit\AuditLogger;
 use App\Services\Config\MailcowConfig;
 use App\Services\Groupware\SogoDirectory;
@@ -60,7 +61,7 @@ class MailboxUpdater
      *
      * @param  array<string, mixed>  $patch  the sent members of `MailboxPatch`
      * @param  string|null  $ifMatch  the `If-Match` value (or a bulk item's version as one)
-     * @param  array{templateMarker?: string, auditActor?: array{username: string|null, role: null}, auditDetails?: array<string, mixed>}  $options
+     * @param  array{templateName?: string, templateMarker?: string, auditActor?: array{username: string|null, role: null}, auditDetails?: array<string, mixed>}  $options
      * @return bool whether anything changed
      */
     public function update(Principal $principal, string $address, array $patch, ?string $ifMatch, ?string $bulkRequestId = null, bool $deferFlush = false, array $options = []): bool
@@ -79,8 +80,20 @@ class MailboxUpdater
 
             // Provider templates must not undo a local suspension. Check the locked row so
             // an administrator's concurrent deactivation also wins over sign-in sync.
-            if (isset($options['templateMarker']) && (int) $row->active !== 1) {
-                throw new AccessDeniedHttpException('A provider template cannot update a disabled mailbox.');
+            if (isset($options['templateMarker'])) {
+                if (SchemaVersion::hasNovember2026Features() && isset($options['templateName'])) {
+                    $previous = MailboxReader::decode($row->attributes)['template'] ?? null;
+                    $disabledByProvider = (bool) DB::table('identity_link')->where('username', $address)->value('idp_disabled');
+                    if ($previous === null || $previous === $options['templateName'] || $disabledByProvider) {
+                        // Reapplying the same template preserves manual activation and suspension.
+                        unset($patch['status']);
+                    }
+                    if (($options['auditDetails']['trigger'] ?? null) === 'identityProviderSignIn' && (int) $row->active !== 1) {
+                        throw new AccessDeniedHttpException('A provider template cannot update a disabled mailbox during sign-in.');
+                    }
+                } elseif ((int) $row->active !== 1) {
+                    throw new AccessDeniedHttpException('A provider template cannot update a disabled mailbox.');
+                }
             }
 
             $acl = DB::table('user_acl')->where('username', $address)->lockForUpdate()->first();
@@ -101,6 +114,10 @@ class MailboxUpdater
             }
 
             $marker = isset($options['templateMarker']) ? (string) $options['templateMarker'] : null;
+
+            if ($marker !== null && isset($options['templateName']) && SchemaVersion::hasNovember2026Features()) {
+                DB::update("UPDATE `mailbox` SET `attributes` = JSON_SET(`attributes`, '$.template', ?) WHERE `username` = ?", [$options['templateName'], $address]);
+            }
 
             if ($changes === []) {
                 if ($marker !== null && (MailboxReader::decode($row->attributes ?? null)['attribute_hash'] ?? '') !== $marker) {
@@ -150,6 +167,7 @@ class MailboxUpdater
         $recovery = $attributes['recovery_email'] ?? null;
 
         return [
+            'shared' => $flag('shared', false),
             'displayName' => (string) ($row->name ?? ''),
             'status' => MailboxValues::status($row->active),
             'quota' => (int) $row->quota,
@@ -176,11 +194,16 @@ class MailboxUpdater
     {
         $violations = new FieldViolations;
         $values = MailboxDefaults::merge($current, array_intersect_key($patch, array_flip([
-            'status', 'quota', 'forcePasswordChange', 'forceSecondFactorSetup', 'webmailRedirect', 'protocolAccess', 'userPermissions', 'authSource',
+            'shared', 'status', 'quota', 'forcePasswordChange', 'forceSecondFactorSetup', 'webmailRedirect', 'protocolAccess', 'userPermissions', 'authSource',
         ])));
 
         if (array_key_exists('displayName', $patch)) {
             $values['displayName'] = MailboxValidator::displayName((string) $patch['displayName'], (string) $row->local_part);
+        }
+
+        if ($values['shared']) {
+            $values['forcePasswordChange'] = false;
+            $values['forceSecondFactorSetup'] = false;
         }
 
         $source = (string) $values['authSource'];
@@ -286,7 +309,7 @@ class MailboxUpdater
         $address = (string) $row->username;
         $set = [];
 
-        foreach (['forcePasswordChange' => 'force_pw_update', 'forceSecondFactorSetup' => 'force_tfa', 'webmailRedirect' => 'sogo_access'] as $member => $key) {
+        foreach (['shared' => 'shared', 'forcePasswordChange' => 'force_pw_update', 'forceSecondFactorSetup' => 'force_tfa', 'webmailRedirect' => 'sogo_access'] as $member => $key) {
             if ($values[$member] !== $current[$member]) {
                 $set[$key] = $values[$member] ? '1' : '0';
             }

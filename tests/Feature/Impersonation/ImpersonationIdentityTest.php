@@ -4,6 +4,7 @@ namespace Tests\Feature\Impersonation;
 
 use App\Auth\PermissionFlag;
 use App\Auth\Role;
+use App\Models\Mailcow\SchemaVersion;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\Accounts\AccountTestHelpers;
 use Tests\TestCase;
@@ -41,7 +42,9 @@ class ImpersonationIdentityTest extends TestCase
         $this->assertSame($started['id'], $identity['impersonation']['id']);
         $this->assertSame(['username' => 'alice', 'role' => 'admin', 'authMethod' => 'password'], $identity['impersonation']['impersonator']);
         $this->assertSame(['username' => 'bob@a.example', 'role' => 'mailboxUser'], $identity['impersonation']['target']);
-        $this->assertSame(array_fill_keys(array_map(fn (PermissionFlag $f): string => $f->value, PermissionFlag::cases()), true), $identity['permissions']);
+        $expected = array_fill_keys(array_map(fn (PermissionFlag $f): string => $f->value, PermissionFlag::cases()), true);
+        $expected['mailboxGroups'] = SchemaVersion::hasNovember2026Features();
+        $this->assertSame($expected, $identity['permissions']);
     }
 
     public function test_a_domain_administrator_impersonator_brings_its_own_overlapping_flags(): void
@@ -52,6 +55,11 @@ class ImpersonationIdentityTest extends TestCase
         $permissions = $this->getJson('/api/v2/me')->assertOk()->json('data.permissions');
 
         foreach (PermissionFlag::cases() as $flag) {
+            if ($flag === PermissionFlag::MailboxGroups && ! SchemaVersion::hasNovember2026Features()) {
+                $this->assertFalse($permissions[$flag->value]);
+
+                continue;
+            }
             $own = DB::table('da_acl')->where('username', 'reseller1')->value($flag->daAclColumn() ?? 'username');
             $expected = $flag->daAclColumn() === null ? true : (int) $own === 1;
             $this->assertSame($expected, $permissions[$flag->value], $flag->value);

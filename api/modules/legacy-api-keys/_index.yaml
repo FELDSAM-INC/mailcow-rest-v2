@@ -1,0 +1,6 @@
+/legacy-api-keys:
+  $ref: ./keys.yaml
+/legacy-api-keys/{legacyKeyId}:
+  $ref: ./key.yaml
+/legacy-api-keys/{legacyKeyId}/regenerate:
+  $ref: ./regenerate.yaml

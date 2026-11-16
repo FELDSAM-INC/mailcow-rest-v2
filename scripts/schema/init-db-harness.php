@@ -23,11 +23,14 @@ if ($initDb === false) {
     exit(1);
 }
 
-if (! preg_match('/\$db_version\s*=\s*"([^"]+)"/', $initDb, $m)) {
+if (preg_match('/\$db_version\s*=\s*"([^"]+)"/', $initDb, $m)) {
+    $dbVersion = $m[1];
+} elseif (preg_match('/^[0-9]+_[0-9]+$/D', getenv('DB_VERSION') ?: '') === 1) {
+    $dbVersion = getenv('DB_VERSION');
+} else {
     fwrite(STDERR, "no \$db_version in init_db.inc.php\n");
     exit(1);
 }
-$dbVersion = $m[1];
 
 // Cut the top-level CLI block (the last line that starts with it at column 0).
 $cut = strrpos($initDb, "\nif (php_sapi_name() == \"cli\") {");

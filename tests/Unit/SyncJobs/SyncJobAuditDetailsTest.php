@@ -4,6 +4,7 @@ namespace Tests\Unit\SyncJobs;
 
 use App\Models\Mailcow\SyncJob;
 use App\Services\SyncJobs\SyncJobAuditDetails;
+use App\Services\SyncJobs\SyncJobQuery;
 use Tests\TestCase;
 
 /**
@@ -23,7 +24,7 @@ class SyncJobAuditDetailsTest extends TestCase
         $this->mailcow()->mailboxWithDomain('alice@example.org');
         $id = $this->mailcow()->syncJob('alice@example.org', array_merge(['password1' => $password], $overrides));
 
-        return SyncJob::query()->findOrFail($id);
+        return SyncJobQuery::base()->findOrFail($id);
     }
 
     public function test_creation_values_hold_the_configuration_and_only_whether_a_password_is_set(): void

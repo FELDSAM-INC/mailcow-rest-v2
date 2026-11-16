@@ -123,11 +123,28 @@ class SingleSignOnService
         }
 
         $mappingValue = self::firstValue($details['mailcow_template'] ?? null);
+        $externalId = is_string($details['sub'] ?? null) ? $details['sub'] : null;
+        $links = app(IdentityLinkGuard::class);
+        if (! $links->mayCreate($config->type->legacy(), $email, $externalId)) {
+            $this->fail($email, $config->type, 'mailboxNotLinked', []);
+            throw new ProblemException(ProblemType::SignInFailed);
+        }
         $name = is_string($details['name'] ?? null) ? $details['name'] : null;
         $requestId = RequestContext::requestId($request);
         $mailbox = $this->accounts->findMailboxAccount($email);
         $created = false;
         $templateApplied = false;
+
+        if ($mailbox !== null && (string) $mailbox->getAttribute('authsource') === $config->type->legacy()
+            && ((int) $mailbox->getAttribute('active') !== 1 || (int) $mailbox->getAttribute('d_active') !== 1)) {
+            $this->fail($email, $config->type, 'accountInactive', []);
+            throw new ProblemException(ProblemType::SignInFailed);
+        }
+
+        if ($mailbox !== null && ! $links->verify($config->type->legacy(), $email, $externalId)) {
+            $this->fail($email, $config->type, 'mailboxNotLinked', []);
+            throw new ProblemException(ProblemType::SignInFailed);
+        }
 
         if ($mailbox === null) {
             $result = $this->provisioner->provision($config, $email, $mappingValue, $name, $requestId);
@@ -139,6 +156,10 @@ class SingleSignOnService
             }
 
             $created = $result->isCreated();
+            if (! $links->verify($config->type->legacy(), $email, $externalId)) {
+                $this->fail($email, $config->type, 'mailboxNotLinked', []);
+                throw new ProblemException(ProblemType::SignInFailed);
+            }
             $mailbox = $this->accounts->findMailboxAccount($email);
 
             if ($mailbox !== null && ! $created && (string) $mailbox->getAttribute('authsource') === $config->type->legacy()) {
@@ -169,7 +190,7 @@ class SingleSignOnService
             authMethod: AuthMethod::SingleSignOn,
             signedInAt: CarbonImmutable::now('UTC'),
             identityProvider: $config->type,
-            ssoLinkId: $this->links->create($tokens, $email, $config->type),
+            ssoLinkId: $this->links->create($tokens, $email, $config->type, $externalId),
         );
 
         DB::transaction(function () use ($principal, $email, $request, $config, $created, $templateApplied): void {

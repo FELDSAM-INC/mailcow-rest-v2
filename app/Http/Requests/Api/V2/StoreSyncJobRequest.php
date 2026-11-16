@@ -39,7 +39,7 @@ class StoreSyncJobRequest extends ApiFormRequest
     {
         $rules = $this->valueRules();
 
-        foreach (['remoteHost', 'remotePort', 'remoteUser', 'remotePassword'] as $member) {
+        foreach (array_key_exists('sourceId', $this->jsonBody()) ? ['remoteUser'] : ['remoteHost', 'remotePort', 'remoteUser', 'remotePassword'] as $member) {
             $rules[$member] = ['bail', 'required', ...array_filter($rules[$member], fn (mixed $rule): bool => ! in_array($rule, ['bail', 'sometimes', 'filled'], true))];
         }
 

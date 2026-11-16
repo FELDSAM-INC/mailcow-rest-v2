@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V2;
 
 use App\Auth\IdentityProviderType;
+use App\Models\Mailcow\SchemaVersion;
 use App\Rules\HttpUrl;
 use App\Rules\LdapFilter;
 use App\Services\IdentityProvider\AppReturnUrls;
@@ -27,6 +28,7 @@ class IdentityProviderCapabilitiesResource extends JsonResource
         $defaults = IdentityProviderConfig::DEFAULTS;
 
         return new self([
+            'identitySynchronisation' => SchemaVersion::hasNovember2026Features(),
             'configured' => $stored !== null,
             'configuredType' => $stored?->type->value,
             'appReturnUrls' => app(AppReturnUrls::class)->all(),

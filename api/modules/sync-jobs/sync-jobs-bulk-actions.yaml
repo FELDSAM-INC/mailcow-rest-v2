@@ -1,59 +1,59 @@
 post:
   operationId: applySyncJobBulkAction
-  tags: [Sync jobs]
+  tags:
+  - Sync jobs
   summary: Apply an action to several sync jobs
-  description: |
-    Activates, deactivates, reschedules or deletes up to the bulk limit (default 100) of sync jobs
-    in one request, as the legacy mass actions do. Creation and other edits are single-job
-    requests.
-
-    The whole request is refused only when the caller may never perform the action: `403
-    permission-flag-required` (`requiredFlags: [syncjobs]`) without the sync-jobs permission, `403 insufficient-key-scope` for a read-only key,
-    and `422` for a malformed body or more targets than the bulk limit. Otherwise each job is checked,
-    processed and audited on its own, as a single request for it would be, and gets one result in
-    request order:
-
-    - `done`: the action was applied. `version` carries the job's new version tag exactly as its
-      `ETag` header and `etag` member show it (quoted), except after `delete`; a target's `version`
-      accepts it with or without the quotes. Activating an active job or deactivating an inactive
-      one is `done` and changes nothing.
-    - `notFound`: the job does not exist or its mailbox lies outside the caller's scope.
-    - `outdated`: the target's `version` no longer matches; the job is unchanged. Not checked for
-      `reschedule`, and not checked for targets without `version`.
-    - `refused` or `failed`: the result's `problem` explains why.
-
-    A failure on one job never stops or undoes the others. A job named twice is processed and
-    reported once. Every audit record of the request carries `bulkRequestId`.
+  description: "Activates, deactivates, reschedules or deletes up to the bulk limit (default 100) of sync\
+    \ jobs\nin one request, as the legacy mass actions do. Creation and other edits are single-job\nrequests.\n\
+    \nThe whole request is refused only when the caller may never perform the action: `403\npermission-flag-required`\
+    \ (`requiredFlags: [syncjobs]`) without the sync-jobs permission, `403 insufficient-key-scope` for\
+    \ a read-only key,\nand `422` for a malformed body or more targets than the bulk limit. Otherwise\
+    \ each job is checked,\nprocessed and audited on its own, as a single request for it would be, and\
+    \ gets one result in\nrequest order:\n\n- `done`: the action was applied. `version` carries the job's\
+    \ new version tag exactly as its\n  `ETag` header and `etag` member show it (quoted), except after\
+    \ `delete`; a target's `version`\n  accepts it with or without the quotes. Activating an active job\
+    \ or deactivating an inactive\n  one is `done` and changes nothing.\n- `notFound`: the job does not\
+    \ exist or its mailbox lies outside the caller's scope.\n- `outdated`: the target's `version` no longer\
+    \ matches; the job is unchanged. Not checked for\n  `reschedule`, and not checked for targets without\
+    \ `version`.\n- `refused` or `failed`: the result's `problem` explains why.\n\nA failure on one job\
+    \ never stops or undoes the others. A job named twice is processed and\nreported once. Every audit\
+    \ record of the request carries `bulkRequestId`.\n"
   security:
-    - sessionCookie: []
-      csrfToken: []
-    - apiKeyAuth: []
+  - sessionCookie: []
+    csrfToken: []
+  - apiKeyAuth: []
   requestBody:
     required: true
     content:
       application/json:
         schema:
-          $ref: '../../components/schemas/SyncJobBulkActionRequest.yaml'
+          $ref: ../../components/schemas/SyncJobBulkActionRequest.yaml
         examples:
           deactivate:
             value:
               action: deactivate
               targets:
-                - id: '17'
-                  version: 'V3kQ0u1lH5o2tKpN8bYzR4cX6mE9aJfD7sGhLwTqUiA'
-                - id: '18'
+              - id: '17'
+                version: V3kQ0u1lH5o2tKpN8bYzR4cX6mE9aJfD7sGhLwTqUiA
+              - id: '18'
   responses:
     '200':
-      $ref: '../../components/responses/BulkResultResponse.yaml'
+      $ref: ../../components/responses/BulkResultResponse.yaml
     '400':
-      $ref: '../../components/responses/BadRequest.yaml'
+      $ref: ../../components/responses/BadRequest.yaml
     '401':
-      $ref: '../../components/responses/Unauthorized.yaml'
+      $ref: ../../components/responses/Unauthorized.yaml
     '403':
-      $ref: '../../components/responses/SyncJobForbidden.yaml'
+      $ref: ../../components/responses/SyncJobForbidden.yaml
     '415':
-      $ref: '../../components/responses/UnsupportedMediaType.yaml'
+      $ref: ../../components/responses/UnsupportedMediaType.yaml
     '422':
-      $ref: '../../components/responses/SyncJobValidationFailed.yaml'
+      $ref: ../../components/responses/SyncJobValidationFailed.yaml
     '500':
-      $ref: '../../components/responses/InternalError.yaml'
+      $ref: ../../components/responses/InternalError.yaml
+    '409':
+      description: Queue priority requires mailcow 2026-11.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml

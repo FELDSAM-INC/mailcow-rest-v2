@@ -1,0 +1,22 @@
+type: object
+additionalProperties: false
+required:
+- accessLevel
+properties:
+  description:
+    type: string
+    maxLength: 255
+  accessLevel:
+    type: string
+    enum:
+    - readOnly
+    - readWrite
+  allowedNetworks:
+    type: array
+    maxItems: 100
+    items:
+      type: string
+      maxLength: 49
+  skipIpCheck: &id001
+    type: boolean
+  active: *id001

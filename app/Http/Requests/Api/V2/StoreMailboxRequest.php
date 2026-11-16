@@ -19,6 +19,7 @@ class StoreMailboxRequest extends ApiFormRequest
     use MailboxValueRules;
 
     public const MEMBERS = [
+        'shared',
         'localPart', 'domain', 'password', 'displayName', 'authSource', 'templateId', 'quota', 'status',
         'forcePasswordChange', 'forceSecondFactorSetup', 'webmailRedirect', 'protocolAccess', 'userPermissions',
         'tags', 'taggedMailHandling', 'quarantineNotification', 'quarantineCategory', 'tlsEnforceInbound',

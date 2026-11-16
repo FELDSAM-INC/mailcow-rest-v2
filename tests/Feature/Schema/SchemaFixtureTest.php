@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Schema;
 
+use App\Models\Mailcow\SchemaVersion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -22,12 +23,12 @@ class SchemaFixtureTest extends TestCase
         $this->assertContains($version, config('restv2.supported_schema_versions'));
     }
 
-    public function test_the_upstream_schema_has_54_tables_and_6_views(): void
+    public function test_the_upstream_schema_has_the_expected_tables_and_views(): void
     {
         $objects = collect(DB::select('SELECT TABLE_NAME AS name, TABLE_TYPE AS type FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()'));
         $upstream = $objects->reject(fn (object $o): bool => str_starts_with($o->name, 'restv2_'));
 
-        $this->assertCount(54, $upstream->where('type', 'BASE TABLE'));
+        $this->assertCount(SchemaVersion::hasNovember2026Features() ? 68 : 54, $upstream->where('type', 'BASE TABLE'));
         $this->assertCount(6, $upstream->where('type', 'VIEW'));
     }
 

@@ -3,6 +3,8 @@
 namespace Tests\Support\SyncJobs;
 
 use App\Auth\Role;
+use App\Models\Mailcow\SchemaVersion;
+use App\Services\SyncJobs\SyncJobParametersCodec;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use stdClass;
@@ -47,7 +49,15 @@ trait SyncJobTestHelpers
      */
     protected function syncJobRow(int $id): ?stdClass
     {
-        $row = DB::table('imapsync')->where('id', $id)->first();
+        $query = DB::table('imapsync')->where('imapsync.id', $id);
+        if (SchemaVersion::hasNovember2026Features()) {
+            $query->join('imapsync_source as source', 'source.id', '=', 'imapsync.source_id')
+                ->select('imapsync.*', 'source.host1', 'source.port1', 'source.enc1', 'source.auth_type as authmech1');
+        }
+        $row = $query->first();
+        if ($row && SchemaVersion::hasNovember2026Features()) {
+            $row->custom_params = SyncJobParametersCodec::display($row->custom_params);
+        }
 
         return $row instanceof stdClass ? $row : null;
     }

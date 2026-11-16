@@ -1,0 +1,26 @@
+type: object
+required:
+- mailbox
+- provider
+- externalId
+- disabled
+- missingSince
+- etag
+properties:
+  mailbox:
+    type: string
+  provider:
+    type: string
+  externalId:
+    type:
+    - string
+    - 'null'
+  disabled:
+    type: boolean
+  missingSince:
+    type:
+    - string
+    - 'null'
+  etag:
+    type: string
+additionalProperties: false

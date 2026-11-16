@@ -1,0 +1,132 @@
+get:
+  operationId: listSyncSources
+  tags:
+  - Sync sources
+  summary: List available sync sources
+  description: Requires mailcow 2026-11 and the syncjobs permission. Sources are scoped by creator and
+    explicit domain/mailbox targets. OAuth credentials and tokens are write-only. Endpoint changes require
+    access to every attached job. Configuration writes support If-Match.
+  security:
+  - sessionCookie: []
+  - apiKeyAuth: []
+  responses:
+    '400':
+      $ref: ../../components/responses/BadRequest.yaml
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../../components/responses/NotFound.yaml
+    '412':
+      $ref: ../../components/responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../../components/responses/UnsupportedMediaType.yaml
+    '422':
+      $ref: ../../components/responses/ValidationFailed.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '409':
+      description: Unsupported schema, conflicting source state or unavailable provider.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '503':
+      description: Unsupported schema, conflicting source state or unavailable provider.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '200':
+      description: The requested data.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            - meta
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: ../../components/schemas/SyncSource.yaml
+              meta:
+                $ref: ../../components/schemas/ListMeta.yaml
+  parameters:
+  - $ref: ../../components/parameters/Limit.yaml
+  - $ref: ../../components/parameters/Offset.yaml
+  - $ref: ../../components/parameters/Order.yaml
+  - $ref: ../../components/parameters/Search.yaml
+  - in: query
+    name: sort
+    schema:
+      type: string
+      enum:
+      - id
+      - name
+      - remoteHost
+      - scope
+      - active
+      default: name
+post:
+  operationId: createSyncSource
+  tags:
+  - Sync sources
+  summary: Create a sync source
+  description: Requires mailcow 2026-11 and the syncjobs permission. Sources are scoped by creator and
+    explicit domain/mailbox targets. OAuth credentials and tokens are write-only. Endpoint changes require
+    access to every attached job. Configuration writes support If-Match.
+  security:
+  - sessionCookie: []
+    csrfToken: []
+  - apiKeyAuth: []
+  responses:
+    '400':
+      $ref: ../../components/responses/BadRequest.yaml
+    '401':
+      $ref: ../../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../../components/responses/NotFound.yaml
+    '412':
+      $ref: ../../components/responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../../components/responses/UnsupportedMediaType.yaml
+    '422':
+      $ref: ../../components/responses/ValidationFailed.yaml
+    '500':
+      $ref: ../../components/responses/InternalError.yaml
+    '409':
+      description: Unsupported schema, conflicting source state or unavailable provider.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '503':
+      description: Unsupported schema, conflicting source state or unavailable provider.
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../components/schemas/Problem.yaml
+    '201':
+      description: The requested data.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            properties:
+              data:
+                $ref: ../../components/schemas/SyncSource.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/SyncSourceCreateRequest.yaml

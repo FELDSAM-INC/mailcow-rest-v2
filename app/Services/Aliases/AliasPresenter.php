@@ -27,6 +27,7 @@ class AliasPresenter
 
         return [
             'id' => (int) $row->id,
+            'groupId' => isset($row->group_id) ? (int) $row->group_id : null,
             'address' => $address,
             'addressUnicode' => AliasAddress::unicodeOf($address),
             'kind' => str_starts_with($address, '@') ? 'catchAll' : 'regular',

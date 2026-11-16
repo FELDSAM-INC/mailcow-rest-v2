@@ -3,6 +3,7 @@
 namespace App\Services\Mailboxes;
 
 use App\Auth\Principal;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Config\MailcowConfig;
 use App\Services\Identity\IdentityService;
 use App\Services\Passwords\MailboxPasswordHasher;
@@ -31,6 +32,8 @@ class MailboxCapabilities
         $defaults['userPermissions'] = UserPermissions::visibleTo($defaults['userPermissions'], $principal, $this->identity->permissions($principal));
 
         return [
+            'mailboxGroups' => SchemaVersion::hasNovember2026Features(),
+            'sharedMailboxes' => SchemaVersion::hasNovember2026Features(),
             'identityProviderType' => IdentityProviderType::current(),
             'authSources' => IdentityProviderType::allowedSources(),
             'groupwareEnabled' => ! config('restv2.skip_sogo'),

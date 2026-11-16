@@ -3,7 +3,7 @@
 namespace App\Auth;
 
 /**
- * The 29 permission flags (contract `PermissionFlags`, R20): the columns of mailcow's `user_acl`
+ * The permission flags (contract `PermissionFlags`, R20): the columns of mailcow's `user_acl`
  * and `da_acl` in camelCase. Five names exist in both tables. tests/Feature/Schema/AclColumnsTest
  * fails when an upstream release adds a column, so that the contract is updated deliberately.
  */
@@ -41,6 +41,7 @@ enum PermissionFlag: string
     case DomainRelayhost = 'domainRelayhost';
     case DomainDesc = 'domainDesc';
     case AliasExternalGoto = 'aliasExternalGoto';
+    case MailboxGroups = 'mailboxGroups';
 
     private const USER_ACL = [
         'spam_alias', 'tls_policy', 'spam_score', 'spam_policy', 'delimiter_action', 'syncjobs',
@@ -52,7 +53,7 @@ enum PermissionFlag: string
         'syncjobs', 'quarantine', 'login_as', 'sogo_access', 'app_passwds', 'bcc_maps', 'pushover',
         'filters', 'ratelimit', 'spam_policy', 'extend_sender_acl', 'unlimited_quota',
         'protocol_access', 'smtp_ip_access', 'alias_domains', 'mailbox_relayhost',
-        'domain_relayhost', 'domain_desc', 'alias_external_goto',
+        'domain_relayhost', 'domain_desc', 'alias_external_goto', 'mailbox_groups',
     ];
 
     /**

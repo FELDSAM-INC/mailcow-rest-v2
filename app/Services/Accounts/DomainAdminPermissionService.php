@@ -40,7 +40,7 @@ class DomainAdminPermissionService
         }
 
         if ($current === null) {
-            $columns = array_fill_keys(array_values(DomainAdminFlags::COLUMNS), 0);
+            $columns = array_fill_keys(array_values(DomainAdminFlags::availableColumns()), 0);
             DB::table('da_acl')->insert(['username' => $username] + array_merge($columns, self::columns($flags)));
             $changes = [];
 

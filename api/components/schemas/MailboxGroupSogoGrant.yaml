@@ -1,0 +1,42 @@
+type: object
+additionalProperties: false
+required:
+- owner
+- type
+- folder
+- access
+- subscribe
+- id
+- state
+- error
+properties:
+  owner:
+    type: string
+    format: email
+  type:
+    type: string
+    enum:
+    - Calendar
+    - Contacts
+  folder:
+    type: string
+    pattern: ^[A-Za-z0-9._-]{1,100}$
+  access:
+    type: string
+    enum:
+    - read
+    - write
+  subscribe:
+    type: boolean
+  id:
+    type: integer
+  state:
+    type: string
+    enum:
+    - pending
+    - applied
+    - failed
+  error:
+    type:
+    - string
+    - 'null'

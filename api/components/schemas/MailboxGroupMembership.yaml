@@ -1,0 +1,24 @@
+type: object
+additionalProperties: false
+required:
+- id
+- name
+- address
+- active
+- source
+properties:
+  id:
+    type: integer
+  name:
+    type: string
+  address:
+    type:
+    - string
+    - 'null'
+  active:
+    type: boolean
+  source:
+    type: string
+    enum:
+    - manual
+    - idp

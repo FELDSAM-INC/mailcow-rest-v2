@@ -64,7 +64,7 @@ return [
     'mailcow_inc_dir' => (string) env('RESTV2_MAILCOW_INC_DIR', '/mailcow/web/inc'),
 
     // versions.db_schema values of the supported mailcow releases (README).
-    'supported_schema_versions' => ['18082026_1200'],
+    'supported_schema_versions' => ['18082026_1200', '02112026_1600'],
 
     // mailcow.conf settings.
     'mailcow_hostname' => Env::get('MAILCOW_HOSTNAME'),

@@ -8,6 +8,7 @@ use App\Clients\Memcached\MemcachedFlusher;
 use App\Exceptions\ProblemException;
 use App\Exceptions\ValidationProblemException;
 use App\Http\Requests\Api\V2\ApiFormRequest;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Audit\AuditLogger;
 use App\Services\Auth\LegacyFactorAccountGuard;
 use App\Services\Config\MailcowConfig;
@@ -76,7 +77,7 @@ class MailboxCreator
      * details (`trigger`, `template`, `signInRequestId`).
      *
      * @param  array<string, mixed>  $input  the sent members of `MailboxCreateRequest`
-     * @param  array{templateMarker?: string, auditActor?: array{username: string|null, role: null}, auditDetails?: array<string, mixed>}  $options
+     * @param  array{templateName?: string, templateMarker?: string, auditActor?: array{username: string|null, role: null}, auditDetails?: array<string, mixed>}  $options
      */
     public function create(Principal $principal, array $input, array $options = []): MailboxCreation
     {
@@ -89,6 +90,11 @@ class MailboxCreator
         $request = array_intersect_key($input, array_flip(self::VALUE_MEMBERS));
         $resolved = $this->defaults->resolve($request, $named, $this->defaultTemplate());
         $values = $resolved->values;
+        $values['shared'] = (bool) ($input['shared'] ?? false);
+        if ($values['shared']) {
+            $values['forcePasswordChange'] = false;
+            $values['forceSecondFactorSetup'] = false;
+        }
         $baseline = $resolved->baseline;
         $domainUsage = $domain === null ? null : $this->usage->forDomain($domain->domain);
         $authSource = (string) ($input['authSource'] ?? 'mailcow');
@@ -181,6 +187,11 @@ class MailboxCreator
             return null;
         }
 
+        if (($input['shared'] ?? false) === true && $password === null) {
+            // The mailbox has no independent login; no usable password is returned to the caller.
+            return bin2hex(random_bytes(32));
+        }
+
         if ($password === null || $password === '') {
             $violations->add('password', 'required');
 
@@ -211,7 +222,7 @@ class MailboxCreator
      * record. Returns the audit record's ID.
      *
      * @param  array<string, mixed>  $values
-     * @param  array{templateMarker?: string, auditActor?: array{username: string|null, role: null}, auditDetails?: array<string, mixed>}  $options
+     * @param  array{templateName?: string, templateMarker?: string, auditActor?: array{username: string|null, role: null}, auditDetails?: array<string, mixed>}  $options
      */
     private function store(Principal $principal, MailboxAddress $address, array $values, ?HashedPassword $password, ?int $templateId, array $options = []): string
     {
@@ -243,6 +254,9 @@ class MailboxCreator
 
             try {
                 $this->insertRows($address, $values, $password, (string) ($options['templateMarker'] ?? ''));
+                if (isset($options['templateName']) && SchemaVersion::hasNovember2026Features()) {
+                    DB::update("UPDATE `mailbox` SET `attributes` = JSON_SET(`attributes`, '$.template', ?) WHERE `username` = ?", [$options['templateName'], $address->address]);
+                }
             } catch (QueryException $e) {
                 if ((int) ($e->errorInfo[1] ?? 0) === 1062) {
                     throw AddressAvailability::inUse($address->address, $this->availability->holderOf($address->address) ?? 'mailbox');
@@ -278,6 +292,10 @@ class MailboxCreator
             'tls_enforce_out' => self::flag($values['tlsEnforceOutbound']),
             'sogo_access' => self::flag($values['webmailRedirect']),
         ];
+
+        if (SchemaVersion::hasNovember2026Features()) {
+            $attributes['shared'] = self::flag($values['shared']);
+        }
 
         foreach (MailboxValues::PROTOCOLS as $protocol => $key) {
             $attributes[$key] = self::flag($values['protocolAccess'][$protocol]);

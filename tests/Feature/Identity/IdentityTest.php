@@ -5,6 +5,7 @@ namespace Tests\Feature\Identity;
 use App\Auth\AuthMethod;
 use App\Auth\PermissionFlag;
 use App\Auth\Role;
+use App\Models\Mailcow\SchemaVersion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Tests\Support\ApiKeys\ApiKeys;
@@ -44,7 +45,7 @@ class IdentityTest extends TestCase
             // user_acl-only flags are granted to domain admins
             ->assertJsonPath('data.permissions.spamAlias', true)
             ->assertJsonPath('data.pendingActions', []);
-        $this->assertCount(29, $response->json('data.permissions'));
+        $this->assertCount(count(PermissionFlag::cases()), $response->json('data.permissions'));
         $this->assertArrayNotHasKey('impersonation', $response->json('data'));
         // Feature 007 (FR-056): administrators and domain administrators learn the server setting.
         $this->assertFalse($response->json('data.webmailOnBehalfEnabled'));
@@ -95,7 +96,7 @@ class IdentityTest extends TestCase
         $response->assertJsonPath('data.scope', ['type' => 'allDomains'])
             ->assertJsonPath('data.authentication', ['method' => 'passkey']);
         foreach (PermissionFlag::cases() as $flag) {
-            $this->assertTrue($response->json('data.permissions.'.$flag->value), $flag->value);
+            $this->assertSame($flag !== PermissionFlag::MailboxGroups || SchemaVersion::hasNovember2026Features(), $response->json('data.permissions.'.$flag->value), $flag->value);
         }
     }
 

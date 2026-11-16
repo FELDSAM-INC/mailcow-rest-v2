@@ -45,6 +45,7 @@ use App\Http\Controllers\Api\V2\DomainTagController;
 use App\Http\Controllers\Api\V2\DomainTemplateBulkActionController;
 use App\Http\Controllers\Api\V2\DomainTemplateController;
 use App\Http\Controllers\Api\V2\Fail2BanActiveBanController;
+use App\Http\Controllers\Api\V2\Fail2BanAllBansLiftController;
 use App\Http\Controllers\Api\V2\Fail2BanBanAllowlistController;
 use App\Http\Controllers\Api\V2\Fail2BanBanDenylistController;
 use App\Http\Controllers\Api\V2\Fail2BanBanLiftController;
@@ -61,10 +62,12 @@ use App\Http\Controllers\Api\V2\IdentityController;
 use App\Http\Controllers\Api\V2\IdentityProviderCapabilitiesController;
 use App\Http\Controllers\Api\V2\IdentityProviderConnectionTestController;
 use App\Http\Controllers\Api\V2\IdentityProviderController;
+use App\Http\Controllers\Api\V2\IdentitySyncController;
 use App\Http\Controllers\Api\V2\ImpersonationController;
 use App\Http\Controllers\Api\V2\InstallationController;
 use App\Http\Controllers\Api\V2\IpCheckSettingController;
 use App\Http\Controllers\Api\V2\LegacyApiCorsController;
+use App\Http\Controllers\Api\V2\LegacyApiKeyController;
 use App\Http\Controllers\Api\V2\LicenseController;
 use App\Http\Controllers\Api\V2\LicenseVerificationController;
 use App\Http\Controllers\Api\V2\LivenessController;
@@ -75,6 +78,7 @@ use App\Http\Controllers\Api\V2\MailboxBulkActionController;
 use App\Http\Controllers\Api\V2\MailboxCapabilitiesController;
 use App\Http\Controllers\Api\V2\MailboxController;
 use App\Http\Controllers\Api\V2\MailboxDeletionPreviewController;
+use App\Http\Controllers\Api\V2\MailboxGroupController;
 use App\Http\Controllers\Api\V2\MailboxMailSettingsController;
 use App\Http\Controllers\Api\V2\MailboxRenameController;
 use App\Http\Controllers\Api\V2\MailboxSenderSettingsController;
@@ -176,6 +180,9 @@ use App\Http\Controllers\Api\V2\SyncJobCapabilitiesController;
 use App\Http\Controllers\Api\V2\SyncJobController;
 use App\Http\Controllers\Api\V2\SyncJobLogController;
 use App\Http\Controllers\Api\V2\SyncJobScheduleResetController;
+use App\Http\Controllers\Api\V2\SyncQueueSettingsController;
+use App\Http\Controllers\Api\V2\SyncSourceController;
+use App\Http\Controllers\Api\V2\SyncSourceOAuthController;
 use App\Http\Controllers\Api\V2\TemporaryAliasController;
 use App\Http\Controllers\Api\V2\TlsPolicyMapController;
 use App\Http\Controllers\Api\V2\TransportController;
@@ -587,6 +594,9 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->defaults('restv2.audit', ['event' => 'fail2banRulesReset', 'target' => 'fail2banRules'])
             ->name('fail2ban-rules-reset.store');
         // The network carries a percent-encoded `/` (research R30), so it matches `.+`.
+        Route::post('/fail2ban/active-bans/lift-all', [Fail2BanAllBansLiftController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'fail2banAllBansLift', 'target' => 'fail2banSettings'])
+            ->name('fail2ban-all-bans-lift.store');
         Route::post('/fail2ban/active-bans/{network}/lift', [Fail2BanBanLiftController::class, 'store'])
             ->where('network', '.+')
             ->defaults('restv2.audit', ['event' => 'fail2banBanLift', 'target' => 'fail2banActiveBan'])
@@ -599,6 +609,43 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
             ->where('network', '.+')
             ->defaults('restv2.audit', ['event' => 'fail2banBanDenylisting', 'target' => 'fail2banActiveBan'])
             ->name('fail2ban-ban-denylist.store');
+    });
+
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/mailbox-groups', [MailboxGroupController::class, 'index'])->name('mailbox-groups.index');
+        Route::get('/mailbox-groups/{groupId}', [MailboxGroupController::class, 'show'])->where('groupId', '[1-9][0-9]{0,9}')->name('mailbox-groups.show');
+        Route::get('/mailboxes/{mailbox}/groups', [MailboxGroupController::class, 'memberships'])->name('mailbox-groups.memberships');
+    });
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::post('/mailbox-groups', [MailboxGroupController::class, 'store'])
+            ->defaults('restv2.audit', ['event' => 'mailboxGroupCreation', 'target' => 'mailboxGroup'])->name('mailbox-groups.store');
+        Route::patch('/mailbox-groups/{groupId}', [MailboxGroupController::class, 'update'])->where('groupId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'mailboxGroupUpdate', 'target' => 'mailboxGroup'])->name('mailbox-groups.update');
+        Route::delete('/mailbox-groups/{groupId}', [MailboxGroupController::class, 'destroy'])->where('groupId', '[1-9][0-9]{0,9}')
+            ->defaults('restv2.audit', ['event' => 'mailboxGroupDeletion', 'target' => 'mailboxGroup'])->name('mailbox-groups.destroy');
+    });
+
+    Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
+        Route::get('/sync-queue/settings', [SyncQueueSettingsController::class, 'show'])->name('sync-queue-settings.show');
+        Route::get('/legacy-api-keys', [LegacyApiKeyController::class, 'index'])->name('legacy-api-keys.index');
+        Route::post('/legacy-api-keys', [LegacyApiKeyController::class, 'store'])->middleware(['restv2.csrf', 'restv2.not-impersonating'])->defaults('restv2.audit', ['event' => 'legacyApiKeyCreation', 'target' => 'legacyApiKey'])->name('legacy-api-keys.store');
+        Route::get('/legacy-api-keys/{legacyKeyId}', [LegacyApiKeyController::class, 'show'])->whereNumber('legacyKeyId')->name('legacy-api-keys.show');
+        Route::patch('/legacy-api-keys/{legacyKeyId}', [LegacyApiKeyController::class, 'update'])->whereNumber('legacyKeyId')->middleware(['restv2.csrf', 'restv2.not-impersonating'])->defaults('restv2.audit', ['event' => 'legacyApiKeyUpdate', 'target' => 'legacyApiKey'])->name('legacy-api-keys.update');
+        Route::delete('/legacy-api-keys/{legacyKeyId}', [LegacyApiKeyController::class, 'destroy'])->whereNumber('legacyKeyId')->middleware(['restv2.csrf', 'restv2.not-impersonating'])->defaults('restv2.audit', ['event' => 'legacyApiKeyDeletion', 'target' => 'legacyApiKey'])->name('legacy-api-keys.destroy');
+        Route::post('/legacy-api-keys/{legacyKeyId}/regenerate', [LegacyApiKeyController::class, 'regenerate'])->whereNumber('legacyKeyId')->middleware(['restv2.csrf', 'restv2.not-impersonating'])->defaults('restv2.audit', ['event' => 'legacyApiKeyRegeneration', 'target' => 'legacyApiKey'])->name('legacy-api-keys.regenerate');
+        Route::get('/sync-sources', [SyncSourceController::class, 'index'])->name('sync-sources.index');
+        Route::get('/sync-sources/{sourceId}', [SyncSourceController::class, 'show'])->where('sourceId', '[1-9][0-9]{0,9}')->name('sync-sources.show');
+        Route::get('/sync-sources/{sourceId}/connections', [SyncSourceOAuthController::class, 'connections'])->where('sourceId', '[1-9][0-9]{0,9}')->name('sync-source-connections.index');
+    });
+    Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::patch('/sync-queue/settings', [SyncQueueSettingsController::class, 'update'])->defaults('restv2.audit', ['event' => 'syncQueueSettingsUpdate', 'target' => 'syncQueue'])->name('sync-queue-settings.update');
+        Route::post('/sync-sources', [SyncSourceController::class, 'store'])->defaults('restv2.audit', ['event' => 'syncSourceCreation', 'target' => 'syncSource'])->name('sync-sources.store');
+        Route::patch('/sync-sources/{sourceId}', [SyncSourceController::class, 'update'])->where('sourceId', '[1-9][0-9]{0,9}')->defaults('restv2.audit', ['event' => 'syncSourceUpdate', 'target' => 'syncSource'])->name('sync-sources.update');
+        Route::delete('/sync-sources/{sourceId}', [SyncSourceController::class, 'destroy'])->where('sourceId', '[1-9][0-9]{0,9}')->defaults('restv2.audit', ['event' => 'syncSourceDeletion', 'target' => 'syncSource'])->name('sync-sources.destroy');
+        Route::post('/sync-sources/{sourceId}/oauth/start', [SyncSourceOAuthController::class, 'start'])->where('sourceId', '[1-9][0-9]{0,9}')->name('sync-source-oauth.start');
+        Route::post('/sync-sources/oauth/complete', [SyncSourceOAuthController::class, 'complete'])->name('sync-source-oauth.complete');
+        Route::post('/sync-sources/{sourceId}/oauth/refresh', [SyncSourceOAuthController::class, 'refresh'])->where('sourceId', '[1-9][0-9]{0,9}')->defaults('restv2.audit', ['event' => 'syncSourceConnection', 'target' => 'syncSource'])->name('sync-source-oauth.refresh');
+        Route::delete('/sync-sources/{sourceId}/connections', [SyncSourceOAuthController::class, 'disconnect'])->where('sourceId', '[1-9][0-9]{0,9}')->defaults('restv2.audit', ['event' => 'syncSourceConnection', 'target' => 'syncSource'])->name('sync-source-connections.destroy');
     });
 
     // Feature 008: sync jobs. Literal paths (bulk-actions) come before `{syncJobId}`, which is
@@ -641,9 +688,17 @@ Route::prefix('api/v2')->middleware('api.v2')->group(function (): void {
     // authenticated callers of the state-changing routes are audited).
     Route::middleware(['restv2.auth:authenticated', 'restv2.pending'])->group(function (): void {
         Route::get('/capabilities/identity-provider', [IdentityProviderCapabilitiesController::class, 'show'])->name('identity-provider-capabilities.show');
+        Route::get('/identity-provider/synchronisation', [IdentitySyncController::class, 'show'])->name('identity-sync.show');
+        Route::get('/identity-provider/links/{mailbox}', [IdentitySyncController::class, 'link'])->name('identity-sync.link');
         Route::get('/identity-provider', [IdentityProviderController::class, 'show'])->name('identity-provider.show');
     });
     Route::middleware(['restv2.auth:authenticated', 'restv2.csrf', 'restv2.pending'])->group(function (): void {
+        Route::patch('/identity-provider/synchronisation', [IdentitySyncController::class, 'update'])
+            ->defaults('restv2.audit', ['event' => 'identitySyncSettingsUpdate', 'target' => 'identityProvider'])->name('identity-sync.update');
+        Route::post('/identity-provider/synchronisation/runs', [IdentitySyncController::class, 'storeRun'])
+            ->defaults('restv2.audit', ['event' => 'identitySyncRequested', 'target' => 'identityProvider'])->name('identity-sync.request');
+        Route::delete('/identity-provider/links/{mailbox}', [IdentitySyncController::class, 'unlink'])
+            ->defaults('restv2.audit', ['event' => 'identityLinkDeletion', 'target' => 'identityProvider'])->name('identity-sync.unlink');
         Route::put('/identity-provider', [IdentityProviderController::class, 'save'])
             ->defaults('restv2.audit', ['event' => 'identityProviderCreation', 'target' => 'identityProvider'])
             ->name('identity-provider.save');

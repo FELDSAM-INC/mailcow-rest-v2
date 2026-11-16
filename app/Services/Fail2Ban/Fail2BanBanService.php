@@ -142,6 +142,26 @@ class Fail2BanBanService
         ], 'auditRecorded' => $committed];
     }
 
+    /** Queue the current automatic bans atomically; permanent denylist entries remain in place.
+     * @return array{data: array{queuedCount: int, banServiceRunning: bool}, auditRecorded: bool}
+     */
+    public function liftAll(Principal $actor): array
+    {
+        [$count, $committed] = $this->store->transaction([Fail2BanStore::ACTIVE_BANS, Fail2BanStore::UNBAN_QUEUE],
+            function (Redis $redis): array {
+                $networks = $redis->hKeys(Fail2BanStore::ACTIVE_BANS);
+
+                return [function (Redis $multi) use ($networks): void {
+                    if ($networks !== []) {
+                        $multi->hMSet(Fail2BanStore::UNBAN_QUEUE, array_fill_keys($networks, '1'));
+                    }
+                }, count($networks)];
+            }, fn (int $count) => $this->logger->record(AuditEventType::Fail2banAllBansLift, true, $actor,
+                ['type' => 'fail2banActiveBan', 'id' => null, 'name' => 'all'], null, null, ['queuedCount' => $count]));
+
+        return ['data' => ['queuedCount' => $count, 'banServiceRunning' => $this->containers->banServiceRunning()], 'auditRecorded' => $committed];
+    }
+
     /**
      * @param  list<string>  $entries  the list the network is added to
      */

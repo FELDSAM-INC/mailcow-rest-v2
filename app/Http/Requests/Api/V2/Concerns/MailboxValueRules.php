@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V2\Concerns;
 
 use App\Http\Requests\Api\V2\ApiFormRequest;
+use App\Models\Mailcow\SchemaVersion;
 use App\Rules\StrictBoolean;
 use App\Services\Mailboxes\MailboxValues;
 use App\Services\Mailboxes\UserPermissions;
@@ -29,6 +30,7 @@ trait MailboxValueRules
         $rules = [
             'quota' => ['bail', 'sometimes', 'integer', 'between:0,'.self::MAX_QUOTA],
             'status' => ['bail', 'sometimes', 'string', 'in:'.implode(',', array_keys(MailboxValues::STATUSES))],
+            'shared' => $flag,
             'forcePasswordChange' => $flag,
             'forceSecondFactorSetup' => $flag,
             'webmailRedirect' => $flag,
@@ -77,6 +79,12 @@ trait MailboxValueRules
         ];
 
         foreach ($body as $member => $value) {
+            if ($member === 'shared' && ! SchemaVersion::hasNovember2026Features()) {
+                $violations[$member] = ApiFormRequest::make('immutable', [], 'Shared mailboxes require mailcow 2026-11.');
+
+                continue;
+            }
+
             if (! in_array((string) $member, $members, true)) {
                 $violations[(string) $member] = ApiFormRequest::make('immutable', [], 'This member cannot be set here.');
 

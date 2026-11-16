@@ -181,11 +181,11 @@ class UpdateSyncJobTest extends TestCase
 
     public function test_members_sent_with_their_stored_value_are_accepted_even_if_they_predate_the_rules(): void
     {
-        $legacy = $this->mailcow()->syncJob('a@example.org', ['host1' => 'bad_host', 'user1' => 'legacy', 'custom_params' => '--removed-option']);
+        $legacy = $this->mailcow()->syncJob('a@example.org', ['host1' => 'bad_host', 'user1' => 'legacy', 'custom_params' => '--removedoption']);
         $this->asSyncUser('a@example.org');
 
         $this->patchSyncJob($legacy, ['active' => false])->assertOk();
-        $this->patchSyncJob($legacy, ['remoteHost' => 'bad_host', 'customParameters' => '--removed-option', 'active' => true])->assertOk();
+        $this->patchSyncJob($legacy, ['remoteHost' => 'bad_host', 'customParameters' => '--removedoption', 'active' => true])->assertOk();
         $this->patchSyncJob($legacy, ['remoteHost' => 'other_bad'])->assertUnprocessable()
             ->assertJsonPath('errors.remoteHost.0.code', 'invalidFormat');
         $this->assertSame('bad_host', $this->syncJobRow($legacy)?->host1);

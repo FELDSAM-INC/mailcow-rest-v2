@@ -1,0 +1,52 @@
+type: object
+required:
+- supported
+- provider
+- canSync
+- enabled
+- settings
+- counts
+- runs
+- etag
+properties:
+  supported:
+    type: boolean
+  provider:
+    oneOf:
+    - $ref: ./IdentityProviderType.yaml
+    - type: 'null'
+  canSync:
+    type: boolean
+  enabled:
+    type: boolean
+  settings:
+    $ref: ./IdentitySyncSettings.yaml
+  counts:
+    type: object
+    required:
+    - accounts
+    - linked
+    - disabled
+    - missing
+    properties:
+      accounts:
+        type: integer
+        minimum: 0
+      linked:
+        type: integer
+        minimum: 0
+      disabled:
+        type: integer
+        minimum: 0
+      missing:
+        type: integer
+        minimum: 0
+    additionalProperties: false
+  runs:
+    type: array
+    maxItems: 10
+    items:
+      $ref: ./IdentitySyncRun.yaml
+  etag:
+    type: string
+additionalProperties: false

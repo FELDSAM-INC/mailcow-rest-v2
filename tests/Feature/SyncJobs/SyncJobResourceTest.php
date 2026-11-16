@@ -4,8 +4,8 @@ namespace Tests\Feature\SyncJobs;
 
 use App\Http\Resources\Api\V2\SyncJobResource;
 use App\Models\Mailcow\SyncJob;
+use App\Services\SyncJobs\SyncJobQuery;
 use App\Services\SyncJobs\SyncJobVersion;
-use Illuminate\Support\Facades\DB;
 use Tests\Support\Contract\OpenApiContract;
 use Tests\TestCase;
 
@@ -30,7 +30,7 @@ class SyncJobResourceTest extends TestCase
     private function render(array $overrides = [], bool $logAvailable = false): array
     {
         $id = $this->mailcow()->syncJob('alice@example.org', $overrides);
-        $job = SyncJob::query()->findOrFail($id);
+        $job = SyncJobQuery::base()->findOrFail($id);
         $data = SyncJobResource::present($job, $logAvailable);
 
         $this->assertSame([], OpenApiContract::shared()->validateComponent($data, 'SyncJob'));
@@ -74,7 +74,7 @@ class SyncJobResourceTest extends TestCase
         $this->assertSame('2026-10-18T10:00:00Z', $data['createdAt']);
         $this->assertNull($data['modifiedAt']);
         $this->assertTrue($data['runStatus']['logAvailable']);
-        $this->assertSame((new SyncJobVersion)->forRow(DB::table('imapsync')->where('id', $data['id'])->first() ?? (object) []), $data['etag']);
+        $this->assertSame((new SyncJobVersion)->of(SyncJobQuery::base()->findOrFail($data['id'])), $data['etag']);
     }
 
     public function test_the_run_status_follows_the_runner_s_columns(): void

@@ -4,7 +4,6 @@ namespace App\Services\SyncJobs;
 
 use App\Models\Mailcow\SyncJob;
 use App\Support\Http\ETag;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Version tags of sync jobs (feature 008 research R4, FR-020): 001's strong ETag over the stored
@@ -32,9 +31,9 @@ class SyncJobVersion
     /** The tag of a stored job, or null when it does not exist. */
     public function ofId(int $id): ?string
     {
-        $row = DB::table('imapsync')->where('id', $id)->first();
+        $row = SyncJobQuery::base()->whereKey($id)->first();
 
-        return $row === null ? null : $this->forRow($row);
+        return $row === null ? null : $this->of($row);
     }
 
     /**
@@ -46,7 +45,7 @@ class SyncJobVersion
     {
         $flag = fn (string $column): string => (int) ($row->{$column} ?? 0) !== 0 ? '1' : '0';
 
-        return [
+        $values = [
             (int) $row->id,
             (string) $row->user2,
             (string) $row->host1,
@@ -65,5 +64,9 @@ class SyncJobVersion
             (string) $row->custom_params,
             $flag('active'),
         ];
+
+        // Changes made through legacy source management must invalidate an open editor too.
+        return isset($row->source_id) ? [...$values, (int) $row->source_id, (string) $row->authmech1,
+            $flag('verify_cert'), $flag('source_active'), (int) ($row->prio ?? 0)] : $values;
     }
 }

@@ -34,12 +34,12 @@ class SyncJobDuplicateGuard
     public function run(string $user2, string $user1, string $host1, ?int $exceptId, Closure $write): mixed
     {
         return $this->locks->run([self::lockName($user2, $user1, $host1)], fn (): mixed => DB::transaction(function () use ($user2, $user1, $host1, $exceptId, $write): mixed {
-            $duplicate = DB::table('imapsync')
-                ->where('user2', $user2)
-                ->where('user1', $user1)
-                ->where('host1', $host1)
-                ->when($exceptId !== null, fn ($query) => $query->where('id', '<>', $exceptId))
-                ->value('id');
+            $duplicate = SyncJobQuery::base()
+                ->where('imapsync.user2', $user2)
+                ->where('imapsync.user1', $user1)
+                ->where(SyncJobQuery::hostColumn(), $host1)
+                ->when($exceptId !== null, fn ($query) => $query->where('imapsync.id', '<>', $exceptId))
+                ->value('imapsync.id');
 
             if ($duplicate !== null) {
                 throw new ProblemException(ProblemType::SyncJobExists, null, ['syncJobId' => (int) $duplicate]);

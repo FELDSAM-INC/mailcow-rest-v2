@@ -2,10 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\Mailcow\SchemaVersion;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 /**
@@ -832,7 +834,7 @@ class MailcowRows
      */
     public function syncJob(string $user2, array $overrides = []): int
     {
-        return (int) DB::table('imapsync')->insertGetId(array_merge([
+        $values = array_merge([
             'user2' => $user2,
             'exclude' => '(?i)spam|(?i)junk',
             'delete1' => 0,
@@ -856,7 +858,27 @@ class MailcowRows
             'delete2duplicates' => 1,
             'custom_params' => '',
             'active' => 1,
-        ], $overrides));
+        ], $overrides);
+        if (SchemaVersion::hasNovember2026Features()) {
+            $source = ['name' => 'Fixture '.Str::uuid(), 'created_by' => $user2, 'scope' => 'user', 'active' => 1, 'verify_cert' => 1];
+            foreach (['host1', 'port1', 'enc1', 'authmech1'] as $column) {
+                $source[$column === 'authmech1' ? 'auth_type' : $column] = $values[$column];
+                unset($values[$column]);
+            }
+            $values['source_id'] ??= DB::table('imapsync_source')->insertGetId($source);
+            DB::table('imapsync_source_user')->insert(['source_id' => $values['source_id'], 'username' => $user2]);
+            $text = (string) $values['custom_params'];
+            if (! str_starts_with(ltrim($text), '[')) {
+                $pairs = [];
+                foreach (preg_split('/\s+(?=--)/', trim($text), -1, PREG_SPLIT_NO_EMPTY) ?: [] as $arg) {
+                    [$name, $value] = array_pad(explode('=', ltrim($arg, '-'), 2), 2, '');
+                    $pairs[] = ['o' => $name, 'v' => $value];
+                }
+                $values['custom_params'] = json_encode($pairs, JSON_THROW_ON_ERROR);
+            }
+        }
+
+        return (int) DB::table('imapsync')->insertGetId($values);
     }
 
     /**

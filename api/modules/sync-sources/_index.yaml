@@ -1,0 +1,12 @@
+/sync-sources:
+  $ref: ./sources.yaml
+/sync-sources/{sourceId}:
+  $ref: ./source.yaml
+/sync-sources/{sourceId}/connections:
+  $ref: ./connections.yaml
+/sync-sources/{sourceId}/oauth/start:
+  $ref: ./oauth-start.yaml
+/sync-sources/oauth/complete:
+  $ref: ./oauth-complete.yaml
+/sync-sources/{sourceId}/oauth/refresh:
+  $ref: ./oauth-refresh.yaml

@@ -16,6 +16,7 @@ use App\Support\Http\ETag;
 use App\Support\Http\FieldViolations;
 use Illuminate\Support\Facades\DB;
 use stdClass;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 
@@ -40,7 +41,7 @@ use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 class AliasUpdater
 {
     /** Read-only members of `AliasPatch`; `etag` is ignored. */
-    public const READ_ONLY = ['id', 'addressUnicode', 'kind', 'domain', 'domainUnicode', 'inAliasDomain', 'primaryDomain', 'primaryDomainUnicode', 'createdAt', 'modifiedAt', 'orphaned'];
+    public const READ_ONLY = ['id', 'groupId', 'addressUnicode', 'kind', 'domain', 'domainUnicode', 'inAliasDomain', 'primaryDomain', 'primaryDomainUnicode', 'createdAt', 'modifiedAt', 'orphaned'];
 
     public function __construct(
         private readonly AliasRules $rules,
@@ -191,6 +192,10 @@ class AliasUpdater
             throw new NotFoundHttpException('The alias does not exist.');
         }
 
+        if (($row->group_id ?? null) !== null) {
+            throw new AccessDeniedHttpException('This address is managed by a mailbox group. Change it through the group.');
+        }
+
         return $row;
     }
 
@@ -295,6 +300,7 @@ class AliasUpdater
         $resulting = $address === null ? null : self::derived($address);
         $fixed = [
             'id' => (int) $row->id,
+            'groupId' => isset($row->group_id) ? (int) $row->group_id : null,
             'createdAt' => DomainPresenter::time($row->created),
             'modifiedAt' => DomainPresenter::time($row->modified),
         ];

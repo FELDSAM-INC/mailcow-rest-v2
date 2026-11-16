@@ -26,3 +26,6 @@ properties:
   domainRelayhost: {type: boolean}
   domainDesc: {type: boolean}
   aliasExternalGoto: {type: boolean}
+  mailboxGroups:
+    type: boolean
+    description: Manage mailbox groups (mailcow 2026-11 or newer).

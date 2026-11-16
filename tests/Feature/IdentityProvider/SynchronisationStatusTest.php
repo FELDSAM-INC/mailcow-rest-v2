@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\IdentityProvider;
 
+use App\Models\Mailcow\SchemaVersion;
 use Carbon\CarbonImmutable;
 use Tests\Support\IdentityProvider\IdentityProviderTestHelpers;
 use Tests\TestCase;
@@ -18,6 +19,9 @@ class SynchronisationStatusTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        if (SchemaVersion::hasNovember2026Features()) {
+            $this->markTestSkipped('Legacy cron log; November run status is covered by IdentitySyncTest.');
+        }
 
         // A fixed time after the real one: cookies set with a travelled expiry in the past would
         // count as cleared.

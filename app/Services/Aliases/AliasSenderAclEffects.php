@@ -2,6 +2,8 @@
 
 namespace App\Services\Aliases;
 
+use App\Services\Mailboxes\GroupDataLifecycle;
+use App\Services\SenderSettings\ManualSenderPermissions;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -28,16 +30,17 @@ class AliasSenderAclEffects
             return;
         }
 
-        DB::table('sender_acl')->where('send_as', $address)->whereIn('logged_in_as', $destination->addresses)->delete();
+        ManualSenderPermissions::query()->where('send_as', $address)->whereIn('logged_in_as', $destination->addresses)->delete();
     }
 
     public function moved(string $old, string $new): void
     {
+        app(GroupDataLifecycle::class)->addressRenamed($old, $new);
         if (mb_strtolower($old) !== mb_strtolower($new)) {
-            $holders = DB::table('sender_acl')->where('send_as', $old)->where('external', 0)->pluck('logged_in_as')->all();
+            $holders = ManualSenderPermissions::query()->where('send_as', $old)->where('external', 0)->pluck('logged_in_as')->all();
 
             if ($holders !== []) {
-                DB::table('sender_acl')->where('send_as', $new)->where('external', 0)->whereIn('logged_in_as', $holders)->delete();
+                ManualSenderPermissions::query()->where('send_as', $new)->where('external', 0)->whereIn('logged_in_as', $holders)->delete();
             }
         }
 
@@ -47,6 +50,8 @@ class AliasSenderAclEffects
     /** Removes every sender permission for the address; returns how many were removed. */
     public function deleted(string $address): int
     {
+        app(GroupDataLifecycle::class)->addressDeleted($address);
+
         return DB::table('sender_acl')->where('send_as', $address)->delete();
     }
 }

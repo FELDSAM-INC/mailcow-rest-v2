@@ -45,3 +45,6 @@ properties:
   domainRelayhost: {type: boolean, description: 'Change a domain''s relayhost (`da_acl.domain_relayhost`).'}
   domainDesc: {type: boolean, description: 'Change the domain description (`da_acl.domain_desc`).'}
   aliasExternalGoto: {type: boolean, description: 'Allow aliases with external destinations (`da_acl.alias_external_goto`).'}
+  mailboxGroups:
+    type: boolean
+    description: Manage mailbox groups (mailcow 2026-11 or newer).

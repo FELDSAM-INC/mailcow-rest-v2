@@ -17,6 +17,7 @@ use App\Clients\Releases\ReleaseSource;
 use App\Clients\Rspamd\RspamdController;
 use App\Clients\Rspamd\SettingsMapClient;
 use App\Clients\Smtp\SmtpProbe;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Auth\SessionManager;
 use App\Services\Dkim\DkimDnsPublisher;
 use App\Support\Clock\Clock;
@@ -31,6 +32,7 @@ use LogicException;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Clock\FakeSleeper;
+use Tests\Support\Contract\ContractCoverageRecorder;
 use Tests\Support\Contract\OpenApiContract;
 use Tests\Support\Dkim\DkimAssertions;
 use Tests\Support\Dns\FakeClock;
@@ -107,6 +109,7 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        ContractCoverageRecorder::$schemaVersion ??= SchemaVersion::current();
 
         // Some controllers bound their request with set_time_limit() (feature 011: the container
         // service timeout plus 20 s). In the one PHPUnit process that limit would outlive the

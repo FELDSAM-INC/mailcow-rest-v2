@@ -3,6 +3,7 @@
 namespace Tests\Feature\DomainAdmins;
 
 use App\Audit\AuditEventType;
+use App\Services\Accounts\DomainAdminFlags;
 use App\Services\Audit\AuditLogger;
 use App\Support\Hashing\LegacyPasswordVerifier;
 use Database\Factories\MailcowRows;
@@ -56,7 +57,7 @@ class CreateDomainAdminTest extends TestCase
         $this->assertSame(['force_tfa' => '0', 'force_pw_update' => '0'], $this->adminAttributes('reseller1'));
         $this->assertTrue($this->app->make(LegacyPasswordVerifier::class)->verify((string) DB::table('admin')->where('username', 'reseller1')->value('password'), self::PASSWORD));
         $this->assertAssignments('reseller1', [['a.example', 1], ['b.example', 1]]);
-        $this->assertDaAcl('reseller1', array_combine(array_values(self::FLAG_COLUMNS), array_map('intval', array_values($this->flagDefaults()))));
+        $this->assertDaAcl('reseller1', array_combine(array_values(DomainAdminFlags::availableColumns()), array_map('intval', array_values($this->flagDefaults()))));
 
         $this->forgetCookies();
         $this->passwordSignIn('reseller1', self::PASSWORD)->assertCreated()->assertJsonPath('data.role', 'domainAdmin');

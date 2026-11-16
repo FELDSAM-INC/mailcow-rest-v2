@@ -9,6 +9,7 @@ use App\Audit\AuditEventType;
  */
 enum SyncJobBulkAction: string
 {
+    case Prioritize = 'prioritize';
     case Activate = 'activate';
     case Deactivate = 'deactivate';
     case Reschedule = 'reschedule';
@@ -18,7 +19,7 @@ enum SyncJobBulkAction: string
     public function auditEvent(): AuditEventType
     {
         return match ($this) {
-            self::Activate, self::Deactivate => AuditEventType::SyncJobUpdate,
+            self::Activate, self::Deactivate, self::Prioritize => AuditEventType::SyncJobUpdate,
             self::Reschedule => AuditEventType::SyncJobReschedule,
             self::Delete => AuditEventType::SyncJobDeletion,
         };

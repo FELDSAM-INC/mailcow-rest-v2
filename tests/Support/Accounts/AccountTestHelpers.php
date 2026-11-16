@@ -81,7 +81,11 @@ trait AccountTestHelpers
             ->all();
         $flags = [];
 
-        foreach (self::FLAG_COLUMNS as $name => $column) {
+        $columns = self::FLAG_COLUMNS;
+        if (array_key_exists('mailbox_groups', $defaults)) {
+            $columns['mailboxGroups'] = 'mailbox_groups';
+        }
+        foreach ($columns as $name => $column) {
             $flags[$name] = (int) trim((string) ($defaults[$column] ?? '0'), "'") === 1;
         }
 

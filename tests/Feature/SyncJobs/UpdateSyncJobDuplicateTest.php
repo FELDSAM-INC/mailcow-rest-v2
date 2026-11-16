@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\SyncJobs;
 
+use App\Models\Mailcow\SchemaVersion;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\SyncJobs\SyncJobTestHelpers;
 use Tests\TestCase;
@@ -44,6 +45,12 @@ class UpdateSyncJobDuplicateTest extends TestCase
         $queries = implode("\n", array_column(DB::getQueryLog(), 'query'));
         DB::disableQueryLog();
 
-        $this->assertStringNotContainsString('GET_LOCK', $queries);
+        if (SchemaVersion::hasNovember2026Features()) {
+            $bindings = array_merge(...array_column(DB::getQueryLog(), 'bindings'));
+            $this->assertContains('restv2_sync_sources', $bindings);
+            $this->assertSame([], array_filter($bindings, fn ($binding) => is_string($binding) && str_starts_with($binding, 'restv2_syncjob_')));
+        } else {
+            $this->assertStringNotContainsString('GET_LOCK', $queries);
+        }
     }
 }

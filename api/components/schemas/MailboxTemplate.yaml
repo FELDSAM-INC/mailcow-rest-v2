@@ -87,3 +87,9 @@ properties:
     type: string
     readOnly: true
     description: Version tag of the template's name and values, equal to the `ETag` header of a single read.
+  applicationWarnings:
+    type: array
+    readOnly: true
+    description: Failures applying this template to its effective mailbox-group members after an edit.
+    items:
+      type: string

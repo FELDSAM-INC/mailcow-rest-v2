@@ -43,6 +43,9 @@ required:
   - modifiedAt
   - etag
 properties:
+  shared:
+    type: boolean
+    description: Shared mailbox without independent sign-in (requires mailcow 2026-11 for writes). Creation can omit the password; an unexposed random password is stored.
   address:
     type: string
     readOnly: true

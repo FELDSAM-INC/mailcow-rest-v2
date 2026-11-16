@@ -57,10 +57,11 @@ class AccountResolver
                 ->join('domain', 'mailbox.domain', '=', 'domain.domain')
                 ->where('mailbox.username', $username)
                 ->toBase()
-                ->first(['mailbox.password', 'mailbox.kind', 'mailbox.authsource', 'mailbox.active', 'domain.active as d_active']);
+                ->first(['mailbox.password', 'mailbox.kind', 'mailbox.authsource', 'mailbox.attributes', 'mailbox.active', 'domain.active as d_active']);
 
             if ($mailbox !== null) {
                 $candidates[] = new AccountCandidate($username, Role::MailboxUser, (string) $mailbox->password, match (true) {
+                    (int) (json_decode((string) $mailbox->attributes, true)['shared'] ?? 0) === 1 => CandidateStatus::Inactive,
                     preg_match('/'.Mailbox::RESOURCE_KIND_PATTERN.'/i', (string) $mailbox->kind) === 1 => CandidateStatus::Inactive,
                     ($mailbox->authsource ?? 'mailcow') !== 'mailcow' => CandidateStatus::ExternalIdentitySource,
                     (int) $mailbox->active !== 1 || (int) $mailbox->d_active !== 1 => CandidateStatus::Inactive,
@@ -148,6 +149,7 @@ class AccountResolver
             ->select('mailbox.*', 'domain.active as d_active')
             ->join('domain', 'mailbox.domain', '=', 'domain.domain')
             ->whereRaw('`mailbox`.`kind` NOT REGEXP ?', [Mailbox::RESOURCE_KIND_PATTERN])
+            ->whereRaw("COALESCE(JSON_VALUE(`mailbox`.`attributes`, '$.shared'), '0') <> '1'")
             ->where('mailbox.username', $username)
             ->first();
     }

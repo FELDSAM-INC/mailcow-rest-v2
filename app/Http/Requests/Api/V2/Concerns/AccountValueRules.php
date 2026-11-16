@@ -42,7 +42,7 @@ trait AccountValueRules
     {
         $rules = ['permissions' => ['bail', 'sometimes', 'array']];
 
-        foreach (array_keys(DomainAdminFlags::COLUMNS) as $name) {
+        foreach (array_keys(DomainAdminFlags::availableColumns()) as $name) {
             $rules['permissions.'.$name] = ['bail', 'sometimes', new StrictBoolean];
         }
 

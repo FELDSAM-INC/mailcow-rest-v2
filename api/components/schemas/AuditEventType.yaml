@@ -1,164 +1,181 @@
 type: string
-description: Audited event. Later features add values; clients must tolerate unknown ones.
+description: Audited event. Later features add values; clients must tolerate unknown
+  ones.
 enum:
-  - signIn
-  - signOut
-  - preferencesUpdate
-  - passkeyRegistration
-  - passkeyRename
-  - passkeyRemoval
-  - apiKeyCreation
-  - apiKeyRevocation
-  - syncJobCreation
-  - syncJobUpdate
-  - syncJobReschedule
-  - syncJobDeletion
-  - domainCreation
-  - domainUpdate
-  - domainDeletion
-  - domainFooterUpdate
-  - domainTemplateCreation
-  - domainTemplateUpdate
-  - domainTemplateDeletion
-  - dkimKeyGeneration
-  - dkimKeyImport
-  - dkimKeyCopy
-  - dkimKeyDeletion
-  - dkimPrivateKeyExport
-  - dkimDnsPublication
-  - mtaStsPolicyCreation
-  - mtaStsPolicyUpdate
-  - mailboxCreation
-  - mailboxUpdate
-  - mailboxDeletion
-  - mailboxRename
-  - mailboxTemplateCreation
-  - mailboxTemplateUpdate
-  - mailboxTemplateDeletion
-  - identityProviderCreation
-  - identityProviderUpdate
-  - identityProviderDeletion
-  - identityProviderConnectionTest
-  - identityProviderSessionEnd
-  - oauth2ClientCreation
-  - oauth2ClientUpdate
-  - oauth2ClientSecretRegeneration
-  - oauth2ClientTokenRevocation
-  - oauth2ClientDeletion
-  - adminCreation
-  - adminUpdate
-  - adminDeletion
-  - adminSecondFactorSuspension
-  - domainAdminCreation
-  - domainAdminUpdate
-  - domainAdminDeletion
-  - domainAdminSecondFactorSuspension
-  - ssoTokenIssue
-  - impersonationStart
-  - impersonationEnd
-  - webmailSignInOnBehalf
-  - relayhostCreation
-  - relayhostUpdate
-  - relayhostDeletion
-  - relayhostTest
-  - relayhostAssignmentUpdate
-  - transportCreation
-  - transportUpdate
-  - transportDeletion
-  - transportTest
-  - bccMapCreation
-  - bccMapUpdate
-  - bccMapDeletion
-  - recipientMapCreation
-  - recipientMapUpdate
-  - recipientMapDeletion
-  - tlsPolicyMapCreation
-  - tlsPolicyMapUpdate
-  - tlsPolicyMapDeletion
-  - forwardingHostCreation
-  - forwardingHostUpdate
-  - forwardingHostDeletion
-  - containerStart
-  - containerStop
-  - containerRestart
-  - mailQueueDelivery
-  - mailQueueHold
-  - mailQueueRelease
-  - mailQueueDeletion
-  - mailQueueFlush
-  - mailQueuePurge
-  - mailQueueMessageView
-  - fail2banSettingsUpdate
-  - fail2banRulesReplacement
-  - fail2banRulesReset
-  - fail2banBanLift
-  - fail2banBanAllowlisting
-  - fail2banBanDenylisting
-  - fail2banBanListIdRotation
-  - quarantineItemRelease
-  - quarantineItemSpamLearning
-  - quarantineItemDeletion
-  - quarantineSettingsUpdate
-  - quarantineNotificationSettingsUpdate
-  - spamScoreUpdate
-  - spamScoreReset
-  - spamPolicyEntryCreation
-  - spamPolicyEntryRemoval
-  - rateLimitUpdate
-  - rateLimitRemoval
-  - rateLimitBucketReset
-  - logoReplacement
-  - logoDeletion
-  - uiTextsUpdate
-  - loginPageUpdate
-  - appLinksUpdate
-  - brandColorsUpdate
-  - ipCheckUpdate
-  - passwordPolicyUpdate
-  - passwordResetNotificationUpdate
-  - quotaNotificationUpdate
-  - quotaNotificationRecipientsUpdate
-  - rspamdSettingsRuleCreation
-  - rspamdSettingsRuleUpdate
-  - rspamdSettingsRuleDeletion
-  - rspamdRegexMapReplacement
-  - globalSieveFilterReplacement
-  - rspamdUiPasswordChange
-  - legacyApiCorsUpdate
-  - massMailJobCreation
-  - massMailJobCompletion
-  - massMailJobCancellation
-  - licenseVerification
-  - aliasCreation
-  - aliasUpdate
-  - aliasDeletion
-  - aliasDomainCreation
-  - aliasDomainUpdate
-  - aliasDomainDeletion
-  - resourceCreation
-  - resourceUpdate
-  - resourceDeletion
-  - mailboxSenderSettingsUpdate
-  - ownPasswordChange
-  - ownSecondFactorEnrolment
-  - ownSecondFactorRemoval
-  - ownRecoveryEmailChange
-  - passwordResetRequest
-  - passwordResetCompletion
-  - appPasswordCreation
-  - appPasswordUpdate
-  - appPasswordDeletion
-  - temporaryAliasCreation
-  - temporaryAliasUpdate
-  - temporaryAliasDeletion
-  - sieveFilterCreation
-  - sieveFilterUpdate
-  - sieveFilterDeletion
-  - pushNotificationSettingsUpdate
-  - pushNotificationSettingsDeletion
-  - pushNotificationVerification
-  - mailSettingsUpdate
-  - recentLoginsClear
-  - activeSyncCacheReset
-  - groupwareProfileReset
-  - webmailHandOff
+- signIn
+- signOut
+- preferencesUpdate
+- passkeyRegistration
+- passkeyRename
+- passkeyRemoval
+- apiKeyCreation
+- apiKeyRevocation
+- syncJobCreation
+- syncJobUpdate
+- syncJobReschedule
+- syncJobDeletion
+- domainCreation
+- domainUpdate
+- domainDeletion
+- domainFooterUpdate
+- domainTemplateCreation
+- domainTemplateUpdate
+- domainTemplateDeletion
+- dkimKeyGeneration
+- dkimKeyImport
+- dkimKeyCopy
+- dkimKeyDeletion
+- dkimPrivateKeyExport
+- dkimDnsPublication
+- mtaStsPolicyCreation
+- mtaStsPolicyUpdate
+- mailboxCreation
+- mailboxUpdate
+- mailboxDeletion
+- mailboxRename
+- mailboxTemplateCreation
+- mailboxTemplateUpdate
+- mailboxTemplateDeletion
+- identityProviderCreation
+- identityProviderUpdate
+- identityProviderDeletion
+- identityProviderConnectionTest
+- identitySyncSettingsUpdate
+- identitySyncRequested
+- identityLinkDeletion
+- identityProviderSessionEnd
+- oauth2ClientCreation
+- oauth2ClientUpdate
+- oauth2ClientSecretRegeneration
+- oauth2ClientTokenRevocation
+- oauth2ClientDeletion
+- adminCreation
+- adminUpdate
+- adminDeletion
+- adminSecondFactorSuspension
+- domainAdminCreation
+- domainAdminUpdate
+- domainAdminDeletion
+- domainAdminSecondFactorSuspension
+- ssoTokenIssue
+- impersonationStart
+- impersonationEnd
+- webmailSignInOnBehalf
+- relayhostCreation
+- relayhostUpdate
+- relayhostDeletion
+- relayhostTest
+- relayhostAssignmentUpdate
+- transportCreation
+- transportUpdate
+- transportDeletion
+- transportTest
+- bccMapCreation
+- bccMapUpdate
+- bccMapDeletion
+- recipientMapCreation
+- recipientMapUpdate
+- recipientMapDeletion
+- tlsPolicyMapCreation
+- tlsPolicyMapUpdate
+- tlsPolicyMapDeletion
+- forwardingHostCreation
+- forwardingHostUpdate
+- forwardingHostDeletion
+- containerStart
+- containerStop
+- containerRestart
+- mailQueueDelivery
+- mailQueueHold
+- mailQueueRelease
+- mailQueueDeletion
+- mailQueueFlush
+- mailQueuePurge
+- mailQueueMessageView
+- fail2banSettingsUpdate
+- fail2banRulesReplacement
+- fail2banRulesReset
+- fail2banBanLift
+- fail2banAllBansLift
+- fail2banBanAllowlisting
+- fail2banBanDenylisting
+- fail2banBanListIdRotation
+- quarantineItemRelease
+- quarantineItemSpamLearning
+- quarantineItemDeletion
+- quarantineSettingsUpdate
+- quarantineNotificationSettingsUpdate
+- spamScoreUpdate
+- spamScoreReset
+- spamPolicyEntryCreation
+- spamPolicyEntryRemoval
+- rateLimitUpdate
+- rateLimitRemoval
+- rateLimitBucketReset
+- logoReplacement
+- logoDeletion
+- uiTextsUpdate
+- loginPageUpdate
+- appLinksUpdate
+- brandColorsUpdate
+- ipCheckUpdate
+- passwordPolicyUpdate
+- passwordResetNotificationUpdate
+- quotaNotificationUpdate
+- quotaNotificationRecipientsUpdate
+- rspamdSettingsRuleCreation
+- rspamdSettingsRuleUpdate
+- rspamdSettingsRuleDeletion
+- rspamdRegexMapReplacement
+- globalSieveFilterReplacement
+- rspamdUiPasswordChange
+- legacyApiCorsUpdate
+- massMailJobCreation
+- massMailJobCompletion
+- massMailJobCancellation
+- licenseVerification
+- aliasCreation
+- aliasUpdate
+- aliasDeletion
+- aliasDomainCreation
+- aliasDomainUpdate
+- aliasDomainDeletion
+- resourceCreation
+- resourceUpdate
+- resourceDeletion
+- mailboxSenderSettingsUpdate
+- ownPasswordChange
+- ownSecondFactorEnrolment
+- ownSecondFactorRemoval
+- ownRecoveryEmailChange
+- passwordResetRequest
+- passwordResetCompletion
+- appPasswordCreation
+- appPasswordUpdate
+- appPasswordDeletion
+- temporaryAliasCreation
+- temporaryAliasUpdate
+- temporaryAliasDeletion
+- sieveFilterCreation
+- sieveFilterUpdate
+- sieveFilterDeletion
+- pushNotificationSettingsUpdate
+- pushNotificationSettingsDeletion
+- pushNotificationVerification
+- mailSettingsUpdate
+- recentLoginsClear
+- activeSyncCacheReset
+- groupwareProfileReset
+- webmailHandOff
+- mailboxGroupCreation
+- mailboxGroupUpdate
+- mailboxGroupDeletion
+- syncSourceCreation
+- syncSourceUpdate
+- syncSourceDeletion
+- syncSourceConnection
+- syncQueueSettingsUpdate
+- legacyApiKeyCreation
+- legacyApiKeyUpdate
+- legacyApiKeyDeletion
+- legacyApiKeyRegeneration

@@ -101,6 +101,7 @@ class MonitoringAuthorizationTest extends TestCase
             'replaceFail2BanRules' => ['PUT', '/api/v2/fail2ban/rules', ['rules' => ['new (\\d+)']], 'fail2banRulesReplacement', 'fail2banRules'],
             'resetFail2BanRules' => ['POST', '/api/v2/fail2ban/rules/reset', null, 'fail2banRulesReset', 'fail2banRules'],
             'listFail2BanActiveBans' => ['GET', '/api/v2/fail2ban/active-bans', null, null, null],
+            'liftAllFail2BanBans' => ['POST', '/api/v2/fail2ban/active-bans/lift-all', null, 'fail2banAllBansLift', 'fail2banSettings'],
             'liftFail2BanBan' => ['POST', '/api/v2/fail2ban/active-bans/203.0.113.0%2F24/lift', null, 'fail2banBanLift', 'fail2banActiveBan'],
             'allowlistFail2BanBan' => ['POST', '/api/v2/fail2ban/active-bans/203.0.113.0%2F24/allowlist', null, 'fail2banBanAllowlisting', 'fail2banActiveBan'],
             'denylistFail2BanBan' => ['POST', '/api/v2/fail2ban/active-bans/203.0.113.0%2F24/denylist', null, 'fail2banBanDenylisting', 'fail2banActiveBan'],
@@ -260,7 +261,7 @@ class MonitoringAuthorizationTest extends TestCase
         }
 
         $this->assertEqualsCanonicalizing(FeatureRegistry::load()->features['011-monitoring-operations']['operations'], array_values(array_unique($covered)));
-        $this->assertCount(42, array_unique($covered));
+        $this->assertCount(43, array_unique($covered));
     }
 
     #[DataProvider('cases')]

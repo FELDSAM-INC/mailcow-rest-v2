@@ -6,9 +6,12 @@ use App\Auth\IdentityProviderType;
 use App\Clients\Keycloak\KeycloakAdminClient;
 use App\Clients\Ldap\LdapConnectionSettings;
 use App\Clients\Ldap\LdapDirectory;
+use App\Clients\Ldap\LdapResult;
 use App\Clients\Ldap\LdapStatus;
 use App\Clients\Oidc\OidcFailure;
+use App\Models\Mailcow\SchemaVersion;
 use App\Support\Hashing\LegacyPasswordVerifier;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Verifies a mailbox user's password at the identity provider (FR-029, research R2, R3), ports of
@@ -55,12 +58,19 @@ class ProviderPasswordVerifier
     {
         $settings = LdapConnectionSettings::fromConfig($config);
         $attributes = array_values(array_filter([$settings->usernameField, $settings->attributeField, 'displayname', 'distinguishedname', 'dn'], fn (?string $a): bool => $a !== null && $a !== ''));
+        $idAttributes = [];
+        if (SchemaVersion::hasNovember2026Features()) {
+            $configured = DB::table('identity_provider')->where('key', 'id_attribute')->value('value');
+            $idAttributes = is_string($configured) && $configured !== '' ? [strtolower($configured)] : ['objectguid', 'entryuuid', 'nsuniqueid', 'ipauniqueid'];
+            $attributes = array_values(array_unique([...$attributes, ...$idAttributes]));
+        }
         $result = $this->ldap->findAndBind($settings, $username, $password, $attributes);
 
         return match ($result->status) {
             LdapStatus::Ok => ProviderVerification::verified(
                 $settings->attributeField === null ? null : $result->first($settings->attributeField),
                 $result->first('displayname'),
+                self::ldapIdentity($result, $idAttributes),
             ),
             LdapStatus::WrongPassword => ProviderVerification::wrongPassword(),
             LdapStatus::UnknownUser => ProviderVerification::unknownUser(),
@@ -97,7 +107,31 @@ class ProviderPasswordVerifier
         // Deviation (FR-037): legacy reads `name`, which Keycloak's admin API never provides.
         $name = trim((is_string($user['firstName'] ?? null) ? $user['firstName'] : '').' '.(is_string($user['lastName'] ?? null) ? $user['lastName'] : ''));
 
-        return ProviderVerification::verified(is_string($template) && $template !== '' ? $template : null, $name === '' ? null : $name);
+        return ProviderVerification::verified(is_string($template) && $template !== '' ? $template : null, $name === '' ? null : $name,
+            is_string($user['id'] ?? null) ? $user['id'] : null);
+    }
+
+    /** @param list<string> $attributes */
+    private static function ldapIdentity(LdapResult $result, array $attributes): ?string
+    {
+        foreach ($attributes as $attribute) {
+            $value = $result->first($attribute);
+            if ($value === null || $value === '') {
+                continue;
+            }
+            if ($attribute === 'objectguid' && strlen($value) === 16) {
+                $hex = bin2hex($value);
+
+                return implode('', array_reverse(str_split(substr($hex, 0, 8), 2))).'-'
+                    .implode('', array_reverse(str_split(substr($hex, 8, 4), 2))).'-'
+                    .implode('', array_reverse(str_split(substr($hex, 12, 4), 2))).'-'
+                    .substr($hex, 16, 4).'-'.substr($hex, 20);
+            }
+
+            return strtolower($value);
+        }
+
+        return $result->dn === null || $result->dn === '' ? null : 'dn:'.strtolower($result->dn);
     }
 
     /**

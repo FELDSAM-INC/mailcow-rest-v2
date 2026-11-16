@@ -21,6 +21,7 @@ class UpdateMailboxRequest extends ApiFormRequest
     use MailboxValueRules;
 
     public const MEMBERS = [
+        'shared',
         'displayName', 'status', 'quota', 'password', 'forcePasswordChange', 'forceSecondFactorSetup', 'webmailRedirect',
         'protocolAccess', 'authSource', 'recoveryEmail', 'tags', 'userPermissions', 'customAttributes',
     ];

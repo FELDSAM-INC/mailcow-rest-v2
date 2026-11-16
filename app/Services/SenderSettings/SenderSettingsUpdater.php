@@ -74,7 +74,7 @@ class SenderSettingsUpdater
             throw new PreconditionFailedHttpException('The sender settings were changed since they were read.');
         }
 
-        $rows = DB::table('sender_acl')->where('logged_in_as', $mailbox)->get(['external', 'send_as']);
+        $rows = ManualSenderPermissions::query()->where('logged_in_as', $mailbox)->get(['external', 'send_as']);
         $storedExplicit = $rows->filter(fn (object $r): bool => (int) $r->external === 0)->map(fn (object $r): string => (string) $r->send_as)->values()->all();
         $storedExternal = $rows->filter(fn (object $r): bool => (int) $r->external === 1)->map(fn (object $r): string => (string) $r->send_as)->values()->all();
         $violations = new FieldViolations;
@@ -94,10 +94,10 @@ class SenderSettingsUpdater
         $changes = [];
 
         if ($explicit !== null) {
-            DB::table('sender_acl')->where('external', 0)->where('logged_in_as', $mailbox)->delete();
+            ManualSenderPermissions::query()->where('external', 0)->where('logged_in_as', $mailbox)->delete();
 
             foreach ($explicit as $value) {
-                DB::table('sender_acl')->insert(['send_as' => $value, 'logged_in_as' => $mailbox]);
+                ManualSenderPermissions::query()->insert(['send_as' => $value, 'logged_in_as' => $mailbox]);
             }
 
             if (self::sorted($explicit) !== self::sorted($storedExplicit)) {
@@ -108,10 +108,10 @@ class SenderSettingsUpdater
         $outcome = null;
 
         if ($external !== null) {
-            DB::table('sender_acl')->where('external', 1)->where('logged_in_as', $mailbox)->delete();
+            ManualSenderPermissions::query()->where('external', 1)->where('logged_in_as', $mailbox)->delete();
 
             foreach ($external as $value) {
-                DB::table('sender_acl')->insert(['send_as' => $value, 'logged_in_as' => $mailbox, 'external' => 1]);
+                ManualSenderPermissions::query()->insert(['send_as' => $value, 'logged_in_as' => $mailbox, 'external' => 1]);
             }
 
             if (self::sorted($external) !== self::sorted($storedExternal)) {

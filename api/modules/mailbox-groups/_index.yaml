@@ -1,0 +1,6 @@
+/mailbox-groups:
+  $ref: ./mailbox-groups.yaml
+/mailbox-groups/{groupId}:
+  $ref: ./mailbox-group.yaml
+/mailboxes/{mailbox}/groups:
+  $ref: ./memberships.yaml

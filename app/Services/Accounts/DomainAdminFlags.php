@@ -3,10 +3,11 @@
 namespace App\Services\Accounts;
 
 use App\Auth\PermissionFlag;
+use App\Models\Mailcow\SchemaVersion;
 use stdClass;
 
 /**
- * The 19 permission flags of a domain administrator (feature 007 FR-037, contract
+ * The permission flags of a domain administrator (feature 007 FR-037, contract
  * `DomainAdminPermissions`): the `da_acl` columns of the supported schema in their column order,
  * named as in feature 001's `PermissionFlags`. tests/Feature/Schema/AclColumnsTest fails when an
  * upstream release adds a column.
@@ -34,7 +35,14 @@ final class DomainAdminFlags
         'domainRelayhost' => 'domain_relayhost',
         'domainDesc' => 'domain_desc',
         'aliasExternalGoto' => 'alias_external_goto',
+        'mailboxGroups' => 'mailbox_groups',
     ];
+
+    /** @return array<string, string> */
+    public static function availableColumns(): array
+    {
+        return SchemaVersion::hasNovember2026Features() ? self::COLUMNS : array_diff_key(self::COLUMNS, ['mailboxGroups' => true]);
+    }
 
     /**
      * The flags of a `da_acl` row by contract name; every flag `false` without a row (FR-041).
@@ -45,7 +53,7 @@ final class DomainAdminFlags
     {
         $flags = [];
 
-        foreach (self::COLUMNS as $name => $column) {
+        foreach (self::availableColumns() as $name => $column) {
             $flags[$name] = $row !== null && (int) ($row->{$column} ?? 0) === 1;
         }
 
@@ -57,7 +65,7 @@ final class DomainAdminFlags
      */
     public static function column(string $name): ?string
     {
-        return self::COLUMNS[$name] ?? null;
+        return self::availableColumns()[$name] ?? null;
     }
 
     /**

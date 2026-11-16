@@ -5,6 +5,7 @@ namespace App\Http\Resources\Api\V2;
 use App\Auth\PendingAction;
 use App\Auth\Principal;
 use App\Auth\Role;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Auth\SessionManager;
 use App\Services\Identity\IdentityService;
 use App\Services\Preferences\PreferencesService;
@@ -52,6 +53,7 @@ class IdentityResource extends JsonResource
             'authentication' => $authentication,
             'scope' => $identity->scope($principal)->toArray(),
             'permissions' => $identity->permissions($principal),
+            'features' => ['legacyApiKeys' => SchemaVersion::hasNovember2026Features(), 'syncSources' => SchemaVersion::hasNovember2026Features()],
             'pendingActions' => array_map(fn (PendingAction $a): string => $a->value, $identity->pendingActions($principal)),
         ];
 

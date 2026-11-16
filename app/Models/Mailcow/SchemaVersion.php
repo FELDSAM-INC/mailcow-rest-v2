@@ -24,4 +24,10 @@ class SchemaVersion extends MailcowModel
 
         return is_string($version) ? $version : null;
     }
+
+    /** 2026-11 introduced source-based sync jobs and group-managed alias/sender rows. */
+    public static function hasNovember2026Features(): bool
+    {
+        return self::current() === '02112026_1600';
+    }
 }

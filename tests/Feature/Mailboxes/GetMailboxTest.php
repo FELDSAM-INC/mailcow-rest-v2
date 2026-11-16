@@ -79,6 +79,7 @@ class GetMailboxTest extends TestCase
 
         $this->assertSame($response->headers->get('ETag'), $data['etag']);
         $this->assertSame([
+            'shared' => false,
             'address' => 'anna@example.org',
             'localPart' => 'anna',
             'domain' => 'example.org',

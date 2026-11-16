@@ -3,6 +3,7 @@
 namespace Tests\Feature\SyncJobs;
 
 use App\Auth\Role;
+use App\Models\Mailcow\SchemaVersion;
 use Tests\Support\SyncJobs\SyncJobTestHelpers;
 use Tests\TestCase;
 
@@ -20,7 +21,7 @@ class UpdateSyncJobCustomParamsRestrictionTest extends TestCase
         $this->syncMailbox('alice@example.org');
         $job = $this->mailcow()->syncJob('alice@example.org', [
             'active' => 0,
-            'custom_params' => '--folder=INBOX +debug',
+            'custom_params' => SchemaVersion::hasNovember2026Features() ? '--showpasswords' : '--folder=INBOX +debug',
             'last_run' => '2026-10-18 08:00:00',
             'success' => 1,
         ]);

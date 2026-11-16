@@ -6,6 +6,7 @@ use App\Audit\AuditEventType;
 use App\Auth\IdentityProviderType;
 use App\Auth\Principal;
 use App\Exceptions\ProblemException;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Audit\AuditLogger;
 use App\Support\Database\NamedLock;
 use App\Support\Http\ETag;
@@ -60,7 +61,7 @@ class IdentityProviderConfigService
                 $this->assertNotInUse($type);
             }
 
-            $this->write($candidate);
+            $this->write($candidate, $stored?->type === $type);
             $this->recordChange($stored, $candidate, $actor);
 
             return ['config' => $this->repository->current() ?? $candidate, 'created' => $stored === null];
@@ -82,7 +83,7 @@ class IdentityProviderConfigService
             $candidate = $stored->withPatch($patch);
             $candidate = $candidate->withSecret($this->secrets->resolve($stored, $candidate, self::secretOf($candidate, $patch)));
 
-            $this->write($candidate);
+            $this->write($candidate, true);
             $this->recordChange($stored, $candidate, $actor);
 
             return $this->repository->current() ?? $candidate;
@@ -147,11 +148,12 @@ class IdentityProviderConfigService
     /**
      * Writes the rows of the configuration as legacy does and removes every other row.
      */
-    private function write(IdentityProviderConfig $config): void
+    private function write(IdentityProviderConfig $config, bool $sameProvider): void
     {
         $rows = $this->codec->toRows($config);
 
-        DB::table('identity_provider')->whereNotIn('key', array_keys($rows))->delete();
+        $preserved = $sameProvider && SchemaVersion::hasNovember2026Features() ? array_values(IdentitySyncSettings::KEYS) : [];
+        DB::table('identity_provider')->whereNotIn('key', [...array_keys($rows), ...$preserved])->delete();
 
         foreach ($rows as $key => $value) {
             DB::statement('INSERT INTO `identity_provider` (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)', [$key, $value]);

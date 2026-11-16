@@ -44,7 +44,7 @@ class AccountCapabilitiesService
             ->all();
         $flags = [];
 
-        foreach (DomainAdminFlags::COLUMNS as $name => $column) {
+        foreach (DomainAdminFlags::availableColumns() as $name => $column) {
             $flags[$name] = (int) trim((string) ($defaults[$column] ?? '0'), "'") === 1;
         }
 

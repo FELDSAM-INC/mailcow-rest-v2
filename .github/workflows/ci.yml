@@ -36,7 +36,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Test subscription scan runner (no model calls)
-        run: node --test scripts/security/scan-local.test.mjs scripts/security/ci-image.test.mjs
+        run: node --test scripts/security/scan-local.test.mjs scripts/security/ci-image.test.mjs scripts/contract/prepare-comparison.test.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
@@ -54,9 +54,11 @@ jobs:
             exit 0
           fi
           git worktree add --detach "$RUNNER_TEMP/base" "$base_tag"
-          npx --yes "$REDOCLY_CLI" bundle "$RUNNER_TEMP/base/api/openapi.yaml" --output build/contract/base.yaml
+          npx --yes "$REDOCLY_CLI" bundle "$RUNNER_TEMP/base/api/openapi.yaml" --dereferenced --output build/contract/base.json
+          node scripts/contract/prepare-comparison.mjs build/contract/base.json build/contract/base-comparison.json
+          node scripts/contract/prepare-comparison.mjs build/contract/openapi.json build/contract/current-comparison.json build/contract/base.json
           docker run --rm -v "$PWD/build/contract:/specs:ro" "$OASDIFF_IMAGE" \
-            breaking /specs/base.yaml /specs/openapi.yaml --fail-on ERR
+            breaking /specs/base-comparison.json /specs/current-comparison.json --fail-on ERR
       - name: Webmail hand-off assumptions of every supported release (feature 005, R3)
         run: |
           git clone --quiet --bare --filter=blob:none https://github.com/mailcow/mailcow-dockerized.git "$RUNNER_TEMP/mailcow"

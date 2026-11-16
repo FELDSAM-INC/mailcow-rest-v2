@@ -141,6 +141,7 @@ class MailboxReader
             $largest = $domainRow === null ? 0 : max(0, min((int) $domainRow->maxquota * self::MIB, (int) $domainRow->quota * self::MIB - $otherMailboxes));
 
             $result[] = [
+                'shared' => $flag('shared', false),
                 'address' => $address,
                 'localPart' => (string) $row->local_part,
                 'domain' => $domain,

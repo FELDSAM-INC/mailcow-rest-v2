@@ -1,0 +1,17 @@
+type: object
+additionalProperties: false
+required:
+- owner
+- rights
+properties:
+  owner:
+    type: string
+    format: email
+  rights:
+    type: string
+    enum:
+    - read
+    - write
+    - full
+  subscribe:
+    type: boolean

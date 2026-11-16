@@ -1,0 +1,71 @@
+type: object
+required:
+- offboarding
+- offboardingLimit
+- groupSync
+- groupAutocreate
+- groupDefaultDomain
+- groupPaths
+- idAttribute
+- disabledFilter
+- groupBaseDn
+- groupFilter
+- groupNameAttribute
+- groupMemberMode
+- groupMemberAttribute
+properties:
+  offboarding:
+    type: boolean
+    description: Disable sign-in for removed or disabled provider accounts, retaining
+      delivery.
+  offboardingLimit:
+    type: integer
+    minimum: 0
+    maximum: 100
+    description: Maximum percentage of deactivations and membership removals per run;
+      upstream allows at least five mailboxes.
+  groupSync:
+    type: boolean
+  groupAutocreate:
+    type: boolean
+  groupDefaultDomain:
+    type: string
+    maxLength: 255
+  groupPaths:
+    type: array
+    maxItems: 100
+    uniqueItems: true
+    items:
+      type: string
+      minLength: 1
+      maxLength: 1000
+      pattern: ^/[^,\x00-\x1F]*$
+  idAttribute:
+    type: string
+    maxLength: 255
+    description: LDAP only; empty chooses a stable ID automatically. Changing this
+      clears existing LDAP external IDs, retaining offboarding markers.
+  disabledFilter:
+    type: string
+    maxLength: 1000
+  groupBaseDn:
+    type: string
+    maxLength: 1000
+  groupFilter:
+    type: string
+    maxLength: 1000
+  groupNameAttribute:
+    type: string
+    minLength: 1
+    maxLength: 255
+  groupMemberMode:
+    type: string
+    enum:
+    - memberof
+    - member
+    - ad_chain
+  groupMemberAttribute:
+    type: string
+    minLength: 1
+    maxLength: 255
+additionalProperties: false

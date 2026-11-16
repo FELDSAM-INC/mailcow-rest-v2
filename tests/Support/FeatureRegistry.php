@@ -13,7 +13,7 @@ use RuntimeException;
 final class FeatureRegistry
 {
     /**
-     * @param  array<string, array{operations: list<string>, problemTypes: list<string>}>  $features
+     * @param  array<string, array{operations: list<string>, problemTypes: list<string>, schemaVersions: list<string>}>  $features
      * @param  list<string>  $pendingOperations
      */
     private function __construct(
@@ -36,6 +36,7 @@ final class FeatureRegistry
             $features[(string) $name] = [
                 'operations' => array_values($feature['operations'] ?? []),
                 'problemTypes' => array_values($feature['problemTypes'] ?? []),
+                'schemaVersions' => array_values($feature['schemaVersions'] ?? []),
             ];
         }
 

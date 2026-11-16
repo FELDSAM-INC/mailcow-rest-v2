@@ -3,8 +3,11 @@
 namespace App\Services\IdentityProvider;
 
 use App\Auth\IdentityProviderType;
+use App\Casts\MailcowDateTime;
+use App\Models\Mailcow\SchemaVersion;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -34,6 +37,10 @@ class SynchronisationStatusReader
             return null;
         }
 
+        if (SchemaVersion::hasNovember2026Features()) {
+            return $this->databaseStatus($config, $now);
+        }
+
         if (! $config->get('importUsers') && ! $config->get('periodicSync')) {
             return SynchronisationStatus::disabled();
         }
@@ -42,6 +49,31 @@ class SynchronisationStatusReader
         $status = SynchronisationLogParser::derive($this->entries($task), $task, (int) $config->get('syncInterval'), $now);
 
         return new SynchronisationStatus(true, $status['state'], $status['lastCompletedAt'], $status['lastFailedAt'], $status['nextRunExpectedAt']);
+    }
+
+    private function databaseStatus(IdentityProviderConfig $config, CarbonImmutable $now): SynchronisationStatus
+    {
+        $extra = DB::table('identity_provider')->whereIn('key', ['offboarding', 'group_sync'])->pluck('value', 'key');
+        if (! $config->get('importUsers') && ! $config->get('periodicSync')
+            && ! filter_var($extra['offboarding'] ?? false, FILTER_VALIDATE_BOOLEAN)
+            && ! filter_var($extra['group_sync'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            return SynchronisationStatus::disabled();
+        }
+
+        $runs = DB::table('identity_sync_run')->where('provider', $config->type->legacy())->where('mode', '<>', 'preview');
+        $time = fn (mixed $value): ?CarbonImmutable => is_string($value) && $value !== '' ? CarbonImmutable::parse($value, MailcowDateTime::zone())->utc() : null;
+        $completed = $time((clone $runs)->where('status', 'ok')->max('finished'));
+        $failed = $time((clone $runs)->whereIn('status', ['error', 'blocked'])->max('finished'));
+        $started = $time((clone $runs)->max('started'));
+        $next = $started?->addMinutes(max(1, (int) $config->get('syncInterval')));
+        $running = (clone $runs)->whereIn('status', ['pending', 'running'])->exists();
+
+        return new SynchronisationStatus(true, match (true) {
+            $running => 'running',
+            $next === null => 'unknown',
+            $next->addMinutes(5)->lessThan($now) => 'overdue',
+            default => 'waiting',
+        }, $completed, $failed, $next);
     }
 
     /**

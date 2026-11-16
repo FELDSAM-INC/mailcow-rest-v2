@@ -43,7 +43,7 @@ class SyncJobScope
      */
     public function query(Principal $principal): Builder
     {
-        return $this->apply(SyncJob::query()->select(SyncJobQuery::columns()), $principal);
+        return $this->apply(SyncJobQuery::base(), $principal);
     }
 
     public function findInScope(int $id, Principal $principal): ?SyncJob
@@ -57,7 +57,7 @@ class SyncJobScope
      */
     public function findInScopeForUpdate(int $id, Principal $principal): ?SyncJob
     {
-        $job = SyncJob::query()->select(SyncJobQuery::columns())->whereKey($id)->lockForUpdate()->first();
+        $job = SyncJobQuery::base()->whereKey($id)->lockForUpdate()->first();
 
         if ($job === null || ! $this->apply(SyncJob::query(), $principal)->where('imapsync.id', $id)->exists()) {
             return null;

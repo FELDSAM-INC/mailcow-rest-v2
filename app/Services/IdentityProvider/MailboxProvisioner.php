@@ -13,14 +13,12 @@ use App\Exceptions\ProblemException;
 use App\Exceptions\ProblemRenderer;
 use App\Exceptions\ValidationProblemException;
 use App\Models\Mailcow\Mailbox;
+use App\Models\Mailcow\SchemaVersion;
 use App\Services\Audit\AuditLogger;
 use App\Services\Audit\RefusalAuditor;
 use App\Services\Mailboxes\MailboxCreator;
-use App\Services\Mailboxes\MailboxDefaults;
 use App\Services\Mailboxes\MailboxReader;
-use App\Services\Mailboxes\MailboxUpdater;
-use App\Services\Mailboxes\TaggedMailHandlingStore;
-use App\Services\RateLimits\RateLimitStore;
+use App\Services\Mailboxes\MailboxTemplateApplication;
 use App\Support\Database\NamedLock;
 use App\Support\Http\ProblemType;
 use Illuminate\Database\QueryException;
@@ -49,11 +47,7 @@ class MailboxProvisioner
 
     public function __construct(
         private readonly MailboxCreator $creator,
-        private readonly MailboxUpdater $updater,
-        private readonly MailboxDefaults $defaults,
         private readonly NamedLock $lock,
-        private readonly RateLimitStore $rateLimits,
-        private readonly TaggedMailHandlingStore $tagged,
         private readonly AuditLogger $audit,
         private readonly RefusalAuditor $refusals,
     ) {}
@@ -137,6 +131,17 @@ class MailboxProvisioner
     {
         $template = $config->mappedTemplate($mappingValue);
 
+        if (SchemaVersion::hasNovember2026Features()) {
+            $groupTemplate = DB::table('mailbox_group_member as m')
+                ->join('mailbox_group as g', 'g.id', '=', 'm.group_id')
+                ->join('templates as t', 't.id', '=', 'g.template_id')
+                ->where('m.username', $email)->where('g.active', 1)->where('t.type', 'mailbox')
+                ->orderByDesc('g.priority')->orderBy('g.id')->value('t.template');
+            if (is_string($groupTemplate)) {
+                $template = $groupTemplate;
+            }
+        }
+
         if ($template === null) {
             return false;
         }
@@ -165,20 +170,11 @@ class MailboxProvisioner
             return false;
         }
 
-        $values = $this->defaults->decodeTemplate($row->attributes);
-        $patch = array_intersect_key($values, array_flip(['status', 'quota', 'forcePasswordChange', 'forceSecondFactorSetup', 'webmailRedirect', 'protocolAccess', 'userPermissions', 'tags']));
-        $patch['displayName'] = $effectiveName;
-
-        if ($config->type !== IdentityProviderType::Keycloak && $config->type !== IdentityProviderType::Ldap) {
-            // Generic OIDC mailboxes are never forced to set up a second factor (feature 003 FR-025).
-            $patch['forceSecondFactorSetup'] = false;
-        }
-
-        $patch['forcePasswordChange'] = false;
-
         try {
-            $this->updater->update(self::system(), $email, $patch, null, null, false, $this->options($email, $template, (string) $row->attributes, $signInRequestId));
-            $this->applyFollowUps($email, $values);
+            app(MailboxTemplateApplication::class)->apply(self::system(), $email,
+                (string) $row->attributes, $effectiveName,
+                $this->options($email, $template, (string) $row->attributes, $signInRequestId),
+                in_array($config->type, [IdentityProviderType::Keycloak, IdentityProviderType::Ldap], true));
 
             return true;
         } catch (Throwable $e) {
@@ -192,29 +188,6 @@ class MailboxProvisioner
             $this->recordFailure($email, $template, $signInRequestId, $response->getStatusCode(), (string) ($problem['type'] ?? 'about:blank'), null, is_array($problem['errors'] ?? null) ? $problem['errors'] : null);
 
             return false;
-        }
-    }
-
-    /**
-     * The template's rate limit and tagged-mail handling, which legacy's update from a template
-     * applies besides the mailbox values (ratelimit('edit'), mailbox('edit', 'delimiter_action')).
-     *
-     * @param  array<string, mixed>  $values  the template's decoded values
-     */
-    private function applyFollowUps(string $email, array $values): void
-    {
-        try {
-            if (array_key_exists('rateLimit', $values)) {
-                is_array($values['rateLimit'])
-                    ? $this->rateLimits->set($email, (int) $values['rateLimit']['value'], (string) $values['rateLimit']['frame'])
-                    : $this->rateLimits->delete($email);
-            }
-
-            if (is_string($values['taggedMailHandling'] ?? null)) {
-                $this->tagged->set($email, $values['taggedMailHandling']);
-            }
-        } catch (Throwable $e) {
-            Log::warning("The rate limit or tagged-mail handling of {$email} was not applied on sign-in: ".$e->getMessage());
         }
     }
 
@@ -244,11 +217,12 @@ class MailboxProvisioner
     }
 
     /**
-     * @return array{templateMarker: string, auditActor: array{username: string, role: null}, auditDetails: array<string, mixed>}
+     * @return array{templateName: string, templateMarker: string, auditActor: array{username: string, role: null}, auditDetails: array<string, mixed>}
      */
     private function options(string $email, string $template, string $attributes, string $signInRequestId): array
     {
         return [
+            'templateName' => $template,
             'templateMarker' => TemplateMarker::for($attributes),
             'auditActor' => ['username' => $email, 'role' => null],
             'auditDetails' => ['trigger' => self::TRIGGER, 'template' => $template, 'signInRequestId' => $signInRequestId],

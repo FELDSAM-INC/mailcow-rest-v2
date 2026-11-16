@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Accounts;
 
+use App\Services\Accounts\DomainAdminFlags;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\Accounts\AccountTestHelpers;
 use Tests\TestCase;
@@ -54,7 +55,7 @@ class LegacyParityRowsTest extends TestCase
         ], $this->rows('domain_admins', 'reseller1', ['username', 'domain', 'active'], 'domain'));
         // INSERT INTO da_acl (username): every column default.
         $defaults = array_map(fn (bool $v): int => (int) $v, $this->flagDefaults());
-        $this->assertSame([['username' => 'reseller1'] + array_combine(array_values(self::FLAG_COLUMNS), array_values($defaults))], $this->rows('da_acl', 'reseller1', ['username', ...array_values(self::FLAG_COLUMNS)]));
+        $this->assertSame([['username' => 'reseller1'] + array_combine(array_values(DomainAdminFlags::availableColumns()), array_values($defaults))], $this->rows('da_acl', 'reseller1', ['username', ...array_values(DomainAdminFlags::availableColumns())]));
     }
 
     public function test_administrator_creation(): void
@@ -105,7 +106,7 @@ class LegacyParityRowsTest extends TestCase
     public function test_permission_change_with_every_flag_sent(): void
     {
         $this->mailcow()->domainAdmin('reseller1', ['a.example']);
-        $sent = array_combine(array_keys(self::FLAG_COLUMNS), array_map(fn (int $i): bool => $i % 2 === 0, range(0, 18)));
+        $sent = array_combine(array_keys(DomainAdminFlags::availableColumns()), array_map(fn (int $i): bool => $i % 2 === 0, range(0, count(DomainAdminFlags::availableColumns()) - 1)));
 
         $this->patchDomainAdmin('reseller1', ['permissions' => $sent])->assertOk();
 
@@ -113,11 +114,11 @@ class LegacyParityRowsTest extends TestCase
         // Deviation (FR-038): unsent flags keep their values; with every flag sent the row is the same.
         $expected = ['username' => 'reseller1'];
 
-        foreach (self::FLAG_COLUMNS as $name => $column) {
+        foreach (DomainAdminFlags::availableColumns() as $name => $column) {
             $expected[$column] = $sent[$name] ? 1 : 0;
         }
 
-        $this->assertSame([$expected], $this->rows('da_acl', 'reseller1', ['username', ...array_values(self::FLAG_COLUMNS)]));
+        $this->assertSame([$expected], $this->rows('da_acl', 'reseller1', ['username', ...array_values(DomainAdminFlags::availableColumns())]));
     }
 
     public function test_domain_administrator_deletion(): void

@@ -35,8 +35,8 @@ Sources:
   maintain desktop/mobile layouts and translations.
 - [x] Installer/nginx: test new upstream template, preserve internal endpoints at `/` and `/ng/`,
   respect upstream body limits and trusted client-IP handling.
-- [x] Update API contract, documentation and compatibility matrix; pin the UI contract to the final API commit.
-- [ ] Run functional/contract/static/build checks; commit and push the completed changes.
+- [x] Update API contract, vendored UI contract, documentation and compatibility matrix.
+- [x] Run functional/contract/static/build checks; commit and push the completed changes.
 
 Release publication, if requested, additionally requires fresh sequential full Codex Security
 scans of both final application commits, following the root AGENTS.md rule.
@@ -49,7 +49,8 @@ issues, which were corrected and checked through targeted regression runs. The i
 runs are not recorded as clean full-suite passes. The November follow-up exercised 946
 cases; its only remaining failure was the monitoring-operation count (42 → 43), fixed
 and checked separately. The corresponding older-schema 946-case run passes, as does the
-684-case older-schema feature regression. CI runs each complete suite again from the commit.
+684-case older-schema feature regression. The final 36 older-schema impersonation, access, public-config
+and legacy webmail checks also pass. CI runs each complete suite again from the commit.
 
 Combined full-run and follow-up contract coverage reaches all 409 registered operations on
 November, and all 380 applicable operations on September/October. The 29 November-only
@@ -74,7 +75,8 @@ idempotence, root and `/ng/` activation, and preserved keys. Both upstream nginx
 rollback, trusted client-IP handling and callback-log suppression. Webmail SSO hand-off
 assumptions hold for upstream 2026-11. No production server was changed.
 
-Before committing the UI, run `scripts/contract/bump.sh <final-api-commit>` to record its exact
-source revision. No release tags, release image promotion, server deployment or release
+Implementation commits pushed to `main`: API `cd9a5acc256d4aefa8257ba19ddb774602652b5e`,
+UI `b0992c4b`, installer `a43c8a58`. The UI contract is pinned to that exact API implementation
+commit; regeneration, type checks, translations and the final production build pass. No release tags, release image promotion, server deployment or release
 security scan has run for this implementation. Release publication still requires the two
 fresh full subscription scans in AGENTS.md.
